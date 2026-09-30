@@ -6,7 +6,7 @@ This is the Unframework monorepo: a [Turborepo](https://turborepo.dev) on [pnpm]
 
 ## Layout
 
-- `apps/*`: sites, such as the Nuxt site for [unframework.dev](https://unframework.dev).
+- `apps/web`: the Nuxt site for [unframework.dev](https://unframework.dev). See [`apps/web/README.md`](apps/web/README.md).
 - `packages/*`: the packages of Unframework.
 
 ## Shared parts from uxfront
@@ -15,7 +15,7 @@ The shared configuration comes from the published `@uxfront/*` packages, not fro
 
 | Package                                                                                                 | Where                                                    |
 | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| [`@uxfront/oxlint-config`](https://www.npmjs.com/package/@uxfront/oxlint-config)                        | `oxlint.config.ts` (`/vue` once there is a Vue app)      |
+| [`@uxfront/oxlint-config`](https://www.npmjs.com/package/@uxfront/oxlint-config)                        | `oxlint.config.ts` (the `/vue` preset)                   |
 | [`@uxfront/oxfmt-config`](https://www.npmjs.com/package/@uxfront/oxfmt-config)                          | `oxfmt.config.ts`                                        |
 | [`@uxfront/typescript-config`](https://www.npmjs.com/package/@uxfront/typescript-config)                | Each package's `tsconfig.json` (see below)               |
 | [`@uxfront/layer-ui`](https://www.npmjs.com/package/@uxfront/layer-ui), `@uxfront/ui`, `@uxfront/scene` | The homepage in `apps/web`, the same look as uxfront.com |

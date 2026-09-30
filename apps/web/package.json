@@ -1,0 +1,25 @@
+{
+  "name": "web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt generate",
+    "check-types": "tsc -b",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lighthouse": "pnpm dlx @lhci/cli autorun"
+  },
+  "dependencies": {
+    "@uxfront/layer-ui": "^0.1.3",
+    "@uxfront/scene": "^0.1.0",
+    "@uxfront/ui": "^0.4.0",
+    "nuxt": "^4.5.2",
+    "vue": "^3.5.43",
+    "vue-router": "^5.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.0"
+  }
+}

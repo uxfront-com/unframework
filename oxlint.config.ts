@@ -1,8 +1,8 @@
-import base from "@uxfront/oxlint-config";
+import vue from "@uxfront/oxlint-config/vue";
 import { defineConfig } from "oxlint";
 
 export default defineConfig({
-  extends: [base],
+  extends: [vue],
   options: {
     typeAware: true,
   },

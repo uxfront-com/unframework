@@ -1,0 +1,14 @@
+// Deploys the `nuxt generate` output as static assets (no Worker script).
+// Without this file, `wrangler deploy` auto-configures Nuxt for SSR and fails.
+{
+  "name": "unframework",
+  "compatibility_date": "2026-09-21",
+  "assets": {
+    "directory": "./dist",
+    // Serve dist/404.html with a 404 status for unknown paths.
+    "not_found_handling": "404-page",
+  },
+  // Required by `wrangler preview` (non-production branch builds). Empty because
+  // previews need no separate bindings; `assets` stays at the top level.
+  "previews": {},
+}
