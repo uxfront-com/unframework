@@ -3,25 +3,30 @@ import { corridor, prism } from "@uxfront/scene/formations";
 import { FRAMEWORKS } from "@uxfront/ui/frameworks";
 
 import { GITHUB_URL, UXFRONT_URL } from "~/data/site";
+import { stack } from "~/formations/stack";
+import { threshold } from "~/formations/threshold";
 import { hold, spotlight } from "~/lib/formations";
 
 useUxHead({
   title: "Unframework - The compiler that speaks seven UI frameworks",
   description:
-    "Write your UI components once, then compile them to native React, Vue, Svelte, Angular, Solid, Qwik and Astro components. One source, seven frameworks.",
+    "Write UI components once and compile them to native React, Vue, Svelte, Angular, Solid, Qwik and Astro. When a faster framework ships, you add a target, not a migration.",
   siteName: "Unframework",
   image: {
     path: "/og.jpg",
     width: 1200,
     height: 630,
-    alt: "A beam of white light split by a prism into seven coloured rails, ending at Angular, Svelte, Astro, Vue, React, Solid and Qwik, beside the words: the compiler that speaks seven UI frameworks.",
+    alt: "A beam of white light split by a prism into seven coloured rails, ending at Angular, Svelte, Astro, Vue, React, Solid and Qwik, beside the words: ready for the eighth, the compiler that speaks seven UI frameworks.",
   },
   sameAs: [GITHUB_URL],
 });
 
-// The prism tells the whole story: one beam of light (your source) goes into
-// the prism (the compiler) and comes out as seven rails (the frameworks).
-// The hero shows all of it, then each chapter closes in on one part.
+// The prism tells the story: one beam of light (your source) goes into the
+// prism (the compiler) and comes out as seven rails (the frameworks). The hero
+// shows all of it, the first two chapters close in on one part each, and in
+// the third the rails become a stack of seven cards, one per framework. In the
+// fourth, the rails pass through a film of light and become one white stream,
+// whatever comes next.
 const hero = hold(
   prism({
     key: "hero",
@@ -70,22 +75,20 @@ const compiler = spotlight(
   // The rails fan out behind the copy: keep them faint so it stays legible.
   { soft: 0.6, dim: 0.02 },
 );
-// Not held: the rails grow one after another as the chapter is read, in step
-// with the framework chips.
-const output = spotlight(
-  prism({
-    key: "output",
-    label: "Output",
-  }),
-  1,
-  20,
-);
-const scene = [hero, source, compiler, output, corridor({ label: "Build on it" })];
+// The cards are dealt one after another as the chapter is read, in step with
+// the framework chips.
+const output = stack({ key: "output", label: "Output" });
+// The same seven beams of light cross a soap film into a faster medium, where
+// they converge into one white stream: the next framework. They break through
+// one after another as the chapter is read.
+const next = threshold({ key: "next", label: "Next" });
+const scene = [hero, source, compiler, output, next, corridor({ label: "Build on it" })];
 
 const chapters = {
   source: { id: "source", index: "01", role: "Source", title: "Write it once" },
   compiler: { id: "compiler", index: "02", role: "Compiler", title: "Compile it to seven" },
   output: { id: "output", index: "03", role: "Output", title: "Ship it everywhere" },
+  next: { id: "next", index: "04", role: "Next", title: "Take it to the next one" },
 };
 
 const nav = Object.values(chapters).map((chapter) => ({
@@ -109,6 +112,25 @@ const compile = [
   { title: "Consistent", text: "Props, events and slots keep their names in every framework." },
   { title: "Build-time", text: "The translation happens in your build, not in the browser." },
   { title: "Deterministic", text: "The same source compiles to the same output, every time." },
+];
+
+const ahead = [
+  {
+    title: "No migration",
+    text: "A new framework is a new compile target, not a rewrite of every component.",
+  },
+  {
+    title: "No bet to make",
+    text: "Don't guess which framework wins. Your components go where it goes.",
+  },
+  {
+    title: "Side by side",
+    text: "Ship the old framework and the new one from the same source while you move.",
+  },
+  {
+    title: "On your schedule",
+    text: "Switch when the numbers say so, not when a rewrite fits the roadmap.",
+  },
 ];
 
 const targets = FRAMEWORKS.map((framework, i) => ({
@@ -160,6 +182,13 @@ const family = [
       >
         <template #icon><UxFrameworkLogo :name="framework" /></template>
       </UxAnchor>
+      <UxAnchor anchor="next:stream" label="The next framework">
+        <template #icon>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+            <circle cx="8" cy="8" r="6.5" stroke-dasharray="2.5 2" />
+          </svg>
+        </template>
+      </UxAnchor>
     </template>
     <template #header>
       <UxHeader brand="Unframework" :nav="nav" nav-label="How it works" :github="GITHUB_URL">
@@ -176,6 +205,7 @@ const family = [
     </template>
 
     <UxHero
+      kicker="Ready for the eighth"
       title="The compiler that speaks seven UI frameworks"
       :index="nav"
       index-label="How it works"
@@ -188,7 +218,7 @@ const family = [
       </template>
       <template #lead>
         Write a component once. Unframework compiles it to native React, Vue, Svelte, Angular,
-        Solid, Qwik and Astro code, so one source serves every framework.
+        Solid, Qwik and Astro code, and to whichever faster framework comes next, with no migration.
       </template>
     </UxHero>
 
@@ -208,7 +238,7 @@ const family = [
       <UxTraits :items="compile" />
     </UxChapter>
 
-    <UxChapter v-bind="chapters.output" :steps="7" valign="end">
+    <UxChapter v-bind="chapters.output" :steps="7">
       <template #lead>
         Each framework gets a real component in its own format, typed and readable, with no wrapper
         or adapter in between.
@@ -216,10 +246,20 @@ const family = [
       <UxChips :items="targets" aria-label="Compile targets" />
     </UxChapter>
 
-    <UxFinale kicker="Part of UXFront" :cards="family">
-      <template #title>One source. <strong>Seven</strong> frameworks.</template>
+    <UxChapter v-bind="chapters.next" :steps="4" align="end">
       <template #lead>
-        Write it once, and let the compiler speak every framework your users work in.
+        AI is speeding everything up, and a faster framework is always around the corner. When it
+        lands, it's one more compile target: your components move on the next build, not in a
+        migration.
+      </template>
+      <UxTraits :items="ahead" />
+    </UxChapter>
+
+    <UxFinale kicker="Part of UXFront" :cards="family">
+      <template #title>Seven frameworks. And the <strong>next</strong>.</template>
+      <template #lead>
+        Write it once, and let the compiler speak every framework your users work in, including the
+        one that isn't out yet.
       </template>
       <template #actions>
         <UxPillLink :href="GITHUB_URL" label="Follow on GitHub" />
