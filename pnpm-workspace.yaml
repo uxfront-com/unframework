@@ -2,7 +2,18 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
+  # Only an auto-installed peer of @nuxt/content: Docus reads content with the
+  # built-in node:sqlite, so the native binding is never built.
+  better-sqlite3: false
   esbuild: true
+  # Its postinstall only switches the build to Vue 2; the default build is Vue 3's.
+  vue-demi: false
+overrides:
+  # 2.1.3 serializes `strong` and `emphasis` through containerPhrasing, which calls
+  # remark-mdc's (3.11.1) wrappers of them again: any **bold** text in the docs
+  # overflows the stack, and llms-full.txt fails to prerender. Drop this once
+  # remark-mdc handles it.
+  mdast-util-to-markdown: 2.1.2
 minimumReleaseAgeExclude:
   - "@uxfront/layer-ui@0.1.4"
   - "@uxfront/scene@0.2.0"

@@ -6,7 +6,7 @@ Found a bug, or have an idea? Search the [existing issues](https://github.com/ux
 
 ## Layout
 
-- `apps/web`: the Nuxt site for [unframework.dev](https://unframework.dev). See [`apps/web/README.md`](../apps/web/README.md).
+- `apps/web`: the Nuxt site for [unframework.dev](https://unframework.dev), the homepage and the documentation at `/docs`. See [`apps/web/README.md`](../apps/web/README.md).
 - `packages/*`: the packages of Unframework.
 
 ## Getting started
@@ -40,7 +40,7 @@ The shared configuration comes from the published `@uxfront/*` packages, not fro
 | [`@uxfront/oxfmt-config`](https://www.npmjs.com/package/@uxfront/oxfmt-config)                          | `oxfmt.config.ts`                                        |
 | [`@uxfront/typescript-config`](https://www.npmjs.com/package/@uxfront/typescript-config)                | Each package's `tsconfig.json` (see below)               |
 | [`@uxfront/layer-ui`](https://www.npmjs.com/package/@uxfront/layer-ui), `@uxfront/ui`, `@uxfront/scene` | The homepage in `apps/web`, the same look as uxfront.com |
-| [`@uxfront/layer-docs`](https://www.npmjs.com/package/@uxfront/layer-docs)                              | The documentation site                                   |
+| [`@uxfront/layer-docs`](https://www.npmjs.com/package/@uxfront/layer-docs)                              | The documentation in `apps/web`, at `/docs`              |
 
 ## Adding a package
 

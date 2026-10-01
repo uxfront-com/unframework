@@ -19,6 +19,8 @@
     <br/>
     <a href="https://unframework.dev">Homepage</a>
     ·
+    <a href="https://unframework.dev/docs">Documentation</a>
+    ·
     <a href="./.github/CONTRIBUTING.md">Contributing</a>
     ·
     <a href="https://github.com/uxfront-com/unframework/issues">Issue Tracker</a>
@@ -80,7 +82,8 @@ it's one more compile target: your components move on the next build, not in a m
 ## Status
 
 Unframework is in early development, and the compiler isn't published yet. Watch this repository
-to hear when the first release lands.
+to hear when the first release lands, and read the [documentation](https://unframework.dev/docs)
+as it grows with it.
 
 ## Part of UXFront
 

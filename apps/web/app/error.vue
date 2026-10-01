@@ -11,6 +11,9 @@ useSeoMeta({
   title,
   description: title,
   robots: "noindex",
+  // UxErrorPage paints dark, like the homepage (docs pages follow the color mode).
+  themeColor: "#050507",
+  colorScheme: "dark",
 });
 
 const goHome = (event: MouseEvent) => {

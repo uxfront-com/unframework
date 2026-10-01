@@ -2,7 +2,7 @@
 import { corridor, prism, stack, threshold } from "@uxfront/scene/formations";
 import { FRAMEWORKS } from "@uxfront/ui/frameworks";
 
-import { GITHUB_URL, UXFRONT_URL } from "~/data/site";
+import { DOCS_URL, GITHUB_URL, UXFRONT_URL } from "~/data/site";
 import { hold, spotlight } from "~/lib/formations";
 
 useUxHead({
@@ -191,13 +191,16 @@ const family = [
     <template #header>
       <UxHeader brand="Unframework" :nav="nav" nav-label="How it works" :github="GITHUB_URL">
         <template #mark />
-        <template #brand><strong>Un</strong>framework</template>
+        <template #brand>Unframework</template>
         <template #byline>
           by
           <a :href="UXFRONT_URL">
             <UxFrontMark />
             <span><strong>UX</strong>Front</span>
           </a>
+        </template>
+        <template #actions>
+          <NuxtLink class="header-docs" :to="DOCS_URL">Documentation</NuxtLink>
         </template>
       </UxHeader>
     </template>
@@ -217,6 +220,8 @@ const family = [
       <template #lead>
         Write a component once. Unframework compiles it to native React, Vue, Svelte, Angular,
         Solid, Qwik and Astro code, and to whichever faster framework comes next, with no migration.
+        <br />
+        <UxPillLink class="hero-docs" :href="DOCS_URL" label="Read the documentation" />
       </template>
     </UxHero>
 
@@ -260,6 +265,7 @@ const family = [
         one that isn't out yet.
       </template>
       <template #actions>
+        <UxPillLink :href="DOCS_URL" label="Read the documentation" />
         <UxPillLink :href="GITHUB_URL" label="Follow on GitHub" />
       </template>
       <template #footer>
@@ -269,3 +275,19 @@ const family = [
     </UxFinale>
   </UxSite>
 </template>
+
+<style scoped>
+/* The first frame only has the components' inline styles (Tailwind loads after
+   it), so the docs links are styled here rather than with utilities. */
+.hero-docs {
+  margin-top: 2rem;
+}
+
+/* Phones can't fit the byline beside both header links. The hero links to the
+   docs just below. */
+@media (max-width: 639px) {
+  .header-docs {
+    display: none;
+  }
+}
+</style>
