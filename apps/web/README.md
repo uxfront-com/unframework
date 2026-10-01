@@ -1,6 +1,6 @@
 # web
 
-Static Nuxt site for https://unframework.dev, prerendered and deployed to Cloudflare Workers as static assets. It is built like [uxfront.com](https://github.com/uxfront-com/uxfront/tree/main/apps/web) and [opencomponents.dev](https://github.com/uxfront-com/open-components), from the same homepage kit.
+Static Nuxt site for https://unframework.dev: the homepage and the documentation at `/docs`, prerendered and deployed to Cloudflare Workers as static assets. It is built like [uxfront.com](https://github.com/uxfront-com/uxfront/tree/main/apps/web) and [opencomponents.dev](https://github.com/uxfront-com/open-components), from the same homepage kit, with the docs on [Docus](https://docus.dev).
 
 ## Commands
 
@@ -8,7 +8,7 @@ Static Nuxt site for https://unframework.dev, prerendered and deployed to Cloudf
 pnpm dev          # dev server on http://localhost:3000
 pnpm build        # nuxt generate → dist
 pnpm preview      # serve the generated site
-pnpm check-types  # type-check the .ts sources (.vue files aren't covered)
+pnpm check-types  # type-check the .ts sources (.vue files aren't covered, see "The docs" for what else it skips)
 pnpm lighthouse   # Lighthouse CI against dist, fails below 100 in any category (add new routes to `url` in `lighthouserc.json`)
 ```
 
@@ -27,7 +27,7 @@ The page (`app/pages/index.vue`) holds the copy and the scene. Its story follows
 
 `app/lib/formations.ts` has the two wrappers the chapters need: `hold()` pins a formation's progress (the hero isn't pinned, so the rails would otherwise jump when the page scrolls) and `spotlight()` lights one stretch of the prism along the x axis.
 
-`app/formations/stack/` is a formation of the site's own: a stack of seven glass cards, each holding the same component, a sign-up form, drawn in light in its framework's colour. Angular sits in front and Qwik at the back, rising at about 45°. They're dealt one after another as the chapter is read: Angular lands in front, and each next card fans out from behind the one before it, and the form fills itself in on the same beat on all seven: the email is typed, "remember me" switches on and submit is pressed. The renderer has no depth test, so the shader dims whatever a card in front covers, as through frosted glass. Its particle bands line up with the prism's, so rail `i` flows into card `i` on the way in. It follows the `@uxfront/scene` formation contract and layout (`index.ts`, `geometry.ts`, `art.ts`, `shader.ts`), so it can move to `packages/scene/src/formations/stack/` in uxfront as is: swap the `@uxfront/scene` imports for the relative ones, export it from `formations/index.ts` and drop the `build:manifest` hook from this `nuxt.config.ts` (`@uxfront/layer-ui` already keeps the scene's shaders out of prefetch).
+`app/formations/stack/` is a formation of the site's own: a stack of seven glass cards, each holding the same component, a sign-up form, drawn in light in its framework's colour. Angular sits in front and Qwik at the back, rising at about 45°. They're dealt one after another as the chapter is read: Angular lands in front, and each next card fans out from behind the one before it, and the form fills itself in on the same beat on all seven: the email is typed, "remember me" switches on and submit is pressed. The renderer has no depth test, so the shader dims whatever a card in front covers, as through frosted glass. Its particle bands line up with the prism's, so rail `i` flows into card `i` on the way in. It follows the `@uxfront/scene` formation contract and layout (`index.ts`, `geometry.ts`, `art.ts`, `shader.ts`), so it can move to `packages/scene/src/formations/stack/` in uxfront as is: swap the `@uxfront/scene` imports for the relative ones, and export it from `formations/index.ts`. Its shader stays out of prefetch either way: the `build:manifest` hook in this `nuxt.config.ts` turns prefetch off for every chunk, and `@uxfront/layer-ui` keeps the scene's shaders out of it too.
 
 `app/formations/threshold/` is the other one: the same seven beams of light cross a film of light into whatever comes next. The film is a soap film on a ring: its colours swirl as it drains, and ripples spread from where each beam goes through, with one wide ring as it breaks through. Beyond it the light is faster: the beams turn the corner and converge into one white stream, the next framework, which races off into the distance with its pulses stretched into streaks. It's the prism in reverse: seven colours back into white. They break through one after another as the chapter is read, the stream brightens as each one joins it, and a label above it names it once all seven have. It follows the same contract and layout, so it can move upstream the same way.
 
@@ -52,6 +52,49 @@ Keep `wrangler.jsonc`: without it, `wrangler deploy` auto-configures Nuxt for SS
 
 The `cloudflare_pages_static` preset turns `routeRules` headers in `nuxt.config.ts` into a `_headers` file (immutable caching for `/_nuxt/**`, security headers for every route). It also writes a `/* /404.html 404` fallback to `_redirects`, which the Workers API rejects, so a `nitro:init` hook strips 404 rules; `not_found_handling` in `wrangler.jsonc` serves `404.html` with a 404 instead.
 
+## The docs
+
+The documentation is built with [Docus](https://docus.dev), through [`@uxfront/layer-docs`](https://github.com/uxfront-com/uxfront/tree/main/packages/layer-docs), the second layer in `nuxt.config.ts`, the same way as on [opencomponents.dev](https://github.com/uxfront-com/open-components). Pages are markdown files in `content/docs/`, served under `/docs`. Number files and folders to order them in the sidebar, as in `1.getting-started/1.introduction.md`, which is served at `/docs/getting-started/introduction`. `/docs` itself redirects to the introduction (`routeRules` in `nuxt.config.ts`). From those files, Docus builds the sidebar, search, table of contents, a markdown copy of each page at `/raw/<path>.md`, `llms.txt`, `llms-full.txt`, `sitemap.xml` and each page's Open Graph image. The homepage links to the docs from its header, its hero and its finale (`DOCS_URL` in `app/data/site.ts`).
+
+How it shares the app with the homepage:
+
+- `app/app.vue` replaces Docus's own, so it renders the Docus shell (header, sidebar, search), loaded lazily from `docus/app/app.vue`, on `/docs` and below, and the bare page everywhere else. `app/error.vue` still renders `UxErrorPage`, docs included.
+- `app/components/app/AppHeaderLeft.vue` replaces Docus's header title with the `Unframework` wordmark and the "by UXFront" byline, like the homepage header.
+- Docus adds Tailwind CSS and Nuxt UI to the entry stylesheet. On the homepage, `@uxfront/layer-ui` loads that stylesheet after first paint, and the `.ux-site` styles take precedence over it. Keep `app/app.css`, which Docus imports into the same stylesheet, off `.ux-site` too.
+- `nuxt.config.ts` turns off Nuxt's prefetch hints. Otherwise every page, the homepage included, would prefetch the docs' lazy chunks, which delays the homepage's fonts and stylesheet, and with them its LCP.
+- `app/app.config.ts` sets the theme colors and the GitHub, "Edit this page" and "Report an issue" links (with `rootDir: "apps/web"`, since the docs don't live at the repository root). `app/app.css` darkens Nuxt UI's light-mode primary to pass WCAG AA contrast. Nuxt UI's callouts (`::tip`, `::note`, …) still draw their text in fixed shades that fail it in light mode, so avoid them until they're themed.
+- Docus reads the site URL from `NUXT_SITE_URL`, which `nuxt.config.ts` defaults to the production origin, and generates `robots.txt` (with `@nuxtjs/robots`). Don't add a `public/robots.txt`: the module renames it to `_robots.txt` and merges it in.
+- The site is static, so Docus's MCP server is off (`mcp.enabled` in `nuxt.config.ts`), and so is its AI assistant, which only starts with an `AI_GATEWAY_API_KEY`.
+- The `cloudflare_pages_static` preset is set for production builds only: under it, `nuxt dev` serves Nuxt Content's browser database from a dump frozen at startup, so after a reload the docs would show stale content.
+- In content, link to the generated files (`/llms.txt`, `/raw/…`) with `{external}`, as the introduction does. Otherwise the router handles the click and shows the 404 page.
+- `server/middleware/raw-markdown.ts` serves `/raw/<path>.md` from the page's source file. Nuxt Content's own route rebuilds it from the parsed page and writes tables as unescaped HTML, which agents, and Docus's "Copy page", then read.
+- `pnpm-workspace.yaml` pins `mdast-util-to-markdown` to 2.1.2: 2.1.3 sends `remark-mdc` into endless recursion on any **bold** text, and `llms-full.txt` fails to prerender.
+
+Docus and `@uxfront/layer-docs` ship their sources uncompiled, and they don't type-check against this app's dependencies. `pnpm check-types` runs `tsc` and fails on any error outside them.
+
+### Examples per framework
+
+Write an example once per framework in a `::framework-switcher`, one slot per framework:
+
+````md
+::framework-switcher
+#react
+
+```tsx [Button.tsx]
+…
+```
+
+#vue
+
+```vue [Button.vue]
+…
+```
+
+::
+````
+
+It shows one tab per framework. The reader's pick switches every switcher on the site and the Framework select above the sidebar, and is kept across visits. The frameworks, their order and their slot names (the `value`s) are `docsTheme.frameworks` in `app/app.config.ts`: the seven Unframework compiles to. A page doesn't have to cover them all: a missing framework shows the first one the page has, with a note saying so.
+
 ## Keeping 100s
 
-The rules are the same as for [uxfront.com](https://github.com/uxfront-com/uxfront/tree/main/apps/web#keeping-100s-as-the-site-grows): no render-blocking resources, heavy code behind dynamic `import()`, images through `@nuxt/image`, and a title, meta description, canonical link and single `<h1>` on every page.
+The rules are the same as for [uxfront.com](https://github.com/uxfront-com/uxfront/tree/main/apps/web#keeping-100s-as-the-site-grows): no render-blocking resources, heavy code behind dynamic `import()`, images through `@nuxt/image`, and a title, meta description, canonical link and single `<h1>` on every page. `lighthouserc.json` covers the homepage only. The docs pages are Docus's theme as it ships, which scores below 100 in performance and accessibility, so they're not in it yet. The Lighthouse CI server also doesn't serve `/docs/<path>` from `<path>.html` the way Cloudflare does: measure them on `npx wrangler dev` instead.

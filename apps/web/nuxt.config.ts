@@ -2,8 +2,11 @@ import { existsSync } from "node:fs";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-// The lazy shader chunks of the formations in app/formations/.
-const FORMATION_SHADER = /(?:^|[/\\])formations[/\\][^/\\]+[/\\]shader\.[jt]s$/;
+const SITE_URL = "https://unframework.dev";
+
+// Docus reads the site URL from the environment: for canonical URLs, robots.txt
+// and llms.txt at build time, and for the sitemap when it's prerendered.
+process.env.NUXT_SITE_URL ||= SITE_URL;
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -11,13 +14,28 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   ssr: true,
 
-  // The homepage kit: components, fonts, head helpers and critical-path loading.
-  extends: ["@uxfront/layer-ui"],
+  extends: [
+    // The homepage kit: components, fonts, head helpers and critical-path loading.
+    "@uxfront/layer-ui",
+    // The docs theme: Docus, which renders content/docs/ at /docs (see app/app.vue),
+    // plus the framework switcher (`docsTheme.frameworks` in app/app.config.ts).
+    "@uxfront/layer-docs",
+  ],
 
   runtimeConfig: {
     public: {
-      siteUrl: "https://unframework.dev",
+      siteUrl: SITE_URL,
     },
+  },
+
+  // The docs header and title template (Docus falls back to the package name).
+  site: {
+    name: "Unframework",
+  },
+
+  // Docus's MCP server needs a server at runtime, and the site is static.
+  mcp: {
+    enabled: false,
   },
 
   app: {
@@ -26,8 +44,6 @@ export default defineNuxtConfig({
       meta: [
         { charset: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { name: "theme-color", content: "#050507" },
-        { name: "color-scheme", content: "dark" },
       ],
       link: [
         { rel: "icon", href: "/favicon.ico", sizes: "any" },
@@ -38,11 +54,16 @@ export default defineNuxtConfig({
   },
 
   experimental: {
-    // One static page: inline the payload instead of fetching it.
-    payloadExtraction: false,
+    // Inline the payload on first load (the homepage makes no extra request),
+    // and extract it for client-side navigation between docs pages.
+    payloadExtraction: "client",
   },
 
   routeRules: {
+    // The docs open on the introduction. /raw/docs.md, the markdown copy of /docs,
+    // redirects the same way, since agents may guess it.
+    "/docs": { redirect: "/docs/getting-started/introduction" },
+    "/raw/docs.md": { redirect: "/raw/docs/getting-started/introduction.md" },
     // Hashed build assets never change, so cache them forever.
     "/_nuxt/**": {
       headers: { "cache-control": "public, max-age=31536000, immutable" },
@@ -59,25 +80,31 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    // Emits _headers/_redirects for Cloudflare Pages from routeRules.
-    preset: "cloudflare_pages_static",
     // Cloudflare compresses at the edge.
     compressPublicAssets: false,
     prerender: {
       crawlLinks: true,
-      routes: ["/"],
+      // /docs only redirects, so crawling the docs starts from the introduction.
+      routes: ["/", "/docs", "/docs/getting-started/introduction"],
       failOnError: true,
     },
   },
 
+  $production: {
+    nitro: {
+      // Emits _headers/_redirects for Cloudflare Pages from routeRules. Build-only:
+      // under a Cloudflare preset, `nuxt dev` serves Nuxt Content's browser database
+      // from a dump frozen at startup, so after a reload the docs show stale content.
+      preset: "cloudflare_pages_static",
+    },
+  },
+
   hooks: {
-    // The page's own formations import their shaders once the page is idle, like
-    // @uxfront/scene's (which @uxfront/layer-ui already keeps out of prefetch).
-    // A prefetch hint would pull them into the critical path instead.
+    // Every page would otherwise prefetch the lazy chunks: the docs' (~75 of them),
+    // which delay the homepage's fonts and stylesheet, and with them its LCP, and the
+    // shaders of the page's own formations, which it imports once the page is idle.
     "build:manifest"(manifest) {
-      for (const chunk of Object.values(manifest)) {
-        chunk.dynamicImports = chunk.dynamicImports?.filter((key) => !FORMATION_SHADER.test(key));
-      }
+      for (const chunk of Object.values(manifest)) chunk.prefetch = false;
     },
     // Workers rejects the `/* /404.html 404` fallback the preset writes to _redirects
     // (404 isn't a valid redirect status), failing the deploy. not_found_handling in

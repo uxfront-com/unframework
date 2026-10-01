@@ -1,0 +1,21 @@
+/* Docus imports this after Tailwind CSS and Nuxt UI, into the global stylesheet
+   the docs pages load. Keep it off `.ux-site`: the homepage loads it too. */
+
+/* Identifiers in a table's first column, like prop names and option names, read
+   as one word: don't break them at their hyphens. */
+table td:first-child > code {
+  white-space: nowrap;
+}
+
+@layer theme {
+  /* Nuxt UI draws light-mode links in the 500 shade, below WCAG AA contrast on
+     white. The rules below replace both of its defaults, so dark mode is restated. */
+  :root,
+  .light {
+    --ui-primary: var(--ui-color-primary-600);
+  }
+
+  .dark {
+    --ui-primary: var(--ui-color-primary-400);
+  }
+}
