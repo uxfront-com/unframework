@@ -12,9 +12,9 @@
     "lighthouse": "pnpm dlx @lhci/cli autorun"
   },
   "dependencies": {
-    "@uxfront/layer-ui": "^0.1.3",
-    "@uxfront/scene": "^0.1.0",
-    "@uxfront/ui": "^0.4.0",
+    "@uxfront/layer-ui": "^0.1.4",
+    "@uxfront/scene": "^0.2.0",
+    "@uxfront/ui": "^0.4.1",
     "nuxt": "^4.5.2",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1"

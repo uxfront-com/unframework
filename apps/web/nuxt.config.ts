@@ -2,9 +2,6 @@ import { existsSync } from "node:fs";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-// The lazy shader chunks of the formations in app/formations/.
-const FORMATION_SHADER = /(?:^|[/\\])formations[/\\][^/\\]+[/\\]shader\.[jt]s$/;
-
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
@@ -71,14 +68,6 @@ export default defineNuxtConfig({
   },
 
   hooks: {
-    // The page's own formations import their shaders once the page is idle, like
-    // @uxfront/scene's (which @uxfront/layer-ui already keeps out of prefetch).
-    // A prefetch hint would pull them into the critical path instead.
-    "build:manifest"(manifest) {
-      for (const chunk of Object.values(manifest)) {
-        chunk.dynamicImports = chunk.dynamicImports?.filter((key) => !FORMATION_SHADER.test(key));
-      }
-    },
     // Workers rejects the `/* /404.html 404` fallback the preset writes to _redirects
     // (404 isn't a valid redirect status), failing the deploy. not_found_handling in
     // wrangler.jsonc serves 404.html instead. Registered here, not in nitro.hooks,
