@@ -1,0 +1,47 @@
+name: Site bug
+description: Report something broken on unframework.dev, including typos and broken links.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting it. Please [search the existing issues](https://github.com/uxfront-com/unframework/issues?q=is%3Aissue) first. To suggest a change to the compiler, open a feature request instead.
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      placeholder: https://unframework.dev
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the page
+        2. Scroll to …
+        3. Click …
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and device
+      placeholder: Safari on an iPhone, Chrome on Windows, …
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag images or recordings here, if they help.
