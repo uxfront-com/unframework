@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { corridor, prism } from "@uxfront/scene/formations";
+import { corridor, prism, stack, threshold } from "@uxfront/scene/formations";
 import { FRAMEWORKS } from "@uxfront/ui/frameworks";
 
 import { GITHUB_URL, UXFRONT_URL } from "~/data/site";
-import { stack } from "~/formations/stack";
-import { threshold } from "~/formations/threshold";
 import { hold, spotlight } from "~/lib/formations";
 
 useUxHead({
