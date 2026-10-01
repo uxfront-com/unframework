@@ -12,6 +12,7 @@
     "lighthouse": "pnpm dlx @lhci/cli autorun"
   },
   "dependencies": {
+    "@nuxt/content": "^3.16.1",
     "@uxfront/layer-docs": "^0.5.0",
     "@uxfront/layer-ui": "^0.1.4",
     "@uxfront/scene": "^0.2.0",
