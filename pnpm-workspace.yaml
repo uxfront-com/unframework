@@ -14,3 +14,7 @@ overrides:
   # overflows the stack, and llms-full.txt fails to prerender. Drop this once
   # remark-mdc handles it.
   mdast-util-to-markdown: 2.1.2
+minimumReleaseAgeExclude:
+  - "@uxfront/layer-ui@0.1.4"
+  - "@uxfront/scene@0.2.0"
+  - "@uxfront/ui@0.4.1"

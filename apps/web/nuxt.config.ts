@@ -100,9 +100,8 @@ export default defineNuxtConfig({
   },
 
   hooks: {
-    // Every page would otherwise prefetch the lazy chunks: the docs' (~75 of them),
-    // which delay the homepage's fonts and stylesheet, and with them its LCP, and the
-    // shaders of the page's own formations, which it imports once the page is idle.
+    // Every page would otherwise prefetch the docs' lazy chunks (~75 of them),
+    // which delays the homepage's fonts and stylesheet, and with them its LCP.
     "build:manifest"(manifest) {
       for (const chunk of Object.values(manifest)) chunk.prefetch = false;
     },

@@ -2,7 +2,7 @@
 
 This is the Unframework monorepo: a [Turborepo](https://turborepo.dev) on [pnpm](https://pnpm.io) workspaces, set up like [uxfront](https://github.com/uxfront-com/uxfront).
 
-Found a bug, or have an idea? Search the [existing issues](https://github.com/uxfront-com/unframework/issues?q=is%3Aissue) first, then [open a new one](https://github.com/uxfront-com/unframework/issues/new/choose).
+Found a bug, or have an idea? Search the [existing issues](https://github.com/uxfront-com/unframework/issues?q=is%3Aissue) first, then [open a new one](https://github.com/uxfront-com/unframework/issues/new/choose): a feature request, or a site bug. Everyone taking part agrees to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ## Layout
 

@@ -103,6 +103,7 @@ for existing and closed issues. If your problem or idea is not addressed yet,
 
 Please read through our [contributing guide](./.github/CONTRIBUTING.md). There you can find how
 the monorepo is laid out, how to run the site locally, how to add a package and how releases work.
+Everyone taking part in the project agrees to follow our [Code of Conduct](./.github/CODE_OF_CONDUCT.md).
 
 Thanks goes to these [wonderful people](https://github.com/uxfront-com/unframework/graphs/contributors)!
 
