@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF1201",
+    "severity": "error",
+    "message": "\"react\" is a React module, and components are framework-free.",
+    "file": "diagnostics/framework-import-rejected/LikeButton.uf.tsx",
+    "start": {
+      "line": 1,
+      "column": 26,
+      "offset": 25
+    },
+    "end": {
+      "line": 1,
+      "column": 33,
+      "offset": 32
+    },
+    "help": "Write the component with the authoring API from \"unframework\" (ref, computed, watch and the define* macros); the compiler writes the framework code."
+  }
+]

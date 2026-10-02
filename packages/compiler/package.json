@@ -1,0 +1,69 @@
+{
+  "name": "@unframework/compiler",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Unframework compiler: compile() turns one .uf.tsx source into native React, Vue, Svelte, Solid, Angular, Qwik and Astro components.",
+  "keywords": [
+    "angular",
+    "astro",
+    "compiler",
+    "qwik",
+    "react",
+    "solid",
+    "svelte",
+    "unframework",
+    "vue"
+  ],
+  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/compiler#readme",
+  "bugs": "https://github.com/uxfront-com/unframework/issues",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uxfront-com/unframework.git",
+    "directory": "packages/compiler"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@unframework/analyzer": "workspace:*",
+    "@unframework/codegen": "workspace:*",
+    "@unframework/diagnostics": "workspace:*",
+    "@unframework/ir": "workspace:*",
+    "@unframework/parser": "workspace:*",
+    "@unframework/target-angular": "workspace:*",
+    "@unframework/target-astro": "workspace:*",
+    "@unframework/target-qwik": "workspace:*",
+    "@unframework/target-react": "workspace:*",
+    "@unframework/target-solid": "workspace:*",
+    "@unframework/target-svelte": "workspace:*",
+    "@unframework/target-vue": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@uxfront/typescript-config": "catalog:",
+    "tsdown": "catalog:",
+    "vitest": "catalog:"
+  }
+}

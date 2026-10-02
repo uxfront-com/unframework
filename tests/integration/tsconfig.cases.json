@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // Type-checks every corpus input under tsgo with the authoring settings (packages/unframework,
+  // "Type-checking .uf.tsx"): what an author's editor reports, before the compiler runs. The
+  // goldens under __output__ are checked per target by tests/toolchains instead.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "unframework",
+    // tsc never emits a .uf.tsx, and isolatedDeclarations would demand an explicit return type on
+    // every exported component (TS9013).
+    "declaration": false,
+    "isolatedDeclarations": false
+  },
+  "include": ["cases/**/*.uf.tsx"],
+  "exclude": ["cases/**/__output__/**"]
+}

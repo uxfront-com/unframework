@@ -1,0 +1,17 @@
+{
+  "name": "@unframework/repo-tests",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Repo invariants: the package layering rules and the package template every package follows.",
+  "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@uxfront/typescript-config": "catalog:",
+    "oxc-parser": "catalog:",
+    "vitest": "catalog:"
+  }
+}

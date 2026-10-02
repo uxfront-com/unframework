@@ -1,0 +1,15 @@
+{
+  "name": "@unframework/toolchain-astro",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The astro test toolchain: the checker and tsconfig that type-check every case's astro golden output in one run (L4), with TypeScript 6 until the checker moves to TypeScript 7.",
+  "type": "module",
+  "scripts": {
+    "check": "astro check --noSync --minimumFailingSeverity warning"
+  },
+  "devDependencies": {
+    "@astrojs/check": "catalog:",
+    "astro": "catalog:",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
+  }
+}

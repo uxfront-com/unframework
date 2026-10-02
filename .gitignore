@@ -36,3 +36,18 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# The v1 compiler, kept locally for reference only
+packages/compiler-v1
+
+# Unframework test harness
+.uf-cache
+tests/integration/.reports
+tests/integration/.canary
+tests/integration/.live
+# Vitest browser mode attachments and failure screenshots
+.vitest-attachments
+__screenshots__/**/*-darwin.png
+__screenshots__/**/*-win32.png
+.uf-tmp
+.vitest

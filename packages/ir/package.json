@@ -1,0 +1,55 @@
+{
+  "name": "@unframework/ir",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Unframework intermediate representation: plain-data types, builders, visitors and the JSON Schema that every IR snapshot is validated against.",
+  "keywords": [
+    "compiler",
+    "ir",
+    "unframework"
+  ],
+  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/ir#readme",
+  "bugs": "https://github.com/uxfront-com/unframework/issues",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uxfront-com/unframework.git",
+    "directory": "packages/ir"
+  },
+  "files": [
+    "dist",
+    "schema"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema.json": "./schema/ir.schema.json",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./schema.json": "./schema/ir.schema.json",
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "check-types": "tsc --noEmit",
+    "generate": "node scripts/generate-schema.ts",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@uxfront/typescript-config": "catalog:",
+    "ajv": "catalog:",
+    "ts-json-schema-generator": "^2.9.0",
+    "tsdown": "catalog:",
+    "vitest": "catalog:"
+  }
+}

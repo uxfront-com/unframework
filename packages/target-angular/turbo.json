@@ -1,0 +1,17 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "test": {
+      // The tests emit from the corpus's IR snapshots and check its committed angular outputs with
+      // what tests/toolchains/angular installs: its transit node carries that package's tsconfig and
+      // the locked versions of its tools into this hash.
+      "dependsOn": ["$TURBO_EXTENDS$", "@unframework/toolchain-angular#transit"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/tests/integration/cases/**/__output__/ir.json",
+        "$TURBO_ROOT$/tests/integration/cases/**/__output__/angular/**"
+      ]
+    }
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "name": "@unframework/testing",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The cross-target test API: describeTargets, mount, the View and its parity checks, the mount adapters, the SSR renderers and normalisation. Private until M7.",
+  "keywords": [
+    "testing",
+    "unframework",
+    "vitest"
+  ],
+  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/testing#readme",
+  "bugs": "https://github.com/uxfront-com/unframework/issues",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uxfront-com/unframework.git",
+    "directory": "packages/testing"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "./src/setup.ts",
+    "./src/targets/*.ts",
+    "./dist/setup.js",
+    "./dist/targets/*.js"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./setup": "./src/setup.ts",
+    "./normalize": "./src/normalize/index.ts",
+    "./node": "./src/node/index.ts",
+    "./react": "./src/targets/react.ts",
+    "./vue": "./src/targets/vue.ts",
+    "./svelte": "./src/targets/svelte.ts",
+    "./solid": "./src/targets/solid.ts",
+    "./angular": "./src/targets/angular.ts",
+    "./qwik": "./src/targets/qwik.ts",
+    "./astro": "./src/targets/astro.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./setup": {
+        "types": "./dist/setup.d.ts",
+        "default": "./dist/setup.js"
+      },
+      "./normalize": {
+        "types": "./dist/normalize/index.d.ts",
+        "default": "./dist/normalize/index.js"
+      },
+      "./node": {
+        "types": "./dist/node/index.d.ts",
+        "default": "./dist/node/index.js"
+      },
+      "./react": {
+        "types": "./dist/targets/react.d.ts",
+        "default": "./dist/targets/react.js"
+      },
+      "./vue": {
+        "types": "./dist/targets/vue.d.ts",
+        "default": "./dist/targets/vue.js"
+      },
+      "./svelte": {
+        "types": "./dist/targets/svelte.d.ts",
+        "default": "./dist/targets/svelte.js"
+      },
+      "./solid": {
+        "types": "./dist/targets/solid.d.ts",
+        "default": "./dist/targets/solid.js"
+      },
+      "./angular": {
+        "types": "./dist/targets/angular.d.ts",
+        "default": "./dist/targets/angular.js"
+      },
+      "./qwik": {
+        "types": "./dist/targets/qwik.d.ts",
+        "default": "./dist/targets/qwik.js"
+      },
+      "./astro": {
+        "types": "./dist/targets/astro.d.ts",
+        "default": "./dist/targets/astro.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run && vitest run --config test/parity/vitest.config.ts"
+  },
+  "dependencies": {
+    "@fontsource/inter": "catalog:",
+    "@unframework/codegen": "workspace:*",
+    "@unframework/ir": "workspace:*",
+    "@unframework/target-angular": "workspace:*",
+    "@unframework/target-astro": "workspace:*",
+    "@unframework/target-qwik": "workspace:*",
+    "@unframework/target-react": "workspace:*",
+    "@unframework/target-solid": "workspace:*",
+    "@unframework/target-svelte": "workspace:*",
+    "@unframework/target-vue": "workspace:*",
+    "axe-core": "catalog:",
+    "parse5": "catalog:",
+    "pixelmatch": "catalog:",
+    "pngjs": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/pngjs": "catalog:",
+    "@uxfront/typescript-config": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
+    "playwright": "catalog:",
+    "tsdown": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@vitest/browser-playwright": "catalog:",
+    "vitest": "catalog:"
+  }
+}

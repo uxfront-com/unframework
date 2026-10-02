@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // L4 for the Vue target: vue-tsc (TypeScript 6) over every case's golden Vue output, with the
+  // type strictness every target's checker shares (the strictest of the seven frameworks'
+  // project defaults; harness/toolchain-strictness.unit.test.ts). The toolchain's `typecheck`
+  // extends this file with an explicit file list, so these options are the contract for both. Vue resolves from the files' own location (tests/integration).
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "jsx": "preserve",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "types": []
+  },
+  // Unknown components, props and events in templates are errors, as in a strict TSX target.
+  "vueCompilerOptions": {
+    "strictTemplates": true
+  },
+  "include": ["../../integration/cases/**/__output__/vue/**/*.vue"]
+}

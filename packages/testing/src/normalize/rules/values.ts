@@ -1,0 +1,77 @@
+import { parseStyle, printStyle } from "../style.ts";
+import { attributeName, forEachElement, HTML_NAMESPACE } from "../tree.ts";
+import type { TreeParent } from "../tree.ts";
+
+/**
+ * Rule 4a: rewrites every `style` attribute in the CSSOM's format (`a: b; c: d;`): comments and
+ * spacing go and property names are lowercased. Every declaration is kept, in order, with its
+ * value (see `style.ts`).
+ *
+ * An overridden declaration is kept too. Only the browser knows whether the later one is valid:
+ * if it is not, the earlier one is what renders (`color: red; color: nonsense` is red), so
+ * dropping it would equate a fallback with its loss. The live DOM's `style.cssText` has already
+ * been through the CSSOM, so the DOM path needs no such guess.
+ */
+export function canonicalizeStyles(root: TreeParent): void {
+  forEachElement(root, (element) => {
+    for (const attribute of element.attrs) {
+      if (attributeName(attribute) === "style") {
+        attribute.value = printStyle(parseStyle(attribute.value));
+      }
+    }
+  });
+}
+
+/** Boolean attributes every HTML element can have. */
+const GLOBAL_BOOLEAN_ATTRIBUTES: readonly string[] = ["autofocus", "hidden", "inert", "itemscope"];
+
+/** Boolean attributes per HTML element, from the HTML standard's attribute index. */
+const BOOLEAN_ATTRIBUTES: Readonly<Record<string, readonly string[]>> = {
+  audio: ["autoplay", "controls", "loop", "muted"],
+  button: ["disabled", "formnovalidate"],
+  details: ["open"],
+  dialog: ["open"],
+  fieldset: ["disabled"],
+  form: ["novalidate"],
+  iframe: ["allowfullscreen"],
+  img: ["ismap"],
+  input: ["alpha", "checked", "disabled", "formnovalidate", "multiple", "readonly", "required"],
+  link: ["disabled"],
+  ol: ["reversed"],
+  optgroup: ["disabled"],
+  option: ["disabled", "selected"],
+  script: ["async", "defer", "nomodule"],
+  select: ["disabled", "multiple", "required"],
+  template: [
+    "shadowrootclonable",
+    "shadowrootcustomelementregistry",
+    "shadowrootdelegatesfocus",
+    "shadowrootserializable",
+  ],
+  textarea: ["disabled", "readonly", "required"],
+  track: ["default"],
+  video: ["autoplay", "controls", "loop", "muted", "playsinline"],
+};
+
+/**
+ * Rule 4b: writes every boolean attribute of an HTML element as `name=""`. The standard allows
+ * the empty string or the attribute's own name, and frameworks pick either (`disabled`,
+ * `disabled=""`, `disabled="disabled"`). Any other value (`disabled="false"`) is invalid HTML
+ * that still switches the state on, so it is kept for the reader to see. `hidden="until-found"`
+ * is a state of its own and stays too.
+ */
+export function canonicalizeBooleanAttributes(root: TreeParent): void {
+  forEachElement(root, (element) => {
+    if (element.namespaceURI !== HTML_NAMESPACE) return;
+    const own = BOOLEAN_ATTRIBUTES[element.tagName] ?? [];
+    for (const attribute of element.attrs) {
+      const name = attributeName(attribute);
+      if (
+        (GLOBAL_BOOLEAN_ATTRIBUTES.includes(name) || own.includes(name)) &&
+        attribute.value.toLowerCase() === name
+      ) {
+        attribute.value = "";
+      }
+    }
+  });
+}

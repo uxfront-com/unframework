@@ -1,0 +1,4 @@
+{
+  "description": "An image without alt text: L11 expects exactly the image-alt rule.",
+  "axe": ["image-alt"]
+}

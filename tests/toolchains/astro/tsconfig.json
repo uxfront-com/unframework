@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // Layer L4 for Astro: `astro check` (TypeScript 6) over every case's golden Astro output, with
+  // the type strictness every target's checker shares: Astro's strict preset, plus the flags it
+  // leaves out (harness/toolchain-strictness.unit.test.ts). The toolchain's typecheck() extends
+  // this file with a temporary one that lists the files to check.
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    // Only Astro's own types: nothing from @types/* hoisted elsewhere in the workspace.
+    "types": []
+  },
+  "include": ["../../integration/cases/**/__output__/astro/**/*.astro"],
+  "exclude": []
+}

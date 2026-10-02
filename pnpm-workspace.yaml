@@ -1,6 +1,12 @@
 packages:
   - "apps/*"
   - "packages/*"
+  # The v1 compiler is kept for reference only (and gitignored). Its `catalog:`
+  # dependencies name entries this workspace does not define, so including it
+  # would break `pnpm install`.
+  - "!packages/compiler-v1"
+  - "tests/*"
+  - "tests/toolchains/*"
 allowBuilds:
   # Only an auto-installed peer of @nuxt/content: Docus reads content with the
   # built-in node:sqlite, so the native binding is never built.
@@ -8,6 +14,12 @@ allowBuilds:
   esbuild: true
   # Its postinstall only switches the build to Vue 2; the default build is Vue 3's.
   vue-demi: false
+  # Native optional dependencies of @angular/build, which ship prebuilt binaries.
+  "@parcel/watcher": false
+  lmdb: false
+  msgpackr-extract: false
+  # Astro's optional image service; the tests render no images through it.
+  sharp: false
 overrides:
   # 2.1.3 serializes `strong` and `emphasis` through containerPhrasing, which calls
   # remark-mdc's (3.11.1) wrappers of them again: any **bold** text in the docs
@@ -19,7 +31,100 @@ overrides:
   # Chrome logs a deprecation, and the homepage loses its Best Practices 100.
   # 0.14 skips it. Drop this once @nuxtjs/partytown depends on 0.14.
   "@nuxtjs/partytown>@qwik.dev/partytown": 0.14.4
+  # @typescript/typescript6 depends on `@typescript/old: npm:typescript@^6`. Pin the real
+  # TypeScript 6, which Angular checks at runtime, so a lockfile refresh cannot move it.
+  "@typescript/typescript6>@typescript/old": npm:typescript@6.0.3
+packageExtensions:
+  # Analog imports `typescript` without declaring it, so pnpm would resolve the root's
+  # TypeScript 7, which has no JS API. As a peer, it shares the TypeScript 6 of its importer
+  # (tests/toolchains/angular).
+  "@analogjs/vite-plugin-angular@2":
+    peerDependencies:
+      typescript: ">=6.0 <6.1"
+peerDependencyRules:
+  allowedVersions:
+    # Qwik 2.0.0-beta.47 declares an optional `vitest: ">=2 <5"` peer; the harness runs Vitest 5.
+    "@qwik.dev/core>vitest": "5"
+    # The compiler pins oxfmt 0.71 (plan, Appendix C); the shared config still names ^0.70.
+    "@uxfront/oxfmt-config>oxfmt": "0.71"
 minimumReleaseAgeExclude:
   - "@uxfront/layer-ui@0.1.4"
   - "@uxfront/scene@0.2.0"
   - "@uxfront/ui@0.4.1"
+  - "@vitest/mocker@5.0.3"
+  - "@vitest/spy@5.0.3"
+  - vitest@5.0.3
+  - "@angular/common@22.2.1"
+  - "@angular/compiler-cli@22.2.1"
+  - "@angular/compiler@22.2.1"
+  - "@angular/core@22.2.1"
+  - "@angular/platform-browser@22.2.1"
+  - "@angular/platform-server@22.2.1"
+  - "@qwik.dev/core@2.0.0-beta.47"
+  - "@vitest/browser-playwright@5.0.3"
+  - "@vitest/browser@5.0.3"
+  - "@vitest/pretty-format@5.0.3"
+  - "@vitest/ui@5.0.3"
+  - "@vitest/utils@5.0.3"
+# The version baseline (plan, Appendix C). Every package takes its tooling from
+# here, so one line moves a version for the whole repo. Compiler dependencies
+# that shape the output (oxc, oxfmt) are exact: the same input and the same
+# versions give byte-identical output (P8).
+catalog:
+  "@analogjs/vite-plugin-angular": 2.7.5
+  "@angular/build": 22.2.0
+  "@angular/common": 22.2.1
+  "@angular/compiler": 22.2.1
+  "@angular/compiler-cli": 22.2.1
+  "@angular/core": 22.2.1
+  "@angular/platform-browser": 22.2.1
+  "@angular/platform-server": 22.2.1
+  "@astrojs/check": 0.9.10
+  "@astrojs/compiler-rs": 0.5.1
+  "@babel/core": 7.29.7
+  "@babel/preset-typescript": 7.29.7
+  "@fontsource/inter": ^5.3.0
+  "@oxc-project/types": 0.152.0
+  "@qwik.dev/core": 2.0.0-beta.47
+  "@qwik.dev/optimizer": 2.1.0-beta.9
+  "@standard-schema/spec": ^1.1.0
+  "@sveltejs/vite-plugin-svelte": 7.3.1
+  "@types/babel__core": ^7.20.5
+  "@types/node": ^24.19.0
+  "@types/pngjs": ^6.0.5
+  "@types/react": 19.3.0
+  "@types/react-dom": 19.3.0
+  "@uxfront/typescript-config": ^0.1.0
+  "@vitejs/plugin-react": 6.1.1
+  "@vitejs/plugin-vue": 6.0.9
+  "@vitest/browser-playwright": 5.0.3
+  ajv: ^8.20.0
+  astro: 7.3.5
+  axe-core: 4.13.0
+  babel-plugin-react-compiler: 1.0.0
+  babel-preset-solid: 1.9.15
+  csstype: ^3.2.3
+  lightningcss: 1.33.0
+  magic-string: ^1.4.2
+  oxc-codegen: 0.152.0
+  oxc-parser: 0.152.0
+  oxfmt: 0.71.0
+  parse5: ^8.0.1
+  pixelmatch: ^7.2.0
+  playwright: 1.63.0
+  pngjs: ^7.0.0
+  react-dom: 19.3.0
+  react: 19.3.0
+  rxjs: ^7.8.2
+  solid-js: 1.9.15
+  svelte-check: 4.7.6
+  svelte: 5.57.1
+  tsdown: ^0.23.0
+  tslib: ^2.8.1
+  typescript: 7.0.2
+  unplugin: ^3.4.0
+  vite-plugin-solid: 2.11.14
+  vite: 8.3.1
+  vitest: 5.0.3
+  vue-tsc: 3.3.11
+  vue: 3.5.43

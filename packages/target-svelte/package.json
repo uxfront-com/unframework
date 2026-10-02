@@ -1,0 +1,73 @@
+{
+  "name": "@unframework/target-svelte",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Svelte 5 target of the Unframework compiler: emits idiomatic Svelte components from the portable IR, declares their capabilities, and provides the toolchain the tests use.",
+  "keywords": [
+    "compiler",
+    "svelte",
+    "unframework"
+  ],
+  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/target-svelte#readme",
+  "bugs": "https://github.com/uxfront-com/unframework/issues",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uxfront-com/unframework.git",
+    "directory": "packages/target-svelte"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./toolchain": "./src/toolchain/index.ts",
+    "./toolchain/client": "./src/toolchain/client.ts",
+    "./toolchain/server": "./src/toolchain/server.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./toolchain": {
+        "types": "./dist/toolchain/index.d.ts",
+        "default": "./dist/toolchain/index.js"
+      },
+      "./toolchain/client": {
+        "types": "./dist/toolchain/client.d.ts",
+        "default": "./dist/toolchain/client.js"
+      },
+      "./toolchain/server": {
+        "types": "./dist/toolchain/server.d.ts",
+        "default": "./dist/toolchain/server.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@unframework/codegen": "workspace:*",
+    "@unframework/ir": "workspace:*"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "catalog:",
+    "@types/node": "catalog:",
+    "@uxfront/typescript-config": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
+    "playwright": "catalog:",
+    "svelte": "catalog:",
+    "tsdown": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

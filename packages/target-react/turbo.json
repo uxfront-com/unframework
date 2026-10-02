@@ -1,0 +1,13 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "test": {
+      // The toolchain tests check the corpus's committed react outputs with what
+      // tests/toolchains/react installs: its transit node carries that package's tsconfig and the
+      // locked versions of its tools into this hash.
+      "dependsOn": ["$TURBO_EXTENDS$", "@unframework/toolchain-react#transit"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tests/integration/cases/**/__output__/react/**"]
+    }
+  }
+}

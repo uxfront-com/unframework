@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // L4 for Angular: ngc over every case's golden output in one run, with the options `ng new`
+  // generates plus every extended template diagnostic as an error, and the two type-checking
+  // flags `ng new` leaves out that the other targets' checkers set (noUncheckedIndexedAccess,
+  // verbatimModuleSyntax): every target's checker shares one type strictness
+  // (harness/toolchain-strictness.unit.test.ts). L3 checks with the same
+  // options in memory (@unframework/target-angular/toolchain, `strictOptions`), where the
+  // extended diagnostics stay warnings so it can tell them apart; a unit test keeps the two in
+  // step.
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": [],
+    // The output trees have no Angular dependency of their own.
+    "paths": { "@angular/*": ["./node_modules/@angular/*"] }
+  },
+  "angularCompilerOptions": {
+    "strictTemplates": true,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictStandalone": true,
+    "typeCheckHostBindings": true,
+    "extendedDiagnostics": { "defaultCategory": "error" }
+  },
+  "include": ["../../integration/cases/**/__output__/angular/**/*.ts"]
+}
