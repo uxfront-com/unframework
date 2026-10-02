@@ -38,6 +38,13 @@ export default defineNuxtConfig({
     enabled: false,
   },
 
+  // Amplitude Analytics and Session Replay (modules/amplitude.ts), built in when
+  // NUXT_PUBLIC_AMPLITUDE_API_KEY is set.
+  amplitude: {
+    // Records every session until the project's Session Replay settings set a rate.
+    sessionReplaySampleRate: 1,
+  },
+
   app: {
     head: {
       htmlAttrs: { lang: "en" },

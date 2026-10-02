@@ -14,6 +14,11 @@ overrides:
   # overflows the stack, and llms-full.txt fails to prerender. Drop this once
   # remark-mdc handles it.
   mdast-util-to-markdown: 2.1.2
+  # @nuxtjs/partytown (2.0.0) asks for ^0.11.0, which reads the deprecated
+  # attributionSrc of every element when it mirrors the page for its worker:
+  # Chrome logs a deprecation, and the homepage loses its Best Practices 100.
+  # 0.14 skips it. Drop this once @nuxtjs/partytown depends on 0.14.
+  "@nuxtjs/partytown>@qwik.dev/partytown": 0.14.4
 minimumReleaseAgeExclude:
   - "@uxfront/layer-ui@0.1.4"
   - "@uxfront/scene@0.2.0"
