@@ -12,7 +12,9 @@
     "lighthouse": "pnpm dlx @lhci/cli autorun"
   },
   "dependencies": {
+    "@amplitude/session-replay-browser": "^1.51.0",
     "@nuxt/content": "^3.16.1",
+    "@nuxtjs/partytown": "^2.0.0",
     "@uxfront/layer-docs": "^0.5.0",
     "@uxfront/layer-ui": "^0.1.4",
     "@uxfront/scene": "^0.2.0",
@@ -23,6 +25,7 @@
     "vue-router": "^5.3.1"
   },
   "devDependencies": {
+    "@nuxt/kit": "^4.5.2",
     "@types/node": "^24.19.0"
   }
 }
