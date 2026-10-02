@@ -9,25 +9,298 @@ Read `docs/README.md` inside that installed package first, then read the relevan
 This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
 <!-- END:turborepo-agent-rules -->
 
-# Working in this repo
+# Unframework
 
 Unframework compiles one `.uf.tsx` component into native React, Vue, Svelte, Solid, Angular, Qwik
-and Astro components. The plan (`docs/plan.md`) is the architecture and the milestones,
-`docs/adrs/` records the decisions, and `.github/CONTRIBUTING.md` is the contributor guide.
+and Astro components. The source is ordinary TSX with Vue-inspired APIs (`ref`, `computed`,
+`defineEmits`, …) imported from `unframework` and erased at build time. The output has no runtime:
+each file depends only on its framework. Every output is verified by executed tests, from golden
+files and each framework's own compiler to server HTML, the DOM, the accessibility tree and pixels
+in a real browser.
 
-- **The verify loop.** `pnpm check-types && pnpm lint && pnpm test`. A compiler change is done when
-  the corpus in `tests/integration` is green on all seven targets. If the output is meant to change,
-  run `pnpm test:update` and review every changed file under `tests/integration/cases`: golden
-  outputs and expectations are reviewed like code. Never hand-edit `__output__`, `__expected__` or
-  `__screenshots__`.
-- **The parity matrix** (`tests/integration/.reports/parity-matrix.md`) says which (case, target,
-  layer) failed. Fix the cause; never weaken a check. Known failures go in
-  `tests/integration/harness/quarantine.ts` with a reason and an issue, and must still fail.
-- **Loud, never silent.** Every construct the compiler cannot lower is a diagnostic with a stable
-  `UF` code from `packages/diagnostics/src/catalogue.ts`; nothing is copied through unanalysed. A
-  check that cannot start fails, and every skip carries a reason.
-- **Layering.** A package never imports one on its own layer or above it (`tests/repo`); a target's
-  main entry imports only `@unframework/ir` and `@unframework/codegen`; only the test toolchains
-  load TypeScript's API (TypeScript 6 lives only in `tests/toolchains/{vue,svelte,astro,angular}`).
-- **Versions** come from the `catalog:` in `pnpm-workspace.yaml`. The installed packages are newer
-  than most training data: read their types and docs in `node_modules` before using an API.
+## Where the project is
+
+- **M0, the walking skeleton, is done:** the whole pipeline and the verification machine, around
+  static elements, text and attributes. **M1, props and static JSX, is next** (plan §9).
+- Anything outside the built subset is rejected as UF1002 (`unsupported-syntax`) until its
+  milestone lands. The authoring types already accept the whole language (plan §4).
+- The plan describes the target state. The code is the truth for what is built:
+  - IR kinds: `packages/ir/src/types.ts`
+  - capabilities: `packages/codegen/src/target.ts`
+  - live layers: `LIVE_LAYERS` in `tests/integration/harness/quarantine.ts`
+  - diagnostic codes: `packages/diagnostics/src/catalogue.ts`
+
+## Read first
+
+| Document                            | Read it                                                                                                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/plan.md`                      | For the architecture. Cited everywhere as §n, principles P1–P8, goals G1–G7, layers L1–L15, milestones M0–M10, decisions C1–C4 and D1–D13, risks R1–R14.                         |
+| `docs/adrs/README.md` and the index | Before you reopen a decision. ADR-0018 onwards record what the M0 spikes and the M0 build settled. An accepted ADR is newer than the plan: where the two differ, follow the ADR. |
+| `tests/integration/README.md`       | Before you touch the corpus or the harness.                                                                                                                                      |
+| `packages/<name>/README.md`         | Before you change a package. Each README states the package's contract and its toolchain. Keep the README true when you change the contract.                                     |
+| `.github/CONTRIBUTING.md`           | For scripts, the package template and releases.                                                                                                                                  |
+
+## Layout
+
+```
+packages/        ir, diagnostics           pure data and the UF catalogue (no dependencies)
+                 parser                    P1: oxc (TS-ESTree) and lightningcss; no TypeScript API
+                 codegen                   the target kit: defineTarget, capabilities, JS/JSX/markup
+                                           printers, oxfmt, the Toolchain contract (/toolchain-node)
+                 analyzer                  P2 analyse and P3 lower the returned JSX into IR
+                 target-<name> ×7          emit() and capabilities; /toolchain{,/client,/server} for tests
+                 compiler                  compile(): the passes in order, for each selected target
+                 unplugin                  the Vite plugin (other bundlers in M6)
+                 testing                   describeTargets, mount, expectParity, normaliser, parity
+                                           reporter (private until M7)
+                 unframework               the authoring stubs and the JSX types (vendored from
+                                           @vue/runtime-dom), with type probes
+tests/integration  the corpus (cases/<area>/<name>/) and its harness (harness/, scripts/)
+tests/toolchains   one per target: the checker and tsconfig that type-check its golden outputs
+tests/repo         repo invariants: package layering and the package template
+apps/web           unframework.dev: a Nuxt homepage and Docus docs (content/docs)
+docs/              plan.md and adrs/
+```
+
+`compile()` runs these passes: parse, analyse and lower into IR, the `ir` plugin hook, the
+capability check for each target, each target's `emit`, the `output` plugin hook, then oxfmt. It is
+a pure function of its input. `packages/compiler-v1` is the gitignored v1 compiler, kept as a
+reference only. Never import it, and never add it to the workspace.
+
+## Commands
+
+Use Node 24 or later. `packageManager` pins pnpm. Workspace packages export `src`, so tests and type
+checks need no build first.
+
+```sh
+pnpm install                          # also installs the Chromium that the browser tests use
+pnpm format:check && pnpm lint && pnpm check-types && pnpm test   # the full verify loop, as CI runs it
+pnpm format                           # oxfmt; pnpm lint:fix for oxlint's fixes
+
+# Narrower loops while you work
+pnpm --filter @unframework/analyzer test                          # one package's own tests
+pnpm --filter @unframework/integration test -- --project compile  # L1 and L2 only: the fastest corpus check
+pnpm --filter @unframework/integration test -- --project "toolchain:angular"   # L3 and L4, one target
+pnpm --filter @unframework/integration test -- --project "ssr:svelte"          # L6, one target
+pnpm --filter @unframework/integration test -- --project "browser:vue"         # L7, L10, L11 and L13
+UF_TARGETS=vue,react pnpm --filter @unframework/integration test  # some targets only
+
+# Commands that write artefacts (never in CI)
+pnpm test:update                      # golden outputs and shared expectations; needs vue among the targets
+pnpm test:baselines                   # the Linux screenshots and geometry, in Docker
+pnpm test:baselines:check             # compare with them as CI does, in Docker
+pnpm test:canaries                    # after a harness change: every live layer must catch its corruption
+
+# Generated files
+pnpm --filter @unframework/ir generate         # the IR's JSON Schema, after a change to the IR types
+pnpm --filter unframework vendor:jsx           # re-vendor the JSX types after a bump of @vue/runtime-dom
+pnpm --filter unframework probes               # the JSX type probes (they also run in its tests)
+
+pnpm new:package <dir> "<description>"         # a new package; then add it to LAYERS (see below)
+```
+
+A run that names a project, applies a filter or sets `UF_TARGETS` is a partial run. Its summary
+judges only what ran. CI's parity job requires every (case, target, layer) cell. The matrix is in
+`tests/integration/.reports/parity-matrix.md`.
+
+## Rules
+
+### Done means green on seven targets
+
+- A compiler change is done when the corpus is green at every live layer on all seven targets (P1).
+  Emitted code alone is not done.
+- If you intend to change the output, run `pnpm test:update`. Then review every changed file under
+  `tests/integration/cases` as you would review code. The expectations are the contract.
+- In update mode, only Vue, the reference target (D10), writes the shared expectations. Every other
+  target must match them in the same run. A change to Vue's rendering changes the expectations of
+  all seven targets.
+
+### Never hand-edit generated files
+
+Generate each of these with its command. The formatter and the linter skip them on purpose.
+
+| Files                                                       | Command                                     |
+| ----------------------------------------------------------- | ------------------------------------------- |
+| `cases/**/__output__/`, `__expected__/`                     | `pnpm test:update`                          |
+| `cases/**/__screenshots__/`, `__expected__/geometry.*.json` | `pnpm test:baselines` (Docker, linux/amd64) |
+| `packages/ir/schema/`                                       | `pnpm --filter @unframework/ir generate`    |
+| `packages/unframework/src/vendor/`                          | `pnpm --filter unframework vendor:jsx`      |
+
+### Never weaken a check
+
+- When a parity cell fails, fix the cause in the compiler or the target.
+- Do not loosen normalisation. It removes only a framework's own noise (ADR-0031).
+- Do not add pixel tolerance without a reason for that case.
+- Do not delete an assertion. Do not add `.skip`, `.only` or retries.
+- A known failure goes in `harness/quarantine.ts`, with a reason and an issue. A quarantined cell
+  still runs and must still fail. An entry that starts to pass fails the run, so the list only
+  shrinks.
+- `harness/coverage-exemptions.ts` follows the same rule. Every IR kind, capability and diagnostic
+  code needs a case, or an exemption with a reason.
+
+### Loud, never silent (P2)
+
+- Passes return diagnostics and never throw. `compile()` throws only for invalid options. A plugin
+  or a target that throws becomes a diagnostic.
+- Every construct that the compiler cannot lower is a diagnostic with a stable `UF` code from the
+  catalogue. Nothing is copied into an output without analysis.
+- A check that cannot start fails. Every skip names its reason: a capability or a quarantine entry.
+- A flaky parity test is a bug in the compiler or in the harness. Never retry it.
+
+### Deterministic (P8)
+
+- The same input and the same versions give byte-identical output. Never put time, randomness,
+  environment data, absolute paths or file-system order into output.
+- The dependencies that shape output (oxc, oxfmt) are pinned exactly in the catalog.
+- oxfmt formats code only (TS, TSX, JS). Markup keeps the printer's whitespace-safe layout,
+  because whitespace in a template changes the DOM (ADR-0026).
+
+### Layering and TypeScript
+
+- A package never imports a package on its own layer or above it. The order is `LAYERS` in
+  `tests/repo/test/layering.test.ts`:
+  1. ir, diagnostics
+  2. parser
+  3. codegen
+  4. analyzer
+  5. the targets
+  6. compiler
+  7. unplugin
+  8. testing
+  9. unframework, the umbrella, at the top
+
+  Planned packages (type-oracle, cli, visual, …) already have their slots.
+
+- A target's main entry imports only `@unframework/ir` and `@unframework/codegen`. Its `toolchain/`
+  entries are for tests and tooling. Targets never import each other. Toolchain code that two
+  targets share goes in `@unframework/codegen/toolchain-node`.
+- The repo runs TypeScript 7 (tsgo). Only `type-oracle-tsgo` (from M5) and the test toolchains may
+  load TypeScript's API. TypeScript 6 (`@typescript/typescript6`) lives only in
+  `tests/toolchains/{vue,svelte,astro,angular}`. The Angular compiler stack loads from
+  `tests/toolchains/angular` and is never a package dependency.
+
+### Targets and the IR
+
+- **Targets own their idioms (P6).** Logic for one framework lives in its `target-*` package.
+  `ir`, `analyzer` and `codegen` stay target-agnostic.
+- **Idiomatic output (G2).** Each output must read as a senior developer of that framework would
+  write it. It must pass that framework's compiler, type-checker and lint rules with zero warnings.
+- **Differences are declared (P4, ADR-0033).** Each target declares a cell for every capability:
+  `native`, `emulated` (with the name of its inline helper) or `unsupported` (with a UF4xxx
+  diagnostic). Never let a difference show up only in a test.
+- **No runtime (P7, D11).** An output imports only its framework. If a framework lacks a primitive,
+  emit a small inline helper and declare it `emulated`.
+- **The IR is plain JSON (P5).** Every node carries a span. Add a field only when a consumer reads
+  it. Keep `checkInvariants` true (ADR-0032).
+
+### The source language is fixed by the plan
+
+- Each concept has one canonical form (P3, ADR-0007). Do not add an alternative syntax.
+- JSX uses HTML attribute names and Vue event names (`class`, `for`, `onKeydown`).
+- A change to the language, to a target's mapping (plan §6), to the harness's rules or to the
+  layering needs an ADR.
+
+### Versions
+
+- Every version comes from the `catalog:` in `pnpm-workspace.yaml`, which holds plan Appendix C.
+- The installed packages are newer than most training data: TypeScript 7, Vite 8, Vitest 5,
+  Angular 22, Qwik 2 beta, Astro 7, oxc 0.152. Read their types and docs in `node_modules` before
+  you use an API.
+
+## Recipes
+
+**Add a corpus case.**
+
+1. Create `tests/integration/cases/<area>/<name>/<Name>.uf.tsx`.
+2. Add `<name>.test.ts`, unless the case is in `diagnostics/`. Optionally add `case.json` for SSR
+   scenarios and the expected axe rules.
+3. Write the area, the name and every scenario in kebab-case. Name each scenario of `expectParity`
+   with a string literal.
+4. Run `pnpm test:update`.
+5. Run `pnpm test:baselines` for the screenshots and the geometry.
+6. Review every new file.
+
+**Change what a target emits.**
+
+1. Edit `packages/target-<t>/src`.
+2. Run the target's own tests: `emit` and render-parity, which render through the real framework.
+3. Run `pnpm test:update`, and read the diff of `__output__/<t>/`.
+4. Run that target's `toolchain:`, `ssr:` and `browser:` projects.
+
+**Add a diagnostic.**
+
+1. Add an entry to `catalogue.ts` in its band (UF1 syntax, UF2 setup, UF3 JSX, UF4 portability,
+   UF5 styles, UF6 types, UF7 config, UF8 plugins, UF9 internal). Give it a unique kebab-case
+   `name`, a severity, a one-line title and a Markdown description that says how to fix the
+   problem.
+2. Never reuse or renumber a code.
+3. Report it at the exact span.
+4. If a mechanical rewrite exists, attach a fix with a confidence of `safe` or `likely`. The tests
+   apply every fix and compile the result again.
+5. Add a `cases/diagnostics/<name>` case that triggers it, or an `EXEMPT_CODES` entry with a reason.
+
+**Add an IR node or attribute kind.**
+
+1. Change `types.ts`, the builders, `walk` and the invariants in `packages/ir`.
+2. Run `pnpm --filter @unframework/ir generate`.
+3. Map the kind to a capability in `packages/codegen/src/capabilities.ts`. The records there fail
+   type-checking until you do.
+
+**Add a capability.**
+
+1. Add it to `CapabilityName` and `CAPABILITY_NAMES`.
+2. Give it a cell in each of the seven targets.
+3. Cover it with a case, or with an `EXEMPT_CAPABILITIES` entry.
+
+**Add a package.**
+
+1. Run `pnpm new:package`, then `pnpm install`.
+2. Add the package to `LAYERS`.
+
+`tests/repo` fails a package that drifts from the template (plan §5.2):
+
+- `exports` point at `src`, and `publishConfig.exports` point at `dist`.
+- tsdown builds the package with `unbundle`.
+- `isolatedDeclarations` is on.
+- The Vitest tests are in `test/`.
+
+**Record a decision.**
+
+1. Take the next free number in `docs/adrs/`.
+2. Fill in `template.md`.
+3. Add a row to the index.
+4. Run `pnpm exec oxfmt docs/adrs`.
+
+Never rewrite an accepted ADR. Supersede it with a new ADR, or amend it with one.
+
+## Target notes
+
+These are the hard cells (plan §6). Each one has, or will have, its own `semantics/*` cases.
+
+| Target  | Watch for                                                                                                                                                                                                             |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| React   | The body re-runs on every render, but the source's setup runs once: keep snapshots, local shadows and mirror refs (R1). React prop names (`className`).                                                               |
+| Vue     | The reference target: its output writes every shared expectation. It renders single-selection list boxes differently, so `listbox` is unsupported.                                                                    |
+| Svelte  | Runes mode is forced (`<svelte:options runes>`). Svelte drops whitespace and unmatched selectors, so the printer and the compiler-owned CSS scoping handle them.                                                      |
+| Solid   | Solid 1.9 now, `solid@2` as a separate variant later. The props are a proxy (`mergeProps`), so never destructure them.                                                                                                |
+| Angular | Inputs are set after construction, the host element wraps the root (`display: contents`, D6), and there is no attribute spread. TypeScript 6 checks the output. Virtual modules go through our ngtsc step (ADR-0027). |
+| Qwik    | Experimental and pinned exactly (2.0 beta). Respect the QRL `$` capture rules and `track` in tasks. L3 runs the real optimizer.                                                                                       |
+| Astro   | Static, with no client runtime. `interactivity` is unsupported, so handlers are reported as inert. SSR runs through the Container API.                                                                                |
+
+## Code and prose
+
+- **TypeScript and ESM, run directly by Node 24's type stripping.** `erasableSyntaxOnly` rules out
+  enums, namespaces and parameter properties. Import local files with their `.ts` extension. Use
+  `import type` for types (`verbatimModuleSyntax`). `isolatedDeclarations` needs explicit types on
+  exports.
+- **Tests.** Vitest 5 runs each package's `test/`. Files named `*.browser.test.ts` run in Chromium.
+  The harness's own unit tests are `harness/*.unit.test.ts`.
+- **Comments say why, not what.** Cite the plan (§, P, L, D) and the ADRs. Match the comment
+  density of the code around you.
+- **Prose** in docs, comments and messages is plain, with short declarative sentences and British
+  spelling (analyse, normalise, behaviour, artefact). Code identifiers keep their established
+  American names (`analyzer`, `normalize`).
+- **Commits and PR titles** follow Conventional Commits, scoped where one area changes, as in
+  `feat(web): …` or `fix(analyzer): …`. PRs follow `.github/PULL_REQUEST_TEMPLATE.md`. Every
+  package is private at `0.0.0` until its first release. After that, a change to a published
+  package needs `pnpm changeset`.
