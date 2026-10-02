@@ -1,0 +1,274 @@
+{
+  "irVersion": 1,
+  "file": "basics/nested-and-void/ProfileCard.uf.tsx",
+  "components": [
+    {
+      "name": "ProfileCard",
+      "span": {
+        "start": 0,
+        "end": 742
+      },
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "profile",
+            "span": {
+              "start": 64,
+              "end": 79
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-labelledby",
+            "value": "profile-name",
+            "span": {
+              "start": 80,
+              "end": 110
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "header",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "profile-header",
+                "span": {
+                  "start": 126,
+                  "end": 148
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "img",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "src",
+                    "value": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%23345'/%3E%3C/svg%3E",
+                    "span": {
+                      "start": 173,
+                      "end": 323
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "alt",
+                    "value": "Ada's avatar",
+                    "span": {
+                      "start": 334,
+                      "end": 352
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "width",
+                    "value": "48",
+                    "span": {
+                      "start": 363,
+                      "end": 373
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "height",
+                    "value": "48",
+                    "span": {
+                      "start": 384,
+                      "end": 395
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 158,
+                  "end": 406
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "h2",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "id",
+                    "value": "profile-name",
+                    "span": {
+                      "start": 419,
+                      "end": 436
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Ada Lovelace",
+                    "span": {
+                      "start": 437,
+                      "end": 449
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 415,
+                  "end": 454
+                }
+              }
+            ],
+            "span": {
+              "start": 118,
+              "end": 470
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Mathematician & writer",
+                "span": {
+                  "start": 480,
+                  "end": 524
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "br",
+                "attributes": [],
+                "children": [],
+                "span": {
+                  "start": 524,
+                  "end": 530
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "of the first published program",
+                "span": {
+                  "start": 530,
+                  "end": 576
+                }
+              }
+            ],
+            "span": {
+              "start": 477,
+              "end": 580
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "hr",
+            "attributes": [],
+            "children": [],
+            "span": {
+              "start": 587,
+              "end": 593
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "for",
+                "value": "profile-note",
+                "span": {
+                  "start": 607,
+                  "end": 625
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Note",
+                "span": {
+                  "start": 626,
+                  "end": 630
+                }
+              }
+            ],
+            "span": {
+              "start": 600,
+              "end": 638
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "input",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "id",
+                "value": "profile-note",
+                "span": {
+                  "start": 652,
+                  "end": 669
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "text",
+                "span": {
+                  "start": 670,
+                  "end": 681
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "name",
+                "value": "note",
+                "span": {
+                  "start": 682,
+                  "end": 693
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "placeholder",
+                "value": "Say hello",
+                "span": {
+                  "start": 694,
+                  "end": 717
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 645,
+              "end": 720
+            }
+          }
+        ],
+        "span": {
+          "start": 55,
+          "end": 735
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ProfileCard",
+      "span": {
+        "start": 0,
+        "end": 742
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+/* Counter.css, scoped to Counter by the compiler */
+.counter {
+  display: flex;
+  gap: 0.5rem;
+}

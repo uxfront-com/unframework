@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // L4 for Qwik: tsgo over every case's Qwik output, as a strict Qwik 2 project would check it,
+  // with the type strictness every target's checker shares (the strictest of the seven
+  // frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). Types resolve from each file's
+  // own location (tests/integration holds @qwik.dev/core), never from this directory.
+  // `@unframework/target-qwik/toolchain` extends this file with a temporary config that lists
+  // the files to check.
+  "compilerOptions": {
+    "target": "es2024",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+    "jsxImportSource": "@qwik.dev/core",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": [],
+    "noEmit": true
+  },
+  "include": [
+    "../../integration/cases/**/__output__/qwik/**/*.ts",
+    "../../integration/cases/**/__output__/qwik/**/*.tsx"
+  ]
+}

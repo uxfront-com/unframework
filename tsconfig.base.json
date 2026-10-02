@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // The compiler options every Unframework package shares, on top of uxfront's.
+  "extends": "@uxfront/typescript-config/tsconfig.json",
+  "compilerOptions": {
+    "target": "es2024",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "allowJs": false,
+    // Published types are emitted file by file by tsdown (oxc), without a checker.
+    "declaration": true,
+    "isolatedDeclarations": true,
+    // Scripts and tests run directly under Node 24's type stripping.
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true
+  }
+}

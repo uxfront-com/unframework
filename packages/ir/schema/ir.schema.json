@@ -1,0 +1,230 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/UfModule",
+  "definitions": {
+    "UfModule": {
+      "type": "object",
+      "properties": {
+        "irVersion": {
+          "type": "number",
+          "const": 1,
+          "description": "The IR format version. Bumped, with a migration, on every breaking change."
+        },
+        "file": {
+          "type": "string",
+          "description": "The source file as the caller named it: relative and with forward slashes in snapshots."
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UfComponent"
+          },
+          "description": "The module's components, in source order."
+        },
+        "exports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UfExport"
+          },
+          "description": "What the module exports, in source order. Targets keep the same export shape."
+        }
+      },
+      "required": [
+        "irVersion",
+        "file",
+        "components",
+        "exports"
+      ],
+      "additionalProperties": false,
+      "description": "One `.uf.tsx` module."
+    },
+    "UfComponent": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The function's name, PascalCase in ASCII letters and digits, and unique in the module without case: every target writes it as an identifier and names the output file by it."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        },
+        "render": {
+          "$ref": "#/definitions/ElementNode",
+          "description": "The returned JSX: the component's template."
+        }
+      },
+      "required": [
+        "name",
+        "span",
+        "render"
+      ],
+      "additionalProperties": false,
+      "description": "A component: an exported PascalCase function whose last statement returns JSX."
+    },
+    "Span": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "number"
+        },
+        "end": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "additionalProperties": false,
+      "description": "A half-open range `[start, end)` of UTF-16 offsets into the source file."
+    },
+    "ElementNode": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Element"
+        },
+        "tag": {
+          "type": "string",
+          "description": "The tag name, in lower case: an element of the HTML Living Standard.",
+          "pattern": "^[a-z][a-z0-9]*$"
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Attribute"
+          },
+          "description": "Each attribute of the element, set once."
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RenderNode"
+          },
+          "description": "None for a void element (`<br>`)."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "tag",
+        "attributes",
+        "children",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An HTML element such as `<p>`."
+    },
+    "Attribute": {
+      "$ref": "#/definitions/StaticAttribute",
+      "description": "An attribute on an element."
+    },
+    "StaticAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Static"
+        },
+        "name": {
+          "type": "string",
+          "description": "The HTML attribute name, in lower case (`class`, `for`, `aria-label`): an attribute of the element (its own, a global, an ARIA or a `data-*` attribute). Targets map names to their own spellings by it.",
+          "pattern": "^[^\\sA-Z\"'<>/=]+$"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean",
+              "const": true
+            }
+          ],
+          "description": "The decoded value. `true` for an HTML boolean attribute (`<input disabled />`), which is on by being present and renders without a value, and only for one. Any other attribute written without a value has the string `\"true\"`, as in Vue's and React's JSX (`<span aria-hidden>`). A `class` holds one or more class names separated by single spaces, as Vue, Svelte and Angular render it. Like text, a value holds only characters HTML keeps as they are."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An attribute whose value is known at compile time: `class=\"card\"`, `disabled`."
+    },
+    "RenderNode": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/ElementNode"
+        },
+        {
+          "$ref": "#/definitions/TextNode"
+        }
+      ],
+      "description": "A node of the render tree."
+    },
+    "TextNode": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Text"
+        },
+        "value": {
+          "type": "string",
+          "description": "The text exactly as the DOM holds it: after JSX whitespace rules and entity decoding, as every JSX implementation reads it. It holds only characters HTML keeps as they are (no carriage return, NUL, lone surrogate, control character or noncharacter). Targets escape it for their own syntax."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A text node."
+    },
+    "UfExport": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "default",
+            "named"
+          ],
+          "description": "`default` for `export default function Name`, `named` for `export function Name`."
+        },
+        "name": {
+          "type": "string",
+          "description": "The exported name: `\"default\"` for the default export, and an identifier otherwise."
+        },
+        "local": {
+          "type": "string",
+          "description": "The name of the component that is exported: one of the module's components."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "local",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An export of a module."
+    }
+  },
+  "$id": "https://unframework.dev/schemas/ir-v1.json"
+}

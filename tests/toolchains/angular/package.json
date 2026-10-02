@@ -1,0 +1,23 @@
+{
+  "name": "@unframework/toolchain-angular",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Angular test toolchain: Angular's compiler stack on TypeScript 6 (ngtsc for L3 and L4, Analog and the Angular linker for the Vite projects), loaded by @unframework/target-angular/toolchain, and the tsconfig that type-checks every case's Angular golden output in one run.",
+  "type": "module",
+  "scripts": {
+    "check": "ngc -p tsconfig.json --pretty false"
+  },
+  "devDependencies": {
+    "@analogjs/vite-plugin-angular": "catalog:",
+    "@angular/build": "catalog:",
+    "@angular/common": "catalog:",
+    "@angular/compiler": "catalog:",
+    "@angular/compiler-cli": "catalog:",
+    "@angular/core": "catalog:",
+    "@angular/platform-browser": "catalog:",
+    "rxjs": "catalog:",
+    "tslib": "catalog:",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "vite": "catalog:"
+  }
+}

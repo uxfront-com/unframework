@@ -1,0 +1,53 @@
+{
+  "irVersion": 1,
+  "file": "basics/hello/Hello.uf.tsx",
+  "components": [
+    {
+      "name": "Hello",
+      "span": {
+        "start": 0,
+        "end": 83
+      },
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "greeting",
+            "span": {
+              "start": 46,
+              "end": 62
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Hello, world!",
+            "span": {
+              "start": 63,
+              "end": 76
+            }
+          }
+        ],
+        "span": {
+          "start": 43,
+          "end": 80
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Hello",
+      "span": {
+        "start": 0,
+        "end": 83
+      }
+    }
+  ]
+}

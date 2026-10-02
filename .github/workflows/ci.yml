@@ -56,10 +56,20 @@ jobs:
         if: ${{ !cancelled() && steps.install.conclusion == 'success' }}
         run: pnpm check-types
 
-  test:
-    name: Test
+  # Every package's own tests, and the repo invariants (layering, the package template): what
+  # `pnpm test` runs through turbo, except the integration corpus, which runs in the jobs below,
+  # split the way plan §7.9 describes. The suites of testing, codegen and the react, vue,
+  # svelte, solid and qwik targets have browser projects in Chromium, so the job runs in the
+  # Playwright image, whose git turbo hashes with. There is no cache to restore, so turbo runs
+  # every package, two at a time: on the runner's four vCPUs, more at once starve the browser
+  # and compiler-heavy suites (Angular's ngtsc, unframework's build and type probes) past
+  # Vitest's timeouts. --continue reports every package that fails, not only the first.
+  unit:
+    name: Unit tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -78,9 +88,277 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Runs the `test` script of every workspace that has one.
       - name: Test
-        run: pnpm test
+        run: pnpm exec turbo run test --filter='!@unframework/integration' --continue --concurrency=2
+
+  # L1 and L2: every case compiled to all seven targets, against the golden outputs; and the
+  # harness's own unit tests.
+  integration-compile:
+    name: "Integration: compile"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Compile and harness projects
+        run: pnpm --filter @unframework/integration exec vitest run --project compile --project harness
+
+      - name: Upload the parity results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: parity-compile
+          path: tests/integration/.reports
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+  # L3 and L4: one framework-compiler pass and one type-checker run per target over every case.
+  integration-toolchains:
+    name: "Integration: toolchain (${{ matrix.target }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [react, vue, svelte, solid, angular, qwik, astro]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Toolchain project
+        run: pnpm --filter @unframework/integration exec vitest run --project "toolchain:${{ matrix.target }}"
+
+      - name: Upload the parity results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: parity-toolchain-${{ matrix.target }}
+          path: tests/integration/.reports
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+  # L6: each target's server renderer against the shared SSR expectations.
+  integration-ssr:
+    name: "Integration: SSR"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: SSR projects
+        run: pnpm --filter @unframework/integration exec vitest run --project "ssr:*"
+
+      - name: Upload the parity results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: parity-ssr
+          path: tests/integration/.reports
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+  # L7, L10, L11 and L13 in Chromium. The job runs in the Playwright image that generates the
+  # Linux baselines (`pnpm test:baselines`), so fonts and rendering libraries are the same.
+  # Not sharded while the corpus fits the job's ten minutes. To shard (plan §7.9), add a
+  # `shard` dimension to the matrix, pass `--shard ${{ matrix.shard }}/<n>` and put the shard in
+  # the artefact's name: the reporter names each shard's matrix apart, and the parity job counts
+  # a project as run in full once shards 1 to n all reported (harness/summary.unit.test.ts).
+  integration-browser:
+    name: "Integration: browser (${{ matrix.target }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [react, vue, svelte, solid, angular, qwik, astro]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Browser project
+        run: pnpm --filter @unframework/integration exec vitest run --project "browser:${{ matrix.target }}"
+
+      - name: Upload the parity results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: parity-browser-${{ matrix.target }}
+          path: tests/integration/.reports
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+      - name: Upload visual diffs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: visual-diffs-${{ matrix.target }}
+          path: |
+            tests/integration/.reports/diffs
+            tests/integration/.reports/failures
+            tests/integration/.vitest
+          include-hidden-files: true
+          if-no-files-found: ignore
+          overwrite: true
+          retention-days: 7
+
+  # Each live layer has a canary: a corruption that layer must catch. The job fails if any
+  # canary passes (plan §7.7).
+  canaries:
+    name: Canaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Canaries
+        run: pnpm test:canaries
+
+      # A canary that was not caught leaves its Vitest log and matrix in .canary/<id>.
+      - name: Upload the canary runs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: canaries
+          path: tests/integration/.canary
+          include-hidden-files: true
+          if-no-files-found: ignore
+          overwrite: true
+          retention-days: 7
+
+  # Merges the partial parity matrices, writes the CI summary, and fails when any job's matrix,
+  # or any (case, target, live layer) cell, is missing or failing. It waits for every job that
+  # runs harness projects; harness/summary.unit.test.ts reads them from this file.
+  parity:
+    name: Parity matrix
+    needs: [integration-compile, integration-toolchains, integration-ssr, integration-browser]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download the parity results
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: parity-*
+          path: tests/integration/.reports
+          merge-multiple: true
+
+      - name: Summarise
+        run: pnpm --filter @unframework/integration summary
+
+      - name: Upload the parity matrix
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: parity-matrix
+          path: |
+            tests/integration/.reports/parity-matrix.json
+            tests/integration/.reports/parity-matrix.md
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 30
 
   build:
     name: Build

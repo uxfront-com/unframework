@@ -1,0 +1,8 @@
+- article "Ada Lovelace":
+  - img "Ada's avatar"
+  - heading "Ada Lovelace" [level=2]
+  - paragraph: Mathematician & writer of the first published program
+  - separator
+  - text: Note
+  - textbox "Note":
+    - /placeholder: Say hello

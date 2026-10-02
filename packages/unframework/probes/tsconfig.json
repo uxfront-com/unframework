@@ -1,0 +1,15 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  // The authoring settings for .uf.tsx (README, "Type-checking .uf.tsx").
+  "compilerOptions": {
+    "jsx": "preserve",
+    "jsxImportSource": "unframework",
+    // The compiler emits per target; tsc never emits a .uf.tsx, and isolatedDeclarations would
+    // demand an explicit return type on every exported component (TS9013).
+    "declaration": false,
+    "isolatedDeclarations": false,
+    // Check the vendored .d.ts too: a bad re-vendor must fail here, not hide behind skipLibCheck.
+    "skipLibCheck": false
+  },
+  "include": ["fixtures", "caught", "allowed"]
+}

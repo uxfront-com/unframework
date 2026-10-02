@@ -1,0 +1,77 @@
+{
+  "name": "@unframework/target-solid",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Solid 1.9 target of the Unframework compiler: emits idiomatic Solid components from the portable IR, declares their capabilities, and provides the toolchain the tests use.",
+  "keywords": [
+    "compiler",
+    "solid",
+    "unframework"
+  ],
+  "homepage": "https://github.com/uxfront-com/unframework/tree/main/packages/target-solid#readme",
+  "bugs": "https://github.com/uxfront-com/unframework/issues",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uxfront-com/unframework.git",
+    "directory": "packages/target-solid"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./toolchain": "./src/toolchain/index.ts",
+    "./toolchain/client": "./src/toolchain/client.ts",
+    "./toolchain/server": "./src/toolchain/server.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./toolchain": {
+        "types": "./dist/toolchain/index.d.ts",
+        "default": "./dist/toolchain/index.js"
+      },
+      "./toolchain/client": {
+        "types": "./dist/toolchain/client.d.ts",
+        "default": "./dist/toolchain/client.js"
+      },
+      "./toolchain/server": {
+        "types": "./dist/toolchain/server.d.ts",
+        "default": "./dist/toolchain/server.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@unframework/codegen": "workspace:*",
+    "@unframework/ir": "workspace:*"
+  },
+  "devDependencies": {
+    "@babel/core": "catalog:",
+    "@babel/preset-typescript": "catalog:",
+    "@types/babel__core": "catalog:",
+    "@types/node": "catalog:",
+    "@uxfront/typescript-config": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
+    "babel-preset-solid": "catalog:",
+    "playwright": "catalog:",
+    "solid-js": "catalog:",
+    "tsdown": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-solid": "catalog:",
+    "vitest": "catalog:"
+  }
+}

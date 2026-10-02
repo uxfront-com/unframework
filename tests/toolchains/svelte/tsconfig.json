@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // L4 for the Svelte target: svelte-check (TypeScript 6) over every case's golden Svelte output,
+  // types only (`--diagnostic-sources js`: the Svelte compiler's warnings are L3's), with the
+  // type strictness every target's checker shares (the strictest of the seven frameworks'
+  // project defaults; harness/toolchain-strictness.unit.test.ts). The toolchain's `typecheck`
+  // extends this file with an explicit file list, so these options are the contract for both. Svelte resolves from the files' own location (tests/integration).
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "types": []
+  },
+  "include": ["../../integration/cases/**/__output__/svelte/**/*.svelte"]
+}

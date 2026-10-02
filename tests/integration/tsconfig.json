@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // The harness, its scripts and the browser specs. The specs import corpus inputs, so this
+  // program type-checks .uf.tsx files too, with the authoring settings of tsconfig.cases.json.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node", "vite/client"],
+    "jsx": "preserve",
+    "jsxImportSource": "unframework",
+    // Nothing here is published, and a .uf.tsx component has no explicit return type (TS9013).
+    "declaration": false,
+    "isolatedDeclarations": false
+  },
+  "include": ["harness", "scripts", "vitest.config.ts", "cases/**/*.test.ts"],
+  "exclude": ["cases/**/__output__/**"]
+}

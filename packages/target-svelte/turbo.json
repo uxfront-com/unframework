@@ -1,0 +1,17 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "test": {
+      // The tests emit from the corpus's IR snapshots and check its committed svelte outputs with
+      // what tests/toolchains/svelte installs: its transit node carries that package's tsconfig and
+      // the locked versions of its tools into this hash.
+      "dependsOn": ["$TURBO_EXTENDS$", "@unframework/toolchain-svelte#transit"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/tests/integration/cases/**/__output__/ir.json",
+        "$TURBO_ROOT$/tests/integration/cases/**/__output__/svelte/**"
+      ]
+    }
+  }
+}

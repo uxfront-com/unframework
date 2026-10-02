@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // L4 for Solid: tsgo over every case's Solid output, as a strict Solid 1.9 project would check
+  // it, with the type strictness every target's checker shares (the strictest of the seven
+  // frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). Types resolve from each file's own location (tests/integration holds solid-js), never
+  // from this directory. `@unframework/target-solid/toolchain` extends this file with a
+  // temporary config that lists the files to check.
+  "compilerOptions": {
+    "target": "es2024",
+    "lib": ["es2024", "dom", "dom.iterable"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": [],
+    "noEmit": true
+  },
+  "include": [
+    "../../integration/cases/**/__output__/solid/**/*.ts",
+    "../../integration/cases/**/__output__/solid/**/*.tsx"
+  ]
+}

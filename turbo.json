@@ -1,17 +1,58 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
+  // Every package's tsconfig extends it: a change there re-runs every type check and test.
+  "globalDependencies": ["tsconfig.base.json"],
+  "globalPassThroughEnv": ["GITHUB_*", "PLAYWRIGHT_BROWSERS_PATH", "FORCE_COLOR"],
   "tasks": {
+    // Workspace packages export their sources, so tests and type checks need no
+    // build. This node only carries a dependency's changes into the hashes of
+    // the tasks that depend on it. A package that only installs tools (the test
+    // toolchains under tests/toolchains) is depended on through its node too:
+    // its hash covers its tsconfig and the locked versions of its checkers.
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**", ".output/**", "!.output/cache/**"]
     },
     "check-types": {
-      "dependsOn": ["^check-types"]
+      "dependsOn": ["transit"]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["transit"],
+      "env": ["CI", "UF_*"]
+    },
+    // The repo invariants read the whole workspace: every package's manifest, sources and
+    // tests, the harness and the package template. Hashing that would be hashing the
+    // repository, and they run in about a second, so they always run: a cached pass must never
+    // hide a layering violation.
+    "@unframework/repo-tests#test": {
+      "dependsOn": ["transit"],
+      "cache": false
+    },
+    // The harness exercises its workspace dependencies (compiler, targets, unplugin, testing),
+    // which `transit` hashes, and the checkers installed in tests/toolchains, which are no
+    // dependency of it: their transit nodes carry their tsconfigs and locked versions. Its own
+    // tests also read CI's workflow (the baseline image, the jobs the parity job merges), so a
+    // change there alone must not replay a cached pass. The parity matrices are outputs, so a
+    // cached run still leaves them for the summary.
+    "@unframework/integration#test": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.github/workflows/ci.yml"],
+      "dependsOn": [
+        "transit",
+        "@unframework/toolchain-angular#transit",
+        "@unframework/toolchain-astro#transit",
+        "@unframework/toolchain-qwik#transit",
+        "@unframework/toolchain-react#transit",
+        "@unframework/toolchain-solid#transit",
+        "@unframework/toolchain-svelte#transit",
+        "@unframework/toolchain-vue#transit"
+      ],
+      "env": ["CI", "UF_*"],
+      "outputs": [".reports/parity-matrix*"]
     },
     "dev": {
       "cache": false,
