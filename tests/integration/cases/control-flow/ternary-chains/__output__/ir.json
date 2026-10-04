@@ -1,0 +1,381 @@
+{
+  "irVersion": 1,
+  "file": "control-flow/ternary-chains/OrderStatus.uf.tsx",
+  "components": [
+    {
+      "name": "OrderStatus",
+      "span": {
+        "start": 136,
+        "end": 608
+      },
+      "props": [
+        {
+          "name": "status",
+          "optional": false,
+          "type": {
+            "code": "\"pending\" | \"shipped\" | \"delivered\" | \"cancelled\"",
+            "span": {
+              "start": 46,
+              "end": 95
+            }
+          },
+          "binding": "status@174",
+          "span": {
+            "start": 38,
+            "end": 96
+          }
+        },
+        {
+          "name": "carrier",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 109,
+              "end": 115
+            }
+          },
+          "binding": "carrier@182",
+          "span": {
+            "start": 99,
+            "end": 116
+          }
+        },
+        {
+          "name": "eta",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 125,
+              "end": 131
+            }
+          },
+          "binding": "eta@191",
+          "span": {
+            "start": 119,
+            "end": 132
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "OrderStatusProps",
+          "span": {
+            "start": 198,
+            "end": 214
+          }
+        },
+        "span": {
+          "start": 172,
+          "end": 214
+        }
+      },
+      "types": [
+        "OrderStatusProps"
+      ],
+      "bindings": [
+        {
+          "id": "status@174",
+          "name": "status",
+          "kind": "prop",
+          "span": {
+            "start": 174,
+            "end": 180
+          }
+        },
+        {
+          "id": "carrier@182",
+          "name": "carrier",
+          "kind": "prop",
+          "span": {
+            "start": 182,
+            "end": 189
+          }
+        },
+        {
+          "id": "eta@191",
+          "name": "eta",
+          "kind": "prop",
+          "span": {
+            "start": 191,
+            "end": 194
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "order-status",
+            "span": {
+              "start": 236,
+              "end": 256
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "status === \"pending\"",
+                  "span": {
+                    "start": 265,
+                    "end": 285
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "status@174",
+                      "span": {
+                        "start": 265,
+                        "end": 271
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Waiting for payment.",
+                    "span": {
+                      "start": 298,
+                      "end": 320
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 265,
+                  "end": 320
+                }
+              },
+              {
+                "condition": {
+                  "code": "status === \"shipped\"",
+                  "span": {
+                    "start": 331,
+                    "end": 351
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "status@174",
+                      "span": {
+                        "start": 331,
+                        "end": 337
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "strong",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Shipped",
+                        "span": {
+                          "start": 385,
+                          "end": 392
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 377,
+                      "end": 401
+                    }
+                  },
+                  {
+                    "kind": "Text",
+                    "value": " with ",
+                    "span": {
+                      "start": 401,
+                      "end": 407
+                    }
+                  },
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "carrier ?? \"our courier\"",
+                      "span": {
+                        "start": 408,
+                        "end": 432
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "carrier@182",
+                          "span": {
+                            "start": 408,
+                            "end": 415
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 407,
+                      "end": 433
+                    }
+                  },
+                  {
+                    "kind": "Text",
+                    "value": ", arriving ",
+                    "span": {
+                      "start": 433,
+                      "end": 444
+                    }
+                  },
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "eta ?? \"soon\"",
+                      "span": {
+                        "start": 445,
+                        "end": 458
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "eta@191",
+                          "span": {
+                            "start": 445,
+                            "end": 448
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 444,
+                      "end": 459
+                    }
+                  },
+                  {
+                    "kind": "Text",
+                    "value": ".",
+                    "span": {
+                      "start": 459,
+                      "end": 469
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 331,
+                  "end": 472
+                }
+              },
+              {
+                "condition": {
+                  "code": "status === \"delivered\"",
+                  "span": {
+                    "start": 483,
+                    "end": 505
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "status@174",
+                      "span": {
+                        "start": 483,
+                        "end": 489
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "strong",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Delivered",
+                        "span": {
+                          "start": 526,
+                          "end": 535
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 518,
+                      "end": 544
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 483,
+                  "end": 544
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "em",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Cancelled",
+                        "span": {
+                          "start": 569,
+                          "end": 578
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 565,
+                      "end": 583
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 565,
+                  "end": 583
+                }
+              }
+            ],
+            "span": {
+              "start": 265,
+              "end": 591
+            }
+          }
+        ],
+        "span": {
+          "start": 233,
+          "end": 601
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "OrderStatus",
+      "span": {
+        "start": 136,
+        "end": 608
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "OrderStatusProps",
+      "exported": true,
+      "code": "interface OrderStatusProps {\n  status: \"pending\" | \"shipped\" | \"delivered\" | \"cancelled\";\n  carrier?: string;\n  eta?: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 134
+      }
+    }
+  ]
+}

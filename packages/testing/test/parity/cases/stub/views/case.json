@@ -1,0 +1,7 @@
+{
+  "description": "The View's props: mountScenario mounts with an SSR scenario's props, and rerender replaces them whole.",
+  "ssr": {
+    "named": { "props": { "name": "Ada", "tone": "warn" } },
+    "bare": {}
+  }
+}

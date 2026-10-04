@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3019",
+    "severity": "error",
+    "message": "`Math.random` reads chance, so the server's render and the browser's would differ.",
+    "file": "diagnostics/nondeterministic-render/Dice.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 36,
+      "offset": 169
+    },
+    "end": {
+      "line": 3,
+      "column": 47,
+      "offset": 180
+    },
+    "help": "Pass the value in as a prop, computed where it is decided."
+  }
+]

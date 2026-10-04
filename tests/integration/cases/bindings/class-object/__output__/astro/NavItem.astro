@@ -1,0 +1,19 @@
+---
+export interface NavItemProps {
+  label: string;
+  href: string;
+  active: boolean;
+  muted: boolean;
+  danger?: boolean;
+}
+
+type Props = NavItemProps;
+
+const { label, href, active, muted, danger = false } = Astro.props;
+---
+
+<a
+  href={href}
+  class:list={[{ active, "nav-item-muted": muted, "nav-item-danger": danger, "text-danger": danger }]}
+  aria-current={active ? "page" : undefined}
+>{label}</a>

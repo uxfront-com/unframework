@@ -3,6 +3,7 @@
 import { expect, inject, it, onTestFinished } from "vitest";
 
 import "../../../../../src/setup.ts";
+import { expectLayerFailure } from "../../../../../src/browser/behaviour.ts";
 import { currentTarget, describeTargets, mount } from "../../../../../src/index.ts";
 import { normalizeHtml } from "../../../../../src/normalize/index.ts";
 import { LIVE_REFERENCE_SKIP } from "../../../../../src/visual-types.ts";
@@ -37,29 +38,48 @@ describeTargets("stub/match", () => {
         L10: { status: "skip", reason: LIVE_REFERENCE_SKIP },
         L11: { status: "pass" },
       },
+      scenarios: ["initial"],
     });
   });
 
-  // Update mode would write the artefacts this test expects to be missing.
+  // Update mode would write the artefacts these tests expect to be missing.
   it.skipIf(update)(
     "fails a scenario without artefacts, naming the command that writes them",
-    async () => {
+    async ({ task }) => {
       const view = await mount(greeting);
-      const error = await view.expectParity("absent").then(
-        () => undefined,
-        (caught: unknown) => caught as Error,
+      // It resolves: the shared layers are recorded, and the test goes on to its own assertions.
+      await view.expectParity("absent");
+      const l7 = expectLayerFailure(
+        "L7",
+        /Missing artefact cases\/stub\/match\/__expected__\/dom\.absent\.html\. Run `pnpm test:update` to write it/,
       );
-      expect(error?.message).toContain(
-        "Missing artefact cases/stub/match/__expected__/dom.absent.html. Run `pnpm test:update` to write it",
-      );
-      expect(error?.message).toContain(
-        "Missing artefact cases/stub/match/__expected__/aria.absent.yaml",
-      );
+      expect(l7).toContain("Missing artefact cases/stub/match/__expected__/aria.absent.yaml");
       // L10 is live here, and "dom" is the reference: its capture is the expectation.
-      expect(error?.message).not.toContain("L10:");
-      expect(error?.message).not.toContain("L11:");
+      expect(task.meta.uf?.layers.L10).toEqual({ status: "skip", reason: LIVE_REFERENCE_SKIP });
+      expect(task.meta.uf?.layers.L11).toEqual({ status: "pass" });
+      expect(task.meta.uf?.scenarios).toEqual(["absent"]);
     },
   );
+
+  it.skipIf(update).fails(
+    "fails the test, after its own assertions, with a layer that failed",
+    async ({ task }) => {
+      const view = await mount(greeting);
+      await view.expectParity("absent");
+      expect(task.meta.uf?.layers.L7?.status).toBe("fail");
+      await expect.element(view.getByText("Hello, world!")).toBeVisible();
+    },
+  );
+
+  it.skipIf(update)("recorded the failed layer and the passing behaviour above", ({ task }) => {
+    const sibling = task.suite?.tasks.find(
+      (test) => test.name === "fails the test, after its own assertions, with a layer that failed",
+    );
+    expect(sibling?.meta.uf?.layers).toMatchObject({
+      L7: { status: "fail", message: expect.stringMatching(/Missing artefact/) },
+      L8: { status: "pass" },
+    });
+  });
 
   it("serialises the container as normalised HTML", async () => {
     const view = await mount(greeting);
@@ -94,6 +114,7 @@ describeTargets("stub/match", () => {
 
   it("unmounts what a test leaves mounted", async () => {
     const view = await mount(greeting);
+    expect(view.container.isConnected).toBe(true);
     onTestFinished(() => {
       expect(view.container.isConnected).toBe(false);
     });

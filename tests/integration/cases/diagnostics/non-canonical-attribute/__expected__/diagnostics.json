@@ -1,0 +1,33 @@
+[
+  {
+    "code": "UF3004",
+    "severity": "error",
+    "message": "`className` is written `class`: elements take HTML's attribute names, in lower case.",
+    "file": "diagnostics/non-canonical-attribute/Note.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 13,
+      "offset": 145
+    },
+    "end": {
+      "line": 3,
+      "column": 22,
+      "offset": 154
+    },
+    "fixes": [
+      {
+        "title": "Rename `className` to `class`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 145,
+              "end": 154
+            },
+            "text": "class"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,32 @@
+{
+  "description": "Bound HTML boolean attributes, `aria-*` bound to booleans and to strings, `data-*` bound to strings, and static roles.",
+  "ssr": {
+    "collapsed": {
+      "props": {
+        "heading": "Filters",
+        "hint": "Narrow the results by price.",
+        "category": "lighting",
+        "expanded": false,
+        "inStockOnly": false,
+        "locked": false,
+        "mandatory": false,
+        "loading": false,
+        "current": "page"
+      }
+    },
+    "expanded-and-locked": {
+      "props": {
+        "heading": "Filters",
+        "hint": "Prices include tax.",
+        "category": "seating",
+        "expanded": true,
+        "inStockOnly": true,
+        "locked": true,
+        "mandatory": true,
+        "loading": true,
+        "invalid": true,
+        "current": "step"
+      }
+    }
+  }
+}

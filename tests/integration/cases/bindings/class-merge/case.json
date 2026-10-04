@@ -1,0 +1,27 @@
+{
+  "description": "A typed spread whose `class` key merges with the element's static class or class binding; the other spread keys render as attributes.",
+  "ssr": {
+    "merged": {
+      "props": {
+        "href": "/docs",
+        "label": "Read the docs",
+        "strong": true,
+        "link": {
+          "class": "external underline",
+          "title": "Opens the documentation",
+          "rel": "noopener"
+        },
+        "row": { "class": "row-highlight", "id": "docs-link-row" }
+      }
+    },
+    "own-classes": {
+      "props": {
+        "href": "/changelog",
+        "label": "Changelog",
+        "strong": false,
+        "link": {},
+        "row": { "class": "" }
+      }
+    }
+  }
+}

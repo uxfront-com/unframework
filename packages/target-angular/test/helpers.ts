@@ -5,9 +5,15 @@ import { fileURLToPath } from "node:url";
 
 import { formatOutput } from "@unframework/codegen";
 import type { EmitContext, OutputFile, ToolchainContext } from "@unframework/codegen";
+import { checkInvariants } from "@unframework/ir";
 import type { UfModule } from "@unframework/ir";
 import type { Plugin, ResolvedConfig } from "vite";
 
+// The analyser is no dependency of a target (plan §5.2): tests reach it from its source, as the
+// render-parity kit does, to lower source snippets as `compile()` would rather than hand-build
+// IR it would never produce.
+import { analyze } from "../../analyzer/src/index.ts";
+import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
 import { ngtscVirtual } from "../src/toolchain/ngtsc-virtual.ts";
 import { loadCompiler } from "../src/toolchain/tools.ts";
@@ -66,6 +72,31 @@ export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
       return outcome.file;
     }),
   );
+}
+
+/** The IR of a source, as `compile()` lowers it: it must lower without an error or a warning. */
+export function lower(source: string, file = "Card.uf.tsx"): UfModule {
+  const { module, diagnostics } = analyze(parseModule(file, source));
+  if (diagnostics.length || !module) {
+    throw new Error(`${file} does not lower cleanly: ${JSON.stringify(diagnostics, null, 2)}`);
+  }
+  const broken = checkInvariants(module);
+  if (broken.length) throw new Error(`${file} lowers invalid IR: ${JSON.stringify(broken)}`);
+  return module;
+}
+
+/** The one file a single-component source emits, as `emit` prints it (unformatted). */
+export function emitted(source: string): string {
+  const [file, ...more] = emitModule(lower(source));
+  if (!file || more.length) throw new Error("Expected one file.");
+  return file.contents;
+}
+
+/** The one file a single-component source emits, formatted as the compiler writes it. */
+export async function formatted(source: string): Promise<OutputFile> {
+  const [file, ...more] = await emitFormatted(lower(source));
+  if (!file || more.length) throw new Error("Expected one file.");
+  return file;
 }
 
 const scratch: string[] = [];

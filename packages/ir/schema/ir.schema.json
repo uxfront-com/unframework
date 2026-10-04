@@ -27,13 +27,21 @@
             "$ref": "#/definitions/UfExport"
           },
           "description": "What the module exports, in source order. Targets keep the same export shape."
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TypeDeclaration"
+          },
+          "description": "The local type declarations the components' props use, in source order, each name once: the targets that print types copy them into the outputs of the components that use them."
         }
       },
       "required": [
         "irVersion",
         "file",
         "components",
-        "exports"
+        "exports",
+        "types"
       ],
       "additionalProperties": false,
       "description": "One `.uf.tsx` module."
@@ -48,14 +56,49 @@
         "span": {
           "$ref": "#/definitions/Span"
         },
+        "props": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Prop"
+          },
+          "description": "The members of the props type, in member order: none for a component without props."
+        },
+        "propsParameter": {
+          "$ref": "#/definitions/PropsParameter",
+          "description": "The props parameter as written. Absent when the component takes no parameter."
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The names of the module's `types` this component's output declares: the declarations its props' types reach, in source order."
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Binding"
+          },
+          "description": "Every binding the component declares, by the start of its span: the props (each destructured prop, or every prop in the object form) and the loop variables. Expressions refer to them by id."
+        },
         "render": {
-          "$ref": "#/definitions/ElementNode",
-          "description": "The returned JSX: the component's template."
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ElementNode"
+            },
+            {
+              "$ref": "#/definitions/FragmentNode"
+            }
+          ],
+          "description": "The returned JSX: one element, or several roots in a fragment."
         }
       },
       "required": [
         "name",
         "span",
+        "props",
+        "types",
+        "bindings",
         "render"
       ],
       "additionalProperties": false,
@@ -78,6 +121,220 @@
       "additionalProperties": false,
       "description": "A half-open range `[start, end)` of UTF-16 offsets into the source file."
     },
+    "Prop": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name a consumer passes: ASCII letters and digits that every target can declare and read as an identifier, and none a target reserves (`RESERVED_PROP_NAMES`)."
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Whether the member is optional (`label?: string`)."
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The member's type annotation as written: the targets that declare inputs print it."
+        },
+        "default": {
+          "$ref": "#/definitions/Expression",
+          "description": "The default, in the destructured form only: a static value, which references nothing, since Vue hoists defaults out of the component and Angular evaluates them before any input is set. Absent, or explicitly `undefined`, the prop takes it."
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId",
+          "description": "The binding expressions read the prop through. Absent when the destructured form leaves the prop out; the object form has one for every prop."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "name",
+        "optional",
+        "type",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A member of a component's props type."
+    },
+    "TypeText": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "code",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A type annotation, as written: exactly `source.slice(span.start, span.end)`."
+    },
+    "Expression": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "The source text, exactly `source.slice(span.start, span.end)`: never rewritten in the IR."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        },
+        "refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "description": "Each reference to a binding or an allowed global, in source order, without overlap."
+        }
+      },
+      "required": [
+        "code",
+        "span",
+        "refs"
+      ],
+      "additionalProperties": false,
+      "description": "An expression the analyser accepted, with every identifier in it resolved (plan §5.4). Targets print it by splicing their own spelling of each reference into the code."
+    },
+    "Reference": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/BindingReference"
+        },
+        {
+          "$ref": "#/definitions/GlobalReference"
+        }
+      ],
+      "description": "A resolved identifier in an expression."
+    },
+    "BindingReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Binding"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "What a target replaces with its own spelling of the binding: the identifier, or the whole `props.label` in the object form."
+        },
+        "shorthand": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set for a shorthand property (`{ label }`), which a rewrite must expand to `label: …`."
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A read of one of the component's bindings."
+    },
+    "BindingId": {
+      "type": "string",
+      "description": "A binding's id: its name and the offset where it is declared, `name@offset` (plan §5.3). Unique in a component, and stable for one source, so expressions refer to bindings by it.",
+      "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*@(0|[1-9][0-9]*)$"
+    },
+    "GlobalReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Global"
+        },
+        "name": {
+          "type": "string",
+          "description": "The global's name: one of `ALLOWED_GLOBALS`."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The identifier."
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A read of a global every target can reach (`ALLOWED_GLOBALS`): Angular templates see only the component's members, so its target declares one for each."
+    },
+    "PropsParameter": {
+      "type": "object",
+      "properties": {
+        "form": {
+          "type": "string",
+          "enum": [
+            "destructured",
+            "object"
+          ],
+          "description": "`destructured` for an object pattern, `object` for an identifier (ADR-0034)."
+        },
+        "name": {
+          "type": "string",
+          "description": "The parameter's name, exactly in the object form: the name its uses are written with (`props.label`), which the targets that keep the object form keep too."
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The annotation as written: a reference to a local type, or an object type literal."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "form",
+        "type",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "How a component declares its props: `({ label, tone = \"info\" }: Props)` or `(props: Props)`."
+    },
+    "Binding": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/BindingId",
+          "description": "`name@span.start`."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name as declared."
+        },
+        "kind": {
+          "$ref": "#/definitions/BindingKind"
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "Where the binding is declared: the destructured name, the props member, or the parameter."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kind",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A name a component declares, which its expressions refer to."
+    },
+    "BindingKind": {
+      "type": "string",
+      "enum": [
+        "prop",
+        "loopVar"
+      ],
+      "description": "What declares a binding: a prop, or the item or index parameter of a list's callback. Only the kinds the analyser lowers: the coverage gate requires a corpus case for each."
+    },
     "ElementNode": {
       "type": "object",
       "properties": {
@@ -87,15 +344,15 @@
         },
         "tag": {
           "type": "string",
-          "description": "The tag name, in lower case: an element of the HTML Living Standard.",
-          "pattern": "^[a-z][a-z0-9]*$"
+          "description": "The tag name: an element of the HTML Living Standard in lower case, or, inside an `<svg>`, an SVG element with its own case (`linearGradient`). The namespace follows from the tree: `<svg>` starts SVG, and everything inside it is SVG.",
+          "pattern": "^[A-Za-z][A-Za-z0-9]*$"
         },
         "attributes": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/Attribute"
           },
-          "description": "Each attribute of the element, set once."
+          "description": "Each attribute of the element, each name set once."
         },
         "children": {
           "type": "array",
@@ -116,10 +373,26 @@
         "span"
       ],
       "additionalProperties": false,
-      "description": "An HTML element such as `<p>`."
+      "description": "An element: an HTML element such as `<p>`, or an SVG element inside an `<svg>`."
     },
     "Attribute": {
-      "$ref": "#/definitions/StaticAttribute",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/StaticAttribute"
+        },
+        {
+          "$ref": "#/definitions/BoundAttribute"
+        },
+        {
+          "$ref": "#/definitions/ClassAttribute"
+        },
+        {
+          "$ref": "#/definitions/StyleAttribute"
+        },
+        {
+          "$ref": "#/definitions/SpreadAttribute"
+        }
+      ],
       "description": "An attribute on an element."
     },
     "StaticAttribute": {
@@ -131,8 +404,8 @@
         },
         "name": {
           "type": "string",
-          "description": "The HTML attribute name, in lower case (`class`, `for`, `aria-label`): an attribute of the element (its own, a global, an ARIA or a `data-*` attribute). Targets map names to their own spellings by it.",
-          "pattern": "^[^\\sA-Z\"'<>/=]+$"
+          "description": "The attribute name as HTML spells it (`class`, `for`, `aria-label`), in lower case on an HTML element and with SVG's own case on an SVG element (`viewBox`): an attribute of the element (its own, a global, an ARIA or a `data-*` attribute). Targets map names to their own spellings by it.",
+          "pattern": "^[^\\s\"'<>/=]+$"
         },
         "value": {
           "anyOf": [
@@ -144,7 +417,7 @@
               "const": true
             }
           ],
-          "description": "The decoded value. `true` for an HTML boolean attribute (`<input disabled />`), which is on by being present and renders without a value, and only for one. Any other attribute written without a value has the string `\"true\"`, as in Vue's and React's JSX (`<span aria-hidden>`). A `class` holds one or more class names separated by single spaces, as Vue, Svelte and Angular render it. Like text, a value holds only characters HTML keeps as they are."
+          "description": "The decoded value. `true` for an HTML boolean attribute (`<input disabled />`), which is on by being present and renders without a value, and only for one. Any other attribute written without a value has the string `\"true\"`, as in Vue's and React's JSX (`<span aria-hidden>`); SVG has no boolean attributes. A `class` holds one or more class names separated by single spaces, as Vue, Svelte and Angular render it. Like text, a value holds only characters HTML keeps as they are."
         },
         "span": {
           "$ref": "#/definitions/Span"
@@ -159,6 +432,287 @@
       "additionalProperties": false,
       "description": "An attribute whose value is known at compile time: `class=\"card\"`, `disabled`."
     },
+    "BoundAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Bound"
+        },
+        "name": {
+          "type": "string",
+          "description": "As a static attribute's name; never `class` or `style`, which have kinds of their own.",
+          "pattern": "^[^\\s\"'<>/=]+$"
+        },
+        "value": {
+          "$ref": "#/definitions/Expression"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An attribute bound to an expression, `title={label}`: absent when the value is nullish, and its value otherwise, by the rules for its name (ADR-0037)."
+    },
+    "ClassAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Class"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ClassItem"
+          }
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "items",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A `class` built from parts (ADR-0038): the rendered class names are the union of the static names, the toggles whose condition holds and the names each dynamic part holds, in no particular order. A `class` with no names renders as no `class` attribute."
+    },
+    "ClassItem": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/StaticClass"
+        },
+        {
+          "$ref": "#/definitions/ToggleClass"
+        },
+        {
+          "$ref": "#/definitions/DynamicClass"
+        }
+      ],
+      "description": "A part of a `class`."
+    },
+    "StaticClass": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Static"
+        },
+        "value": {
+          "type": "string",
+          "description": "One or more class names separated by single spaces."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "Class names known at compile time: `\"card\"` in `class={[\"card\", tone]}`."
+    },
+    "ToggleClass": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Toggle"
+        },
+        "name": {
+          "type": "string",
+          "description": "One class name."
+        },
+        "condition": {
+          "$ref": "#/definitions/Expression"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "condition",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "One class name, present when its condition is truthy: `{ active: on }`, `on && \"active\"`."
+    },
+    "DynamicClass": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Dynamic"
+        },
+        "value": {
+          "$ref": "#/definitions/Expression"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An expression whose string value holds class names separated by whitespace, or nothing."
+    },
+    "StyleAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Style"
+        },
+        "declarations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StyleDeclaration"
+          }
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "declarations",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A `style` (ADR-0038): `style=\"color: red\"` or `style={{ color: tone }}`, as declarations. The declarations whose value is present render, in no particular order, so no two of them set the same property. A `style` with none renders as no `style` attribute."
+    },
+    "StyleDeclaration": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/StaticStyle"
+        },
+        {
+          "$ref": "#/definitions/BoundStyle"
+        }
+      ],
+      "description": "A declaration of a `style`."
+    },
+    "StaticStyle": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Static"
+        },
+        "property": {
+          "type": "string",
+          "description": "The CSS property name in lower case (`margin-top`), or a custom property (`--gap`)."
+        },
+        "value": {
+          "type": "string",
+          "description": "The value as written, trimmed: one CSS value, without `!important`."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "property",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A declaration whose value is known at compile time."
+    },
+    "BoundStyle": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Bound"
+        },
+        "property": {
+          "type": "string",
+          "description": "As a static declaration's property."
+        },
+        "value": {
+          "$ref": "#/definitions/Expression"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "property",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A declaration bound to an expression: left out when its value is nullish or `\"\"`."
+    },
+    "SpreadAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Spread"
+        },
+        "value": {
+          "$ref": "#/definitions/Expression",
+          "description": "The object spread: a prop or a loop item typed by a local object type."
+        },
+        "keys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SpreadKey"
+          },
+          "description": "The keys the object's type declares, in member order."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "keys",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A spread of an object whose keys the analyser knows from its type, `{...attrs}` (ADR-0039). It renders exactly its declared keys, each as a bound attribute would, and a `class` key merges with the element's own `class`."
+    },
+    "SpreadKey": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The attribute name, as a bound attribute's.",
+          "pattern": "^[^\\s\"'<>/=]+$"
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The member's key in the type."
+        }
+      },
+      "required": [
+        "name",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A key a spread's type declares: an attribute the spread renders."
+    },
     "RenderNode": {
       "anyOf": [
         {
@@ -166,6 +720,15 @@
         },
         {
           "$ref": "#/definitions/TextNode"
+        },
+        {
+          "$ref": "#/definitions/InterpolationNode"
+        },
+        {
+          "$ref": "#/definitions/IfNode"
+        },
+        {
+          "$ref": "#/definitions/ForNode"
         }
       ],
       "description": "A node of the render tree."
@@ -179,7 +742,7 @@
         },
         "value": {
           "type": "string",
-          "description": "The text exactly as the DOM holds it: after JSX whitespace rules and entity decoding, as every JSX implementation reads it. It holds only characters HTML keeps as they are (no carriage return, NUL, lone surrogate, control character or noncharacter). Targets escape it for their own syntax."
+          "description": "The text exactly as the DOM holds it: after JSX whitespace rules and entity decoding, as every JSX implementation reads it, or a string literal's value. It holds only characters HTML keeps as they are (no carriage return, NUL, lone surrogate, control character or noncharacter). Targets escape it for their own syntax. Two Texts are never adjacent: the analyser merges them."
         },
         "span": {
           "$ref": "#/definitions/Span"
@@ -192,6 +755,147 @@
       ],
       "additionalProperties": false,
       "description": "A text node."
+    },
+    "InterpolationNode": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Interpolation"
+        },
+        "value": {
+          "$ref": "#/definitions/Expression"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An expression rendered as text, `{label}`. Its value is a string or a number, or nothing when nullish: the analyser rejects every other kind of value, which the targets render differently."
+    },
+    "IfNode": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "If"
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IfBranch"
+          },
+          "description": "The branches in order: the first whose condition holds renders, or the final else."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "branches",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A conditional, `c ? <A/> : <B/>` or `c && <A/>`, with an else-if chain flattened into its branches. A branch renders when its condition is truthy, as `v-if` decides, never by the value JavaScript's `&&` would give (ADR-0036)."
+    },
+    "IfBranch": {
+      "type": "object",
+      "properties": {
+        "condition": {
+          "$ref": "#/definitions/Expression",
+          "description": "The condition: absent on the final else branch."
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RenderNode"
+          },
+          "description": "What the branch renders: nothing for an empty branch, which only the else may not be."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "children",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A branch of an `If`."
+    },
+    "ForNode": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "For"
+        },
+        "source": {
+          "$ref": "#/definitions/Expression",
+          "description": "The array the list renders."
+        },
+        "item": {
+          "$ref": "#/definitions/BindingId",
+          "description": "The callback's item parameter: a `loopVar` binding."
+        },
+        "index": {
+          "$ref": "#/definitions/BindingId",
+          "description": "The callback's index parameter, when it has one: a `loopVar` binding."
+        },
+        "key": {
+          "$ref": "#/definitions/Expression",
+          "description": "The `key` of the callback's root, lifted off the element: `key` is no attribute."
+        },
+        "body": {
+          "$ref": "#/definitions/ElementNode",
+          "description": "The callback's root element, without its `key`."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "source",
+        "item",
+        "key",
+        "body",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A list, `source.map((item, index) => <li key={…}>…</li>)` (ADR-0036)."
+    },
+    "FragmentNode": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Fragment"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RenderNode"
+          },
+          "description": "The roots, one or more."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "children",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "Several root nodes, `<>…</>`: only ever a component's render root."
     },
     "UfExport": {
       "type": "object",
@@ -224,6 +928,34 @@
       ],
       "additionalProperties": false,
       "description": "An export of a module."
+    },
+    "TypeDeclaration": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The declared name, which the props' types refer to."
+        },
+        "exported": {
+          "type": "boolean",
+          "description": "Whether the source exports it: the outputs export it too."
+        },
+        "code": {
+          "type": "string",
+          "description": "The declaration from `interface` or `type` to its end, without `export`: exactly `source.slice(span.start, span.end)`. Targets copy it as written."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "name",
+        "exported",
+        "code",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A top-level `interface` or `type` declaration that a component's props use (ADR-0034)."
     }
   },
   "$id": "https://unframework.dev/schemas/ir-v1.json"

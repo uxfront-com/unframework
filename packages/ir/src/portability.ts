@@ -90,3 +90,67 @@ export const WHITESPACE_DROPPING_ELEMENTS: ReadonlySet<string> = new Set([
 export function isWhitespaceText(value: string): boolean {
   return /^[\t\n\f\r ]+$/.test(value);
 }
+
+/**
+ * Attributes that cannot be bound in M1, by element, and why (ADR-0037): Angular reads them as
+ * resource URLs, whose bound value it rejects unless trusted (NG0904), or refuses to bind them
+ * at all (`ATTRIBUTE_NO_BINDING`, NG0910); and a bound `src` or `data` that loads a nested
+ * document could load a `data:` document, which the invariants keep out of static values
+ * (`NESTED_DOCUMENT_ATTRIBUTES`). Static values stay valid. The analyser reports a bound one
+ * (UF1002), and no IR binds one, as a bound attribute or a spread's key.
+ */
+export const UNBINDABLE_ATTRIBUTES: ReadonlyMap<string, ReadonlyMap<string, string>> = new Map(
+  Object.entries<Readonly<Record<string, string>>>({
+    embed: {
+      src: "Angular reads a bound `src` on <embed> as a resource URL and throws for any value it does not trust (NG0904).",
+    },
+    iframe: {
+      src: "Angular reads a bound `src` on <iframe> as a resource URL and throws for any value it does not trust (NG0904).",
+      allow: "Angular refuses to bind `allow` on <iframe> (NG0910).",
+      allowfullscreen: "Angular refuses to bind `allowfullscreen` on <iframe> (NG0910).",
+      referrerpolicy: "Angular refuses to bind `referrerpolicy` on <iframe> (NG0910).",
+      sandbox: "Angular refuses to bind `sandbox` on <iframe> (NG0910).",
+    },
+    object: {
+      data: "Angular reads a bound `data` on <object> as a resource URL and throws for any value it does not trust (NG0904).",
+    },
+  }).map(([tag, attributes]) => [tag, table(attributes)]),
+);
+
+/** Why an attribute of an element cannot be bound (`UNBINDABLE_ATTRIBUTES`), or `undefined`. */
+export function unbindableAttribute(tag: string, name: string): string | undefined {
+  return UNBINDABLE_ATTRIBUTES.get(tag)?.get(name);
+}
+
+/**
+ * HTML elements no interpolation renders in alike, and why: the analyser reports one there
+ * (UF3003, or UF1002 for a `<textarea>`'s value), and no IR holds one, directly or in a branch.
+ */
+export const UNINTERPOLATED_ELEMENTS: ReadonlyMap<string, string> = new Map([
+  ...[...TEXTLESS_ELEMENTS].map(
+    (tag) =>
+      [
+        tag,
+        `the HTML parser moves text out of a <${tag}>, so the server's markup and a client's DOM differ.`,
+      ] as const,
+  ),
+  ...["datalist", "select"].map(
+    (tag) =>
+      [
+        tag,
+        `a <${tag}> renders no text, and Svelte drops the whitespace in it that the other targets keep.`,
+      ] as const,
+  ),
+  [
+    "textarea",
+    "a <textarea>'s content is its value, which Svelte sets as a property: form state lands with `v-model` (M3).",
+  ],
+]);
+
+/**
+ * Elements whose content loses a leading line feed: the HTML parser drops one that starts it,
+ * React's server renderer writes an extra one to keep it, and a client's DOM keeps it as
+ * written. The analyser reports a text that starts with one there (UF3017), and no IR holds
+ * one.
+ */
+export const LEADING_LINE_FEED_ELEMENTS: ReadonlySet<string> = words("listing pre textarea");

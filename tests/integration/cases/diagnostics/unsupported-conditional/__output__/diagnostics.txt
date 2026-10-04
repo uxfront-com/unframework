@@ -1,0 +1,8 @@
+error[UF3025]: `||` renders its left side's value or the JSX on its right, which no template target can write as one conditional.
+ --> diagnostics/unsupported-conditional/StatusLine.uf.tsx:8:30
+  |
+8 |   return <div role="status">{message || <p>All good.</p>}</div>;
+  |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: Write the conditional with `?:`, such as `value ? value : <p>None</p>`.
+  = see: https://unframework.dev/diagnostics/UF3025

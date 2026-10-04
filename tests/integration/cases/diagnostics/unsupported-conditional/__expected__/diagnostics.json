@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3025",
+    "severity": "error",
+    "message": "`||` renders its left side's value or the JSX on its right, which no template target can write as one conditional.",
+    "file": "diagnostics/unsupported-conditional/StatusLine.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 30,
+      "offset": 264
+    },
+    "end": {
+      "line": 8,
+      "column": 57,
+      "offset": 291
+    },
+    "help": "Write the conditional with `?:`, such as `value ? value : <p>None</p>`."
+  }
+]

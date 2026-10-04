@@ -1,0 +1,28 @@
+<figure class="template-tip">
+  <figcaption title="Vue {{ name }}, Svelte {#if ok}, Angular @if (ok) & JSX {name}">
+    "Template syntax & escaping"
+  </figcaption>
+  <pre>
+    <code>
+      "const answer = 42;"
+    </code>
+  </pre>
+  <p data-sample="<b> \"double\" 'single' C:\\temp">
+    "Static: <b>not bold</b>, {{ name }}, @if (ok) { }"
+  </p>
+  <p>
+    "Literal: {{ name }} <i>not italic</i> {#each items} @for \"quoted\" C:\\temp café"
+  </p>
+  <p title="Say \"hi\" & wave">
+    "Quoted attribute"
+  </p>
+  <p data-path="/home/ada" title="Nothing to escape">
+    "Bound: Nothing to escape in /home/ada\\index.ts"
+  </p>
+  <p>
+    "Mustache: {{ /home/ada }}"
+  </p>
+  <p>
+    "Done &check;"
+  </p>
+</figure>

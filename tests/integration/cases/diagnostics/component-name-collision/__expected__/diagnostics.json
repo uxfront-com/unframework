@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF1104",
+    "severity": "error",
+    "message": "CARD and Card differ only in case, so their output files collide.",
+    "file": "diagnostics/component-name-collision/Cards.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 17,
+      "offset": 150
+    },
+    "end": {
+      "line": 6,
+      "column": 21,
+      "offset": 154
+    },
+    "help": "Rename one of them.",
+    "related": [
+      {
+        "start": {
+          "line": 2,
+          "column": 17,
+          "offset": 100
+        },
+        "end": {
+          "line": 2,
+          "column": 21,
+          "offset": 104
+        },
+        "message": "Card is declared here"
+      }
+    ]
+  }
+]

@@ -23,8 +23,20 @@
     "types": []
   },
   // Unknown components, props and events in templates are errors, as in a strict TSX target.
+  // `data-*` attributes are allowed on every element, as in HTML and every other target's types:
+  // Vue's element types do not declare them, so strict templates would reject each one. The same
+  // holds for a few hyphenated HTML and ARIA attributes Vue renders as written but its types
+  // misspell (`acceptcharset`) or predate (ARIA 1.3); TSX lets the source through, so only the
+  // Vue output would fail (ADR-0042).
   "vueCompilerOptions": {
-    "strictTemplates": true
+    "strictTemplates": true,
+    "dataAttributes": [
+      "data-*",
+      "accept-charset",
+      "aria-braillelabel",
+      "aria-brailleroledescription",
+      "aria-description"
+    ]
   },
   "include": ["../../integration/cases/**/__output__/vue/**/*.vue"]
 }

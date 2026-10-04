@@ -1,0 +1,6 @@
+{
+  "description": "Static style strings with a custom property, shorthands and `var()`.",
+  "ssr": {
+    "tip": { "props": { "heading": "Tip", "body": "Press Enter to save the draft." } }
+  }
+}

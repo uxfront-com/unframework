@@ -9,13 +9,20 @@ import {
   isHtmlAttribute,
   isStateAttribute,
   isWhitespaceText,
+  LEADING_LINE_FEED_ELEMENTS,
+  NESTED_DOCUMENT_ATTRIBUTES,
   OBSOLETE_ELEMENTS,
   STATE_ATTRIBUTES,
   TEMPLATE_SYNTAX_ATTRIBUTES,
+  TEXTLESS_ELEMENTS,
+  UNBINDABLE_ATTRIBUTES,
+  unbindableAttribute,
+  UNINTERPOLATED_ELEMENTS,
   UNPORTABLE_ELEMENTS,
   UNRENDERABLE_ELEMENTS,
   UNRENDERED_ATTRIBUTES,
   WHITESPACE_DROPPING_ELEMENTS,
+  WHITESPACE_PRESERVING_ELEMENTS,
 } from "../src/index.ts";
 
 // The facts name HTML's elements and attributes; a typo would silently disable an invariant.
@@ -45,8 +52,40 @@ describe("the portability facts", () => {
     }
   });
 
+  it("name only attributes of their elements a target cannot bind, every nested document's", () => {
+    for (const [tag, attributes] of UNBINDABLE_ATTRIBUTES) {
+      expect(
+        [...attributes.keys()].filter((name) => !isHtmlAttribute(tag, name)),
+        tag,
+      ).toEqual([]);
+    }
+    for (const [tag, name] of NESTED_DOCUMENT_ATTRIBUTES) {
+      expect(unbindableAttribute(tag, name), `${tag} ${name}`).toBeDefined();
+    }
+  });
+
+  it("keep interpolations out of every element whose text the parser moves or drops", () => {
+    for (const tag of [...TEXTLESS_ELEMENTS, "select", "datalist", "textarea"]) {
+      expect(UNINTERPOLATED_ELEMENTS.has(tag), tag).toBe(true);
+    }
+    expect(
+      [...UNINTERPOLATED_ELEMENTS.keys()].filter(
+        (tag) => !HTML_ELEMENTS.has(tag) && !OBSOLETE_ELEMENTS.has(tag),
+      ),
+    ).toEqual([]);
+    // The parser drops a leading line feed only where it keeps whitespace.
+    expect(
+      [...LEADING_LINE_FEED_ELEMENTS].filter((tag) => !WHITESPACE_PRESERVING_ELEMENTS.has(tag)),
+    ).toEqual([]);
+  });
+
   it.each(["toString", "constructor", "__proto__"])("find nothing for %s", (name) => {
+    expect(unbindableAttribute(name, "src")).toBeUndefined();
+    expect(unbindableAttribute("iframe", name)).toBeUndefined();
+    expect(LEADING_LINE_FEED_ELEMENTS.has(name)).toBe(false);
     for (const table of [
+      UNBINDABLE_ATTRIBUTES,
+      UNINTERPOLATED_ELEMENTS,
       UNPORTABLE_ELEMENTS,
       TEMPLATE_SYNTAX_ATTRIBUTES,
       UNRENDERED_ATTRIBUTES,

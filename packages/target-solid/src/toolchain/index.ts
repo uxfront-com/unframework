@@ -1,7 +1,7 @@
 // The Solid target's toolchain (plan §5.7): how tests and tooling build, check and run Solid
 // output. Node only; the main entry never imports it.
 import type { Toolchain } from "@unframework/codegen";
-import { typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
+import { lintWithOxlint, typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
 import { compileWithSolid } from "./compile.ts";
@@ -39,6 +39,9 @@ export const toolchain: Toolchain = {
   frameworkCompile: (files) => compileWithSolid(files),
 
   typecheck: (files, context) => typecheckWithTsgo(files, context),
+
+  // L5: oxlint, with the shared baseline and eslint-plugin-solid as a JS plugin (ADR-0042).
+  lint: (files, context) => lintWithOxlint(files, context),
 };
 
 export default toolchain;

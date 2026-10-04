@@ -4,7 +4,8 @@
 //   harness             node             the harness's own unit tests
 //   toolchain:<target>  node     L3 L4   the framework compiler and checker, one run per target
 //   ssr:<target>        node     L6 L13  the target's server renderer, through the unplugin
-//   browser:<target>    chromium L7 L10 L11 L13  the shared specs, through the unplugin
+//   browser:<target>    chromium L7 L10 L11 L13  the shared specs, through the unplugin (and L8,
+//                                                recorded before it is live: ADR-0043)
 //
 // Every project sets `extends: false`: inheriting the root config merges its plugins into each
 // project (the browser-projects ADR), and a project must hold its own toolchain only. Toolchains
@@ -201,8 +202,12 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
       fragment.test,
       {
         testTimeout: 60_000,
-        // A locator that never matches fails in seconds, not at the test timeout.
-        expect: { poll: { timeout: 5_000 } },
+        expect: {
+          // A locator that never matches fails in seconds, not at the test timeout.
+          poll: { timeout: 5_000 },
+          // A test without an assertion fails L8: every spec asserts what it rendered (ADR-0043).
+          requireAssertions: true,
+        },
       },
       {
         name,

@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF1101",
+    "severity": "error",
+    "message": "This file exports no component.",
+    "file": "diagnostics/no-component/Formatting.uf.tsx",
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "help": "A component is an exported PascalCase function whose last statement returns JSX."
+  }
+]

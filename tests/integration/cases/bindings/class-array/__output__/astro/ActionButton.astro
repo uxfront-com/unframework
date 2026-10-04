@@ -1,0 +1,18 @@
+---
+export interface ActionButtonProps {
+  label: string;
+  size: "small" | "medium" | "large";
+  primary: boolean;
+  busy?: boolean;
+  badge: number;
+}
+
+type Props = ActionButtonProps;
+
+const { label, size, primary, busy = false, badge } = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={["button", `button-${size}`, { "button-primary": primary, "is-busy": busy, "button-waiting": busy, "has-badge": badge }, primary ? "solid" : "outline"]}
+>{label}</button>

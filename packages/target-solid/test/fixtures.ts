@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { formatOutput } from "@unframework/codegen";
 import type { Diagnostic, EmitContext, OutputFile, ToolchainFile } from "@unframework/codegen";
 import {
   createComponent,
@@ -11,8 +12,12 @@ import {
   createStaticAttribute,
   createText,
 } from "@unframework/ir";
-import type { ElementNode, RenderNode } from "@unframework/ir";
+import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
 
+// The analyser, by path: the target's tests lower real sources as the compiler would, while the
+// package itself depends only on ir and codegen (layering).
+import { analyze } from "../../analyzer/src/index.ts";
+import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
 
 export const packageDir: string = fileURLToPath(new URL("..", import.meta.url));
@@ -94,4 +99,41 @@ export function goldens(targetName: string): ToolchainFile[] {
       const path = join(cases, entry);
       return { path, contents: readFileSync(path, "utf8") };
     });
+}
+
+/**
+ * A source lowered by the analyser, which must accept it: a test of the emitter starts from the
+ * IR the compiler would hand it.
+ */
+export function lower(source: string, file = "Fixture.uf.tsx"): UfModule {
+  const { module, diagnostics } = analyze(parseModule(file, source));
+  const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
+  if (!module || errors.length) {
+    throw new Error(
+      `The analyser rejects ${JSON.stringify(source)}: ${JSON.stringify(errors, null, 2)}`,
+    );
+  }
+  return module;
+}
+
+/**
+ * The formatted Solid output of a source's first component, as `compile()` would write it.
+ * Throws when the target reports anything: it never reports (ADR-0033).
+ */
+export async function emitSource(source: string): Promise<string> {
+  const module = lower(source);
+  const component = module.components[0]!;
+  const reported: Omit<Diagnostic, "file" | "target">[] = [];
+  const context: EmitContext = {
+    module,
+    options: undefined,
+    report: (diagnostic) => void reported.push(diagnostic),
+  };
+  const files = target.emit(component, context);
+  if (reported.length || files.length !== 1) {
+    throw new Error(`The Solid target reported ${JSON.stringify(reported)}.`);
+  }
+  const outcome = await formatOutput(files[0]!);
+  if (outcome.error) throw new Error(`oxfmt rejects the output: ${outcome.error}`);
+  return outcome.file.contents;
 }

@@ -1,0 +1,14 @@
+{
+  "description": "A list keyed by its index, which appears in text and in an attribute; repeated values render under their own indices.",
+  "ssr": {
+    "three-steps": {
+      "props": {
+        "title": "Brew tea",
+        "steps": ["Boil the water", "Warm the pot", "Steep for three minutes"]
+      }
+    },
+    "repeated-steps": {
+      "props": { "title": "Knead the dough", "steps": ["Fold", "Turn", "Fold", "Turn"] }
+    }
+  }
+}

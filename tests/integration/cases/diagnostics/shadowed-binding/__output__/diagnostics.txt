@@ -1,0 +1,8 @@
+error[UF3024]: The parameter `label` shadows the prop `label`: the targets that rewrite names would read the parameter instead.
+  --> diagnostics/shadowed-binding/TagCloud.uf.tsx:10:18
+   |
+10 |       {tags.map((label) => (
+   |                  ^^^^^
+   |
+   = help: Rename the parameter.
+   = see: https://unframework.dev/diagnostics/UF3024

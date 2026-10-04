@@ -1,0 +1,24 @@
+{
+  "description": "Expressions interpolated as text: arithmetic with precedence, string and number methods, template literals, the String and Math globals, and conditional text.",
+  "ssr": {
+    "single-item": {
+      "props": {
+        "customer": "  ada lovelace ",
+        "orderNumber": 42,
+        "unitPrice": 19.99,
+        "quantity": 1,
+        "discount": 0
+      }
+    },
+    "bulk": {
+      "props": {
+        "customer": "grace hopper",
+        "orderNumber": 1906,
+        "unitPrice": 4.5,
+        "quantity": 12,
+        "discount": 65,
+        "coupon": "SPRING"
+      }
+    }
+  }
+}

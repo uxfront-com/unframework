@@ -222,8 +222,10 @@ export const READ_ONLY_VALUE_TYPES: ReadonlySet<string> = new Set([
  * input whose type React leaves alone stays `value`; React matches the type exactly, and so
  * does this.
  *
- * The type is the element's static `type`. When attributes can be bound (M1), a bound `type`
- * beside a static `value` has no type to decide by here, and needs a decision of its own.
+ * The type is the element's static `type`: beside a bound `type`, an input's `value` is form
+ * state, which the analyser rejects until `v-model` (M3), as it does every `value` and `checked`
+ * that is not a fixed value. So of these, only a `<textarea>`'s content (as `value`) and a
+ * fixed `value` reach the React target today.
  */
 export function formControlProp(
   name: string,
@@ -242,31 +244,8 @@ export function formControlProp(
 
 /** The element's static `type`, or `""` when it has none. */
 function staticType(element: Pick<ElementNode, "attributes">): string {
-  const type = element.attributes.find((attribute) => attribute.name === "type")?.value;
-  return typeof type === "string" ? type : "";
-}
-
-/**
- * Why React cannot render a static attribute as the HTML would, or `undefined` when it can.
- * The React target reports these (UF1002) instead of emitting code that crashes, warns or
- * renders something else.
- */
-export function unsupportedOnReact(
-  name: string,
-  value: string | true,
-  tag: string,
-): string | undefined {
-  if (name === "style") {
-    return "React takes `style` as an object, so a static `style` string is not supported on React yet.";
-  }
-  if (/^on/i.test(name)) {
-    return `React takes event handlers as functions, so the static \`${name}\` attribute is not supported on React.`;
-  }
-  if (name === "selected" && tag === "option") {
-    return "React selects options through the `<select>`'s `value`, so `selected` on an `<option>` is not supported on React yet.";
-  }
-  if (name === "hidden" && typeof value === "string" && value.toLowerCase() === "until-found") {
-    return 'React 19 renders `hidden` as a boolean, so it cannot render `hidden="until-found"`.';
-  }
-  return undefined;
+  const type = element.attributes.find(
+    (attribute) => attribute.kind === "Static" && attribute.name === "type",
+  );
+  return type?.kind === "Static" && typeof type.value === "string" ? type.value : "";
 }

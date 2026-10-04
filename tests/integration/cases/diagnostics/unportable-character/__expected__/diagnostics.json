@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3010",
+    "severity": "error",
+    "message": "U+0007 is a control character, which HTML does not allow in a document.",
+    "file": "diagnostics/unportable-character/Alert.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 17,
+      "offset": 143
+    },
+    "end": {
+      "line": 3,
+      "column": 21,
+      "offset": 147
+    },
+    "help": "Remove it."
+  }
+]

@@ -9,7 +9,7 @@ import {
 } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
-import { applyAndRecheck, codes, component, slices } from "./helpers.ts";
+import { applyAndRecheck, codes, component, root, slices } from "./helpers.ts";
 
 /** The first element that has an attribute as its own. */
 function ownerOf(name: string): string | undefined {
@@ -27,10 +27,12 @@ function only(jsx: string) {
 function attributesOf(jsx: string) {
   const { module, diagnostics } = component(jsx);
   expect(diagnostics).toEqual([]);
-  return module!.components[0]!.render.attributes.map(({ name, value }) => [name, value]);
+  return root(module).attributes.map((attribute) =>
+    attribute.kind === "Static" ? [attribute.name, attribute.value] : [attribute.kind],
+  );
 }
 
-describe("event and style attributes", () => {
+describe("event attributes", () => {
   // HTML names are case-insensitive: the browser runs `ONCLICK` as `onclick`.
   it.each(["onClick", "onclick", "ONCLICK", "OnClick", "OnMouseOver", "onKeyDown", "onClick$"])(
     "reports %s as an event attribute, whatever its case",
@@ -41,10 +43,13 @@ describe("event and style attributes", () => {
     },
   );
 
-  it.each(["style", "STYLE", "Style"])("reports %s as a style attribute", (name) => {
+  // M1 lowers `style` (ADR-0038): a name in another case is renamed like any other.
+  it.each(["STYLE", "Style"])("reports %s as written style, and lowers it", (name) => {
     const diagnostic = only(`<p ${name}="color: red">a</p>`);
-    expect([diagnostic.code, diagnostic.at]).toEqual(["UF1002", name]);
-    expect(diagnostic.message).toContain(`Static \`${name}\` attributes are not supported yet`);
+    expect([diagnostic.code, diagnostic.at]).toEqual(["UF3004", name]);
+    expect(applyAndRecheck(diagnostic.source, diagnostic.diagnostics)).toContain(
+      'style="color: red"',
+    );
   });
 
   it("does not mistake names that only start like an event", () => {
@@ -184,7 +189,6 @@ describe("attribute names", () => {
   });
 
   it.each([
-    ['<p key="k">a</p>', "key"],
     ['<p ref="r">a</p>', "ref"],
     ['<input v-model="x" />', "v-model"],
     ['<p v-if="x">a</p>', "v-if"],

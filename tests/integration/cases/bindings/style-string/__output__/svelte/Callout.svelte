@@ -1,0 +1,19 @@
+<svelte:options runes={true} preserveWhitespace={false} />
+
+<script lang="ts">
+  export interface CalloutProps {
+    heading: string;
+    body: string;
+  }
+
+  let { heading, body }: CalloutProps = $props();
+</script>
+
+<aside
+  class="callout"
+  aria-label={heading}
+  style="--callout-accent: #1f4d7a; border-left: 4px solid var(--callout-accent); padding: 8px 12px; color: #1a1a1a"
+>
+  <p style="margin: 0; font-weight: 700">{heading}</p
+  ><p style="margin: 4px 0 0">{body}</p>
+</aside>

@@ -1,0 +1,7 @@
+error[UF3002]: <title> names the document: React moves it into the <head>, and the other frameworks leave it in place.
+ --> diagnostics/reserved-element/Dashboard.uf.tsx:5:8
+  |
+5 |       <title>Dashboard</title>
+  |        ^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF3002

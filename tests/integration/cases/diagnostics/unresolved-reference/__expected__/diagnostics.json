@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3020",
+    "severity": "error",
+    "message": "`lable` is not a prop, a list's item or index, or a global a template expression can read.",
+    "file": "diagnostics/unresolved-reference/Greeting.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 29,
+      "offset": 251
+    },
+    "end": {
+      "line": 8,
+      "column": 34,
+      "offset": 256
+    },
+    "help": "Did you mean `label`?"
+  }
+]

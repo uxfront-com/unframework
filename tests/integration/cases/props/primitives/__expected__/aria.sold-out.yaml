@@ -1,0 +1,6 @@
+- article "Floor lamp":
+  - heading "Floor lamp" [level=2]
+  - paragraph: "Price: 120 EUR"
+  - paragraph: 0 in stock
+  - paragraph: Currently unavailable
+  - button "Add Floor lamp to basket" [disabled]

@@ -1,0 +1,11 @@
+{
+  "description": "A class array: a static name, a template literal, a nested array, toggles with one or two names and a number condition, and a conditional string.",
+  "ssr": {
+    "primary-small": {
+      "props": { "label": "Save", "size": "small", "primary": true, "badge": 0 }
+    },
+    "busy-outline": {
+      "props": { "label": "Sync", "size": "large", "primary": false, "busy": true, "badge": 4 }
+    }
+  }
+}

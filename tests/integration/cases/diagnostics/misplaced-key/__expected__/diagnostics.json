@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF3014",
+    "severity": "error",
+    "message": "`key` belongs on the element a list's `.map` renders: elsewhere React and Vue remount the element when it changes, and the others ignore it.",
+    "file": "diagnostics/misplaced-key/Intro.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 10,
+      "offset": 165
+    },
+    "end": {
+      "line": 5,
+      "column": 13,
+      "offset": 168
+    },
+    "help": "Remove it.",
+    "fixes": [
+      {
+        "title": "Remove `key`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 164,
+              "end": 176
+            },
+            "text": ""
+          }
+        ]
+      }
+    ]
+  }
+]

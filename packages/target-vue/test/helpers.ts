@@ -4,8 +4,17 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { formatOutput } from "@unframework/codegen";
 import type { EmitContext, OutputFile } from "@unframework/codegen";
+import { checkInvariants } from "@unframework/ir";
 import type { UfModule } from "@unframework/ir";
+import { createSSRApp } from "vue";
+import type { Component } from "vue";
+import { compileScript, compileTemplate, parse } from "vue/compiler-sfc";
+import { renderToString } from "vue/server-renderer";
 
+// The analyser lowers the sources these tests emit from, as the compiler does (a test-only
+// import: a target's own code never sees it).
+import { analyze } from "../../analyzer/src/index.ts";
+import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
 
 export const packageDir: string = fileURLToPath(new URL("..", import.meta.url));
@@ -55,6 +64,100 @@ export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
       return outcome.file;
     }),
   );
+}
+
+/**
+ * A source lowered by the analyser: throws on any error, or on IR that breaks an invariant, so
+ * a test emits only from IR the compiler would hand the target.
+ */
+export function lower(source: string, file = "Case.uf.tsx"): UfModule {
+  const { module, diagnostics } = analyze(parseModule(file, source));
+  const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
+  if (!module || errors.length) {
+    throw new Error(`the analyser rejects the source: ${errors.map((e) => e.message).join("; ")}`);
+  }
+  const broken = checkInvariants(module);
+  if (broken.length) throw new Error(`invalid IR: ${JSON.stringify(broken)}`);
+  return module;
+}
+
+/** The single file this target emits for a source's one component, formatted or as printed. */
+export async function emitSource(source: string, format = true): Promise<string> {
+  const module = lower(source);
+  const files = format
+    ? await emitFormatted(module)
+    : module.components.flatMap((component) =>
+        target.emit(component, { module, options: undefined, report: () => {} }),
+      );
+  if (files.length !== 1) throw new Error(`expected one file, got ${files.length}`);
+  return files[0]!.contents;
+}
+
+let compiled = 0;
+
+/**
+ * Compiles a single-file component as @vitejs/plugin-vue does, `inline` as in a production build
+ * (the template inlined into `setup`) or not as under a dev server (a separate render function
+ * that reads bindings through `$props` and `$setup`), for the server, and renders it with
+ * `props` as root props. Fails on any warning from the compiler or from Vue.
+ */
+export async function renderSfc(
+  contents: string,
+  props: Record<string, unknown>,
+  { inline }: { inline: boolean },
+): Promise<string> {
+  const id = `sfc-${compiled++}`;
+  const filename = `${id}.vue`;
+  const { descriptor, errors } = parse(contents, { filename });
+  if (errors.length) throw new Error(`parse: ${errors.map(String).join("; ")}`);
+  const warnings: string[] = [];
+  const warn = console.warn;
+  console.warn = (...args: unknown[]) => void warnings.push(args.join(" "));
+  let code: string;
+  try {
+    const onWarn = (warning: { message: string }) => void warnings.push(warning.message);
+    const script = descriptor.scriptSetup
+      ? compileScript(descriptor, {
+          id,
+          inlineTemplate: inline,
+          templateOptions: {
+            ssr: true,
+            ssrCssVars: [],
+            transformAssetUrls: false,
+            compilerOptions: { onWarn },
+          },
+        })
+      : undefined;
+    if (script && inline) code = script.content;
+    else {
+      const template = compileTemplate({
+        source: descriptor.template!.content,
+        ast: descriptor.template!.ast,
+        filename,
+        id,
+        ssr: true,
+        ssrCssVars: [],
+        transformAssetUrls: false,
+        compilerOptions: {
+          onWarn,
+          ...(script ? { bindingMetadata: script.bindings, expressionPlugins: ["typescript"] } : {}),
+        },
+      });
+      if (template.errors.length) throw new Error(`template: ${template.errors.join("; ")}`);
+      const component = script
+        ? script.content.replace("export default ", "const component = ")
+        : "const component = {};";
+      code = `${component}\n${template.code}\ncomponent.ssrRender = ssrRender;\nexport default component;\n`;
+    }
+  } finally {
+    console.warn = warn;
+  }
+  const { default: component } = await importScratch<{ default: Component }>(`${id}.ts`, code);
+  const app = createSSRApp(component, props);
+  app.config.warnHandler = (message) => void warnings.push(message);
+  const html = await renderToString(app);
+  if (warnings.length) throw new Error(`warnings: ${warnings.join("\n")}`);
+  return html;
 }
 
 const scratch: string[] = [];

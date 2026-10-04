@@ -1,0 +1,7 @@
+- region "Inbox summary":
+  - heading "Work" [level=2]
+  - paragraph: 3 unread
+  - paragraph: 1 flagged
+  - paragraph: Some unread messages are flagged.
+  - paragraph: Filed under Work
+  - paragraph: Ada

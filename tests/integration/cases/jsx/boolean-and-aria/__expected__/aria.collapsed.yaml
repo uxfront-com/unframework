@@ -1,0 +1,9 @@
+- region "Filters":
+  - button "Price filters"
+  - paragraph: Narrow the results by price.
+  - group: Price range
+  - button "In stock only"
+  - navigation "Filter steps":
+    - link "Filters":
+      - /url: "#filters"
+  - status: Results ready

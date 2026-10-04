@@ -4,10 +4,11 @@ import type { OutputFile, Target } from "@unframework/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { checkInvariants, validateModule } from "@unframework/ir";
-import type { ElementNode, IrValidationError, Span, UfComponent, UfModule } from "@unframework/ir";
+import type { IrValidationError, UfComponent, UfModule } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
 
 import { checkCapabilities } from "./capabilities.ts";
+import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";
 import { resolveTarget } from "./targets.ts";
 import type { TargetName } from "./targets.ts";
 
@@ -22,7 +23,10 @@ export interface OutputHookContext {
  * A compiler plugin (plan §5.10). Hooks are pure: the module and the files they receive are
  * frozen, so a hook returns a new value to change them. A hook that throws, or returns a value
  * that is not valid IR (by its schema and its invariants, `checkInvariants`) or a list of
- * files, becomes a UF8001 diagnostic and its step is left out.
+ * files, becomes a UF8001 diagnostic and its step is left out. An `ir` hook's module also keeps
+ * the analysed file and every span in the source, and holds only expressions, type annotations
+ * and type declarations the analyser produced: it may move, copy or drop analysed code, never
+ * write its own.
  */
 export interface CompilerPlugin {
   name: string;
@@ -78,7 +82,9 @@ export async function compile(source: string, options: CompileOptions): Promise<
     outputs[target.name] = [];
   }
 
-  let module: UfModule | undefined;
+  // The analyser's module, frozen: every plugin's module is compared with it, whatever the
+  // plugins before it returned.
+  let analysed: UfModule | undefined;
   try {
     const analysis = analyze(parseModule(file, source));
     diagnostics.push(...analysis.diagnostics);
@@ -88,21 +94,22 @@ export async function compile(source: string, options: CompileOptions): Promise<
     if (broken?.length) {
       diagnostics.push(internal(file, describeProblems(broken), "The analyser lowered invalid IR"));
     } else {
-      module = analysis.module && deepFreeze(analysis.module);
+      analysed = analysis.module && deepFreeze(analysis.module);
     }
   } catch (error) {
     diagnostics.push(internal(file, error, "The analyser failed"));
   }
 
+  let module = analysed;
   for (const plugin of options.plugins ?? []) {
-    if (!module || !plugin.ir) continue;
+    if (!module || !analysed || !plugin.ir) continue;
     try {
       const result = plugin.ir(module);
       if (result === undefined) continue;
       const problems = validateModule(result);
       // Only a module of the schema's shape can be walked for its invariants.
       if (!problems.length) {
-        problems.push(...checkInvariants(result), ...sourceProblems(result, module, source));
+        problems.push(...checkInvariants(result), ...pluginIrProblems(result, analysed, source));
       }
       if (problems.length) {
         const what = `returned invalid IR: ${describeProblems(problems)}`;
@@ -224,47 +231,6 @@ function reported(value: unknown, source: string, file: string, target: string):
   }
   const { code, ...init } = value as Omit<Diagnostic, "file" | "target">;
   return createDiagnostic(code, { ...init, file, target });
-}
-
-/**
- * Where a plugin's module stops describing the source it was analysed from: another file, or a
- * span outside the source. Diagnostics point at those spans, and JSON and SARIF output refuse a
- * location outside its file.
- */
-function sourceProblems(result: UfModule, analysed: UfModule, source: string): IrValidationError[] {
-  const problems: IrValidationError[] = [];
-  if (result.file !== analysed.file) {
-    problems.push({ path: "/file", message: `must stay "${analysed.file}", the file analysed` });
-  }
-  const check = (span: Span, path: string): void => {
-    if (!isSpanIn(span, source.length)) {
-      const message = `must lie in the source (${source.length} characters)`;
-      problems.push({ path: `${path}/span`, message });
-    }
-  };
-  const visit = (element: ElementNode, path: string): void => {
-    check(element.span, path);
-    for (const [index, attribute] of element.attributes.entries()) {
-      check(attribute.span, `${path}/attributes/${index}`);
-    }
-    for (const [index, child] of element.children.entries()) {
-      if (child.kind === "Element") visit(child, `${path}/children/${index}`);
-      else check(child.span, `${path}/children/${index}`);
-    }
-  };
-  for (const [index, component] of result.components.entries()) {
-    check(component.span, `/components/${index}`);
-    visit(component.render, `/components/${index}/render`);
-  }
-  for (const [index, entry] of result.exports.entries()) check(entry.span, `/exports/${index}`);
-  return problems;
-}
-
-/** Whether a span is a well-formed range of UTF-16 offsets in a source of `length` characters. */
-function isSpanIn(span: unknown, length: number): boolean {
-  const isOffset = (offset: unknown): offset is number =>
-    typeof offset === "number" && Number.isInteger(offset) && offset >= 0 && offset <= length;
-  return isRecord(span) && isOffset(span.start) && isOffset(span.end) && span.start <= span.end;
 }
 
 /** Why a value is not a diagnostic whose spans lie in a source of `length` characters. */

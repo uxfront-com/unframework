@@ -6,15 +6,19 @@ import { createRoot } from "react-dom/client";
 
 import { asComponent } from "./component.ts";
 
-/** Mounts a React component with `createRoot`, inside `act`. */
+/**
+ * Mounts a React component with `createRoot`, inside `act`. A rerender renders the root again
+ * with a new props object, as a parent does: a prop the object lacks is `undefined` in the
+ * component, so its default applies.
+ */
 export const mount: MountAdapter = async (component, container, options) => {
-  const element = createElement(asComponent(component), { ...options.props });
+  const type = asComponent(component);
   // Declares a test environment: without it React logs an error for every `act` call.
   Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true);
   const root = createRoot(container);
   try {
     // A render error inside `act` rejects here, rather than surfacing as a global error.
-    await act(async () => root.render(element));
+    await act(async () => root.render(createElement(type, { ...options.props })));
   } catch (error) {
     try {
       await act(async () => root.unmount());
@@ -27,6 +31,9 @@ export const mount: MountAdapter = async (component, container, options) => {
   }
   return {
     settle: () => act(async () => {}),
+    async rerender(props) {
+      await act(async () => root.render(createElement(type, { ...props })));
+    },
     unmount: () => act(async () => root.unmount()),
   };
 };

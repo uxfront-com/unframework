@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2002",
+    "severity": "error",
+    "message": "A prop's default must be a static value: Vue hoists defaults out of the component, and Angular reads them before any input is set.",
+    "file": "diagnostics/non-static-prop-default/Pager.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 51,
+      "offset": 216
+    },
+    "end": {
+      "line": 7,
+      "column": 74,
+      "offset": 239
+    },
+    "help": "Write the value itself: a literal, or an array or object of literals."
+  }
+]

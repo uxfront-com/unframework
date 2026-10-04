@@ -1,0 +1,304 @@
+{
+  "irVersion": 1,
+  "file": "props/literal-unions/StatusPill.uf.tsx",
+  "components": [
+    {
+      "name": "StatusPill",
+      "span": {
+        "start": 131,
+        "end": 464
+      },
+      "props": [
+        {
+          "name": "status",
+          "optional": false,
+          "type": {
+            "code": "\"active\" | \"paused\" | \"archived\"",
+            "span": {
+              "start": 45,
+              "end": 77
+            }
+          },
+          "binding": "status@168",
+          "span": {
+            "start": 37,
+            "end": 78
+          }
+        },
+        {
+          "name": "size",
+          "optional": true,
+          "type": {
+            "code": "\"small\" | \"large\"",
+            "span": {
+              "start": 88,
+              "end": 105
+            }
+          },
+          "default": {
+            "code": "\"small\"",
+            "span": {
+              "start": 183,
+              "end": 190
+            },
+            "refs": []
+          },
+          "binding": "size@176",
+          "span": {
+            "start": 81,
+            "end": 106
+          }
+        },
+        {
+          "name": "level",
+          "optional": true,
+          "type": {
+            "code": "1 | 2 | 3",
+            "span": {
+              "start": 117,
+              "end": 126
+            }
+          },
+          "default": {
+            "code": "1",
+            "span": {
+              "start": 200,
+              "end": 201
+            },
+            "refs": []
+          },
+          "binding": "level@192",
+          "span": {
+            "start": 109,
+            "end": 127
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "StatusPillProps",
+          "span": {
+            "start": 205,
+            "end": 220
+          }
+        },
+        "span": {
+          "start": 166,
+          "end": 220
+        }
+      },
+      "types": [
+        "StatusPillProps"
+      ],
+      "bindings": [
+        {
+          "id": "status@168",
+          "name": "status",
+          "kind": "prop",
+          "span": {
+            "start": 168,
+            "end": 174
+          }
+        },
+        {
+          "id": "size@176",
+          "name": "size",
+          "kind": "prop",
+          "span": {
+            "start": 176,
+            "end": 180
+          }
+        },
+        {
+          "id": "level@192",
+          "name": "level",
+          "kind": "prop",
+          "span": {
+            "start": 192,
+            "end": 197
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Static",
+                "value": "pill",
+                "span": {
+                  "start": 253,
+                  "end": 259
+                }
+              },
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "`pill-${status}`",
+                  "span": {
+                    "start": 261,
+                    "end": 277
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "status@168",
+                      "span": {
+                        "start": 269,
+                        "end": 275
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 261,
+                  "end": 277
+                }
+              },
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "`pill-${size}`",
+                  "span": {
+                    "start": 279,
+                    "end": 293
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "size@176",
+                      "span": {
+                        "start": 287,
+                        "end": 291
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 279,
+                  "end": 293
+                }
+              },
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "`pill-level-${level}`",
+                  "span": {
+                    "start": 295,
+                    "end": 316
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "level@192",
+                      "span": {
+                        "start": 309,
+                        "end": 314
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 295,
+                  "end": 316
+                }
+              }
+            ],
+            "span": {
+              "start": 245,
+              "end": 318
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "status === \"active\" ? \"Active\" : status === \"paused\" ? \"Paused\" : \"Archived\"",
+              "span": {
+                "start": 327,
+                "end": 403
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "status@168",
+                  "span": {
+                    "start": 327,
+                    "end": 333
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "status@168",
+                  "span": {
+                    "start": 360,
+                    "end": 366
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 326,
+              "end": 404
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "level === 3 ? \" (critical)\" : \"\"",
+              "span": {
+                "start": 412,
+                "end": 444
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "level@192",
+                  "span": {
+                    "start": 412,
+                    "end": 417
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 411,
+              "end": 445
+            }
+          }
+        ],
+        "span": {
+          "start": 239,
+          "end": 457
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "StatusPill",
+      "span": {
+        "start": 131,
+        "end": 464
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "StatusPillProps",
+      "exported": true,
+      "code": "interface StatusPillProps {\n  status: \"active\" | \"paused\" | \"archived\";\n  size?: \"small\" | \"large\";\n  level?: 1 | 2 | 3;\n}",
+      "span": {
+        "start": 7,
+        "end": 129
+      }
+    }
+  ]
+}

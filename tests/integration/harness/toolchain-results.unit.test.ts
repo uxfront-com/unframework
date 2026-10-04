@@ -1,17 +1,19 @@
-// What L3 and L4 report from a toolchain's results, with results of their own: a message on a
-// path that is no output (the toolchain's tsconfig, an imported file) fails every case.
+// What L3, L4 and L5 report from a toolchain's results, with results of their own: a message on
+// a path that is no output (the toolchain's tsconfig or lint configuration, an imported file)
+// fails every case.
 import { join } from "node:path";
 
 import type { FrameworkCompileResult, ToolchainMessage } from "@unframework/codegen";
 import { describe, expect, it } from "vitest";
 
 import { ROOT } from "./paths.ts";
-import { frameworkCompileProblems, typecheckProblems } from "./toolchain-results.ts";
+import { frameworkCompileProblems, lintProblems, typecheckProblems } from "./toolchain-results.ts";
 
 const hello = join(ROOT, "cases/basics/hello/__output__/react/Hello.tsx");
 const card = join(ROOT, "cases/basics/card/__output__/react/Card.tsx");
 const tsconfig = join(ROOT, "../toolchains/react/.uf-tmp/typecheck-1/tsconfig.json");
 const helper = join(ROOT, "../toolchains/react/helper.ts");
+const oxlintrc = join(ROOT, "../toolchains/react/output.oxlintrc.json");
 const outputs = new Set([hello, card]);
 const clean: FrameworkCompileResult = { errors: [], warnings: [] };
 
@@ -60,6 +62,48 @@ describe("typecheckProblems", () => {
   it("fails a file the checker reported nothing for: it may never have been checked", () => {
     expect(typecheckProblems(new Map(), [hello], outputs)).toEqual([
       "cases/basics/hello/__output__/react/Hello.tsx: the checker reported nothing for this file.",
+    ]);
+  });
+});
+
+describe("lintProblems", () => {
+  it("reports each message on the case's own files, warnings included", () => {
+    const results = new Map<string, ToolchainMessage[]>([
+      [
+        hello,
+        [
+          {
+            code: "no-debugger",
+            message: "`debugger` statement is not allowed.",
+            line: 2,
+            column: 3,
+          },
+          { code: "vue/no-v-html", message: "warning: 'v-html' directive can lead to XSS attack." },
+        ],
+      ],
+      [card, []],
+    ]);
+    expect(lintProblems(results, [hello], outputs)).toEqual([
+      "cases/basics/hello/__output__/react/Hello.tsx: no-debugger `debugger` statement is not allowed. (line 2, column 3)",
+      "cases/basics/hello/__output__/react/Hello.tsx: vue/no-v-html warning: 'v-html' directive can lead to XSS attack.",
+    ]);
+    expect(lintProblems(results, [card], outputs)).toEqual([]);
+  });
+
+  it("fails every case on a message outside the outputs, and a file the linter skipped", () => {
+    const results = new Map<string, ToolchainMessage[]>([
+      [hello, []],
+      [card, []],
+      [oxlintrc, [{ message: "Unknown rule." }]],
+    ]);
+    const expected = [
+      "The linter reported problems outside the outputs:",
+      "../toolchains/react/output.oxlintrc.json: Unknown rule.",
+    ];
+    expect(lintProblems(results, [hello], outputs)).toEqual(expected);
+    expect(lintProblems(results, [card], outputs)).toEqual(expected);
+    expect(lintProblems(new Map(), [card], outputs)).toEqual([
+      "cases/basics/card/__output__/react/Card.tsx: the linter reported nothing for this file.",
     ]);
   });
 });

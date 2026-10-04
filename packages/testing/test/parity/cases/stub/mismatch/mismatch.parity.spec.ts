@@ -4,7 +4,8 @@
 import { expect, inject, it } from "vitest";
 
 import "../../../../../src/setup.ts";
-import { describeTargets, LayerFailure, mount } from "../../../../../src/index.ts";
+import { expectLayerFailure } from "../../../../../src/browser/behaviour.ts";
+import { describeTargets, mount } from "../../../../../src/index.ts";
 import { LIVE_REFERENCE_SKIP } from "../../../../../src/visual-types.ts";
 import "../../../dom-target.ts";
 
@@ -14,20 +15,16 @@ describeTargets("stub/mismatch", () => {
     "fails L7 with the DOM and ARIA diffs, and records L11 as passing",
     async ({ task }) => {
       const view = await mount({ html: '<p class="greeting">Hello, world!</p>' });
-      const error = await view.expectParity("initial").then(
-        () => undefined,
-        (caught: unknown) => caught,
+      await view.expectParity("initial");
+      const l7 = expectLayerFailure(
+        "L7",
+        /^cases\/stub\/mismatch\/__expected__\/dom\.initial\.html differs/,
       );
-      expect(error).toBeInstanceOf(LayerFailure);
-      const failures = (error as LayerFailure).failures;
-      expect(failures).toHaveLength(1);
-      expect(failures[0]).toMatch(
-        /^L7: cases\/stub\/mismatch\/__expected__\/dom\.initial\.html differs/,
-      );
-      expect(failures[0]).toContain("Goodbye");
-      expect(failures[0]).toMatch(/aria\.initial\.yaml differs[\s\S]*- - paragraph: Goodbye/);
-      expect(task.meta.uf?.layers).toMatchObject({
-        L7: { status: "fail" },
+      expect(l7).toContain("Goodbye");
+      expect(l7).toMatch(/aria\.initial\.yaml differs[\s\S]*- - paragraph: Goodbye/);
+      // L7 is the only failure.
+      expect(task.meta.uf?.layers).toEqual({
+        L7: { status: "fail", message: l7 },
         L10: { status: "skip", reason: LIVE_REFERENCE_SKIP },
         L11: { status: "pass" },
       });

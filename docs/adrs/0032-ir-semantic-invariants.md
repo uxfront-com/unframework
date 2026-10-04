@@ -1,6 +1,6 @@
 # ADR-0032: The IR has semantic invariants, checked after every plugin
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0037, ADR-0038 and ADR-0040
 - **Date:** 2026-10-01
 - **Plan:** §5.3 (the IR), §5.10 (compiler plugins), P2, P5; ADR-0030
 

@@ -1,0 +1,4 @@
+- text: Work email
+- textbox "Work email":
+  - /placeholder: ada@example.com
+- paragraph: We never share your address.

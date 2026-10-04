@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { findComponents, isComponentName, parseModule, parseStylesheet } from "../src/index.ts";
+import {
+  findComponents,
+  findTypeDeclarations,
+  isComponentName,
+  parseDeclarations,
+  parseModule,
+  parseStylesheet,
+  visitorKeys,
+} from "../src/index.ts";
 
 describe("parseModule", () => {
   it("parses TSX with UTF-16 spans", () => {
@@ -39,6 +47,20 @@ describe("parseModule", () => {
   it("parses .uf.ts modules as TypeScript, where JSX is a syntax error", () => {
     expect(parseModule("use.uf.ts", "export const x = <p />;").errors.length).toBeGreaterThan(0);
     expect(parseModule("use.uf.ts", "export const x = <number>1;").errors).toEqual([]);
+  });
+
+  // The analyser's scope analysis (scope-manager) reads `range` to resolve references.
+  it("gives every node a range beside its start and end", () => {
+    const { program } = parseModule(
+      "A.uf.tsx",
+      "export function A({ a }: P) { return <p>{a}</p>; }",
+    );
+    const statement = program.body[0]!;
+    expect(statement.range).toEqual([statement.start, statement.end]);
+  });
+
+  it("re-exports oxc's visitor keys", () => {
+    expect(visitorKeys.JSXElement).toEqual(["openingElement", "children", "closingElement"]);
   });
 
   it("records static imports", () => {
@@ -115,6 +137,85 @@ describe("findComponents", () => {
     expect(isComponentName("HTMLView2")).toBe(true);
     expect(isComponentName("hello")).toBe(false);
     expect(isComponentName("Hello_World")).toBe(false);
+  });
+});
+
+describe("findTypeDeclarations", () => {
+  it("finds interfaces and aliases, plain and exported, in source order", () => {
+    const source = [
+      "interface A { a: string }",
+      "export interface B { b: number }",
+      'type C = "x" | "y";',
+      "export type D = { d: C };",
+      "const e = 1;",
+      "export function F() { return <p />; }",
+      'export type { A } from "./a.ts";',
+    ].join("\n");
+    const found = findTypeDeclarations(parseModule("A.uf.tsx", source).program);
+    expect(found.map((item) => [item.name, item.exported, item.node.type])).toEqual([
+      ["A", false, "TSInterfaceDeclaration"],
+      ["B", true, "TSInterfaceDeclaration"],
+      ["C", false, "TSTypeAliasDeclaration"],
+      ["D", true, "TSTypeAliasDeclaration"],
+    ]);
+    // The statement includes `export`; the declaration starts at its keyword.
+    const exported = found[1]!;
+    expect(source.slice(exported.span.start, exported.span.end)).toBe(
+      "export interface B { b: number }",
+    );
+    expect(source.slice(exported.node.start, exported.node.end)).toBe("interface B { b: number }");
+  });
+});
+
+describe("parseDeclarations", () => {
+  /** Each declaration as `property: value`, with the text its spans cover. */
+  function declarationsOf(source: string) {
+    const { declarations, errors } = parseDeclarations(source);
+    expect(errors).toEqual([]);
+    for (const declaration of declarations) {
+      expect(source.slice(declaration.propertySpan.start, declaration.propertySpan.end)).toBe(
+        declaration.property,
+      );
+      expect(source.slice(declaration.valueSpan.start, declaration.valueSpan.end)).toBe(
+        declaration.value,
+      );
+    }
+    return declarations.map((declaration) => `${declaration.property}: ${declaration.value}`);
+  }
+
+  it("keeps each property and value as written, trimmed", () => {
+    expect(declarationsOf("color: red; margin-top:4px ;  --Gap :  1px  ")).toEqual([
+      "color: red",
+      "margin-top: 4px",
+      "--Gap: 1px",
+    ]);
+  });
+
+  // A `;` or `:` in a string, a comment or brackets does not split the list.
+  it.each([
+    ['background: url("a;b:c")', ['background: url("a;b:c")']],
+    ["font-family: 'a;b'; color: red", ["font-family: 'a;b'", "color: red"]],
+    ["/* a; b: c */ color: red /* d; */", ["color: red"]],
+    ["width: calc(1px + var(--a, 2px))", ["width: calc(1px + var(--a, 2px))"]],
+  ])("splits %j where CSS does", (source, expected) => {
+    expect(declarationsOf(source)).toEqual(expected);
+  });
+
+  it("skips empty declarations and keeps an empty value", () => {
+    expect(declarationsOf(";; color: red;;; --x: ;")).toEqual(["color: red", "--x: "]);
+    expect(parseDeclarations("  ").declarations).toEqual([]);
+  });
+
+  it("keeps !important in the value, for the analyser to report", () => {
+    expect(declarationsOf("color: red !important")).toEqual(["color: red !important"]);
+  });
+
+  it.each([
+    ["color red", "Expected a colon after the property"],
+    [": red", "Expected a property before the colon"],
+    ["color: {}", "Unexpected token CurlyBracketBlock"],
+  ])("reports the syntax error in %j", (source, message) => {
+    expect(parseDeclarations(source).errors.map((error) => error.message)).toEqual([message]);
   });
 });
 

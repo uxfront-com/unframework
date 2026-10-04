@@ -1,32 +1,107 @@
 export type {
   Attribute,
+  Binding,
+  BindingId,
+  BindingKind,
+  BindingReference,
+  BoundAttribute,
+  BoundStyle,
+  ClassAttribute,
+  ClassItem,
+  DynamicClass,
   ElementNode,
+  Expression,
+  ForNode,
+  FragmentNode,
+  GlobalReference,
+  IfBranch,
+  IfNode,
+  InterpolationNode,
+  Prop,
+  PropsParameter,
+  Reference,
   RenderNode,
   Span,
+  SpreadAttribute,
+  SpreadKey,
   StaticAttribute,
+  StaticClass,
+  StaticStyle,
+  StyleAttribute,
+  StyleDeclaration,
   TextNode,
+  ToggleClass,
+  TypeDeclaration,
+  TypeText,
   UfComponent,
   UfExport,
   UfModule,
 } from "./types.ts";
 export { IR_VERSION } from "./version.ts";
 export {
+  bindingId,
+  createBinding,
+  createBindingReference,
+  createBoundAttribute,
+  createBoundStyle,
+  createBranch,
+  createClassAttribute,
   createComponent,
+  createDynamicClass,
   createElement,
   createExport,
+  createExpression,
+  createFor,
+  createFragment,
+  createGlobalReference,
+  createIf,
+  createInterpolation,
   createModule,
+  createProp,
+  createPropsParameter,
+  createSpreadAttribute,
+  createSpreadKey,
   createStaticAttribute,
+  createStaticClass,
+  createStaticStyle,
+  createStyleAttribute,
   createText,
+  createToggleClass,
+  createTypeDeclaration,
+  createTypeText,
   span,
 } from "./builders.ts";
-export { ATTRIBUTE_KINDS, RENDER_NODE_KINDS, collectFeatures, walk } from "./visit.ts";
-export type { ModuleFeatures, Visitor } from "./visit.ts";
+export {
+  ATTRIBUTE_KINDS,
+  BINDING_KINDS,
+  childrenOf,
+  collectFeatures,
+  expressionsOf,
+  RENDER_NODE_KINDS,
+  spansOf,
+  walk,
+} from "./visit.ts";
+export type {
+  LocatedExpression,
+  LocatedSpan,
+  ModuleFeatures,
+  VisitedNode,
+  Visitor,
+} from "./visit.ts";
 export { irSchema } from "./schema.ts";
 export type { JsonSchema } from "./schema.ts";
 export { validateModule } from "./validate.ts";
 export type { IrValidationError } from "./validate.ts";
 export { checkInvariants } from "./invariants.ts";
-export { isComponentName, isExportName } from "./names.ts";
+export {
+  ALLOWED_GLOBALS,
+  isComponentName,
+  isExportName,
+  isIdentifier,
+  PROP_NAME_PATTERN,
+  RESERVED_PROP_NAMES,
+  reservedPropName,
+} from "./names.ts";
 export { listBoxSize } from "./listbox.ts";
 export {
   CHILDLESS_ATTRIBUTES,
@@ -34,14 +109,19 @@ export {
   isDroppedEmptyUrl,
   isStateAttribute,
   isWhitespaceText,
+  LEADING_LINE_FEED_ELEMENTS,
   STATE_ATTRIBUTES,
   TEMPLATE_SYNTAX_ATTRIBUTES,
+  UNBINDABLE_ATTRIBUTES,
+  unbindableAttribute,
+  UNINTERPOLATED_ELEMENTS,
   UNPORTABLE_ELEMENTS,
   UNRENDERED_ATTRIBUTES,
   WHITESPACE_DROPPING_ELEMENTS,
 } from "./portability.ts";
 export {
   ARIA_ATTRIBUTES,
+  BINDABLE_BOOLEAN_ATTRIBUTES,
   BLOCK_ELEMENTS,
   BOOLEAN_ATTRIBUTES,
   canonicalNumber,
@@ -59,8 +139,11 @@ export {
   isHtmlAttribute,
   isHtmlElement,
   isJavaScriptUrl,
+  isNumberTypedAttribute,
   isVoidElement,
   NESTED_DOCUMENT_ATTRIBUTES,
+  NUMBER_TYPED_ATTRIBUTES,
+  NUMBER_TYPED_GLOBAL_ATTRIBUTES,
   NUMERIC_ATTRIBUTES,
   OBSOLETE_ELEMENTS,
   P_CLOSING_ELEMENTS,
@@ -79,3 +162,25 @@ export {
   WHITESPACE_PRESERVING_ELEMENTS,
 } from "./html.ts";
 export type { NumberKind, UnkeptCharacter } from "./html.ts";
+export {
+  elementNamespace,
+  isSvgAttribute,
+  isSvgElement,
+  SVG_ELEMENT_ATTRIBUTES,
+  SVG_ELEMENTS,
+  SVG_GLOBAL_ATTRIBUTES,
+  SVG_HTML_INTEGRATION_POINTS,
+  SVG_PRESENTATION_ATTRIBUTES,
+  SVG_TEXT_ELEMENTS,
+  SVG_UNRENDERABLE_ELEMENTS,
+  SVG_WHITESPACE_KEEPING_ELEMENT,
+} from "./svg.ts";
+export type { Namespace } from "./svg.ts";
+export {
+  CSS_SHORTHANDS,
+  cssPropertiesOverlap,
+  cssValueProblem,
+  isCssPropertyName,
+  isCustomProperty,
+  UNITLESS_PROPERTIES,
+} from "./css.ts";

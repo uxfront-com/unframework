@@ -24,17 +24,20 @@ const ASCII_WHITESPACE = /[\t\n\f\r ]+/;
 /**
  * Rule 4c: sorts the tokens of every `class` attribute and joins them with one space. Token
  * order and spacing carry no meaning. Duplicate tokens are kept: a doubled class usually means
- * a merge went wrong. An empty `class=""` stays, as it still matches `[class]`.
+ * a merge went wrong. A `class` with no token goes (ADR-0044, amending ADR-0031): frameworks
+ * disagree even with themselves on writing an empty one (Vue's server writes `class=""` where
+ * its client writes none, Svelte's client the other way round, and Chromium keeps
+ * `class=""` once the last token is toggled off), and it applies no class: only a `[class]`
+ * selector tells the two apart.
  */
 export function canonicalizeClasses(root: TreeParent): void {
   forEachElement(root, (element) => {
-    for (const attribute of element.attrs) {
-      if (attributeName(attribute) !== "class") continue;
-      attribute.value = attribute.value
-        .split(ASCII_WHITESPACE)
-        .filter((token) => token !== "")
-        .toSorted(byCodeUnits)
-        .join(" ");
-    }
+    element.attrs = element.attrs.flatMap((attribute) => {
+      if (attributeName(attribute) !== "class") return [attribute];
+      const tokens = attribute.value.split(ASCII_WHITESPACE).filter((token) => token !== "");
+      if (!tokens.length) return [];
+      attribute.value = tokens.toSorted(byCodeUnits).join(" ");
+      return [attribute];
+    });
   });
 }

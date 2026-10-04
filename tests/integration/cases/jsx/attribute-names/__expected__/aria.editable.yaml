@@ -1,0 +1,19 @@
+- form "Profile":
+  - img "Avatar"
+  - text: Display name
+  - textbox "Display name":
+    - /placeholder: Ada
+  - text: Bio
+  - textbox "Bio"
+  - button "Profile help"
+- form "Plan":
+  - img "Team plan banner"
+  - table:
+    - rowgroup:
+      - row "Plan Team":
+        - rowheader "Plan"
+        - cell "Team"
+      - row "Seats 12":
+        - rowheader "Seats"
+        - cell "12"
+  - button "Plan help"

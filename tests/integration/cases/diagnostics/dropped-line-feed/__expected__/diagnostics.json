@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3017",
+    "severity": "error",
+    "message": "This text starts with a line feed, which the HTML parser drops at the start of a <pre>, and React's server renderer writes twice.",
+    "file": "diagnostics/dropped-line-feed/CodeSample.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 16,
+      "offset": 223
+    },
+    "end": {
+      "line": 4,
+      "column": 38,
+      "offset": 245
+    },
+    "help": "Start the text with something other than a line feed."
+  }
+]

@@ -9,15 +9,21 @@
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "catalog:",
+    "@angular-eslint/eslint-plugin": "catalog:",
+    "@angular-eslint/eslint-plugin-template": "catalog:",
+    "@angular-eslint/template-parser": "catalog:",
     "@angular/build": "catalog:",
     "@angular/common": "catalog:",
     "@angular/compiler": "catalog:",
     "@angular/compiler-cli": "catalog:",
     "@angular/core": "catalog:",
     "@angular/platform-browser": "catalog:",
+    "eslint": "catalog:",
+    "oxlint": "catalog:",
     "rxjs": "catalog:",
     "tslib": "catalog:",
     "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "catalog:",
     "vite": "catalog:"
   }
 }

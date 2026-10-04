@@ -1,0 +1,967 @@
+{
+  "irVersion": 1,
+  "file": "jsx/attribute-names/AccountSettings.uf.tsx",
+  "components": [
+    {
+      "name": "AccountSettings",
+      "span": {
+        "start": 209,
+        "end": 2006
+      },
+      "props": [
+        {
+          "name": "charset",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 51,
+              "end": 57
+            }
+          },
+          "binding": "charset@253",
+          "span": {
+            "start": 42,
+            "end": 58
+          }
+        },
+        {
+          "name": "bioId",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 68,
+              "end": 74
+            }
+          },
+          "binding": "bioId@264",
+          "span": {
+            "start": 61,
+            "end": 75
+          }
+        },
+        {
+          "name": "bioLimit",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 88,
+              "end": 94
+            }
+          },
+          "binding": "bioLimit@273",
+          "span": {
+            "start": 78,
+            "end": 95
+          }
+        },
+        {
+          "name": "locked",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 106,
+              "end": 113
+            }
+          },
+          "binding": "locked@285",
+          "span": {
+            "start": 98,
+            "end": 114
+          }
+        },
+        {
+          "name": "bannerCors",
+          "optional": false,
+          "type": {
+            "code": "\"anonymous\" | \"use-credentials\"",
+            "span": {
+              "start": 129,
+              "end": 160
+            }
+          },
+          "binding": "bannerCors@295",
+          "span": {
+            "start": 117,
+            "end": 161
+          }
+        },
+        {
+          "name": "seatColumns",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 177,
+              "end": 183
+            }
+          },
+          "binding": "seatColumns@309",
+          "span": {
+            "start": 164,
+            "end": 184
+          }
+        },
+        {
+          "name": "helpOrder",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 198,
+              "end": 204
+            }
+          },
+          "binding": "helpOrder@324",
+          "span": {
+            "start": 187,
+            "end": 205
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "AccountSettingsProps",
+          "span": {
+            "start": 338,
+            "end": 358
+          }
+        },
+        "span": {
+          "start": 249,
+          "end": 358
+        }
+      },
+      "types": [
+        "AccountSettingsProps"
+      ],
+      "bindings": [
+        {
+          "id": "charset@253",
+          "name": "charset",
+          "kind": "prop",
+          "span": {
+            "start": 253,
+            "end": 260
+          }
+        },
+        {
+          "id": "bioId@264",
+          "name": "bioId",
+          "kind": "prop",
+          "span": {
+            "start": 264,
+            "end": 269
+          }
+        },
+        {
+          "id": "bioLimit@273",
+          "name": "bioLimit",
+          "kind": "prop",
+          "span": {
+            "start": 273,
+            "end": 281
+          }
+        },
+        {
+          "id": "locked@285",
+          "name": "locked",
+          "kind": "prop",
+          "span": {
+            "start": 285,
+            "end": 291
+          }
+        },
+        {
+          "id": "bannerCors@295",
+          "name": "bannerCors",
+          "kind": "prop",
+          "span": {
+            "start": 295,
+            "end": 305
+          }
+        },
+        {
+          "id": "seatColumns@309",
+          "name": "seatColumns",
+          "kind": "prop",
+          "span": {
+            "start": 309,
+            "end": 320
+          }
+        },
+        {
+          "id": "helpOrder@324",
+          "name": "helpOrder",
+          "kind": "prop",
+          "span": {
+            "start": 324,
+            "end": 333
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "account-settings",
+            "span": {
+              "start": 382,
+              "end": 406
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "form",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "accept-charset",
+                "value": "utf-8",
+                "span": {
+                  "start": 420,
+                  "end": 442
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Profile",
+                "span": {
+                  "start": 443,
+                  "end": 463
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "img",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "src",
+                    "value": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23345'/%3E%3C/svg%3E",
+                    "span": {
+                      "start": 488,
+                      "end": 638
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "alt",
+                    "value": "Avatar",
+                    "span": {
+                      "start": 649,
+                      "end": 661
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "width",
+                    "value": "40",
+                    "span": {
+                      "start": 672,
+                      "end": 682
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "height",
+                    "value": "40",
+                    "span": {
+                      "start": 693,
+                      "end": 704
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "crossorigin",
+                    "value": "anonymous",
+                    "span": {
+                      "start": 715,
+                      "end": 738
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 473,
+                  "end": 749
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "label",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "for",
+                    "value": "display-name",
+                    "span": {
+                      "start": 765,
+                      "end": 783
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Display name",
+                    "span": {
+                      "start": 784,
+                      "end": 796
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 758,
+                  "end": 804
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "id",
+                    "value": "display-name",
+                    "span": {
+                      "start": 830,
+                      "end": 847
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "text",
+                    "span": {
+                      "start": 858,
+                      "end": 869
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "display-name",
+                    "span": {
+                      "start": 880,
+                      "end": 899
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "maxlength",
+                    "value": "40",
+                    "span": {
+                      "start": 910,
+                      "end": 924
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "readonly",
+                    "value": true,
+                    "span": {
+                      "start": 935,
+                      "end": 943
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "placeholder",
+                    "value": "Ada",
+                    "span": {
+                      "start": 954,
+                      "end": 971
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 813,
+                  "end": 982
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "label",
+                "attributes": [
+                  {
+                    "kind": "Bound",
+                    "name": "for",
+                    "value": {
+                      "code": "bioId",
+                      "span": {
+                        "start": 1003,
+                        "end": 1008
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "bioId@264",
+                          "span": {
+                            "start": 1003,
+                            "end": 1008
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 998,
+                      "end": 1009
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Bio",
+                    "span": {
+                      "start": 1010,
+                      "end": 1013
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 991,
+                  "end": 1021
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "textarea",
+                "attributes": [
+                  {
+                    "kind": "Bound",
+                    "name": "id",
+                    "value": {
+                      "code": "bioId",
+                      "span": {
+                        "start": 1044,
+                        "end": 1049
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "bioId@264",
+                          "span": {
+                            "start": 1044,
+                            "end": 1049
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 1040,
+                      "end": 1050
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "bio",
+                    "span": {
+                      "start": 1051,
+                      "end": 1061
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "rows",
+                    "value": "3",
+                    "span": {
+                      "start": 1062,
+                      "end": 1070
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "name": "maxlength",
+                    "value": {
+                      "code": "bioLimit",
+                      "span": {
+                        "start": 1082,
+                        "end": 1090
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "bioLimit@273",
+                          "span": {
+                            "start": 1082,
+                            "end": 1090
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 1071,
+                      "end": 1091
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "name": "readonly",
+                    "value": {
+                      "code": "locked",
+                      "span": {
+                        "start": 1102,
+                        "end": 1108
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "locked@285",
+                          "span": {
+                            "start": 1102,
+                            "end": 1108
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 1092,
+                      "end": 1109
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 1030,
+                  "end": 1121
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 1138,
+                      "end": 1151
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "tabindex",
+                    "value": "0",
+                    "span": {
+                      "start": 1152,
+                      "end": 1164
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Profile help",
+                    "span": {
+                      "start": 1165,
+                      "end": 1197
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1130,
+                  "end": 1206
+                }
+              }
+            ],
+            "span": {
+              "start": 414,
+              "end": 1220
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "form",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "accept-charset",
+                "value": {
+                  "code": "charset",
+                  "span": {
+                    "start": 1249,
+                    "end": 1256
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "charset@253",
+                      "span": {
+                        "start": 1249,
+                        "end": 1256
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1233,
+                  "end": 1257
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Plan",
+                "span": {
+                  "start": 1258,
+                  "end": 1275
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "img",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "src",
+                    "value": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40'%3E%3Crect width='120' height='40' fill='%23563'/%3E%3C/svg%3E",
+                    "span": {
+                      "start": 1300,
+                      "end": 1452
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "alt",
+                    "value": "Team plan banner",
+                    "span": {
+                      "start": 1463,
+                      "end": 1485
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "width",
+                    "value": "120",
+                    "span": {
+                      "start": 1496,
+                      "end": 1507
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "height",
+                    "value": "40",
+                    "span": {
+                      "start": 1518,
+                      "end": 1529
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "name": "crossorigin",
+                    "value": {
+                      "code": "bannerCors",
+                      "span": {
+                        "start": 1553,
+                        "end": 1563
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "bannerCors@295",
+                          "span": {
+                            "start": 1553,
+                            "end": 1563
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 1540,
+                      "end": 1564
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 1285,
+                  "end": 1575
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "table",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "tbody",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "tr",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "kind": "Element",
+                            "tag": "th",
+                            "attributes": [
+                              {
+                                "kind": "Static",
+                                "name": "scope",
+                                "value": "row",
+                                "span": {
+                                  "start": 1645,
+                                  "end": 1656
+                                }
+                              }
+                            ],
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "Plan",
+                                "span": {
+                                  "start": 1657,
+                                  "end": 1661
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 1641,
+                              "end": 1666
+                            }
+                          },
+                          {
+                            "kind": "Element",
+                            "tag": "td",
+                            "attributes": [
+                              {
+                                "kind": "Static",
+                                "name": "colspan",
+                                "value": "2",
+                                "span": {
+                                  "start": 1685,
+                                  "end": 1696
+                                }
+                              }
+                            ],
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "Team",
+                                "span": {
+                                  "start": 1697,
+                                  "end": 1701
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 1681,
+                              "end": 1706
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 1622,
+                          "end": 1724
+                        }
+                      },
+                      {
+                        "kind": "Element",
+                        "tag": "tr",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "kind": "Element",
+                            "tag": "th",
+                            "attributes": [
+                              {
+                                "kind": "Static",
+                                "name": "scope",
+                                "value": "row",
+                                "span": {
+                                  "start": 1760,
+                                  "end": 1771
+                                }
+                              }
+                            ],
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "Seats",
+                                "span": {
+                                  "start": 1772,
+                                  "end": 1777
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 1756,
+                              "end": 1782
+                            }
+                          },
+                          {
+                            "kind": "Element",
+                            "tag": "td",
+                            "attributes": [
+                              {
+                                "kind": "Bound",
+                                "name": "colspan",
+                                "value": {
+                                  "code": "seatColumns",
+                                  "span": {
+                                    "start": 1810,
+                                    "end": 1821
+                                  },
+                                  "refs": [
+                                    {
+                                      "kind": "Binding",
+                                      "binding": "seatColumns@309",
+                                      "span": {
+                                        "start": 1810,
+                                        "end": 1821
+                                      }
+                                    }
+                                  ]
+                                },
+                                "span": {
+                                  "start": 1801,
+                                  "end": 1822
+                                }
+                              }
+                            ],
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "12",
+                                "span": {
+                                  "start": 1823,
+                                  "end": 1825
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 1797,
+                              "end": 1830
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 1737,
+                          "end": 1848
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1602,
+                      "end": 1867
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1584,
+                  "end": 1884
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 1901,
+                      "end": 1914
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "name": "tabindex",
+                    "value": {
+                      "code": "helpOrder",
+                      "span": {
+                        "start": 1925,
+                        "end": 1934
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "helpOrder@324",
+                          "span": {
+                            "start": 1925,
+                            "end": 1934
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 1915,
+                      "end": 1935
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Plan help",
+                    "span": {
+                      "start": 1936,
+                      "end": 1965
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1893,
+                  "end": 1974
+                }
+              }
+            ],
+            "span": {
+              "start": 1227,
+              "end": 1988
+            }
+          }
+        ],
+        "span": {
+          "start": 377,
+          "end": 1999
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "AccountSettings",
+      "span": {
+        "start": 209,
+        "end": 2006
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "AccountSettingsProps",
+      "exported": true,
+      "code": "interface AccountSettingsProps {\n  charset: string;\n  bioId: string;\n  bioLimit: number;\n  locked: boolean;\n  bannerCors: \"anonymous\" | \"use-credentials\";\n  seatColumns: number;\n  helpOrder: number;\n}",
+      "span": {
+        "start": 7,
+        "end": 207
+      }
+    }
+  ]
+}

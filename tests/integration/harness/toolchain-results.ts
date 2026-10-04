@@ -1,8 +1,9 @@
-// What L3 and L4 make of a toolchain's results (DESIGN §4.1). A case fails on every message the
-// tool reported on its own output files, and on every message the tool reported on any other
-// path: the toolchain's tsconfig (an option the checker does not know is ignored, so the check
-// is weaker than configured), or a file an output imports. Each case was checked with that
-// configuration, so each fails, loudly, rather than passing a check that did not run as set up.
+// What L3, L4 and L5 make of a toolchain's results (DESIGN §4.1). A case fails on every message
+// the tool reported on its own output files, and on every message the tool reported on any
+// other path: the toolchain's tsconfig or lint configuration (an option the tool does not know
+// is ignored, so the check is weaker than configured), or a file an output imports. Each case
+// was checked with that configuration, so each fails, loudly, rather than passing a check that
+// did not run as set up.
 import { relative, sep } from "node:path";
 
 import type { FrameworkCompileResult, ToolchainMessage } from "@unframework/codegen";
@@ -35,16 +36,35 @@ export function typecheckProblems(
   caseFiles: readonly string[],
   outputs: ReadonlySet<string>,
 ): string[] {
+  return messageProblems("checker", results, caseFiles, outputs);
+}
+
+/** L5: every linter message on a case's files, and outside the outputs. */
+export function lintProblems(
+  results: ReadonlyMap<string, readonly ToolchainMessage[]>,
+  caseFiles: readonly string[],
+  outputs: ReadonlySet<string>,
+): string[] {
+  return messageProblems("linter", results, caseFiles, outputs);
+}
+
+/** The problems of a tool that reports messages without a kind: L4 and L5 tolerate none. */
+function messageProblems(
+  tool: "checker" | "linter",
+  results: ReadonlyMap<string, readonly ToolchainMessage[]>,
+  caseFiles: readonly string[],
+  outputs: ReadonlySet<string>,
+): string[] {
   const problems = caseFiles.flatMap((file) => {
     const messages = results.get(file);
     return messages
       ? describeCheck(file, messages)
-      : [`${display(file)}: the checker reported nothing for this file.`];
+      : [`${display(file)}: the ${tool} reported nothing for this file.`];
   });
   const outside = [...results].filter(([path]) => !outputs.has(path));
   const elsewhere = outside.flatMap(([path, messages]) => describeCheck(path, messages));
   if (elsewhere.length) {
-    problems.push("The checker reported problems outside the outputs:", ...elsewhere);
+    problems.push(`The ${tool} reported problems outside the outputs:`, ...elsewhere);
   }
   return problems;
 }
@@ -61,7 +81,7 @@ function describeCompile(path: string, result: FrameworkCompileResult): string[]
   ];
 }
 
-/** A checker's diagnostics carry no kind: L4 tolerates none of them. */
+/** A checker's or a linter's messages carry no kind: L4 and L5 tolerate none of them. */
 function describeCheck(path: string, messages: readonly ToolchainMessage[]): string[] {
   return messages.map((message) => `${display(path)}: ${describeMessage(message)}`);
 }

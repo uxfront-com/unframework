@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { QuarantineEntry, UfLayerMeta } from "../src/layers.ts";
-import { buildPartialMatrix, stringifyMatrix } from "../src/node/matrix.ts";
+import { buildPartialMatrix, MATRIX_VERSION, stringifyMatrix } from "../src/node/matrix.ts";
 import type { PartialMatrix, RunMode, Shard } from "../src/node/matrix.ts";
 import { summarise, writeSummary } from "../src/node/summary.ts";
 import type { SummaryExpectations } from "../src/node/summary.ts";
@@ -588,6 +588,101 @@ describe("writeSummary", () => {
       join(reportsDir, "parity-matrix.all.json"),
       JSON.stringify({ version: 1, run: "all", projects: [], cases: {} }),
     );
-    expect(() => writeSummary({ reportsDir, expected })).toThrow(/version 1, not 3/);
+    expect(() => writeSummary({ reportsDir, expected })).toThrow(
+      new RegExp(`version 1, not ${MATRIX_VERSION}`),
+    );
+  });
+});
+
+describe("summarise: parity scenarios", () => {
+  const twoTargets: SummaryExpectations = {
+    projects: ["compile", "browser:vue", "browser:react"],
+    cases: ["basics/hello"],
+    targets: ["vue", "react"],
+    liveLayers: ["L1", "L7"],
+    notLiveReason: "not live in M0",
+  };
+
+  /** A run of every project in which each target's browser test checked these scenarios. */
+  function scenarios(
+    byTarget: Record<string, string[]>,
+    options: { filtered?: string; reference?: string | null } = {},
+  ): PartialMatrix {
+    return buildPartialMatrix({
+      run: options.filtered ? "all+filtered-abc" : "all",
+      projects: [...twoTargets.projects],
+      records: [
+        ...twoTargets.targets.map((target) => ({
+          project: "compile",
+          record: hello({ L1: { status: "pass" } }, target),
+        })),
+        ...Object.entries(byTarget).map(([target, names]) => ({
+          project: `browser:${target}`,
+          record: { ...hello({ L7: { status: "pass" } }, target), scenarios: names },
+        })),
+      ],
+      finishedAt: "2026-10-01T10:00:00.000Z",
+      mode: check,
+      filtered: options.filtered ?? null,
+      shard: null,
+      empty: [],
+      quarantine: [],
+      reference: options.reference === undefined ? "vue" : options.reference,
+    });
+  }
+
+  it("passes when every target checks the reference's scenarios, in any order", () => {
+    const result = summarise(
+      [scenarios({ vue: ["initial", "rerendered"], react: ["rerendered", "initial"] })],
+      twoTargets,
+    );
+    expect(result.complete).toBe(true);
+    expect(result.problems).toEqual([]);
+    expect(result.matrix.scenarios).toEqual({
+      "basics/hello": { react: ["initial", "rerendered"], vue: ["initial", "rerendered"] },
+    });
+  });
+
+  it("fails a target that leaves out a scenario, or checks one the reference never does", () => {
+    expect(
+      summarise([scenarios({ vue: ["initial", "rerendered"], react: ["initial"] })], twoTargets)
+        .problems,
+    ).toEqual([
+      "basics/hello › react: its parity scenarios differ from vue's: it never checks rerendered. Every target runs the same spec, so every target checks the same scenarios.",
+    ]);
+    expect(
+      summarise([scenarios({ vue: ["initial"], react: ["initial", "react-only"] })], twoTargets)
+        .problems,
+    ).toEqual([
+      "basics/hello › react: its parity scenarios differ from vue's: it checks react-only, which vue never checks. Every target runs the same spec, so every target checks the same scenarios.",
+    ]);
+  });
+
+  it("fails a target that checks no scenario of a case the reference checks", () => {
+    const result = summarise([scenarios({ vue: ["initial"], react: [] })], twoTargets);
+    expect(result.problems).toEqual([
+      expect.stringMatching(/^basics\/hello › react: .*it never checks initial\./),
+    ]);
+  });
+
+  it("compares only once every project ran all its tests, as it does the missing cells", () => {
+    const filtered = scenarios(
+      { vue: ["initial", "rerendered"], react: ["initial"] },
+      { filtered: "tests named /initial/" },
+    );
+    expect(summarise([filtered], twoTargets).problems).toEqual([]);
+    expect(
+      summarise([filtered], twoTargets, { requireComplete: true }).problems.filter((problem) =>
+        problem.includes("parity scenarios"),
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("has nothing to compare without a reference, or when the reference is not selected", () => {
+    const differing = { vue: ["initial", "rerendered"], react: ["initial"] };
+    expect(summarise([scenarios(differing, { reference: null })], twoTargets).problems).toEqual([]);
+    expect(
+      summarise([scenarios(differing)], { ...twoTargets, targets: ["react"] }).problems,
+    ).toEqual([]);
   });
 });

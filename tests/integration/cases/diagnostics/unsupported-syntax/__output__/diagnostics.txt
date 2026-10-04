@@ -1,0 +1,8 @@
+error[UF1002]: Rest props (`...rest`) are fallthrough attributes, which land in M3.
+ --> diagnostics/unsupported-syntax/Chip.uf.tsx:7:39
+  |
+7 | export default function Chip({ label, ...rest }: ChipProps) {
+  |                                       ^^^^^^^
+  |
+  = help: Destructure each prop by its name.
+  = see: https://unframework.dev/diagnostics/UF1002

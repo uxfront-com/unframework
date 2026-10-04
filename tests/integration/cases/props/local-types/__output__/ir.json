@@ -1,0 +1,577 @@
+{
+  "irVersion": 1,
+  "file": "props/local-types/ProductSpec.uf.tsx",
+  "components": [
+    {
+      "name": "ProductSpec",
+      "span": {
+        "start": 286,
+        "end": 834
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 162,
+              "end": 168
+            }
+          },
+          "binding": "name@324",
+          "span": {
+            "start": 156,
+            "end": 169
+          }
+        },
+        {
+          "name": "availability",
+          "optional": false,
+          "type": {
+            "code": "Availability",
+            "span": {
+              "start": 186,
+              "end": 198
+            }
+          },
+          "binding": "availability@330",
+          "span": {
+            "start": 172,
+            "end": 199
+          }
+        },
+        {
+          "name": "size",
+          "optional": false,
+          "type": {
+            "code": "{ width: number; depth: number; unit: \"cm\" | \"in\" }",
+            "span": {
+              "start": 208,
+              "end": 259
+            }
+          },
+          "binding": "size@344",
+          "span": {
+            "start": 202,
+            "end": 260
+          }
+        },
+        {
+          "name": "finishes",
+          "optional": false,
+          "type": {
+            "code": "Finish[]",
+            "span": {
+              "start": 273,
+              "end": 281
+            }
+          },
+          "binding": "finishes@350",
+          "span": {
+            "start": 263,
+            "end": 282
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ProductSpecProps",
+          "span": {
+            "start": 362,
+            "end": 378
+          }
+        },
+        "span": {
+          "start": 322,
+          "end": 378
+        }
+      },
+      "types": [
+        "Availability",
+        "Finish",
+        "ProductSpecProps"
+      ],
+      "bindings": [
+        {
+          "id": "name@324",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 324,
+            "end": 328
+          }
+        },
+        {
+          "id": "availability@330",
+          "name": "availability",
+          "kind": "prop",
+          "span": {
+            "start": 330,
+            "end": 342
+          }
+        },
+        {
+          "id": "size@344",
+          "name": "size",
+          "kind": "prop",
+          "span": {
+            "start": 344,
+            "end": 348
+          }
+        },
+        {
+          "id": "finishes@350",
+          "name": "finishes",
+          "kind": "prop",
+          "span": {
+            "start": 350,
+            "end": 358
+          }
+        },
+        {
+          "id": "finish@686",
+          "name": "finish",
+          "kind": "loopVar",
+          "span": {
+            "start": 686,
+            "end": 692
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "product-spec",
+            "span": {
+              "start": 406,
+              "end": 426
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "name",
+              "span": {
+                "start": 439,
+                "end": 443
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "name@324",
+                  "span": {
+                    "start": 439,
+                    "end": 443
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 427,
+              "end": 444
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "name",
+                  "span": {
+                    "start": 457,
+                    "end": 461
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@324",
+                      "span": {
+                        "start": 457,
+                        "end": 461
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 456,
+                  "end": 462
+                }
+              }
+            ],
+            "span": {
+              "start": 452,
+              "end": 467
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "dl",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "dt",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Availability",
+                    "span": {
+                      "start": 491,
+                      "end": 503
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 487,
+                  "end": 508
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "dd",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "availability",
+                      "span": {
+                        "start": 522,
+                        "end": 534
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "availability@330",
+                          "span": {
+                            "start": 522,
+                            "end": 534
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 521,
+                      "end": 535
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 517,
+                  "end": 540
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "dt",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Size",
+                    "span": {
+                      "start": 553,
+                      "end": 557
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 549,
+                  "end": 562
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "dd",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "size.width",
+                      "span": {
+                        "start": 587,
+                        "end": 597
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "size@344",
+                          "span": {
+                            "start": 587,
+                            "end": 591
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 586,
+                      "end": 598
+                    }
+                  },
+                  {
+                    "kind": "Text",
+                    "value": " × ",
+                    "span": {
+                      "start": 598,
+                      "end": 601
+                    }
+                  },
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "size.depth",
+                      "span": {
+                        "start": 602,
+                        "end": 612
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "size@344",
+                          "span": {
+                            "start": 602,
+                            "end": 606
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 601,
+                      "end": 613
+                    }
+                  },
+                  {
+                    "kind": "Text",
+                    "value": " ",
+                    "span": {
+                      "start": 613,
+                      "end": 614
+                    }
+                  },
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "size.unit",
+                      "span": {
+                        "start": 615,
+                        "end": 624
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "size@344",
+                          "span": {
+                            "start": 615,
+                            "end": 619
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 614,
+                      "end": 625
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 571,
+                  "end": 639
+                }
+              }
+            ],
+            "span": {
+              "start": 474,
+              "end": 651
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "finishes",
+                  "span": {
+                    "start": 672,
+                    "end": 680
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "finishes@350",
+                      "span": {
+                        "start": 672,
+                        "end": 680
+                      }
+                    }
+                  ]
+                },
+                "item": "finish@686",
+                "key": {
+                  "code": "finish.sku",
+                  "span": {
+                    "start": 718,
+                    "end": 728
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "finish@686",
+                      "span": {
+                        "start": 718,
+                        "end": 724
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "finish.label",
+                        "span": {
+                          "start": 744,
+                          "end": 756
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "finish@686",
+                            "span": {
+                              "start": 744,
+                              "end": 750
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 743,
+                        "end": 757
+                      }
+                    },
+                    {
+                      "kind": "Text",
+                      "value": " (",
+                      "span": {
+                        "start": 757,
+                        "end": 759
+                      }
+                    },
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "finish.sku",
+                        "span": {
+                          "start": 760,
+                          "end": 770
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "finish@686",
+                            "span": {
+                              "start": 760,
+                              "end": 766
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 759,
+                        "end": 771
+                      }
+                    },
+                    {
+                      "kind": "Text",
+                      "value": ")",
+                      "span": {
+                        "start": 771,
+                        "end": 783
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 709,
+                    "end": 788
+                  }
+                },
+                "span": {
+                  "start": 672,
+                  "end": 799
+                }
+              }
+            ],
+            "span": {
+              "start": 658,
+              "end": 812
+            }
+          }
+        ],
+        "span": {
+          "start": 397,
+          "end": 827
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ProductSpec",
+      "span": {
+        "start": 286,
+        "end": 834
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Availability",
+      "exported": false,
+      "code": "type Availability = \"in-stock\" | \"backorder\" | \"discontinued\";",
+      "span": {
+        "start": 0,
+        "end": 62
+      }
+    },
+    {
+      "name": "Finish",
+      "exported": false,
+      "code": "interface Finish {\n  sku: string;\n  label: string;\n}",
+      "span": {
+        "start": 64,
+        "end": 116
+      }
+    },
+    {
+      "name": "ProductSpecProps",
+      "exported": true,
+      "code": "interface ProductSpecProps {\n  name: string;\n  availability: Availability;\n  size: { width: number; depth: number; unit: \"cm\" | \"in\" };\n  finishes: Finish[];\n}",
+      "span": {
+        "start": 125,
+        "end": 284
+      }
+    }
+  ]
+}

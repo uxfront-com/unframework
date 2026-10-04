@@ -8,8 +8,12 @@
     "check": "svelte-check --tsconfig ./tsconfig.json --diagnostic-sources js --fail-on-warnings"
   },
   "devDependencies": {
+    "eslint": "catalog:",
+    "eslint-plugin-svelte": "catalog:",
+    "oxlint": "catalog:",
     "svelte": "catalog:",
     "svelte-check": "catalog:",
-    "typescript": "npm:@typescript/typescript6@6.0.2"
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "catalog:"
   }
 }

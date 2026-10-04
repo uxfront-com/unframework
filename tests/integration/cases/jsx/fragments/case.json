@@ -1,0 +1,16 @@
+{
+  "description": "A root fragment of several elements, fragments as the branches of a conditional, and a fragment flattened into an element.",
+  "ssr": {
+    "draft": {
+      "props": {
+        "title": "Release notes",
+        "subtitle": "What changed in 2.0",
+        "draft": true,
+        "tags": ["release", "changelog"]
+      }
+    },
+    "published": {
+      "props": { "title": "Migration guide", "draft": false, "tags": ["guides"] }
+    }
+  }
+}

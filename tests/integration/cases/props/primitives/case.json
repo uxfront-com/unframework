@@ -1,0 +1,9 @@
+{
+  "description": "String, number and boolean props rendered as text and as attributes; the boolean prop has a default.",
+  "ssr": {
+    "in-stock": { "props": { "name": "Desk lamp", "price": 39.5, "stock": 12 } },
+    "sold-out": {
+      "props": { "name": "Floor lamp", "price": 120, "stock": 0, "available": false }
+    }
+  }
+}

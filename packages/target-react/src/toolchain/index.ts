@@ -1,7 +1,7 @@
 // The React target's toolchain (plan §5.7): how tests and tooling build, check and run React
 // output. Node only; the main entry never imports it.
 import type { Toolchain } from "@unframework/codegen";
-import { typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
+import { lintWithOxlint, typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
 import { compileWithReactCompiler } from "./compile.ts";
@@ -31,6 +31,9 @@ export const toolchain: Toolchain = {
   frameworkCompile: (files) => compileWithReactCompiler(files),
 
   typecheck: (files, context) => typecheckWithTsgo(files, context),
+
+  // L5: oxlint, with the shared baseline and its own React rules (ADR-0042).
+  lint: (files, context) => lintWithOxlint(files, context),
 };
 
 export default toolchain;

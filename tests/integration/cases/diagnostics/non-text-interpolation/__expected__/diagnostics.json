@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3016",
+    "severity": "error",
+    "message": "An expression child renders text, and this one can be a boolean, which the targets render differently.",
+    "file": "diagnostics/non-text-interpolation/TaskRow.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 17,
+      "offset": 267
+    },
+    "end": {
+      "line": 10,
+      "column": 21,
+      "offset": 271
+    },
+    "help": "Turn it into text: `value ? \"Yes\" : \"No\"`, or render an element with `value && <span>…</span>`."
+  }
+]

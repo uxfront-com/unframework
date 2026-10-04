@@ -10,6 +10,11 @@
   "devDependencies": {
     "@astrojs/check": "catalog:",
     "astro": "catalog:",
-    "typescript": "npm:@typescript/typescript6@6.0.2"
+    "astro-eslint-parser": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-astro": "catalog:",
+    "oxlint": "catalog:",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "catalog:"
   }
 }

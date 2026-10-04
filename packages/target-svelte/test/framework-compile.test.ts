@@ -14,7 +14,7 @@ async function compileOne(contents: string, path = "/virtual/Component.svelte") 
 }
 
 describe("svelte frameworkCompile", () => {
-  // The committed goldens predate the runes declaration: what the target emits now is checked.
+  // What the target emits now, not the committed goldens, which change only with `test:update`.
   it("accepts what the target emits for the corpus without a warning", async () => {
     const cases = corpus();
     expect(cases.length).toBeGreaterThan(0);

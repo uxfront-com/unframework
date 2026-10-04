@@ -1,0 +1,906 @@
+{
+  "irVersion": 1,
+  "file": "jsx/boolean-and-aria/FilterPanel.uf.tsx",
+  "components": [
+    {
+      "name": "FilterPanel",
+      "span": {
+        "start": 250,
+        "end": 1464
+      },
+      "props": [
+        {
+          "name": "heading",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 47,
+              "end": 53
+            }
+          },
+          "binding": "heading@290",
+          "span": {
+            "start": 38,
+            "end": 54
+          }
+        },
+        {
+          "name": "hint",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 63,
+              "end": 69
+            }
+          },
+          "binding": "hint@301",
+          "span": {
+            "start": 57,
+            "end": 70
+          }
+        },
+        {
+          "name": "category",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 83,
+              "end": 89
+            }
+          },
+          "binding": "category@309",
+          "span": {
+            "start": 73,
+            "end": 90
+          }
+        },
+        {
+          "name": "expanded",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 103,
+              "end": 110
+            }
+          },
+          "binding": "expanded@321",
+          "span": {
+            "start": 93,
+            "end": 111
+          }
+        },
+        {
+          "name": "inStockOnly",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 127,
+              "end": 134
+            }
+          },
+          "binding": "inStockOnly@333",
+          "span": {
+            "start": 114,
+            "end": 135
+          }
+        },
+        {
+          "name": "locked",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 146,
+              "end": 153
+            }
+          },
+          "binding": "locked@348",
+          "span": {
+            "start": 138,
+            "end": 154
+          }
+        },
+        {
+          "name": "mandatory",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 168,
+              "end": 175
+            }
+          },
+          "binding": "mandatory@358",
+          "span": {
+            "start": 157,
+            "end": 176
+          }
+        },
+        {
+          "name": "loading",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 188,
+              "end": 195
+            }
+          },
+          "binding": "loading@371",
+          "span": {
+            "start": 179,
+            "end": 196
+          }
+        },
+        {
+          "name": "invalid",
+          "optional": true,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 209,
+              "end": 216
+            }
+          },
+          "binding": "invalid@382",
+          "span": {
+            "start": 199,
+            "end": 217
+          }
+        },
+        {
+          "name": "current",
+          "optional": true,
+          "type": {
+            "code": "\"page\" | \"step\"",
+            "span": {
+              "start": 230,
+              "end": 245
+            }
+          },
+          "binding": "current@393",
+          "span": {
+            "start": 220,
+            "end": 246
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "FilterPanelProps",
+          "span": {
+            "start": 405,
+            "end": 421
+          }
+        },
+        "span": {
+          "start": 286,
+          "end": 421
+        }
+      },
+      "types": [
+        "FilterPanelProps"
+      ],
+      "bindings": [
+        {
+          "id": "heading@290",
+          "name": "heading",
+          "kind": "prop",
+          "span": {
+            "start": 290,
+            "end": 297
+          }
+        },
+        {
+          "id": "hint@301",
+          "name": "hint",
+          "kind": "prop",
+          "span": {
+            "start": 301,
+            "end": 305
+          }
+        },
+        {
+          "id": "category@309",
+          "name": "category",
+          "kind": "prop",
+          "span": {
+            "start": 309,
+            "end": 317
+          }
+        },
+        {
+          "id": "expanded@321",
+          "name": "expanded",
+          "kind": "prop",
+          "span": {
+            "start": 321,
+            "end": 329
+          }
+        },
+        {
+          "id": "inStockOnly@333",
+          "name": "inStockOnly",
+          "kind": "prop",
+          "span": {
+            "start": 333,
+            "end": 344
+          }
+        },
+        {
+          "id": "locked@348",
+          "name": "locked",
+          "kind": "prop",
+          "span": {
+            "start": 348,
+            "end": 354
+          }
+        },
+        {
+          "id": "mandatory@358",
+          "name": "mandatory",
+          "kind": "prop",
+          "span": {
+            "start": 358,
+            "end": 367
+          }
+        },
+        {
+          "id": "loading@371",
+          "name": "loading",
+          "kind": "prop",
+          "span": {
+            "start": 371,
+            "end": 378
+          }
+        },
+        {
+          "id": "invalid@382",
+          "name": "invalid",
+          "kind": "prop",
+          "span": {
+            "start": 382,
+            "end": 389
+          }
+        },
+        {
+          "id": "current@393",
+          "name": "current",
+          "kind": "prop",
+          "span": {
+            "start": 393,
+            "end": 400
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "filter-panel",
+            "span": {
+              "start": 455,
+              "end": 475
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "heading",
+              "span": {
+                "start": 494,
+                "end": 501
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "heading@290",
+                  "span": {
+                    "start": 494,
+                    "end": 501
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 482,
+              "end": 502
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "data-category",
+            "value": {
+              "code": "category",
+              "span": {
+                "start": 524,
+                "end": 532
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "category@309",
+                  "span": {
+                    "start": 524,
+                    "end": 532
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 509,
+              "end": 533
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "data-layout",
+            "value": "stacked",
+            "span": {
+              "start": 540,
+              "end": 561
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 582,
+                  "end": 595
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-expanded",
+                "value": {
+                  "code": "expanded",
+                  "span": {
+                    "start": 611,
+                    "end": 619
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "expanded@321",
+                      "span": {
+                        "start": 611,
+                        "end": 619
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 596,
+                  "end": 620
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-describedby",
+                "value": "filter-panel-hint",
+                "span": {
+                  "start": 621,
+                  "end": 657
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Price filters",
+                "span": {
+                  "start": 658,
+                  "end": 687
+                }
+              }
+            ],
+            "span": {
+              "start": 574,
+              "end": 696
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "id",
+                "value": "filter-panel-hint",
+                "span": {
+                  "start": 706,
+                  "end": 728
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "hint",
+                  "span": {
+                    "start": 730,
+                    "end": 734
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "hint@301",
+                      "span": {
+                        "start": 730,
+                        "end": 734
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 729,
+                  "end": 735
+                }
+              }
+            ],
+            "span": {
+              "start": 703,
+              "end": 739
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "details",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "open",
+                "value": {
+                  "code": "expanded",
+                  "span": {
+                    "start": 761,
+                    "end": 769
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "expanded@321",
+                      "span": {
+                        "start": 761,
+                        "end": 769
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 755,
+                  "end": 770
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "summary",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Price range",
+                    "span": {
+                      "start": 789,
+                      "end": 800
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 780,
+                  "end": 810
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "label",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Minimum price",
+                    "span": {
+                      "start": 826,
+                      "end": 861
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "input",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "type",
+                        "value": "number",
+                        "span": {
+                          "start": 880,
+                          "end": 893
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "name",
+                        "value": "min-price",
+                        "span": {
+                          "start": 906,
+                          "end": 922
+                        }
+                      },
+                      {
+                        "kind": "Bound",
+                        "name": "required",
+                        "value": {
+                          "code": "mandatory",
+                          "span": {
+                            "start": 945,
+                            "end": 954
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "mandatory@358",
+                              "span": {
+                                "start": 945,
+                                "end": 954
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 935,
+                          "end": 955
+                        }
+                      },
+                      {
+                        "kind": "Bound",
+                        "name": "disabled",
+                        "value": {
+                          "code": "locked",
+                          "span": {
+                            "start": 978,
+                            "end": 984
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "locked@348",
+                              "span": {
+                                "start": 978,
+                                "end": 984
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 968,
+                          "end": 985
+                        }
+                      },
+                      {
+                        "kind": "Bound",
+                        "name": "aria-invalid",
+                        "value": {
+                          "code": "invalid",
+                          "span": {
+                            "start": 1012,
+                            "end": 1019
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "invalid@382",
+                              "span": {
+                                "start": 1012,
+                                "end": 1019
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 998,
+                          "end": 1020
+                        }
+                      }
+                    ],
+                    "children": [],
+                    "span": {
+                      "start": 861,
+                      "end": 1033
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 819,
+                  "end": 1050
+                }
+              }
+            ],
+            "span": {
+              "start": 746,
+              "end": 1067
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1082,
+                  "end": 1095
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-pressed",
+                "value": {
+                  "code": "inStockOnly",
+                  "span": {
+                    "start": 1110,
+                    "end": 1121
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "inStockOnly@333",
+                      "span": {
+                        "start": 1110,
+                        "end": 1121
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1096,
+                  "end": 1122
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "disabled",
+                "value": {
+                  "code": "locked",
+                  "span": {
+                    "start": 1133,
+                    "end": 1139
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "locked@348",
+                      "span": {
+                        "start": 1133,
+                        "end": 1139
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1123,
+                  "end": 1140
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "In stock only",
+                "span": {
+                  "start": 1141,
+                  "end": 1170
+                }
+              }
+            ],
+            "span": {
+              "start": 1074,
+              "end": 1179
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "nav",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Filter steps",
+                "span": {
+                  "start": 1191,
+                  "end": 1216
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "a",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "href",
+                    "value": "#filters",
+                    "span": {
+                      "start": 1229,
+                      "end": 1244
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "name": "aria-current",
+                    "value": {
+                      "code": "current",
+                      "span": {
+                        "start": 1259,
+                        "end": 1266
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "current@393",
+                          "span": {
+                            "start": 1259,
+                            "end": 1266
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 1245,
+                      "end": 1267
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Filters",
+                    "span": {
+                      "start": 1268,
+                      "end": 1295
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1226,
+                  "end": 1299
+                }
+              }
+            ],
+            "span": {
+              "start": 1186,
+              "end": 1312
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 1322,
+                  "end": 1335
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-live",
+                "value": "polite",
+                "span": {
+                  "start": 1336,
+                  "end": 1354
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-busy",
+                "value": {
+                  "code": "loading",
+                  "span": {
+                    "start": 1366,
+                    "end": 1373
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "loading@371",
+                      "span": {
+                        "start": 1366,
+                        "end": 1373
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1355,
+                  "end": 1374
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "loading ? \"Loading results\" : \"Results ready\"",
+                  "span": {
+                    "start": 1385,
+                    "end": 1430
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "loading@371",
+                      "span": {
+                        "start": 1385,
+                        "end": 1392
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1384,
+                  "end": 1431
+                }
+              }
+            ],
+            "span": {
+              "start": 1319,
+              "end": 1442
+            }
+          }
+        ],
+        "span": {
+          "start": 440,
+          "end": 1457
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "FilterPanel",
+      "span": {
+        "start": 250,
+        "end": 1464
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "FilterPanelProps",
+      "exported": true,
+      "code": "interface FilterPanelProps {\n  heading: string;\n  hint: string;\n  category: string;\n  expanded: boolean;\n  inStockOnly: boolean;\n  locked: boolean;\n  mandatory: boolean;\n  loading: boolean;\n  invalid?: boolean;\n  current?: \"page\" | \"step\";\n}",
+      "span": {
+        "start": 7,
+        "end": 248
+      }
+    }
+  ]
+}

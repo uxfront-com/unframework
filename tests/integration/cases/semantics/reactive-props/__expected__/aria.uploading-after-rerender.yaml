@@ -1,0 +1,8 @@
+- region "Upload of report-v2.pdf":
+  - heading "report-v2.pdf" [level=2]
+  - progressbar "Upload progress": 80%
+  - paragraph: Uploading
+  - list:
+    - listitem: Send chunks
+    - listitem: Verify checksum
+    - listitem: Index the text

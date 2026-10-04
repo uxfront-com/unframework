@@ -13,5 +13,7 @@
     "isolatedDeclarations": false
   },
   "include": ["cases/**/*.uf.tsx"],
-  "exclude": ["cases/**/__output__/**"]
+  // Diagnostic cases are deliberately wrong: a misspelt prop or a React attribute name is a type
+  // error too, and a syntax error does not parse.
+  "exclude": ["cases/**/__output__/**", "cases/diagnostics/**"]
 }

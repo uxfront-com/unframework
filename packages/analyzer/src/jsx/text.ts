@@ -22,9 +22,10 @@
 // it would with any other character there: applying every fix then leaves exactly the
 // diagnostics that have none, that character's UF3010 among them.
 //
-// One consequence: accepted text never holds a tab, a line feed or a carriage return. When
-// expressions (`{"\n"}`) bring them, a leading line feed in <pre>, <textarea> and <listing>
-// needs care, because the HTML parser drops it from server-rendered markup.
+// One consequence: accepted JSX text never holds a tab, a line feed or a carriage return. A
+// string expression (`{"\n"}`) writes them, as JavaScript reads it; a leading line feed in
+// <pre>, <textarea> and <listing> is reported then (UF3017), because the HTML parser drops it
+// from server-rendered markup.
 import { unkeptCharacter } from "@unframework/ir";
 
 import { XHTML_ENTITIES } from "./entities.ts";
@@ -462,13 +463,12 @@ function whitespaceDivergences(
       // references read in Babel's, which trims and splits after it decodes.
       if (value === "\t") {
         const message = `\`${written}\` is a space to Babel's JSX, which turns tabs into spaces, and a tab to TypeScript's, oxc's and esbuild's.`;
-        const help =
-          'Write a space. A tab in text needs an expression (`{"\\t"}`), which is not supported yet.';
+        const help = 'Write a space, or a string expression (`{"\\t"}`) for a tab.';
         rewrite({ start, end, message, help }, " ");
       } else if (value === "\n" || value === "\r") {
         const message = `\`${written}\` is a line break to Babel's JSX, which trims the text around it, and a ${value === "\n" ? "line feed" : "carriage return"} character to TypeScript's, oxc's and esbuild's.`;
         const help =
-          'Write a line break, which every JSX implementation reads as Babel reads this. A line feed character in text needs an expression (`{"\\n"}`), which is not supported yet.';
+          'Write a line break, which every JSX implementation reads as Babel reads this, or a string expression (`{"\\n"}`) for a line feed character.';
         rewrite({ start, end, message, help }, "\n");
       } else if (value === " " && babelTrimmed.has(piece)) {
         const message = `\`${written}\` next to a line break is trimmed by Babel's JSX, which decodes it first, and kept by TypeScript's, oxc's and esbuild's.`;

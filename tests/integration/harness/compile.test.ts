@@ -11,7 +11,13 @@ import { builtinTargets, compile, requiredCapabilities, TARGET_NAMES } from "@un
 import type { CompileResult, CompilerPlugin } from "@unframework/compiler";
 import { catalogue, formatDiagnostics, toJsonDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic, JsonDiagnostic } from "@unframework/diagnostics";
-import { ATTRIBUTE_KINDS, collectFeatures, irSchema, RENDER_NODE_KINDS } from "@unframework/ir";
+import {
+  ATTRIBUTE_KINDS,
+  BINDING_KINDS,
+  collectFeatures,
+  irSchema,
+  RENDER_NODE_KINDS,
+} from "@unframework/ir";
 import { checkLayers, settleArtefact, settleArtefactDirectory } from "@unframework/testing/node";
 import type { ArtefactContext, LayerCheck, LayerName } from "@unframework/testing/node";
 import { Ajv } from "ajv";
@@ -207,10 +213,12 @@ async function checkOutputs(
 }
 
 /**
- * The coverage gate (plan §7.7), derived from the corpus: every render node and attribute kind,
- * every native or emulated capability cell of every target, and every catalogued diagnostic
- * code has a case, or an exemption with a reason. An exemption the corpus covers is a problem,
- * so the exemption lists only shrink. Compiles without the canary, so it measures the corpus.
+ * The coverage gate (plan §7.7), derived from the corpus: every render node, attribute and
+ * binding kind, every native or emulated capability cell of every target, and every catalogued
+ * diagnostic code has a case, or (cells and codes only) an exemption with a reason. An
+ * exemption the corpus covers is a problem, so the exemption lists only shrink. Compiles
+ * without the canary, so it measures the corpus. A root fragment is no render node: the
+ * `fragment` capability covers it.
  */
 async function coverageProblems(): Promise<string[]> {
   const results = await Promise.all(
@@ -219,6 +227,7 @@ async function coverageProblems(): Promise<string[]> {
   const problems: string[] = [];
   const nodeKinds = new Set<string>();
   const attributeKinds = new Set<string>();
+  const bindingKinds = new Set<string>();
   const codes = new Set<string>();
   const cells = new Set<string>();
   for (const result of results) {
@@ -227,6 +236,7 @@ async function coverageProblems(): Promise<string[]> {
     const features = collectFeatures(result.ir);
     for (const kind of features.nodeKinds) nodeKinds.add(kind);
     for (const kind of features.attributeKinds) attributeKinds.add(kind);
+    for (const kind of features.bindingKinds) bindingKinds.add(kind);
     const capabilities = [...requiredCapabilities(result.ir).keys()];
     for (const target of TARGET_NAMES) {
       if (hasErrors(result.diagnostics, target) || !result.outputs[target]?.length) continue;
@@ -239,6 +249,9 @@ async function coverageProblems(): Promise<string[]> {
   }
   for (const kind of ATTRIBUTE_KINDS) {
     if (!attributeKinds.has(kind)) problems.push(`No case has a ${kind} attribute.`);
+  }
+  for (const kind of BINDING_KINDS) {
+    if (!bindingKinds.has(kind)) problems.push(`No case has a ${kind} binding.`);
   }
 
   for (const [capability, reason] of Object.entries(EXEMPT_CAPABILITIES)) {

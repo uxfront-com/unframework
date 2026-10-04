@@ -14,7 +14,7 @@
 import type { OutputFile } from "@unframework/codegen";
 import type { CompilerPlugin } from "@unframework/compiler";
 import { createStaticAttribute } from "@unframework/ir";
-import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
+import type { ElementNode, FragmentNode, RenderNode, TextNode, UfModule } from "@unframework/ir";
 import type { LayerName, ProjectKind } from "@unframework/testing/node";
 
 import { REFERENCE } from "./targets.ts";
@@ -391,29 +391,60 @@ export function guardsGoldens(id: string | null): boolean {
 function wrongText(): CompilerPlugin {
   return {
     name: "uf-canary-wrong-text",
-    ir: (module) =>
-      mapRoots(module, (root) => {
-        const text = firstText(root);
+    ir: (module) => {
+      const copy = structuredClone(module);
+      for (const { render } of copy.components) {
+        const text = firstText(render);
         if (!text) throw new Error(`${MARKER} the component has no text to change.`);
         text.value = `${text.value} (canary)`;
-      }),
+      }
+      return copy;
+    },
   };
 }
 
-/** A copy of the module with `change` applied to each component's root element. */
+/**
+ * A copy of the module with `change` applied to each component's root element: the root, or
+ * each element among the roots of a root fragment.
+ */
 function mapRoots(module: UfModule, change: (root: ElementNode) => void): UfModule {
   const copy = structuredClone(module);
-  for (const component of copy.components) change(component.render);
+  for (const { render } of copy.components) {
+    const roots = render.kind === "Element" ? [render] : render.children;
+    for (const root of roots) if (root.kind === "Element") change(root);
+  }
   return copy;
 }
 
-function firstText(node: RenderNode): Extract<RenderNode, { kind: "Text" }> | undefined {
-  if (node.kind === "Text") return node;
-  for (const child of node.children) {
-    const found = firstText(child);
+/** The first text node in document order, through every branch and list body. */
+function firstText(node: RenderNode | FragmentNode): TextNode | undefined {
+  switch (node.kind) {
+    case "Text":
+      return node;
+    case "Interpolation":
+      return undefined;
+    case "Element":
+    case "Fragment":
+      return firstOf(node.children);
+    case "If":
+      return firstOf(node.branches.flatMap((branch) => branch.children));
+    case "For":
+      return firstText(node.body);
+    default:
+      return unreachable(node);
+  }
+}
+
+function firstOf(nodes: readonly RenderNode[]): TextNode | undefined {
+  for (const node of nodes) {
+    const found = firstText(node);
     if (found) return found;
   }
   return undefined;
+}
+
+function unreachable(value: never): never {
+  throw new Error(`${MARKER} an IR node of an unknown kind: ${JSON.stringify(value)}`);
 }
 
 /** Renames the first closing tag so it no longer matches its opening tag. */

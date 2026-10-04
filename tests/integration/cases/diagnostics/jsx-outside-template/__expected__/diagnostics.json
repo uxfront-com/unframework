@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3012",
+    "severity": "error",
+    "message": "renderIcon is a helper that returns JSX, and JSX can only be in a component's template: the tree the component returns, and its slot functions.",
+    "file": "diagnostics/jsx-outside-template/Toolbar.uf.tsx",
+    "start": {
+      "line": 2,
+      "column": 10,
+      "offset": 107
+    },
+    "end": {
+      "line": 2,
+      "column": 20,
+      "offset": 117
+    },
+    "help": "Inline the JSX where it is used, or extract a component: an exported function with a PascalCase name."
+  }
+]

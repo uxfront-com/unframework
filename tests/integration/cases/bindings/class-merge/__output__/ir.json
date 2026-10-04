@@ -1,0 +1,412 @@
+{
+  "irVersion": 1,
+  "file": "bindings/class-merge/TextLink.uf.tsx",
+  "components": [
+    {
+      "name": "TextLink",
+      "span": {
+        "start": 277,
+        "end": 533
+      },
+      "props": [
+        {
+          "name": "href",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 184,
+              "end": 190
+            }
+          },
+          "binding": "href@312",
+          "span": {
+            "start": 178,
+            "end": 191
+          }
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 201,
+              "end": 207
+            }
+          },
+          "binding": "label@318",
+          "span": {
+            "start": 194,
+            "end": 208
+          }
+        },
+        {
+          "name": "strong",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 219,
+              "end": 226
+            }
+          },
+          "binding": "strong@325",
+          "span": {
+            "start": 211,
+            "end": 227
+          }
+        },
+        {
+          "name": "link",
+          "optional": false,
+          "type": {
+            "code": "LinkAttributes",
+            "span": {
+              "start": 236,
+              "end": 250
+            }
+          },
+          "binding": "link@333",
+          "span": {
+            "start": 230,
+            "end": 251
+          }
+        },
+        {
+          "name": "row",
+          "optional": false,
+          "type": {
+            "code": "RowAttributes",
+            "span": {
+              "start": 259,
+              "end": 272
+            }
+          },
+          "binding": "row@339",
+          "span": {
+            "start": 254,
+            "end": 273
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TextLinkProps",
+          "span": {
+            "start": 346,
+            "end": 359
+          }
+        },
+        "span": {
+          "start": 310,
+          "end": 359
+        }
+      },
+      "types": [
+        "LinkAttributes",
+        "RowAttributes",
+        "TextLinkProps"
+      ],
+      "bindings": [
+        {
+          "id": "href@312",
+          "name": "href",
+          "kind": "prop",
+          "span": {
+            "start": 312,
+            "end": 316
+          }
+        },
+        {
+          "id": "label@318",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 318,
+            "end": 323
+          }
+        },
+        {
+          "id": "strong@325",
+          "name": "strong",
+          "kind": "prop",
+          "span": {
+            "start": 325,
+            "end": 331
+          }
+        },
+        {
+          "id": "link@333",
+          "name": "link",
+          "kind": "prop",
+          "span": {
+            "start": 333,
+            "end": 337
+          }
+        },
+        {
+          "id": "row@339",
+          "name": "row",
+          "kind": "prop",
+          "span": {
+            "start": 339,
+            "end": 342
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Spread",
+            "value": {
+              "code": "row",
+              "span": {
+                "start": 385,
+                "end": 388
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "row@339",
+                  "span": {
+                    "start": 385,
+                    "end": 388
+                  }
+                }
+              ]
+            },
+            "keys": [
+              {
+                "name": "class",
+                "span": {
+                  "start": 110,
+                  "end": 115
+                }
+              },
+              {
+                "name": "id",
+                "span": {
+                  "start": 127,
+                  "end": 129
+                }
+              }
+            ],
+            "span": {
+              "start": 381,
+              "end": 389
+            }
+          },
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Static",
+                "value": "link-row",
+                "span": {
+                  "start": 398,
+                  "end": 408
+                }
+              },
+              {
+                "kind": "Toggle",
+                "name": "link-row-strong",
+                "condition": {
+                  "code": "strong",
+                  "span": {
+                    "start": 410,
+                    "end": 416
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "strong@325",
+                      "span": {
+                        "start": 410,
+                        "end": 416
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 410,
+                  "end": 437
+                }
+              }
+            ],
+            "span": {
+              "start": 390,
+              "end": 439
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "a",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "href",
+                "value": {
+                  "code": "href",
+                  "span": {
+                    "start": 456,
+                    "end": 460
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "href@312",
+                      "span": {
+                        "start": 456,
+                        "end": 460
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 450,
+                  "end": 461
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "text-link",
+                "span": {
+                  "start": 462,
+                  "end": 479
+                }
+              },
+              {
+                "kind": "Spread",
+                "value": {
+                  "code": "link",
+                  "span": {
+                    "start": 484,
+                    "end": 488
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "link@333",
+                      "span": {
+                        "start": 484,
+                        "end": 488
+                      }
+                    }
+                  ]
+                },
+                "keys": [
+                  {
+                    "name": "class",
+                    "span": {
+                      "start": 29,
+                      "end": 34
+                    }
+                  },
+                  {
+                    "name": "title",
+                    "span": {
+                      "start": 47,
+                      "end": 52
+                    }
+                  },
+                  {
+                    "name": "rel",
+                    "span": {
+                      "start": 65,
+                      "end": 68
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 480,
+                  "end": 489
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 500,
+                    "end": 505
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@318",
+                      "span": {
+                        "start": 500,
+                        "end": 505
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 499,
+                  "end": 506
+                }
+              }
+            ],
+            "span": {
+              "start": 447,
+              "end": 517
+            }
+          }
+        ],
+        "span": {
+          "start": 378,
+          "end": 526
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "TextLink",
+      "span": {
+        "start": 277,
+        "end": 533
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "LinkAttributes",
+      "exported": false,
+      "code": "interface LinkAttributes {\n  class?: string;\n  title?: string;\n  rel?: string;\n}",
+      "span": {
+        "start": 0,
+        "end": 80
+      }
+    },
+    {
+      "name": "RowAttributes",
+      "exported": false,
+      "code": "interface RowAttributes {\n  class: string;\n  id?: string;\n}",
+      "span": {
+        "start": 82,
+        "end": 141
+      }
+    },
+    {
+      "name": "TextLinkProps",
+      "exported": true,
+      "code": "interface TextLinkProps {\n  href: string;\n  label: string;\n  strong: boolean;\n  link: LinkAttributes;\n  row: RowAttributes;\n}",
+      "span": {
+        "start": 150,
+        "end": 275
+      }
+    }
+  ]
+}

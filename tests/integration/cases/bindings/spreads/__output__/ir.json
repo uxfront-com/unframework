@@ -1,0 +1,481 @@
+{
+  "irVersion": 1,
+  "file": "bindings/spreads/TextField.uf.tsx",
+  "components": [
+    {
+      "name": "TextField",
+      "span": {
+        "start": 364,
+        "end": 685
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 263,
+              "end": 269
+            }
+          },
+          "binding": "label@400",
+          "span": {
+            "start": 256,
+            "end": 270
+          }
+        },
+        {
+          "name": "inputId",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 282,
+              "end": 288
+            }
+          },
+          "binding": "inputId@407",
+          "span": {
+            "start": 273,
+            "end": 289
+          }
+        },
+        {
+          "name": "hintText",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 302,
+              "end": 308
+            }
+          },
+          "binding": "hintText@416",
+          "span": {
+            "start": 292,
+            "end": 309
+          }
+        },
+        {
+          "name": "field",
+          "optional": false,
+          "type": {
+            "code": "FieldAttributes",
+            "span": {
+              "start": 319,
+              "end": 334
+            }
+          },
+          "binding": "field@426",
+          "span": {
+            "start": 312,
+            "end": 335
+          }
+        },
+        {
+          "name": "hint",
+          "optional": true,
+          "type": {
+            "code": "HintAttributes",
+            "span": {
+              "start": 345,
+              "end": 359
+            }
+          },
+          "binding": "hint@433",
+          "span": {
+            "start": 338,
+            "end": 360
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TextFieldProps",
+          "span": {
+            "start": 441,
+            "end": 455
+          }
+        },
+        "span": {
+          "start": 398,
+          "end": 455
+        }
+      },
+      "types": [
+        "FieldAttributes",
+        "HintAttributes",
+        "TextFieldProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@400",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 400,
+            "end": 405
+          }
+        },
+        {
+          "id": "inputId@407",
+          "name": "inputId",
+          "kind": "prop",
+          "span": {
+            "start": 407,
+            "end": 414
+          }
+        },
+        {
+          "id": "hintText@416",
+          "name": "hintText",
+          "kind": "prop",
+          "span": {
+            "start": 416,
+            "end": 424
+          }
+        },
+        {
+          "id": "field@426",
+          "name": "field",
+          "kind": "prop",
+          "span": {
+            "start": 426,
+            "end": 431
+          }
+        },
+        {
+          "id": "hint@433",
+          "name": "hint",
+          "kind": "prop",
+          "span": {
+            "start": 433,
+            "end": 437
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "text-field",
+            "span": {
+              "start": 479,
+              "end": 497
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "for",
+                "value": {
+                  "code": "inputId",
+                  "span": {
+                    "start": 517,
+                    "end": 524
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "inputId@407",
+                      "span": {
+                        "start": 517,
+                        "end": 524
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 512,
+                  "end": 525
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 527,
+                    "end": 532
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@400",
+                      "span": {
+                        "start": 527,
+                        "end": 532
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 526,
+                  "end": 533
+                }
+              }
+            ],
+            "span": {
+              "start": 505,
+              "end": 541
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "input",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "id",
+                "value": {
+                  "code": "inputId",
+                  "span": {
+                    "start": 559,
+                    "end": 566
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "inputId@407",
+                      "span": {
+                        "start": 559,
+                        "end": 566
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 555,
+                  "end": 567
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "text",
+                "span": {
+                  "start": 568,
+                  "end": 579
+                }
+              },
+              {
+                "kind": "Spread",
+                "value": {
+                  "code": "field",
+                  "span": {
+                    "start": 584,
+                    "end": 589
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "field@426",
+                      "span": {
+                        "start": 584,
+                        "end": 589
+                      }
+                    }
+                  ]
+                },
+                "keys": [
+                  {
+                    "name": "name",
+                    "span": {
+                      "start": 30,
+                      "end": 34
+                    }
+                  },
+                  {
+                    "name": "placeholder",
+                    "span": {
+                      "start": 46,
+                      "end": 57
+                    }
+                  },
+                  {
+                    "name": "autocomplete",
+                    "span": {
+                      "start": 70,
+                      "end": 82
+                    }
+                  },
+                  {
+                    "name": "maxlength",
+                    "span": {
+                      "start": 95,
+                      "end": 104
+                    }
+                  },
+                  {
+                    "name": "required",
+                    "span": {
+                      "start": 117,
+                      "end": 125
+                    }
+                  },
+                  {
+                    "name": "title",
+                    "span": {
+                      "start": 139,
+                      "end": 144
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 580,
+                  "end": 590
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 548,
+              "end": 593
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "text-field-hint",
+                "span": {
+                  "start": 603,
+                  "end": 626
+                }
+              },
+              {
+                "kind": "Spread",
+                "value": {
+                  "code": "hint",
+                  "span": {
+                    "start": 631,
+                    "end": 635
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "hint@433",
+                      "span": {
+                        "start": 631,
+                        "end": 635
+                      }
+                    }
+                  ]
+                },
+                "keys": [
+                  {
+                    "name": "id",
+                    "span": {
+                      "start": 187,
+                      "end": 189
+                    }
+                  },
+                  {
+                    "name": "title",
+                    "span": {
+                      "start": 201,
+                      "end": 206
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 627,
+                  "end": 636
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "hintText",
+                  "span": {
+                    "start": 647,
+                    "end": 655
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "hintText@416",
+                      "span": {
+                        "start": 647,
+                        "end": 655
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 646,
+                  "end": 656
+                }
+              }
+            ],
+            "span": {
+              "start": 600,
+              "end": 667
+            }
+          }
+        ],
+        "span": {
+          "start": 474,
+          "end": 678
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "TextField",
+      "span": {
+        "start": 364,
+        "end": 685
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "FieldAttributes",
+      "exported": false,
+      "code": "interface FieldAttributes {\n  name: string;\n  placeholder?: string;\n  autocomplete?: string;\n  maxlength?: number;\n  required?: boolean;\n  title?: string;\n}",
+      "span": {
+        "start": 0,
+        "end": 156
+      }
+    },
+    {
+      "name": "HintAttributes",
+      "exported": false,
+      "code": "interface HintAttributes {\n  id: string;\n  title?: string;\n}",
+      "span": {
+        "start": 158,
+        "end": 218
+      }
+    },
+    {
+      "name": "TextFieldProps",
+      "exported": true,
+      "code": "interface TextFieldProps {\n  label: string;\n  inputId: string;\n  hintText: string;\n  field: FieldAttributes;\n  hint?: HintAttributes;\n}",
+      "span": {
+        "start": 227,
+        "end": 362
+      }
+    }
+  ]
+}

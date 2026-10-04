@@ -1,7 +1,8 @@
 // What every toolchain's checks share: the files a gate accepts, the one shape in which every
-// type checker's diagnostics come back (L4), and running a checker as a process from the
-// toolchain directory, over a temporary tsconfig. A process, because TypeScript 6 and
-// TypeScript 7 cannot share one (spike: ts6-ts7 ADR), and tsgo has no stable JS API yet.
+// type checker's (L4) and linter's (L5) messages come back, and running a tool as a process
+// from the toolchain directory (a checker over a temporary tsconfig). A process, because
+// TypeScript 6 and TypeScript 7 cannot share one (spike: ts6-ts7 ADR), and tsgo has no stable
+// JS API yet.
 import { spawn } from "node:child_process";
 import { existsSync, realpathSync } from "node:fs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -29,21 +30,25 @@ export function assertFilesToCompile(files: readonly ToolchainFile[]): void {
 }
 
 /**
- * Rejects a type check (L4) that could not check every file: no files (a check over nothing
- * proves nothing), a relative path, or a file that does not exist, which some checkers skip
- * and others report against their configuration rather than against the file.
+ * Rejects a type check (L4) or a lint (L5) that could not check every file: no files (a check
+ * over nothing proves nothing), a relative path, or a file that does not exist, which some
+ * tools skip and others report against their configuration rather than against the file.
+ * `gate` names the check in the error.
  */
-export function assertFilesToCheck(files: readonly string[]): void {
+export function assertFilesToCheck(
+  files: readonly string[],
+  gate: "typecheck" | "lint" = "typecheck",
+): void {
   if (files.length === 0) {
-    throw new Error("typecheck received no files: a check over nothing proves nothing.");
+    throw new Error(`${gate} received no files: a check over nothing proves nothing.`);
   }
   const relativeFiles = files.filter((file) => !isAbsolute(file));
   if (relativeFiles.length > 0) {
-    throw new TypeError(`typecheck needs absolute paths, got: ${relativeFiles.join(", ")}`);
+    throw new TypeError(`${gate} needs absolute paths, got: ${relativeFiles.join(", ")}`);
   }
   const missing = files.filter((file) => !existsSync(file));
   if (missing.length > 0) {
-    throw new Error(`typecheck received files that do not exist:\n${missing.join("\n")}`);
+    throw new Error(`${gate} received files that do not exist:\n${missing.join("\n")}`);
   }
 }
 
@@ -81,11 +86,15 @@ export async function runChecker(
   }
 }
 
-function execute(
-  command: string,
-  args: string[],
-  cwd: string,
-): Promise<Pick<CheckerRun, "code" | "signal" | "stdout" | "stderr">> {
+/** How a tool's process ended, and what it printed. */
+export type ProcessRun = Pick<CheckerRun, "code" | "signal" | "stdout" | "stderr">;
+
+/**
+ * Runs a tool as a process in `cwd` and collects its output, as every gate runs its tools:
+ * without the test runner's NODE_OPTIONS and NODE_PATH, and without colour. Rejects only when
+ * the process cannot start; how it ended is the caller's to judge.
+ */
+export function execute(command: string, args: string[], cwd: string): Promise<ProcessRun> {
   return new Promise((resolvePromise, reject) => {
     // NODE_OPTIONS belongs to the test runner, not to the checker. Without NODE_PATH, the
     // checker resolves its own dependencies from where it is installed, however the tests were
@@ -160,8 +169,8 @@ function pathKeys(files: readonly string[]): (path: string) => string {
     keys.get(path) ?? (existsSync(path) ? keys.get(realpathSync(path)) : undefined) ?? path;
 }
 
-/** The error a run is rejected with, carrying everything the checker printed. */
-export function checkerFailed(name: string, run: CheckerRun, problem: string): Error {
+/** The error a run is rejected with, carrying everything the tool printed. */
+export function checkerFailed(name: string, run: ProcessRun, problem: string): Error {
   const output = [run.stdout.trim(), run.stderr.trim()].filter(Boolean).join("\n");
   const ended = run.signal ? `was killed by ${run.signal}` : `exited with code ${run.code}`;
   return new Error(`${name} ${ended}: ${problem}${output ? `\n${output}` : " (no output)"}`);

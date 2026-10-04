@@ -1669,26 +1669,36 @@ Both v1 and Unframework are TSX, so moving from one to the other is a mechanical
 These are npm `latest` versions on 2026-10-01. Each target pins its tested range in
 `framework.range`.
 
-| Package                                  | Version        | Notes                                                                      |
-| ---------------------------------------- | -------------- | -------------------------------------------------------------------------- |
-| typescript                               | 7.0.2          | 7.1 stable planned for Nov 24, 2026, with the API and content mappers      |
-| @typescript/typescript6                  | 6.0.2          | for vue-tsc, svelte-check, `astro check` and Angular until they move       |
-| react / react-dom                        | 19.3.0         | React Compiler 1.0                                                         |
-| vue / @vue/runtime-dom                   | 3.5.43         | 3.6.0-rc.10 has Vapor; the JSX types are vendored from runtime-dom         |
-| svelte                                   | 5.57.1         | async is still experimental, so output never uses it                       |
-| solid-js                                 | 1.9.15         | 2.0.0-rc.13 (`@solidjs/web`)                                               |
-| @angular/core                            | 22.2.1         | zoneless and OnPush by default; compiler-cli peers TypeScript `>=6.0 <6.1` |
-| @qwik.dev/core                           | 2.0.0-beta.47  | `@builder.io/qwik` 1.20.1 is the v1 line                                   |
-| astro                                    | 7.3.5          | a Rust compiler; the Container API serves SSR tests                        |
-| vite / rolldown                          | 8.3.1 / 1.2.12 |                                                                            |
-| vitest / @vitest/browser-playwright      | 5.0.3          | Browser Mode is stable; `toMatchScreenshot`                                |
-| playwright                               | 1.63.0         |                                                                            |
-| unplugin                                 | 3.4.0          | ten bundler factories                                                      |
-| oxc-parser / oxc-transform / oxc-codegen | 0.152.0        | TS-ESTree; isolated declarations; printing                                 |
-| oxc-resolver                             | 11.24.2        |                                                                            |
-| lightningcss                             | 1.33.0         | CSS parsing and selector scoping                                           |
-| oxfmt                                    | 0.71.0         | programmatic `format()`                                                    |
-| magic-string                             | 1.4.2          |                                                                            |
-| tsdown                                   | 0.23.0         |                                                                            |
-| axe-core                                 | 4.13.0         |                                                                            |
-| vue-jsx-vapor                            | 3.2.25         | prior art: Vue directives and macros in JSX                                |
+| Package                                   | Version           | Notes                                                                      |
+| ----------------------------------------- | ----------------- | -------------------------------------------------------------------------- |
+| typescript                                | 7.0.2             | 7.1 stable planned for Nov 24, 2026, with the API and content mappers      |
+| @typescript/typescript6                   | 6.0.2             | for vue-tsc, svelte-check, `astro check` and Angular until they move       |
+| react / react-dom                         | 19.3.0            | React Compiler 1.0                                                         |
+| vue / @vue/runtime-dom                    | 3.5.43            | 3.6.0-rc.10 has Vapor; the JSX types are vendored from runtime-dom         |
+| svelte                                    | 5.57.1            | async is still experimental, so output never uses it                       |
+| solid-js                                  | 1.9.15            | 2.0.0-rc.13 (`@solidjs/web`)                                               |
+| @angular/core                             | 22.2.1            | zoneless and OnPush by default; compiler-cli peers TypeScript `>=6.0 <6.1` |
+| @qwik.dev/core                            | 2.0.0-beta.47     | `@builder.io/qwik` 1.20.1 is the v1 line                                   |
+| astro                                     | 7.3.5             | a Rust compiler; the Container API serves SSR tests                        |
+| vite / rolldown                           | 8.3.1 / 1.2.12    |                                                                            |
+| vitest / @vitest/browser-playwright       | 5.0.3             | Browser Mode is stable; `toMatchScreenshot`                                |
+| playwright                                | 1.63.0            |                                                                            |
+| unplugin                                  | 3.4.0             | ten bundler factories                                                      |
+| oxc-parser / oxc-transform / oxc-codegen  | 0.152.0           | TS-ESTree; isolated declarations; printing                                 |
+| oxc-resolver                              | 11.24.2           |                                                                            |
+| lightningcss                              | 1.33.0            | CSS parsing and selector scoping                                           |
+| @typescript-eslint/scope-manager          | 8.71.0            | the analyzer's scope analysis (ADR-0035); exact, because it shapes the IR  |
+| oxfmt                                     | 0.71.0            | programmatic `format()`                                                    |
+| magic-string                              | 1.4.2             |                                                                            |
+| tsdown                                    | 0.23.0            |                                                                            |
+| axe-core                                  | 4.13.0            |                                                                            |
+| oxlint / oxlint-tsgolint                  | 1.86.0 / 7.0.2003 | the repo's linter, and L5's baseline on every target (ADR-0042)            |
+| eslint                                    | 10.11.0           | L5 for Vue, Svelte, Astro and Angular, on TypeScript 6                     |
+| typescript-eslint                         | 8.71.0            | peers TypeScript `<6.1`, so only the TypeScript 6 toolchains load it       |
+| eslint-plugin-vue / vue-eslint-parser     | 10.11.1 / 10.4.1  | L5 for Vue                                                                 |
+| eslint-plugin-svelte                      | 3.23.0            | L5 for Svelte                                                              |
+| eslint-plugin-astro / astro-eslint-parser | 3.2.1 / 3.2.0     | L5 for Astro                                                               |
+| @angular-eslint/eslint-plugin             | 22.5.0            | with `eslint-plugin-template` and `template-parser`: L5 for Angular        |
+| eslint-plugin-solid                       | 0.18.0            | L5 for Solid, as an oxlint JS plugin                                       |
+| eslint-plugin-qwik                        | 2.0.0-beta.47     | the `beta` tag (`latest` is Qwik 1's); a JS plugin without its typed rules |
+| vue-jsx-vapor                             | 3.2.25            | prior art: Vue directives and macros in JSX                                |

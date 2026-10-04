@@ -1,0 +1,8 @@
+error[UF2001]: `label` is required, so its default would never apply.
+ --> diagnostics/invalid-props/Badge.uf.tsx:6:41
+  |
+6 | export default function Badge({ label = "New" }: BadgeProps) {
+  |                                         ^^^^^
+  |
+  = help: Make it optional (`label?:`), or remove the default.
+  = see: https://unframework.dev/diagnostics/UF2001

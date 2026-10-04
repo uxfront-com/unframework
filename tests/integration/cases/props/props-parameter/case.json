@@ -1,0 +1,16 @@
+{
+  "description": "The object form of props, `(props: P)`, read as `props.x` in text and in an attribute, with an optional prop and no defaults.",
+  "ssr": {
+    "with-affiliation": {
+      "props": {
+        "author": "Ada Lovelace",
+        "published": "1843-10-01",
+        "minutes": 7,
+        "affiliation": "Analytical Society"
+      }
+    },
+    "independent": {
+      "props": { "author": "Mary Somerville", "published": "1834-01-01", "minutes": 12 }
+    }
+  }
+}

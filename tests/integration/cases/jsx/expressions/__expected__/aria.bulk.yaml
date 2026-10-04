@@ -1,0 +1,9 @@
+- region "Order summary":
+  - heading "Order 001906" [level=2]
+  - paragraph: "Customer: GRACE HOPPER"
+  - paragraph: 12 items at 4.50 each
+  - paragraph: "Subtotal: 54.00"
+  - paragraph: "Discount: 50%"
+  - paragraph: "Total: 27.00"
+  - paragraph: Bulk order, coupon applied
+  - paragraph: "Points earned: 54"

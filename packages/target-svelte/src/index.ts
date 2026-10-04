@@ -1,6 +1,8 @@
 import { defineTarget, printMarkup, svelteDialect } from "@unframework/codegen";
-import type { OutputFile, Target } from "@unframework/codegen";
+import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
+
+import { instanceScript } from "./script.ts";
 
 /**
  * The options every component declares, so that it compiles the same whatever the consumer's
@@ -11,7 +13,10 @@ import type { UfComponent } from "@unframework/ir";
  */
 const OPTIONS = "<svelte:options runes={true} preserveWhitespace={false} />";
 
-/** The Svelte 5 target: runes-mode components. */
+/**
+ * The Svelte 5 target: runes-mode components. A component is its options, its instance script
+ * when it takes props (`script.ts`), and its markup, printed in `svelteDialect` (design §5.3).
+ */
 export const svelte: Target = defineTarget({
   name: "svelte",
   framework: { package: "svelte", range: ">=5.57 <6" },
@@ -21,14 +26,27 @@ export const svelte: Target = defineTarget({
     "static-attribute": { support: "native" },
     listbox: { support: "native" },
     interactivity: { support: "native" },
+    props: { support: "native" },
+    interpolation: { support: "native" },
+    conditional: { support: "native" },
+    list: { support: "native" },
+    fragment: { support: "native" },
+    "bound-attribute": { support: "native" },
+    "class-binding": { support: "native" },
+    "style-binding": { support: "native" },
+    "attribute-spread": { support: "native" },
+    svg: { support: "native" },
   },
-  emit(component: UfComponent): OutputFile[] {
-    return [
-      {
-        path: `${component.name}.svelte`,
-        contents: `${OPTIONS}\n\n${printMarkup(component.render, svelteDialect)}\n`,
-      },
-    ];
+  emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    const { block, rewrite } = instanceScript(component, context.module);
+    // The component resolves the names of loop variables and tells whether a spread's object
+    // may be absent (read through `?.`).
+    const markup = printMarkup(component.render, svelteDialect, {
+      component,
+      ...(rewrite ? { rewrite } : {}),
+    });
+    const parts = block === undefined ? [OPTIONS, markup] : [OPTIONS, block, markup];
+    return [{ path: `${component.name}.svelte`, contents: `${parts.join("\n\n")}\n` }];
   },
 });
 

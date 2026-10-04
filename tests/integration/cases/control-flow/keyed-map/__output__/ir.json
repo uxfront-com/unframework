@@ -1,0 +1,432 @@
+{
+  "irVersion": 1,
+  "file": "control-flow/keyed-map/ContributorTable.uf.tsx",
+  "components": [
+    {
+      "name": "ContributorTable",
+      "span": {
+        "start": 180,
+        "end": 818
+      },
+      "props": [
+        {
+          "name": "caption",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 138,
+              "end": 144
+            }
+          },
+          "binding": "caption@223",
+          "span": {
+            "start": 129,
+            "end": 145
+          }
+        },
+        {
+          "name": "contributors",
+          "optional": false,
+          "type": {
+            "code": "Contributor[]",
+            "span": {
+              "start": 162,
+              "end": 175
+            }
+          },
+          "binding": "contributors@232",
+          "span": {
+            "start": 148,
+            "end": 176
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ContributorTableProps",
+          "span": {
+            "start": 248,
+            "end": 269
+          }
+        },
+        "span": {
+          "start": 221,
+          "end": 269
+        }
+      },
+      "types": [
+        "Contributor",
+        "ContributorTableProps"
+      ],
+      "bindings": [
+        {
+          "id": "caption@223",
+          "name": "caption",
+          "kind": "prop",
+          "span": {
+            "start": 223,
+            "end": 230
+          }
+        },
+        {
+          "id": "contributors@232",
+          "name": "contributors",
+          "kind": "prop",
+          "span": {
+            "start": 232,
+            "end": 244
+          }
+        },
+        {
+          "id": "contributor@524",
+          "name": "contributor",
+          "kind": "loopVar",
+          "span": {
+            "start": 524,
+            "end": 535
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "table",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "contributors",
+            "span": {
+              "start": 295,
+              "end": 315
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "caption",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "caption",
+                  "span": {
+                    "start": 333,
+                    "end": 340
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "caption@223",
+                      "span": {
+                        "start": 333,
+                        "end": 340
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 332,
+                  "end": 341
+                }
+              }
+            ],
+            "span": {
+              "start": 323,
+              "end": 351
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "thead",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "tr",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "th",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "scope",
+                        "value": "col",
+                        "span": {
+                          "start": 393,
+                          "end": 404
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Name",
+                        "span": {
+                          "start": 405,
+                          "end": 409
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 389,
+                      "end": 414
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "th",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "scope",
+                        "value": "col",
+                        "span": {
+                          "start": 429,
+                          "end": 440
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Commits",
+                        "span": {
+                          "start": 441,
+                          "end": 448
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 425,
+                      "end": 453
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 374,
+                  "end": 467
+                }
+              }
+            ],
+            "span": {
+              "start": 358,
+              "end": 482
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "tbody",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "contributors",
+                  "span": {
+                    "start": 506,
+                    "end": 518
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "contributors@232",
+                      "span": {
+                        "start": 506,
+                        "end": 518
+                      }
+                    }
+                  ]
+                },
+                "item": "contributor@524",
+                "key": {
+                  "code": "contributor.login",
+                  "span": {
+                    "start": 561,
+                    "end": 578
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "contributor@524",
+                      "span": {
+                        "start": 561,
+                        "end": 572
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "tr",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Element",
+                      "tag": "td",
+                      "attributes": [],
+                      "children": [
+                        {
+                          "kind": "Element",
+                          "tag": "a",
+                          "attributes": [
+                            {
+                              "kind": "Bound",
+                              "name": "href",
+                              "value": {
+                                "code": "`https://example.com/people/${contributor.login}`",
+                                "span": {
+                                  "start": 621,
+                                  "end": 670
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "contributor@524",
+                                    "span": {
+                                      "start": 651,
+                                      "end": 662
+                                    }
+                                  }
+                                ]
+                              },
+                              "span": {
+                                "start": 615,
+                                "end": 671
+                              }
+                            }
+                          ],
+                          "children": [
+                            {
+                              "kind": "Interpolation",
+                              "value": {
+                                "code": "contributor.name",
+                                "span": {
+                                  "start": 673,
+                                  "end": 689
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "contributor@524",
+                                    "span": {
+                                      "start": 673,
+                                      "end": 684
+                                    }
+                                  }
+                                ]
+                              },
+                              "span": {
+                                "start": 672,
+                                "end": 690
+                              }
+                            }
+                          ],
+                          "span": {
+                            "start": 612,
+                            "end": 694
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 593,
+                        "end": 712
+                      }
+                    },
+                    {
+                      "kind": "Element",
+                      "tag": "td",
+                      "attributes": [],
+                      "children": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "contributor.commits",
+                            "span": {
+                              "start": 730,
+                              "end": 749
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "contributor@524",
+                                "span": {
+                                  "start": 730,
+                                  "end": 741
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 729,
+                            "end": 750
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 725,
+                        "end": 755
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 552,
+                    "end": 771
+                  }
+                },
+                "span": {
+                  "start": 506,
+                  "end": 782
+                }
+              }
+            ],
+            "span": {
+              "start": 489,
+              "end": 798
+            }
+          }
+        ],
+        "span": {
+          "start": 288,
+          "end": 811
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ContributorTable",
+      "span": {
+        "start": 180,
+        "end": 818
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Contributor",
+      "exported": true,
+      "code": "interface Contributor {\n  login: string;\n  name: string;\n  commits: number;\n}",
+      "span": {
+        "start": 7,
+        "end": 84
+      }
+    },
+    {
+      "name": "ContributorTableProps",
+      "exported": true,
+      "code": "interface ContributorTableProps {\n  caption: string;\n  contributors: Contributor[];\n}",
+      "span": {
+        "start": 93,
+        "end": 178
+      }
+    }
+  ]
+}

@@ -4,9 +4,9 @@ import { parseModule } from "@unframework/parser";
 import type { ParseError, ParsedModule } from "@unframework/parser";
 
 /**
- * oxc's error for a `}` or `>` in JSX text, which advises `{'}'}` (an expression, which this
- * compiler cannot lower yet) or `&rbrace;` (which JSX does not decode, so every target would
- * render it as written). The tests pin the wording: if oxc changes it, they fail.
+ * oxc's error for a `}` or `>` in JSX text, which advises `{'}'}` (a string expression, which
+ * renders the character) or `&rbrace;` (which JSX does not decode, so every target would render
+ * it as written). The tests pin the wording: if oxc changes it, they fail.
  */
 const JSX_TEXT_TOKEN = /^Unexpected token\. Did you mean `\{'([>}])'\}` or `&(?:gt|rbrace);`\?$/;
 
@@ -32,7 +32,7 @@ export function syntaxError(error: ParseError, parsed: ParsedModule): SyntaxRepo
   const token = textToken(error, parsed.source);
   if (token === undefined) return { span: error.span, message: error.message, help: error.help };
   const reference = REFERENCES.get(token)!;
-  const why = `\`{'${token}'}\` is an expression, which is not supported yet${token === "}" ? ", and JSX does not decode `&rbrace;`" : ""}`;
+  const why = `every JSX implementation decodes it${token === "}" ? ", and none decodes `&rbrace;`" : ""}; a string expression, \`{'${token}'}\`, renders the character too`;
   const edits = textRewrite(error, parsed);
   return {
     span: { start: error.span.start, end: error.span.start + 1 },

@@ -1,0 +1,11 @@
+- region "Filters":
+  - button "Price filters" [expanded]
+  - paragraph: Prices include tax.
+  - group:
+    - text: Price range Minimum price
+    - spinbutton "Minimum price" [disabled] [invalid]
+  - button "In stock only" [disabled] [pressed]
+  - navigation "Filter steps":
+    - link "Filters":
+      - /url: "#filters"
+  - status: Loading results

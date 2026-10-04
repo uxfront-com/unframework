@@ -1,0 +1,8 @@
+error[UF3015]: A list's callback takes the item and its index as plain names: `source.map((item, index) => <element key={…}>…</element>)`.
+  --> diagnostics/invalid-list/MemberList.uf.tsx:15:21
+   |
+15 |       {members.map(({ id, name }) => (
+   |                     ^^^^^^^^^^^^
+   |
+   = help: Name the item, and read its members as `item.name`.
+   = see: https://unframework.dev/diagnostics/UF3015

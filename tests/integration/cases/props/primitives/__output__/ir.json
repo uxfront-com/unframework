@@ -1,0 +1,486 @@
+{
+  "irVersion": 1,
+  "file": "props/primitives/ProductTile.uf.tsx",
+  "components": [
+    {
+      "name": "ProductTile",
+      "span": {
+        "start": 112,
+        "end": 568
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 44,
+              "end": 50
+            }
+          },
+          "binding": "name@150",
+          "span": {
+            "start": 38,
+            "end": 51
+          }
+        },
+        {
+          "name": "price",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 61,
+              "end": 67
+            }
+          },
+          "binding": "price@156",
+          "span": {
+            "start": 54,
+            "end": 68
+          }
+        },
+        {
+          "name": "stock",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 78,
+              "end": 84
+            }
+          },
+          "binding": "stock@163",
+          "span": {
+            "start": 71,
+            "end": 85
+          }
+        },
+        {
+          "name": "available",
+          "optional": true,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 100,
+              "end": 107
+            }
+          },
+          "default": {
+            "code": "true",
+            "span": {
+              "start": 182,
+              "end": 186
+            },
+            "refs": []
+          },
+          "binding": "available@170",
+          "span": {
+            "start": 88,
+            "end": 108
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ProductTileProps",
+          "span": {
+            "start": 190,
+            "end": 206
+          }
+        },
+        "span": {
+          "start": 148,
+          "end": 206
+        }
+      },
+      "types": [
+        "ProductTileProps"
+      ],
+      "bindings": [
+        {
+          "id": "name@150",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 150,
+            "end": 154
+          }
+        },
+        {
+          "id": "price@156",
+          "name": "price",
+          "kind": "prop",
+          "span": {
+            "start": 156,
+            "end": 161
+          }
+        },
+        {
+          "id": "stock@163",
+          "name": "stock",
+          "kind": "prop",
+          "span": {
+            "start": 163,
+            "end": 168
+          }
+        },
+        {
+          "id": "available@170",
+          "name": "available",
+          "kind": "prop",
+          "span": {
+            "start": 170,
+            "end": 179
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "product-tile",
+            "span": {
+              "start": 234,
+              "end": 254
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "name",
+              "span": {
+                "start": 267,
+                "end": 271
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "name@150",
+                  "span": {
+                    "start": 267,
+                    "end": 271
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 255,
+              "end": 272
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "name",
+                  "span": {
+                    "start": 285,
+                    "end": 289
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@150",
+                      "span": {
+                        "start": 285,
+                        "end": 289
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 284,
+                  "end": 290
+                }
+              }
+            ],
+            "span": {
+              "start": 280,
+              "end": 295
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Price: ",
+                "span": {
+                  "start": 305,
+                  "end": 312
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "price",
+                  "span": {
+                    "start": 313,
+                    "end": 318
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "price@156",
+                      "span": {
+                        "start": 313,
+                        "end": 318
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 312,
+                  "end": 319
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " EUR",
+                "span": {
+                  "start": 319,
+                  "end": 323
+                }
+              }
+            ],
+            "span": {
+              "start": 302,
+              "end": 327
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "data-stock",
+                "value": {
+                  "code": "stock",
+                  "span": {
+                    "start": 349,
+                    "end": 354
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "stock@163",
+                      "span": {
+                        "start": 349,
+                        "end": 354
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 337,
+                  "end": 355
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "stock",
+                  "span": {
+                    "start": 357,
+                    "end": 362
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "stock@163",
+                      "span": {
+                        "start": 357,
+                        "end": 362
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 356,
+                  "end": 363
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " in stock",
+                "span": {
+                  "start": 363,
+                  "end": 372
+                }
+              }
+            ],
+            "span": {
+              "start": 334,
+              "end": 376
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "available ? \"Available to order\" : \"Currently unavailable\"",
+                  "span": {
+                    "start": 387,
+                    "end": 445
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "available@170",
+                      "span": {
+                        "start": 387,
+                        "end": 396
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 386,
+                  "end": 446
+                }
+              }
+            ],
+            "span": {
+              "start": 383,
+              "end": 450
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 465,
+                  "end": 478
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "disabled",
+                "value": {
+                  "code": "!available",
+                  "span": {
+                    "start": 489,
+                    "end": 499
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "available@170",
+                      "span": {
+                        "start": 490,
+                        "end": 499
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 479,
+                  "end": 500
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add ",
+                "span": {
+                  "start": 501,
+                  "end": 514
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "name",
+                  "span": {
+                    "start": 515,
+                    "end": 519
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@150",
+                      "span": {
+                        "start": 515,
+                        "end": 519
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 514,
+                  "end": 520
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " to basket",
+                "span": {
+                  "start": 520,
+                  "end": 537
+                }
+              }
+            ],
+            "span": {
+              "start": 457,
+              "end": 546
+            }
+          }
+        ],
+        "span": {
+          "start": 225,
+          "end": 561
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ProductTile",
+      "span": {
+        "start": 112,
+        "end": 568
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ProductTileProps",
+      "exported": true,
+      "code": "interface ProductTileProps {\n  name: string;\n  price: number;\n  stock: number;\n  available?: boolean;\n}",
+      "span": {
+        "start": 7,
+        "end": 110
+      }
+    }
+  ]
+}

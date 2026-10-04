@@ -11,8 +11,12 @@ import {
   createStaticAttribute,
   createText,
 } from "@unframework/ir";
-import type { ElementNode, RenderNode } from "@unframework/ir";
+import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
 
+// The analyser lowers the M1 fixtures from source, so each shape under test is one it produces
+// (and keeps the IR's invariants). A test-only import: the target itself never sees the analyser.
+import { analyze } from "../../analyzer/src/index.ts";
+import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
 
 export const packageDir: string = fileURLToPath(new URL("..", import.meta.url));
@@ -67,20 +71,49 @@ export const profileCard = (): ElementNode =>
 export const AVATAR =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%23345'/%3E%3C/svg%3E";
 
-/** Emits one component through the React target and collects what it reports. */
-export function emit(
-  render: ElementNode,
-  { name = "Fixture", kind = "default" }: { name?: string; kind?: "default" | "named" } = {},
-): { files: OutputFile[]; reported: Omit<Diagnostic, "file" | "target">[] } {
-  const component = createComponent(name, render, next());
-  const module = createModule(`${name}.uf.tsx`, [component], [createExport(kind, name, next())]);
-  const reported: Omit<Diagnostic, "file" | "target">[] = [];
+/** What the React target emitted for one component, and what it reported (never anything). */
+export interface Emitted {
+  files: OutputFile[];
+  reported: Omit<Diagnostic, "file" | "target">[];
+}
+
+/** Emits one component of a module through the React target and collects what it reports. */
+export function emitComponent(
+  module: UfModule,
+  name: string = module.components[0]!.name,
+): Emitted {
+  const component = module.components.find((candidate) => candidate.name === name)!;
+  const reported: Emitted["reported"] = [];
   const context: EmitContext = {
     module,
     options: undefined,
     report: (diagnostic) => void reported.push(diagnostic),
   };
   return { files: target.emit(component, context), reported };
+}
+
+/** Emits a static render tree as one component's, the way M0's fixtures were built. */
+export function emit(
+  render: ElementNode,
+  { name = "Fixture", kind = "default" }: { name?: string; kind?: "default" | "named" } = {},
+): Emitted {
+  const component = createComponent(name, render, next());
+  return emitComponent(
+    createModule(`${name}.uf.tsx`, [component], [createExport(kind, name, next())]),
+  );
+}
+
+/**
+ * Lowers a `.uf.tsx` source with the analyser, which must accept it without a diagnostic: a
+ * fixture the analyser rejects tests nothing the compiler would emit.
+ */
+export function lower(source: string, file = "Fixture.uf.tsx"): UfModule {
+  const { module, diagnostics } = analyze(parseModule(file, source));
+  if (!module || diagnostics.length) {
+    const messages = diagnostics.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message}`);
+    throw new Error(`The analyser rejected the fixture:\n${messages.join("\n")}`);
+  }
+  return module;
 }
 
 /** Every committed golden output of a target, read from the integration corpus. */

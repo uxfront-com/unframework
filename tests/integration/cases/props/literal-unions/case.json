@@ -1,0 +1,8 @@
+{
+  "description": "String and number literal-union props, with literal defaults, mapped to class names and to text.",
+  "ssr": {
+    "active": { "props": { "status": "active" } },
+    "paused-large": { "props": { "status": "paused", "size": "large", "level": 2 } },
+    "archived-critical": { "props": { "status": "archived", "level": 3 } }
+  }
+}

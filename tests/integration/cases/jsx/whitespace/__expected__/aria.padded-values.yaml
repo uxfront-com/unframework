@@ -1,0 +1,11 @@
+- article "Shipping label":
+  - paragraph:
+    - strong: "To:"
+    - text: Grace Hopper
+  - paragraph: Arlington VA 22202 United Kingdom
+  - paragraph: Handle with care
+  - text: "Grace Hopper 1 Navy Way Arlington VA 22202 Parcel: 1 of 2 Weight: 2.5 kg"
+  - paragraph:
+    - text: Sent by
+    - emphasis: Unframework Ltd
+    - text: ", on two lines."

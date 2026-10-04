@@ -1,0 +1,8 @@
+error[UF3016]: An expression child renders text, and this one can be a boolean, which the targets render differently.
+  --> diagnostics/non-text-interpolation/TaskRow.uf.tsx:10:17
+   |
+10 |       {title}: {done}
+   |                 ^^^^
+   |
+   = help: Turn it into text: `value ? "Yes" : "No"`, or render an element with `value && <span>…</span>`.
+   = see: https://unframework.dev/diagnostics/UF3016

@@ -116,12 +116,10 @@ export class ParityReporter {
       if (fileRecord) records.push({ project: module.project.name, record: fileRecord });
       for (const test of module.children.allTests()) {
         counts.set(test.project.name, (counts.get(test.project.name) ?? 0) + 1);
+        // A record carries the parity scenarios the test checked too: a scenario one target
+        // leaves out shows in no cell, so the summary compares each target's with the reference's.
         const record = test.meta().uf;
         if (record) records.push({ project: test.project.name, record });
-        // M1 (capabilities, several scenarios per case): a scenario one target verifies and
-        // another leaves out without a skip shows only per (case, scenario), so `expectParity`
-        // should then record its scenario and the summary compare the scenarios across targets.
-        // In M0 every spec has one test and one scenario, which the cell already covers.
         if (!filtered && test.result().state === "skipped" && !skipsWithReasons(record)) {
           problems.push(
             `${test.project.name}: "${test.fullName}" was skipped without recording why. A harness test never skips silently (plan §7.7): record each layer it skips, with the reason, before skipping.`,
@@ -162,6 +160,7 @@ export class ParityReporter {
       shard,
       empty,
       quarantine: harness?.quarantine ?? [],
+      reference: harness?.reference ?? null,
     });
     if (complete) {
       // Every record of every cell is here: a quarantined cell that no longer fails is stale.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { frameworkOf } from "../src/index.ts";
-import { applyAndRecheck, codes, run, slices } from "./helpers.ts";
+import { applyAndRecheck, codes, root, run, slices } from "./helpers.ts";
 
 describe("lowering", () => {
   it("lowers elements, text and static attributes with their spans", () => {
@@ -50,10 +50,16 @@ describe("lowering", () => {
         "}",
       ].join("\n"),
     );
-    const div = module!.components[0]!.render;
+    const div = root(module);
     expect(div.attributes[0]).toMatchObject({ value: "Tom & Jerry" });
     expect(
-      div.children.map((child) => (child.kind === "Text" ? child.value : `<${child.tag}>`)),
+      div.children.map((child) =>
+        child.kind === "Text"
+          ? child.value
+          : child.kind === "Element"
+            ? `<${child.tag}>`
+            : child.kind,
+      ),
     ).toEqual(["Line one & line two", "<br>", "<span>"]);
     const span = div.children[2]!;
     expect(span.kind === "Element" && span.children).toEqual([
@@ -131,11 +137,22 @@ describe("diagnostics", () => {
     },
   );
 
-  it("erases the authoring API and type-only imports", () => {
+  it("erases the authoring API, and its types", () => {
     const { diagnostics } = run(
-      'import { ref } from "unframework";\nimport type { X } from "./types.ts";\nexport function A() { return <p />; }',
+      'import { ref } from "unframework";\nimport type { Ref } from "unframework";\nexport function A() { return <p />; }',
     );
     expect(diagnostics).toEqual([]);
+  });
+
+  // Props types from other modules land with M5's type oracle (ADR-0034).
+  it("reports type-only imports from other modules as not supported yet", () => {
+    const source = 'import type { X } from "./types.ts";\nexport function A() { return <p />; }';
+    const { module, diagnostics } = run(source);
+    expect(module).toBeUndefined();
+    expect(codes(diagnostics)).toEqual(["UF1002"]);
+    expect(diagnostics[0]!.message).toBe(
+      "Importing types from other modules is not supported yet: props types from other modules land in M5.",
+    );
   });
 
   it("reports value imports and stylesheets as not supported yet", () => {
@@ -154,22 +171,19 @@ describe("diagnostics", () => {
     expect(codes(run("export {};").diagnostics)).toEqual(["UF1101"]);
   });
 
-  it("reports local components, props, setup code and async functions as not supported yet", () => {
+  it("reports local components, setup code and async functions as not supported yet", () => {
     const source = [
       "function Local() { return <p />; }",
-      "export function Props(props: { a: string }) { return <p />; }",
       "export function Setup() { const a = 1; return <p />; }",
       "export async function Async() { return <p />; }",
       "export function Ok() { return <p />; }",
     ].join("\n");
     const { module, diagnostics } = run(source);
-    expect(codes(diagnostics)).toEqual(["UF1002", "UF1002", "UF1002", "UF1002"]);
-    expect(slices(source, diagnostics)).toEqual([
-      "Local",
-      "props: { a: string }",
-      "const a = 1;",
-      "Async",
-    ]);
+    expect(codes(diagnostics)).toEqual(["UF1002", "UF1002", "UF1002"]);
+    expect(slices(source, diagnostics)).toEqual(["Local", "const a = 1;", "Async"]);
+    expect(diagnostics[1]!.message).toBe(
+      "Setup code in a component's body is not supported yet: it lands in M2.",
+    );
     // An error in one component never stops its siblings.
     expect(module!.components.map((component) => component.name)).toEqual(["Ok"]);
     expect(module!.exports.map((entry) => entry.local)).toEqual(["Ok"]);
@@ -187,15 +201,14 @@ describe("diagnostics", () => {
     );
   });
 
-  it("reports each JSX construct outside the subset, and keeps going", () => {
+  it("reports each JSX construct M1 does not lower, and keeps going", () => {
     const source = [
       "export function A() {",
       "  return (",
-      '    <div {...rest} a={1} xlink:href="x" key="k" v-model="x" v-model:open="x">',
-      "      {value}",
+      '    <div ref="r" v-model="x" v-model:open="x" onClick={go}>',
       "      <Child />",
       "      <svg:rect />",
-      "      <></>",
+      "      <a.b />",
       "      {...children}",
       "    </div>",
       "  );",
@@ -204,25 +217,30 @@ describe("diagnostics", () => {
     const { module, diagnostics } = run(source);
     expect(module!.components).toEqual([]);
     expect(slices(source, diagnostics)).toEqual([
-      "{...rest}",
-      "{1}",
-      "xlink:href",
-      "key",
+      "ref",
       "v-model",
       "v-model:open",
-      "{value}",
+      "onClick",
       "Child",
       "svg:rect",
-      "<></>",
+      "a.b",
       "{...children}",
     ]);
     expect(new Set(codes(diagnostics))).toEqual(new Set(["UF1002"]));
   });
 
-  it("reports a returned fragment as not supported yet", () => {
-    expect(run("export function A() { return <></>; }").diagnostics[0]!.message).toBe(
-      "Fragments (`<>…</>`) are not supported yet.",
-    );
+  it("lowers a returned fragment, and reports an empty one as rendering nothing", () => {
+    const { module, diagnostics } = run("export function A() { return <><p>a</p><p>b</p></>; }");
+    expect(diagnostics).toEqual([]);
+    expect(module!.components[0]!.render).toMatchObject({
+      kind: "Fragment",
+      children: [{ tag: "p" }, { tag: "p" }],
+    });
+    for (const fragment of ["<></>", "<>{null}{/* c */}</>"]) {
+      const empty = run(`export function A() { return ${fragment}; }`);
+      expect(codes(empty.diagnostics)).toEqual(["UF1102"]);
+      expect(empty.diagnostics[0]!.message).toBe("A renders nothing: its fragment is empty.");
+    }
   });
 
   it("reports other top-level declarations as not supported yet", () => {
@@ -412,8 +430,9 @@ describe("the module's statements", () => {
   ])("reports the type-only export in %s", (source, at) => {
     const { module, diagnostics } = run(source);
     expect(module).toBeUndefined();
-    expect(codes(diagnostics)).toEqual(["UF1002"]);
-    expect(slices(source, diagnostics)).toEqual([at]);
+    // The component is still checked: it is local, since a type-only export exports no value.
+    expect(codes(diagnostics)).toEqual(["UF1002", "UF1002"]);
+    expect(slices(source, diagnostics)).toEqual([at, "A"]);
     expect(diagnostics[0]!.message).toBe("Type-only exports are not supported yet.");
   });
 });

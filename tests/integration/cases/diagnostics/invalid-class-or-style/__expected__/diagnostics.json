@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF3022",
+    "severity": "error",
+    "message": "This `style` sets `margin-top` and `margin`, which set the same thing: the targets that write a style as an object cannot keep the order that decides it.",
+    "file": "diagnostics/invalid-class-or-style/Spacer.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 37,
+      "offset": 219
+    },
+    "end": {
+      "line": 4,
+      "column": 46,
+      "offset": 228
+    },
+    "help": "Set each property once, with its final value.",
+    "related": [
+      {
+        "start": {
+          "line": 4,
+          "column": 24,
+          "offset": 206
+        },
+        "end": {
+          "line": 4,
+          "column": 30,
+          "offset": 212
+        },
+        "message": "Also set here"
+      }
+    ]
+  }
+]

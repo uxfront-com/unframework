@@ -1,0 +1,9 @@
+error[UF1001]: Unexpected token: JSX text cannot hold a raw `>`.
+ --> diagnostics/syntax-error/PriceTag.uf.tsx:3:20
+  |
+3 |   return <p>Orders > 50 EUR ship free</p>;
+  |                    ^
+  |
+  = help: Write `&gt;` for the character: every JSX implementation decodes it; a string expression, `{'>'}`, renders the character too.
+  = fix (likely): Write `&gt;`
+  = see: https://unframework.dev/diagnostics/UF1001

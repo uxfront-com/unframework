@@ -1,0 +1,8 @@
+error[UF3005]: `slot` is template syntax: Svelte rejects it outside a component and Astro moves the element into a slot.
+ --> diagnostics/reserved-attribute/Panel.uf.tsx:5:11
+  |
+5 |       <h2 slot="title">Settings</h2>
+  |           ^^^^
+  |
+  = help: Slots land with composition.
+  = see: https://unframework.dev/diagnostics/UF3005

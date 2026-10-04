@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ARIA_ATTRIBUTES,
+  BINDABLE_BOOLEAN_ATTRIBUTES,
   BOOLEAN_ATTRIBUTES,
   canonicalNumber,
   DOCUMENT_ATTRIBUTES,
@@ -15,7 +16,10 @@ import {
   isHtmlAttribute,
   isHtmlElement,
   isJavaScriptUrl,
+  isNumberTypedAttribute,
   NESTED_DOCUMENT_ATTRIBUTES,
+  NUMBER_TYPED_ATTRIBUTES,
+  NUMBER_TYPED_GLOBAL_ATTRIBUTES,
   NUMERIC_ATTRIBUTES,
   OBSOLETE_ELEMENTS,
   P_CLOSING_ELEMENTS,
@@ -74,6 +78,30 @@ describe("the HTML vocabulary", () => {
     }
   });
 
+  it("binds only boolean attributes, and types as numbers only attributes of their elements", () => {
+    expect(
+      [...BINDABLE_BOOLEAN_ATTRIBUTES].filter((name) => !BOOLEAN_ATTRIBUTES.has(name)),
+    ).toEqual([]);
+    expect(
+      [...NUMBER_TYPED_GLOBAL_ATTRIBUTES].filter((name) => !isHtmlAttribute("div", name)),
+    ).toEqual([]);
+    for (const [tag, attributes] of NUMBER_TYPED_ATTRIBUTES) {
+      expect(
+        [...attributes].filter((name) => !isHtmlAttribute(tag, name)),
+        tag,
+      ).toEqual([]);
+    }
+    // Each numeric attribute renderers rewrite is typed as a number, but where React and Qwik
+    // also take a string.
+    const stringTyped = new Set(["li value", "meter value", "progress max", "progress value"]);
+    for (const [tag, attributes] of NUMERIC_ATTRIBUTES) {
+      for (const name of attributes.keys()) {
+        if (stringTyped.has(`${tag} ${name}`) || ["height", "width"].includes(name)) continue;
+        expect(isNumberTypedAttribute(tag, name), `${tag} ${name}`).toBe(true);
+      }
+    }
+  });
+
   it("knows ARIA attributes by their prefix", () => {
     expect([...ARIA_ATTRIBUTES].filter((name) => !name.startsWith("aria-"))).toEqual([]);
   });
@@ -112,8 +140,13 @@ describe("lookups by a source name", () => {
     expect(isHtmlAttribute("div", name)).toBe(false);
     expect(isHtmlAttribute(name, "href")).toBe(false);
     expect(isBooleanAttribute(name)).toBe(false);
+    expect(BINDABLE_BOOLEAN_ATTRIBUTES.has(name)).toBe(false);
+    expect(NUMBER_TYPED_GLOBAL_ATTRIBUTES.has(name)).toBe(false);
+    expect(isNumberTypedAttribute(name, name)).toBe(false);
+    expect(isNumberTypedAttribute("td", name)).toBe(false);
     for (const table of [
       ELEMENT_ATTRIBUTES,
+      NUMBER_TYPED_ATTRIBUTES,
       NUMERIC_ATTRIBUTES,
       PERMITTED_CHILDREN,
       REQUIRED_PARENTS,

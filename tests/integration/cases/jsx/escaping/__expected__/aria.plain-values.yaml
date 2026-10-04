@@ -1,0 +1,9 @@
+- figure "Template syntax & escaping":
+  - text: Template syntax & escaping
+  - code: const answer = 42;
+  - paragraph: "Static: <b>not bold</b>, {{ name }}, @if (ok) { }"
+  - paragraph: "Literal: {{ name }} <i>not italic</i> {#each items} @for \"quoted\" C:\\temp café"
+  - paragraph: Quoted attribute
+  - paragraph: "Bound: Nothing to escape in /home/ada\\index.ts"
+  - paragraph: "Mustache: {{ /home/ada }}"
+  - paragraph: Done &check;

@@ -1,0 +1,492 @@
+{
+  "irVersion": 1,
+  "file": "jsx/escaping/TemplateTip.uf.tsx",
+  "components": [
+    {
+      "name": "TemplateTip",
+      "span": {
+        "start": 90,
+        "end": 970
+      },
+      "props": [
+        {
+          "name": "example",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 47,
+              "end": 53
+            }
+          },
+          "binding": "example@128",
+          "span": {
+            "start": 38,
+            "end": 54
+          }
+        },
+        {
+          "name": "note",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 63,
+              "end": 69
+            }
+          },
+          "binding": "note@137",
+          "span": {
+            "start": 57,
+            "end": 70
+          }
+        },
+        {
+          "name": "path",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 79,
+              "end": 85
+            }
+          },
+          "binding": "path@143",
+          "span": {
+            "start": 73,
+            "end": 86
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TemplateTipProps",
+          "span": {
+            "start": 151,
+            "end": 167
+          }
+        },
+        "span": {
+          "start": 126,
+          "end": 167
+        }
+      },
+      "types": [
+        "TemplateTipProps"
+      ],
+      "bindings": [
+        {
+          "id": "example@128",
+          "name": "example",
+          "kind": "prop",
+          "span": {
+            "start": 128,
+            "end": 135
+          }
+        },
+        {
+          "id": "note@137",
+          "name": "note",
+          "kind": "prop",
+          "span": {
+            "start": 137,
+            "end": 141
+          }
+        },
+        {
+          "id": "path@143",
+          "name": "path",
+          "kind": "prop",
+          "span": {
+            "start": 143,
+            "end": 147
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "figure",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "template-tip",
+            "span": {
+              "start": 194,
+              "end": 214
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "figcaption",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "title",
+                "value": "Vue {{ name }}, Svelte {#if ok}, Angular @if (ok) & JSX {name}",
+                "span": {
+                  "start": 234,
+                  "end": 308
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Template syntax & escaping",
+                "span": {
+                  "start": 309,
+                  "end": 355
+                }
+              }
+            ],
+            "span": {
+              "start": 222,
+              "end": 368
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "pre",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "code",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "example",
+                      "span": {
+                        "start": 396,
+                        "end": 403
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "example@128",
+                          "span": {
+                            "start": 396,
+                            "end": 403
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 395,
+                      "end": 404
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 389,
+                  "end": 411
+                }
+              }
+            ],
+            "span": {
+              "start": 375,
+              "end": 424
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "data-sample",
+                "value": "<b> \"double\" 'single' C:\\temp",
+                "span": {
+                  "start": 434,
+                  "end": 493
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Static: <b>not bold</b>, {{ name }}, @if (ok) { }",
+                "span": {
+                  "start": 494,
+                  "end": 601
+                }
+              }
+            ],
+            "span": {
+              "start": 431,
+              "end": 605
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Literal: {{ name }} <i>not italic</i> {#each items} @for \"quoted\" C:\\temp café",
+                "span": {
+                  "start": 624,
+                  "end": 712
+                }
+              }
+            ],
+            "span": {
+              "start": 612,
+              "end": 723
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "title",
+                "value": "Say \"hi\" & wave",
+                "span": {
+                  "start": 733,
+                  "end": 758
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Quoted attribute",
+                "span": {
+                  "start": 759,
+                  "end": 775
+                }
+              }
+            ],
+            "span": {
+              "start": 730,
+              "end": 779
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "title",
+                "value": {
+                  "code": "note",
+                  "span": {
+                    "start": 796,
+                    "end": 800
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "note@137",
+                      "span": {
+                        "start": 796,
+                        "end": 800
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 789,
+                  "end": 801
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "data-path",
+                "value": {
+                  "code": "path",
+                  "span": {
+                    "start": 813,
+                    "end": 817
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "path@143",
+                      "span": {
+                        "start": 813,
+                        "end": 817
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 802,
+                  "end": 818
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Bound: ",
+                "span": {
+                  "start": 819,
+                  "end": 835
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "note",
+                  "span": {
+                    "start": 836,
+                    "end": 840
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "note@137",
+                      "span": {
+                        "start": 836,
+                        "end": 840
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 835,
+                  "end": 841
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " in ",
+                "span": {
+                  "start": 841,
+                  "end": 845
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "path + \"\\\\index.ts\"",
+                  "span": {
+                    "start": 846,
+                    "end": 865
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "path@143",
+                      "span": {
+                        "start": 846,
+                        "end": 850
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 845,
+                  "end": 866
+                }
+              }
+            ],
+            "span": {
+              "start": 786,
+              "end": 877
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Mustache: ",
+                "span": {
+                  "start": 887,
+                  "end": 897
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "\"{{ \" + path + \" }}\"",
+                  "span": {
+                    "start": 898,
+                    "end": 918
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "path@143",
+                      "span": {
+                        "start": 906,
+                        "end": 910
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 897,
+                  "end": 919
+                }
+              }
+            ],
+            "span": {
+              "start": 884,
+              "end": 923
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Done &check;",
+                "span": {
+                  "start": 933,
+                  "end": 945
+                }
+              }
+            ],
+            "span": {
+              "start": 930,
+              "end": 949
+            }
+          }
+        ],
+        "span": {
+          "start": 186,
+          "end": 963
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "TemplateTip",
+      "span": {
+        "start": 90,
+        "end": 970
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "TemplateTipProps",
+      "exported": true,
+      "code": "interface TemplateTipProps {\n  example: string;\n  note: string;\n  path: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 88
+      }
+    }
+  ]
+}

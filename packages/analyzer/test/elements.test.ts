@@ -83,7 +83,6 @@ describe("element names", () => {
       "<div><my-widget>a</my-widget></div>",
       "Custom elements such as <my-widget> are not supported yet.",
     ],
-    ["<div><svg></svg></div>", "SVG (`<svg>`) is not supported yet."],
     ["<div><math></math></div>", "MathML (`<math>`) is not supported yet."],
     [
       "<div><select><selectedcontent /></select></div>",
@@ -117,15 +116,11 @@ describe("element names", () => {
     expect(problems("<foo><p><div>a</div></p></foo>")).toEqual(["UF3001 foo", "UF3003 div"]);
   });
 
-  // Their children are SVG or MathML, which the HTML checks would only misreport (M1: SVG).
-  it.each([
-    [
-      '<button type="button"><svg viewBox="0 0 10 10"><path d="M0 0" /><circle r="1" /><linearGradient id="g"><stop offset="0" /></linearGradient></svg></button>',
-      "svg",
-    ],
-    ["<div><math><mi>x</mi><mo>=</mo><mn>2</mn></math></div>", "math"],
-  ])("reports %s once, and nothing inside it", (jsx, tag) => {
-    expect(problems(jsx)).toEqual([`UF1002 ${tag}`]);
+  // Its children are MathML, which the HTML checks would only misreport.
+  it("reports <math> once, and nothing inside it", () => {
+    expect(problems("<div><math><mi>x</mi><mo>=</mo><mn>2</mn></math></div>")).toEqual([
+      "UF1002 math",
+    ]);
   });
 
   // Tags are looked up in tables keyed by name: none may answer from a prototype.

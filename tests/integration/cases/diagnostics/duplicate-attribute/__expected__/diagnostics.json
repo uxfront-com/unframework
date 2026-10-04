@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF3007",
+    "severity": "error",
+    "message": "`href` is set twice on this <a>.",
+    "file": "diagnostics/duplicate-attribute/NavLink.uf.tsx",
+    "start": {
+      "line": 14,
+      "column": 21,
+      "offset": 330
+    },
+    "end": {
+      "line": 14,
+      "column": 30,
+      "offset": 339
+    },
+    "help": "Keep one: remove the attribute, or the key from the spread's type.",
+    "related": [
+      {
+        "start": {
+          "line": 14,
+          "column": 8,
+          "offset": 317
+        },
+        "end": {
+          "line": 14,
+          "column": 12,
+          "offset": 321
+        },
+        "message": "First set here"
+      }
+    ]
+  }
+]

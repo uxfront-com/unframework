@@ -30,7 +30,7 @@ export function parseStylesheet(file: string, source: string): ParsedStylesheet 
  * The UTF-16 offset of lightningcss's error location: a 1-based line and a 1-based column in
  * UTF-16 code units. Lines end at CSS's line breaks: LF, CRLF, CR and form feed.
  */
-function offsetOf(source: string, line: number, column: number): number {
+export function offsetOf(source: string, line: number, column: number): number {
   let offset = 0;
   for (let current = 1; current < line; current++) {
     const end = /\r\n|[\n\r\f]/g;

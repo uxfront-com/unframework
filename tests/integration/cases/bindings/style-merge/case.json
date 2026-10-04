@@ -1,0 +1,9 @@
+{
+  "description": "Static and bound declarations in one style object; bound declarations whose value is undefined (an absent prop) or empty are left out.",
+  "ssr": {
+    "styled": {
+      "props": { "label": "Urgent", "colour": "#7a1f5c", "weight": 700, "indent": "16px" }
+    },
+    "nullish-dropped": { "props": { "label": "Later", "indent": "" } }
+  }
+}

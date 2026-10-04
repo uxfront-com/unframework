@@ -1,0 +1,16 @@
+---
+export interface BannerProps {
+  message: string;
+  tone: string;
+  emphasis?: string | null;
+}
+
+type Props = BannerProps;
+
+const { message, tone, emphasis } = Astro.props;
+---
+
+<div class:list={["banner", tone]} role="note">
+  <p class:list={[emphasis]}>{message}</p>
+  <p class:list={[`banner-footer banner-footer-${tone}`]}>Shown to every visitor.</p>
+</div>

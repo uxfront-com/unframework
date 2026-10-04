@@ -1,0 +1,13 @@
+{
+  "description": "Rendering again with new props updates text, attributes, the class, the style, the branch and the list; a prop left out is absent again.",
+  "ssr": {
+    "queued": {
+      "props": {
+        "fileName": "report.pdf",
+        "state": "queued",
+        "percent": 0,
+        "steps": [{ "id": "verify", "label": "Verify checksum" }]
+      }
+    }
+  }
+}

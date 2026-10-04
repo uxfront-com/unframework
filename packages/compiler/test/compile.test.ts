@@ -1,6 +1,6 @@
-import { defineTarget } from "@unframework/codegen";
-import type { Target } from "@unframework/codegen";
-import type { UfModule } from "@unframework/ir";
+import { CAPABILITY_NAMES, defineTarget } from "@unframework/codegen";
+import type { Capabilities, Target } from "@unframework/codegen";
+import type { ElementNode, UfModule } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
 import { compile, requiredCapabilities, TARGET_NAMES } from "../src/index.ts";
@@ -8,6 +8,20 @@ import type { CompileResult, CompilerPlugin } from "../src/index.ts";
 
 const hello =
   'export default function Hello() {\n  return <p class="greeting">Hello, world!</p>;\n}\n';
+
+/** A capability matrix that supports everything, but the cells given. */
+function capabilities(cells: Partial<Capabilities> = {}): Capabilities {
+  return Object.fromEntries(
+    CAPABILITY_NAMES.map((name) => [name, cells[name] ?? { support: "native" }]),
+  ) as Capabilities;
+}
+
+/** The root element of a module's only component, which every test source renders. */
+function rootOf(module: UfModule): ElementNode {
+  const { render } = module.components[0]!;
+  if (render.kind !== "Element") throw new Error("The test source renders one root element.");
+  return render;
+}
 
 describe("compile", () => {
   it("emits every built-in target", async () => {
@@ -65,13 +79,7 @@ describe("compile", () => {
     const html = defineTarget({
       name: "html",
       framework: { package: "none", range: "*" },
-      capabilities: {
-        element: { support: "native" },
-        text: { support: "native" },
-        "static-attribute": { support: "native" },
-        listbox: { support: "native" },
-        interactivity: { support: "native" },
-      },
+      capabilities: capabilities(),
       emit: (component) => [{ path: `${component.name}.html`, contents: "<p></p>" }],
     });
     const result = await compile(hello, { filename: "Hello.uf.tsx", targets: [html] });
@@ -95,10 +103,9 @@ describe("plugins", () => {
       name: "test",
       ir(module) {
         calls.push("ir");
-        const render = module.components[0]!.render;
         return {
           ...module,
-          components: [{ ...module.components[0]!, render: { ...render, attributes: [] } }],
+          components: [{ ...module.components[0]!, render: { ...rootOf(module), attributes: [] } }],
         };
       },
       output(files, context) {
@@ -157,13 +164,7 @@ describe("targets", () => {
     const broken: Target = defineTarget({
       name: "broken",
       framework: { package: "none", range: "*" },
-      capabilities: {
-        element: { support: "native" },
-        text: { support: "native" },
-        "static-attribute": { support: "native" },
-        listbox: { support: "native" },
-        interactivity: { support: "native" },
-      },
+      capabilities: capabilities(),
       emit() {
         throw new Error("nope");
       },
@@ -177,18 +178,14 @@ describe("targets", () => {
     const limited: Target = defineTarget({
       name: "textless",
       framework: { package: "none", range: "*" },
-      capabilities: {
-        element: { support: "native" },
+      capabilities: capabilities({
         text: {
           support: "unsupported",
           code: "UF4001",
           severity: "warning",
           reason: "No text here.",
         },
-        "static-attribute": { support: "native" },
-        listbox: { support: "native" },
-        interactivity: { support: "native" },
-      },
+      }),
       emit: () => [],
     });
     const result = await compile(hello, { filename: "Hello.uf.tsx", targets: [limited] });
@@ -224,13 +221,7 @@ function htmlTarget(overrides: Partial<Target> = {}): Target {
   return defineTarget({
     name: "html",
     framework: { package: "none", range: "*" },
-    capabilities: {
-      element: { support: "native" },
-      text: { support: "native" },
-      "static-attribute": { support: "native" },
-      listbox: { support: "native" },
-      interactivity: { support: "native" },
-    },
+    capabilities: capabilities(),
     emit: (component) => [{ path: `${component.name}.html`, contents: "<p></p>" }],
     ...overrides,
   });
@@ -251,7 +242,7 @@ function renamed(module: UfModule, name: string): UfModule {
 /** The module with its component rendering an `<iframe>` with one more attribute. */
 function framed(module: UfModule, name: string, value: string): UfModule {
   const copy = structuredClone(module);
-  const { span } = copy.components[0]!.render;
+  const { span } = rootOf(copy);
   copy.components[0]!.render = {
     kind: "Element",
     tag: "iframe",
@@ -268,7 +259,7 @@ function framed(module: UfModule, name: string, value: string): UfModule {
 /** The module with an attribute added to its component's root element. */
 function withAttribute(module: UfModule, name: string, value: string | true): UfModule {
   const copy = structuredClone(module);
-  const render = copy.components[0]!.render;
+  const render = rootOf(copy);
   render.attributes.push({ kind: "Static", name, value, span: render.span });
   return copy;
 }
@@ -283,7 +274,7 @@ describe("misbehaving plugins", () => {
       plugins: [{ name: "empty", ir: () => ({}) as never }],
     });
     expect(result.diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
-      'The "empty" plugin\'s ir hook returned invalid IR: / must have "irVersion"; / must have "file"; / must have "components" (and 1 more)',
+      'The "empty" plugin\'s ir hook returned invalid IR: / must have "irVersion"; / must have "file"; / must have "components" (and 2 more)',
     ]);
     expect(result.outputs.vue![0]!.contents).toContain("Hello, world!");
   });
@@ -300,7 +291,7 @@ describe("misbehaving plugins", () => {
           name: "unsafe",
           ir: (module) => {
             const copy = structuredClone(module);
-            const render = copy.components[0]!.render;
+            const render = rootOf(copy);
             const at = render.span;
             render.attributes = [
               { kind: "Static", name: "aria-hidden", value: true, span: at },
@@ -395,7 +386,7 @@ describe("misbehaving plugins", () => {
     expect(result.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.message])).toEqual([
       [
         "UF8001",
-        'The "holey" plugin\'s ir hook returned invalid IR: /components/0/render/children/1 must match one of ElementNode, TextNode',
+        'The "holey" plugin\'s ir hook returned invalid IR: /components/0/render/children/1 must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode',
       ],
     ]);
     for (const name of TARGET_NAMES) expect(result.outputs[name]).toHaveLength(1);
@@ -429,6 +420,46 @@ describe("misbehaving plugins", () => {
     for (const name of TARGET_NAMES) expect(result.outputs[name]).toHaveLength(1);
   });
 
+  // Targets copy an expression's code into seven outputs, and the IR cannot parse it: a plugin
+  // that points an expression at source text the analyser never read as code (the inside of a
+  // string literal or a comment) is rejected, once (r-ir-analyzer).
+  it.each([
+    ["the inside of a string literal", hello, "greeting"],
+    [
+      "the inside of a comment",
+      "export default function Hello() {\n  return <p>{/* alert(1) */}Hi</p>;\n}\n",
+      "alert(1)",
+    ],
+  ])("rejects an ir hook's expression that points at %s, once", async (_, source, code) => {
+    const start = source.indexOf(code);
+    const result = await compile(source, {
+      filename: "Hello.uf.tsx",
+      targets: TARGET_NAMES,
+      plugins: [
+        {
+          name: "injector",
+          ir: (module) => {
+            const copy = structuredClone(module);
+            const value = { code, span: { start, end: start + code.length }, refs: [] };
+            rootOf(copy).children = [{ kind: "Interpolation", value, span: value.span }];
+            return copy;
+          },
+        },
+      ],
+    });
+    expect(result.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.message])).toEqual([
+      [
+        "UF8001",
+        'The "injector" plugin\'s ir hook returned invalid IR: /components/0/render/children/0/value must be an expression the analyser produced, with its span, code and references: a plugin may move, copy or drop analysed code, never write its own',
+      ],
+    ]);
+    for (const name of TARGET_NAMES) {
+      const contents = result.outputs[name]!.map((file) => file.contents).join("\n");
+      expect(contents).not.toContain(`{{ ${code} }}`);
+      expect(result.outputs[name]).toHaveLength(1);
+    }
+  });
+
   // What the canaries do to the IR keeps its invariants, so each reaches its own layer.
   it("accepts an ir hook's result that keeps the invariants", async () => {
     const result = await compile(hello, {
@@ -439,7 +470,7 @@ describe("misbehaving plugins", () => {
           name: "canary-like",
           ir: (module) => {
             const copy = structuredClone(module);
-            const render = copy.components[0]!.render;
+            const render = rootOf(copy);
             render.attributes.push(
               { kind: "Static", name: "data-uf-canary", value: "L2", span: render.span },
               { kind: "Static", name: "hidden", value: true, span: render.span },

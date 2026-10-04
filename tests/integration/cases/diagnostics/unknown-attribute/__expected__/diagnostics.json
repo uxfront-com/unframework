@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3006",
+    "severity": "error",
+    "message": "`alt` is not an attribute of <a>.",
+    "file": "diagnostics/unknown-attribute/DocsLink.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 21,
+      "offset": 153
+    },
+    "end": {
+      "line": 4,
+      "column": 24,
+      "offset": 156
+    },
+    "help": "`alt` is an attribute of <area>, <img> and <input>."
+  }
+]

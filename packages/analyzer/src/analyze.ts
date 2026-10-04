@@ -1,12 +1,29 @@
 import type { Diagnostic } from "@unframework/diagnostics";
-import { createComponent, createExport, createModule, isExportName } from "@unframework/ir";
-import type { UfComponent, UfExport, UfModule } from "@unframework/ir";
-import { findComponents, isComponentName } from "@unframework/parser";
+import {
+  createComponent,
+  createExport,
+  createFragment,
+  createModule,
+  createTypeDeclaration,
+  isExportName,
+} from "@unframework/ir";
+import type { TypeDeclaration, UfComponent, UfExport, UfModule } from "@unframework/ir";
+import {
+  findComponents,
+  findTypeDeclarations,
+  isComponentName,
+  typeDeclarationOf,
+} from "@unframework/parser";
 import type { AST, ComponentDeclaration, ParsedModule } from "@unframework/parser";
 
 import { Reporter } from "./context.ts";
+import { checkTypeDeclaration, collectTypes } from "./declarations.ts";
+import type { ModuleTypes } from "./declarations.ts";
 import { frameworkOf, isAuthoringModule } from "./frameworks.ts";
-import { lowerElement } from "./lower.ts";
+import { containsJsx, lowerElement, lowerRootChildren, ROOT } from "./lower.ts";
+import { analyzeProps } from "./props.ts";
+import type { RenderContext } from "./render.ts";
+import { Scopes } from "./scope.ts";
 import { syntaxError } from "./syntax.ts";
 
 /** The result of analysing one module. */
@@ -37,33 +54,39 @@ export function analyze(parsed: ParsedModule): AnalyzeResult {
 
   const candidates = findComponents(parsed.program);
   const componentStatements = new Set(candidates.map((candidate) => candidate.span.start));
+  const declarations = findTypeDeclarations(parsed.program);
+  const types = collectTypes(declarations, candidates);
   const context: ModuleContext = {
     source: parsed.source,
     candidates,
     exported: exportedNames(parsed.program),
     reporter,
+    types,
+    comments: parsed.comments,
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
     if (componentStatements.has(statement.start)) continue;
     checkTopLevelStatement(statement, context);
   }
-  if (reporter.hasErrorsSince(moduleMark)) {
-    return { module: undefined, diagnostics: reporter.diagnostics };
-  }
+  // A module-level error drops every component, but they are still checked: fixing it must
+  // reveal nothing new (the harness's L1).
+  const moduleErrors = reporter.hasErrorsSince(moduleMark);
 
+  const scopes = new Scopes(parsed.program);
   const components: UfComponent[] = [];
   const exports: UfExport[] = [];
   const names = new Map<string, ComponentDeclaration>();
   for (const candidate of candidates) {
     if (!checkComponentExports(candidate, names, reporter)) continue;
-    const component = analyzeComponent(candidate, reporter);
+    const component = analyzeComponent(candidate, parsed, types, scopes, reporter);
     if (!component) continue;
     components.push(component);
     for (const entry of candidate.exports) {
       exports.push({ ...createExport(entry.kind, candidate.name, entry.span), name: entry.name });
     }
   }
+  if (moduleErrors) return { module: undefined, diagnostics: reporter.diagnostics };
   if (!candidates.some((candidate) => candidate.exports.length)) {
     reporter.report("UF1101", { start: 0, end: 0 }, "This file exports no component.", {
       help: "A component is an exported PascalCase function whose last statement returns JSX.",
@@ -72,9 +95,36 @@ export function analyze(parsed: ParsedModule): AnalyzeResult {
   }
   exports.sort((a, b) => a.span.start - b.span.start);
   return {
-    module: createModule(parsed.file, components, exports),
+    module: createModule(
+      parsed.file,
+      components,
+      exports,
+      moduleTypes(components, types, parsed.source),
+    ),
     diagnostics: reporter.diagnostics,
   };
+}
+
+/**
+ * The type declarations the components' outputs declare (ADR-0034): each one some lowered
+ * component's props reach, in source order, as written from `interface` or `type` on.
+ */
+function moduleTypes(
+  components: readonly UfComponent[],
+  types: ModuleTypes,
+  source: string,
+): TypeDeclaration[] {
+  const used = new Set(components.flatMap((component) => component.types));
+  return types.declarations
+    .filter((declaration) => used.has(declaration.name))
+    .map((declaration) =>
+      createTypeDeclaration(
+        declaration.name,
+        declaration.exported,
+        source.slice(declaration.node.start, declaration.node.end),
+        spanOf(declaration.node),
+      ),
+    );
 }
 
 /**
@@ -130,6 +180,9 @@ interface ModuleContext {
   /** The local names the module exports as values (`export { name }`, `export default name`). */
   exported: ReadonlySet<string>;
   reporter: Reporter;
+  types: ModuleTypes;
+  /** The module's comments: lint directives must not reach an output. */
+  comments: readonly AST.Comment[];
 }
 
 /** The local names a module exports as values in `export { name }` and `export default name`. */
@@ -159,10 +212,16 @@ function exportedNames(program: AST.Program): Set<string> {
 /** Checks a top-level statement that does not declare a component. */
 function checkTopLevelStatement(
   statement: AST.Directive | AST.Statement,
-  { source, candidates, exported, reporter }: ModuleContext,
+  { source, candidates, exported, reporter, types, comments }: ModuleContext,
 ): void {
   if (isDirective(statement)) {
     checkDirective(statement, reporter);
+    return;
+  }
+  // A props type, plain or exported (ADR-0034).
+  if (typeDeclarationOf(statement)) {
+    const declaration = types.declarations.find((item) => item.span.start === statement.start);
+    if (declaration) checkTypeDeclaration(declaration, types, source, comments, reporter);
     return;
   }
   const fn = functionReturningJsx(statement);
@@ -183,8 +242,9 @@ function checkTopLevelStatement(
       checkImport(statement, reporter);
       return;
     case "ExportNamedDeclaration": {
-      // A type-only export exports no value, only a type for consumers' type checks (M5), and
-      // the targets' outputs export none yet.
+      // A type-only export list exports no value, only types for consumers' type checks (M5),
+      // and the targets' outputs export none on their own yet. (`export interface` and
+      // `export type X = …` declare a props type, above.)
       if (statement.exportKind === "type") {
         reporter.unsupported(statement, "Type-only exports are not supported yet.");
         return;
@@ -349,7 +409,14 @@ function checkImport(statement: AST.ImportDeclaration, reporter: Reporter): void
     return;
   }
   if (isAuthoringModule(specifier)) return;
-  if (statement.importKind === "type") return;
+  if (statement.importKind === "type") {
+    reporter.unsupported(
+      statement,
+      "Importing types from other modules is not supported yet: props types from other modules land in M5.",
+      { help: "Declare the props type in this module." },
+    );
+    return;
+  }
   if (/\.(css|scss|sass|less|styl|pcss)$/.test(specifier)) {
     reporter.unsupported(statement, "Stylesheets are not supported yet.");
     return;
@@ -357,9 +424,12 @@ function checkImport(statement: AST.ImportDeclaration, reporter: Reporter): void
   reporter.unsupported(statement, "Importing modules is not supported yet.");
 }
 
-/** Checks a component's shape and lowers its returned JSX. */
+/** Checks a component's shape, its props and its setup, and lowers its returned JSX. */
 function analyzeComponent(
   candidate: ComponentDeclaration,
+  parsed: ParsedModule,
+  types: ModuleTypes,
+  scopes: Scopes,
   reporter: Reporter,
 ): UfComponent | undefined {
   const mark = reporter.diagnostics.length;
@@ -379,31 +449,126 @@ function analyzeComponent(
   if (fn.async) reporter.unsupported(name, "Async components are not supported yet.");
   if (fn.typeParameters)
     reporter.unsupported(fn.typeParameters, "Generic components are not supported yet.");
-  if (fn.params.length) {
-    const first = fn.params[0]!;
-    const last = fn.params.at(-1)!;
-    reporter.unsupported({ start: first.start, end: last.end }, "Props are not supported yet.");
-  }
+  const props = analyzeProps(fn, types, parsed.source, parsed.comments, reporter);
 
   // A stray `;` does nothing, so `return <p />;;` still ends with its return.
   const body = (fn.body?.body ?? []).filter((statement) => statement.type !== "EmptyStatement");
   const last = body.at(-1);
-  for (const statement of body.slice(0, -1)) {
-    if (isDirective(statement)) checkDirective(statement, reporter);
-    else reporter.unsupported(statement, "Setup code in a component's body is not supported yet.");
-  }
+  for (const statement of body.slice(0, -1)) checkSetup(statement, reporter);
   const returned = last?.type === "ReturnStatement" ? last.argument : undefined;
+  const render: RenderContext = {
+    source: parsed.source,
+    reporter,
+    scopes,
+    types: types.table,
+    component: fn,
+    props: props.byName,
+    propsByDeclaration: props.byDeclaration,
+    propsObject: props.object,
+    loopVariables: new Map(),
+    enclosing: [],
+    bindings: [...props.bindings],
+    comments: parsed.comments,
+  };
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {
-    reporter.report("UF1102", last ?? name, `${candidate.name}'s last statement must return JSX.`, {
-      help: "End the component with `return <element>…</element>;`.",
-    });
+    if (returned && containsJsx(returned) && returned.type !== "ArrowFunctionExpression") {
+      rootExpression(candidate, returned, render);
+    } else {
+      reporter.report(
+        "UF1102",
+        last ?? name,
+        `${candidate.name}'s last statement must return JSX.`,
+        {
+          help: "End the component with `return <element>…</element>;`.",
+        },
+      );
+    }
     return undefined;
   }
+  let root: UfComponent["render"] | undefined;
   if (returned.type === "JSXFragment") {
-    reporter.unsupported(returned, "Fragments (`<>…</>`) are not supported yet.");
-    return undefined;
+    const children = lowerRootChildren(returned, render);
+    if (!children.length && !reporter.hasErrorsSince(mark)) {
+      reporter.report(
+        "UF1102",
+        returned,
+        `${candidate.name} renders nothing: its fragment is empty.`,
+        {
+          help: "Return the elements the component renders.",
+        },
+      );
+    }
+    root = children.length ? createFragment(children, spanOf(returned)) : undefined;
+  } else {
+    root = lowerElement(returned, ROOT, render).element;
   }
-  const render = lowerElement(returned, reporter);
-  if (!render || reporter.hasErrorsSince(mark)) return undefined;
-  return createComponent(candidate.name, render, candidate.span);
+  if (!root || props.failed || reporter.hasErrorsSince(mark)) return undefined;
+  return createComponent(
+    candidate.name,
+    root,
+    candidate.span,
+    props.props,
+    props.propsParameter,
+    props.types,
+    render.bindings.toSorted((a, b) => a.span.start - b.span.start),
+  );
+}
+
+/**
+ * A component that returns a conditional or a list (UF1102): a component's root is an element or
+ * a fragment. The likely fix wraps it in `<>…</>`, which renders the same; its content is still
+ * checked, so the fix reveals nothing new.
+ */
+function rootExpression(
+  candidate: ComponentDeclaration,
+  returned: AST.Expression,
+  render: RenderContext,
+): void {
+  render.reporter.report(
+    "UF1102",
+    returned,
+    `${candidate.name} returns a conditional or a list, and a component returns an element or a fragment.`,
+    {
+      help: "Wrap it in a fragment: `<>{…}</>`.",
+      fixes: [
+        {
+          title: "Wrap it in a fragment",
+          confidence: "likely",
+          // Two insertions, so the fixes inside it still apply.
+          edits: [
+            { span: { start: returned.start, end: returned.start }, text: "<>{" },
+            { span: { start: returned.end, end: returned.end }, text: "}</>" },
+          ],
+        },
+      ],
+    },
+  );
+  lowerRootChildren(returned, render);
+}
+
+/**
+ * A statement before the component's return: setup code, which lands in M2. A variable that
+ * holds JSX is JSX outside the template (UF3012), which stays so once setup code lands.
+ */
+function checkSetup(statement: AST.Directive | AST.Statement, reporter: Reporter): void {
+  if (isDirective(statement)) {
+    checkDirective(statement, reporter);
+    return;
+  }
+  if (statement.type === "VariableDeclaration") {
+    const jsx = statement.declarations.filter((declarator) => containsJsx(declarator.init));
+    for (const declarator of jsx) {
+      reporter.report(
+        "UF3012",
+        declarator.init!,
+        "JSX cannot be kept in a variable: Vue's, Svelte's and Angular's templates have no counterpart for it.",
+        { help: "Write the JSX where it renders, in the returned tree, or extract a component." },
+      );
+    }
+    if (jsx.length) return;
+  }
+  reporter.unsupported(
+    statement,
+    "Setup code in a component's body is not supported yet: it lands in M2.",
+  );
 }
