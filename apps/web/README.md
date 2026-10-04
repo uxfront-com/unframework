@@ -25,7 +25,7 @@ The page (`app/pages/index.vue`) holds the copy and the scene. Its story follows
 | 04 Next     | `threshold`: the rails cross a soap film of light and converge into one white stream | Why a new framework won't need a migration     |
 | Finale      | The light corridor                                                                   | The GitHub link and the other UXFront projects |
 
-`app/lib/formations.ts` has the two wrappers the chapters need: `hold()` pins a formation's progress (the hero isn't pinned, so the rails would otherwise jump when the page scrolls) and `spotlight()` lights one stretch of the prism along the x axis.
+`app/lib/formations.ts` has the two wrappers the chapters need: `hold()` keeps a formation at a fixed progress (the hero holds its formation for only the first quarter screen of scroll, so the rails would otherwise grow out as the page starts to scroll) and `spotlight()` lights one stretch of the prism along the x axis.
 
 Chapters 03 and 04 use `stack` and `threshold`, two formations that started on this site and now live in `@uxfront/scene`:
 
@@ -35,8 +35,8 @@ Chapters 03 and 04 use `stack` and `threshold`, two formations that started on t
 Everything else comes from the homepage kit:
 
 - [`@uxfront/layer-ui`](https://www.npmjs.com/package/@uxfront/layer-ui), extended in `nuxt.config.ts`: auto-imports the components, self-hosts the fonts, adds `useUxHead()` and keeps the critical path clean.
-- [`@uxfront/ui`](https://www.npmjs.com/package/@uxfront/ui): the Vue components (`UxSite`, `UxHero`, `UxChapter`, `UxFinale`, the HUD, the header, the pinned labels), the framework logos and the design tokens.
-- [`@uxfront/scene`](https://www.npmjs.com/package/@uxfront/scene): the WebGL particle scene and its formations.
+- [`@uxfront/ui`](https://www.npmjs.com/package/@uxfront/ui): the Vue components (`UxSite`, `UxHero`, `UxChapter`, `UxFinale`, the HUD, the header, the labels pinned to the formations), the framework logos and the design tokens.
+- [`@uxfront/scene`](https://www.npmjs.com/package/@uxfront/scene): the WebGL particle scene and its formations. The page scrolls natively, and the chapters scroll with it: each one is a screen tall, and the scene holds its formation while it fills the screen.
 
 `public/og.jpg` is a 1200 × 630 capture of the hero, with the HUD and the scroll cue hidden. Capture it again when the hero changes.
 
@@ -61,7 +61,7 @@ The documentation is built with [Docus](https://docus.dev), through [`@uxfront/l
 How it shares the app with the homepage:
 
 - `app/app.vue` replaces Docus's own, so it renders the Docus shell (header, sidebar, search), loaded lazily from `docus/app/app.vue`, on `/docs` and below, and the bare page everywhere else. `app/error.vue` still renders `UxErrorPage`, docs included.
-- `app/components/app/AppHeaderLeft.vue` replaces Docus's header title with the `Unframework` wordmark and the "by UXFront" byline, like the homepage header.
+- `docsTheme.byline` in `app/app.config.ts` signs the docs header's `Unframework` "by UXFront", like the homepage header. `@uxfront/layer-docs` draws it, and leaves the name itself as Docus's plain title.
 - Docus adds Tailwind CSS and Nuxt UI to the entry stylesheet. On the homepage, `@uxfront/layer-ui` loads that stylesheet after first paint, and the `.ux-site` styles take precedence over it. Keep `app/app.css`, which Docus imports into the same stylesheet, off `.ux-site` too.
 - `nuxt.config.ts` turns off Nuxt's prefetch hints. Otherwise every page, the homepage included, would prefetch the docs' lazy chunks, which delays the homepage's fonts and stylesheet, and with them its LCP.
 - `app/app.config.ts` sets the theme colors and the GitHub, "Edit this page" and "Report an issue" links (with `rootDir: "apps/web"`, since the docs don't live at the repository root). `app/app.css` darkens Nuxt UI's light-mode primary to pass WCAG AA contrast. Nuxt UI's callouts (`::tip`, `::note`, …) still draw their text in fixed shades that fail it in light mode, so avoid them until they're themed.
@@ -95,7 +95,7 @@ Write an example once per framework in a `::framework-switcher`, one slot per fr
 ::
 ````
 
-It shows one tab per framework. The reader's pick switches every switcher on the site and the Framework select above the sidebar, and is kept across visits. The frameworks, their order and their slot names (the `value`s) are `docsTheme.frameworks` in `app/app.config.ts`: the seven Unframework compiles to. A page doesn't have to cover them all: a missing framework shows the first one the page has, with a note saying so.
+It shows the reader's framework, with no tabs of its own. The reader picks it once for the whole site, in the Framework select above the sidebar (in the header's menu on smaller screens), and the pick is kept across visits. The frameworks, their order and their slot names (the `value`s) are `docsTheme.frameworks` in `app/app.config.ts`: the seven Unframework compiles to. A page doesn't have to cover them all: a missing framework shows the first one the page has, with a note saying so. `@uxfront/layer-docs` highlights `tsx`, `svelte`, `angular-html`, `angular-ts` and `astro` on top of Docus's languages. Add any other an example needs to `content.build.markdown.highlight.langs` in `nuxt.config.ts`.
 
 ## Analytics
 

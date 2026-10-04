@@ -38,11 +38,12 @@ ${body}
 /**
  * Holds a formation at a fixed `local` progress, whatever the scroll.
  *
- * The scene hands formation `k` `local = 1` as soon as the stage passes `k`,
- * and `local = 0` before. The hero isn't pinned, so the prism would show its
- * rails half grown on load, then jump to full length the moment the page
- * scrolls. Held at 1, all seven rails reach their frameworks from the start.
- * Anchors and `update()` see the same `local`.
+ * The scene runs a formation's `local` from 0 to 1 while its section holds
+ * it. The hero starts the page, so it holds its formation only for the first
+ * quarter screen of scroll (`HOLD_MARGIN`): the prism would show its rails
+ * half grown on load, then grow them out the moment the page scrolls. Held at
+ * 1, all seven rails reach their frameworks from the start. Anchors and
+ * `update()` see the same `local`.
  */
 export function hold(formation: Formation, local: number): Formation {
   const at = <T extends FormationProgress>(progress: T): T => ({ ...progress, local });

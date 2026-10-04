@@ -10,9 +10,13 @@ export default defineAppConfig({
     rootDir: "apps/web",
   },
   docsTheme: {
-    // The frameworks the docs' examples come in, in the order the framework
-    // switcher (`::framework-switcher` in content) and the sidebar select show
-    // them. The first is the default. `value` names each framework's slot.
+    // Signs the header's site name "by UXFront", like the homepage header. With
+    // no wordmark, the name stays Docus's plain title, as the homepage writes it.
+    byline: true,
+    // The frameworks the docs' examples come in, in the order the Framework
+    // select shows them. The first is the default, and a page that skips the
+    // reader's framework (`::framework-switcher` in content) shows the first one
+    // it has. `value` names each framework's slot.
     frameworks: [
       { value: "react", label: "React", icon: "i-simple-icons-react" },
       { value: "vue", label: "Vue", icon: "i-simple-icons-vuedotjs" },
