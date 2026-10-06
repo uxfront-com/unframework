@@ -1,0 +1,11 @@
+error[UF1104]: CARD and Card differ only in case, so their output files collide.
+ --> diagnostics/component-name-collision/Cards.uf.tsx:6:17
+  |
+6 | export function CARD() {
+  |                 ^^^^
+  |
+2 | export function Card() {
+  |                 ^^^^ Card is declared here
+  |
+  = help: Rename one of them.
+  = see: https://unframework.dev/diagnostics/UF1104

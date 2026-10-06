@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF3023",
+    "severity": "error",
+    "message": "The left side of `??` is never null or undefined, so its right side never renders.",
+    "file": "diagnostics/non-nullable-operand/Heading.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 20,
+      "offset": 284
+    },
+    "end": {
+      "line": 8,
+      "column": 22,
+      "offset": 286
+    },
+    "help": "Remove `??` and its right side, or make the prop optional if it can be absent.",
+    "fixes": [
+      {
+        "title": "Remove `??` and its right side",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 283,
+              "end": 297
+            },
+            "text": ""
+          }
+        ]
+      }
+    ]
+  }
+]

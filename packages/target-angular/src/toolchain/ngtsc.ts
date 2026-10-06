@@ -26,7 +26,9 @@ export function strictOptions(compiler: AngularCompiler): CompilerOptions {
     target: ts.ScriptTarget.ES2022,
     module: ts.ModuleKind.Preserve,
     moduleResolution: ts.ModuleResolutionKind.Bundler,
-    lib: ["lib.es2022.d.ts", "lib.dom.d.ts", "lib.dom.iterable.d.ts"],
+    // ES2024's library, as every target's checker has: `toSorted()`, `toReversed()` and
+    // `toSpliced()` (the analyser's fixes for the mutating methods, UF3021) type-check.
+    lib: ["lib.es2024.d.ts", "lib.dom.d.ts", "lib.dom.iterable.d.ts"],
     strict: true,
     noUncheckedIndexedAccess: true,
     noImplicitOverride: true,

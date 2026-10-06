@@ -69,6 +69,7 @@ How it shares the app with the homepage:
 - The site is static, so Docus's MCP server is off (`mcp.enabled` in `nuxt.config.ts`), and so is its AI assistant, which only starts with an `AI_GATEWAY_API_KEY`.
 - The `cloudflare_pages_static` preset is set for production builds only: under it, `nuxt dev` serves Nuxt Content's browser database from a dump frozen at startup, so after a reload the docs would show stale content.
 - In content, link to the generated files (`/llms.txt`, `/raw/…`) with `{external}`, as the introduction does. Otherwise the router handles the click and shows the 404 page.
+- Examples of the compiler are copied verbatim from a corpus case's source and its golden outputs (`tests/integration/cases`). Put `<!-- prettier-ignore -->` before each copied block: oxfmt formats a fenced block's code, which would change the whitespace of the outputs. Docus highlights `tsx`, `svelte` and `astro` blocks only because `nuxt.config.ts` adds them to its languages.
 - `server/middleware/raw-markdown.ts` serves `/raw/<path>.md` from the page's source file. Nuxt Content's own route rebuilds it from the parsed page and writes tables as unescaped HTML, which agents, and Docus's "Copy page", then read.
 - `pnpm-workspace.yaml` pins `mdast-util-to-markdown` to 2.1.2: 2.1.3 sends `remark-mdc` into endless recursion on any **bold** text, and `llms-full.txt` fails to prerender.
 

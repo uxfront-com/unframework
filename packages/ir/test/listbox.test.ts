@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { createElement, createStaticAttribute, createText, listBoxSize } from "../src/index.ts";
-import type { ElementNode, RenderNode } from "../src/index.ts";
+import {
+  createBoundAttribute,
+  createBranch,
+  createElement,
+  createFor,
+  createIf,
+  createSpreadAttribute,
+  createSpreadKey,
+  createStaticAttribute,
+  createText,
+  listBoxSize,
+} from "../src/index.ts";
+import type { Attribute, ElementNode, RenderNode } from "../src/index.ts";
+import { expression, ids } from "./fixtures.ts";
 
 const at = { start: 0, end: 0 };
 
@@ -50,6 +62,71 @@ describe("listBoxSize", () => {
       el("select", { size: "2" }, option({ disabled: true })),
       el("select", { size: "2" }, el("optgroup", { label: "g", disabled: true }, option())),
       el("input", { size: "2" }),
+    ];
+    for (const element of quiet) expect(listBoxSize(element)).toBeUndefined();
+  });
+});
+
+const label = () => expression("label", 0, [["label", ids.label]]);
+const bound = (name: string) => createBoundAttribute(name, label(), at);
+const select = (attributes: Attribute[], ...children: RenderNode[]) =>
+  createElement("select", attributes, children, at);
+const conditional = (...children: RenderNode[]) =>
+  createIf([createBranch(label(), children, at)], at);
+const list = (body: ElementNode) =>
+  createFor(label(), ids.item, expression("item", 0, [["item", ids.item]]), body, at);
+
+// What is known only at run time counts as a list box (ADR-0033): Vue, the reference target,
+// cannot render one, so the `listbox` capability must never miss one.
+describe("listBoxSize with bindings and control flow", () => {
+  it("finds the attribute that may make a select a list box", () => {
+    const size = bound("size");
+    expect(listBoxSize(select([size], option()))).toBe(size);
+    const spread = createSpreadAttribute(label(), [createSpreadKey("size", at)], false, at);
+    expect(listBoxSize(select([spread], option()))).toBe(spread);
+    const multiple = bound("multiple");
+    const staticSize = createStaticAttribute("size", "2", at);
+    expect(listBoxSize(select([staticSize, multiple], option()))).toBe(staticSize);
+    const spreadMultiple = createSpreadAttribute(
+      label(),
+      [createSpreadKey("multiple", at)],
+      false,
+      at,
+    );
+    expect(listBoxSize(select([staticSize, spreadMultiple], option()))).toBe(staticSize);
+  });
+
+  it("counts an option in a conditional or a list, and one a binding may enable", () => {
+    const size = createStaticAttribute("size", "2", at);
+    expect(listBoxSize(select([size], conditional(option())))).toBe(size);
+    expect(listBoxSize(select([size], list(option())))).toBe(size);
+    expect(
+      listBoxSize(
+        select(
+          [size],
+          createIf([createBranch(label(), [], at), createBranch(undefined, [option()], at)], at),
+        ),
+      ),
+    ).toBe(size);
+    const group = createElement(
+      "optgroup",
+      [createStaticAttribute("label", "g", at)],
+      [conditional(option())],
+      at,
+    );
+    expect(listBoxSize(select([size], group))).toBe(size);
+    const maybeDisabled = createElement("option", [bound("disabled")], [createText("x", at)], at);
+    expect(listBoxSize(select([size], maybeDisabled))).toBe(size);
+  });
+
+  it("finds nothing where no option a drop-down would select can be there", () => {
+    const quiet = [
+      select([bound("size"), createStaticAttribute("multiple", true, at)], option()),
+      select([bound("size")], conditional(option({ disabled: true }))),
+      select([bound("size")], list(option({ disabled: true }))),
+      select([bound("size")], conditional(createText("x", at))),
+      select([bound("name")], option()),
+      createElement("input", [bound("size")], [], at),
     ];
     for (const element of quiet) expect(listBoxSize(element)).toBeUndefined();
   });

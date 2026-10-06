@@ -1,0 +1,8 @@
+error[UF3001]: <sapn> is not an HTML element.
+ --> diagnostics/unknown-element/Notice.uf.tsx:5:8
+  |
+5 |       <sapn class="notice-icon">!</sapn> Read this first.
+  |        ^^^^
+  |
+  = help: Components are PascalCase (`<Card>`), SVG elements sit inside an <svg>, and MathML is not supported yet.
+  = see: https://unframework.dev/diagnostics/UF3001

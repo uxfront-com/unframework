@@ -1,0 +1,11 @@
+error[UF3003]: <tr> cannot be a child of <table>: it belongs inside <thead>, <tbody> or <tfoot>.
+  --> diagnostics/invalid-nesting/PriceTable.uf.tsx:11:10
+   |
+11 |         <tr key={plan}>
+   |          ^^
+   |
+ 9 |     <table>
+   |      ^^^^^ The parent
+   |
+   = help: Wrap the rows in a <tbody>.
+   = see: https://unframework.dev/diagnostics/UF3003

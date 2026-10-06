@@ -1,0 +1,19 @@
+{
+  "description": "Template syntax of every target (`<`, `&`, `{{ }}`, `{#if}`, `@if`, quotes, backslashes) renders as written: in props, string-literal children, static text and attribute values. `&check;` stays as written (UF3011).",
+  "ssr": {
+    "template-syntax": {
+      "props": {
+        "example": "<b>{{ user.name }}</b> {#if open} @if (open) {} &amp;",
+        "note": "Say \"hi\" & {{ wave }}",
+        "path": "C:\\Users\\ada"
+      }
+    },
+    "plain-values": {
+      "props": {
+        "example": "const answer = 42;",
+        "note": "Nothing to escape",
+        "path": "/home/ada"
+      }
+    }
+  }
+}

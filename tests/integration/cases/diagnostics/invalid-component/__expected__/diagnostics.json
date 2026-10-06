@@ -1,0 +1,73 @@
+[
+  {
+    "code": "UF1102",
+    "severity": "error",
+    "message": "statusBadge returns JSX, as a component does, but a component's name is PascalCase.",
+    "file": "diagnostics/invalid-component/Presence.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 17,
+      "offset": 199
+    },
+    "end": {
+      "line": 3,
+      "column": 28,
+      "offset": 210
+    },
+    "help": "Name it in PascalCase, such as `StatusBadge`: JSX reads a lower-case tag as an HTML element.",
+    "fixes": [
+      {
+        "title": "Rename `statusBadge` to `StatusBadge`",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 199,
+              "end": 210
+            },
+            "text": "StatusBadge"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "UF1102",
+    "severity": "error",
+    "message": "Presence returns a conditional or a list, and a component returns an element or a fragment.",
+    "file": "diagnostics/invalid-component/Presence.uf.tsx",
+    "start": {
+      "line": 12,
+      "column": 10,
+      "offset": 380
+    },
+    "end": {
+      "line": 12,
+      "column": 58,
+      "offset": 428
+    },
+    "help": "Wrap it in a fragment: `<>{…}</>`.",
+    "fixes": [
+      {
+        "title": "Wrap it in a fragment",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 380,
+              "end": 380
+            },
+            "text": "<>{"
+          },
+          {
+            "span": {
+              "start": 428,
+              "end": 428
+            },
+            "text": "}</>"
+          }
+        ]
+      }
+    ]
+  }
+]

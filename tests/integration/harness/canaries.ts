@@ -4,23 +4,64 @@
 // every case it corrupts, on every target, with the evidence of every sub-check the canary
 // names (`canary-verdict.ts`). A layer that fails because its tool crashed proves nothing, and a
 // sub-check that never fails on its own (ARIA behind the DOM, pixels behind geometry, the
-// golden files behind the IR snapshot, determinism and formatting behind the golden files) is
-// not proven by its sibling.
+// golden files behind the IR snapshot, determinism and formatting behind the golden files, the
+// fix check behind the diagnostics, a framework's lint rules behind the baseline rules) is not
+// proven by its sibling.
 //
-// One sub-check has no canary yet: L1's "every fix applies and recompiles clean". No M0 case
-// has a diagnostic with a fix, and no compiler hook reaches the fixes a canary would have to
-// break; `compile-checks.unit.test.ts` proves the check on the real compiler until a case with
-// a fixable diagnostic (M1's attribute cases) and a way to corrupt its fix exist.
+// A corruption must reach every case it is judged on and keep the IR valid: the compiler turns a
+// plugin that throws or returns IR that breaks an invariant into a UF8001 and emits the module
+// as it was, so the layer would fail for the wrong reason, or not at all. So the IR canaries
+// change only elements every render shows, with attributes each element takes (an `<svg>` has
+// no `hidden`), and replace what an element already sets rather than set it twice;
+// `canaries.unit.test.ts` runs each canary on every case of the corpus.
+import { relative, sep } from "node:path";
+
 import type { OutputFile } from "@unframework/codegen";
-import type { CompilerPlugin } from "@unframework/compiler";
-import { createStaticAttribute } from "@unframework/ir";
-import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
+import type { CompilerPlugin, TargetName } from "@unframework/compiler";
+import type { Diagnostic } from "@unframework/diagnostics";
+import {
+  createElement,
+  createStaticAttribute,
+  createStaticStyle,
+  createStyleAttribute,
+  createText,
+  cssPropertiesOverlap,
+  elementNamespace,
+  isVoidElement,
+  PERMITTED_CHILDREN,
+  SVG_TEXT_ELEMENTS,
+  UNINTERPOLATED_ELEMENTS,
+} from "@unframework/ir";
+import type {
+  Attribute,
+  ElementNode,
+  FragmentNode,
+  Namespace,
+  RenderNode,
+  StaticAttribute,
+  StaticStyle,
+  UfModule,
+} from "@unframework/ir";
 import type { LayerName, ProjectKind } from "@unframework/testing/node";
 
+import { errorState, expectedDiagnostics } from "./cases.ts";
+import type { CaseInfo } from "./cases.ts";
+import { ROOT } from "./paths.ts";
 import { REFERENCE } from "./targets.ts";
 
 /** What a sub-check's failure says: a pattern, or one built for the target of the cell. */
 export type Evidence = RegExp | ((target: string) => RegExp);
+
+/** What the verdict and the compile project know about a case, from its committed artefacts. */
+export interface CanaryCase {
+  id: string;
+  /** Whether the case has output for a target: a case with compile errors has none to corrupt. */
+  hasOutput(target: string): boolean;
+  /** The browser spec, relative to the integration package, which the browser projects run. */
+  spec: string | undefined;
+  /** Whether the case's expected diagnostics for a target carry a fix, which L1 applies. */
+  hasFixes(target: string): boolean;
+}
 
 /** One canary. */
 export interface Canary {
@@ -66,9 +107,23 @@ export interface Canary {
   format?: false;
   /** The compiler plugin, made afresh for each compile. */
   plugin?(): CompilerPlugin;
+  /**
+   * Corrupts a target's diagnostics before the compile project's fix check applies their fixes
+   * (L1). No compiler hook reaches the fixes, so the harness corrupts them; a case with compile
+   * errors has them too. Only the compile project.
+   */
+  fixes?(diagnostics: readonly Diagnostic[], source: string, target: string): Diagnostic[];
+  /**
+   * The cases the canary corrupts on a target, when not every case it can reach: the compile
+   * project corrupts, and the verdict judges, only those.
+   */
+  appliesTo?(info: CanaryCase, target: string): boolean;
 }
 
 const MARKER = "[uf canary]";
+
+/** What the text canaries append to a text every render shows. */
+const TEXT_MARKER = "(canary)";
 
 /** A golden output file of the cell's own target. */
 const goldenFile = (target: string) => `__output__/${target}/\\S+`;
@@ -76,6 +131,32 @@ const goldenFile = (target: string) => `__output__/${target}/\\S+`;
 /** The golden guard's failure for a module of the cell's own target. */
 const guardFailure = (target: string) =>
   new RegExp(`\\[uf guard\\] The ${target} output of \\S+ is not its golden output`);
+
+/** An idiom a target's lint plugin forbids, as an attribute, and the rule that reports it. */
+interface FrameworkRule {
+  attribute: string;
+  rule: string;
+}
+
+/**
+ * One idiom each target's lint plugin forbids, written on the root element (ADR-0042): the
+ * framework layer of L5, which the baseline rules cannot prove.
+ */
+const FRAMEWORK_RULES: Readonly<Record<TargetName, FrameworkRule>> = {
+  react: { attribute: 'class="uf-canary"', rule: "react/no-unknown-property" },
+  vue: { attribute: "v-html=\"'uf-canary'\"", rule: "vue/no-v-html" },
+  svelte: {
+    attribute: 'style:uf-canary="1"',
+    rule: "svelte/no-unknown-style-directive-property",
+  },
+  solid: { attribute: 'className="uf-canary"', rule: "solid/no-react-specific-props" },
+  angular: {
+    attribute: '*ngIf="true"',
+    rule: "@angular-eslint/template/prefer-control-flow",
+  },
+  qwik: { attribute: 'className="uf-canary"', rule: "qwik/no-react-props" },
+  astro: { attribute: 'set:html="uf-canary"', rule: "astro/no-set-html-directive" },
+};
 
 /** How many compiles the L2-nondeterministic canary has numbered in this process. */
 let compiles = 0;
@@ -86,9 +167,13 @@ export const CANARIES: readonly Canary[] = [
     id: "L1-diagnostic-added",
     layer: "L1",
     description:
-      'Prepends `import "react";` to every case\'s source in the compile project: an unexpected UF1201 on every case, and on the diagnostics case its own diagnostic a line further down.',
+      'Prepends `import "react";` to every case\'s source in the compile project: an unexpected UF1201 on every case that parses, and on every diagnostics case its own diagnostics a line further down (a file that does not parse reports its syntax error alone).',
     evidence: {
-      compile: { diagnostics: /__expected__\/diagnostics\.json differs[\s\S]*UF1201/ },
+      compile: {
+        // The added UF1201, or, in a file that does not parse, its syntax error a line down.
+        diagnostics:
+          /__expected__\/diagnostics\.json differs[\s\S]*(?:UF1201|^\+\s+"line": \d+,$)/m,
+      },
     },
     source: (text) => `import "react";\n${text}`,
   },
@@ -107,6 +192,38 @@ export const CANARIES: readonly Canary[] = [
     }),
   },
   {
+    id: "L1-fix-no-op",
+    layer: "L1",
+    description:
+      "Makes the fixes of the first fixable diagnostic rewrite the source as it was, in the compile project's fix check, on every case whose diagnostics have a fix: applying them leaves the diagnostic, while the diagnostics themselves still match.",
+    evidence: {
+      compile: { fixes: /Applying the fixes of .+ does not recompile clean/ },
+    },
+    appliesTo: (info, target) => info.hasFixes(target),
+    fixes: (diagnostics, source, target) => {
+      const first = diagnostics.findIndex(
+        (diagnostic) =>
+          (diagnostic.target === undefined || diagnostic.target === target) &&
+          diagnostic.fixes?.length,
+      );
+      if (first === -1) throw new Error(`${MARKER} L1: no diagnostic has a fix to corrupt.`);
+      return diagnostics.map((diagnostic, index) =>
+        index === first
+          ? {
+              ...diagnostic,
+              fixes: diagnostic.fixes!.map((fix) => ({
+                ...fix,
+                edits: fix.edits.map((edit) => ({
+                  ...edit,
+                  text: source.slice(edit.span.start, edit.span.end),
+                })),
+              })),
+            }
+          : diagnostic,
+      );
+    },
+  },
+  {
     id: "L2-ir-attribute",
     layer: "L2",
     description:
@@ -121,7 +238,7 @@ export const CANARIES: readonly Canary[] = [
       name: "uf-canary-L2-ir",
       ir: (module) =>
         mapRoots(module, (root) => {
-          root.attributes.push(createStaticAttribute("data-uf-canary", "L2", root.span));
+          setAttribute(root, createStaticAttribute("data-uf-canary", "L2", root.span));
         }),
     }),
   },
@@ -182,7 +299,7 @@ export const CANARIES: readonly Canary[] = [
     id: "L3-mismatched-closing-tag",
     layer: "L3",
     description:
-      "Renames the first closing tag of every output (`</p>` → `</span>`): the one corruption all seven framework compilers reject (the framework-compile ADR).",
+      "Renames the last closing tag of every output's template (`</p>` → `</span>`): the one corruption all seven framework compilers reject (the framework-compile ADR).",
     evidence: {
       // `<file>: error <the framework compiler's message>`, on the case's own output file.
       toolchain: { "framework compiler": (target) => new RegExp(`${goldenFile(target)}: error `) },
@@ -218,9 +335,50 @@ export const CANARIES: readonly Canary[] = [
     }),
   },
   {
+    id: "L5-debugger",
+    layer: "L5",
+    description:
+      "Adds `debugger;` where every component renders: the baseline rules every target's oxlint shares (`no-debugger`) report it.",
+    evidence: {
+      // `<file>: <rule> <message>`, on the case's own output file.
+      toolchain: {
+        "baseline rules": (target) => new RegExp(`${goldenFile(target)}: no-debugger `),
+      },
+    },
+    plugin: () => ({
+      name: "uf-canary-L5-debugger",
+      output: (files, { target }) =>
+        files.map((file) => ({
+          ...file,
+          contents: injectScript(file, target, "debugger;", "render"),
+        })),
+    }),
+  },
+  {
+    id: "L5-framework-rule",
+    layer: "L5",
+    description:
+      "Writes on every output's root element an idiom its framework's lint plugin forbids: `class` in React, `className` in Solid and Qwik, `v-html`, a style directive for no property, `*ngIf`, `set:html`.",
+    evidence: {
+      toolchain: {
+        "framework rules": (target) =>
+          new RegExp(`${goldenFile(target)}: ${escapeRegExp(frameworkRule(target).rule)} `),
+      },
+    },
+    plugin: () => ({
+      name: "uf-canary-L5-framework-rule",
+      output: (files, { target }) =>
+        files.map((file) => ({
+          ...file,
+          contents: addRootAttribute(file, frameworkRule(target).attribute),
+        })),
+    }),
+  },
+  {
     id: "L6-wrong-text",
     layer: "L6",
-    description: "Changes the first text node of every component: the server HTML differs.",
+    description:
+      "Appends a marker to the text of an element every render of every component shows: the server HTML differs.",
     evidence: { ssr: { "server HTML": /__expected__\/ssr\.[a-z0-9-]+\.html differs/ } },
     plugin: wrongText,
   },
@@ -247,7 +405,7 @@ export const CANARIES: readonly Canary[] = [
     id: "L7-wrong-text",
     layer: "L7",
     description:
-      "Changes the first text node of every component: the client DOM and its ARIA tree differ.",
+      "Appends a marker to the text of an element every render of every component shows: the client DOM and its ARIA tree differ.",
     evidence: {
       browser: {
         DOM: /__expected__\/dom\.[a-z0-9-]+\.html differs/,
@@ -257,17 +415,47 @@ export const CANARIES: readonly Canary[] = [
     plugin: wrongText,
   },
   {
+    id: "L8-render-nothing",
+    layer: "L8",
+    description:
+      "Replaces every component's render with an empty <div>, keeping only its prop bindings so the IR stays valid: every spec's assertions about what it rendered find nothing (ADR-0043).",
+    evidence: {
+      // The first positive assertion of a spec, on a query of the view (`getByTestId` is the
+      // mount root's locator): every spec makes one (the spec rules in the README). Vitest
+      // 5.0.3 reports a locator that never matches with that locator, or, when the poll's own
+      // deadline comes first, with the poll's timeout.
+      browser: {
+        "spec assertions":
+          /^(?:VitestBrowserElementError: Cannot find element with locator: getByTestId\('uf-root-\d+'\)\.getBy[A-Za-z]+\(|Error: expect\.poll\(\) function didn't resolve in time\.$)/m,
+      },
+    },
+    plugin: () => ({
+      name: "uf-canary-L8",
+      ir: (module) => {
+        const copy = structuredClone(module);
+        for (const component of copy.components) {
+          component.render = createElement("div", [], [], component.render.span);
+          // A loop variable is bound by its list, which is gone.
+          component.bindings = component.bindings.filter(({ kind }) => kind === "prop");
+        }
+        return copy;
+      },
+    }),
+  },
+  {
     id: "L10-root-hidden",
     layer: "L10",
     description:
-      "Adds `hidden` to every component's root on every target but the reference: the geometry differs from the reference's, live or committed.",
+      "Hides every component's root (`display: none`) on every target but the reference: the geometry differs from the reference's, live or committed.",
     evidence: { browser: { geometry: /geometry-mismatch \(/ } },
     followersOnly: true,
+    // A declaration, not `hidden`: an `<svg>` takes no `hidden`, and a root's own `display`
+    // would override it (bindings/style-merge).
     plugin: () => ({
       name: "uf-canary-L10-geometry",
       ir: (module) =>
         mapRoots(module, (root) => {
-          root.attributes.push(createStaticAttribute("hidden", true, root.span));
+          setStyle(root, createStaticStyle("display", "none", root.span));
         }),
     }),
   },
@@ -278,18 +466,12 @@ export const CANARIES: readonly Canary[] = [
       "Inverts the colours of every component's root on every target but the reference, with a style no geometry property captures: only the pixels differ.",
     evidence: { browser: { pixels: /pixel-mismatch \(/ } },
     followersOnly: true,
-    // An output hook: a static `style` is not in the M0 source language, so the IR cannot
-    // carry it to React.
     plugin: () => ({
       name: "uf-canary-L10-pixels",
-      output: (files) =>
-        files.map((file) => ({
-          ...file,
-          contents: addRootAttribute(file, {
-            jsx: 'style={{ filter: "invert(1)" }}',
-            markup: 'style="filter: invert(1)"',
-          }),
-        })),
+      ir: (module) =>
+        mapRoots(module, (root) => {
+          setStyle(root, createStaticStyle("filter", "invert(1)", root.span));
+        }),
     }),
   },
   {
@@ -301,7 +483,7 @@ export const CANARIES: readonly Canary[] = [
       name: "uf-canary-L11",
       ir: (module) =>
         mapRoots(module, (root) => {
-          root.attributes.push(createStaticAttribute("role", "uf-canary", root.span));
+          setAttribute(root, createStaticAttribute("role", "uf-canary", root.span));
         }),
     }),
   },
@@ -378,6 +560,22 @@ export function canarySource(id: string | null, text: string): string {
   return canary?.source ? canary.source(text) : text;
 }
 
+/**
+ * A target's diagnostics as the compile project's fix check applies them: with their fixes
+ * corrupted by a fix canary, on the cases it applies to.
+ */
+export function canaryFixes(
+  id: string | null,
+  info: CanaryCase,
+  target: string,
+  source: string,
+  diagnostics: readonly Diagnostic[],
+): readonly Diagnostic[] {
+  const canary = id ? findCanary(id) : undefined;
+  if (!canary?.fixes || (canary.appliesTo && !canary.appliesTo(info, target))) return diagnostics;
+  return canary.fixes(diagnostics, source, target);
+}
+
 /** Whether the compile project formats its output: always, except under a format canary. */
 export function canaryFormats(id: string | null): boolean {
   return !id || findCanary(id).format !== false;
@@ -388,76 +586,265 @@ export function guardsGoldens(id: string | null): boolean {
   return !id || findCanary(id).guard === true;
 }
 
-function wrongText(): CompilerPlugin {
+/** A case of the corpus as canaries see it: what its committed artefacts say. */
+export function canaryCase(info: CaseInfo): CanaryCase {
   return {
-    name: "uf-canary-wrong-text",
-    ir: (module) =>
-      mapRoots(module, (root) => {
-        const text = firstText(root);
-        if (!text) throw new Error(`${MARKER} the component has no text to change.`);
-        text.value = `${text.value} (canary)`;
-      }),
+    id: info.id,
+    hasOutput: (target) => errorState(info, target) === false,
+    spec: info.spec && relative(ROOT, info.spec).split(sep).join("/"),
+    hasFixes: (target) =>
+      (expectedDiagnostics(info) ?? []).some(
+        (diagnostic) =>
+          (diagnostic.target === undefined || diagnostic.target === target) &&
+          Boolean(diagnostic.fixes?.length),
+      ),
   };
 }
 
-/** A copy of the module with `change` applied to each component's root element. */
-function mapRoots(module: UfModule, change: (root: ElementNode) => void): UfModule {
-  const copy = structuredClone(module);
-  for (const component of copy.components) change(component.render);
-  return copy;
+/** The idiom the L5-framework-rule canary writes for a target; throws for an unknown one. */
+function frameworkRule(target: string): FrameworkRule {
+  const rules: Readonly<Record<string, FrameworkRule | undefined>> = FRAMEWORK_RULES;
+  const rule = rules[target];
+  if (!rule) throw new Error(`${MARKER} L5: no framework rule for the ${target} target.`);
+  return rule;
 }
 
-function firstText(node: RenderNode): Extract<RenderNode, { kind: "Text" }> | undefined {
-  if (node.kind === "Text") return node;
-  for (const child of node.children) {
-    const found = firstText(child);
-    if (found) return found;
+function wrongText(): CompilerPlugin {
+  return {
+    name: "uf-canary-wrong-text",
+    ir: (module) => {
+      const copy = structuredClone(module);
+      for (const { name, render } of copy.components) {
+        if (!markText(render)) {
+          throw new Error(`${MARKER} ${name} renders no element that can hold text.`);
+        }
+      }
+      return copy;
+    },
+  };
+}
+
+/**
+ * Appends the marker to the text of one element that every render shows: the first element,
+ * from the roots down through elements, never into a branch or a list, that can hold text. A
+ * root fragment whose roots all sit in branches or lists gets one in each of them. Returns
+ * whether it marked any.
+ */
+function markText(render: ElementNode | FragmentNode): boolean {
+  const always =
+    render.kind === "Element"
+      ? [render]
+      : render.children.filter((node): node is ElementNode => node.kind === "Element");
+  for (const root of always) {
+    const holder = textHolder(root, "html");
+    if (holder) {
+      appendMarker(holder);
+      return true;
+    }
+  }
+  let marked = false;
+  for (const root of rootElements(render)) {
+    const holder = textHolder(root, "html");
+    if (holder) {
+      appendMarker(holder);
+      marked = true;
+    }
+  }
+  return marked;
+}
+
+/**
+ * The first element, the element itself or one of its descendants through elements, that can
+ * hold text: its text renders, in the server HTML, the DOM and the ARIA tree, as every target
+ * renders it. Never a void or text-free HTML element, a `<textarea>`, or an SVG element that
+ * renders no text.
+ */
+function textHolder(element: ElementNode, parent: Namespace): ElementNode | undefined {
+  const namespace = elementNamespace(element.tag, parent);
+  const holds =
+    namespace === "svg"
+      ? SVG_TEXT_ELEMENTS.has(element.tag)
+      : !isVoidElement(element.tag) &&
+        !UNINTERPOLATED_ELEMENTS.has(element.tag) &&
+        !PERMITTED_CHILDREN.has(element.tag);
+  if (holds) return element;
+  for (const child of element.children) {
+    if (child.kind !== "Element") continue;
+    const holder = textHolder(child, namespace);
+    if (holder) return holder;
   }
   return undefined;
 }
 
-/** Renames the first closing tag so it no longer matches its opening tag. */
-export function mismatchClosingTag(file: OutputFile): string {
-  const match = /<\/([a-z][a-z0-9-]*)\s*>/.exec(file.contents);
-  if (!match) throw new Error(`${MARKER} L3: ${file.path} has no closing tag to mismatch.`);
-  const replacement = match[1] === "span" ? "div" : "span";
-  return `${file.contents.slice(0, match.index)}</${replacement}>${file.contents.slice(match.index + match[0].length)}`;
+/**
+ * Appends the marker as the element's last text, merged into a text it ends with: no two texts
+ * are adjacent in the IR.
+ */
+function appendMarker(element: ElementNode): void {
+  const last = element.children.at(-1);
+  if (last?.kind === "Text") {
+    last.value = `${last.value} ${TEXT_MARKER}`;
+    return;
+  }
+  const value = element.children.length ? ` ${TEXT_MARKER}` : TEXT_MARKER;
+  element.children.push(createText(value, element.span));
 }
 
 /**
- * Adds an attribute to the root element of an output file: `jsx` in a JSX file, `markup` in a
- * template. The root is the first element of the template: after `return` in JSX, inside
- * `template:` in an Angular class, inside `<template>` in Vue, and after Svelte's options and
- * Astro's frontmatter.
+ * A copy of the module with `change` applied to each component's root elements: the root, or
+ * each element among the roots of a root fragment, with those of its branches and list bodies.
  */
-export function addRootAttribute(
-  file: OutputFile,
-  attribute: { jsx: string; markup: string },
-): string {
-  const { path, contents } = file;
-  const start = templateStart(path, contents);
-  if (start === undefined) {
-    throw new Error(`${MARKER} ${path} has no template to find the root element in.`);
+function mapRoots(module: UfModule, change: (root: ElementNode) => void): UfModule {
+  const copy = structuredClone(module);
+  for (const { render } of copy.components) {
+    for (const root of rootElements(render)) change(root);
   }
-  // An element's name is followed by a space, `/` or `>`: `<svelte:options` is not one.
-  const element = /<(?!(?:script|style|template)\b)[a-z][a-z0-9-]*(?=[\s/>])/g;
-  element.lastIndex = start;
-  const match = element.exec(contents);
-  if (!match) throw new Error(`${MARKER} ${path} has no root element to add an attribute to.`);
-  const end = match.index + match[0].length;
-  const text = path.endsWith(".tsx") ? attribute.jsx : attribute.markup;
-  return `${contents.slice(0, end)} ${text}${contents.slice(end)}`;
+  return copy;
 }
 
-/** Where an output file's template starts, in each target's own syntax. */
-function templateStart(path: string, contents: string): number | undefined {
-  if (path.endsWith(".tsx")) return endOf(/\breturn\b/.exec(contents));
-  if (path.endsWith(".ts")) return endOf(/\btemplate:\s*`/.exec(contents));
-  if (path.endsWith(".vue")) return endOf(/<template>/.exec(contents));
-  if (path.endsWith(".astro") && contents.startsWith("---\n")) {
-    return endOf(/\n---\n/.exec(contents));
+/** A component's root elements: the root, or the elements among a root fragment's roots. */
+function rootElements(render: ElementNode | FragmentNode): ElementNode[] {
+  return render.kind === "Element" ? [render] : topElements(render.children);
+}
+
+/** The elements among some roots, through branches and list bodies. */
+function topElements(nodes: readonly RenderNode[]): ElementNode[] {
+  return nodes.flatMap((node): ElementNode[] => {
+    switch (node.kind) {
+      case "Element":
+        return [node];
+      case "If":
+        return node.branches.flatMap((branch) => topElements(branch.children));
+      case "For":
+        return [node.body];
+      case "Text":
+      case "Interpolation":
+        return [];
+      default:
+        return unreachable(node);
+    }
+  });
+}
+
+/**
+ * Sets a static attribute on an element, in place of any it sets already: an attribute of that
+ * name, or a spread's key (a spread left without keys goes), since the IR sets a name once.
+ */
+function setAttribute(element: ElementNode, attribute: StaticAttribute): void {
+  element.attributes = element.attributes.flatMap((existing): Attribute[] => {
+    if (existing.kind === "Spread") {
+      const keys = existing.keys.filter((key) => key.name !== attribute.name);
+      return keys.length ? [{ ...existing, keys }] : [];
+    }
+    return (existing.kind === "Static" || existing.kind === "Bound") &&
+      existing.name === attribute.name
+      ? []
+      : [existing];
+  });
+  element.attributes.push(attribute);
+}
+
+/**
+ * Adds a declaration to an element's `style`, in place of any that sets the same property or
+ * overlaps it (the IR's styles never do), or gives the element a `style` of its own.
+ */
+function setStyle(element: ElementNode, declaration: StaticStyle): void {
+  const style = element.attributes.find((attribute) => attribute.kind === "Style");
+  if (!style) {
+    element.attributes.push(createStyleAttribute([declaration], element.span));
+    return;
   }
-  return 0;
+  style.declarations = style.declarations.filter(
+    ({ property }) => !cssPropertiesOverlap(property, declaration.property),
+  );
+  style.declarations.push(declaration);
+}
+
+function unreachable(value: never): never {
+  throw new Error(`${MARKER} an IR node of an unknown kind: ${JSON.stringify(value)}`);
+}
+
+/**
+ * Renames the last closing tag of an output's template so it no longer matches its opening
+ * tag: a tag of the markup, never one of a script block, and the end of an element rather
+ * than text in an attribute value that reads like a tag.
+ */
+export function mismatchClosingTag(file: OutputFile): string {
+  const { path, contents } = file;
+  const range = templateRange(path, contents);
+  if (!range) throw new Error(`${MARKER} L3: ${path} has no template to find a closing tag in.`);
+  let last: RegExpExecArray | undefined;
+  const closing = /<\/([A-Za-z][A-Za-z0-9-]*)\s*>/g;
+  closing.lastIndex = range.start;
+  for (let match = closing.exec(contents); match; match = closing.exec(contents)) {
+    if (match.index + match[0].length > range.end) break;
+    last = match;
+  }
+  if (!last) throw new Error(`${MARKER} L3: ${path} has no closing tag to mismatch.`);
+  const replacement = last[1] === "span" ? "div" : "span";
+  return `${contents.slice(0, last.index)}</${replacement}>${contents.slice(last.index + last[0].length)}`;
+}
+
+/**
+ * Adds an attribute, written in the file's own syntax, to the root element of an output file:
+ * the first element of its template.
+ */
+export function addRootAttribute(file: OutputFile, attribute: string): string {
+  const { path, contents } = file;
+  const range = templateRange(path, contents);
+  if (!range) {
+    throw new Error(`${MARKER} ${path} has no template to find the root element in.`);
+  }
+  // An element's name is followed by a space, `/` or `>`: `<svelte:options` is not one, nor is
+  // a fragment's `<>`.
+  const element = /<(?!(?:script|style|template)\b)[A-Za-z][A-Za-z0-9-]*(?=[\s/>])/g;
+  element.lastIndex = range.start;
+  const match = element.exec(contents);
+  if (!match || match.index >= range.end) {
+    throw new Error(`${MARKER} ${path} has no root element to add an attribute to.`);
+  }
+  const end = match.index + match[0].length;
+  return `${contents.slice(0, end)} ${attribute}${contents.slice(end)}`;
+}
+
+/**
+ * Where an output file's template is, in each target's own syntax: after the component's
+ * `return` in JSX, inside `template:` in an Angular class, inside the outer `<template>` in Vue,
+ * after the options and script blocks in Svelte and after the frontmatter in Astro. Script
+ * blocks and frontmatter come first, and their TypeScript has tags of its own (`Array<string>`).
+ */
+function templateRange(path: string, contents: string): { start: number; end: number } | undefined {
+  const end = contents.length;
+  if (path.endsWith(".tsx")) {
+    const body = componentBodyStart(contents);
+    if (body === undefined) return undefined;
+    const returned = /\breturn\b/g;
+    returned.lastIndex = body;
+    const start = endOf(returned.exec(contents));
+    return start === undefined ? undefined : { start, end };
+  }
+  if (path.endsWith(".ts")) {
+    const start = endOf(/\btemplate:\s*`/.exec(contents));
+    if (start === undefined) return undefined;
+    const close = endOfString(contents, start - 1);
+    return close === undefined ? undefined : { start, end: close };
+  }
+  if (path.endsWith(".vue")) {
+    const start = endOf(/<template>/.exec(contents));
+    const close = contents.lastIndexOf("</template>");
+    return start === undefined || close < start ? undefined : { start, end: close };
+  }
+  if (path.endsWith(".svelte")) {
+    const blocks = [...contents.matchAll(/<\/script\s*>/g)];
+    const last = blocks.at(-1);
+    return { start: last ? last.index + last[0].length : 0, end };
+  }
+  if (path.endsWith(".astro")) {
+    if (!contents.startsWith("---\n")) return { start: 0, end };
+    const start = endOf(/\n---\n/.exec(contents));
+    return start === undefined ? undefined : { start, end };
+  }
+  return undefined;
 }
 
 function endOf(match: RegExpExecArray | null): number | undefined {
@@ -501,6 +888,7 @@ export function injectScript(
   if (where === "module") return `${contents.trimEnd()}\n\nexport ${statement}\n`;
   if (target === "angular") {
     if (/\bconstructor\s*\(/.test(contents)) fail("constructor-free class");
+    // The class's members follow: a constructor before them still runs once per render.
     return (
       insertAfter(
         contents,
@@ -509,16 +897,84 @@ export function injectScript(
       ) ?? fail("component class")
     );
   }
-  if (target === "qwik") {
-    return (
-      insertAfter(contents, /component\$\(\s*\([^)]*\)\s*=>\s*\{/, `\n  ${statement}`) ??
-      fail("component$ body")
-    );
+  const body = componentBodyStart(contents);
+  if (body === undefined) {
+    return fail(target === "qwik" ? "component$ body" : "component function body");
   }
-  return (
-    insertAfter(contents, /function\s+[A-Z][\w$]*\s*\([^)]*\)[^{]*\{/, `\n  ${statement}`) ??
-    fail("component function body")
-  );
+  return `${contents.slice(0, body)}\n  ${statement}${contents.slice(body)}`;
+}
+
+/**
+ * Where a JSX component's body starts, just after its `{`: Qwik's `component$<Props>((…) => {`,
+ * or the first PascalCase `function Name(…) {` (React and Solid). The parameters are read to
+ * their matching parenthesis: a destructured default or a type may hold parentheses of its own.
+ */
+function componentBodyStart(contents: string): number | undefined {
+  // Not the import's `component$`: the call's, with its type argument or its parenthesis.
+  const qwik = /\bcomponent\$\s*(?=[<(])/.exec(contents);
+  if (qwik) {
+    let index = qwik.index + qwik[0].length;
+    if (contents[index] === "<") {
+      const close = matchingBracket(contents, index, "<", ">");
+      if (close === undefined) return undefined;
+      index = close + 1;
+    }
+    const call = /^\s*\(\s*/.exec(contents.slice(index));
+    if (!call) return undefined;
+    index += call[0].length;
+    if (contents[index] !== "(") return undefined;
+    const close = matchingBracket(contents, index, "(", ")");
+    if (close === undefined) return undefined;
+    return endAt(contents, close + 1, /^\s*=>\s*\{/);
+  }
+  const component = /\bfunction\s+[A-Z][\w$]*\s*\(/.exec(contents);
+  if (!component) return undefined;
+  const close = matchingBracket(contents, component.index + component[0].length - 1, "(", ")");
+  if (close === undefined) return undefined;
+  return endAt(contents, close + 1, /^[^{]*\{/);
+}
+
+/** The end of `pattern` (anchored with `^`) matched at `index`, or `undefined`. */
+function endAt(contents: string, index: number, pattern: RegExp): number | undefined {
+  const match = pattern.exec(contents.slice(index));
+  return match ? index + match[0].length : undefined;
+}
+
+/**
+ * The index of the bracket that closes the one at `open`, skipping string and template
+ * literals; an arrow's `=>` closes no angle bracket.
+ */
+function matchingBracket(
+  contents: string,
+  open: number,
+  opening: string,
+  closing: string,
+): number | undefined {
+  let depth = 0;
+  for (let index = open; index < contents.length; index += 1) {
+    const char = contents[index]!;
+    if (char === '"' || char === "'" || char === "`") {
+      const end = endOfString(contents, index);
+      if (end === undefined) return undefined;
+      index = end;
+    } else if (char === opening) {
+      depth += 1;
+    } else if (char === closing && !(char === ">" && contents[index - 1] === "=")) {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+  return undefined;
+}
+
+/** The index of the quote that ends the string or template literal opened at `open`. */
+function endOfString(contents: string, open: number): number | undefined {
+  const quote = contents[open]!;
+  for (let index = open + 1; index < contents.length; index += 1) {
+    if (contents[index] === "\\") index += 1;
+    else if (contents[index] === quote) return index;
+  }
+  return undefined;
 }
 
 function intoScriptBlock(
@@ -538,4 +994,8 @@ function insertAfter(contents: string, pattern: RegExp, text: string): string | 
   if (!match) return undefined;
   const end = match.index + match[0].length;
   return `${contents.slice(0, end)}${text}${contents.slice(end)}`;
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

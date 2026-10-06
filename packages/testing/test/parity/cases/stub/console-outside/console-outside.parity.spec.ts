@@ -5,7 +5,7 @@
 import { beforeAll, expect, it } from "vitest";
 
 import "../../../../../src/setup.ts";
-import { describeTargets } from "../../../../../src/index.ts";
+import { capturedConsole, describeTargets } from "../../../../../src/index.ts";
 import "../../../dom-target.ts";
 
 console.warn("[fixture] while the spec evaluates");
@@ -15,10 +15,14 @@ beforeAll(() => {
 });
 
 describeTargets("stub/console-outside", () => {
-  it.fails("fails the first test on the messages logged before it began", () => {});
+  it.fails("fails the first test on the messages logged before it began", () => {
+    // Asserted, so L13 is the only layer that fails it.
+    expect(capturedConsole().map((entry) => entry.beforeTest)).toEqual([true, true]);
+  });
 
   it("recorded them as L13 of that test, marked as logged before it", ({ task }) => {
     const before = "before the test: module evaluation, a beforeAll hook or an earlier teardown";
+    expect(task.suite?.tasks[0]?.meta.uf?.layers.L8).toEqual({ status: "pass" });
     expect(task.suite?.tasks[0]?.meta.uf?.layers.L13).toEqual({
       status: "fail",
       message: [

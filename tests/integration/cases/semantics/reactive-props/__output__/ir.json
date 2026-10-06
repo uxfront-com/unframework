@@ -1,0 +1,687 @@
+{
+  "irVersion": 1,
+  "file": "semantics/reactive-props/UploadStatus.uf.tsx",
+  "components": [
+    {
+      "name": "UploadStatus",
+      "span": {
+        "start": 228,
+        "end": 1105
+      },
+      "props": [
+        {
+          "name": "fileName",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 113,
+              "end": 119
+            }
+          },
+          "binding": "fileName@269",
+          "span": {
+            "start": 103,
+            "end": 120
+          }
+        },
+        {
+          "name": "state",
+          "optional": false,
+          "type": {
+            "code": "\"queued\" | \"uploading\" | \"failed\"",
+            "span": {
+              "start": 130,
+              "end": 163
+            }
+          },
+          "binding": "state@281",
+          "span": {
+            "start": 123,
+            "end": 164
+          }
+        },
+        {
+          "name": "percent",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 176,
+              "end": 182
+            }
+          },
+          "binding": "percent@290",
+          "span": {
+            "start": 167,
+            "end": 183
+          }
+        },
+        {
+          "name": "steps",
+          "optional": false,
+          "type": {
+            "code": "UploadStep[]",
+            "span": {
+              "start": 193,
+              "end": 205
+            }
+          },
+          "binding": "steps@301",
+          "span": {
+            "start": 186,
+            "end": 206
+          }
+        },
+        {
+          "name": "error",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 217,
+              "end": 223
+            }
+          },
+          "binding": "error@310",
+          "span": {
+            "start": 209,
+            "end": 224
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "UploadStatusProps",
+          "span": {
+            "start": 320,
+            "end": 337
+          }
+        },
+        "span": {
+          "start": 265,
+          "end": 337
+        }
+      },
+      "types": [
+        "UploadStep",
+        "UploadStatusProps"
+      ],
+      "bindings": [
+        {
+          "id": "fileName@269",
+          "name": "fileName",
+          "kind": "prop",
+          "span": {
+            "start": 269,
+            "end": 277
+          }
+        },
+        {
+          "id": "state@281",
+          "name": "state",
+          "kind": "prop",
+          "span": {
+            "start": 281,
+            "end": 286
+          }
+        },
+        {
+          "id": "percent@290",
+          "name": "percent",
+          "kind": "prop",
+          "span": {
+            "start": 290,
+            "end": 297
+          }
+        },
+        {
+          "id": "steps@301",
+          "name": "steps",
+          "kind": "prop",
+          "span": {
+            "start": 301,
+            "end": 306
+          }
+        },
+        {
+          "id": "error@310",
+          "name": "error",
+          "kind": "prop",
+          "span": {
+            "start": 310,
+            "end": 315
+          }
+        },
+        {
+          "id": "step@1003",
+          "name": "step",
+          "kind": "loopVar",
+          "span": {
+            "start": 1003,
+            "end": 1007
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Static",
+                "value": "upload",
+                "span": {
+                  "start": 379,
+                  "end": 387
+                }
+              },
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "`upload-${state}`",
+                  "span": {
+                    "start": 389,
+                    "end": 406
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "state@281",
+                      "span": {
+                        "start": 399,
+                        "end": 404
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 389,
+                  "end": 406
+                }
+              }
+            ],
+            "span": {
+              "start": 371,
+              "end": 408
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "`Upload of ${fileName}`",
+              "span": {
+                "start": 427,
+                "end": 450
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "fileName@269",
+                  "span": {
+                    "start": 440,
+                    "end": 448
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 415,
+              "end": 451
+            }
+          },
+          {
+            "kind": "Style",
+            "declarations": [
+              {
+                "kind": "Bound",
+                "property": "color",
+                "value": {
+                  "code": "state === \"failed\" ? \"#8a1c1c\" : \"#1f3d5c\"",
+                  "span": {
+                    "start": 474,
+                    "end": 516
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "state@281",
+                      "span": {
+                        "start": 474,
+                        "end": 479
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 467,
+                  "end": 516
+                }
+              },
+              {
+                "kind": "Bound",
+                "property": "--upload-percent",
+                "value": {
+                  "code": "percent",
+                  "span": {
+                    "start": 538,
+                    "end": 545
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "percent@290",
+                      "span": {
+                        "start": 538,
+                        "end": 545
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 518,
+                  "end": 545
+                }
+              }
+            ],
+            "span": {
+              "start": 458,
+              "end": 548
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "fileName",
+                  "span": {
+                    "start": 566,
+                    "end": 574
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "fileName@269",
+                      "span": {
+                        "start": 566,
+                        "end": 574
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 565,
+                  "end": 575
+                }
+              }
+            ],
+            "span": {
+              "start": 561,
+              "end": 580
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "progressbar",
+                "span": {
+                  "start": 600,
+                  "end": 618
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Upload progress",
+                "span": {
+                  "start": 627,
+                  "end": 655
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-valuemin",
+                "value": "0",
+                "span": {
+                  "start": 664,
+                  "end": 681
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-valuemax",
+                "value": "100",
+                "span": {
+                  "start": 690,
+                  "end": 709
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-valuenow",
+                "value": {
+                  "code": "percent",
+                  "span": {
+                    "start": 733,
+                    "end": 740
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "percent@290",
+                      "span": {
+                        "start": 733,
+                        "end": 740
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 718,
+                  "end": 741
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "percent",
+                  "span": {
+                    "start": 759,
+                    "end": 766
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "percent@290",
+                      "span": {
+                        "start": 759,
+                        "end": 766
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 758,
+                  "end": 767
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "%",
+                "span": {
+                  "start": 767,
+                  "end": 775
+                }
+              }
+            ],
+            "span": {
+              "start": 587,
+              "end": 781
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "state === \"failed\"",
+                  "span": {
+                    "start": 789,
+                    "end": 807
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "state@281",
+                      "span": {
+                        "start": 789,
+                        "end": 794
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "upload-error",
+                        "span": {
+                          "start": 823,
+                          "end": 843
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "error ?? \"The upload failed.\"",
+                          "span": {
+                            "start": 845,
+                            "end": 874
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "error@310",
+                              "span": {
+                                "start": 845,
+                                "end": 850
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 844,
+                          "end": 875
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 820,
+                      "end": 879
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 789,
+                  "end": 879
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "state === \"queued\" ? \"Waiting to start\" : \"Uploading\"",
+                          "span": {
+                            "start": 904,
+                            "end": 957
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "state@281",
+                              "span": {
+                                "start": 904,
+                                "end": 909
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 903,
+                          "end": 958
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 900,
+                      "end": 962
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 900,
+                  "end": 962
+                }
+              }
+            ],
+            "span": {
+              "start": 789,
+              "end": 970
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "steps",
+                  "span": {
+                    "start": 992,
+                    "end": 997
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "steps@301",
+                      "span": {
+                        "start": 992,
+                        "end": 997
+                      }
+                    }
+                  ]
+                },
+                "item": "step@1003",
+                "key": {
+                  "code": "step.id",
+                  "span": {
+                    "start": 1033,
+                    "end": 1040
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "step@1003",
+                      "span": {
+                        "start": 1033,
+                        "end": 1037
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "step.label",
+                        "span": {
+                          "start": 1043,
+                          "end": 1053
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "step@1003",
+                            "span": {
+                              "start": 1043,
+                              "end": 1047
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 1042,
+                        "end": 1054
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 1024,
+                    "end": 1059
+                  }
+                },
+                "span": {
+                  "start": 992,
+                  "end": 1070
+                }
+              }
+            ],
+            "span": {
+              "start": 978,
+              "end": 1083
+            }
+          }
+        ],
+        "span": {
+          "start": 356,
+          "end": 1098
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "UploadStatus",
+      "span": {
+        "start": 228,
+        "end": 1105
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "UploadStep",
+      "exported": true,
+      "code": "interface UploadStep {\n  id: string;\n  label: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 62
+      }
+    },
+    {
+      "name": "UploadStatusProps",
+      "exported": true,
+      "code": "interface UploadStatusProps {\n  fileName: string;\n  state: \"queued\" | \"uploading\" | \"failed\";\n  percent: number;\n  steps: UploadStep[];\n  error?: string;\n}",
+      "span": {
+        "start": 71,
+        "end": 226
+      }
+    }
+  ]
+}

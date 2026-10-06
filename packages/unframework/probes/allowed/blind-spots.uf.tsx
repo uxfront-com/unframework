@@ -62,6 +62,69 @@ export function BlindSpots() {
   );
 }
 
+// The props and static JSX of M1 (ADR-0034 to ADR-0040): mistakes the types accept, which the
+// compiler reports.
+export function M1BlindSpots({
+  label,
+  items,
+  active,
+}: {
+  label: string;
+  items: string[];
+  active: boolean;
+}) {
+  return (
+    <section>
+      {/* A number on a length, which React and Qwik write with `px`. Caught by: compiler (UF3018). */}
+      <div style={{ marginTop: 2 }} />
+      {/* A kebab-case style key. Caught by: compiler (UF3004), with a fix to `marginTop`. */}
+      <div style={{ "margin-top": "2px" }} />
+      {/* A boolean on a data attribute, which Qwik drops when false. Caught by: compiler (UF3018). */}
+      <div data-active={active} />
+      {/* SVG's old `xlinkHref`. Caught by: compiler (UF3004), with a fix to `href`. */}
+      <svg>
+        <use xlinkHref="#icon" />
+      </svg>
+      {/* Markup set as a property. Caught by: compiler (UF1002). */}
+      <div innerHTML="<b>x</b>" />
+      {/* Children JSX renders as nothing and templates as text. Caught by: compiler (UF3016, UF1002). */}
+      <p>
+        {true}
+        {123n}
+      </p>
+      {/* An array of children. Caught by: compiler (UF3012, UF3016). */}
+      <p>{["a", <i>b</i>]}</p>
+      {/* A list without keys, and a key outside a list. Caught by: compiler (UF3013, UF3014). */}
+      <ul>
+        {items.map((item) => (
+          <li>{item}</li>
+        ))}
+      </ul>
+      <p key="intro">Intro</p>
+      {/* A list item that is a fragment. Caught by: compiler (UF3015). */}
+      <ul>
+        {items.map((item) => (
+          <>
+            <li>{item}</li>
+          </>
+        ))}
+      </ul>
+      {/* `??` on a value that is never nullish, which Angular rejects. Caught by: compiler (UF3023). */}
+      <p>{label ?? "Untitled"}</p>
+      {/* Sorting a prop in place. Caught by: compiler (UF3021), with a fix to `toSorted`. */}
+      <p>{items.sort().join(", ")}</p>
+      {/* Formatting by the machine's locale. Caught by: compiler (UF3019). */}
+      <p>{label.length.toLocaleString()}</p>
+    </section>
+  );
+}
+
+// A conditional root: a component returns an element or a fragment. Caught by: compiler
+// (UF1102), with a fix that wraps it in a fragment.
+export function ConditionalRoot({ show }: { show: boolean }) {
+  return show ? <p>Shown</p> : null;
+}
+
 export function ConditionalReturn({ show }: { show: boolean }) {
   // An early or conditional return (plan §4.6). Caught by: compiler.
   if (!show) return null;

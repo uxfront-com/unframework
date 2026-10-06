@@ -6,6 +6,10 @@ import { formatOutput } from "@unframework/codegen";
 import type { EmitContext, OutputFile } from "@unframework/codegen";
 import type { UfModule } from "@unframework/ir";
 
+// The analyzer is no dependency of a target (plan §5.2): tests reach it from its source, as the
+// render-parity kit does, to lower source snippets as `compile()` would.
+import { analyze } from "../../analyzer/src/index.ts";
+import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
 
 export const packageDir: string = fileURLToPath(new URL("..", import.meta.url));
@@ -40,14 +44,7 @@ export function corpus(): { name: string; module: UfModule; outputDir: string }[
 
 /** What this target emits for a module, formatted as the compiler formats it. */
 export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
-  const context: EmitContext = {
-    module,
-    options: undefined,
-    report: (diagnostic) => {
-      throw new Error(`unexpected diagnostic: ${diagnostic.message}`);
-    },
-  };
-  const files = module.components.flatMap((component) => target.emit(component, context));
+  const files = module.components.flatMap((component) => target.emit(component, context(module)));
   return Promise.all(
     files.map(async (file) => {
       const outcome = await formatOutput(file);
@@ -55,6 +52,37 @@ export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
       return outcome.file;
     }),
   );
+}
+
+/**
+ * What this target emits for a source's one component, as `compile()` would: analysed, then
+ * emitted, then formatted unless `format` is false. Fails on any diagnostic.
+ */
+export async function emitSource(
+  source: string,
+  { format = false }: { format?: boolean } = {},
+): Promise<OutputFile> {
+  const { module, diagnostics } = analyze(parseModule("Source.uf.tsx", source));
+  if (!module || diagnostics.length) {
+    throw new Error(`the source does not analyse: ${diagnostics.map((d) => d.message).join("; ")}`);
+  }
+  if (module.components.length !== 1) throw new Error("the source has more than one component");
+  const files = format
+    ? await emitFormatted(module)
+    : target.emit(module.components[0]!, context(module));
+  if (files.length !== 1) throw new Error(`expected one file, got ${files.length}`);
+  return files[0]!;
+}
+
+/** An emit context that fails on any diagnostic: a target never reports from `emit`. */
+function context(module: UfModule): EmitContext {
+  return {
+    module,
+    options: undefined,
+    report: (diagnostic) => {
+      throw new Error(`unexpected diagnostic: ${diagnostic.message}`);
+    },
+  };
 }
 
 const scratch: string[] = [];

@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF3008",
+    "severity": "error",
+    "message": "`aria-hidden` takes `\"true\"` or `\"false\"`, and \"yes\" is not one.",
+    "file": "diagnostics/unportable-attribute-value/Rating.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 15,
+      "offset": 270
+    },
+    "end": {
+      "line": 7,
+      "column": 26,
+      "offset": 281
+    },
+    "help": "Write a value ARIA defines: assistive technology ignores any other."
+  },
+  {
+    "code": "UF3008",
+    "severity": "error",
+    "message": "`href` runs a `javascript:` URL: React blocks these, and the compiler cannot analyse the code.",
+    "file": "diagnostics/unportable-attribute-value/Rating.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 10,
+      "offset": 332
+    },
+    "end": {
+      "line": 9,
+      "column": 14,
+      "offset": 336
+    },
+    "help": "Run code from an event handler."
+  }
+]

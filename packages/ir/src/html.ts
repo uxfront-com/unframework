@@ -136,6 +136,20 @@ export function isBooleanAttribute(name: string): boolean {
   return BOOLEAN_ATTRIBUTES.has(name.toLowerCase());
 }
 
+/**
+ * The boolean attributes a value can be bound to (ADR-0037): the ones both Vue's `isBooleanAttr`
+ * (3.5) and Svelte's `DOM_BOOLEAN_ATTRIBUTES` (5.57) know, so both render `false` as no
+ * attribute. Bound to the others (`hidden`, `itemscope`, `playsinline`, `shadowroot*`), Vue's
+ * server or Svelte renders `="false"` and their types reject `""`: the analyser reports them
+ * (UF1002), and no IR binds one. Some of these are form state or unrendered (`checked`,
+ * `autofocus`), which stay invalid bound or static (`portability.ts`).
+ */
+export const BINDABLE_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = words(`
+  allowfullscreen async autofocus autoplay checked controls default defer disabled
+  formnovalidate inert ismap loop multiple muted nomodule novalidate open readonly required
+  reversed selected
+`);
+
 /** Whether an element is void. */
 export function isVoidElement(tag: string): boolean {
   return VOID_ELEMENTS.has(tag);
@@ -148,7 +162,7 @@ export function isBlockElement(tag: string): boolean {
 
 /**
  * The elements of the HTML Living Standard (its element index), in the HTML namespace. SVG's
- * `<svg>` and MathML's `<math>` are foreign elements and are not listed.
+ * `<svg>` and MathML's `<math>` are foreign elements and are not listed: `svg.ts` lists SVG's.
  */
 export const HTML_ELEMENTS: ReadonlySet<string> = words(`
   a abbr address area article aside audio b base bdi bdo blockquote body br button canvas
@@ -605,6 +619,46 @@ export function canonicalNumber(
   const inRange =
     Number.isFinite(number) && (kind === "number" || (number <= limit && number >= min));
   return NUMBER_SYNTAX[kind].test(value) && inRange ? String(number) : undefined;
+}
+
+/**
+ * Attributes of every element, HTML or SVG, whose JSX type is `number` on React (`@types/react`
+ * 19.3) and on Qwik (2.0 beta): `tabindex` and ARIA's numeric properties.
+ */
+export const NUMBER_TYPED_GLOBAL_ATTRIBUTES: ReadonlySet<string> = words(`
+  tabindex aria-colcount aria-colindex aria-colspan aria-level aria-posinset aria-rowcount
+  aria-rowindex aria-rowspan aria-setsize aria-valuemax aria-valuemin aria-valuenow
+`);
+
+/**
+ * Each HTML element's attributes whose JSX type on React (`@types/react` 19.3) or on Qwik (2.0
+ * beta, which types an element's attributes by its DOM properties) takes a number and no
+ * arbitrary string: `number` on either, or Qwik's `Numberish` (a number or a numeric string
+ * literal) for `<img>` and `<video>`'s `width` and `height`. A bound value must be a number
+ * there, or a string would fail one target's type check; a static value is a number in
+ * canonical form, which React and Qwik write as a number literal (ADR-0037). With
+ * `NUMBER_TYPED_GLOBAL_ATTRIBUTES`.
+ */
+export const NUMBER_TYPED_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = table({
+  col: words("span"),
+  colgroup: words("span"),
+  img: words("height width"),
+  input: words("maxlength minlength size"),
+  meter: words("high low max min optimum"),
+  ol: words("start"),
+  select: words("size"),
+  td: words("colspan rowspan"),
+  textarea: words("cols maxlength minlength rows"),
+  th: words("colspan rowspan"),
+  video: words("height width"),
+});
+
+/** Whether an attribute of an element is number-typed (`NUMBER_TYPED_ATTRIBUTES`). */
+export function isNumberTypedAttribute(tag: string, name: string): boolean {
+  return (
+    NUMBER_TYPED_GLOBAL_ATTRIBUTES.has(name) ||
+    (NUMBER_TYPED_ATTRIBUTES.get(tag)?.has(name) ?? false)
+  );
 }
 
 /** Whether a tag is an element of the HTML Living Standard. */

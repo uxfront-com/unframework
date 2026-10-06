@@ -1,4 +1,4 @@
-import { ID_REFERENCE_ATTRIBUTES } from "@unframework/ir";
+import { cssPropertiesOverlap, ID_REFERENCE_ATTRIBUTES } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
 import { normalizeHtml } from "../src/normalize/index.ts";
@@ -268,16 +268,70 @@ describe("rule 4c: canonicalizeClasses", () => {
     );
   });
 
-  it("does not erase a different, a duplicated or an empty class", () => {
+  it("does not erase a different or a duplicated class", () => {
     expect(normalizeHtml('<p class="a b"></p>')).not.toBe(normalizeHtml('<p class="a c"></p>'));
     expect(normalizeHtml('<p class="a a"></p>')).not.toBe(normalizeHtml('<p class="a"></p>'));
-    expect(normalizeHtml('<p class=""></p>')).not.toBe(normalizeHtml("<p></p>"));
+  });
+
+  // ADR-0044: Vue's server writes class="" where its client writes nothing, Svelte's client the
+  // other way round, and Chromium keeps class="" once the last token is toggled off.
+  it("removes a class with no token, which applies no class", () => {
+    expect(apply('<p class=""></p><p class=" \t "></p>', canonicalizeClasses)).toBe(
+      "<p></p>\n<p></p>\n",
+    );
+    expect(normalizeHtml('<p class=""></p>')).toBe(normalizeHtml("<p></p>"));
+  });
+
+  it("does not erase a class with a token", () => {
+    expect(normalizeHtml('<p class="a"></p>')).not.toBe(normalizeHtml("<p></p>"));
+    expect(normalizeHtml('<p class=" a "></p>')).not.toBe(normalizeHtml('<p class=""></p>'));
   });
 
   it("leaves other attributes' tokens in order", () => {
     expect(apply('<p aria-describedby="b a"></p>', canonicalizeClasses)).toBe(
       '<p aria-describedby="b a"></p>\n',
     );
+  });
+});
+
+// The ordering guard of rule 4a is `@unframework/ir`'s: these are the pairs the normaliser relies on.
+describe("cssPropertiesOverlap: whether two declarations' order decides what renders", () => {
+  it.each([
+    ["color", "color"],
+    ["margin", "margin-top"],
+    ["margin-top", "margin"],
+    ["border", "border-top-color"],
+    ["border-color", "border-top"],
+    ["font", "line-height"],
+    ["white-space", "text-wrap-mode"],
+    ["all", "color"],
+    ["margin-inline-start", "margin-left"],
+    ["margin-right", "margin-inline"],
+    ["border-block-start-width", "border-width"],
+    ["border-end-start-radius", "border-bottom-left-radius"],
+    ["max-block-size", "max-height"],
+    ["overflow-inline", "overflow"],
+    ["inset", "inset-inline-end"],
+  ])("%s and %s", (a, b) => {
+    expect(cssPropertiesOverlap(a, b)).toBe(true);
+    expect(cssPropertiesOverlap(b, a)).toBe(true);
+  });
+
+  it.each([
+    ["color", "background-color"],
+    ["margin-top", "margin-left"],
+    ["margin-top", "padding-top"],
+    ["border-top-width", "border-top-color"],
+    ["margin-inline-start", "margin-block-start"],
+    ["margin-inline-start", "padding-left"],
+    ["width", "height"],
+    ["min-width", "width"],
+    ["all", "--gap"],
+    ["all", "direction"],
+    ["--gap", "--Gap"],
+  ])("not %s and %s", (a, b) => {
+    expect(cssPropertiesOverlap(a, b)).toBe(false);
+    expect(cssPropertiesOverlap(b, a)).toBe(false);
   });
 });
 
@@ -304,10 +358,52 @@ describe("rule 4a: canonicalizeStyles", () => {
     ],
     ["custom properties, case kept", "--Accent : Red", "--Accent: Red;"],
     ["a chunk without a colon, kept", "color: red; oops", "color: red; oops;"],
-    ["an empty declaration list", " ; ", ""],
+    [
+      "unrelated declarations, sorted",
+      "margin-top: 1px; color: red",
+      "color: red; margin-top: 1px;",
+    ],
+    ["custom properties, sorted first", "color: red; --gap: 2px", "--gap: 2px; color: red;"],
+    ["an empty value, dropped", "color: ; margin: 0", "margin: 0;"],
+    ["an empty !important value, dropped", "color: !important; margin: 0", "margin: 0;"],
   ])("canonicalises %s", (_, style, expected) => {
     expect(apply(`<p style='${style}'></p>`, canonicalizeStyles)).toBe(
       `<p style=${JSON.stringify(expected)}></p>\n`,
+    );
+  });
+
+  // ADR-0044: Vue's server writes style="" (and `color:;` for an empty bound value) where its
+  // client writes nothing; the CSSOM ignores an empty value.
+  it.each([
+    ["no declaration", ""],
+    ["an empty declaration list", " ; "],
+    ["only empty values", "color: ; margin:"],
+  ])("removes a style with %s, which declares nothing", (_, style) => {
+    expect(apply(`<p style='${style}'></p>`, canonicalizeStyles)).toBe("<p></p>\n");
+  });
+
+  it("does not erase a declaration with a value, or a chunk without a colon", () => {
+    expect(normalizeHtml('<p style="color: red"></p>')).not.toBe(normalizeHtml("<p></p>"));
+    expect(normalizeHtml('<p style="color: red"></p>')).not.toBe(
+      normalizeHtml('<p style="color: "></p>'),
+    );
+    expect(normalizeHtml('<p style="oops"></p>')).not.toBe(normalizeHtml("<p></p>"));
+  });
+
+  it("sorts declarations whose order cannot change what renders", () => {
+    expect(normalizeHtml('<p style="margin-top: 4px; color: red"></p>')).toBe(
+      normalizeHtml('<p style="color: red; margin-top: 4px"></p>'),
+    );
+    // Two sides of one shorthand, and two longhands of different shorthands.
+    expect(normalizeHtml('<p style="margin-top: 4px; margin-left: 2px"></p>')).toBe(
+      normalizeHtml('<p style="margin-left: 2px; margin-top: 4px"></p>'),
+    );
+    expect(normalizeHtml('<p style="border-top-width: 1px; margin-top: 2px"></p>')).toBe(
+      normalizeHtml('<p style="margin-top: 2px; border-top-width: 1px"></p>'),
+    );
+    // `all` resets no custom property.
+    expect(normalizeHtml('<p style="all: initial; --gap: 1px"></p>')).toBe(
+      normalizeHtml('<p style="--gap: 1px; all: initial"></p>'),
     );
   });
 
@@ -321,6 +417,27 @@ describe("rule 4a: canonicalizeStyles", () => {
     expect(normalizeHtml('<p style="margin: 0; margin-top: 1px"></p>')).not.toBe(
       normalizeHtml('<p style="margin-top: 1px; margin: 0"></p>'),
     );
+  });
+
+  it.each([
+    ["the same property twice", "color: red", "color: blue"],
+    ["a shorthand and its longhand", "margin: 0", "margin-top: 4px"],
+    ["two shorthands that share a longhand", "border-width: 2px", "border-top: 1px solid"],
+    ["`all` and a standard property", "all: initial", "color: red"],
+    ["a flow-relative longhand and a physical one", "margin-inline-start: 1px", "margin-left: 2px"],
+    ["a flow-relative shorthand and a physical one", "padding-block: 1px", "padding: 2px"],
+    [
+      "a flow-relative corner and a physical one",
+      "border-start-end-radius: 1px",
+      "border-radius: 2px",
+    ],
+    ["a flow-relative size and a physical one", "inline-size: 1px", "width: 2px"],
+    ["a flow-relative inset and a physical one", "inset-block-end: 1px", "bottom: 2px"],
+  ])("keeps the order of %s, and every other declaration's", (_, first, second) => {
+    // An unrelated declaration first, which sorting would move to the end.
+    const style = (a: string, b: string) => normalizeHtml(`<p style="z-index: 1; ${a}; ${b}"></p>`);
+    expect(style(first, second)).not.toBe(style(second, first));
+    expect(style(first, second)).toContain(`z-index: 1; ${first}; ${second};`);
   });
 
   it("does not erase a fallback that a later declaration the browser rejects leaves in place", () => {
@@ -378,6 +495,40 @@ describe("rule 4b: canonicalizeBooleanAttributes", () => {
   it("does not erase the difference between present, absent and invalid", () => {
     expect(normalizeHtml("<input disabled>")).not.toBe(normalizeHtml("<input>"));
     expect(normalizeHtml('<input disabled="false">')).not.toBe(normalizeHtml("<input disabled>"));
+  });
+
+  // Qwik 2.0 beta's client: `<input disabled readOnly required={on} />` renders
+  // `disabled="true" readonly="true" required=""`, where its server and Vue write them empty.
+  it.each([
+    [
+      '<input disabled="true" readonly="TRUE" required="">',
+      '<input disabled="" readonly="" required="">',
+    ],
+    ['<details open="true"></details>', '<details open=""></details>'],
+    ['<div hidden="true"></div>', '<div hidden=""></div>'],
+  ])("writes Qwik's %s as an empty value", (html, expected) => {
+    const root = parseHtml(html);
+    canonicalizeBooleanAttributes(root, "qwik");
+    expect(printTree(root)).toBe(`${expected}\n`);
+    expect(normalizeHtml(html, { target: "qwik" })).toBe(
+      normalizeHtml(expected, { target: "vue" }),
+    );
+  });
+
+  it('keeps "true" from every other target, and "false" and until-found from Qwik', () => {
+    for (const target of NORMALIZE_TARGETS.filter((name) => name !== "qwik")) {
+      expect(normalizeHtml('<input disabled="true">', { target })).not.toBe(
+        normalizeHtml("<input disabled>", { target }),
+      );
+    }
+    expect(normalizeHtml('<input disabled="true">')).not.toBe(normalizeHtml("<input disabled>"));
+    for (const html of ['<input disabled="false">', '<div hidden="until-found"></div>']) {
+      expect(normalizeHtml(html, { target: "qwik" })).toBe(normalizeHtml(html));
+    }
+    // Not a boolean attribute on this element, or outside HTML: kept on Qwik too.
+    for (const html of ['<div open="true"></div>', '<svg><rect hidden="true"></rect></svg>']) {
+      expect(normalizeHtml(html, { target: "qwik" })).toBe(normalizeHtml(html));
+    }
   });
 });
 

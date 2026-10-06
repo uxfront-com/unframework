@@ -11,7 +11,7 @@ import { PROBES_DIRECTORY, runProbes } from "../scripts/run-probes.ts";
  * Every pinned probe. A change here is a change to what the types catch: update the README's tables
  * with it.
  */
-const PINNED_PROBES = 73;
+const PINNED_PROBES = 76;
 
 const PACKAGE = fileURLToPath(new URL("..", import.meta.url));
 const copies: string[] = [];

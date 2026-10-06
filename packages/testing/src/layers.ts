@@ -54,6 +54,12 @@ export interface UfLayerMeta {
   case: string;
   target: string;
   layers: Partial<Record<LayerName, LayerOutcome>>;
+  /**
+   * The parity scenarios the test checked (`expectParity` names), in the order it first checked
+   * them. A target that leaves out a scenario the reference checks would otherwise go unseen,
+   * as a cell merges every test of its case (see `summarise`).
+   */
+  scenarios?: string[];
 }
 
 /**
@@ -185,15 +191,31 @@ export function recordLayer(
   const entry = quarantineFor(subject.quarantine, subject, layer);
   const settled: LayerOutcome =
     entry && outcome.status === "fail" ? { status: "quarantined", issue: entry.issue } : outcome;
+  const meta = metaOf(task, subject);
+  const previous = meta.layers[layer];
+  meta.layers[layer] = previous ? mergeOutcomes(previous, settled) : settled;
+  return settled;
+}
+
+/**
+ * Records that a test checked a parity scenario, once per name. The summary compares each
+ * target's scenarios of a case with the reference's.
+ */
+export function recordScenario(task: LayerTask, subject: LayerSubject, name: string): void {
+  const meta = metaOf(task, subject);
+  const scenarios = (meta.scenarios ??= []);
+  if (!scenarios.includes(name)) scenarios.push(name);
+}
+
+/** The task's record, created for the subject on first use: a test records one case and target. */
+function metaOf(task: LayerTask, subject: LayerSubject): UfLayerMeta {
   const meta = (task.meta.uf ??= { case: subject.case, target: subject.target, layers: {} });
   if (meta.case !== subject.case || meta.target !== subject.target) {
     throw new Error(
       `A test records one case and target: it recorded ${meta.case} › ${meta.target}, then ${subject.case} › ${subject.target}.`,
     );
   }
-  const previous = meta.layers[layer];
-  meta.layers[layer] = previous ? mergeOutcomes(previous, settled) : settled;
-  return settled;
+  return meta;
 }
 
 /** The messages of every failed layer a task recorded, in layer order. */
@@ -223,16 +245,17 @@ function outcomeOfResult(result: unknown): LayerOutcome {
 }
 
 /**
- * Runs layer checks in order, records each outcome on the task, and then throws one error with
- * every failure, so a test reports all the layers it broke rather than the first. A check fails
- * by throwing, and skips by returning `{ skip: reason }` with a non-blank reason; any other
- * return value is a failure, never a silent skip.
+ * Runs layer checks in order and records each outcome on the task, without throwing: returns
+ * the failures (`"L7: …"`), quarantined ones excluded. A check fails by throwing, and skips by
+ * returning `{ skip: reason }` with a non-blank reason; any other return value is a failure,
+ * never a silent skip. The browser's `expectParity` records this way, so the spec's own
+ * assertions after it still run and are recorded as L8 (see `setup.ts`).
  */
-export async function checkLayers(
+export async function recordLayerChecks(
   task: LayerTask,
   subject: LayerSubject,
   checks: Partial<Record<LayerName, LayerCheck>>,
-): Promise<void> {
+): Promise<string[]> {
   const failures: string[] = [];
   for (const layer of LAYERS) {
     const check = checks[layer];
@@ -246,6 +269,20 @@ export async function checkLayers(
     const recorded = recordLayer(task, subject, layer, outcome);
     if (recorded.status === "fail") failures.push(`${layer}: ${recorded.message}`);
   }
+  return failures;
+}
+
+/**
+ * Runs layer checks in order, records each outcome on the task, and then throws one error with
+ * every failure, so a test reports all the layers it broke rather than the first (see
+ * `recordLayerChecks`). The Node projects check this way: their tests have nothing to run after.
+ */
+export async function checkLayers(
+  task: LayerTask,
+  subject: LayerSubject,
+  checks: Partial<Record<LayerName, LayerCheck>>,
+): Promise<void> {
+  const failures = await recordLayerChecks(task, subject, checks);
   if (failures.length) {
     throw new LayerFailure(subject, failures);
   }

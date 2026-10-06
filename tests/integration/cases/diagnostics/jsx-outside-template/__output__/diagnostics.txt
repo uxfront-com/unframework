@@ -1,0 +1,8 @@
+error[UF3012]: renderIcon is a helper that returns JSX, and JSX can only be in a component's template: the tree the component returns, and its slot functions.
+ --> diagnostics/jsx-outside-template/Toolbar.uf.tsx:2:10
+  |
+2 | function renderIcon() {
+  |          ^^^^^^^^^^
+  |
+  = help: Inline the JSX where it is used, or extract a component: an exported function with a PascalCase name.
+  = see: https://unframework.dev/diagnostics/UF3012

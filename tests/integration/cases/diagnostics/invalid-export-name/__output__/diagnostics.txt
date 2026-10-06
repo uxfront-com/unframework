@@ -1,0 +1,8 @@
+error[UF1103]: Card is exported as "info card", which is not an identifier.
+ --> diagnostics/invalid-export-name/Card.uf.tsx:6:10
+  |
+6 | export { Card as "info card", Card as default };
+  |          ^^^^^^^^^^^^^^^^^^^
+  |
+  = help: Export it under an identifier, such as `export { Card }`.
+  = see: https://unframework.dev/diagnostics/UF1103

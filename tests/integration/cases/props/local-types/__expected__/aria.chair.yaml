@@ -1,0 +1,9 @@
+- region "Lounge chair":
+  - heading "Lounge chair" [level=2]
+  - term: Availability
+  - definition: in-stock
+  - term: Size
+  - definition: 45 × 52 cm
+  - list:
+    - listitem: Oak (CH-OAK)
+    - listitem: Walnut (CH-WAL)

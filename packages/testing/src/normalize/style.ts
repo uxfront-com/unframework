@@ -1,3 +1,5 @@
+import { cssPropertiesOverlap } from "@unframework/ir";
+
 /**
  * The `style` attribute as a list of declarations. The parser is deliberately small: it splits
  * on `;` and `:` outside strings, parentheses, escapes and comments, which is all a declaration
@@ -140,4 +142,26 @@ export function styleValue(
   return dedupeDeclarations(parseStyle(style))
     .findLast((declaration) => properties.includes(declaration.property))
     ?.value?.toLowerCase();
+}
+
+/**
+ * Sorts declarations by property name, unless the order of two of them decides what renders
+ * (`cssPropertiesOverlap` of `@unframework/ir`: the same property, a shorthand and one of its
+ * longhands, two shorthands that share one, `all`, or a flow-relative longhand and a physical
+ * one that can be the same): then it keeps them as they are. A declaration list without such a
+ * pair renders the same in any order, and the targets write it in theirs (an object's key order,
+ * the CSSOM's, or static declarations first).
+ */
+export function sortDeclarations(declarations: readonly Declaration[]): Declaration[] {
+  const ordered = declarations.some((declaration, index) =>
+    declarations
+      .slice(index + 1)
+      .some((other) => cssPropertiesOverlap(declaration.property, other.property)),
+  );
+  // By UTF-16 code units, so the order never depends on a locale.
+  return ordered
+    ? [...declarations]
+    : declarations.toSorted((a, b) =>
+        a.property < b.property ? -1 : a.property > b.property ? 1 : 0,
+      );
 }

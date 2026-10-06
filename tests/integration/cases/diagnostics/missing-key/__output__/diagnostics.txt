@@ -1,0 +1,9 @@
+error[UF3013]: A list's element needs a `key`: the frameworks match each item's element across renders by it.
+  --> diagnostics/missing-key/TagList.uf.tsx:10:10
+   |
+10 |         <li>{tag}</li>
+   |          ^^
+   |
+   = help: Key it by something unique and stable in the item: `key={item.id}`.
+   = fix (likely): Key the element by its index, `key={index}`
+   = see: https://unframework.dev/diagnostics/UF3013

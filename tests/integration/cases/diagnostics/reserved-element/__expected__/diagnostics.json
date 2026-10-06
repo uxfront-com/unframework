@@ -1,0 +1,18 @@
+[
+  {
+    "code": "UF3002",
+    "severity": "error",
+    "message": "<title> names the document: React moves it into the <head>, and the other frameworks leave it in place.",
+    "file": "diagnostics/reserved-element/Dashboard.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 8,
+      "offset": 175
+    },
+    "end": {
+      "line": 5,
+      "column": 13,
+      "offset": 180
+    }
+  }
+]

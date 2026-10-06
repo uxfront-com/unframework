@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { HarnessContext } from "../src/harness.ts";
 import type { QuarantineEntry, UfLayerMeta } from "../src/layers.ts";
-import { buildPartialMatrix, stringifyMatrix } from "../src/node/matrix.ts";
+import { buildPartialMatrix, MATRIX_VERSION, stringifyMatrix } from "../src/node/matrix.ts";
 import type { PartialMatrix } from "../src/node/matrix.ts";
 import { ParityReporter, runName } from "../src/node/reporter.ts";
 
@@ -118,7 +118,10 @@ describe("ParityReporter", () => {
         testModule("browser:vue", [
           test(
             "browser:vue",
-            hello("vue", { L7: { status: "fail", message: "dom differs\nmore" } }),
+            {
+              ...hello("vue", { L7: { status: "fail", message: "dom differs\nmore" } }),
+              scenarios: ["initial"],
+            },
             "failed",
           ),
         ]),
@@ -128,7 +131,7 @@ describe("ParityReporter", () => {
     );
     const matrix = read("parity-matrix.all.json");
     expect(matrix).toMatchObject({
-      version: 3,
+      version: MATRIX_VERSION,
       run: "all",
       mode: { update: false, pixels: "baseline", canary: null },
       filtered: null,
@@ -136,10 +139,16 @@ describe("ParityReporter", () => {
       projects: ["browser:vue", "compile"],
       empty: [],
       quarantine: [],
+      reference: "vue",
       cases: { "basics/hello": { vue: { L1: "pass", L7: "fail: dom differs\nmore" } } },
+      scenarios: { "basics/hello": { vue: ["initial"] } },
       byProject: {
         compile: { "basics/hello": { vue: { L1: "pass" } } },
         "browser:vue": { "basics/hello": { vue: { L7: "fail: dom differs\nmore" } } },
+      },
+      scenariosByProject: {
+        compile: {},
+        "browser:vue": { "basics/hello": { vue: ["initial"] } },
       },
     });
     expect(Date.parse(matrix.finishedAt)).toBeGreaterThan(0);

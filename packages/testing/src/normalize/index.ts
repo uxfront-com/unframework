@@ -28,7 +28,7 @@ export type { NormalizeTarget } from "./targets.ts";
  *    (`unwrapAngularHosts`);
  * 4. style declarations (4a, `canonicalizeStyles`), boolean attributes (4b,
  *    `canonicalizeBooleanAttributes`) and class tokens (4c, `canonicalizeClasses`) get one
- *    canonical form;
+ *    canonical form, and a `class` or `style` that holds nothing goes;
  * 5. attributes are sorted by name (`sortAttributes`), before ids are numbered, so the
  *    numbering never depends on a framework's attribute order;
  * 6. whitespace collapses as the browser renders it (`collapseWhitespace`);

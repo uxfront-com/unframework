@@ -1,0 +1,12 @@
+- region "Starters":
+  - heading "Starters" [level=2]
+  - list:
+    - listitem: Tomato soup, 5.50 (vegetarian)
+    - listitem: Chicken wings, 7.00
+- region "Desserts":
+  - heading "Desserts" [level=2]
+  - list:
+    - listitem: Lemon tart, 4.25 (vegetarian)
+- region "Specials":
+  - heading "Specials" [level=2]
+  - list

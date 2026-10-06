@@ -6,18 +6,9 @@ import { outcomeOfCell } from "@unframework/testing/node";
 import type { ParityMatrix, ProjectKind } from "@unframework/testing/node";
 
 import { canaryProjects } from "./canaries.ts";
-import type { Canary, Evidence } from "./canaries.ts";
+import type { Canary, CanaryCase, Evidence } from "./canaries.ts";
 import type { LoadFailure } from "./load-failures.ts";
 import { REFERENCE } from "./targets.ts";
-
-/** What the verdict needs to know about a case of the corpus. */
-export interface CanaryCase {
-  id: string;
-  /** Whether the case has output for a target: a case with compile errors has none to corrupt. */
-  hasOutput(target: string): boolean;
-  /** The browser spec, relative to the integration package, which the browser projects run. */
-  spec: string | undefined;
-}
 
 /** One canary run: Vitest's exit status, and what it wrote, if it got that far. */
 export interface CanaryRun {
@@ -125,12 +116,16 @@ function missingEvidence(
 }
 
 /**
- * Whether a kind of project verifies a case on a target under a canary. A case with compile
- * errors has no output to corrupt, except for the compile project under a source canary, which
- * corrupts the source itself; the browser projects run only cases with a spec.
+ * Whether a kind of project verifies a case on a target under a canary: only the cases the
+ * canary applies to. A case with compile errors has no output to corrupt, except for the
+ * compile project under a source or fix canary, which corrupts the source or the fixes the
+ * case has all the same; the browser projects run only cases with a spec.
  */
 function verifies(canary: Canary, kind: ProjectKind, info: CanaryCase, target: string): boolean {
-  if (kind === "compile" && canary.source !== undefined) return true;
+  if (canary.appliesTo && !canary.appliesTo(info, target)) return false;
+  if (kind === "compile" && (canary.source !== undefined || canary.fixes !== undefined)) {
+    return true;
+  }
   if (!info.hasOutput(target)) return false;
   return kind !== "browser" || info.spec !== undefined;
 }

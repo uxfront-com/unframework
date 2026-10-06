@@ -1,0 +1,391 @@
+{
+  "irVersion": 1,
+  "file": "props/optional/ContactCard.uf.tsx",
+  "components": [
+    {
+      "name": "ContactCard",
+      "span": {
+        "start": 139,
+        "end": 447
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 44,
+              "end": 50
+            }
+          },
+          "binding": "name@177",
+          "span": {
+            "start": 38,
+            "end": 51
+          }
+        },
+        {
+          "name": "jobTitle",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 65,
+              "end": 71
+            }
+          },
+          "binding": "jobTitle@183",
+          "span": {
+            "start": 54,
+            "end": 72
+          }
+        },
+        {
+          "name": "team",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 82,
+              "end": 88
+            }
+          },
+          "binding": "team@193",
+          "span": {
+            "start": 75,
+            "end": 89
+          }
+        },
+        {
+          "name": "pronouns",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 103,
+              "end": 109
+            }
+          },
+          "binding": "pronouns@199",
+          "span": {
+            "start": 92,
+            "end": 110
+          }
+        },
+        {
+          "name": "phone",
+          "optional": true,
+          "type": {
+            "code": "string | null",
+            "span": {
+              "start": 121,
+              "end": 134
+            }
+          },
+          "binding": "phone@209",
+          "span": {
+            "start": 113,
+            "end": 135
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ContactCardProps",
+          "span": {
+            "start": 218,
+            "end": 234
+          }
+        },
+        "span": {
+          "start": 175,
+          "end": 234
+        }
+      },
+      "types": [
+        "ContactCardProps"
+      ],
+      "bindings": [
+        {
+          "id": "name@177",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 177,
+            "end": 181
+          }
+        },
+        {
+          "id": "jobTitle@183",
+          "name": "jobTitle",
+          "kind": "prop",
+          "span": {
+            "start": 183,
+            "end": 191
+          }
+        },
+        {
+          "id": "team@193",
+          "name": "team",
+          "kind": "prop",
+          "span": {
+            "start": 193,
+            "end": 197
+          }
+        },
+        {
+          "id": "pronouns@199",
+          "name": "pronouns",
+          "kind": "prop",
+          "span": {
+            "start": 199,
+            "end": 207
+          }
+        },
+        {
+          "id": "phone@209",
+          "name": "phone",
+          "kind": "prop",
+          "span": {
+            "start": 209,
+            "end": 214
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "contact-card",
+            "span": {
+              "start": 262,
+              "end": 282
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "name",
+              "span": {
+                "start": 295,
+                "end": 299
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "name@177",
+                  "span": {
+                    "start": 295,
+                    "end": 299
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 283,
+              "end": 300
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "data-team",
+            "value": {
+              "code": "team",
+              "span": {
+                "start": 312,
+                "end": 316
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "team@193",
+                  "span": {
+                    "start": 312,
+                    "end": 316
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 301,
+              "end": 317
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "title",
+                "value": {
+                  "code": "pronouns",
+                  "span": {
+                    "start": 336,
+                    "end": 344
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "pronouns@199",
+                      "span": {
+                        "start": 336,
+                        "end": 344
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 329,
+                  "end": 345
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "name",
+                  "span": {
+                    "start": 347,
+                    "end": 351
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@177",
+                      "span": {
+                        "start": 347,
+                        "end": 351
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 346,
+                  "end": 352
+                }
+              }
+            ],
+            "span": {
+              "start": 325,
+              "end": 357
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "jobTitle",
+                  "span": {
+                    "start": 368,
+                    "end": 376
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "jobTitle@183",
+                      "span": {
+                        "start": 368,
+                        "end": 376
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 367,
+                  "end": 377
+                }
+              }
+            ],
+            "span": {
+              "start": 364,
+              "end": 381
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Phone: ",
+                "span": {
+                  "start": 391,
+                  "end": 398
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "phone ?? \"not listed\"",
+                  "span": {
+                    "start": 399,
+                    "end": 420
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "phone@209",
+                      "span": {
+                        "start": 399,
+                        "end": 404
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 398,
+                  "end": 421
+                }
+              }
+            ],
+            "span": {
+              "start": 388,
+              "end": 425
+            }
+          }
+        ],
+        "span": {
+          "start": 253,
+          "end": 440
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ContactCard",
+      "span": {
+        "start": 139,
+        "end": 447
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ContactCardProps",
+      "exported": true,
+      "code": "interface ContactCardProps {\n  name: string;\n  jobTitle?: string;\n  team?: string;\n  pronouns?: string;\n  phone?: string | null;\n}",
+      "span": {
+        "start": 7,
+        "end": 137
+      }
+    }
+  ]
+}

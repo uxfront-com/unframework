@@ -1,0 +1,246 @@
+{
+  "irVersion": 1,
+  "file": "bindings/everyday-values/CommentQuote.uf.tsx",
+  "components": [
+    {
+      "name": "CommentQuote",
+      "span": {
+        "start": 77,
+        "end": 371
+      },
+      "props": [
+        {
+          "name": "author",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 47,
+              "end": 53
+            }
+          },
+          "binding": "author@116",
+          "span": {
+            "start": 39,
+            "end": 54
+          }
+        },
+        {
+          "name": "comment",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 66,
+              "end": 72
+            }
+          },
+          "binding": "comment@124",
+          "span": {
+            "start": 57,
+            "end": 73
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "CommentQuoteProps",
+          "span": {
+            "start": 135,
+            "end": 152
+          }
+        },
+        "span": {
+          "start": 114,
+          "end": 152
+        }
+      },
+      "types": [
+        "CommentQuoteProps"
+      ],
+      "bindings": [
+        {
+          "id": "author@116",
+          "name": "author",
+          "kind": "prop",
+          "span": {
+            "start": 116,
+            "end": 122
+          }
+        },
+        {
+          "id": "comment@124",
+          "name": "comment",
+          "kind": "prop",
+          "span": {
+            "start": 124,
+            "end": 131
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "figure",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "comment-quote",
+            "span": {
+              "start": 179,
+              "end": 200
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "blockquote",
+            "attributes": [
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Static",
+                    "property": "margin",
+                    "value": "0",
+                    "span": {
+                      "start": 229,
+                      "end": 238
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "padding",
+                    "value": "0",
+                    "span": {
+                      "start": 240,
+                      "end": 250
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 220,
+                  "end": 253
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "p",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "dir",
+                    "value": "auto",
+                    "span": {
+                      "start": 266,
+                      "end": 276
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "comment",
+                      "span": {
+                        "start": 278,
+                        "end": 285
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "comment@124",
+                          "span": {
+                            "start": 278,
+                            "end": 285
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 277,
+                      "end": 286
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 263,
+                  "end": 290
+                }
+              }
+            ],
+            "span": {
+              "start": 208,
+              "end": 310
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "figcaption",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "author",
+                  "span": {
+                    "start": 330,
+                    "end": 336
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "author@116",
+                      "span": {
+                        "start": 330,
+                        "end": 336
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 329,
+                  "end": 337
+                }
+              }
+            ],
+            "span": {
+              "start": 317,
+              "end": 350
+            }
+          }
+        ],
+        "span": {
+          "start": 171,
+          "end": 364
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "CommentQuote",
+      "span": {
+        "start": 77,
+        "end": 371
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "CommentQuoteProps",
+      "exported": true,
+      "code": "interface CommentQuoteProps {\n  author: string;\n  comment: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 75
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+error[UF3010]: U+0007 is a control character, which HTML does not allow in a document.
+ --> diagnostics/unportable-character/Alert.uf.tsx:3:17
+  |
+3 |   return <p>Ding&#7; you have mail</p>;
+  |                 ^^^^
+  |
+  = help: Remove it.
+  = see: https://unframework.dev/diagnostics/UF3010

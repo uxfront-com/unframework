@@ -18,11 +18,33 @@ export type CapabilityName =
   | "static-attribute"
   /**
    * A `<select>` shown as a single-selection list box: display size above 1, without
-   * `multiple`, holding an option a drop-down would select (`listBoxSize`).
+   * `multiple`, holding an option a drop-down would select (`listBoxSize`). A bound or spread
+   * `size`, and options in a conditional or a list, count: what only the run time knows is
+   * taken to be one.
    */
   | "listbox"
   /** Running event handlers and updating the DOM in the browser. */
-  | "interactivity";
+  | "interactivity"
+  /** Props: a component whose props type has members (ADR-0034). */
+  | "props"
+  /** Expressions rendered as text (`InterpolationNode`). */
+  | "interpolation"
+  /** Conditionals: `c ? <A/> : <B/>`, `c && <A/>` (`IfNode`). */
+  | "conditional"
+  /** Keyed lists: `items.map((item) => <li key={…}/>)` (`ForNode`), content and order. */
+  | "list"
+  /** Several roots: a component's render root that is a `FragmentNode`. */
+  | "fragment"
+  /** Attributes bound to an expression (`BoundAttribute`). */
+  | "bound-attribute"
+  /** A `class` built from static names, toggles and dynamic parts (`ClassAttribute`). */
+  | "class-binding"
+  /** A `style` as declarations, static or bound (`StyleAttribute`). */
+  | "style-binding"
+  /** A spread of an object whose keys its type declares (`SpreadAttribute`). */
+  | "attribute-spread"
+  /** SVG: an `<svg>` element and the SVG inside it. */
+  | "svg";
 
 /** Every capability name, in a stable order. */
 export const CAPABILITY_NAMES: readonly CapabilityName[] = [
@@ -31,6 +53,16 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "static-attribute",
   "listbox",
   "interactivity",
+  "props",
+  "interpolation",
+  "conditional",
+  "list",
+  "fragment",
+  "bound-attribute",
+  "class-binding",
+  "style-binding",
+  "attribute-spread",
+  "svg",
 ];
 
 /** How a target supports a capability (plan §5.7). */

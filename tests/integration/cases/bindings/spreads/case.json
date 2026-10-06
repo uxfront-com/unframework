@@ -1,0 +1,29 @@
+{
+  "description": "A typed attributes prop spread beside written attributes (a boolean key included), and an optional spread source that renders nothing when absent.",
+  "ssr": {
+    "with-hint": {
+      "props": {
+        "label": "Work email",
+        "inputId": "work-email",
+        "hintText": "We never share your address.",
+        "field": {
+          "name": "email",
+          "placeholder": "ada@example.com",
+          "autocomplete": "email",
+          "maxlength": 120,
+          "required": true,
+          "title": "Your work address"
+        },
+        "hint": { "id": "work-email-hint", "title": "Privacy" }
+      }
+    },
+    "without-hint": {
+      "props": {
+        "label": "Nickname",
+        "inputId": "nickname",
+        "hintText": "Shown on your profile.",
+        "field": { "name": "nickname" }
+      }
+    }
+  }
+}

@@ -36,7 +36,7 @@ export function normalizeTree(root: TreeFragment, options: NormalizeOptions): st
   removeFrameworkAttributes(root, target);
   unwrapAngularHosts(root, target);
   canonicalizeStyles(root);
-  canonicalizeBooleanAttributes(root);
+  canonicalizeBooleanAttributes(root, target);
   canonicalizeClasses(root);
   sortAttributes(root);
   collapseWhitespace(root);

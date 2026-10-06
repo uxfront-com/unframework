@@ -1,0 +1,8 @@
+error[UF3019]: `Math.random` reads chance, so the server's render and the browser's would differ.
+ --> diagnostics/nondeterministic-render/Dice.uf.tsx:3:36
+  |
+3 |   return <p>You rolled {Math.floor(Math.random() * 6) + 1}.</p>;
+  |                                    ^^^^^^^^^^^
+  |
+  = help: Pass the value in as a prop, computed where it is decided.
+  = see: https://unframework.dev/diagnostics/UF3019

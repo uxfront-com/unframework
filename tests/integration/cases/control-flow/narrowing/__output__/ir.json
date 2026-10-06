@@ -1,0 +1,1329 @@
+{
+  "irVersion": 1,
+  "file": "control-flow/narrowing/AccountSummary.uf.tsx",
+  "components": [
+    {
+      "name": "AccountSummary",
+      "span": {
+        "start": 415,
+        "end": 1528
+      },
+      "props": [
+        {
+          "name": "loading",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 297,
+              "end": 304
+            }
+          },
+          "binding": "loading@458",
+          "span": {
+            "start": 288,
+            "end": 305
+          }
+        },
+        {
+          "name": "member",
+          "optional": true,
+          "type": {
+            "code": "Member",
+            "span": {
+              "start": 317,
+              "end": 323
+            }
+          },
+          "binding": "member@469",
+          "span": {
+            "start": 308,
+            "end": 324
+          }
+        },
+        {
+          "name": "uptime",
+          "optional": true,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 336,
+              "end": 342
+            }
+          },
+          "binding": "uptime@479",
+          "span": {
+            "start": 327,
+            "end": 343
+          }
+        },
+        {
+          "name": "storage",
+          "optional": false,
+          "type": {
+            "code": "number | string",
+            "span": {
+              "start": 355,
+              "end": 370
+            }
+          },
+          "binding": "storage@489",
+          "span": {
+            "start": 346,
+            "end": 371
+          }
+        },
+        {
+          "name": "plan",
+          "optional": false,
+          "type": {
+            "code": "Plan",
+            "span": {
+              "start": 380,
+              "end": 384
+            }
+          },
+          "binding": "plan@500",
+          "span": {
+            "start": 374,
+            "end": 385
+          }
+        },
+        {
+          "name": "seats",
+          "optional": false,
+          "type": {
+            "code": "(Seat | null)[]",
+            "span": {
+              "start": 395,
+              "end": 410
+            }
+          },
+          "binding": "seats@508",
+          "span": {
+            "start": 388,
+            "end": 411
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "AccountSummaryProps",
+          "span": {
+            "start": 518,
+            "end": 537
+          }
+        },
+        "span": {
+          "start": 454,
+          "end": 537
+        }
+      },
+      "types": [
+        "Team",
+        "Member",
+        "Seat",
+        "Plan",
+        "AccountSummaryProps"
+      ],
+      "bindings": [
+        {
+          "id": "loading@458",
+          "name": "loading",
+          "kind": "prop",
+          "span": {
+            "start": 458,
+            "end": 465
+          }
+        },
+        {
+          "id": "member@469",
+          "name": "member",
+          "kind": "prop",
+          "span": {
+            "start": 469,
+            "end": 475
+          }
+        },
+        {
+          "id": "uptime@479",
+          "name": "uptime",
+          "kind": "prop",
+          "span": {
+            "start": 479,
+            "end": 485
+          }
+        },
+        {
+          "id": "storage@489",
+          "name": "storage",
+          "kind": "prop",
+          "span": {
+            "start": 489,
+            "end": 496
+          }
+        },
+        {
+          "id": "plan@500",
+          "name": "plan",
+          "kind": "prop",
+          "span": {
+            "start": 500,
+            "end": 504
+          }
+        },
+        {
+          "id": "seats@508",
+          "name": "seats",
+          "kind": "prop",
+          "span": {
+            "start": 508,
+            "end": 513
+          }
+        },
+        {
+          "id": "seat@1393",
+          "name": "seat",
+          "kind": "loopVar",
+          "span": {
+            "start": 1393,
+            "end": 1397
+          }
+        },
+        {
+          "id": "index@1399",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 1399,
+            "end": 1404
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "account-summary",
+            "span": {
+              "start": 565,
+              "end": 588
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Account",
+            "span": {
+              "start": 589,
+              "end": 609
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "loading",
+                  "span": {
+                    "start": 618,
+                    "end": 625
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "loading@458",
+                      "span": {
+                        "start": 618,
+                        "end": 625
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Loading the account",
+                        "span": {
+                          "start": 631,
+                          "end": 650
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 628,
+                      "end": 654
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 618,
+                  "end": 654
+                }
+              },
+              {
+                "condition": {
+                  "code": "!member",
+                  "span": {
+                    "start": 657,
+                    "end": 664
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "member@469",
+                      "span": {
+                        "start": 658,
+                        "end": 664
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Signed out",
+                        "span": {
+                          "start": 670,
+                          "end": 680
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 667,
+                      "end": 684
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 657,
+                  "end": 684
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "h2",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "member.name",
+                          "span": {
+                            "start": 692,
+                            "end": 703
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "member@469",
+                              "span": {
+                                "start": 692,
+                                "end": 698
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 691,
+                          "end": 704
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 687,
+                      "end": 709
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 687,
+                  "end": 709
+                }
+              }
+            ],
+            "span": {
+              "start": 618,
+              "end": 709
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "member",
+                  "span": {
+                    "start": 718,
+                    "end": 724
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "member@469",
+                      "span": {
+                        "start": 718,
+                        "end": 724
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Signed in as ",
+                        "span": {
+                          "start": 731,
+                          "end": 744
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "member.email",
+                          "span": {
+                            "start": 745,
+                            "end": 757
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "member@469",
+                              "span": {
+                                "start": 745,
+                                "end": 751
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 744,
+                          "end": 758
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 728,
+                      "end": 762
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 718,
+                  "end": 762
+                }
+              }
+            ],
+            "span": {
+              "start": 718,
+              "end": 762
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "member",
+                  "span": {
+                    "start": 771,
+                    "end": 777
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "member@469",
+                      "span": {
+                        "start": 771,
+                        "end": 777
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Role: ",
+                        "span": {
+                          "start": 783,
+                          "end": 789
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "member.admin ? \"administrator\" : \"member\"",
+                          "span": {
+                            "start": 790,
+                            "end": 831
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "member@469",
+                              "span": {
+                                "start": 790,
+                                "end": 796
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 789,
+                          "end": 832
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 780,
+                      "end": 836
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 771,
+                  "end": 836
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Role: guest",
+                        "span": {
+                          "start": 842,
+                          "end": 853
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 839,
+                      "end": 857
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 839,
+                  "end": 857
+                }
+              }
+            ],
+            "span": {
+              "start": 771,
+              "end": 857
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "!member",
+                  "span": {
+                    "start": 866,
+                    "end": 873
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "member@469",
+                      "span": {
+                        "start": 867,
+                        "end": 873
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "No profile",
+                        "span": {
+                          "start": 879,
+                          "end": 889
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 876,
+                      "end": 893
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 866,
+                  "end": 893
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Profile of ",
+                        "span": {
+                          "start": 899,
+                          "end": 910
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "member.name",
+                          "span": {
+                            "start": 911,
+                            "end": 922
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "member@469",
+                              "span": {
+                                "start": 911,
+                                "end": 917
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 910,
+                          "end": 923
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 896,
+                      "end": 927
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 896,
+                  "end": 927
+                }
+              }
+            ],
+            "span": {
+              "start": 866,
+              "end": 927
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "member && member.team",
+                  "span": {
+                    "start": 936,
+                    "end": 957
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "member@469",
+                      "span": {
+                        "start": 936,
+                        "end": 942
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "member@469",
+                      "span": {
+                        "start": 946,
+                        "end": 952
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Team: ",
+                        "span": {
+                          "start": 964,
+                          "end": 970
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "member.team.name",
+                          "span": {
+                            "start": 971,
+                            "end": 987
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "member@469",
+                              "span": {
+                                "start": 971,
+                                "end": 977
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 970,
+                          "end": 988
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 961,
+                      "end": 992
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 936,
+                  "end": 992
+                }
+              }
+            ],
+            "span": {
+              "start": 936,
+              "end": 992
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "uptime !== undefined",
+                  "span": {
+                    "start": 1001,
+                    "end": 1021
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "uptime@479",
+                      "span": {
+                        "start": 1001,
+                        "end": 1007
+                      }
+                    },
+                    {
+                      "kind": "Global",
+                      "name": "undefined",
+                      "span": {
+                        "start": 1012,
+                        "end": 1021
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Uptime ",
+                        "span": {
+                          "start": 1028,
+                          "end": 1035
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "uptime.toFixed(1)",
+                          "span": {
+                            "start": 1036,
+                            "end": 1053
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "uptime@479",
+                              "span": {
+                                "start": 1036,
+                                "end": 1042
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1035,
+                          "end": 1054
+                        }
+                      },
+                      {
+                        "kind": "Text",
+                        "value": "%",
+                        "span": {
+                          "start": 1054,
+                          "end": 1055
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1025,
+                      "end": 1059
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1001,
+                  "end": 1059
+                }
+              }
+            ],
+            "span": {
+              "start": 1001,
+              "end": 1059
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "typeof storage === \"number\"",
+                  "span": {
+                    "start": 1068,
+                    "end": 1095
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "storage@489",
+                      "span": {
+                        "start": 1075,
+                        "end": 1082
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Storage ",
+                        "span": {
+                          "start": 1111,
+                          "end": 1119
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "storage.toFixed(1)",
+                          "span": {
+                            "start": 1120,
+                            "end": 1138
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "storage@489",
+                              "span": {
+                                "start": 1120,
+                                "end": 1127
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1119,
+                          "end": 1139
+                        }
+                      },
+                      {
+                        "kind": "Text",
+                        "value": " GB",
+                        "span": {
+                          "start": 1139,
+                          "end": 1142
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1108,
+                      "end": 1146
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1068,
+                  "end": 1146
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Storage ",
+                        "span": {
+                          "start": 1170,
+                          "end": 1178
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "storage",
+                          "span": {
+                            "start": 1179,
+                            "end": 1186
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "storage@489",
+                              "span": {
+                                "start": 1179,
+                                "end": 1186
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1178,
+                          "end": 1187
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1167,
+                      "end": 1191
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1167,
+                  "end": 1191
+                }
+              }
+            ],
+            "span": {
+              "start": 1068,
+              "end": 1199
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "plan.kind === \"paid\"",
+                  "span": {
+                    "start": 1208,
+                    "end": 1228
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "plan@500",
+                      "span": {
+                        "start": 1208,
+                        "end": 1212
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Renews on ",
+                        "span": {
+                          "start": 1244,
+                          "end": 1254
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "plan.renews",
+                          "span": {
+                            "start": 1255,
+                            "end": 1266
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "plan@500",
+                              "span": {
+                                "start": 1255,
+                                "end": 1259
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1254,
+                          "end": 1267
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1241,
+                      "end": 1271
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1208,
+                  "end": 1271
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Trial ends in ",
+                        "span": {
+                          "start": 1295,
+                          "end": 1309
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "plan.daysLeft",
+                          "span": {
+                            "start": 1310,
+                            "end": 1323
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "plan@500",
+                              "span": {
+                                "start": 1310,
+                                "end": 1314
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1309,
+                          "end": 1324
+                        }
+                      },
+                      {
+                        "kind": "Text",
+                        "value": " days",
+                        "span": {
+                          "start": 1324,
+                          "end": 1329
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1292,
+                      "end": 1333
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1292,
+                  "end": 1333
+                }
+              }
+            ],
+            "span": {
+              "start": 1208,
+              "end": 1341
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Seats",
+                "span": {
+                  "start": 1353,
+                  "end": 1371
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "seats",
+                  "span": {
+                    "start": 1382,
+                    "end": 1387
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "seats@508",
+                      "span": {
+                        "start": 1382,
+                        "end": 1387
+                      }
+                    }
+                  ]
+                },
+                "item": "seat@1393",
+                "index": "index@1399",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 1430,
+                    "end": 1435
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@1399",
+                      "span": {
+                        "start": 1430,
+                        "end": 1435
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "If",
+                      "branches": [
+                        {
+                          "condition": {
+                            "code": "seat",
+                            "span": {
+                              "start": 1438,
+                              "end": 1442
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "seat@1393",
+                                "span": {
+                                  "start": 1438,
+                                  "end": 1442
+                                }
+                              }
+                            ]
+                          },
+                          "children": [
+                            {
+                              "kind": "Element",
+                              "tag": "b",
+                              "attributes": [],
+                              "children": [
+                                {
+                                  "kind": "Interpolation",
+                                  "value": {
+                                    "code": "seat.holder",
+                                    "span": {
+                                      "start": 1449,
+                                      "end": 1460
+                                    },
+                                    "refs": [
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "seat@1393",
+                                        "span": {
+                                          "start": 1449,
+                                          "end": 1453
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "span": {
+                                    "start": 1448,
+                                    "end": 1461
+                                  }
+                                }
+                              ],
+                              "span": {
+                                "start": 1445,
+                                "end": 1465
+                              }
+                            }
+                          ],
+                          "span": {
+                            "start": 1438,
+                            "end": 1465
+                          }
+                        },
+                        {
+                          "children": [
+                            {
+                              "kind": "Text",
+                              "value": "Vacant",
+                              "span": {
+                                "start": 1468,
+                                "end": 1476
+                              }
+                            }
+                          ],
+                          "span": {
+                            "start": 1468,
+                            "end": 1476
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 1438,
+                        "end": 1476
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 1421,
+                    "end": 1482
+                  }
+                },
+                "span": {
+                  "start": 1382,
+                  "end": 1493
+                }
+              }
+            ],
+            "span": {
+              "start": 1349,
+              "end": 1506
+            }
+          }
+        ],
+        "span": {
+          "start": 556,
+          "end": 1521
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "AccountSummary",
+      "span": {
+        "start": 415,
+        "end": 1528
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Team",
+      "exported": false,
+      "code": "interface Team {\n  name: string;\n}",
+      "span": {
+        "start": 0,
+        "end": 34
+      }
+    },
+    {
+      "name": "Member",
+      "exported": false,
+      "code": "interface Member {\n  name: string;\n  email: string;\n  admin: boolean;\n  team?: Team;\n}",
+      "span": {
+        "start": 36,
+        "end": 122
+      }
+    },
+    {
+      "name": "Seat",
+      "exported": false,
+      "code": "interface Seat {\n  holder: string;\n}",
+      "span": {
+        "start": 124,
+        "end": 160
+      }
+    },
+    {
+      "name": "Plan",
+      "exported": false,
+      "code": "type Plan = { kind: \"paid\"; renews: string } | { kind: \"trial\"; daysLeft: number };",
+      "span": {
+        "start": 162,
+        "end": 245
+      }
+    },
+    {
+      "name": "AccountSummaryProps",
+      "exported": true,
+      "code": "interface AccountSummaryProps {\n  loading: boolean;\n  member?: Member;\n  uptime?: number;\n  storage: number | string;\n  plan: Plan;\n  seats: (Seat | null)[];\n}",
+      "span": {
+        "start": 254,
+        "end": 413
+      }
+    }
+  ]
+}

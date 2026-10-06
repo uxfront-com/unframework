@@ -1,19 +1,26 @@
 // How each dialect writes markup: layout and escaping snapshots, so a change to the printed
 // form is reviewed. Whether a framework renders that form as the IR describes is not decided
-// here but by each target package's render-parity test, which runs the framework's own
-// compiler and server renderer over the same tricky text (codegen/test/render-parity.ts).
+// here but by each markup target's render-parity and markup-semantics tests, which run the
+// framework's own compiler and server renderer over the same trees (codegen/test/render-parity.ts,
+// codegen/test/markup-cases.ts).
 import { createElement, createStaticAttribute, createText } from "@unframework/ir";
-import type { ElementNode, RenderNode } from "@unframework/ir";
+import type { ElementNode, FragmentNode, RenderNode } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
 import {
   angularDialect,
   astroDialect,
+  conjoin,
   htmlDialect,
+  member,
+  negate,
   printMarkup,
   svelteDialect,
   vueDialect,
-} from "../src/index.ts";
+} from "../src/markup.ts";
+import type { MarkupOptions } from "../src/markup.ts";
+import { suite } from "./markup-cases.ts";
+import type { Builder, PropSpec } from "./markup-cases.ts";
 
 const at = { start: 0, end: 0 };
 const el = (tag: string, children: RenderNode[] = [], attributes: [string, string | true][] = []) =>
@@ -111,7 +118,10 @@ describe("elements", () => {
   it("lets the caller write attributes its way", () => {
     expect(
       printMarkup(el("p", [], [["class", "a"]]), vueDialect, {
-        attribute: (attribute) => `:${attribute.name}="'${String(attribute.value)}'"`,
+        attribute: (attribute) =>
+          attribute.kind === "Static"
+            ? `:${attribute.name}="'${String(attribute.value)}'"`
+            : undefined,
       }),
     ).toBe(`<p :class="'a'"></p>`);
   });
@@ -293,6 +303,36 @@ describe("layout", () => {
 describe("whitespace and delimiters that template compilers rewrite", () => {
   const runs = p(text("a  b\tc\nd"));
 
+  // No backslash comes before a quote: angular-eslint lints the template's raw text, where it is
+  // doubled, and Angular's search for a comment (`//`) knows no escapes.
+  it("writes an interpolated literal in the quote its text does not hold", () => {
+    const tree = el("div", [
+      p(text('Visit "https://a.b".  Thanks')),
+      p(text("Don't  stop")),
+      p(text(`It's "x"  //`)),
+    ]);
+    expect(printMarkup(tree, angularDialect)).toBe(
+      lines(
+        "<div>",
+        `  <p>{{ 'Visit "https://a.b".\\u0020\\u0020Thanks' }}</p>`,
+        `  <p>{{ "Don't\\u0020\\u0020stop" }}</p>`,
+        `  <p>{{ "It's \\u0022x\\u0022\\u0020\\u0020//" }}</p>`,
+        "</div>",
+      ),
+    );
+  });
+
+  // Angular turns U+E500, its `&ngsp;` marker, into a space in text, a `<pre>`'s included.
+  it("writes U+E500 in text as an escape in an interpolated literal on Angular", () => {
+    const tree = el("div", [p(text("x\ue500y")), el("pre", [text("a\ue500 b")])]);
+    expect(printMarkup(tree, angularDialect)).toBe(
+      lines("<div>", '  <p>{{ "x\\ue500y" }}</p>', '  <pre>{{ "a\\ue500 b" }}</pre>', "</div>"),
+    );
+    expect(printMarkup(tree, vueDialect)).toBe(
+      lines("<div>", "  <p>x\ue500y</p>", "  <pre>a\ue500 b</pre>", "</div>"),
+    );
+  });
+
   it("keeps Vue's condensed whitespace and edge whitespace in interpolated literals", () => {
     expect(printMarkup(runs, vueDialect)).toBe('<p>{{ "a  b\\tc\\nd" }}</p>');
     expect(printMarkup(p(text("one space")), vueDialect)).toBe("<p>one space</p>");
@@ -376,5 +416,676 @@ describe("whitespace and delimiters that template compilers rewrite", () => {
     expect(printMarkup(pre, vueDialect)).toBe("<pre> a  b\n</pre>");
     expect(printMarkup(pre, svelteDialect)).toBe("<pre> a  b\n</pre>");
     expect(printMarkup(pre, angularDialect)).toBe("<pre> a  b\n</pre>");
+  });
+});
+
+const DIALECTS = {
+  vue: vueDialect,
+  svelte: svelteDialect,
+  angular: angularDialect,
+  astro: astroDialect,
+} as const;
+
+/**
+ * A tree built with the markup cases' builder, printed by every markup dialect: each prop is
+ * spelled `c0Name`, and called on Angular (`c0Name()`), as the targets' rewrite rules will.
+ */
+function printed(
+  props: Readonly<Record<string, PropSpec>>,
+  render: (build: Builder) => ElementNode | FragmentNode,
+  options: MarkupOptions = {},
+): Record<keyof typeof DIALECTS, string> {
+  const cases = suite([{ name: "printed", props, render, expected: "" }], "self");
+  const print = (name: keyof typeof DIALECTS) =>
+    printMarkup(cases.component.render, DIALECTS[name], {
+      ...options,
+      component: cases.component,
+      rewrite: cases.rules(name === "angular"),
+    });
+  return {
+    vue: print("vue"),
+    svelte: print("svelte"),
+    angular: print("angular"),
+    astro: print("astro"),
+  };
+}
+
+const lines = (...each: string[]) => each.join("\n");
+const on = { type: "boolean", value: true } as const;
+
+describe("control flow", () => {
+  it("writes a conditional as each language does, on lines only where content allows", () => {
+    // The middle branch starts with text, so Svelte's and Angular's blocks stay on one line;
+    // Vue's directives and Astro's parenthesised branches break around elements anyway.
+    expect(
+      printed({ a: on, b: on }, (b) =>
+        b.el(
+          "div",
+          [],
+          b.if(
+            ["a", b.el("p", [], "A")],
+            ["b", "text ", b.i("a")],
+            [undefined, b.el("p", [], "C")],
+          ),
+        ),
+      ),
+    ).toEqual({
+      vue: lines(
+        "<div>",
+        '  <p v-if="c0A">A</p>',
+        '  <template v-else-if="c0B">text {{ c0A }}</template>',
+        "  <p v-else>C</p>",
+        "</div>",
+      ),
+      svelte: lines(
+        "<div>",
+        "  {#if c0A}<p>A</p>{:else if c0B}text {c0A}{:else}<p>C</p>{/if}",
+        "</div>",
+      ),
+      angular: lines(
+        "<div>",
+        "  @if (c0A()) {<p>A</p>} @else if (c0B()) {text {{ c0A() }}} @else {<p>C</p>}",
+        "</div>",
+      ),
+      astro: lines(
+        "<div>",
+        "  {c0A ? (",
+        "    <p>A</p>",
+        "  ) : c0B ? (",
+        "    <>text {c0A}</>",
+        "  ) : (",
+        "    <p>C</p>",
+        "  )}",
+        "</div>",
+      ),
+    });
+  });
+
+  it("folds an empty branch into the conditions after it, where the language has no empty branch", () => {
+    // angular-eslint rejects `@if (c) {}`; Astro's ternary says `null`.
+    expect(
+      printed({ a: on, b: on }, (b) =>
+        b.el("div", [], b.if(["a"], ["b", b.el("p", [], "B")], [undefined, b.el("p", [], "C")])),
+      ),
+    ).toEqual({
+      vue: lines("<div>", '  <p v-if="!c0A && c0B">B</p>', '  <p v-else-if="!c0A">C</p>', "</div>"),
+      svelte: lines(
+        "<div>",
+        "  {#if !c0A && c0B}",
+        "    <p>B</p>",
+        "  {:else if !c0A}",
+        "    <p>C</p>",
+        "  {/if}",
+        "</div>",
+      ),
+      angular: lines(
+        "<div>",
+        "  @if (!c0A() && c0B()) {",
+        "    <p>B</p>",
+        "  } @else if (!c0A()) {",
+        "    <p>C</p>",
+        "  }",
+        "</div>",
+      ),
+      astro: lines(
+        "<div>",
+        "  {c0A ? null : c0B ? (",
+        "    <p>B</p>",
+        "  ) : (",
+        "    <p>C</p>",
+        "  )}",
+        "</div>",
+      ),
+    });
+  });
+
+  it("writes a list, with its index only when an expression reads it", () => {
+    const items = { type: "string[]", value: [] };
+    expect(
+      printed({ items }, (b) =>
+        b.el(
+          "ul",
+          [],
+          b.for("items", "item", "index", "item", () =>
+            b.el("li", [b.attr("id", "x")], b.i("index")),
+          ),
+        ),
+      ),
+    ).toEqual({
+      // `vue/attributes-order`: `v-for`, then `id`, then `:key`.
+      vue: lines(
+        "<ul>",
+        '  <li v-for="(item, index) in c0Items" id="x" :key="item">{{ index }}</li>',
+        "</ul>",
+      ),
+      svelte: lines(
+        "<ul>",
+        "  {#each c0Items as item, index (item)}",
+        '    <li id="x">{index}</li>',
+        "  {/each}",
+        "</ul>",
+      ),
+      angular: lines(
+        "<ul>",
+        "  @for (item of c0Items(); track item; let index = $index) {",
+        '    <li id="x">{{ index }}</li>',
+        "  }",
+        "</ul>",
+      ),
+      astro: lines(
+        "<ul>",
+        "  {c0Items.map((item, index) => (",
+        '    <li id="x">{index}</li>',
+        "  ))}",
+        "</ul>",
+      ),
+    });
+    const unread = printed({ items }, (b) =>
+      b.el(
+        "ul",
+        [],
+        b.for("items", "item", "index", "item", () => b.el("li", [], b.i("item"))),
+      ),
+    );
+    expect(unread.vue).toContain('v-for="item in c0Items"');
+    expect(unread.svelte).toContain("{#each c0Items as item (item)}");
+    expect(unread.angular).toContain("@for (item of c0Items(); track item) {");
+    expect(unread.astro).toContain("{c0Items.map((item) => (");
+  });
+
+  it("keeps blocks off the whitespace Svelte keeps between siblings", () => {
+    expect(
+      printed({ a: on }, (b) =>
+        b.el("div", [], b.el("p", [], "x"), b.if(["a", b.el("p", [], "a")]), b.el("p", [], "y")),
+      ),
+    ).toEqual({
+      vue: lines("<div>", "  <p>x</p>", '  <p v-if="c0A">a</p>', "  <p>y</p>", "</div>"),
+      svelte: lines(
+        "<div>",
+        "  <p>x</p",
+        "  >{#if c0A}",
+        "    <p>a</p>",
+        "  {/if}<p>y</p>",
+        "</div>",
+      ),
+      angular: lines(
+        "<div>",
+        "  <p>x</p>",
+        "  @if (c0A()) {",
+        "    <p>a</p>",
+        "  }",
+        "  <p>y</p>",
+        "</div>",
+      ),
+      astro: lines(
+        "<div>",
+        "  <p>x</p>",
+        "  {c0A ? (",
+        "    <p>a</p>",
+        "  ) : null}",
+        "  <p>y</p>",
+        "</div>",
+      ),
+    });
+  });
+
+  it("keeps control flow in a <pre> on the text's lines", () => {
+    expect(
+      printed({ a: on }, (b) =>
+        b.el("pre", [], "a\n", b.if(["a", b.el("b", [], "x")], [undefined, b.el("i", [], "y")])),
+      ),
+    ).toEqual({
+      vue: '<pre>a\n<b v-if="c0A">x</b><i v-else>y</i></pre>',
+      svelte: "<pre>a\n{#if c0A}<b>x</b>{:else}<i>y</i>{/if}</pre>",
+      angular: "<pre>a\n@if (c0A()) {<b>x</b>} @else {<i>y</i>}</pre>",
+      astro: "<pre>a\n{c0A ? <b>x</b> : <i>y</i>}</pre>",
+    });
+  });
+});
+
+describe("bindings", () => {
+  it("writes bound attributes, class, style and a spread's keys", () => {
+    const attrs = { type: '{ id?: string; class?: string; "data-x"?: string }' };
+    expect(
+      printed({ t: { type: "string", value: "t" }, on, attrs }, (b) =>
+        b.el("input", [
+          b.attr("type", "text"),
+          b.bind("title", 't + "!"'),
+          b.bind("disabled", "on"),
+          b.cls("a", { code: "t" }, ["on", "on"]),
+          b.style(["color", "red"], ["margin-top", { code: "t" }]),
+          b.spread("attrs", "id", "class", "data-x"),
+        ]),
+      ),
+    ).toEqual({
+      // The spread's `class` joins the element's; its object may be absent, so `?.`.
+      vue: lines(
+        "<input",
+        '  :id="c0Attrs?.id"',
+        '  type="text"',
+        `  :title="c0T + '!'"`,
+        '  :disabled="c0On"',
+        '  class="a"',
+        '  :class="[c0T, { on: c0On }, c0Attrs?.class]"',
+        '  style="color: red"',
+        '  :style="{ marginTop: c0T }"',
+        `  :data-x="c0Attrs?.['data-x']"`,
+        "/>",
+      ),
+      svelte: lines(
+        "<input",
+        '  type="text"',
+        '  title={c0T + "!"}',
+        "  disabled={c0On}",
+        '  class={["a", c0T, { on: c0On }, c0Attrs?.class]}',
+        '  style:color="red"',
+        "  style:margin-top={c0T}",
+        "  id={c0Attrs?.id}",
+        '  data-x={c0Attrs?.["data-x"]}',
+        "/>",
+      ),
+      angular: lines(
+        "<input",
+        '  type="text"',
+        `  [attr.title]="c0T() + '!'"`,
+        `  [attr.disabled]="c0On() ? '' : null"`,
+        '  class="a"',
+        `  [class]="[c0T(), c0On() ? 'on' : null, c0Attrs()?.class].join(' ')"`,
+        '  style="color: red"',
+        '  [style.margin-top]="c0T()"',
+        '  [attr.id]="c0Attrs()?.id"',
+        `  [attr.data-x]="c0Attrs()?.['data-x']"`,
+        "/>",
+      ),
+      astro: lines(
+        "<input",
+        '  type="text"',
+        '  title={c0T + "!"}',
+        "  disabled={c0On}",
+        '  class:list={["a", c0T, { on: c0On }, c0Attrs?.class]}',
+        '  style={{ color: "red", marginTop: c0T }}',
+        "  id={c0Attrs?.id}",
+        '  data-x={c0Attrs?.["data-x"]}',
+        "/>",
+      ),
+    });
+    const passed = printed({ attrs: { type: "{ id: string }", value: { id: "i" } } }, (b) =>
+      b.el("p", [b.spread("attrs", "id")], "x"),
+    );
+    expect(passed.angular).toBe('<p [attr.id]="c0Attrs().id">x</p>');
+  });
+
+  // Svelte passes an object to clsx as it does an array, so the toggles' object stands alone.
+  it("writes class toggles as an object, quoting names that are not identifiers", () => {
+    expect(printed({ on }, (b) => b.el("p", [b.cls(["on", "on"], ["w-1.5", "!on"])], "x"))).toEqual(
+      {
+        vue: `<p :class="{ on: c0On, 'w-1.5': !c0On }">x</p>`,
+        svelte: '<p class={{ on: c0On, "w-1.5": !c0On }}>x</p>',
+        angular: `<p [class]="{ on: c0On(), 'w-1.5': !c0On() }">x</p>`,
+        astro: '<p class:list={[{ on: c0On, "w-1.5": !c0On }]}>x</p>',
+      },
+    );
+  });
+
+  it("writes a bound boolean so that false is no attribute", () => {
+    // Angular binds every attribute with `[attr.x]`; Astro's renderer does not know `multiple`.
+    expect(
+      printed({ on }, (b) =>
+        b.el(
+          "select",
+          [b.bind("multiple", "on"), b.bind("disabled", "on || !on"), b.bind("aria-hidden", "on")],
+          b.el("option", [], "a"),
+        ),
+      ),
+    ).toEqual({
+      vue: lines(
+        '<select :multiple="c0On" :disabled="c0On || !c0On" :aria-hidden="c0On">',
+        "  <option>a</option>",
+        "</select>",
+      ),
+      svelte: lines(
+        "<select multiple={c0On} disabled={c0On || !c0On} aria-hidden={c0On}>",
+        "  <option>a</option>",
+        "</select>",
+      ),
+      angular: lines(
+        "<select",
+        `  [attr.multiple]="c0On() ? '' : null"`,
+        `  [attr.disabled]="c0On() || !c0On() ? '' : null"`,
+        '  [attr.aria-hidden]="c0On()"',
+        ">",
+        "  <option>a</option>",
+        "</select>",
+      ),
+      astro: lines(
+        '<select multiple={c0On ? "" : undefined} disabled={c0On || !c0On} aria-hidden={c0On}>',
+        "  <option>a</option>",
+        "</select>",
+      ),
+    });
+  });
+
+  it("writes a style of static declarations as a static attribute", () => {
+    const style = printed({}, (b) => b.el("p", [b.style(["color", "red"], ["--gap", "1px"])], "x"));
+    for (const dialect of Object.values(style))
+      expect(dialect).toBe('<p style="color: red; --gap: 1px">x</p>');
+  });
+
+  // Vue's compiler parses a static `style` again and splits at a `;` in a string; it takes a
+  // bound object's values whole.
+  it("binds a static declaration Vue's style parser would misread", () => {
+    const style = printed({}, (b) =>
+      b.el("p", [b.style(["font-family", '"A;B", serif'], ["color", "red"])], "x"),
+    );
+    expect(style.vue).toBe(
+      `<p style="color: red" :style="{ fontFamily: '&quot;A;B&quot;, serif' }">x</p>`,
+    );
+    expect(style.angular).toBe('<p style="font-family: &quot;A;B&quot;, serif; color: red">x</p>');
+  });
+
+  // The analyser rejects them (UF3022): Angular's style parser and its server DOM misread them.
+  it.each([
+    ["content", '"a\\";b"'],
+    ["content", '"("'],
+    ["--Gap", "1px"],
+  ])("refuses a declaration Angular's style parser misreads: %s", (property, value) => {
+    expect(() => printed({}, (b) => b.el("p", [b.style([property, value])], "x"))).toThrow(
+      "Angular's style parser misreads",
+    );
+  });
+
+  // Svelte's server renders every `style:` directive, and every attribute of an element with a
+  // spread, through its runtime, which escapes the static text it is handed escaped already and
+  // folds a style's whitespace (5.57). Its client does neither, and neither does its server for
+  // the other static attributes, which stay attribute text.
+  it("writes static values as expressions where Svelte's server would escape or fold them", () => {
+    const quoted = 'a & "b" <c>';
+    const { svelte } = printed({ c: { type: "string", value: "red" } }, (b) =>
+      b.el(
+        "div",
+        [],
+        b.el(
+          "p",
+          [
+            b.style(
+              ["font-family", '"Segoe UI", serif'],
+              ["content", "'a  b'"],
+              ["margin", "0 auto"],
+              ["--x", "{y}"],
+              ["color", { code: "c" }],
+            ),
+          ],
+          "directives",
+        ),
+        b.el(
+          "p",
+          [
+            b.attr("autocorrect", "off"),
+            b.attr("title", quoted),
+            b.attr("class", "q&r"),
+            b.attr("data-x", "{y}"),
+            b.style(["content", '"&"']),
+          ],
+          "spread",
+        ),
+        b.el(
+          "p",
+          [b.attr("title", quoted), b.attr("class", "q&r"), b.style(["content", "'a  b'"])],
+          "plain",
+        ),
+        b.el("p", [b.attr("title", quoted), b.style(["content", '"&"'])], "plain"),
+      ),
+    );
+    expect(svelte).toBe(
+      lines(
+        "<div>",
+        "  <p",
+        '    style:font-family={"\\"Segoe UI\\", serif"}',
+        `    style:content={"'a  b'"}`,
+        '    style:margin="0 auto"',
+        '    style:--x="&#123;y&#125;"',
+        "    style:color={c0C}",
+        "  >directives</p",
+        "  ><p",
+        '    {...{ autocorrect: "off" }}',
+        '    title={"a \\u0026 \\"b\\" \\u003cc\\u003e"}',
+        '    class={"q\\u0026r"}',
+        '    data-x="&#123;y&#125;"',
+        '    style={"content: \\"\\u0026\\""}',
+        "  >spread</p",
+        `  ><p title="a &amp; &quot;b&quot; <c>" class="q&amp;r" style={"content: 'a  b'"}>plain</p`,
+        '  ><p title="a &amp; &quot;b&quot; <c>" style="content: &quot;&amp;&quot;">plain</p>',
+        "</div>",
+      ),
+    );
+  });
+
+  // Svelte's `set_value` writes nothing while the element's own `value` holds the bound one (0
+  // on an `<li>`, "" on a `<button>`); an object spread assigns it on every render. The analyser
+  // reports a value that may be nullish there (UF1002). This IR is built by hand, as a plugin's
+  // may be, and binds a nullable one too (`none`): the invariants cannot see that without types
+  // (ADR-0032), and Svelte renders it as "0" on an `<li>` (it throws on a `<meter>`).
+  it("writes a bound value Svelte would skip writing as an object spread on Svelte", () => {
+    const n = { type: "number", value: 0 };
+    const s = { type: "string", value: "" };
+    const none = { type: "number | null", value: null };
+    const { svelte, vue } = printed({ n, s, none }, (b) =>
+      b.el(
+        "form",
+        [],
+        b.el(
+          "ol",
+          [],
+          b.el("li", [b.bind("value", "n")], "a"),
+          b.el("li", [b.bind("value", "n - 1")], "b"),
+          b.el("li", [b.bind("value", "none")], "c"),
+        ),
+        b.el("meter", [b.bind("value", "n || s.length"), b.attr("title", 'a & "b"')], "m"),
+        b.el("data", [b.bind("value", "`${s}!`")], "d"),
+        b.el("button", [b.attr("type", "button"), b.bind("value", "s")], "b"),
+        b.el("input", [b.attr("type", "hidden"), b.bind("value", "s")]),
+        b.el("progress", [b.bind("value", "n")], "p"),
+        b.el("select", [], b.el("option", [b.bind("value", "s")], "o")),
+      ),
+    );
+    expect(svelte).toBe(
+      lines(
+        "<form>",
+        "  <ol>",
+        "    <li {...{ value: c0N }}>a</li",
+        "    ><li {...{ value: c0N - 1 }}>b</li",
+        "    ><li {...{ value: c0None }}>c</li>",
+        "  </ol",
+        '  ><meter {...{ value: c0N || c0S.length }} title={"a \\u0026 \\"b\\""}>m</meter',
+        '  ><data {...{ value: `${c0S}!` }}>d</data><button type="button" {...{ value: c0S }}>b</button',
+        '  ><input type="hidden" {...{ value: c0S }} /><progress value={c0N}>p</progress',
+        "  ><select>",
+        "    <option value={c0S}>o</option>",
+        "  </select>",
+        "</form>",
+      ),
+    );
+    expect(vue).toContain('<li :value="c0N">a</li>');
+  });
+});
+
+describe("expressions", () => {
+  it("escapes code for what each template scanner reads inside it", () => {
+    expect(
+      printed({ s: { type: "string", value: "s" } }, (b) =>
+        b.el(
+          "p",
+          [b.bind("title", `s + "&amp;\\"" + 'q'`)],
+          b.i(`"}}" + s /* c */`),
+          b.i("`${s}-${1_000}`"),
+          b.i(`/a}}b/.test(s)`),
+          b.i("0x10"),
+        ),
+      ),
+    ).toEqual({
+      // Vue ends `{{` at any `}}` and decodes references, in interpolations and attributes.
+      vue: lines(
+        "<p",
+        `  :title="c0S + '&amp;amp;&quot;' + 'q'"`,
+        '>{{ "\\u007d\\u007d" + c0S /* c */ }}{{ `${c0S}-${1_000}` }}{{ /a}\\}b/.test(c0S) }}{{ 0x10 }}</p>',
+      ),
+      // `{/` closes a Svelte block.
+      svelte: lines(
+        "<p",
+        '  title={c0S + "&amp;\\"" + \'q\'}',
+        '>{"}}" + c0S /* c */}{`${c0S}-${1_000}`}{(/a}}b/.test(c0S))}{0x10}</p>',
+      ),
+      // Angular's lexer: literals from their values, no comments, no template literals.
+      angular: lines(
+        "<p",
+        `  [attr.title]="c0S() + '\\u0026amp;&quot;' + 'q'"`,
+        '>{{ "\\u007d\\u007d" + c0S() }}{{ c0S() + "-" + 1_000 }}{{ /a}\\}b/.test(c0S()) }}{{ 16 }}</p>',
+      ),
+      astro:
+        '<p title={c0S + "&amp;\\"" + \'q\'}>{"}}" + c0S /* c */}{`${c0S}-${1_000}`}{/a}}b/.test(c0S)}{0x10}</p>',
+    });
+  });
+
+  it("keeps a `{` before an interpolation from opening it", () => {
+    expect(
+      printed({ s: { type: "string", value: "s" } }, (b) => b.el("p", [], "a{", b.i("s"), "}")),
+    ).toEqual({
+      vue: "<p>a&#123;{{ c0S }}}</p>",
+      svelte: "<p>a&#123;{c0S}&#125;</p>",
+      angular: '<p>a{{ "\\u007b" }}{{ c0S() }}&#125;</p>',
+      astro: "<p>a&#123;{c0S}&#125;</p>",
+    });
+  });
+
+  it("composes conditions with the parentheses they need", () => {
+    expect(negate("a")).toBe("!a");
+    expect(negate("a.b()")).toBe("!a.b()");
+    expect(negate("!a")).toBe("!!a");
+    expect(negate("a && b")).toBe("!(a && b)");
+    expect(negate("(a || b)")).toBe("!(a || b)");
+    expect(conjoin(["!a", "b || c", "d ?? e", "f ? g : h", "i && j", "(k || l)"])).toBe(
+      "!a && (b || c) && (d ?? e) && (f ? g : h) && i && j && (k || l)",
+    );
+    expect(member("attrs", "id", false)).toBe("attrs.id");
+    expect(member("a ?? b", "data-x", true)).toBe('(a ?? b)?.["data-x"]');
+  });
+
+  it("prints expressions as written without rewrite rules, and needs the component for them", () => {
+    const cases = suite(
+      [
+        {
+          name: "",
+          props: { s: { type: "string", value: "s" } },
+          render: (b) => b.el("p", [], b.i("s")),
+          expected: "",
+        },
+      ],
+      "self",
+    );
+    expect(printMarkup(cases.component.render, vueDialect)).toBe("<p>{{ s }}</p>");
+    expect(() =>
+      printMarkup(cases.component.render, vueDialect, { rewrite: cases.rules(false) }),
+    ).toThrow("needs the `component`");
+    expect(() => printMarkup(cases.component.render, htmlDialect)).toThrow("no expressions");
+  });
+});
+
+describe("roots and SVG", () => {
+  // Angular's lexer reads a `<title>`'s content as text unless the tag names the SVG namespace,
+  // and Astro keeps the whitespace in one, so its content stays on its tag's line.
+  it("writes an SVG title as Angular reads its blocks, on one line", () => {
+    const { angular, astro } = printed({ on: { type: "boolean", value: true } }, (b) =>
+      b.el("svg", [], b.el("title", [], b.if(["on", b.el("tspan", [], "a")], [undefined, "b"]))),
+    );
+    expect(angular).toBe(
+      lines(
+        "<svg>",
+        "  <svg:title>@if (c0On()) {<tspan>a</tspan>} @else {b}</svg:title>",
+        "</svg>",
+      ),
+    );
+    expect(astro).toBe(
+      lines("<svg>", '  <title>{c0On ? <tspan>a</tspan> : "b"}</title>', "</svg>"),
+    );
+  });
+
+  it("protects text and interpolations at the root's edges from the target's own line breaks", () => {
+    expect(
+      printed({ s: { type: "string", value: "s" } }, (b) =>
+        b.fragment("a ", b.el("b", [], "b"), b.i("s")),
+      ),
+    ).toEqual({
+      vue: '{{ "a " }}<b>b</b>{{ c0S }}',
+      svelte: "a <b>b</b>{c0S}",
+      angular: "<ng-container>a </ng-container><b>b</b><ng-container>{{ c0S() }}</ng-container>",
+      astro: "a <b>b</b>{c0S}",
+    });
+    expect(printed({}, (b) => b.fragment(b.el("p", [], "a"), b.el("p", [], "b")))).toEqual({
+      vue: lines("<p>a</p>", "<p>b</p>"),
+      svelte: lines("<p>a</p", "><p>b</p>"),
+      angular: lines("<p>a</p>", "<p>b</p>"),
+      astro: lines("<p>a</p>", "<p>b</p>"),
+    });
+  });
+
+  it("closes childless SVG elements themselves", () => {
+    const svg = printed({ r: { type: "number", value: 1 } }, (b) =>
+      b.el(
+        "svg",
+        [b.attr("viewBox", "0 0 1 1")],
+        b.el("circle", [b.bind("r", "r")]),
+        b.el("g", [], b.el("title", [], "T")),
+      ),
+    );
+    expect(svg.vue).toBe(
+      lines(
+        '<svg viewBox="0 0 1 1">',
+        '  <circle :r="c0R" />',
+        "  <g>",
+        "    <title>T</title>",
+        "  </g>",
+        "</svg>",
+      ),
+    );
+    expect(svg.svelte).toBe(
+      lines('<svg viewBox="0 0 1 1">', "  <circle r={c0R} /><g><title>T</title></g>", "</svg>"),
+    );
+    expect(svg.angular).toContain('<circle [attr.r]="c0R()" />');
+    expect(svg.astro).toContain("<circle r={c0R} />");
+    expect(printMarkup(el("svg", [el("path", [], [["d", "M0 0"]])]), htmlDialect)).toBe(
+      '<svg><path d="M0 0" /></svg>',
+    );
+  });
+
+  // Svelte tells SVG elements from HTML ones by name, and warns that `<title />` is a
+  // self-closing non-void HTML element; the other compilers read it, and Angular as SVG.
+  it("closes an empty SVG title with its end tag on Svelte only", () => {
+    const svg = printed({}, (b) => b.el("svg", [], b.el("title", []), b.el("desc", [])));
+    expect(svg).toEqual({
+      vue: lines("<svg>", "  <title />", "  <desc />", "</svg>"),
+      svelte: lines("<svg>", "  <title></title", "  ><desc />", "</svg>"),
+      angular: lines("<svg>", "  <svg:title />", "  <desc />", "</svg>"),
+      astro: lines("<svg>", "  <title />", "  <desc />", "</svg>"),
+    });
+  });
+
+  it("prints only static content in Angular's literal region", () => {
+    const cases = suite(
+      [
+        {
+          name: "",
+          props: { s: { type: "string", value: "s" } },
+          render: (b) => b.el("p", [b.attr("title", "{{")], b.i("s")),
+          expected: "",
+        },
+      ],
+      "self",
+    );
+    expect(() =>
+      printMarkup(cases.component.render, angularDialect, {
+        component: cases.component,
+        rewrite: cases.rules(true),
+      }),
+    ).toThrow("binds nothing");
   });
 });

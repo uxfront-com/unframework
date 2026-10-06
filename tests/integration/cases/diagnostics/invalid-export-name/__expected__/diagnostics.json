@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF1103",
+    "severity": "error",
+    "message": "Card is exported as \"info card\", which is not an identifier.",
+    "file": "diagnostics/invalid-export-name/Card.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 10,
+      "offset": 159
+    },
+    "end": {
+      "line": 6,
+      "column": 29,
+      "offset": 178
+    },
+    "help": "Export it under an identifier, such as `export { Card }`."
+  }
+]

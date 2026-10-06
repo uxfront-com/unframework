@@ -8,6 +8,9 @@
         "start": 0,
         "end": 83
       },
+      "props": [],
+      "types": [],
+      "bindings": [],
       "render": {
         "kind": "Element",
         "tag": "p",
@@ -49,5 +52,6 @@
         "end": 83
       }
     }
-  ]
+  ],
+  "types": []
 }

@@ -18,7 +18,9 @@ declare module "vitest/browser" {
  * Mounts what `import X from "./X.uf.tsx"` yields in an Astro browser project. The component's
  * own `<style>` elements, which the server puts first, move to `<head>` like the other targets'
  * Vite-injected CSS, so the container holds only the component's markup. `console` carries what
- * the server render logged; `settle` has nothing to wait for.
+ * the server render logged; `settle` has nothing to wait for. A rerender is a new server render
+ * with the new props, whose HTML replaces the old, and whose log it returns: a static component
+ * has no state to update in place, so a prop the props lack takes its default as on a first render.
  */
 export const mount: MountAdapter = async (component, container, options) => {
   if (!isAstroComponentRef(component)) {
@@ -26,28 +28,45 @@ export const mount: MountAdapter = async (component, container, options) => {
       "Astro mount: expected what a `.uf.tsx` import yields in an Astro browser project ({ __ufTarget: 'astro', id, name }).",
     );
   }
-  const props = { ...options.props };
-  assertSerialisableProps(props);
-  const rendered = await commands.ufAstroRender({ id: component.id, props });
-
-  const template = document.createElement("template");
-  template.innerHTML = rendered.html;
-  const styles: HTMLStyleElement[] = [];
-  while (template.content.firstChild instanceof HTMLStyleElement) {
-    const style = template.content.firstChild;
-    style.dataset.ufAstroStyle = component.name;
-    styles.push(style);
-    document.head.append(style);
-  }
-  container.append(template.content);
+  const render = async (props: Readonly<Record<string, unknown>>) => {
+    const copy = { ...props };
+    assertSerialisableProps(copy);
+    return commands.ufAstroRender({ id: component.id, props: copy });
+  };
+  const rendered = await render(options.props ?? {});
+  let styles = insert(container, component.name, rendered.html);
+  const clear = () => {
+    container.replaceChildren();
+    for (const style of styles) style.remove();
+  };
 
   return {
     settle: () => Promise.resolve(),
+    async rerender(props) {
+      const next = await render(props);
+      clear();
+      styles = insert(container, component.name, next.html);
+      return { console: next.console };
+    },
     unmount: () => {
-      container.replaceChildren();
-      for (const style of styles) style.remove();
+      clear();
       return Promise.resolve();
     },
     console: rendered.console,
   };
 };
+
+/** Inserts server HTML into the container, its leading `<style>` elements into `<head>`. */
+function insert(container: HTMLElement, name: string, html: string): HTMLStyleElement[] {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  const styles: HTMLStyleElement[] = [];
+  while (template.content.firstChild instanceof HTMLStyleElement) {
+    const style = template.content.firstChild;
+    style.dataset.ufAstroStyle = name;
+    styles.push(style);
+    document.head.append(style);
+  }
+  container.append(template.content);
+  return styles;
+}

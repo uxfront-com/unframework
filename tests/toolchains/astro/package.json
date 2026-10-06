@@ -2,7 +2,7 @@
   "name": "@unframework/toolchain-astro",
   "version": "0.0.0",
   "private": true,
-  "description": "The astro test toolchain: the checker and tsconfig that type-check every case's astro golden output in one run (L4), with TypeScript 6 until the checker moves to TypeScript 7.",
+  "description": "The astro test toolchain: the checker and tsconfig that type-check every case's astro golden output in one run (L4), with TypeScript 6 until the checker moves to TypeScript 7, and the oxlint and ESLint (eslint-plugin-astro) configs that lint it (L5).",
   "type": "module",
   "scripts": {
     "check": "astro check --noSync --minimumFailingSeverity warning"
@@ -10,6 +10,11 @@
   "devDependencies": {
     "@astrojs/check": "catalog:",
     "astro": "catalog:",
-    "typescript": "npm:@typescript/typescript6@6.0.2"
+    "astro-eslint-parser": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-astro": "catalog:",
+    "oxlint": "catalog:",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "catalog:"
   }
 }

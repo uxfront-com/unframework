@@ -1,0 +1,24 @@
+{
+  "description": "Props typed by an exported interface that uses a local union alias, a nested object member and an array of a local interface.",
+  "ssr": {
+    "chair": {
+      "props": {
+        "name": "Lounge chair",
+        "availability": "in-stock",
+        "size": { "width": 45, "depth": 52, "unit": "cm" },
+        "finishes": [
+          { "sku": "CH-OAK", "label": "Oak" },
+          { "sku": "CH-WAL", "label": "Walnut" }
+        ]
+      }
+    },
+    "shelf": {
+      "props": {
+        "name": "Wall shelf",
+        "availability": "backorder",
+        "size": { "width": 31.5, "depth": 12, "unit": "in" },
+        "finishes": [{ "sku": "SH-BLK", "label": "Black" }]
+      }
+    }
+  }
+}

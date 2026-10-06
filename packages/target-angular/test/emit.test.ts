@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import {
@@ -17,9 +16,10 @@ import { createHost, strictOptions } from "../src/toolchain/ngtsc.ts";
 import { loadCompiler } from "../src/toolchain/tools.ts";
 import {
   context,
-  corpus,
-  emitFormatted,
   emitModule,
+  emitted,
+  formatted,
+  lower,
   removeScratch,
   scratchDir,
 } from "./helpers.ts";
@@ -83,10 +83,20 @@ const greeting = createElement(
 describe("angular target", () => {
   it("declares every capability", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
+      "attribute-spread",
+      "bound-attribute",
+      "class-binding",
+      "conditional",
       "element",
+      "fragment",
       "interactivity",
+      "interpolation",
+      "list",
       "listbox",
+      "props",
       "static-attribute",
+      "style-binding",
+      "svg",
       "text",
     ]);
   });
@@ -174,12 +184,18 @@ describe("angular target", () => {
     expect(templateOf(file!.contents)).toContain('<p title="a&#13;b"></p>');
   });
 
-  it("imports Angular's decorator under another name when the component is named after it", () => {
+  // Angular's compiler accepts a signal input only in a class whose decorator it imports as
+  // `Component` (NG8110 otherwise), so the class takes another name; the export keeps its own.
+  it("names the class apart when the component is named after Angular's decorator", () => {
     const [file] = emitModule(moduleOf(greeting, "Component"));
     expect(file!.contents).toMatch(
-      /^import \{ Component as Component_1 \} from "@angular\/core";\n\n@Component_1\(\{/,
+      /^import \{ Component \} from "@angular\/core";\n\n@Component\(\{/,
     );
-    expect(file!.contents).toMatch(/\nexport default class Component \{\}\n$/);
+    expect(file!.contents).toMatch(/\nexport default class Component_1 \{\}\n$/);
+    const [named] = emitModule(moduleOf(greeting, "Component", "named"));
+    expect(named!.contents).toMatch(
+      /\nclass Component_1 \{\}\nexport \{ Component_1 as Component \};\n$/,
+    );
   });
 
   // Angular drops every whitespace-only text node, even one the browser renders as a space.
@@ -215,16 +231,410 @@ describe("angular target", () => {
     const [file] = emitModule(moduleOf(render));
     expect(templateOf(file!.contents)).toContain("<p>a <b>b</b> c</p>");
   });
+});
 
-  // The compile project owns the goldens; this pins that the emitter (formatted as the compiler
-  // formats it) still writes exactly them.
-  it("emits the corpus's committed golden outputs", async () => {
-    const cases = corpus();
-    expect(cases.length).toBeGreaterThan(0);
-    for (const { name, module, outputDir } of cases) {
-      for (const file of await emitFormatted(module)) {
-        expect(file.contents, name).toBe(readFileSync(join(outputDir, file.path), "utf8"));
-      }
-    }
+/** The class's body of an emitted file, one member per line, as the compiler formats it. */
+function classBody(contents: string): string[] {
+  const body = /\n(?:export (?:default )?)?class \w+ \{\n([\s\S]*?)\n\}\n/.exec(contents);
+  return body ? body[1]!.split("\n").map((line) => line.trim()) : [];
+}
+
+/** The lines of an emitted file's template, without their indentation, formatted or not. */
+function templateLines(contents: string): string[] {
+  return /template: `([\s\S]*)`,?\n/
+    .exec(contents)![1]!
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+describe("props (design §5.5)", () => {
+  it("emits a component whose props are signal inputs, read through `@let`", async () => {
+    const file = await formatted(`
+export interface BadgeProps {
+  label: string;
+  tone?: "info" | "warn";
+  count?: number;
+}
+
+export default function Badge({ label, tone = "info", count }: BadgeProps) {
+  return <p data-tone={tone}>{label} {count ?? 0}</p>;
+}
+`);
+    expect(file).toEqual({
+      path: "badge.ts",
+      contents: [
+        'import { Component, input } from "@angular/core";',
+        "",
+        "export interface BadgeProps {",
+        "  label: string;",
+        '  tone?: "info" | "warn";',
+        "  count?: number;",
+        "}",
+        "",
+        "@Component({",
+        '  selector: "uf-badge",',
+        '  host: { style: "display: contents" },',
+        "  preserveWhitespaces: false,",
+        "  template: `",
+        "    @let label = this.label();",
+        "    @let tone = this.tone();",
+        "    @let count = this.count();",
+        '    <p [attr.data-tone]="tone">{{ label }}&ngsp;{{ count ?? 0 }}</p>',
+        "  `,",
+        "})",
+        "export default class Badge {",
+        "  readonly label = input.required<string>();",
+        '  readonly tone = input<"info" | "warn", "info" | "warn" | undefined>("info", {',
+        '    transform: (value) => (value === undefined ? "info" : value),',
+        "  });",
+        "  readonly count = input<number>();",
+        "}",
+        "",
+      ].join("\n"),
+    });
+  });
+
+  // Angular's initial value covers an absent input only: `setInput(name, undefined)` sets
+  // `undefined`, where JavaScript's destructuring takes the default. `null` stays a value.
+  it("gives every default a transform that maps `undefined`, and only it, to the default", async () => {
+    const file = await formatted(`
+export interface DefaultsProps {
+  label?: string | null;
+  size?: number;
+  tags?: readonly string[];
+  author?: { name: string };
+}
+
+export default function Defaults({ label = null, size = 1000, tags = [], author = { name: "Ada" } }: DefaultsProps) {
+  return <p data-size={size}>{label} {tags.join(", ")} {author.name}</p>;
+}
+`);
+    expect(classBody(file.contents)).toEqual([
+      "readonly label = input<string | null, string | null | undefined>(null, {",
+      "transform: (value) => (value === undefined ? null : value),",
+      "});",
+      "readonly size = input<number, number | undefined>(1000, {",
+      "transform: (value) => (value === undefined ? 1000 : value),",
+      "});",
+      "readonly tags = input<readonly string[], readonly string[] | undefined>([], {",
+      "transform: (value) => (value === undefined ? [] : value),",
+      "});",
+      "readonly author = input<{ name: string }, { name: string } | undefined>(",
+      '{ name: "Ada" },',
+      '{ transform: (value) => (value === undefined ? { name: "Ada" } : value) },',
+      ");",
+    ]);
+  });
+
+  // The transform never returns `undefined`, so the input's value type leaves it out: the
+  // template reads the prop as the source does, where the default removed it.
+  it("types an input with a default without `undefined`", async () => {
+    const file = await formatted(`
+type Tone = "info" | "warn" | undefined;
+
+export interface ToneProps {
+  tone?: Tone;
+  size?: number | undefined;
+}
+
+export default function ToneLabel({ tone = "info", size = 1 }: ToneProps) {
+  return <p data-size={size}>{tone.toUpperCase()}</p>;
+}
+`);
+    expect(classBody(file.contents)).toEqual([
+      'readonly tone = input<Exclude<Tone, undefined>, Exclude<Tone, undefined> | undefined>("info", {',
+      'transform: (value) => (value === undefined ? "info" : value),',
+      "});",
+      "readonly size = input<number, number | undefined>(1, {",
+      "transform: (value) => (value === undefined ? 1 : value),",
+      "});",
+    ]);
+  });
+
+  it("reads the `props` form through the same variables", async () => {
+    const file = await formatted(`
+export default function Byline(props: { author: string; minutes?: number }) {
+  return <p>By {props.author}, {props.minutes ?? 1} min</p>;
+}
+`);
+    expect(templateLines(file.contents)).toEqual([
+      "@let author = this.author();",
+      "@let minutes = this.minutes();",
+      "<p>By {{ author }}, {{ minutes ?? 1 }} min</p>",
+    ]);
+    expect(classBody(file.contents)).toEqual([
+      "readonly author = input.required<string>();",
+      "readonly minutes = input<number>();",
+    ]);
+    // An inline props type declares nothing.
+    expect(file.contents).not.toMatch(/interface|type /);
+  });
+
+  // A prop is the component's API: a consumer may pass one the template does not read, which
+  // Angular would report for an undeclared input (NG0303). An unread `@let` is NG8112.
+  it("declares an input for every prop, and a variable only for those the template reads", async () => {
+    const file = await formatted(`
+export interface QuietProps {
+  label: string;
+  hidden?: boolean;
+  note?: string;
+}
+
+export default function Quiet({ label, note }: QuietProps) {
+  return <p>{label}</p>;
+}
+`);
+    expect(templateLines(file.contents)).toEqual([
+      "@let label = this.label();",
+      "<p>{{ label }}</p>",
+    ]);
+    expect(classBody(file.contents)).toEqual([
+      "readonly label = input.required<string>();",
+      "readonly hidden = input<boolean>();",
+      "readonly note = input<string>();",
+    ]);
+  });
+
+  // An input is typed by its member's type, never by the props type: a props interface the
+  // source does not export would be declared and unused (oxlint's no-unused-vars, L5).
+  it("declares the exported types and the ones an input reaches, in source order", async () => {
+    const file = await formatted(`
+type Size = "s" | "m";
+
+interface Unused {
+  a: string;
+}
+
+interface Finish {
+  size: Size;
+}
+
+interface PanelProps {
+  finishes: Finish[];
+  extra: Extra;
+}
+
+export interface Extra {
+  unused: Unused;
+}
+
+export default function Panel({ finishes, extra }: PanelProps) {
+  return <p>{finishes.length} {extra.unused.a}</p>;
+}
+`);
+    const declared = [...file.contents.matchAll(/^(?:export )?(?:interface|type) (\w+)/gm)];
+    expect(declared.map((match) => match[1])).toEqual(["Size", "Unused", "Finish", "Extra"]);
+  });
+
+  it("imports `input` only when there are props, under another name when the module declares it", async () => {
+    const plain = await formatted(`export default function Plain() { return <p>{Math.PI}</p>; }`);
+    expect(plain.contents).toMatch(/^import \{ Component \} from "@angular\/core";\n/);
+    const taken = await formatted(`
+export interface input {
+  value: string;
+}
+
+export default function Field({ value }: input) {
+  return <p>{value}</p>;
+}
+`);
+    expect(taken.contents).toMatch(
+      /^import \{ Component, input as input_1 \} from "@angular\/core";/,
+    );
+    expect(classBody(taken.contents)).toEqual(["readonly value = input_1.required<string>();"]);
+  });
+});
+
+describe("template (design §5.5)", () => {
+  // Angular narrows a template variable as TypeScript narrows a local, never a signal call
+  // (TS2532 on \`owner() && owner().name\`): output.test.ts proves this source type-checks.
+  it("writes the source's expressions as written, against the variables", async () => {
+    const file = await formatted(`
+interface Owner {
+  name: string;
+}
+
+export interface CardProps {
+  owner?: Owner;
+}
+
+export default function Card({ owner }: CardProps) {
+  return <div>{owner && <p>{owner.name.toUpperCase()}</p>}</div>;
+}
+`);
+    expect(templateLines(file.contents)).toEqual([
+      "@let owner = this.owner();",
+      "<div>",
+      "@if (owner) {",
+      "<p>{{ owner.name.toUpperCase() }}</p>",
+      "}",
+      "</div>",
+    ]);
+  });
+
+  // A \`track\` expression reads only its own item, \`$index\` and the component's members (NG8009).
+  it("reads a prop in a list's key from its input, and declares the index the key reads", async () => {
+    const file = await formatted(`
+export interface RowsProps {
+  prefix: string;
+  rows: { id: string; label: string }[];
+}
+
+export default function Rows({ prefix, rows }: RowsProps) {
+  return (
+    <ul>
+      {rows.map((row) => <li key={prefix + row.id}>{row.label}</li>)}
+      {rows.map((row, index) => <li key={index}>{row.label}</li>)}
+      {rows.map((row, index) => <li key={row.id}>{row.label}</li>)}
+    </ul>
+  );
+}
+`);
+    expect(templateLines(file.contents)).toEqual([
+      "@let rows = this.rows();",
+      "<ul>",
+      "@for (row of rows; track this.prefix() + row.id) {",
+      "<li>{{ row.label }}</li>",
+      "}",
+      "@for (row of rows; track index; let index = $index) {",
+      "<li>{{ row.label }}</li>",
+      "}",
+      "@for (row of rows; track row.id) {",
+      "<li>{{ row.label }}</li>",
+      "}",
+      "</ul>",
+    ]);
+  });
+
+  it("makes each allowed global the template reads a protected member", async () => {
+    const file = await formatted(`
+export interface StatsProps {
+  values: number[];
+}
+
+export default function Stats({ values }: StatsProps) {
+  return <p title={JSON.stringify(values)}>{Math.max(...values)} {String(undefined)} {NaN}</p>;
+}
+`);
+    expect(classBody(file.contents)).toEqual([
+      "readonly values = input.required<number[]>();",
+      "protected readonly JSON = JSON;",
+      "protected readonly Math = Math;",
+      "protected readonly NaN = NaN;",
+      "protected readonly String = String;",
+    ]);
+  });
+
+  // Angular's parser drops a text node that `trim()` empties right after a block, while it looks
+  // for the block's `@else` or `@empty`; an interpolated literal is no blank text.
+  it("writes blank text after a block as an interpolated literal", async () => {
+    const file = await formatted(`
+export interface GapProps {
+  on: boolean;
+  names: string[];
+}
+
+export default function Gap({ on, names }: GapProps) {
+  return (
+    <p>
+      {on && <i>a</i>}{" "}<b>b</b>{names.map((name) => <i key={name}>{name}</i>)}{"\u00a0"}<b>c</b>{" "}
+      <i>d</i>
+    </p>
+  );
+}
+`);
+    expect(templateLines(file.contents)).toEqual([
+      "@let on = this.on();",
+      "@let names = this.names();",
+      "<p>",
+      '@if (on) {<i>a</i>}{{ " " }}<b>b</b>',
+      '@for (name of names; track name) {<i>{{ name }}</i>}{{ "\\\\u00a0" }}<b>c</b>&ngsp;<i>d</i>',
+      "</p>",
+    ]);
+  });
+
+  // Angular's lexers read quotes, `;`, parentheses and `//` in a regular expression, its
+  // whitespace processing turns U+E500 into a space and its expression lexer rejects whitespace
+  // outside ASCII; it reads a `<title>`'s content as text unless the tag names SVG's namespace.
+  it("writes what Angular's template would read differently with escapes", async () => {
+    const file = await formatted(`
+export interface MatchProps {
+  label: string;
+  on: boolean;
+}
+
+export default function Match({ label, on }: MatchProps) {
+  return (
+    <div title={/'/.test(label) ? "quoted" : "plain"}>
+      {/^\\//.test(label) && <b>slash</b>}
+      {label.split(/[;)]/).map((part) => <i key={part}>{part}</i>)}
+      <p>x\ue500y{label\u3000+ label}{/(?<x>a)/.test(label) && "named"}</p>
+      <svg viewBox="0 0 2 2"><title>{label}{on && " on"}</title></svg>
+    </div>
+  );
+}
+`);
+    expect(templateLines(file.contents)).toEqual([
+      "@let label = this.label();",
+      "@let on = this.on();",
+      "<div [attr.title]=\"/\\\\x27/.test(label) ? 'quoted' : 'plain'\">",
+      "@if (/^\\\\x2f/.test(label)) {",
+      "<b>slash</b>",
+      "}",
+      "@for (part of label.split(/[\\\\x3b\\\\x29]/); track part) {",
+      "<i>{{ part }}</i>",
+      "}",
+      '<p>{{ "x\\\\ue500y" }}{{ label + label }}@if (/(?<x>a)/.test(label)) {named}</p>',
+      '<svg viewBox="0 0 2 2">',
+      "<svg:title>{{ label }}@if (on) { on}</svg:title>",
+      "</svg>",
+      "</div>",
+    ]);
+  });
+
+  // A spread without keys prints nothing (ADR-0039). The analyser rejects one (UF3004), but a
+  // plugin may drop a spread's keys, and an unread `@let` is NG8112.
+  it("declares no variable for a spread that prints nothing", () => {
+    const module = lower(`
+export interface EmptyProps {
+  attrs: { id?: string };
+}
+
+export default function Empty({ attrs }: EmptyProps) {
+  return <p {...attrs}>x</p>;
+}
+`);
+    const [component] = module.components;
+    const render = component!.render as ElementNode;
+    const keyless = {
+      ...module,
+      components: [
+        {
+          ...component!,
+          render: {
+            ...render,
+            attributes: render.attributes.map((attribute) => ({ ...attribute, keys: [] })),
+          },
+        },
+      ],
+    } as UfModule;
+    const [file] = emitModule(keyless);
+    expect(templateLines(file!.contents)).toEqual(["<p>x</p>"]);
+  });
+
+  it("prints valid TypeScript before formatting too", () => {
+    const contents = emitted(`
+export interface BadgeProps {
+  tone?: "info" | "warn";
+}
+
+export default function Badge({ tone = "info" }: BadgeProps) {
+  return <p>{tone}</p>;
+}
+`);
+    expect(classBody(contents)).toEqual([
+      'readonly tone = input<"info" | "warn", "info" | "warn" | undefined>("info", { transform: (value) => value === undefined ? "info" : value });',
+    ]);
   });
 });

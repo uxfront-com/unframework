@@ -1,0 +1,12 @@
+- region "Account":
+  - heading "Ada Lovelace" [level=2]
+  - paragraph: Signed in as ada@example.com
+  - paragraph: "Role: administrator"
+  - paragraph: Profile of Ada Lovelace
+  - paragraph: "Team: Analytical Engines"
+  - paragraph: Uptime 99.5%
+  - paragraph: Storage 12.5 GB
+  - paragraph: Renews on 1 November 2026
+  - list "Seats":
+    - listitem: Ada Lovelace
+    - listitem: Vacant

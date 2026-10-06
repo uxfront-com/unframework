@@ -5,16 +5,19 @@
 //
 //   pnpm test:canaries                    every canary
 //   pnpm test:canaries L7-wrong-text …    some of them
+//   pnpm test:canaries L5 L8              the canaries of some layers (each CI job runs one
+//                                         layer or one canary)
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { join, relative } from "node:path";
 
-import type { ParityMatrix, ProjectKind } from "@unframework/testing/node";
+import { LAYERS } from "@unframework/testing/node";
+import type { LayerName, ParityMatrix, ProjectKind } from "@unframework/testing/node";
 
-import { canaryProjects, CANARIES, findCanary } from "../harness/canaries.ts";
-import type { Canary } from "../harness/canaries.ts";
+import { canaryCase, canaryProjects, CANARIES, findCanary } from "../harness/canaries.ts";
+import type { Canary, CanaryCase } from "../harness/canaries.ts";
 import { judgeCanary } from "../harness/canary-verdict.ts";
-import type { CanaryCase, CanaryVerdict } from "../harness/canary-verdict.ts";
-import { errorState, listCases } from "../harness/cases.ts";
+import type { CanaryVerdict } from "../harness/canary-verdict.ts";
+import { listCases } from "../harness/cases.ts";
 import { LOAD_FAILURES, readLoadFailures } from "../harness/load-failures.ts";
 import { CANARY_DIR, ROOT } from "../harness/paths.ts";
 import { selectTargets } from "../harness/targets.ts";
@@ -28,19 +31,36 @@ const PROJECTS: Record<ProjectKind, string> = {
   browser: "browser:*",
 };
 
+/**
+ * The canaries the arguments name: a canary's id, or a layer for every canary of that layer.
+ * An unknown name, or a layer without canaries, throws: a typo never runs nothing.
+ */
+export function selectCanaries(names: readonly string[]): Canary[] {
+  if (!names.length) return [...CANARIES];
+  const selected = names.flatMap((name) => {
+    if (!LAYERS.includes(name as LayerName)) return [findCanary(name)];
+    const ofLayer = CANARIES.filter((canary) => canary.layer === name);
+    if (!ofLayer.length) throw new Error(`No canary proves ${name}: it is not live.`);
+    return ofLayer;
+  });
+  return [...new Set(selected)];
+}
+
 /** Runs one canary and judges whether its layer caught it everywhere it should. */
 function runCanary(
   canary: Canary,
   targets: readonly string[],
   cases: readonly CanaryCase[],
-): CanaryVerdict & { log: string } {
+): CanaryVerdict & { log: string; seconds: number } {
   const directory = join(CANARY_DIR, canary.id);
   rmSync(directory, { recursive: true, force: true });
   mkdirSync(directory, { recursive: true });
   const env: NodeJS.ProcessEnv = { ...process.env, UF_CANARY: canary.id };
   delete env.UF_UPDATE;
   const args = canaryProjects(canary).flatMap((kind) => ["--project", PROJECTS[kind]]);
+  const started = performance.now();
   const { status, stdout } = runVitest(args, env, "pipe");
+  const seconds = (performance.now() - started) / 1000;
   const log = join(directory, "vitest.log");
   writeFileSync(log, stdout);
   const matrixFile = join(directory, "parity-matrix.json");
@@ -51,24 +71,20 @@ function runCanary(
   return {
     ...judgeCanary(canary, { status, cells: matrix?.cases, loadFailures }, targets, cases),
     log,
+    seconds,
   };
 }
 
 function main(): number {
-  const requested = process.argv.slice(2).filter((arg) => arg !== "--");
-  const canaries = requested.length ? requested.map(findCanary) : CANARIES;
+  const canaries = selectCanaries(process.argv.slice(2).filter((arg) => arg !== "--"));
   const targets = selectTargets(process.env.UF_TARGETS);
-  const cases: CanaryCase[] = listCases().map((info) => ({
-    id: info.id,
-    hasOutput: (target) => errorState(info, target) === false,
-    spec: info.spec && relative(ROOT, info.spec).split(sep).join("/"),
-  }));
+  const cases = listCases().map(canaryCase);
   const print = (line: string) => process.stdout.write(`${line}\n`);
   const missed: string[] = [];
   for (const canary of canaries) {
     const verdict = runCanary(canary, targets, cases);
     print(
-      `[uf:canaries] ${canary.id} (${canary.layer}, ${canaryProjects(canary).join(" + ")}): ${verdict.caught ? "caught" : "NOT CAUGHT"}`,
+      `[uf:canaries] ${canary.id} (${canary.layer}, ${canaryProjects(canary).join(" + ")}): ${verdict.caught ? "caught" : "NOT CAUGHT"} in ${verdict.seconds.toFixed(1)} s`,
     );
     for (const problem of verdict.problems) print(`    ${problem}`);
     if (!verdict.caught) {
@@ -84,4 +100,4 @@ function main(): number {
   return missed.length ? 1 : 0;
 }
 
-process.exitCode = main();
+if (import.meta.main) process.exitCode = main();

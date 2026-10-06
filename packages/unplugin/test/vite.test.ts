@@ -665,6 +665,16 @@ function htmlTarget() {
     "static-attribute": { support: "native" },
     listbox: { support: "native" },
     interactivity: { support: "native" },
+    props: { support: "native" },
+    interpolation: { support: "native" },
+    conditional: { support: "native" },
+    list: { support: "native" },
+    fragment: { support: "native" },
+    "bound-attribute": { support: "native" },
+    "class-binding": { support: "native" },
+    "style-binding": { support: "native" },
+    "attribute-spread": { support: "native" },
+    svg: { support: "native" },
   };
   return defineTarget({
     name: "html",

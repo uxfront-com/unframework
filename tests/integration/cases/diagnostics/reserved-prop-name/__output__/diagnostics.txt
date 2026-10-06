@@ -1,0 +1,8 @@
+error[UF2003]: `key` cannot be a prop's name: `key` is the frameworks' list identity, not a prop.
+ --> diagnostics/reserved-prop-name/Tab.uf.tsx:4:3
+  |
+4 |   key: string;
+  |   ^^^
+  |
+  = help: Rename the prop.
+  = see: https://unframework.dev/diagnostics/UF2003

@@ -1,0 +1,8 @@
+- region "Wall shelf":
+  - heading "Wall shelf" [level=2]
+  - term: Availability
+  - definition: backorder
+  - term: Size
+  - definition: 31.5 × 12 in
+  - list:
+    - listitem: Black (SH-BLK)

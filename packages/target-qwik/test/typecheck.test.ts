@@ -6,6 +6,8 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { QWIK_ATTRIBUTE_NAMES } from "../src/attributes.ts";
 import { toolchain } from "../src/toolchain/index.ts";
+import { emitSource } from "./lower.ts";
+import { TITLES } from "./titles.ts";
 
 const repo = fileURLToPath(new URL("../../..", import.meta.url));
 const toolchainDir = join(repo, "tests/toolchains/qwik");
@@ -15,7 +17,7 @@ const goldens = globSync("tests/integration/cases/**/__output__/qwik/*", { cwd: 
 );
 // Qwik components shaped like the target's output. This package's tsconfig excludes them: the
 // Qwik checker types them here, under the same tsconfig as the golden files.
-const fixtures = ["Attributes.tsx", "Counter.tsx", "Greeting.tsx"].map((name) =>
+const fixtures = ["Attributes.tsx", "Counter.tsx", "Greeting.tsx", "NullProps.tsx"].map((name) =>
   fileURLToPath(new URL(`fixtures/${name}`, import.meta.url)),
 );
 
@@ -75,17 +77,50 @@ describe("typecheck (L4, tsgo)", () => {
   });
 });
 
+describe("SVG titles (L4, tsgo)", () => {
+  it("type-checks every form the target writes a title in", async () => {
+    const file = write("Titles.tsx", await emitSource(TITLES));
+    expect((await toolchain.typecheck([file], context)).get(file)).toEqual([]);
+  });
+
+  it("rejects what the target writes differently: a number, several children, null, a needless ??", async () => {
+    const file = write(
+      "TitleControls.tsx",
+      [
+        'import { component$ } from "@qwik.dev/core";',
+        "",
+        "export default component$<{ count: number; label: string; on: boolean }>(({ count, label, on }) => {",
+        "  return (",
+        '    <svg viewBox="0 0 10 10">',
+        "      <title>{count}</title>",
+        "      <title>{label} icon</title>",
+        "      <title>{on ? label : null}</title>",
+        '      <title>{`${count + 1 ?? ""}`}</title>',
+        "    </svg>",
+        "  );",
+        "});",
+        "",
+      ].join("\n"),
+    );
+    const messages = (await toolchain.typecheck([file], context)).get(file)!;
+    expect(messages.map(({ line, code }) => [line, code])).toEqual([
+      [6, "TS2322"],
+      [7, "TS2322"],
+      [8, "TS2322"],
+      [9, "TS2869"],
+    ]);
+  });
+});
+
 describe("Qwik's attribute spellings", () => {
   // An element that carries each attribute in Qwik's JSX types.
   const elements: Record<string, string> = {
     allowfullscreen: "iframe",
     cellpadding: "table",
     cellspacing: "table",
-    closedby: "dialog",
     colspan: "td",
     crossorigin: "img",
     datetime: "time",
-    dirname: "input",
     disablepictureinpicture: "video",
     disableremoteplayback: "video",
     enterkeyhint: "input",
@@ -97,7 +132,6 @@ describe("Qwik's attribute spellings", () => {
     formtarget: "button",
     frameborder: "iframe",
     inputmode: "input",
-    ismap: "img",
     marginheight: "iframe",
     marginwidth: "iframe",
     maxlength: "input",
@@ -110,10 +144,13 @@ describe("Qwik's attribute spellings", () => {
     rowspan: "td",
     usemap: "img",
   };
+  // The value each is checked with: `undefined` tests the name alone, but `autocorrect` is in
+  // the table for its value (Qwik types its HTML name as the DOM's boolean property).
+  const values: Record<string, string> = { autocorrect: '"on"' };
   const entries = Object.entries(QWIK_ATTRIBUTE_NAMES);
   const usage = (names: readonly string[]) =>
     component(
-      `  return (\n    <>\n${entries.map(([html], index) => `      <${elements[html] ?? "div"} ${names[index]}={undefined} />`).join("\n")}\n    </>\n  );`,
+      `  return (\n    <>\n${entries.map(([html], index) => `      <${elements[html] ?? "div"} ${names[index]}=${values[html] ?? "{undefined}"} />`).join("\n")}\n    </>\n  );`,
     );
 
   it("are the names Qwik's JSX types declare, and the HTML names are not", async () => {

@@ -1,0 +1,17 @@
+{
+  "description": "Optional props without defaults: absent attributes are left out, absent text is empty, and `??` falls back for null and undefined but not for an empty string.",
+  "ssr": {
+    "all-absent": { "props": { "name": "Grace Hopper" } },
+    "all-present": {
+      "props": {
+        "name": "Grace Hopper",
+        "jobTitle": "Rear admiral",
+        "team": "Navy",
+        "pronouns": "she/her",
+        "phone": "+1 555 0100"
+      }
+    },
+    "null-phone": { "props": { "name": "Grace Hopper", "phone": null } },
+    "empty-phone": { "props": { "name": "Grace Hopper", "phone": "" } }
+  }
+}

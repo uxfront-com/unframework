@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF3021",
+    "severity": "error",
+    "message": "`sort` changes the array it is called on, which may be a prop: rendering must not change anything.",
+    "file": "diagnostics/impure-render-expression/SortedTags.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 25,
+      "offset": 261
+    },
+    "end": {
+      "line": 8,
+      "column": 29,
+      "offset": 265
+    },
+    "help": "`toSorted` returns a changed copy instead.",
+    "fixes": [
+      {
+        "title": "Write `toSorted`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 261,
+              "end": 265
+            },
+            "text": "toSorted"
+          }
+        ]
+      }
+    ]
+  }
+]

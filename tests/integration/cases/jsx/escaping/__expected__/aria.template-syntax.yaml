@@ -1,0 +1,9 @@
+- figure "Template syntax & escaping":
+  - text: Template syntax & escaping
+  - code: "<b>{{ user.name }}</b> {#if open} @if (open) {} &amp;"
+  - paragraph: "Static: <b>not bold</b>, {{ name }}, @if (ok) { }"
+  - paragraph: "Literal: {{ name }} <i>not italic</i> {#each items} @for \"quoted\" C:\\temp café"
+  - paragraph: Quoted attribute
+  - paragraph: "Bound: Say \"hi\" & {{ wave }} in C:\\Users\\ada\\index.ts"
+  - paragraph: "Mustache: {{ C:\\Users\\ada }}"
+  - paragraph: Done &check;

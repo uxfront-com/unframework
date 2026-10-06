@@ -1,0 +1,46 @@
+{
+  "description": "Conditionals whose branches read what their condition tests: an optional object narrowed by `&&`, `?:` and `!`, a chain split at a `!x` test, nested `&&`, a nullable list item, a comparison with `undefined`, a `typeof` test and a union discriminant.",
+  "ssr": {
+    "loading": {
+      "props": {
+        "loading": true,
+        "storage": "unlimited",
+        "plan": { "kind": "trial", "daysLeft": 12 },
+        "seats": []
+      }
+    },
+    "signed-out": {
+      "props": {
+        "loading": false,
+        "storage": 0,
+        "plan": { "kind": "paid", "renews": "1 November 2026" },
+        "seats": [null]
+      }
+    },
+    "administrator": {
+      "props": {
+        "loading": false,
+        "member": {
+          "name": "Ada Lovelace",
+          "email": "ada@example.com",
+          "admin": true,
+          "team": { "name": "Analytical Engines" }
+        },
+        "uptime": 99.5,
+        "storage": 12.5,
+        "plan": { "kind": "paid", "renews": "1 November 2026" },
+        "seats": [{ "holder": "Ada Lovelace" }, null]
+      }
+    },
+    "member-without-team": {
+      "props": {
+        "loading": false,
+        "member": { "name": "Grace Hopper", "email": "grace@example.com", "admin": false },
+        "uptime": 0,
+        "storage": "unlimited",
+        "plan": { "kind": "trial", "daysLeft": 3 },
+        "seats": [null, { "holder": "Grace Hopper" }]
+      }
+    }
+  }
+}

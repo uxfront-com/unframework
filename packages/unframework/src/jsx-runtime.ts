@@ -94,8 +94,14 @@ export interface VModelAttributes {
 /** Keys unframework defines itself; removed from the upstream before `OwnedElementAttributes` is added. */
 export type OwnedKeys = "key" | "ref" | "children";
 
+/**
+ * A list's key: a string or a number, which every target compares alike (ADR-0036). A symbol is
+ * no key on React, and Angular's `track` and Svelte's keyed `each` compare by value.
+ */
+export type ListKey = string | number;
+
 export interface OwnedElementAttributes<E> {
-  key?: PropertyKey | undefined;
+  key?: ListKey | undefined;
   ref?: RefAttribute<E> | undefined;
   children?: Children;
 }
@@ -138,7 +144,7 @@ export type UfIntrinsicElements = {
 export interface DynamicComponentAttributes
   extends Omit<UpstreamHTMLAttributes, OwnedKeys | "is">, EventOptionHandlers {
   is: keyof UpstreamIntrinsicElements | ((props: any) => JSX.Element | null);
-  key?: PropertyKey | undefined;
+  key?: ListKey | undefined;
   ref?: RefAttribute<any> | undefined;
   children?: Children | SlotObject;
   [attribute: string]: unknown;
@@ -147,7 +153,7 @@ export interface DynamicComponentAttributes
 /** Custom elements (`<my-element>`): typed global attributes, and any other attribute. */
 export interface CustomElementAttributes
   extends Omit<UpstreamHTMLAttributes, OwnedKeys>, EventOptionHandlers {
-  key?: PropertyKey | undefined;
+  key?: ListKey | undefined;
   ref?: RefAttribute<HTMLElement> | undefined;
   children?: Children;
   [attribute: string]: unknown;
@@ -159,7 +165,7 @@ export interface CustomElementAttributes
  * `any` or `unknown` here: the compiler (layer 2) and the content mapper (layer 3) check them.
  */
 export interface ComponentAttributes {
-  key?: PropertyKey | undefined;
+  key?: ListKey | undefined;
   /** A component ref. Its exposed API (`defineExpose`) is typed by the content mapper. */
   ref?: RefAttribute<any> | undefined;
   /** Fallthrough onto the component's root element. */
@@ -197,7 +203,7 @@ export declare namespace JSX {
   }
   /** Only what every value-based element accepts. The open layer-1 surface is in `LibraryManagedAttributes`. */
   interface IntrinsicAttributes {
-    key?: PropertyKey | undefined;
+    key?: ListKey | undefined;
   }
   /**
    * TypeScript checks a component's attributes against `LibraryManagedAttributes<typeof C, P> &

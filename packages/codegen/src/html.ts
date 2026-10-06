@@ -1,11 +1,32 @@
-// The HTML vocabulary lives in @unframework/ir, which every layer shares; the target kit
-// re-exports it for targets, which import only ir and codegen.
+// The HTML, SVG and CSS vocabulary lives in @unframework/ir, which every layer shares; the
+// target kit re-exports what targets print by, so one import gives a target the whole kit.
 export {
+  ALLOWED_GLOBALS,
+  ARIA_ATTRIBUTES,
+  BINDABLE_BOOLEAN_ATTRIBUTES,
   BLOCK_ELEMENTS,
   BOOLEAN_ATTRIBUTES,
+  canonicalNumber,
+  elementNamespace,
   isBlockElement,
   isBooleanAttribute,
+  isCustomProperty,
+  isDataAttribute,
+  isIdentifier,
+  isNumberTypedAttribute,
+  isSvgElement,
   isVoidElement,
+  LEADING_LINE_FEED_ELEMENTS,
+  NUMBER_TYPED_ATTRIBUTES,
+  NUMBER_TYPED_GLOBAL_ATTRIBUTES,
+  SVG_ELEMENTS,
+  SVG_TEXT_ELEMENTS,
+  TEXTLESS_ELEMENTS,
+  TRUE_VALUED_ATTRIBUTES,
+  UNINTERPOLATED_ELEMENTS,
+  UNITLESS_PROPERTIES,
+  URL_ATTRIBUTES,
   VOID_ELEMENTS,
   WHITESPACE_PRESERVING_ELEMENTS,
 } from "@unframework/ir";
+export type { Namespace } from "@unframework/ir";

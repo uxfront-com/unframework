@@ -53,11 +53,12 @@ it("records an L13 failure logged after a file's last test in the parity matrix"
   expect(reporter.matrix?.cases, output).toEqual({
     "stub/late-console": {
       dom: {
+        L8: "pass",
         L13: expect.stringMatching(
           /^fail: after the last test of this file \(a late teardown or an afterAll hook\): 1 unexpected console message\(s\):\n {2}console\.warn: \[fixture\] after the last test$/,
         ),
       },
     },
-    "stub/late-console-known": { dom: { L13: "quarantined(#late)" } },
+    "stub/late-console-known": { dom: { L8: "pass", L13: "quarantined(#late)" } },
   });
 }, 120_000);

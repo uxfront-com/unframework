@@ -7,6 +7,8 @@ import {
   mergeOutcomes,
   quarantineFor,
   recordLayer,
+  recordLayerChecks,
+  recordScenario,
   settleOutcome,
 } from "../src/layers.ts";
 import type { LayerTask, QuarantineEntry } from "../src/layers.ts";
@@ -161,6 +163,54 @@ describe("recordLayer", () => {
     expect(() => recordLayer(t, { ...subject, target: "vue" }, "L7", { status: "pass" })).toThrow(
       /records one case and target/,
     );
+  });
+});
+
+describe("recordScenario", () => {
+  it("records each scenario once, in the order the test first checked it", () => {
+    const t = task();
+    recordScenario(t, subject, "initial");
+    recordScenario(t, subject, "rerendered");
+    recordScenario(t, subject, "initial");
+    expect(t.meta.uf).toEqual({
+      case: "basics/hello",
+      target: "react",
+      layers: {},
+      scenarios: ["initial", "rerendered"],
+    });
+  });
+
+  it("belongs to the test's one case and target, like its layers", () => {
+    const t = task();
+    recordLayer(t, subject, "L7", { status: "pass" });
+    expect(() => recordScenario(t, { ...subject, case: "basics/other" }, "initial")).toThrow(
+      /records one case and target/,
+    );
+  });
+});
+
+describe("recordLayerChecks", () => {
+  it("records every layer and returns the failures without throwing, quarantined ones left out", async () => {
+    const t = task();
+    const failures = await recordLayerChecks(
+      t,
+      { ...subject, quarantine: [entry] },
+      {
+        L7: () => {
+          throw new Error("known");
+        },
+        L10: () => ({ skip: "live pixels" }),
+        L11: () => {
+          throw new Error("axe found image-alt");
+        },
+      },
+    );
+    expect(failures).toEqual(["L11: axe found image-alt"]);
+    expect(t.meta.uf?.layers).toEqual({
+      L7: { status: "quarantined", issue: entry.issue },
+      L10: { status: "skip", reason: "live pixels" },
+      L11: { status: "fail", message: "axe found image-alt" },
+    });
   });
 });
 

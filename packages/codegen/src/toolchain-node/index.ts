@@ -8,6 +8,8 @@ export {
   diagnosticsByFile,
   runChecker,
 } from "./checker.ts";
-export type { CheckerRun, DiagnosticsByFile } from "./checker.ts";
+export type { CheckerRun, DiagnosticsByFile, ProcessRun } from "./checker.ts";
+export { lintWithEslint, lintWithOxlint, mergeLintResults } from "./lint.ts";
+export type { LintOptions } from "./lint.ts";
 export { resolveInstalled, resolveToolBin } from "./resolve.ts";
 export { typecheckWithTsgo } from "./tsgo.ts";

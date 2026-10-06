@@ -36,11 +36,16 @@ pnpm install --frozen-lockfile --store-dir /pnpm-store --reporter=append-only \
   || { cat /tmp/install.log; exit 1; }
 
 cd /work/tests/integration
+# One test file at a time: on Apple silicon the container emulates linux/amd64, and a Chromium
+# page per worker exhausts Docker Desktop's default 8 GB mid-run ("The chromium page crashed").
+# A caller's own `--maxWorkers` comes later and wins.
+WORKERS=(--maxWorkers=1)
 case "$MODE" in
   update)
     # Only browser:vue writes; the other browser projects compare against its capture.
     status=0
-    env -u CI UF_UPDATE=1 UF_PIXELS=baseline node scripts/run.ts --project "browser:*" "$@" \
+    env -u CI UF_UPDATE=1 UF_PIXELS=baseline node scripts/run.ts --project "browser:*" \
+      "${WORKERS[@]}" "$@" \
       || status=$?
     cd /work
     # Only what changed, so an unchanged baseline keeps its bytes and its mtime on the host.
@@ -57,7 +62,7 @@ case "$MODE" in
   check)
     # CI's mode (baseline pixels, nothing written) for the browser projects only: the summary
     # judges the projects the run selected, as a partial run.
-    CI=1 node scripts/run.ts --project "browser:*" "$@"
+    CI=1 node scripts/run.ts --project "browser:*" "${WORKERS[@]}" "$@"
     ;;
   *)
     echo "unknown mode: $MODE (expected update or check)" >&2

@@ -1,0 +1,25 @@
+{
+  "description": "A list of objects mapped to table rows with a string key, rendered in the array's order.",
+  "ssr": {
+    "by-commits": {
+      "props": {
+        "caption": "Top contributors",
+        "contributors": [
+          { "login": "ada", "name": "Ada Lovelace", "commits": 120 },
+          { "login": "grace", "name": "Grace Hopper", "commits": 85 },
+          { "login": "alan", "name": "Alan Turing", "commits": 42 }
+        ]
+      }
+    },
+    "by-name": {
+      "props": {
+        "caption": "Contributors by name",
+        "contributors": [
+          { "login": "alan", "name": "Alan Turing", "commits": 42 },
+          { "login": "ada", "name": "Ada Lovelace", "commits": 120 },
+          { "login": "grace", "name": "Grace Hopper", "commits": 85 }
+        ]
+      }
+    }
+  }
+}

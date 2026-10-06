@@ -286,6 +286,79 @@ describe("rule 6: collapseWhitespace, by display", () => {
     );
   });
 
+  it("keeps the line of a table-internal box in an inline box as written", () => {
+    // An anonymous inline table wraps it (CSS 2.1 §17.2.1), with whitespace rules of its own:
+    // nothing on its line is collapsed, inside it or not.
+    expect(
+      collapse(
+        '<p>x  y <span>a <span style="display: table-cell"> b  </span>\n c</span> <b> d </b></p>',
+      ),
+    ).toBe(
+      lines(
+        "<p>",
+        '  "x  y "',
+        "  <span>",
+        '    "a "',
+        '    <span style="display: table-cell">',
+        '      " b  "',
+        "    </span>",
+        '    "\\n c"',
+        "  </span>",
+        '  " "',
+        "  <b>",
+        '    " d "',
+        "  </b>",
+        "</p>",
+      ),
+    );
+    // Through `display: contents`, and in a ruby, a blockified one's included.
+    for (const [spaced, tight] of [
+      [
+        '<p><span><span style="display: contents">a <i style="display: table-row">b</i></span> c</span></p>',
+        '<p><span><span style="display: contents">a<i style="display: table-row">b</i></span>c</span></p>',
+      ],
+      [
+        '<p><ruby>a <i style="display: table-caption">b</i> c</ruby></p>',
+        '<p><ruby>a<i style="display: table-caption">b</i>c</ruby></p>',
+      ],
+      [
+        '<div style="display: flex"><ruby>a <i style="display: table-cell">b</i> c</ruby></div>',
+        '<div style="display: flex"><ruby>a<i style="display: table-cell">b</i>c</ruby></div>',
+      ],
+    ]) {
+      expect(normalizeHtml(spaced!)).not.toBe(normalizeHtml(tight!));
+    }
+  });
+
+  it("lays a table-internal box in a block container out as a block", () => {
+    // Its anonymous table is block-level.
+    expect(collapse('<p>a <span style="display: table-cell"> b </span> c</p>')).toBe(
+      lines(
+        "<p>",
+        '  "a"',
+        '  <span style="display: table-cell">',
+        '    "b"',
+        "  </span>",
+        '  "c"',
+        "</p>",
+      ),
+    );
+  });
+
+  it("blockifies a table-internal box into a block container", () => {
+    // In a flex container, floated or absolutely positioned, a row is a block, not a row: the
+    // space between its inline children renders.
+    for (const [parent, style] of [
+      ['<div style="display: flex">', "display: table-row"],
+      ["<div>", "display: table-row; float: left"],
+      ["<div>", "display: table-row-group; position: absolute"],
+    ]) {
+      expect(
+        normalizeHtml(`${parent}<span style="${style}"><b>a</b> <b>b</b></span></div>`),
+      ).not.toBe(normalizeHtml(`${parent}<span style="${style}"><b>a</b><b>b</b></span></div>`));
+    }
+  });
+
   it("reads multi-keyword displays", () => {
     expect(collapse('<p>a <span style="display: inline flow-root"> b </span></p>')).toBe(
       lines(
@@ -477,6 +550,54 @@ describe("rule 6: collapseWhitespace, in a ruby", () => {
     expect(normalizeHtml("<div><ruby>dd\u200b</ruby>\na</div>")).not.toBe(
       normalizeHtml("<div><ruby>dd\u200b</ruby>a</div>"),
     );
+  });
+
+  it("removes a line break after a zero-width space across an annotation's start", () => {
+    // In a ruby container, its start is no item of its own, unlike its end.
+    expect(normalizeHtml("<div><ruby>dd\u200b<rt>\na</rt></ruby></div>")).toBe(
+      normalizeHtml("<div><ruby>dd\u200b<rt>a</rt></ruby></div>"),
+    );
+    expect(normalizeHtml("<div><ruby>dd\u200b<rt>\na</rt></ruby></div>")).not.toBe(
+      normalizeHtml("<div><ruby>dd\u200b<rt> a</rt></ruby></div>"),
+    );
+    expect(normalizeHtml("<div><ruby>a<rt>dd\u200b</rt>\nb</ruby></div>")).toBe(
+      normalizeHtml("<div><ruby>a<rt>dd\u200b</rt> b</ruby></div>"),
+    );
+    // Through `display: contents`, which is no box.
+    const contents = '<i style="display: contents"><i style="display: ruby-text">';
+    expect(
+      normalizeHtml(`<div><span style="display: ruby">dd\u200b${contents}\na</i></i></span></div>`),
+    ).toBe(
+      normalizeHtml(`<div><span style="display: ruby">dd\u200b${contents}a</i></i></span></div>`),
+    );
+  });
+
+  it("keeps the start of an annotation outside a ruby container an item of its own", () => {
+    // Chromium wraps it in an anonymous ruby, whose start hides the zero-width space: outside a
+    // ruby, in a ruby that is no ruby container, and in an inline or an annotation in a ruby.
+    for (const html of [
+      'dd\u200b<i style="display: ruby-text">%a</i>',
+      '<ruby style="display: inline">dd\u200b<rt>%a</rt></ruby>',
+      '<ruby style="display: contents">dd\u200b<rt>%a</rt></ruby>',
+      '<ruby><span>dd\u200b<i style="display: ruby-text">%a</i></span></ruby>',
+      '<ruby>x<rt>dd\u200b<i style="display: ruby-text">%a</i></rt></ruby>',
+    ]) {
+      const variant = (space: string) => normalizeHtml(`<div>${html.replace("%", space)}</div>`);
+      expect(variant("\n"), html).toBe(variant(" "));
+      expect(variant("\n"), html).not.toBe(variant(""));
+    }
+  });
+
+  it("inlinifies a block ruby in a ruby as an inline ruby, not an inline-block", () => {
+    // Its edges are a ruby's, across which whitespace collapses: `inline ruby`, not atomic.
+    expect(
+      normalizeHtml('<div><ruby>a<ruby style="display: block ruby"> b</ruby></ruby></div>'),
+    ).not.toBe(
+      normalizeHtml('<div><ruby>a<ruby style="display: block ruby">b</ruby></ruby></div>'),
+    );
+    expect(
+      normalizeHtml('<div><ruby>a <ruby style="display: block ruby"> b</ruby></ruby></div>'),
+    ).toBe(normalizeHtml('<div><ruby>a <ruby style="display: block ruby">b</ruby></ruby></div>'));
   });
 
   it("keeps a line break after preserved text in a ruby as written", () => {

@@ -1,0 +1,392 @@
+{
+  "irVersion": 1,
+  "file": "bindings/class-object/NavItem.uf.tsx",
+  "components": [
+    {
+      "name": "NavItem",
+      "span": {
+        "start": 125,
+        "end": 430
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 41,
+              "end": 47
+            }
+          },
+          "binding": "label@159",
+          "span": {
+            "start": 34,
+            "end": 48
+          }
+        },
+        {
+          "name": "href",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 57,
+              "end": 63
+            }
+          },
+          "binding": "href@166",
+          "span": {
+            "start": 51,
+            "end": 64
+          }
+        },
+        {
+          "name": "active",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 75,
+              "end": 82
+            }
+          },
+          "binding": "active@172",
+          "span": {
+            "start": 67,
+            "end": 83
+          }
+        },
+        {
+          "name": "muted",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 93,
+              "end": 100
+            }
+          },
+          "binding": "muted@180",
+          "span": {
+            "start": 86,
+            "end": 101
+          }
+        },
+        {
+          "name": "danger",
+          "optional": true,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 113,
+              "end": 120
+            }
+          },
+          "default": {
+            "code": "false",
+            "span": {
+              "start": 196,
+              "end": 201
+            },
+            "refs": []
+          },
+          "binding": "danger@187",
+          "span": {
+            "start": 104,
+            "end": 121
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "NavItemProps",
+          "span": {
+            "start": 205,
+            "end": 217
+          }
+        },
+        "span": {
+          "start": 157,
+          "end": 217
+        }
+      },
+      "types": [
+        "NavItemProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@159",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 159,
+            "end": 164
+          }
+        },
+        {
+          "id": "href@166",
+          "name": "href",
+          "kind": "prop",
+          "span": {
+            "start": 166,
+            "end": 170
+          }
+        },
+        {
+          "id": "active@172",
+          "name": "active",
+          "kind": "prop",
+          "span": {
+            "start": 172,
+            "end": 178
+          }
+        },
+        {
+          "id": "muted@180",
+          "name": "muted",
+          "kind": "prop",
+          "span": {
+            "start": 180,
+            "end": 185
+          }
+        },
+        {
+          "id": "danger@187",
+          "name": "danger",
+          "kind": "prop",
+          "span": {
+            "start": 187,
+            "end": 193
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "a",
+        "attributes": [
+          {
+            "kind": "Bound",
+            "name": "href",
+            "value": {
+              "code": "href",
+              "span": {
+                "start": 251,
+                "end": 255
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "href@166",
+                  "span": {
+                    "start": 251,
+                    "end": 255
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 245,
+              "end": 256
+            }
+          },
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Toggle",
+                "name": "active",
+                "condition": {
+                  "code": "active",
+                  "span": {
+                    "start": 272,
+                    "end": 278
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "active@172",
+                      "span": {
+                        "start": 272,
+                        "end": 278
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 272,
+                  "end": 278
+                }
+              },
+              {
+                "kind": "Toggle",
+                "name": "nav-item-muted",
+                "condition": {
+                  "code": "muted",
+                  "span": {
+                    "start": 298,
+                    "end": 303
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "muted@180",
+                      "span": {
+                        "start": 298,
+                        "end": 303
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 280,
+                  "end": 303
+                }
+              },
+              {
+                "kind": "Toggle",
+                "name": "nav-item-danger",
+                "condition": {
+                  "code": "danger",
+                  "span": {
+                    "start": 336,
+                    "end": 342
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "danger@187",
+                      "span": {
+                        "start": 336,
+                        "end": 342
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 305,
+                  "end": 342
+                }
+              },
+              {
+                "kind": "Toggle",
+                "name": "text-danger",
+                "condition": {
+                  "code": "danger",
+                  "span": {
+                    "start": 336,
+                    "end": 342
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "danger@187",
+                      "span": {
+                        "start": 336,
+                        "end": 342
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 305,
+                  "end": 342
+                }
+              }
+            ],
+            "span": {
+              "start": 263,
+              "end": 345
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-current",
+            "value": {
+              "code": "active ? \"page\" : undefined",
+              "span": {
+                "start": 366,
+                "end": 393
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "active@172",
+                  "span": {
+                    "start": 366,
+                    "end": 372
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "undefined",
+                  "span": {
+                    "start": 384,
+                    "end": 393
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 352,
+              "end": 394
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 408,
+                "end": 413
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@159",
+                  "span": {
+                    "start": 408,
+                    "end": 413
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 407,
+              "end": 414
+            }
+          }
+        ],
+        "span": {
+          "start": 236,
+          "end": 423
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "NavItem",
+      "span": {
+        "start": 125,
+        "end": 430
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "NavItemProps",
+      "exported": true,
+      "code": "interface NavItemProps {\n  label: string;\n  href: string;\n  active: boolean;\n  muted: boolean;\n  danger?: boolean;\n}",
+      "span": {
+        "start": 7,
+        "end": 123
+      }
+    }
+  ]
+}

@@ -43,20 +43,36 @@ export interface Box {
    * what it inlinifies.
    */
   rubyContent: boolean;
+  /** Whether the element is a ruby annotation (`<rt>` in a ruby, `display: ruby-text`). */
+  rubyAnnotation: boolean;
   /**
-   * Whether the edges of the element's inline box are items of their own in Blink's inline
-   * layout: a ruby's columns, and the bidi controls around an element whose `unicode-bidi` is
-   * not `normal` (`<bdi>`, `<bdo>`, `<li>`, `dir="…"`). Whitespace collapses across them, but
-   * they hide a zero-width space from a line break on the other side, which then renders:
-   * `a\u200b<bdi>\nb</bdi>` is `a\u200b b`, where `a\u200b<b>\nb</b>` is `a\u200bb`.
+   * Whether the start and the end of the element's inline box are items of their own in
+   * Blink's inline layout: a ruby's columns, and the bidi controls around an element whose
+   * `unicode-bidi` is not `normal` (`<bdi>`, `<bdo>`, `<li>`, `dir="…"`). Whitespace collapses
+   * across them, but they hide a zero-width space from a line break on the other side, which
+   * then renders: `a\u200b<bdi>\nb</bdi>` is `a\u200b b`, where `a\u200b<b>\nb</b>` is
+   * `a\u200bb`. An annotation's end is one, and so is its start, except where its parent is a
+   * ruby container (`ParentLayout.rubyContainer`): in a ruby, `a\u200b<rt>\nb</rt>` is
+   * `a\u200b<rt>b</rt>`. Anywhere else Chromium wraps the annotation in an anonymous ruby,
+   * whose start is one.
    */
-  opaqueEdges: boolean;
+  opaqueStart: boolean;
+  opaqueEnd: boolean;
   /**
    * Whether the element is a list item. Laid out inline (`display: inline list-item`, or
    * inlinified by a ruby), it starts with its marker: content that ends in a space, which takes
    * the whitespace after it.
    */
   listItem: boolean;
+  /**
+   * Whether the box is table-internal: a row group, a row, a column group, a column, a cell or
+   * a caption, by its inline `display` or the user-agent default. Unless its parent is a table
+   * part, CSS wraps it in an anonymous table (CSS 2.1 §17.2.1), an atomic `inline-table` when
+   * the parent is an inline box, with rules for the whitespace around it this model does not
+   * follow: the whitespace rule keeps that line as written. In a block container the wrapper
+   * is a block-level `table`, which is what `outer` says.
+   */
+  tableInternal: boolean;
 }
 
 /** What the element's parent does to its box, besides what the element's own style says. */
@@ -65,6 +81,12 @@ export interface ParentLayout {
   blockifies: boolean;
   /** The element is in a ruby's content: the ruby inlinifies it. */
   ruby: boolean;
+  /**
+   * The parent box is a ruby container itself (`display: ruby`, `inline ruby` or `block ruby`;
+   * `display: contents` between them is no box), not an annotation or an element in one. An
+   * annotation anywhere else gets an anonymous ruby around it.
+   */
+  rubyContainer: boolean;
 }
 
 const words = (list: string): ReadonlySet<string> => new Set(list.split(" "));
@@ -79,6 +101,9 @@ const BLOCK_TAGS = words(
 
 /** HTML elements whose default display is a table, a table row or section, or a column. */
 const TABLE_TAGS = words("col colgroup table tbody tfoot thead tr");
+
+/** HTML elements whose default display is table-internal (see `Box.tableInternal`). */
+const TABLE_INTERNAL_TAGS = words("caption col colgroup tbody td tfoot th thead tr");
 
 /** HTML elements that are replaced or inline-block by default. */
 const ATOMIC_TAGS = words(
@@ -126,16 +151,25 @@ const BIDI_TAGS = words("bdi bdo li output");
 /** The `dir` values that make an HTML element `unicode-bidi: isolate` by default. */
 const DIRECTIONS = words("ltr rtl auto");
 
-/** A box; by default its children are neither blockified nor dropped, ruby nor a list item. */
-function box(outer: Outer, traits: Partial<Omit<Box, "outer" | "opaqueEdges">> = {}): Box {
+/**
+ * A box; by default its children are neither blockified nor dropped, ruby nor a list item, and
+ * it is not table-internal.
+ */
+function box(
+  outer: Outer,
+  traits: Partial<Omit<Box, "outer" | "opaqueStart" | "opaqueEnd">> = {},
+): Box {
   const blockifiesChildren = traits.blockifiesChildren ?? false;
   return {
     outer,
     blockifiesChildren,
     dropsWhitespaceChildren: traits.dropsWhitespaceChildren ?? blockifiesChildren,
     rubyContent: traits.rubyContent ?? false,
+    rubyAnnotation: traits.rubyAnnotation ?? false,
     listItem: traits.listItem ?? false,
-    opaqueEdges: false,
+    tableInternal: traits.tableInternal ?? false,
+    opaqueStart: false,
+    opaqueEnd: false,
   };
 }
 
@@ -185,13 +219,15 @@ function defaultBox(element: TreeElement): Box {
   if (tag === "slot") return box("contents");
   // `ruby { display: ruby }`, and `ruby > rt { display: ruby-text }`: an `<rt>` elsewhere is
   // an ordinary inline.
-  if (tag === "ruby" || (tag === "rt" && isHtmlElement(element.parentNode, "ruby"))) {
-    return box("inline", { rubyContent: true });
+  if (tag === "ruby") return box("inline", { rubyContent: true });
+  if (tag === "rt" && isHtmlElement(element.parentNode, "ruby")) {
+    return box("inline", { rubyContent: true, rubyAnnotation: true });
   }
   if (tag === "li") return box("block", { listItem: true });
   if (NONE_TAGS.has(tag)) return box("none");
-  if (TABLE_TAGS.has(tag)) return box("block", { dropsWhitespaceChildren: true });
-  if (BLOCK_TAGS.has(tag)) return box("block");
+  const tableInternal = TABLE_INTERNAL_TAGS.has(tag);
+  if (TABLE_TAGS.has(tag)) return box("block", { dropsWhitespaceChildren: true, tableInternal });
+  if (BLOCK_TAGS.has(tag)) return box("block", { tableInternal });
   if (ATOMIC_TAGS.has(tag)) return box("atomic");
   // Every other element, custom elements included, has the initial `display: inline`.
   return box("inline");
@@ -216,8 +252,9 @@ export function boxFromDisplay(value: string, mathml = false): Box | undefined {
       case "unset":
         return box("inline");
       case "ruby":
-      case "ruby-text":
         return box("inline", { rubyContent: true });
+      case "ruby-text":
+        return box("inline", { rubyContent: true, rubyAnnotation: true });
       case "math":
         return box(mathml ? "atomic" : "inline");
       case "inline-block":
@@ -227,24 +264,23 @@ export function boxFromDisplay(value: string, mathml = false): Box | undefined {
       case "inline-flex":
       case "inline-grid":
         return box("atomic", { blockifiesChildren: true });
-      // M1 (inline styles): a table-internal display on an element whose parent is not the
-      // matching table box gets anonymous table boxes around it in Chromium, which this model
-      // does not build; a fuzz with `display: table-*` spans finds pairs it calls equal that
-      // lay out differently. M0 rejects `style` (UF1002), so only the user-agent's table
-      // elements get here, and the parser keeps those inside their table.
       case "table":
+        return box("block", { dropsWhitespaceChildren: true });
+      // Table-internal: the analyzer rejects a static one (UF1002), but a bound `display` gets
+      // here with any value (see `Box.tableInternal`).
       case "table-row-group":
       case "table-header-group":
       case "table-footer-group":
       case "table-row":
       case "table-column-group":
       case "table-column":
-        return box("block", { dropsWhitespaceChildren: true });
+        return box("block", { dropsWhitespaceChildren: true, tableInternal: true });
+      case "table-cell":
+      case "table-caption":
+        return box("block", { tableInternal: true });
       case "block":
       case "flow":
       case "flow-root":
-      case "table-cell":
-      case "table-caption":
         return box("block");
       case "list-item":
         return box("block", { listItem: true });
@@ -279,9 +315,11 @@ export function boxFromDisplay(value: string, mathml = false): Box | undefined {
  * - A float or an absolutely positioned box (inline `float`, `position`) is out of flow, apart
  *   from `none` and `contents`, which have no box to take out.
  * - Inside a flex or grid container every other child is blockified.
+ * - Blockified (out of flow, or in a flex or grid container), a table-internal box is a plain
+ *   block container: no anonymous table wraps it, and its children are laid out as a block's.
  * - Inside a ruby, Chromium inlinifies: a block-level box becomes an inline-block (atomic),
- *   or an inline box if it is a list item; a float loses its float and is inlinified the same
- *   way; a `<br>` is content that does not break the line (`ruby-break`). An absolutely
+ *   or an inline box if it is a list item or a ruby (`block ruby` becomes `inline ruby`); a
+ *   float loses its float and is inlinified the same way; a `<br>` is content that does not break the line (`ruby-break`). An absolutely
  *   positioned box stays out of flow.
  *
  * Only inline styles and the user-agent defaults are read: a class whose stylesheet changes
@@ -291,7 +329,12 @@ export function boxFromDisplay(value: string, mathml = false): Box | undefined {
  */
 export function boxOf(element: TreeElement, parent: ParentLayout): Box {
   const placed = placedBox(element, parent);
-  return { ...placed, opaqueEdges: placed.rubyContent || isolatesBidi(element) };
+  const bidi = isolatesBidi(element);
+  return {
+    ...placed,
+    opaqueStart: (placed.rubyContent && !(placed.rubyAnnotation && parent.rubyContainer)) || bidi,
+    opaqueEnd: placed.rubyContent || bidi,
+  };
 }
 
 /** The element's box, laid out by its parent (see `boxOf`), its edges aside. */
@@ -300,21 +343,24 @@ function placedBox(element: TreeElement, parent: ParentLayout): Box {
   if (forced) return forced;
   const style = getAttribute(element, "style");
   const display = styleValue(style, "display");
-  const own =
+  const declared =
     (display !== undefined
       ? boxFromDisplay(display, element.namespaceURI === MATHML_NAMESPACE)
       : undefined) ?? defaultBox(element);
-  if (own.outer === "none" || own.outer === "contents") return own;
+  if (declared.outer === "none" || declared.outer === "contents") return declared;
   const position = styleValue(style, "position");
   const float = styleValue(style, "float");
   const floats = float !== undefined && FLOATING_KEYWORDS.has(float);
-  if (position !== undefined && OUT_OF_FLOW_POSITIONS.has(position)) {
-    return { ...own, outer: "out-of-flow" };
-  }
+  const positioned = position !== undefined && OUT_OF_FLOW_POSITIONS.has(position);
+  // Blockified, a table-internal box is a block container, in no anonymous table: its inner
+  // display becomes `flow` (CSS Display 3 §2.7), so its children are laid out as a block's.
+  const own =
+    declared.tableInternal && (floats || positioned || parent.blockifies) ? box("block") : declared;
+  if (positioned) return { ...own, outer: "out-of-flow" };
   if (parent.ruby) {
     // A float is blockified before the ruby drops its float, so it is inlinified as a block.
     if (floats || own.outer === "block") {
-      return { ...own, outer: own.listItem ? "inline" : "atomic" };
+      return { ...own, outer: own.listItem || own.rubyContent ? "inline" : "atomic" };
     }
     return own.outer === "break" ? { ...own, outer: "ruby-break" } : own;
   }

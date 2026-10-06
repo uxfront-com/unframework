@@ -1,0 +1,47 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/component-name-collision/Cards.uf.tsx",
+  "components": [
+    {
+      "name": "Card",
+      "span": {
+        "start": 84,
+        "end": 132
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Card",
+            "span": {
+              "start": 121,
+              "end": 125
+            }
+          }
+        ],
+        "span": {
+          "start": 118,
+          "end": 129
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "named",
+      "name": "Card",
+      "local": "Card",
+      "span": {
+        "start": 84,
+        "end": 132
+      }
+    }
+  ],
+  "types": []
+}

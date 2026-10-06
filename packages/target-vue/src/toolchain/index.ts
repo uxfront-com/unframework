@@ -1,4 +1,9 @@
 import type { Toolchain } from "@unframework/codegen";
+import {
+  lintWithEslint,
+  lintWithOxlint,
+  mergeLintResults,
+} from "@unframework/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
 import { frameworkCompile } from "./framework-compile.ts";
@@ -6,7 +11,8 @@ import { typecheck } from "./typecheck.ts";
 
 /**
  * The Vue target's toolchain, for tests and tooling: @vitejs/plugin-vue in Vite, Vue's own
- * compiler for L3, vue-tsc for L4, and the `createApp` and `vue/server-renderer` adapters.
+ * compiler for L3, vue-tsc for L4, oxlint and eslint-plugin-vue for L5, and the `createApp` and
+ * `vue/server-renderer` adapters.
  */
 export const toolchain: Toolchain = {
   name: "vue",
@@ -27,6 +33,11 @@ export const toolchain: Toolchain = {
   server: "@unframework/target-vue/toolchain/server",
   frameworkCompile,
   typecheck,
+  // L5 (ADR-0042): oxlint's shared baseline over the script block, ESLint over the whole file.
+  lint: async (files, context) =>
+    mergeLintResults(
+      await Promise.all([lintWithOxlint(files, context), lintWithEslint(files, context)]),
+    ),
 };
 
 export default toolchain;

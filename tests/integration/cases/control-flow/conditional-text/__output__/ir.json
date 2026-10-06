@@ -1,0 +1,381 @@
+{
+  "irVersion": 1,
+  "file": "control-flow/conditional-text/SaveIndicator.uf.tsx",
+  "components": [
+    {
+      "name": "SaveIndicator",
+      "span": {
+        "start": 99,
+        "end": 457
+      },
+      "props": [
+        {
+          "name": "saving",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 48,
+              "end": 55
+            }
+          },
+          "binding": "saving@139",
+          "span": {
+            "start": 40,
+            "end": 56
+          }
+        },
+        {
+          "name": "changes",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 68,
+              "end": 74
+            }
+          },
+          "binding": "changes@147",
+          "span": {
+            "start": 59,
+            "end": 75
+          }
+        },
+        {
+          "name": "savedAt",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 88,
+              "end": 94
+            }
+          },
+          "binding": "savedAt@156",
+          "span": {
+            "start": 78,
+            "end": 95
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "SaveIndicatorProps",
+          "span": {
+            "start": 167,
+            "end": 185
+          }
+        },
+        "span": {
+          "start": 137,
+          "end": 185
+        }
+      },
+      "types": [
+        "SaveIndicatorProps"
+      ],
+      "bindings": [
+        {
+          "id": "saving@139",
+          "name": "saving",
+          "kind": "prop",
+          "span": {
+            "start": 139,
+            "end": 145
+          }
+        },
+        {
+          "id": "changes@147",
+          "name": "changes",
+          "kind": "prop",
+          "span": {
+            "start": 147,
+            "end": 154
+          }
+        },
+        {
+          "id": "savedAt@156",
+          "name": "savedAt",
+          "kind": "prop",
+          "span": {
+            "start": 156,
+            "end": 163
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "save-indicator",
+            "span": {
+              "start": 207,
+              "end": 229
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "status",
+            "span": {
+              "start": 230,
+              "end": 243
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "saving",
+                  "span": {
+                    "start": 252,
+                    "end": 258
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "saving@139",
+                      "span": {
+                        "start": 252,
+                        "end": 258
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "em",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Saving",
+                        "span": {
+                          "start": 265,
+                          "end": 271
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 261,
+                      "end": 276
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 252,
+                  "end": 276
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Saved",
+                    "span": {
+                      "start": 279,
+                      "end": 286
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 279,
+                  "end": 286
+                }
+              }
+            ],
+            "span": {
+              "start": 252,
+              "end": 286
+            }
+          },
+          {
+            "kind": "Text",
+            "value": ", ",
+            "span": {
+              "start": 294,
+              "end": 300
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "changes === 1 ? \"1 change\" : `${changes} changes`",
+              "span": {
+                "start": 308,
+                "end": 357
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "changes@147",
+                  "span": {
+                    "start": 308,
+                    "end": 315
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "changes@147",
+                  "span": {
+                    "start": 340,
+                    "end": 347
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 307,
+              "end": 358
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "savedAt",
+                  "span": {
+                    "start": 366,
+                    "end": 373
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "savedAt@156",
+                      "span": {
+                        "start": 366,
+                        "end": 373
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "time",
+                    "attributes": [
+                      {
+                        "kind": "Bound",
+                        "name": "datetime",
+                        "value": {
+                          "code": "savedAt",
+                          "span": {
+                            "start": 392,
+                            "end": 399
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "savedAt@156",
+                              "span": {
+                                "start": 392,
+                                "end": 399
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 382,
+                          "end": 400
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "\" at \" + savedAt",
+                          "span": {
+                            "start": 402,
+                            "end": 418
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "savedAt@156",
+                              "span": {
+                                "start": 411,
+                                "end": 418
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 401,
+                          "end": 419
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 376,
+                      "end": 426
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 366,
+                  "end": 426
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": " just now",
+                    "span": {
+                      "start": 429,
+                      "end": 440
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 429,
+                  "end": 440
+                }
+              }
+            ],
+            "span": {
+              "start": 366,
+              "end": 440
+            }
+          }
+        ],
+        "span": {
+          "start": 204,
+          "end": 450
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SaveIndicator",
+      "span": {
+        "start": 99,
+        "end": 457
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "SaveIndicatorProps",
+      "exported": true,
+      "code": "interface SaveIndicatorProps {\n  saving: boolean;\n  changes: number;\n  savedAt?: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 97
+      }
+    }
+  ]
+}

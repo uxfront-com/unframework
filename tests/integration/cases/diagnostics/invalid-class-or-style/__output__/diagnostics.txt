@@ -1,0 +1,11 @@
+error[UF3022]: This `style` sets `margin-top` and `margin`, which set the same thing: the targets that write a style as an object cannot keep the order that decides it.
+ --> diagnostics/invalid-class-or-style/Spacer.uf.tsx:4:37
+  |
+4 |   return <div style={{ margin: "0", marginTop: "8px" }}>Spaced</div>;
+  |                                     ^^^^^^^^^
+  |
+4 |   return <div style={{ margin: "0", marginTop: "8px" }}>Spaced</div>;
+  |                        ^^^^^^ Also set here
+  |
+  = help: Set each property once, with its final value.
+  = see: https://unframework.dev/diagnostics/UF3022

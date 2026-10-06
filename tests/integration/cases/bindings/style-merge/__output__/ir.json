@@ -1,0 +1,346 @@
+{
+  "irVersion": 1,
+  "file": "bindings/style-merge/Tag.uf.tsx",
+  "components": [
+    {
+      "name": "Tag",
+      "span": {
+        "start": 105,
+        "end": 521
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 37,
+              "end": 43
+            }
+          },
+          "binding": "label@135",
+          "span": {
+            "start": 30,
+            "end": 44
+          }
+        },
+        {
+          "name": "colour",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 56,
+              "end": 62
+            }
+          },
+          "binding": "colour@142",
+          "span": {
+            "start": 47,
+            "end": 63
+          }
+        },
+        {
+          "name": "weight",
+          "optional": true,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 75,
+              "end": 81
+            }
+          },
+          "binding": "weight@150",
+          "span": {
+            "start": 66,
+            "end": 82
+          }
+        },
+        {
+          "name": "indent",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 94,
+              "end": 100
+            }
+          },
+          "binding": "indent@158",
+          "span": {
+            "start": 85,
+            "end": 101
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TagProps",
+          "span": {
+            "start": 168,
+            "end": 176
+          }
+        },
+        "span": {
+          "start": 133,
+          "end": 176
+        }
+      },
+      "types": [
+        "TagProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@135",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 135,
+            "end": 140
+          }
+        },
+        {
+          "id": "colour@142",
+          "name": "colour",
+          "kind": "prop",
+          "span": {
+            "start": 142,
+            "end": 148
+          }
+        },
+        {
+          "id": "weight@150",
+          "name": "weight",
+          "kind": "prop",
+          "span": {
+            "start": 150,
+            "end": 156
+          }
+        },
+        {
+          "id": "indent@158",
+          "name": "indent",
+          "kind": "prop",
+          "span": {
+            "start": 158,
+            "end": 164
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "tag",
+            "span": {
+              "start": 207,
+              "end": 218
+            }
+          },
+          {
+            "kind": "Style",
+            "declarations": [
+              {
+                "kind": "Static",
+                "property": "display",
+                "value": "inline-block",
+                "span": {
+                  "start": 242,
+                  "end": 265
+                }
+              },
+              {
+                "kind": "Static",
+                "property": "padding",
+                "value": "2px 8px",
+                "span": {
+                  "start": 275,
+                  "end": 293
+                }
+              },
+              {
+                "kind": "Static",
+                "property": "border-style",
+                "value": "solid",
+                "span": {
+                  "start": 303,
+                  "end": 323
+                }
+              },
+              {
+                "kind": "Static",
+                "property": "border-width",
+                "value": "1px",
+                "span": {
+                  "start": 333,
+                  "end": 351
+                }
+              },
+              {
+                "kind": "Bound",
+                "property": "border-color",
+                "value": {
+                  "code": "colour ?? \"#5a5a5a\"",
+                  "span": {
+                    "start": 374,
+                    "end": 393
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "colour@142",
+                      "span": {
+                        "start": 374,
+                        "end": 380
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 361,
+                  "end": 393
+                }
+              },
+              {
+                "kind": "Bound",
+                "property": "color",
+                "value": {
+                  "code": "colour",
+                  "span": {
+                    "start": 410,
+                    "end": 416
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "colour@142",
+                      "span": {
+                        "start": 410,
+                        "end": 416
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 403,
+                  "end": 416
+                }
+              },
+              {
+                "kind": "Bound",
+                "property": "font-weight",
+                "value": {
+                  "code": "weight",
+                  "span": {
+                    "start": 438,
+                    "end": 444
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "weight@150",
+                      "span": {
+                        "start": 438,
+                        "end": 444
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 426,
+                  "end": 444
+                }
+              },
+              {
+                "kind": "Bound",
+                "property": "margin-left",
+                "value": {
+                  "code": "indent",
+                  "span": {
+                    "start": 466,
+                    "end": 472
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "indent@158",
+                      "span": {
+                        "start": 466,
+                        "end": 472
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 454,
+                  "end": 472
+                }
+              }
+            ],
+            "span": {
+              "start": 225,
+              "end": 482
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 496,
+                "end": 501
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@135",
+                  "span": {
+                    "start": 496,
+                    "end": 501
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 495,
+              "end": 502
+            }
+          }
+        ],
+        "span": {
+          "start": 195,
+          "end": 514
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Tag",
+      "span": {
+        "start": 105,
+        "end": 521
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "TagProps",
+      "exported": true,
+      "code": "interface TagProps {\n  label: string;\n  colour?: string;\n  weight?: number;\n  indent?: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 103
+      }
+    }
+  ]
+}

@@ -1,0 +1,419 @@
+{
+  "irVersion": 1,
+  "file": "props/unread-props/ArticleTeaser.uf.tsx",
+  "components": [
+    {
+      "name": "ArticleTeaser",
+      "span": {
+        "start": 207,
+        "end": 762
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 47,
+              "end": 53
+            }
+          },
+          "binding": "title@249",
+          "span": {
+            "start": 40,
+            "end": 54
+          }
+        },
+        {
+          "name": "summary",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 66,
+              "end": 72
+            }
+          },
+          "binding": "summary@258",
+          "span": {
+            "start": 57,
+            "end": 73
+          }
+        },
+        {
+          "name": "author",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 84,
+              "end": 90
+            }
+          },
+          "span": {
+            "start": 76,
+            "end": 91
+          }
+        },
+        {
+          "name": "minutes",
+          "optional": true,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 104,
+              "end": 110
+            }
+          },
+          "default": {
+            "code": "5",
+            "span": {
+              "start": 279,
+              "end": 280
+            },
+            "refs": []
+          },
+          "binding": "minutes@269",
+          "span": {
+            "start": 94,
+            "end": 111
+          }
+        },
+        {
+          "name": "featured",
+          "optional": true,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 125,
+              "end": 132
+            }
+          },
+          "span": {
+            "start": 114,
+            "end": 133
+          }
+        },
+        {
+          "name": "category",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 147,
+              "end": 153
+            }
+          },
+          "span": {
+            "start": 136,
+            "end": 154
+          }
+        },
+        {
+          "name": "pinned",
+          "optional": true,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 166,
+              "end": 173
+            }
+          },
+          "default": {
+            "code": "false",
+            "span": {
+              "start": 473,
+              "end": 478
+            },
+            "refs": []
+          },
+          "binding": "pinned@464",
+          "span": {
+            "start": 157,
+            "end": 174
+          }
+        },
+        {
+          "name": "layout",
+          "optional": true,
+          "type": {
+            "code": "\"row\" | \"column\"",
+            "span": {
+              "start": 186,
+              "end": 202
+            }
+          },
+          "default": {
+            "code": "\"row\"",
+            "span": {
+              "start": 536,
+              "end": 541
+            },
+            "refs": []
+          },
+          "binding": "layout@527",
+          "span": {
+            "start": 177,
+            "end": 203
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ArticleTeaserProps",
+          "span": {
+            "start": 546,
+            "end": 564
+          }
+        },
+        "span": {
+          "start": 245,
+          "end": 564
+        }
+      },
+      "types": [
+        "ArticleTeaserProps"
+      ],
+      "bindings": [
+        {
+          "id": "title@249",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 249,
+            "end": 254
+          }
+        },
+        {
+          "id": "summary@258",
+          "name": "summary",
+          "kind": "prop",
+          "span": {
+            "start": 258,
+            "end": 265
+          }
+        },
+        {
+          "id": "minutes@269",
+          "name": "minutes",
+          "kind": "prop",
+          "span": {
+            "start": 269,
+            "end": 276
+          }
+        },
+        {
+          "id": "pinned@464",
+          "name": "pinned",
+          "kind": "prop",
+          "span": {
+            "start": 464,
+            "end": 470
+          }
+        },
+        {
+          "id": "layout@527",
+          "name": "layout",
+          "kind": "prop",
+          "span": {
+            "start": 527,
+            "end": 533
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "article-teaser",
+            "span": {
+              "start": 592,
+              "end": 614
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "title",
+              "span": {
+                "start": 627,
+                "end": 632
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "title@249",
+                  "span": {
+                    "start": 627,
+                    "end": 632
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 615,
+              "end": 633
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "title",
+                  "span": {
+                    "start": 646,
+                    "end": 651
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@249",
+                      "span": {
+                        "start": 646,
+                        "end": 651
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 645,
+                  "end": 652
+                }
+              }
+            ],
+            "span": {
+              "start": 641,
+              "end": 657
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "summary",
+                  "span": {
+                    "start": 668,
+                    "end": 675
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "summary@258",
+                      "span": {
+                        "start": 668,
+                        "end": 675
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 667,
+                  "end": 676
+                }
+              }
+            ],
+            "span": {
+              "start": 664,
+              "end": 680
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "article-teaser-meta",
+                "span": {
+                  "start": 690,
+                  "end": 717
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "minutes",
+                  "span": {
+                    "start": 719,
+                    "end": 726
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "minutes@269",
+                      "span": {
+                        "start": 719,
+                        "end": 726
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 718,
+                  "end": 727
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " min read",
+                "span": {
+                  "start": 727,
+                  "end": 736
+                }
+              }
+            ],
+            "span": {
+              "start": 687,
+              "end": 740
+            }
+          }
+        ],
+        "span": {
+          "start": 583,
+          "end": 755
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ArticleTeaser",
+      "span": {
+        "start": 207,
+        "end": 762
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ArticleTeaserProps",
+      "exported": true,
+      "code": "interface ArticleTeaserProps {\n  title: string;\n  summary: string;\n  author: string;\n  minutes?: number;\n  featured?: boolean;\n  category?: string;\n  pinned?: boolean;\n  layout?: \"row\" | \"column\";\n}",
+      "span": {
+        "start": 7,
+        "end": 205
+      }
+    }
+  ]
+}

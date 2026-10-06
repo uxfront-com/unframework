@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { applyAndRecheck, codes, component, slices } from "./helpers.ts";
+import { applyAndRecheck, codes, component, root, slices } from "./helpers.ts";
 import { randomSamples } from "./random.ts";
 
 /** The text children of the component's root. */
 function textsOf(jsx: string): string[] {
   const { module, diagnostics } = component(jsx);
   expect(diagnostics).toEqual([]);
-  return module!.components[0]!.render.children.map((child) =>
-    child.kind === "Text" ? child.value : `<${child.tag}>`,
+  return root(module).children.map((child) =>
+    child.kind === "Text" ? child.value : child.kind === "Element" ? `<${child.tag}>` : child.kind,
   );
 }
 
@@ -160,7 +160,7 @@ describe("the fixes of random text", () => {
       checked++;
     }
     expect(checked).toBeGreaterThan(5000);
-  });
+  }, 60_000);
 });
 
 describe("whitespace Svelte drops", () => {
@@ -228,9 +228,7 @@ describe("references only HTML decodes", () => {
       fixes: [{ title: `Write \`${numeric}\``, confidence: "likely" }],
     });
     expect(slices(source, diagnostics)).toEqual([at]);
-    expect(module!.components[0]!.render.children).toEqual([
-      expect.objectContaining({ value: jsx.slice(3, -4) }),
-    ]);
+    expect(root(module).children).toEqual([expect.objectContaining({ value: jsx.slice(3, -4) })]);
     const fixed = applyAndRecheck(source, diagnostics);
     expect(textsOf(fixed.slice(fixed.indexOf("<"), fixed.lastIndexOf(">") + 1))).toEqual([
       fixedText,

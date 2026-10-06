@@ -1,0 +1,119 @@
+// L5 (ADR-0042): oxlint over every react output file.
+// Not named `.oxlintrc.json`, which oxlint would take for a nested configuration when it lints
+// the repository. Everything but `overrides` is the baseline every toolchain shares, identical
+// but for the import allow-list (tests/integration/harness/toolchain-lint.unit.test.ts compares
+// them).
+//
+// L5 judges the emitter's idiom, not the author's code (design §6.1). A rule that can only fire
+// on what the author wrote (an expression, a literal, text, markup) is off below: oxlint sees
+// the author's expressions only in the JSX targets' output, so it would fail one target's copy
+// of an expression and pass another's (P4). The author's own linter judges the source.
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "import"],
+  // Code that is wrong or most likely wrong. Style, pedantic, perf and restriction are opinions
+  // rather than idiom; type-aware rules would need --type-aware, which L5 does not pass.
+  "categories": { "correctness": "error", "suspicious": "error" },
+  "options": {
+    // oxlint has no --no-inline-config: at least ESLint's directives do not silence it.
+    "respectEslintDisableDirectives": false
+  },
+  "rules": {
+    // P7, D11: an output imports only its framework, and (from M3) the outputs beside it.
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["*", "!react", "!react/*", "!./**", "!../**"],
+            "message": "An output imports only its framework (P7)."
+          }
+        ]
+      }
+    ],
+    // Angular components are decorated classes, which may have no member.
+    "typescript/no-extraneous-class": ["error", { "allowWithDecorator": true }],
+    // A useless escape in an output is in code it copies, so it is the author's, `<\/script`
+    // included: UF1002 asks for it where a copied string would end a Vue or Svelte script block.
+    // Only the Vue target escapes one itself, as a guard (design §4.4).
+    "no-useless-escape": "off",
+
+    // Off: they judge the author's expressions and literals.
+    "no-compare-neg-zero": "off",
+    "no-constant-binary-expression": "off",
+    "no-constant-condition": "off",
+    "no-control-regex": "off",
+    "no-empty-character-class": "off",
+    // `!!x && …` becomes the test of a ternary.
+    "no-extra-boolean-cast": "off",
+    "no-invalid-regexp": "off",
+    // In the author's text and strings.
+    "no-irregular-whitespace": "off",
+    "no-loss-of-precision": "off",
+    "no-misleading-character-class": "off",
+    "no-nonoctal-decimal-escape": "off",
+    // A list or arrow parameter may reuse a name; UF3024 rejects the ones a rewrite would capture.
+    "no-shadow": "off",
+    "no-underscore-dangle": "off",
+    "no-unneeded-ternary": "off",
+    "no-unsafe-optional-chaining": "off",
+    "no-useless-backreference": "off",
+    "no-useless-concat": "off",
+    "use-isnan": "off",
+    "valid-typeof": "off",
+    "oxc/approx-constant": "off",
+    "oxc/bad-char-at-comparison": "off",
+    "oxc/bad-comparison-sequence": "off",
+    "oxc/bad-match-all-arg": "off",
+    "oxc/bad-min-max-func": "off",
+    "oxc/bad-object-literal-comparison": "off",
+    "oxc/bad-replace-all-arg": "off",
+    "oxc/const-comparisons": "off",
+    "oxc/double-comparisons": "off",
+    "oxc/erasing-op": "off",
+    "oxc/number-arg-out-of-range": "off",
+    "unicorn/no-useless-fallback-in-spread": "off",
+    "unicorn/no-useless-length-check": "off",
+    "unicorn/no-useless-spread": "off",
+    "unicorn/prefer-string-starts-ends-with": "off"
+  },
+  // The framework layer: oxlint's own React rules (eslint-plugin-react's, and the rules of hooks
+  // and the React Compiler's from eslint-plugin-react-hooks), by the categories above. jsx-a11y
+  // is not on: L11 owns accessibility.
+  "overrides": [
+    {
+      "files": ["**/*"],
+      "plugins": ["react"],
+      "rules": {
+        // React's attribute names (`className`, `htmlFor`, `strokeWidth`); it is in the
+        // restriction category, so it is named. Ignored: attributes React renders as written
+        // (react-dom 19.3 knows no other spelling) that the rule's list lacks, and `fill`,
+        // which the list allows on fewer SVG elements than SVG's presentation attributes.
+        "react/no-unknown-property": [
+          "error",
+          {
+            "ignore": [
+              "blocking",
+              "command",
+              "commandfor",
+              "dirname",
+              "fill",
+              "ismap",
+              "shadowrootcustomelementregistry",
+              "writingsuggestions"
+            ]
+          }
+        ],
+        // The rules of hooks: in the pedantic category, so named (the React Compiler's `hooks`
+        // rule, in suspicious, checks them too).
+        "react/rules-of-hooks": "error",
+        // The automatic JSX runtime needs no `React` in scope.
+        "react/react-in-jsx-scope": "off",
+        // Text that starts with `//` is the author's; the JSX printer still writes it as `{"…"}`.
+        "react/jsx-no-comment-textnodes": "off",
+        // An iframe's `sandbox` is the author's markup.
+        "react/iframe-missing-sandbox": "off"
+      }
+    }
+  ]
+}

@@ -1,4 +1,9 @@
 import type { Toolchain } from "@unframework/codegen";
+import {
+  lintWithEslint,
+  lintWithOxlint,
+  mergeLintResults,
+} from "@unframework/codegen/toolchain-node";
 import type { UserConfig } from "vite";
 
 import { frameworkCompile } from "./framework-compile.ts";
@@ -6,8 +11,8 @@ import { typecheck } from "./typecheck.ts";
 
 /**
  * The Svelte target's toolchain, for tests and tooling: @sveltejs/vite-plugin-svelte in Vite,
- * Svelte's own compiler for L3, svelte-check for L4, and the `mount` and `svelte/server`
- * adapters.
+ * Svelte's own compiler for L3, svelte-check for L4, oxlint and eslint-plugin-svelte for L5, and
+ * the `mount` and `svelte/server` adapters.
  */
 export const toolchain: Toolchain = {
   name: "svelte",
@@ -34,6 +39,11 @@ export const toolchain: Toolchain = {
   server: "@unframework/target-svelte/toolchain/server",
   frameworkCompile,
   typecheck,
+  // L5 (ADR-0042): oxlint's shared baseline over the script block, ESLint over the whole file.
+  lint: async (files, context) =>
+    mergeLintResults(
+      await Promise.all([lintWithOxlint(files, context), lintWithEslint(files, context)]),
+    ),
 };
 
 export default toolchain;

@@ -2,14 +2,18 @@
   "name": "@unframework/toolchain-svelte",
   "version": "0.0.0",
   "private": true,
-  "description": "The svelte test toolchain: the checker and tsconfig that type-check every case's svelte golden output in one run (L4), with TypeScript 6 until the checker moves to TypeScript 7.",
+  "description": "The svelte test toolchain: the checker and tsconfig that type-check every case's svelte golden output in one run (L4), with TypeScript 6 until the checker moves to TypeScript 7, and the oxlint and ESLint (eslint-plugin-svelte) configs that lint it (L5).",
   "type": "module",
   "scripts": {
     "check": "svelte-check --tsconfig ./tsconfig.json --diagnostic-sources js --fail-on-warnings"
   },
   "devDependencies": {
+    "eslint": "catalog:",
+    "eslint-plugin-svelte": "catalog:",
+    "oxlint": "catalog:",
     "svelte": "catalog:",
     "svelte-check": "catalog:",
-    "typescript": "npm:@typescript/typescript6@6.0.2"
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "catalog:"
   }
 }

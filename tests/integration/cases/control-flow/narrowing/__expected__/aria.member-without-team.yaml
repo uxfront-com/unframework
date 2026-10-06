@@ -1,0 +1,11 @@
+- region "Account":
+  - heading "Grace Hopper" [level=2]
+  - paragraph: Signed in as grace@example.com
+  - paragraph: "Role: member"
+  - paragraph: Profile of Grace Hopper
+  - paragraph: Uptime 0.0%
+  - paragraph: Storage unlimited
+  - paragraph: Trial ends in 3 days
+  - list "Seats":
+    - listitem: Vacant
+    - listitem: Grace Hopper

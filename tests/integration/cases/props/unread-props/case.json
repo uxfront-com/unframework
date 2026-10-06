@@ -1,0 +1,23 @@
+{
+  "description": "Props the component does not read: optional ones with and without defaults, boolean and not, and a required one. Given or absent, they change nothing it renders.",
+  "ssr": {
+    "unread-absent": {
+      "props": {
+        "title": "Compilers without a runtime",
+        "summary": "One source, seven frameworks.",
+        "author": "Ada Lovelace"
+      }
+    },
+    "unread-given": {
+      "props": {
+        "title": "Compilers without a runtime",
+        "summary": "One source, seven frameworks.",
+        "author": "Ada Lovelace",
+        "featured": true,
+        "category": "Programming languages",
+        "pinned": true,
+        "layout": "column"
+      }
+    }
+  }
+}

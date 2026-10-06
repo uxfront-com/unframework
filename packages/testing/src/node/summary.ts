@@ -1,7 +1,8 @@
 // The summary (DESIGN §4.6): merges partial matrices into `parity-matrix.json` and
 // `parity-matrix.md` (appended to $GITHUB_STEP_SUMMARY in CI), and reports what is wrong: every
 // failed cell, every stale quarantine entry and, when every project ran all its tests (or must
-// have), every missing or partly run project and every missing (case, target, live layer) cell.
+// have), every missing or partly run project, every missing (case, target, live layer) cell and
+// every target whose parity scenarios of a case differ from the reference's.
 import { appendFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -112,7 +113,7 @@ export function summarise(
   expected: SummaryExpectations,
   judgement: SummaryJudgement = {},
 ): SummaryResult {
-  const { matrix: merged, quarantine } = mergeMatrices(partials);
+  const { matrix: merged, quarantine, reference } = mergeMatrices(partials);
   const coverage = coverageOf(merged, expected.projects);
   const { missingProjects, partialProjects } = coverage;
   const complete = missingProjects.length === 0 && partialProjects.size === 0;
@@ -166,6 +167,9 @@ export function summarise(
         LAYERS.filter((layer) => cells[layer] !== undefined).map((layer) => [layer, cells[layer]!]),
       );
     }
+    if (checkMissing && reference !== null) {
+      problems.push(...scenarioProblems(merged, caseId, reference, expected.targets));
+    }
   }
   const matrix: MergedMatrix = {
     ...merged,
@@ -182,6 +186,39 @@ export function summarise(
     problems,
     complete,
   };
+}
+
+/**
+ * The targets whose parity scenarios of a case differ from the reference's. Every target runs
+ * the same spec, and a cell merges every test of its case, so a scenario one target leaves out
+ * (a spec that branches on the target, a test that stops early) shows in no cell. Judged like
+ * the missing cells, once every project ran all its tests: a filtered run checks only some
+ * scenarios. A case the reference checked no scenario of has nothing to compare with.
+ */
+function scenarioProblems(
+  matrix: MergedMatrix,
+  caseId: string,
+  reference: string,
+  targets: readonly string[],
+): string[] {
+  const expected = matrix.scenarios[caseId]?.[reference];
+  if (!expected || !targets.includes(reference)) return [];
+  const problems: string[] = [];
+  for (const target of targets) {
+    if (target === reference) continue;
+    const actual = matrix.scenarios[caseId]?.[target] ?? [];
+    const missing = expected.filter((name) => !actual.includes(name));
+    const extra = actual.filter((name) => !expected.includes(name));
+    if (!missing.length && !extra.length) continue;
+    const differences = [
+      ...(missing.length ? [`it never checks ${missing.join(", ")}`] : []),
+      ...(extra.length ? [`it checks ${extra.join(", ")}, which ${reference} never checks`] : []),
+    ];
+    problems.push(
+      `${caseId} › ${target}: its parity scenarios differ from ${reference}'s: ${differences.join("; ")}. Every target runs the same spec, so every target checks the same scenarios.`,
+    );
+  }
+  return problems;
 }
 
 /**

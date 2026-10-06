@@ -4,6 +4,7 @@ import { expect, it, onTestFinished } from "vitest";
 
 import "../../../../../src/setup.ts";
 import { allowConsole, capturedConsole, describeTargets, mount } from "../../../../../src/index.ts";
+import type { StubComponent } from "../../../dom-target.ts";
 import "../../../dom-target.ts";
 
 describeTargets("stub/console", () => {
@@ -12,34 +13,58 @@ describeTargets("stub/console", () => {
       expect(task.meta.uf).toEqual({
         case: "stub/console",
         target: "dom",
-        layers: { L13: { status: "pass" } },
+        layers: { L8: { status: "pass" }, L13: { status: "pass" } },
       });
     });
-    await mount({ html: "<p>Quiet</p>" });
+    const view = await mount({ html: "<p>Quiet</p>" });
+    await expect.element(view.getByText("Quiet")).toBeVisible();
   });
 
+  // Each of these asserts what it did, so L13 is the only layer that fails it.
   it.fails("fails the test on an unexpected console.warn", () => {
     console.warn("[fixture] an unexpected warning");
+    expect(capturedConsole()).toEqual([
+      { level: "warn", message: "[fixture] an unexpected warning", source: "page" },
+    ]);
   });
 
   it.fails("fails the test on an unexpected console.error with printf arguments", () => {
     console.error("[fixture] %s went wrong", "something");
+    expect(capturedConsole()).toEqual([
+      { level: "error", message: "[fixture] something went wrong", source: "page" },
+    ]);
   });
 
   it.fails("fails the test on a message from the adapter's server render", async () => {
-    await mount({
+    const view = await mount({
       html: "<p>Rendered</p>",
       console: [{ level: "warn", message: "[fixture] server" }],
     });
+    await expect.element(view.getByText("Rendered")).toBeVisible();
+  });
+
+  it.fails("fails the test on a message from a rerender's server render", async () => {
+    const stub: StubComponent = {
+      html: ({ text = "Rendered" }) => `<p>${String(text)}</p>`,
+      rerenderConsole: [{ level: "error", message: "[fixture] server rerender" }],
+    };
+    const view = await mount(stub);
+    await view.rerender({ text: "Again" });
+    await expect.element(view.getByText("Again")).toBeVisible();
   });
 
   it.fails("fails the test whose unmount leaves a warning for later", async () => {
-    await mount({ html: "<p>Rendered</p>", lateWarning: "[fixture] after the unmount" });
+    const view = await mount({
+      html: "<p>Rendered</p>",
+      lateWarning: "[fixture] after the unmount",
+    });
+    await expect.element(view.getByText("Rendered")).toBeVisible();
   });
 
   it("recorded L13 as failed, with the messages, for the tests above", ({ task }) => {
-    const l13 = (name: string) =>
-      task.suite?.tasks.find((sibling) => sibling.name === name)?.meta.uf?.layers.L13;
+    const layers = (name: string) =>
+      task.suite?.tasks.find((sibling) => sibling.name === name)?.meta.uf?.layers;
+    const l13 = (name: string) => layers(name)?.L13;
     expect(l13("fails the test on an unexpected console.warn")).toEqual({
       status: "fail",
       message: "1 unexpected console message(s):\n  console.warn: [fixture] an unexpected warning",
@@ -52,11 +77,22 @@ describeTargets("stub/console", () => {
       status: "fail",
       message: "1 unexpected console message(s):\n  console.warn (server render): [fixture] server",
     });
+    expect(l13("fails the test on a message from a rerender's server render")).toEqual({
+      status: "fail",
+      message:
+        "1 unexpected console message(s):\n  console.error (server render): [fixture] server rerender",
+    });
     // The teardown's task ran before the test was judged, so the warning is its own.
     expect(l13("fails the test whose unmount leaves a warning for later")).toEqual({
       status: "fail",
       message: "1 unexpected console message(s):\n  console.warn: [fixture] after the unmount",
     });
+    // The console was all they failed on: their own assertions passed.
+    for (const sibling of task.suite?.tasks ?? []) {
+      if (sibling.name.startsWith("fails the test")) {
+        expect(layers(sibling.name)?.L8, sibling.name).toEqual({ status: "pass" });
+      }
+    }
   });
 
   it("allows a message with a reason, and still captures it", async () => {
@@ -77,6 +113,7 @@ describeTargets("stub/console", () => {
     allowConsole(/\[fixture\] repeated/gy, "this test checks a stateful pattern");
     console.warn("[fixture] repeated");
     console.warn("[fixture] repeated");
+    expect(capturedConsole()).toHaveLength(2);
   });
 
   it("starts a test with an empty capture when nothing was logged since the last one", () => {

@@ -14,7 +14,7 @@ import {
   ssrScenarios,
 } from "@unframework/testing/node";
 import { isNormalizeTarget, normalizeHtml } from "@unframework/testing/normalize";
-import { describe, inject, it } from "vitest";
+import { beforeAll, describe, inject, it } from "vitest";
 
 import { errorState, listCases } from "./cases.ts";
 import "./context.ts";
@@ -73,6 +73,13 @@ async function render(
 }
 
 describe(`ssr:${target}`, () => {
+  // The renderer's cold start (the framework's server modules, through Vite) is the project's,
+  // not the first case's: under a canary's load, every ssr and browser project at once, it can
+  // outlast a test's timeout. A renderer that fails to load fails each case's L6 with the reason.
+  beforeAll(async () => {
+    await loadRenderer().catch(() => undefined);
+  }, 300_000);
+
   for (const info of cases) {
     const errors = errorState(info, target);
     // A case with compile errors has no output: the compile project records L6 as skipped.

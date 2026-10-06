@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3015",
+    "severity": "error",
+    "message": "A list's callback takes the item and its index as plain names: `source.map((item, index) => <element key={…}>…</element>)`.",
+    "file": "diagnostics/invalid-list/MemberList.uf.tsx",
+    "start": {
+      "line": 15,
+      "column": 21,
+      "offset": 363
+    },
+    "end": {
+      "line": 15,
+      "column": 33,
+      "offset": 375
+    },
+    "help": "Name the item, and read its members as `item.name`."
+  }
+]

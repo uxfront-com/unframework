@@ -1,0 +1,585 @@
+{
+  "irVersion": 1,
+  "file": "jsx/whitespace/ShippingLabel.uf.tsx",
+  "components": [
+    {
+      "name": "ShippingLabel",
+      "span": {
+        "start": 116,
+        "end": 890
+      },
+      "props": [
+        {
+          "name": "recipient",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 51,
+              "end": 57
+            }
+          },
+          "binding": "recipient@156",
+          "span": {
+            "start": 40,
+            "end": 58
+          }
+        },
+        {
+          "name": "street",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 69,
+              "end": 75
+            }
+          },
+          "binding": "street@167",
+          "span": {
+            "start": 61,
+            "end": 76
+          }
+        },
+        {
+          "name": "city",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 85,
+              "end": 91
+            }
+          },
+          "binding": "city@175",
+          "span": {
+            "start": 79,
+            "end": 92
+          }
+        },
+        {
+          "name": "postcode",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 105,
+              "end": 111
+            }
+          },
+          "binding": "postcode@181",
+          "span": {
+            "start": 95,
+            "end": 112
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ShippingLabelProps",
+          "span": {
+            "start": 193,
+            "end": 211
+          }
+        },
+        "span": {
+          "start": 154,
+          "end": 211
+        }
+      },
+      "types": [
+        "ShippingLabelProps"
+      ],
+      "bindings": [
+        {
+          "id": "recipient@156",
+          "name": "recipient",
+          "kind": "prop",
+          "span": {
+            "start": 156,
+            "end": 165
+          }
+        },
+        {
+          "id": "street@167",
+          "name": "street",
+          "kind": "prop",
+          "span": {
+            "start": 167,
+            "end": 173
+          }
+        },
+        {
+          "id": "city@175",
+          "name": "city",
+          "kind": "prop",
+          "span": {
+            "start": 175,
+            "end": 179
+          }
+        },
+        {
+          "id": "postcode@181",
+          "name": "postcode",
+          "kind": "prop",
+          "span": {
+            "start": 181,
+            "end": 189
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "shipping-label",
+            "span": {
+              "start": 239,
+              "end": 261
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Shipping label",
+            "span": {
+              "start": 262,
+              "end": 289
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "strong",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "To:",
+                    "span": {
+                      "start": 317,
+                      "end": 320
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 309,
+                  "end": 329
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " ",
+                "span": {
+                  "start": 329,
+                  "end": 330
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "recipient",
+                  "span": {
+                    "start": 331,
+                    "end": 340
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "recipient@156",
+                      "span": {
+                        "start": 331,
+                        "end": 340
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 330,
+                  "end": 341
+                }
+              }
+            ],
+            "span": {
+              "start": 297,
+              "end": 352
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "span",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "shipping-label-city",
+                    "span": {
+                      "start": 377,
+                      "end": 404
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "city",
+                      "span": {
+                        "start": 406,
+                        "end": 410
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "city@175",
+                          "span": {
+                            "start": 406,
+                            "end": 410
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 405,
+                      "end": 411
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 371,
+                  "end": 418
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " ",
+                "span": {
+                  "start": 418,
+                  "end": 423
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "span",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "shipping-label-postcode",
+                    "span": {
+                      "start": 438,
+                      "end": 469
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "postcode",
+                      "span": {
+                        "start": 471,
+                        "end": 479
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "postcode@181",
+                          "span": {
+                            "start": 471,
+                            "end": 479
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 470,
+                      "end": 480
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 432,
+                  "end": 487
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " ",
+                "span": {
+                  "start": 487,
+                  "end": 492
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "span",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "shipping-label-country",
+                    "span": {
+                      "start": 507,
+                      "end": 537
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "United Kingdom",
+                    "span": {
+                      "start": 538,
+                      "end": 552
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 501,
+                  "end": 559
+                }
+              }
+            ],
+            "span": {
+              "start": 359,
+              "end": 570
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "  Handle with care ",
+                "span": {
+                  "start": 580,
+                  "end": 603
+                }
+              }
+            ],
+            "span": {
+              "start": 577,
+              "end": 607
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "pre",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "recipient",
+                  "span": {
+                    "start": 629,
+                    "end": 638
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "recipient@156",
+                      "span": {
+                        "start": 629,
+                        "end": 638
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 628,
+                  "end": 639
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "\n",
+                "span": {
+                  "start": 648,
+                  "end": 654
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "street",
+                  "span": {
+                    "start": 664,
+                    "end": 670
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "street@167",
+                      "span": {
+                        "start": 664,
+                        "end": 670
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 663,
+                  "end": 671
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "\n",
+                "span": {
+                  "start": 680,
+                  "end": 686
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "city + \"  \" + postcode",
+                  "span": {
+                    "start": 696,
+                    "end": 718
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "city@175",
+                      "span": {
+                        "start": 696,
+                        "end": 700
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "postcode@181",
+                      "span": {
+                        "start": 710,
+                        "end": 718
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 695,
+                  "end": 719
+                }
+              }
+            ],
+            "span": {
+              "start": 614,
+              "end": 732
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "pre",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Parcel:\t1 of 2\nWeight:\t2.5 kg",
+                "span": {
+                  "start": 744,
+                  "end": 780
+                }
+              }
+            ],
+            "span": {
+              "start": 739,
+              "end": 786
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Sent by ",
+                "span": {
+                  "start": 796,
+                  "end": 813
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "em",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Unframework Ltd",
+                    "span": {
+                      "start": 817,
+                      "end": 832
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 813,
+                  "end": 837
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ", on two\nlines.",
+                "span": {
+                  "start": 837,
+                  "end": 864
+                }
+              }
+            ],
+            "span": {
+              "start": 793,
+              "end": 868
+            }
+          }
+        ],
+        "span": {
+          "start": 230,
+          "end": 883
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ShippingLabel",
+      "span": {
+        "start": 116,
+        "end": 890
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ShippingLabelProps",
+      "exported": true,
+      "code": "interface ShippingLabelProps {\n  recipient: string;\n  street: string;\n  city: string;\n  postcode: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 114
+      }
+    }
+  ]
+}

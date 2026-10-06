@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "Rest props (`...rest`) are fallthrough attributes, which land in M3.",
+    "file": "diagnostics/unsupported-syntax/Chip.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 39,
+      "offset": 206
+    },
+    "end": {
+      "line": 7,
+      "column": 46,
+      "offset": 213
+    },
+    "help": "Destructure each prop by its name."
+  }
+]

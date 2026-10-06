@@ -5,9 +5,15 @@ import { fileURLToPath } from "node:url";
 
 import { formatOutput } from "@unframework/codegen";
 import type { EmitContext, OutputFile, ToolchainContext } from "@unframework/codegen";
+import { checkInvariants } from "@unframework/ir";
 import type { UfModule } from "@unframework/ir";
 import type { Plugin, ResolvedConfig } from "vite";
 
+// The analyser is no dependency of a target (plan §5.2): tests reach it from its source, as the
+// render-parity kit does, to lower source snippets as `compile()` would rather than hand-build
+// IR it would never produce.
+import { analyze } from "../../analyzer/src/index.ts";
+import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
 import { ngtscVirtual } from "../src/toolchain/ngtsc-virtual.ts";
 import { loadCompiler } from "../src/toolchain/tools.ts";
@@ -34,15 +40,21 @@ export function goldenFiles(): string[] {
   return filesUnder(casesDir).filter((path) => /\/__output__\/angular\/[^/]+\.ts$/.test(path));
 }
 
-/** Each corpus case's IR snapshot, with the directory its Angular golden outputs live in. */
-export function corpus(): { name: string; module: UfModule; outputDir: string }[] {
+/**
+ * The corpus's feature cases (not `diagnostics/`, whose sources fail on purpose): each case's
+ * name and its component source.
+ */
+export function corpusSources(): { name: string; file: string; source: string }[] {
+  // The checks read the path within the corpus: CI checks the repo out under `/__w/`.
   return filesUnder(casesDir)
-    .filter((path) => path.endsWith("/__output__/ir.json"))
-    .map((path) => ({
-      name: path.slice(casesDir.length + 1, -"/__output__/ir.json".length),
-      module: JSON.parse(readFileSync(path, "utf8")) as UfModule,
-      outputDir: join(path, "../angular"),
-    }));
+    .map((path) => ({ path, file: path.slice(casesDir.length + 1) }))
+    .filter(({ file }) => file.endsWith(".uf.tsx") && !file.includes("/__"))
+    .map(({ path, file }) => ({
+      name: file.slice(0, file.lastIndexOf("/")),
+      file,
+      source: readFileSync(path, "utf8"),
+    }))
+    .filter(({ name }) => !name.startsWith("diagnostics/"));
 }
 
 /** What this target emits for a module, unformatted, failing on any diagnostic. */
@@ -66,6 +78,35 @@ export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
       return outcome.file;
     }),
   );
+}
+
+/**
+ * The IR of a source, as `compile()` lowers it: it must lower without an error, and without a
+ * warning unless `warnings` allows them (a corpus case may show one on purpose).
+ */
+export function lower(source: string, file = "Card.uf.tsx", warnings = false): UfModule {
+  const { module, diagnostics } = analyze(parseModule(file, source));
+  const failing = diagnostics.filter(({ severity }) => !warnings || severity === "error");
+  if (failing.length || !module) {
+    throw new Error(`${file} does not lower cleanly: ${JSON.stringify(diagnostics, null, 2)}`);
+  }
+  const broken = checkInvariants(module);
+  if (broken.length) throw new Error(`${file} lowers invalid IR: ${JSON.stringify(broken)}`);
+  return module;
+}
+
+/** The one file a single-component source emits, as `emit` prints it (unformatted). */
+export function emitted(source: string): string {
+  const [file, ...more] = emitModule(lower(source));
+  if (!file || more.length) throw new Error("Expected one file.");
+  return file.contents;
+}
+
+/** The one file a single-component source emits, formatted as the compiler writes it. */
+export async function formatted(source: string): Promise<OutputFile> {
+  const [file, ...more] = await emitFormatted(lower(source));
+  if (!file || more.length) throw new Error("Expected one file.");
+  return file;
 }
 
 const scratch: string[] = [];

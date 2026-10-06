@@ -1,6 +1,7 @@
 import type * as AST from "@oxc-project/types";
 
 import { importDeclaration, importDefaultSpecifier, importSpecifier } from "./js/builders.ts";
+import { NameScope } from "./names.ts";
 
 interface ModuleImports {
   defaultName?: string;
@@ -14,14 +15,22 @@ interface ModuleImports {
  * other, or with the names the module declares itself (a component named `Component` beside
  * Angular's `Component` decorator), which the constructor reserves; a taken name gets the
  * first free `_1`, `_2`… suffix, so the output stays deterministic.
+ *
+ * Its {@link NameScope} is the output file's: a target reserves the source's names in it
+ * (`sourceNames`) and claims its own locals from it (`props`, `cx`), so imports and locals
+ * never collide either (design §4.2).
  */
 export class ImportSet {
   readonly #modules = new Map<string, ModuleImports>();
-  readonly #taken: Set<string>;
+  /** The output file's names: imports, reserved source names and claimed locals. */
+  readonly scope: NameScope;
 
-  /** `reserved`: the names the module itself declares, which no import may take. */
-  constructor(reserved: Iterable<string> = []) {
-    this.#taken = new Set(reserved);
+  /**
+   * `reserved`: the names the module itself declares, which no import may take, or the
+   * output file's name scope to share.
+   */
+  constructor(reserved: Iterable<string> | NameScope = []) {
+    this.scope = reserved instanceof NameScope ? reserved : new NameScope(reserved);
   }
 
   #module(source: string): ModuleImports {
@@ -33,12 +42,14 @@ export class ImportSet {
     return entry;
   }
 
-  /** A free local name: `name`, or `name_1`, `name_2`… when it is taken. */
-  #claim(name: string): string {
-    let local = name;
-    for (let suffix = 1; this.#taken.has(local); suffix++) local = `${name}_${suffix}`;
-    this.#taken.add(local);
-    return local;
+  /** Marks names as taken, as they are: see {@link NameScope.reserve}. */
+  reserve(...names: string[]): void {
+    this.scope.reserve(...names);
+  }
+
+  /** Takes a free local name for the output's own use: see {@link NameScope.claim}. */
+  claim(name: string): string {
+    return this.scope.claim(name);
   }
 
   /**
@@ -52,7 +63,7 @@ export class ImportSet {
       existing.type &&= Boolean(options.type);
       return existing.local;
     }
-    const local = this.#claim(options.local ?? name);
+    const local = this.scope.claim(options.local ?? name);
     entry.names.set(name, { local, type: Boolean(options.type) });
     return local;
   }
@@ -60,7 +71,7 @@ export class ImportSet {
   /** Imports a default binding: `import local from "source"`. Returns the local name. */
   addDefault(source: string, local: string): string {
     const entry = this.#module(source);
-    entry.defaultName ??= this.#claim(local);
+    entry.defaultName ??= this.scope.claim(local);
     return entry.defaultName;
   }
 

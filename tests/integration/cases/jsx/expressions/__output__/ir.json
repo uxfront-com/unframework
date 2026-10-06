@@ -1,0 +1,700 @@
+{
+  "irVersion": 1,
+  "file": "jsx/expressions/OrderSummary.uf.tsx",
+  "components": [
+    {
+      "name": "OrderSummary",
+      "span": {
+        "start": 163,
+        "end": 1038
+      },
+      "props": [
+        {
+          "name": "customer",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 49,
+              "end": 55
+            }
+          },
+          "binding": "customer@204",
+          "span": {
+            "start": 39,
+            "end": 56
+          }
+        },
+        {
+          "name": "orderNumber",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 72,
+              "end": 78
+            }
+          },
+          "binding": "orderNumber@216",
+          "span": {
+            "start": 59,
+            "end": 79
+          }
+        },
+        {
+          "name": "unitPrice",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 93,
+              "end": 99
+            }
+          },
+          "binding": "unitPrice@231",
+          "span": {
+            "start": 82,
+            "end": 100
+          }
+        },
+        {
+          "name": "quantity",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 113,
+              "end": 119
+            }
+          },
+          "binding": "quantity@244",
+          "span": {
+            "start": 103,
+            "end": 120
+          }
+        },
+        {
+          "name": "discount",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 133,
+              "end": 139
+            }
+          },
+          "binding": "discount@256",
+          "span": {
+            "start": 123,
+            "end": 140
+          }
+        },
+        {
+          "name": "coupon",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 152,
+              "end": 158
+            }
+          },
+          "binding": "coupon@268",
+          "span": {
+            "start": 143,
+            "end": 159
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "OrderSummaryProps",
+          "span": {
+            "start": 279,
+            "end": 296
+          }
+        },
+        "span": {
+          "start": 200,
+          "end": 296
+        }
+      },
+      "types": [
+        "OrderSummaryProps"
+      ],
+      "bindings": [
+        {
+          "id": "customer@204",
+          "name": "customer",
+          "kind": "prop",
+          "span": {
+            "start": 204,
+            "end": 212
+          }
+        },
+        {
+          "id": "orderNumber@216",
+          "name": "orderNumber",
+          "kind": "prop",
+          "span": {
+            "start": 216,
+            "end": 227
+          }
+        },
+        {
+          "id": "unitPrice@231",
+          "name": "unitPrice",
+          "kind": "prop",
+          "span": {
+            "start": 231,
+            "end": 240
+          }
+        },
+        {
+          "id": "quantity@244",
+          "name": "quantity",
+          "kind": "prop",
+          "span": {
+            "start": 244,
+            "end": 252
+          }
+        },
+        {
+          "id": "discount@256",
+          "name": "discount",
+          "kind": "prop",
+          "span": {
+            "start": 256,
+            "end": 264
+          }
+        },
+        {
+          "id": "coupon@268",
+          "name": "coupon",
+          "kind": "prop",
+          "span": {
+            "start": 268,
+            "end": 274
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "order-summary",
+            "span": {
+              "start": 324,
+              "end": 345
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Order summary",
+            "span": {
+              "start": 346,
+              "end": 372
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Order ",
+                "span": {
+                  "start": 384,
+                  "end": 390
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "String(orderNumber).padStart(6, \"0\")",
+                  "span": {
+                    "start": 391,
+                    "end": 427
+                  },
+                  "refs": [
+                    {
+                      "kind": "Global",
+                      "name": "String",
+                      "span": {
+                        "start": 391,
+                        "end": 397
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "orderNumber@216",
+                      "span": {
+                        "start": 398,
+                        "end": 409
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 390,
+                  "end": 428
+                }
+              }
+            ],
+            "span": {
+              "start": 380,
+              "end": 433
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Customer: ",
+                "span": {
+                  "start": 443,
+                  "end": 453
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "customer.trim().toUpperCase()",
+                  "span": {
+                    "start": 454,
+                    "end": 483
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "customer@204",
+                      "span": {
+                        "start": 454,
+                        "end": 462
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 453,
+                  "end": 484
+                }
+              }
+            ],
+            "span": {
+              "start": 440,
+              "end": 488
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "`${quantity} item${quantity === 1 ? \"\" : \"s\"} at ${unitPrice.toFixed(2)} each`",
+                  "span": {
+                    "start": 499,
+                    "end": 577
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "quantity@244",
+                      "span": {
+                        "start": 502,
+                        "end": 510
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "quantity@244",
+                      "span": {
+                        "start": 518,
+                        "end": 526
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "unitPrice@231",
+                      "span": {
+                        "start": 550,
+                        "end": 559
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 498,
+                  "end": 578
+                }
+              }
+            ],
+            "span": {
+              "start": 495,
+              "end": 582
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Subtotal: ",
+                "span": {
+                  "start": 592,
+                  "end": 602
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "(unitPrice * quantity).toFixed(2)",
+                  "span": {
+                    "start": 603,
+                    "end": 636
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "unitPrice@231",
+                      "span": {
+                        "start": 604,
+                        "end": 613
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "quantity@244",
+                      "span": {
+                        "start": 616,
+                        "end": 624
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 602,
+                  "end": 637
+                }
+              }
+            ],
+            "span": {
+              "start": 589,
+              "end": 641
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Discount: ",
+                "span": {
+                  "start": 651,
+                  "end": 661
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "Math.min(Math.max(discount, 0), 50)",
+                  "span": {
+                    "start": 662,
+                    "end": 697
+                  },
+                  "refs": [
+                    {
+                      "kind": "Global",
+                      "name": "Math",
+                      "span": {
+                        "start": 662,
+                        "end": 666
+                      }
+                    },
+                    {
+                      "kind": "Global",
+                      "name": "Math",
+                      "span": {
+                        "start": 671,
+                        "end": 675
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "discount@256",
+                      "span": {
+                        "start": 680,
+                        "end": 688
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 661,
+                  "end": 698
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "%",
+                "span": {
+                  "start": 698,
+                  "end": 699
+                }
+              }
+            ],
+            "span": {
+              "start": 648,
+              "end": 703
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Total: ",
+                "span": {
+                  "start": 713,
+                  "end": 729
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "(unitPrice * quantity * (1 - Math.min(Math.max(discount, 0), 50) / 100)).toFixed(2)",
+                  "span": {
+                    "start": 730,
+                    "end": 813
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "unitPrice@231",
+                      "span": {
+                        "start": 731,
+                        "end": 740
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "quantity@244",
+                      "span": {
+                        "start": 743,
+                        "end": 751
+                      }
+                    },
+                    {
+                      "kind": "Global",
+                      "name": "Math",
+                      "span": {
+                        "start": 759,
+                        "end": 763
+                      }
+                    },
+                    {
+                      "kind": "Global",
+                      "name": "Math",
+                      "span": {
+                        "start": 768,
+                        "end": 772
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "discount@256",
+                      "span": {
+                        "start": 777,
+                        "end": 785
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 729,
+                  "end": 814
+                }
+              }
+            ],
+            "span": {
+              "start": 710,
+              "end": 825
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "quantity > 10 ? \"Bulk order\" : \"Standard order\"",
+                  "span": {
+                    "start": 845,
+                    "end": 892
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "quantity@244",
+                      "span": {
+                        "start": 845,
+                        "end": 853
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 844,
+                  "end": 893
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ", ",
+                "span": {
+                  "start": 893,
+                  "end": 895
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "coupon ? \"coupon applied\" : \"no coupon\"",
+                  "span": {
+                    "start": 896,
+                    "end": 935
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "coupon@268",
+                      "span": {
+                        "start": 896,
+                        "end": 902
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 895,
+                  "end": 936
+                }
+              }
+            ],
+            "span": {
+              "start": 832,
+              "end": 947
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Points earned: ",
+                "span": {
+                  "start": 957,
+                  "end": 972
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "Math.round(unitPrice * quantity) % 100",
+                  "span": {
+                    "start": 973,
+                    "end": 1011
+                  },
+                  "refs": [
+                    {
+                      "kind": "Global",
+                      "name": "Math",
+                      "span": {
+                        "start": 973,
+                        "end": 977
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "unitPrice@231",
+                      "span": {
+                        "start": 984,
+                        "end": 993
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "quantity@244",
+                      "span": {
+                        "start": 996,
+                        "end": 1004
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 972,
+                  "end": 1012
+                }
+              }
+            ],
+            "span": {
+              "start": 954,
+              "end": 1016
+            }
+          }
+        ],
+        "span": {
+          "start": 315,
+          "end": 1031
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "OrderSummary",
+      "span": {
+        "start": 163,
+        "end": 1038
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "OrderSummaryProps",
+      "exported": true,
+      "code": "interface OrderSummaryProps {\n  customer: string;\n  orderNumber: number;\n  unitPrice: number;\n  quantity: number;\n  discount: number;\n  coupon?: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 161
+      }
+    }
+  ]
+}

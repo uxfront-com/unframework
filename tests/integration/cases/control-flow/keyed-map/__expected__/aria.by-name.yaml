@@ -1,0 +1,22 @@
+- table "Contributors by name":
+  - caption: Contributors by name
+  - rowgroup:
+    - row "Name Commits":
+      - columnheader "Name"
+      - columnheader "Commits"
+  - rowgroup:
+    - row "Alan Turing 42":
+      - cell "Alan Turing":
+        - link "Alan Turing":
+          - /url: https://example.com/people/alan
+      - cell "42"
+    - row "Ada Lovelace 120":
+      - cell "Ada Lovelace":
+        - link "Ada Lovelace":
+          - /url: https://example.com/people/ada
+      - cell "120"
+    - row "Grace Hopper 85":
+      - cell "Grace Hopper":
+        - link "Grace Hopper":
+          - /url: https://example.com/people/grace
+      - cell "85"

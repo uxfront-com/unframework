@@ -1,0 +1,8 @@
+error[UF1101]: This file exports no component.
+ --> diagnostics/no-component/Formatting.uf.tsx:1:1
+  |
+1 | // UF1101 no-component: the file exports nothing, so there is no component to compile.
+  | ^
+  |
+  = help: A component is an exported PascalCase function whose last statement returns JSX.
+  = see: https://unframework.dev/diagnostics/UF1101

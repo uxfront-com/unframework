@@ -1,0 +1,11 @@
+{
+  "description": "Everyday values: a style object of zero lengths (`margin: 0`) and `dir=\"auto\"` on a paragraph of user text.",
+  "ssr": {
+    "comment": {
+      "props": {
+        "author": "Grace Hopper",
+        "comment": "It's easier to ask forgiveness than it is to get permission."
+      }
+    }
+  }
+}

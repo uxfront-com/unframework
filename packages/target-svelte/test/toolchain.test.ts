@@ -1,10 +1,15 @@
+import { readFileSync } from "node:fs";
+
 import type { Plugin } from "vite";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 
 import defaultToolchain, { toolchain } from "../src/toolchain/index.ts";
-import { toolchainDir } from "./helpers.ts";
+import { emitSource, removeScratch, toolchainDir, writeScratch } from "./helpers.ts";
+import { SHAPES } from "./shapes.ts";
 
 const context = { toolchainDir, root: toolchainDir };
+
+afterAll(removeScratch);
 
 describe("svelte toolchain", () => {
   it("is the default export, named after its target", () => {
@@ -34,4 +39,28 @@ describe("svelte toolchain", () => {
     ]);
     expect((await toolchain.vite("ssr", context)).optimizeDeps).toBeUndefined();
   });
+
+  // Design §5: what the target emits passes Svelte's compiler, svelte-check and the linters with
+  // no message. The corpus's own run is the integration `toolchain:svelte` project's.
+  it(
+    "passes L3, L4 and L5 on what the target emits for each shape",
+    { timeout: 60_000 },
+    async () => {
+      const emitted = await Promise.all(
+        Object.entries(SHAPES).map(async ([shape, source]) => {
+          const { path, contents } = await emitSource(source, { format: true });
+          return [`${shape}-${path}`, contents] as const;
+        }),
+      );
+      const paths = Object.values(writeScratch(Object.fromEntries(emitted)));
+      const clean = Object.fromEntries(paths.map((path) => [path, []]));
+      const files = paths.map((path) => ({ path, contents: readFileSync(path, "utf8") }));
+      const compiled = await toolchain.frameworkCompile(files, context);
+      expect(Object.fromEntries(compiled)).toEqual(
+        Object.fromEntries(paths.map((path) => [path, { errors: [], warnings: [] }])),
+      );
+      expect(Object.fromEntries(await toolchain.typecheck(paths, context))).toEqual(clean);
+      expect(Object.fromEntries(await toolchain.lint(paths, context))).toEqual(clean);
+    },
+  );
 });

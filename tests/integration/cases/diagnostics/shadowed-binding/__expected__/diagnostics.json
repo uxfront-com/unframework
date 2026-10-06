@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3024",
+    "severity": "error",
+    "message": "The parameter `label` shadows the prop `label`: the targets that rewrite names would read the parameter instead.",
+    "file": "diagnostics/shadowed-binding/TagCloud.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 18,
+      "offset": 277
+    },
+    "end": {
+      "line": 10,
+      "column": 23,
+      "offset": 282
+    },
+    "help": "Rename the parameter."
+  }
+]

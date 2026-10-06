@@ -1,0 +1,14 @@
+{
+  "description": "A string expression as a class: beside a static name, alone and in a template literal; an empty string, null or an absent prop adds no name.",
+  "ssr": {
+    "warning": {
+      "props": {
+        "message": "Scheduled maintenance tonight.",
+        "tone": "warning",
+        "emphasis": "lead strong"
+      }
+    },
+    "empty-tone": { "props": { "message": "All systems normal.", "tone": "", "emphasis": null } },
+    "no-emphasis": { "props": { "message": "New features shipped.", "tone": "info" } }
+  }
+}

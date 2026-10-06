@@ -1,0 +1,21 @@
+{
+  "description": "Empty lists render empty elements beside a \"nothing here\" branch; an optional list prop defaults to an empty array.",
+  "ssr": {
+    "empty": { "props": { "messages": [] } },
+    "archive-only": {
+      "props": {
+        "messages": [],
+        "archived": [{ "id": "a1", "subject": "Old invoice" }],
+        "emptyText": "All caught up"
+      }
+    },
+    "two-messages": {
+      "props": {
+        "messages": [
+          { "id": "m1", "subject": "Welcome aboard" },
+          { "id": "m2", "subject": "Your order has shipped" }
+        ]
+      }
+    }
+  }
+}

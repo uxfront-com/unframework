@@ -1,0 +1,8 @@
+error[UF3004]: `className` is written `class`: elements take HTML's attribute names, in lower case.
+ --> diagnostics/non-canonical-attribute/Note.uf.tsx:3:13
+  |
+3 |   return <p className="note">Saved.</p>;
+  |             ^^^^^^^^^
+  |
+  = fix (safe): Rename `className` to `class`
+  = see: https://unframework.dev/diagnostics/UF3004

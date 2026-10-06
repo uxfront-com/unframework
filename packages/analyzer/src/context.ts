@@ -11,7 +11,7 @@ export interface Located {
 }
 
 const SUPPORTED_SUBSET =
-  "This version of the compiler lowers exported components without props or setup code that return static elements, text and attributes.";
+  "This version of the compiler lowers exported components with typed props and static JSX: expressions, conditionals, lists, class and style bindings, spreads with known keys and SVG. Setup code, events and composition land in later milestones.";
 
 /** Collects the diagnostics of one file. */
 export class Reporter {

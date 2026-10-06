@@ -1,0 +1,3 @@
+- text: Nickname
+- textbox "Nickname"
+- paragraph: Shown on your profile.

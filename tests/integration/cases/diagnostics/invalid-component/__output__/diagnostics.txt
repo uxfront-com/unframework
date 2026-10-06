@@ -1,0 +1,19 @@
+error[UF1102]: statusBadge returns JSX, as a component does, but a component's name is PascalCase.
+ --> diagnostics/invalid-component/Presence.uf.tsx:3:17
+  |
+3 | export function statusBadge() {
+  |                 ^^^^^^^^^^^
+  |
+  = help: Name it in PascalCase, such as `StatusBadge`: JSX reads a lower-case tag as an HTML element.
+  = fix (likely): Rename `statusBadge` to `StatusBadge`
+  = see: https://unframework.dev/diagnostics/UF1102
+
+error[UF1102]: Presence returns a conditional or a list, and a component returns an element or a fragment.
+  --> diagnostics/invalid-component/Presence.uf.tsx:12:10
+   |
+12 |   return online ? <span>Online</span> : <span>Away</span>;
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Wrap it in a fragment: `<>{…}</>`.
+   = fix (likely): Wrap it in a fragment
+   = see: https://unframework.dev/diagnostics/UF1102

@@ -4,12 +4,18 @@
 // renderer). Types only: nothing here runs, and the target's main entry never imports it.
 import type { UserConfig } from "vite";
 
-/** A message from a framework compiler or a type checker. Lines and columns are 1-based. */
+/**
+ * A message from a framework compiler, a type checker or a linter. Lines and columns are
+ * 1-based.
+ */
 export interface ToolchainMessage {
   message: string;
   line?: number;
   column?: number;
-  /** The tool's own code, such as `TS2322`, `NG8002` or `a11y_missing_attribute`. */
+  /**
+   * The tool's own code, such as `TS2322`, `NG8002`, `a11y_missing_attribute` or, for a lint
+   * rule, its name (`no-debugger`, `vue/require-v-for-key`).
+   */
   code?: string;
 }
 
@@ -73,6 +79,17 @@ export interface Toolchain {
     files: readonly string[],
     context: ToolchainContext,
   ): Promise<Map<string, ToolchainMessage[]>>;
+  /**
+   * L5: lints output files (absolute paths) with the framework's own lint rules and the shared
+   * baseline, and returns every message by file path, as `typecheck` does: an entry for each
+   * file, empty when it is clean, and one for any other path a linter reports. A warning is a
+   * message too. A linter that cannot start, cannot load its configuration or plugins, skips a
+   * file or prints output the toolchain cannot read rejects.
+   */
+  lint(
+    files: readonly string[],
+    context: ToolchainContext,
+  ): Promise<Map<string, ToolchainMessage[]>>;
 }
 
 /** Declares a toolchain, checking its shape at compile time. */
@@ -89,13 +106,25 @@ export interface CapturedConsoleMessage {
   message: string;
 }
 
-/** A component mounted by a target's adapter. */
-export interface MountedComponent {
-  /** Resolves once the framework has flushed every pending update and effect. */
-  settle(): Promise<void>;
-  unmount(): Promise<void>;
+/** What a render reports beyond the page: a mount's, or a rerender's. */
+export interface RenderReport {
   /** Console messages emitted where the page could not capture them. */
   console?: CapturedConsoleMessage[];
+}
+
+/** A component mounted by a target's adapter. */
+export interface MountedComponent extends RenderReport {
+  /** Resolves once the framework has flushed every pending update and effect. */
+  settle(): Promise<void>;
+  /**
+   * Renders the component again with new props, as a parent that re-renders it would (plan
+   * §7.2, L8), and resolves once the update has settled, as the mount does. The props are
+   * replaced whole: a key `props` lacks is removed, so the prop takes its default, and is never
+   * set to `undefined` in its place, except on a framework that cannot unset a prop (Angular's
+   * inputs), where `undefined` is the only way to remove it.
+   */
+  rerender(props: Readonly<Record<string, unknown>>): Promise<RenderReport | void>;
+  unmount(): Promise<void>;
 }
 
 /** Mounts a compiled component into a container, in the browser. */

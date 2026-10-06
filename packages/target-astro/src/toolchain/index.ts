@@ -2,6 +2,11 @@
 // Heavy tools (Astro, its compiler, Vite, the TypeScript 6 checker) load on first use, so a
 // config that imports every target's toolchain pays only for the projects it runs.
 import type { Toolchain } from "@unframework/codegen";
+import {
+  lintWithEslint,
+  lintWithOxlint,
+  mergeLintResults,
+} from "@unframework/codegen/toolchain-node";
 
 import { astroBrowserRef } from "./browser.ts";
 import { astroTypecheck } from "./check.ts";
@@ -27,6 +32,11 @@ export const toolchain: Toolchain = {
   server: "@unframework/target-astro/toolchain/server",
   frameworkCompile: astroFrameworkCompile,
   typecheck: astroTypecheck,
+  // L5 (ADR-0042): oxlint's shared baseline over the frontmatter, ESLint over the whole file.
+  lint: async (files, context) =>
+    mergeLintResults(
+      await Promise.all([lintWithOxlint(files, context), lintWithEslint(files, context)]),
+    ),
 };
 
 export default toolchain;

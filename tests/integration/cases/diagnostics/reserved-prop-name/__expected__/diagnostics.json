@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2003",
+    "severity": "error",
+    "message": "`key` cannot be a prop's name: `key` is the frameworks' list identity, not a prop.",
+    "file": "diagnostics/reserved-prop-name/Tab.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 3,
+      "offset": 164
+    },
+    "end": {
+      "line": 4,
+      "column": 6,
+      "offset": 167
+    },
+    "help": "Rename the prop."
+  }
+]

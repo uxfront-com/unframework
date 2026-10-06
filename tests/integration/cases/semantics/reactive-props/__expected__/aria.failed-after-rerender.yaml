@@ -1,0 +1,7 @@
+- region "Upload of report.pdf":
+  - heading "report.pdf" [level=2]
+  - progressbar "Upload progress": 45%
+  - paragraph: The network connection was lost.
+  - list:
+    - listitem: Verify checksum
+    - listitem: Send chunks

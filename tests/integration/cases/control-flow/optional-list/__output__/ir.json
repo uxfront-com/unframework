@@ -1,0 +1,501 @@
+{
+  "irVersion": 1,
+  "file": "control-flow/optional-list/BuildLog.uf.tsx",
+  "components": [
+    {
+      "name": "BuildLog",
+      "span": {
+        "start": 177,
+        "end": 750
+      },
+      "props": [
+        {
+          "name": "target",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 96,
+              "end": 102
+            }
+          },
+          "binding": "target@212",
+          "span": {
+            "start": 88,
+            "end": 103
+          }
+        },
+        {
+          "name": "failed",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 114,
+              "end": 121
+            }
+          },
+          "binding": "failed@220",
+          "span": {
+            "start": 106,
+            "end": 122
+          }
+        },
+        {
+          "name": "lines",
+          "optional": true,
+          "type": {
+            "code": "LogLine[] | null",
+            "span": {
+              "start": 133,
+              "end": 149
+            }
+          },
+          "binding": "lines@228",
+          "span": {
+            "start": 125,
+            "end": 150
+          }
+        },
+        {
+          "name": "warnings",
+          "optional": true,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 164,
+              "end": 172
+            }
+          },
+          "binding": "warnings@235",
+          "span": {
+            "start": 153,
+            "end": 173
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "BuildLogProps",
+          "span": {
+            "start": 247,
+            "end": 260
+          }
+        },
+        "span": {
+          "start": 210,
+          "end": 260
+        }
+      },
+      "types": [
+        "LogLine",
+        "BuildLogProps"
+      ],
+      "bindings": [
+        {
+          "id": "target@212",
+          "name": "target",
+          "kind": "prop",
+          "span": {
+            "start": 212,
+            "end": 218
+          }
+        },
+        {
+          "id": "failed@220",
+          "name": "failed",
+          "kind": "prop",
+          "span": {
+            "start": 220,
+            "end": 226
+          }
+        },
+        {
+          "id": "lines@228",
+          "name": "lines",
+          "kind": "prop",
+          "span": {
+            "start": 228,
+            "end": 233
+          }
+        },
+        {
+          "id": "warnings@235",
+          "name": "warnings",
+          "kind": "prop",
+          "span": {
+            "start": 235,
+            "end": 243
+          }
+        },
+        {
+          "id": "line@456",
+          "name": "line",
+          "kind": "loopVar",
+          "span": {
+            "start": 456,
+            "end": 460
+          }
+        },
+        {
+          "id": "warning@648",
+          "name": "warning",
+          "kind": "loopVar",
+          "span": {
+            "start": 648,
+            "end": 655
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "build-log",
+            "span": {
+              "start": 288,
+              "end": 305
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Build log",
+            "span": {
+              "start": 306,
+              "end": 328
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "pre",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "$ make ",
+                "span": {
+                  "start": 341,
+                  "end": 357
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "target",
+                  "span": {
+                    "start": 358,
+                    "end": 364
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "target@212",
+                      "span": {
+                        "start": 358,
+                        "end": 364
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 357,
+                  "end": 365
+                }
+              },
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "failed",
+                      "span": {
+                        "start": 375,
+                        "end": 381
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "failed@220",
+                          "span": {
+                            "start": 375,
+                            "end": 381
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "strong",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": " (failed)",
+                            "span": {
+                              "start": 393,
+                              "end": 402
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 385,
+                          "end": 411
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 375,
+                      "end": 411
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 375,
+                  "end": 411
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "\n",
+                "span": {
+                  "start": 421,
+                  "end": 427
+                }
+              },
+              {
+                "kind": "For",
+                "source": {
+                  "code": "lines ?? []",
+                  "span": {
+                    "start": 438,
+                    "end": 449
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "lines@228",
+                      "span": {
+                        "start": 438,
+                        "end": 443
+                      }
+                    }
+                  ]
+                },
+                "item": "line@456",
+                "key": {
+                  "code": "line.id",
+                  "span": {
+                    "start": 488,
+                    "end": 495
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "line@456",
+                      "span": {
+                        "start": 488,
+                        "end": 492
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "code",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "line.text",
+                        "span": {
+                          "start": 511,
+                          "end": 520
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "line@456",
+                            "span": {
+                              "start": 511,
+                              "end": 515
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 510,
+                        "end": 521
+                      }
+                    },
+                    {
+                      "kind": "Text",
+                      "value": "\n",
+                      "span": {
+                        "start": 534,
+                        "end": 540
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 477,
+                    "end": 558
+                  }
+                },
+                "span": {
+                  "start": 437,
+                  "end": 569
+                }
+              }
+            ],
+            "span": {
+              "start": 336,
+              "end": 583
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Warnings",
+                "span": {
+                  "start": 594,
+                  "end": 615
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "warnings ?? []",
+                  "span": {
+                    "start": 627,
+                    "end": 641
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "warnings@235",
+                      "span": {
+                        "start": 627,
+                        "end": 635
+                      }
+                    }
+                  ]
+                },
+                "item": "warning@648",
+                "key": {
+                  "code": "warning",
+                  "span": {
+                    "start": 681,
+                    "end": 688
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "warning@648",
+                      "span": {
+                        "start": 681,
+                        "end": 688
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "warning",
+                        "span": {
+                          "start": 691,
+                          "end": 698
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "warning@648",
+                            "span": {
+                              "start": 691,
+                              "end": 698
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 690,
+                        "end": 699
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 672,
+                    "end": 704
+                  }
+                },
+                "span": {
+                  "start": 626,
+                  "end": 715
+                }
+              }
+            ],
+            "span": {
+              "start": 590,
+              "end": 728
+            }
+          }
+        ],
+        "span": {
+          "start": 279,
+          "end": 743
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "BuildLog",
+      "span": {
+        "start": 177,
+        "end": 750
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "LogLine",
+      "exported": false,
+      "code": "interface LogLine {\n  id: string;\n  text: string;\n}",
+      "span": {
+        "start": 0,
+        "end": 51
+      }
+    },
+    {
+      "name": "BuildLogProps",
+      "exported": true,
+      "code": "interface BuildLogProps {\n  target: string;\n  failed: boolean;\n  lines?: LogLine[] | null;\n  warnings?: string[];\n}",
+      "span": {
+        "start": 60,
+        "end": 175
+      }
+    }
+  ]
+}

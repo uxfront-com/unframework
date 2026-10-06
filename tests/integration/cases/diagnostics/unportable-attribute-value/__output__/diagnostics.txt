@@ -1,0 +1,17 @@
+error[UF3008]: `aria-hidden` takes `"true"` or `"false"`, and "yes" is not one.
+ --> diagnostics/unportable-attribute-value/Rating.uf.tsx:7:15
+  |
+7 |         <span aria-hidden="yes">★★★★☆</span> Four stars
+  |               ^^^^^^^^^^^
+  |
+  = help: Write a value ARIA defines: assistive technology ignores any other.
+  = see: https://unframework.dev/diagnostics/UF3008
+
+error[UF3008]: `href` runs a `javascript:` URL: React blocks these, and the compiler cannot analyse the code.
+ --> diagnostics/unportable-attribute-value/Rating.uf.tsx:9:10
+  |
+9 |       <a href="javascript:void(0)">Rate it</a>
+  |          ^^^^
+  |
+  = help: Run code from an event handler.
+  = see: https://unframework.dev/diagnostics/UF3008

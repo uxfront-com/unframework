@@ -19,7 +19,7 @@ export function Elements({ href, active }: { href?: string; active: boolean }) {
       <div class={["a", active && "b", { c: active }]} />
       <div class={{ active, inactive: !active }} />
       <div style="color: red" />
-      <div style={{ color: "red", "--gap": 4, marginTop: 2 }} />
+      <div style={{ color: "red", "--gap": 4, marginTop: "2px", lineHeight: 1.5 }} />
       <div {...attributes} class="after-spread" />
       <label for="x" tabindex={0} aria-hidden="true" aria-expanded={active} data-anything="1" />
       <input
@@ -52,7 +52,15 @@ export function Elements({ href, active }: { href?: string; active: boolean }) {
         Increment
       </button>
       <svg viewBox="0 0 10 10">
-        <path d="M0 0L10 10" stroke-width={2} />
+        <defs>
+          <linearGradient id="fill" x1="0" x2="1">
+            <stop offset="0" stop-color="#fff" />
+          </linearGradient>
+          <clipPath id="clip">
+            <rect width="10" height="10" />
+          </clipPath>
+        </defs>
+        <path d="M0 0L10 10" stroke-width={2} fill="url(#fill)" clip-path="url(#clip)" />
       </svg>
       <my-element some-prop="x" anyProp={1} class="c" />
       <component is={href ? "a" : "button"} href={href} class="link">
@@ -66,15 +74,6 @@ export function Elements({ href, active }: { href?: string; active: boolean }) {
       {active && <span>Active</span>}
       {active ? <span>Yes</span> : null}
       {active ? <span>Active</span> : href ? <a href={href}>Link</a> : <span>Neither</span>}
-      {123n}
     </>
   );
-}
-
-export function ReturnsNullBranch({ show }: { show: boolean }) {
-  return show ? <p>Shown</p> : null;
-}
-
-export function UsesNullableComponent() {
-  return <ReturnsNullBranch show />;
 }

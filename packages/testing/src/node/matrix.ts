@@ -10,8 +10,11 @@ import type { LayerName, LayerOutcome, QuarantineEntry, UfLayerMeta } from "../l
 /** Case → target → layer → cell. */
 export type MatrixCells = Record<string, Record<string, Partial<Record<LayerName, string>>>>;
 
+/** Case → target → the parity scenarios its tests checked (`expectParity` names), sorted. */
+export type MatrixScenarios = Record<string, Record<string, string[]>>;
+
 /** The version of the matrix files; a file of another version is never merged. */
-export const MATRIX_VERSION = 3;
+export const MATRIX_VERSION = 4;
 
 /** One run's (or a merged) parity matrix. */
 export interface ParityMatrix {
@@ -22,6 +25,11 @@ export interface ParityMatrix {
   projects: string[];
   /** Case → target → layer → cell, merged across projects. */
   cases: MatrixCells;
+  /**
+   * Case → target → the parity scenarios checked, merged across projects. Every target runs the
+   * same spec, so each must check the reference's scenarios (see `summarise`).
+   */
+  scenarios: MatrixScenarios;
 }
 
 /** How a run treated artefacts (the harness mode), for the reader of a matrix. */
@@ -81,8 +89,15 @@ export interface PartialMatrix extends ParityMatrix, RunInfo {
    * `harness/quarantine.ts` held last.
    */
   quarantine: QuarantineEntry[];
+  /**
+   * The run's reference target (D10), whose parity scenarios every target's must equal, or
+   * `null` for a run outside the harness. A merge takes the newest run's.
+   */
+  reference: string | null;
   /** Project → its own cells, so a later run of a project replaces exactly its cells. */
   byProject: Record<string, MatrixCells>;
+  /** Project → its own scenarios, kept and replaced with its cells. */
+  scenariosByProject: Record<string, MatrixScenarios>;
 }
 
 /** A merge of partial matrices (`parity-matrix.json`), with what it was merged from. */
@@ -156,6 +171,41 @@ export function buildCells(records: readonly UfLayerMeta[]): MatrixCells {
   return cells;
 }
 
+/** The scenarios of test records: each (case, target)'s names, once each, sorted. */
+export function buildScenarios(records: readonly UfLayerMeta[]): MatrixScenarios {
+  return mergeScenarios(
+    records.flatMap((record) =>
+      record.scenarios?.length
+        ? [{ [record.case]: { [record.target]: [...record.scenarios] } }]
+        : [],
+    ),
+  );
+}
+
+/** Merges sets of scenarios: the union of each (case, target)'s names, sorted. */
+export function mergeScenarios(sets: readonly MatrixScenarios[]): MatrixScenarios {
+  const names = new Map<string, Map<string, Set<string>>>();
+  for (const scenarios of sets) {
+    for (const [caseId, targets] of Object.entries(scenarios)) {
+      let byTarget = names.get(caseId);
+      if (!byTarget) names.set(caseId, (byTarget = new Map()));
+      for (const [target, list] of Object.entries(targets)) {
+        const set = byTarget.get(target) ?? new Set<string>();
+        for (const name of list) set.add(name);
+        byTarget.set(target, set);
+      }
+    }
+  }
+  const merged: MatrixScenarios = {};
+  for (const caseId of [...names.keys()].sort()) {
+    const byTarget = names.get(caseId)!;
+    merged[caseId] = Object.fromEntries(
+      [...byTarget.keys()].sort().map((target) => [target, [...byTarget.get(target)!].sort()]),
+    );
+  }
+  return merged;
+}
+
 /** Merges several projects' cells into one set, cell by cell (fail beats pass). */
 export function mergeCells(sets: readonly MatrixCells[]): MatrixCells {
   return buildCells(
@@ -186,13 +236,18 @@ export function buildPartialMatrix(input: {
   /** The selected projects that collected no tests. */
   empty: readonly string[];
   quarantine: readonly QuarantineEntry[];
+  /** The run's reference target; none outside the harness. */
+  reference?: string | null;
 }): PartialMatrix {
   const projects = [...new Set(input.projects)].sort();
   const byProject: Record<string, MatrixCells> = {};
+  const scenariosByProject: Record<string, MatrixScenarios> = {};
   for (const project of projects) {
-    byProject[project] = buildCells(
-      input.records.filter((entry) => entry.project === project).map((entry) => entry.record),
-    );
+    const records = input.records
+      .filter((entry) => entry.project === project)
+      .map((entry) => entry.record);
+    byProject[project] = buildCells(records);
+    scenariosByProject[project] = buildScenarios(records);
   }
   return {
     version: MATRIX_VERSION,
@@ -204,8 +259,11 @@ export function buildPartialMatrix(input: {
     projects,
     empty: [...new Set(input.empty)].sort(),
     quarantine: [...input.quarantine],
+    reference: input.reference ?? null,
     cases: mergeCells(Object.values(byProject)),
+    scenarios: mergeScenarios(Object.values(scenariosByProject)),
     byProject,
+    scenariosByProject,
   };
 }
 
@@ -220,24 +278,32 @@ export function withoutProjects(
   const byProject = Object.fromEntries(
     kept.map((project) => [project, matrix.byProject[project] ?? {}]),
   );
+  const scenariosByProject = Object.fromEntries(
+    kept.map((project) => [project, matrix.scenariosByProject[project] ?? {}]),
+  );
   return {
     ...matrix,
     projects: kept,
     empty: matrix.empty.filter((project) => !projects.has(project)),
     byProject,
+    scenariosByProject,
     cases: mergeCells(Object.values(byProject)),
+    scenarios: mergeScenarios(Object.values(scenariosByProject)),
   };
 }
 
 /**
  * Merges partial matrices (CI's jobs, local runs of a subset) into one. For each project the
  * newest record of each cell wins, so a re-run replaces what an earlier run recorded; then the
- * projects merge cell by cell (fail beats pass). The quarantine is the newest run's: an entry
- * removed since an older run must neither hide that run's failures nor go stale.
+ * projects merge cell by cell (fail beats pass). Scenarios add up, as cells another run did not
+ * record are kept: a run of the whole project replaces its older records (the reporter's
+ * `supersede`). The quarantine and the reference are the newest run's: an entry removed since
+ * an older run must neither hide that run's failures nor go stale.
  */
 export function mergeMatrices(partials: readonly PartialMatrix[]): {
   matrix: MergedMatrix;
   quarantine: QuarantineEntry[];
+  reference: string | null;
 } {
   for (const partial of partials) {
     if (partial.version !== MATRIX_VERSION) {
@@ -250,7 +316,9 @@ export function mergeMatrices(partials: readonly PartialMatrix[]): {
     (a, b) => a.finishedAt.localeCompare(b.finishedAt) || a.run.localeCompare(b.run),
   );
   const latest = new Map<string, MatrixCells>();
+  const scenarios: MatrixScenarios[] = [];
   for (const partial of ordered) {
+    scenarios.push(...Object.values(partial.scenariosByProject));
     for (const [project, cells] of Object.entries(partial.byProject)) {
       const merged = latest.get(project) ?? {};
       for (const [caseId, targets] of Object.entries(cells)) {
@@ -267,6 +335,7 @@ export function mergeMatrices(partials: readonly PartialMatrix[]): {
       run: "merged",
       projects: [...new Set(ordered.flatMap((partial) => partial.projects))].sort(),
       cases: mergeCells([...latest.values()]),
+      scenarios: mergeScenarios(scenarios),
       runs: ordered.map(({ run, finishedAt, mode, filtered, shard, projects, empty }) => ({
         run,
         finishedAt,
@@ -278,6 +347,7 @@ export function mergeMatrices(partials: readonly PartialMatrix[]): {
       })),
     },
     quarantine: [...(ordered.at(-1)?.quarantine ?? [])],
+    reference: ordered.findLast((partial) => partial.reference !== null)?.reference ?? null,
   };
 }
 

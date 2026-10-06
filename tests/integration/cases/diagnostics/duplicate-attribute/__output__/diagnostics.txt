@@ -1,0 +1,11 @@
+error[UF3007]: `href` is set twice on this <a>.
+  --> diagnostics/duplicate-attribute/NavLink.uf.tsx:14:21
+   |
+14 |     <a href="/home" {...link}>
+   |                     ^^^^^^^^^
+   |
+14 |     <a href="/home" {...link}>
+   |        ^^^^ First set here
+   |
+   = help: Keep one: remove the attribute, or the key from the spread's type.
+   = see: https://unframework.dev/diagnostics/UF3007

@@ -1,0 +1,7 @@
+- region "Messages":
+  - heading "Inbox" [level=2]
+  - list
+  - paragraph: Nothing here yet.
+  - heading "Archive" [level=2]
+  - list
+  - paragraph: No archived messages.

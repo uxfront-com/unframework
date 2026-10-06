@@ -1,5 +1,6 @@
 // The browser half of L10: snapshot geometry, mark the container for the font audit, and hand
-// both to `ufVisualCapture`, which captures, compares and applies the write policy in Node.
+// both to `ufVisualCapture`, which captures, compares and applies the write policy in Node. Both
+// see each run of adjacent text nodes as one node (./text-runs.ts, ADR-0044).
 import { recordArtifact } from "vitest";
 import type { RunnerTestCase } from "vitest";
 import { commands } from "vitest/browser";
@@ -8,6 +9,7 @@ import type { Locator } from "vitest/browser";
 import "../commands.ts";
 import type { CaptureResult, PixelTolerance } from "../visual-types.ts";
 import { captureGeometry } from "./geometry.ts";
+import { withMergedTextRuns } from "./text-runs.ts";
 
 let markers = 0;
 
@@ -25,14 +27,18 @@ export async function captureVisual(
   const marker = `${Date.now().toString(36)}-${(markers += 1)}`;
   input.container.setAttribute("data-uf-capture", marker);
   try {
-    const result = await commands.ufVisualCapture({
-      element: input.locator.serialize(),
-      case: input.case,
-      name: input.name,
-      geometry: captureGeometry(input.container),
-      marker,
-      ...(input.tolerance ? { tolerance: input.tolerance } : {}),
-    });
+    // Geometry and pixels of the same merged tree; the tree is restored before anything else
+    // runs (L11, the spec's assertions, a rerender).
+    const result = await withMergedTextRuns(input.container, () =>
+      commands.ufVisualCapture({
+        element: input.locator.serialize(),
+        case: input.case,
+        name: input.name,
+        geometry: captureGeometry(input.container),
+        marker,
+        ...(input.tolerance ? { tolerance: input.tolerance } : {}),
+      }),
+    );
     if (!result.pass && result.attachments.length) {
       // The artifact shape toMatchScreenshot uses, so reporters and the UI show the images.
       await recordArtifact(test, {

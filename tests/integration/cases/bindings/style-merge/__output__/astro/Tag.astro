@@ -1,0 +1,17 @@
+---
+export interface TagProps {
+  label: string;
+  colour?: string;
+  weight?: number;
+  indent?: string;
+}
+
+type Props = TagProps;
+
+const { label, colour, weight, indent } = Astro.props;
+---
+
+<span
+  class="tag"
+  style={{ display: "inline-block", padding: "2px 8px", borderStyle: "solid", borderWidth: "1px", borderColor: colour ?? "#5a5a5a", color: colour, fontWeight: weight, marginLeft: indent }}
+>{label}</span>

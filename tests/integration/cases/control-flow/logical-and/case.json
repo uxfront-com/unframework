@@ -1,0 +1,10 @@
+{
+  "description": "`cond && <el/>` renders by truthiness: a falsy number (0) or string (\"\") renders nothing, never the value; chained conditions too.",
+  "ssr": {
+    "all-falsy": { "props": { "folder": "", "unread": 0, "flagged": 0, "signature": "" } },
+    "all-truthy": { "props": { "folder": "Work", "unread": 3, "flagged": 1, "signature": "Ada" } },
+    "unread-only": {
+      "props": { "folder": "Personal", "unread": 2, "flagged": 0, "signature": "" }
+    }
+  }
+}

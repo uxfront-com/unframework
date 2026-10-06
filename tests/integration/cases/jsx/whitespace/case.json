@@ -1,0 +1,21 @@
+{
+  "description": "Significant whitespace as string-literal children (`{\" \"}`, edge spaces, `{\"\\n\"}` in a `pre`, tabs and line breaks) and text beside expressions renders exactly.",
+  "ssr": {
+    "label": {
+      "props": {
+        "recipient": "Ada Lovelace",
+        "street": "12 St James's Square",
+        "city": "London",
+        "postcode": "SW1Y 4JH"
+      }
+    },
+    "padded-values": {
+      "props": {
+        "recipient": " Grace Hopper ",
+        "street": "1 Navy Way",
+        "city": "Arlington",
+        "postcode": "VA 22202"
+      }
+    }
+  }
+}

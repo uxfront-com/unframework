@@ -1,0 +1,9 @@
+error[UF3021]: `sort` changes the array it is called on, which may be a prop: rendering must not change anything.
+ --> diagnostics/impure-render-expression/SortedTags.uf.tsx:8:25
+  |
+8 |   return <p>Tags: {tags.sort().join(", ")}</p>;
+  |                         ^^^^
+  |
+  = help: `toSorted` returns a changed copy instead.
+  = fix (safe): Write `toSorted`
+  = see: https://unframework.dev/diagnostics/UF3021

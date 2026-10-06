@@ -1,0 +1,4 @@
+- region "Build log":
+  - text: $ make test
+  - strong: (failed)
+  - list "Warnings"

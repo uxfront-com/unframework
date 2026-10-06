@@ -1,0 +1,31 @@
+{
+  "description": "Spread sources that may be nullish where they render: a `T | null` prop, a prop defaulting to `null`, an optional member, a conditional, list items typed `T | undefined`, and sources a condition narrows. Present, each key renders; absent, none does.",
+  "ssr": {
+    "sources-present": {
+      "props": {
+        "reference": "Shipment GB-2041",
+        "carrier": { "id": "carrier", "title": "DHL Express" },
+        "eta": { "id": "eta", "title": "Tomorrow before noon" },
+        "parcel": {
+          "label": "Parcel 1 of 2",
+          "tag": { "id": "parcel-tag", "title": "Fragile" },
+          "seal": { "id": "parcel-seal", "title": "Tamper-evident seal" }
+        },
+        "tracked": true,
+        "tracking": { "id": "tracking", "title": "Updated every 5 minutes" },
+        "stops": [{ "id": "stop-leeds", "title": "Leeds depot" }, { "id": "stop-york" }],
+        "signature": { "id": "signature", "title": "Signature required" }
+      }
+    },
+    "sources-absent": {
+      "props": {
+        "reference": "Shipment GB-2042",
+        "carrier": null,
+        "parcel": { "label": "Parcel 2 of 2" },
+        "tracked": false,
+        "tracking": { "id": "tracking", "title": "Updated every 5 minutes" },
+        "stops": []
+      }
+    }
+  }
+}

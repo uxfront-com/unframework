@@ -1,0 +1,399 @@
+{
+  "irVersion": 1,
+  "file": "bindings/class-array/ActionButton.uf.tsx",
+  "components": [
+    {
+      "name": "ActionButton",
+      "span": {
+        "start": 150,
+        "end": 559
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 46,
+              "end": 52
+            }
+          },
+          "binding": "label@191",
+          "span": {
+            "start": 39,
+            "end": 53
+          }
+        },
+        {
+          "name": "size",
+          "optional": false,
+          "type": {
+            "code": "\"small\" | \"medium\" | \"large\"",
+            "span": {
+              "start": 62,
+              "end": 90
+            }
+          },
+          "binding": "size@200",
+          "span": {
+            "start": 56,
+            "end": 91
+          }
+        },
+        {
+          "name": "primary",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 103,
+              "end": 110
+            }
+          },
+          "binding": "primary@208",
+          "span": {
+            "start": 94,
+            "end": 111
+          }
+        },
+        {
+          "name": "busy",
+          "optional": true,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 121,
+              "end": 128
+            }
+          },
+          "default": {
+            "code": "false",
+            "span": {
+              "start": 226,
+              "end": 231
+            },
+            "refs": []
+          },
+          "binding": "busy@219",
+          "span": {
+            "start": 114,
+            "end": 129
+          }
+        },
+        {
+          "name": "badge",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 139,
+              "end": 145
+            }
+          },
+          "binding": "badge@235",
+          "span": {
+            "start": 132,
+            "end": 146
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ActionButtonProps",
+          "span": {
+            "start": 245,
+            "end": 262
+          }
+        },
+        "span": {
+          "start": 187,
+          "end": 262
+        }
+      },
+      "types": [
+        "ActionButtonProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@191",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 191,
+            "end": 196
+          }
+        },
+        {
+          "id": "size@200",
+          "name": "size",
+          "kind": "prop",
+          "span": {
+            "start": 200,
+            "end": 204
+          }
+        },
+        {
+          "id": "primary@208",
+          "name": "primary",
+          "kind": "prop",
+          "span": {
+            "start": 208,
+            "end": 215
+          }
+        },
+        {
+          "id": "busy@219",
+          "name": "busy",
+          "kind": "prop",
+          "span": {
+            "start": 219,
+            "end": 223
+          }
+        },
+        {
+          "id": "badge@235",
+          "name": "badge",
+          "kind": "prop",
+          "span": {
+            "start": 235,
+            "end": 240
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "button",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "type",
+            "value": "button",
+            "span": {
+              "start": 295,
+              "end": 308
+            }
+          },
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Static",
+                "value": "button",
+                "span": {
+                  "start": 332,
+                  "end": 340
+                }
+              },
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "`button-${size}`",
+                  "span": {
+                    "start": 351,
+                    "end": 367
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "size@200",
+                      "span": {
+                        "start": 361,
+                        "end": 365
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 351,
+                  "end": 367
+                }
+              },
+              {
+                "kind": "Toggle",
+                "name": "button-primary",
+                "condition": {
+                  "code": "primary",
+                  "span": {
+                    "start": 369,
+                    "end": 376
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "primary@208",
+                      "span": {
+                        "start": 369,
+                        "end": 376
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 369,
+                  "end": 396
+                }
+              },
+              {
+                "kind": "Toggle",
+                "name": "is-busy",
+                "condition": {
+                  "code": "busy",
+                  "span": {
+                    "start": 407,
+                    "end": 411
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "busy@219",
+                      "span": {
+                        "start": 407,
+                        "end": 411
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 407,
+                  "end": 439
+                }
+              },
+              {
+                "kind": "Toggle",
+                "name": "button-waiting",
+                "condition": {
+                  "code": "busy",
+                  "span": {
+                    "start": 407,
+                    "end": 411
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "busy@219",
+                      "span": {
+                        "start": 407,
+                        "end": 411
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 407,
+                  "end": 439
+                }
+              },
+              {
+                "kind": "Toggle",
+                "name": "has-badge",
+                "condition": {
+                  "code": "badge",
+                  "span": {
+                    "start": 449,
+                    "end": 454
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "badge@235",
+                      "span": {
+                        "start": 449,
+                        "end": 454
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 449,
+                  "end": 469
+                }
+              },
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "primary ? \"solid\" : \"outline\"",
+                  "span": {
+                    "start": 479,
+                    "end": 508
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "primary@208",
+                      "span": {
+                        "start": 479,
+                        "end": 486
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 479,
+                  "end": 508
+                }
+              }
+            ],
+            "span": {
+              "start": 315,
+              "end": 518
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 532,
+                "end": 537
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@191",
+                  "span": {
+                    "start": 532,
+                    "end": 537
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 531,
+              "end": 538
+            }
+          }
+        ],
+        "span": {
+          "start": 281,
+          "end": 552
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ActionButton",
+      "span": {
+        "start": 150,
+        "end": 559
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ActionButtonProps",
+      "exported": true,
+      "code": "interface ActionButtonProps {\n  label: string;\n  size: \"small\" | \"medium\" | \"large\";\n  primary: boolean;\n  busy?: boolean;\n  badge: number;\n}",
+      "span": {
+        "start": 7,
+        "end": 148
+      }
+    }
+  ]
+}

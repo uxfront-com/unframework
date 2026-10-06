@@ -42,7 +42,7 @@ export function runSummary(env: NodeJS.ProcessEnv, run: SummaryRun): number {
         cases: listCases().map((info) => info.id),
         targets,
         liveLayers: LIVE_LAYERS,
-        notLiveReason: "not live in M0",
+        notLiveReason: "not live in M1",
       },
       stepSummary: env.GITHUB_STEP_SUMMARY,
       since: run.since,

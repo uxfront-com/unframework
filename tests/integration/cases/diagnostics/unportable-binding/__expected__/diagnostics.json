@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3018",
+    "severity": "error",
+    "message": "`data-active` renders its value as text, and this value can be a boolean: Qwik drops `false` there and React drops it on some attributes, where the others render \"false\".",
+    "file": "diagnostics/unportable-binding/Toggle.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 40,
+      "offset": 351
+    },
+    "end": {
+      "line": 10,
+      "column": 46,
+      "offset": 357
+    },
+    "help": "Bind a string or a number: `String(value)`."
+  }
+]

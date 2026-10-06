@@ -1,0 +1,9 @@
+error[UF3023]: The left side of `??` is never null or undefined, so its right side never renders.
+ --> diagnostics/non-nullable-operand/Heading.uf.tsx:8:20
+  |
+8 |   return <h2>{text ?? "Untitled"}</h2>;
+  |                    ^^
+  |
+  = help: Remove `??` and its right side, or make the prop optional if it can be absent.
+  = fix (safe): Remove `??` and its right side
+  = see: https://unframework.dev/diagnostics/UF3023

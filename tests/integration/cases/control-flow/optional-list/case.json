@@ -1,0 +1,18 @@
+{
+  "description": "Lists whose source may be absent, written `(items ?? []).map(…)`: an optional array and an array that may be null, each rendering nothing when absent; and a `<pre>` whose line feed follows a conditional that can render nothing, after the text that starts it.",
+  "ssr": {
+    "passed": {
+      "props": {
+        "target": "build",
+        "failed": false,
+        "lines": [
+          { "id": "compile", "text": "cc -O2 -c main.c" },
+          { "id": "link", "text": "ld -o app main.o" }
+        ],
+        "warnings": ["main.c: unused variable 'tmp'"]
+      }
+    },
+    "failed-without-output": { "props": { "target": "test", "failed": true, "lines": null } },
+    "no-output-yet": { "props": { "target": "install", "failed": false, "warnings": [] } }
+  }
+}

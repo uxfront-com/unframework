@@ -1,0 +1,17 @@
+error[UF3017]: This text starts with a line feed, which the HTML parser drops at the start of a <pre>, and React's server renderer writes twice.
+ --> diagnostics/dropped-line-feed/CodeSample.uf.tsx:8:13
+  |
+8 |       <pre>{"\nconst answer = 42;"}</pre>
+  |             ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: Start the text with something other than a line feed.
+  = see: https://unframework.dev/diagnostics/UF3017
+
+error[UF3017]: This text starts with a line feed, which the HTML parser drops at the start of a <pre>: when what comes before it renders nothing, React's and Astro's servers write nothing before it, and the other targets a comment.
+  --> diagnostics/dropped-line-feed/CodeSample.uf.tsx:11:10
+   |
+11 |         {"\nconst question = 6 * 7;"}
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Start the text with something other than a line feed.
+   = see: https://unframework.dev/diagnostics/UF3017

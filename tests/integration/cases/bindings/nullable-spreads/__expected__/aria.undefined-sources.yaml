@@ -1,0 +1,10 @@
+- region "Shipment GB-2043":
+  - paragraph: Carrier
+  - paragraph: Estimated delivery
+  - paragraph: Parcel 1 of 1
+  - paragraph: Live tracking
+  - list:
+    - listitem "Leeds depot": Stop 1
+    - listitem: Stop 2
+    - listitem: Stop 3
+  - paragraph: Sealed

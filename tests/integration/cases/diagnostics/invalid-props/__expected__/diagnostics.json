@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2001",
+    "severity": "error",
+    "message": "`label` is required, so its default would never apply.",
+    "file": "diagnostics/invalid-props/Badge.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 41,
+      "offset": 189
+    },
+    "end": {
+      "line": 6,
+      "column": 46,
+      "offset": 194
+    },
+    "help": "Make it optional (`label?:`), or remove the default."
+  }
+]

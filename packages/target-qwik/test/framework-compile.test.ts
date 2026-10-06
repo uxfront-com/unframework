@@ -34,12 +34,14 @@ describe("frameworkCompile (L3, the Qwik optimizer)", () => {
   });
 
   it("accepts the fixtures, interactive and attribute-heavy ones included", async () => {
-    const files = ["Attributes.tsx", "Counter.tsx", "Greeting.tsx"].map((name) => ({
-      path: fixture(name),
-      contents: readFileSync(fixture(name), "utf8"),
-    }));
+    const files = ["Attributes.tsx", "Counter.tsx", "Greeting.tsx", "NullProps.tsx"].map(
+      (name) => ({
+        path: fixture(name),
+        contents: readFileSync(fixture(name), "utf8"),
+      }),
+    );
     const results = await toolchain.frameworkCompile(files, context);
-    expect(results.size).toBe(3);
+    expect(results.size).toBe(files.length);
     for (const result of results.values()) expect(result).toEqual({ errors: [], warnings: [] });
   });
 

@@ -60,7 +60,7 @@ describe("listCases", () => {
       /kebab-case/,
     );
     expect(() => listCases(makeCorpus({ "basics/card/notes.md": "" }))).toThrow(
-      "Case basics/card must hold exactly one .uf.tsx input in M0, found none.",
+      "Case basics/card must hold exactly one .uf.tsx input, found none.",
     );
     expect(() =>
       listCases(

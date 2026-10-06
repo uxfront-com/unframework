@@ -1,0 +1,33 @@
+---
+interface LinkAttributes {
+  class?: string;
+  title?: string;
+  rel?: string;
+}
+
+interface RowAttributes {
+  class: string;
+  id?: string;
+}
+
+export interface TextLinkProps {
+  href: string;
+  label: string;
+  strong: boolean;
+  link: LinkAttributes;
+  row: RowAttributes;
+}
+
+type Props = TextLinkProps;
+
+const { href, label, strong, link, row } = Astro.props;
+---
+
+<p class:list={[row.class, "link-row", { "link-row-strong": strong }]} id={row.id}>
+  <a
+    href={href}
+    class:list={["text-link", link.class]}
+    title={link.title}
+    rel={link.rel}
+  >{label}</a>
+</p>

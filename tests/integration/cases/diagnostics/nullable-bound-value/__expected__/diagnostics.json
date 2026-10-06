@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "A bound `value` on <meter> that may be null or undefined is not supported yet: Svelte sets the <meter>'s `value` property, which writes \"0\" once it is null or undefined, and Solid writes \"0\" for `null`, where the other targets leave the attribute out.",
+    "file": "diagnostics/nullable-bound-value/Rating.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 28,
+      "offset": 318
+    },
+    "end": {
+      "line": 9,
+      "column": 33,
+      "offset": 323
+    },
+    "help": "Render the element only where the value is there, as in `{value != null && <meter value={value}>…</meter>}`, or give it a fallback, as in `value={value ?? 0}`."
+  }
+]

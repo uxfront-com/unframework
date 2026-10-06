@@ -1,0 +1,13 @@
+---
+export interface ArticleSkeletonProps {
+  title: string;
+  summary?: string;
+  minutes?: number;
+}
+
+export type Props = ArticleSkeletonProps;
+---
+
+<article class="article-skeleton" aria-busy="true" aria-label="Loading article">
+  <p>Loading the article</p>
+</article>

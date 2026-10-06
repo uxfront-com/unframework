@@ -128,3 +128,14 @@ export function SlotObjectOnAnElement() {
   // @ts-expect-error TS2353 slot objects are for components, not elements
   return <div>{{ default: () => "x" }}</div>;
 }
+
+export function SymbolKey() {
+  return (
+    <ul>
+      {[1, 2].map((n) => (
+        // @ts-expect-error TS2322 a list's key is a string or a number (ADR-0036)
+        <li key={Symbol(n)}>{n}</li>
+      ))}
+    </ul>
+  );
+}

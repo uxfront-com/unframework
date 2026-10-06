@@ -1,0 +1,27 @@
+{
+  "description": "HTML attribute names whose DOM or framework spellings differ (tabindex, for, readonly, colspan, maxlength, accept-charset, crossorigin), static and bound.",
+  "ssr": {
+    "locked": {
+      "props": {
+        "charset": "utf-8",
+        "bioId": "account-bio",
+        "bioLimit": 160,
+        "locked": true,
+        "bannerCors": "anonymous",
+        "seatColumns": 2,
+        "helpOrder": 0
+      }
+    },
+    "editable": {
+      "props": {
+        "charset": "iso-8859-1",
+        "bioId": "profile-bio",
+        "bioLimit": 280,
+        "locked": false,
+        "bannerCors": "use-credentials",
+        "seatColumns": 1,
+        "helpOrder": -1
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "description": "Bound `value`s that can equal the element's own default: a list item numbered from 0, a meter at its minimum, and a `<data>` whose value is the empty string.",
+  "ssr": {
+    "zero-score": {
+      "props": {
+        "steps": ["Unbox", "Assemble", "Inspect"],
+        "score": 0,
+        "sku": "",
+        "product": "Oak table"
+      }
+    },
+    "rated": {
+      "props": {
+        "steps": ["Unbox", "Assemble"],
+        "score": 7,
+        "sku": "TBL-042",
+        "product": "Walnut desk"
+      }
+    }
+  }
+}

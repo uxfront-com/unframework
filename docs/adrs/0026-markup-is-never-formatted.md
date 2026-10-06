@@ -1,6 +1,6 @@
 # ADR-0026: Markup is never formatted; oxfmt formats code only
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0041
 - **Date:** 2026-10-01
 - **Plan:** §5.8 (formatting), P8, R14; §4.3 (whitespace); §7.2 (L2, L6, L7)
 

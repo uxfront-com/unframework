@@ -1,0 +1,6 @@
+- region "Upload of report.pdf":
+  - heading "report.pdf" [level=2]
+  - progressbar "Upload progress": 0%
+  - paragraph: Waiting to start
+  - list:
+    - listitem: Verify checksum

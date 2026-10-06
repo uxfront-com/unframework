@@ -1,4 +1,5 @@
 import { boxOf, preservesWhitespace } from "../display.ts";
+import type { Box } from "../display.ts";
 import { childrenOf, HTML_NAMESPACE, isElement, isText, replaceChildren } from "../tree.ts";
 import type { TreeChild, TreeElement, TreeParent, TreeText } from "../tree.ts";
 
@@ -77,6 +78,13 @@ interface Context {
   inline: boolean;
   /** The content is a ruby's, which inlinifies what it holds (see `boxOf`). */
   ruby: boolean;
+  /** The parent box is a ruby container (see `ParentLayout.rubyContainer`). */
+  rubyContainer: boolean;
+  /**
+   * The line holds a table-internal box in an anonymous inline table (see `inInlineTable`):
+   * its whitespace is kept as written.
+   */
+  keep: boolean;
   previous: Previous;
 }
 
@@ -95,8 +103,8 @@ interface Context {
  * - Next to a zero-width space, a line break goes with the spaces around it: in a text, a run
  *   with a line break between U+200B (or a `<wbr>`) and anything, or before U+200B, renders
  *   nothing, and so does the pending space of an earlier text when this one starts so. The
- *   edge of a ruby or a bidi isolate (`dir`, `<bdi>`) hides a U+200B from a line break on its
- *   other side (`Box.opaqueEdges`).
+ *   edge of a ruby or a bidi isolate (`dir`, `<bdi>`), and the end of a ruby annotation, hides
+ *   a U+200B from a line break on its other side (`Box.opaqueStart`, `Box.opaqueEnd`).
  * - A whitespace-only text Chromium does not render at all (after text that ends in
  *   whitespace, after a block or `<br>`, as the first child of a block; in a table or a flex or
  *   grid container, anywhere but after text) takes no part, not even in those removals.
@@ -115,6 +123,11 @@ interface Context {
  *   that are not rendered are normalised on their own. A ruby lays its content out on one
  *   line: a `<br>`, a block or a float inside it, or a preserved line break, does not end it;
  *   a list item there is an inline that starts with its marker.
+ * - A table-internal box (a cell, a row, a caption, …) whose parent is an inline box sits in
+ *   an anonymous inline table, which Chromium builds with whitespace rules of its own (a
+ *   whitespace-only text after it renders nothing, and the next table-internal sibling joins
+ *   it): every whitespace of that line, and of the box's own content, is kept as written. In
+ *   a block container it is a block-level table, a block; blockified, a block container.
  * - Text that keeps its whitespace (`pre`, `textarea`, `listing`, `plaintext`, raw-text
  *   elements, SVG `<style>` and `<script>`, and inline `white-space: pre`, `pre-wrap`,
  *   `pre-line` or `break-spaces`, which is inherited) is left exactly as it is. A collapsible
@@ -125,14 +138,20 @@ interface Context {
  * Soft wraps depend on the viewport, so a space at the end of a wrapped line stays.
  */
 export function collapseWhitespace(root: TreeParent): void {
-  formatBlock(root, { preserve: false, blockify: false, dropsWhitespace: false, ruby: false });
+  formatBlock(root, {
+    preserve: false,
+    blockify: false,
+    dropsWhitespace: false,
+    ruby: false,
+    rubyContainer: false,
+  });
   removeEmptyText(root);
 }
 
 /** Lays out a block container's content as one inline formatting context. */
 function formatBlock(
   container: TreeElement | TreeParent,
-  context: Pick<Context, "preserve" | "blockify" | "dropsWhitespace" | "ruby">,
+  context: Pick<Context, "preserve" | "blockify" | "dropsWhitespace" | "ruby" | "rubyContainer">,
   quotes = false,
 ): void {
   const line: Line = {
@@ -146,10 +165,64 @@ function formatBlock(
     emptied: null,
     afterRuby: false,
   };
+  const keep = holdsInlineTable(container, { ...context, inline: false });
   if (quotes) renderContent(line);
-  flow(container, line, { ...context, inline: false, previous: quotes ? "inline" : "none" });
+  flow(container, line, { ...context, inline: false, keep, previous: quotes ? "inline" : "none" });
   if (quotes) renderContent(line);
   endLine(line);
+}
+
+/**
+ * Whether a table-internal box sits in an anonymous inline table: its parent is an inline box
+ * (CSS 2.1 §17.2.1), a blockified ruby's inline ruby included. A blockified one is a block
+ * container already (see `boxOf`).
+ */
+function inInlineTable(box: Box, context: Pick<Context, "inline" | "ruby">): boolean {
+  return box.tableInternal && (context.inline || context.ruby);
+}
+
+/**
+ * Whether a block container's line holds a box in an anonymous inline table, through inline
+ * boxes and `display: contents`, as `flow` lays them out: if so, the line's whitespace is
+ * kept as written.
+ */
+function holdsInlineTable(
+  parent: TreeParent,
+  context: Pick<Context, "blockify" | "ruby" | "rubyContainer" | "inline">,
+): boolean {
+  return childrenOf(parent).some((node) => {
+    if (!isElement(node)) return false;
+    const box = childBox(node, context);
+    if (inInlineTable(box, context)) return true;
+    if (box.outer === "contents") return holdsInlineTable(node, context);
+    return (
+      box.outer === "inline" &&
+      holdsInlineTable(node, {
+        blockify: false,
+        ruby: context.ruby || box.rubyContent,
+        rubyContainer: isRubyContainer(box),
+        inline: true,
+      })
+    );
+  });
+}
+
+/** A child's box, as its parent lays it out. */
+function childBox(
+  node: TreeElement,
+  context: Pick<Context, "blockify" | "ruby" | "rubyContainer">,
+): Box {
+  return boxOf(node, {
+    // `<wbr>` lays out as text (an empty one), which a flex or grid container does not blockify.
+    blockifies: context.blockify && !isHtml(node, "wbr"),
+    ruby: context.ruby,
+    rubyContainer: context.rubyContainer,
+  });
+}
+
+/** Whether a box is a ruby container, not an annotation (see `ParentLayout.rubyContainer`). */
+function isRubyContainer(box: Box): boolean {
+  return box.rubyContent && !box.rubyAnnotation;
 }
 
 /**
@@ -160,6 +233,8 @@ function flow(parent: TreeParent, line: Line, context: Context): Previous {
   let previous = context.previous;
   for (const node of childrenOf(parent)) {
     if (isText(node)) {
+      // A line kept as written renders its texts as they are (see `holdsInlineTable`).
+      if (context.keep) continue;
       const text = node.value;
       if (!rendersText(text, previous, context)) {
         node.value = "";
@@ -172,16 +247,15 @@ function flow(parent: TreeParent, line: Line, context: Context): Previous {
       continue;
     }
     if (!isElement(node)) continue;
-    // `<wbr>` lays out as text (an empty one), which a flex or grid container does not blockify.
-    const box = boxOf(node, {
-      blockifies: context.blockify && !isHtml(node, "wbr"),
-      ruby: context.ruby,
-    });
+    const box = childBox(node, context);
+    // Its content is kept as written too.
+    if (inInlineTable(box, context)) continue;
     const inner = {
       preserve: preservesWhitespace(node, context.preserve),
       blockify: box.blockifiesChildren,
       dropsWhitespace: box.dropsWhitespaceChildren,
       ruby: box.rubyContent,
+      rubyContainer: isRubyContainer(box),
     };
     const quotes = generatesQuotes(node);
     switch (box.outer) {
@@ -197,7 +271,7 @@ function flow(parent: TreeParent, line: Line, context: Context): Previous {
       case "inline":
         if (quotes) renderContent(line);
         // Its edges hide a zero-width space from a line break on the other side (see `Box`).
-        if (box.opaqueEdges) line.afterZeroWidthSpace = false;
+        if (box.opaqueStart) line.afterZeroWidthSpace = false;
         // A text that collapsed away right before a ruby stays (see `emptied`).
         if (box.rubyContent && line.emptied) keptEmpty.add(line.emptied);
         if (box.listItem) {
@@ -211,10 +285,11 @@ function flow(parent: TreeParent, line: Line, context: Context): Previous {
           dropsWhitespace: false,
           inline: true,
           ruby: context.ruby || inner.ruby,
+          keep: context.keep,
           previous: quotes ? "inline" : "none",
         });
         if (quotes) renderContent(line);
-        if (box.opaqueEdges) line.afterZeroWidthSpace = false;
+        if (box.opaqueEnd) line.afterZeroWidthSpace = false;
         if (box.rubyContent) line.afterRuby = true;
         if (isHtml(node, "wbr")) {
           // Its layout object is an empty text: a whitespace-only text after it renders.

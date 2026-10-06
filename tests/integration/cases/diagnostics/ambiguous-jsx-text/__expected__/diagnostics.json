@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF3009",
+    "severity": "error",
+    "message": "A tab in JSX text is a space to Babel's JSX and a tab to TypeScript's, oxc's and esbuild's.",
+    "file": "diagnostics/ambiguous-jsx-text/Field.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 18,
+      "offset": 196
+    },
+    "end": {
+      "line": 4,
+      "column": 19,
+      "offset": 197
+    },
+    "help": "Write a space.",
+    "fixes": [
+      {
+        "title": "Write a space",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 196,
+              "end": 197
+            },
+            "text": " "
+          }
+        ]
+      }
+    ]
+  }
+]

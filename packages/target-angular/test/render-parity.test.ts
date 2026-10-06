@@ -1,7 +1,7 @@
 // The Angular output, formatted and not, compiled by ngtsc (the `ssr:angular` project's plugin)
-// and rendered by Angular's server platform: the DOM inside the host element must be exactly
-// the one the IR describes, whatever Angular's whitespace removal, entity decoding and
-// interpolation would otherwise make of the template.
+// and rendered by Angular's server platform with the suite's props as inputs: the DOM inside the
+// host element must be exactly the one the reference describes, whatever Angular's whitespace
+// removal, entity decoding and interpolation would otherwise make of the template.
 // Angular's own packages ship partially compiled; in this plain-Node project the JIT compiler
 // finishes them as they load (the ssr project links them instead). The component under test is
 // compiled ahead of time by ngtsc either way, so the template's semantics are the same.
@@ -14,9 +14,9 @@ import { format as formatMessage } from "node:util";
 
 import { afterAll, describe, expect, it, vi } from "vitest";
 
-import { emitParity, paritySuites } from "../../codegen/test/render-parity-node.ts";
+import { emitParity, parityProps, paritySuites } from "../../codegen/test/render-parity-node.ts";
 import { compareCases, parseHtml } from "../../codegen/test/render-parity.ts";
-import type { DomNode, ParityCase } from "../../codegen/test/render-parity.ts";
+import type { DomNode, ParitySuite } from "../../codegen/test/render-parity.ts";
 import target from "../src/index.ts";
 import { renderToString } from "../src/toolchain/server.ts";
 import { ngtscPlugin, removeScratch, scratchDir } from "./helpers.ts";
@@ -29,10 +29,10 @@ afterAll(removeScratch);
  * error handler logs the errors (NG0904) it renders without the value.
  */
 async function render(
-  cases: readonly ParityCase[],
+  suite: ParitySuite,
   format: boolean,
 ): Promise<{ rendered: DomNode[]; logged: string[] }> {
-  const [file] = await emitParity(target, cases, { format });
+  const [file] = await emitParity(target, suite, { format });
   const directory = scratchDir();
   const { transform } = await ngtscPlugin();
   const { code } = await transform(join(directory, "RenderParity.uf.tsx.ts"), file!.contents);
@@ -47,7 +47,7 @@ async function render(
   ];
   let html: string;
   try {
-    html = await renderToString(component, {});
+    html = await renderToString(component, { props: parityProps(suite) });
   } finally {
     for (const spy of spies) spy.mockRestore();
   }
@@ -58,11 +58,14 @@ async function render(
 }
 
 describe.each([true, false])("angular output (formatted: %s), rendered by Angular", (format) => {
-  it.each(paritySuites())("renders %s exactly as the IR describes them", async (_, cases) => {
-    const { rendered, logged } = await render(cases, format);
-    expect(logged).toEqual([]);
-    for (const { name, expected, actual } of compareCases(rendered, cases)) {
-      expect.soft(actual, name).toEqual(expected);
-    }
-  });
+  it.each(paritySuites())(
+    "renders $title exactly as the reference describes them",
+    async (suite) => {
+      const { rendered, logged } = await render(suite, format);
+      expect(logged).toEqual([]);
+      for (const { name, expected, actual } of compareCases(rendered, suite)) {
+        expect.soft(actual, name).toEqual(expected);
+      }
+    },
+  );
 });

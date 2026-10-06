@@ -1,0 +1,11 @@
+{
+  "description": "`null` is a value, not an absence: optional props that may be null render one thing when absent, another when null, and their value when given, the empty string and `false` included.",
+  "ssr": {
+    "absent": { "props": { "name": "Ada Lovelace" } },
+    "null-values": { "props": { "name": "Ada Lovelace", "phone": null, "verified": null } },
+    "given": {
+      "props": { "name": "Ada Lovelace", "phone": "+44 20 7946 0000", "verified": true }
+    },
+    "empty-and-false": { "props": { "name": "Ada Lovelace", "phone": "", "verified": false } }
+  }
+}

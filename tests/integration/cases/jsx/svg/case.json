@@ -1,0 +1,7 @@
+{
+  "description": "An SVG icon: case-exact attributes, `stroke-width` as a string, a labelling `title`, a gradient with `stop`s, and a bound size and colour.",
+  "ssr": {
+    "default-size": { "props": { "label": "Task complete" } },
+    "large": { "props": { "label": "Upload complete", "size": 48, "colour": "#2da44e" } }
+  }
+}

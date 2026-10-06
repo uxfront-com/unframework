@@ -4,6 +4,7 @@ import type { QuarantineEntry, UfLayerMeta } from "../src/layers.ts";
 import {
   buildCells,
   buildPartialMatrix,
+  buildScenarios,
   cellHeadline,
   cellOf,
   mergeMatrices,
@@ -21,12 +22,19 @@ const record = (target: string, layers: UfLayerMeta["layers"], caseId = "basics/
   layers,
 });
 
+/** A browser test's record: it checked these parity scenarios. */
+const checked = (target: string, scenarios: string[], caseId = "basics/hello"): UfLayerMeta => ({
+  ...record(target, { L7: { status: "pass" } }, caseId),
+  scenarios,
+});
+
 const partial = (
   run: string,
   finishedAt: string,
   records: ProjectRecord[],
   projects = [...new Set(records.map((entry) => entry.project))],
   quarantine: QuarantineEntry[] = [],
+  reference: string | null = "vue",
 ): PartialMatrix =>
   buildPartialMatrix({
     run,
@@ -38,6 +46,7 @@ const partial = (
     shard: null,
     empty: [],
     quarantine,
+    reference,
   });
 
 describe("cells", () => {
@@ -86,6 +95,23 @@ describe("buildCells", () => {
   });
 });
 
+describe("buildScenarios", () => {
+  it("collects each case and target's scenarios once, sorted, from the records that have any", () => {
+    expect(
+      buildScenarios([
+        checked("vue", ["with-label", "defaults"]),
+        checked("vue", ["defaults", "after-rerender"]),
+        checked("react", ["defaults"], "a/first"),
+        record("vue", { L13: { status: "pass" } }),
+        { ...record("svelte", { L8: { status: "pass" } }), scenarios: [] },
+      ]),
+    ).toEqual({
+      "a/first": { react: ["defaults"] },
+      "basics/hello": { vue: ["after-rerender", "defaults", "with-label"] },
+    });
+  });
+});
+
 describe("buildPartialMatrix", () => {
   it("keeps each project's cells, and merges them across projects with every message", () => {
     const matrix = partial(
@@ -116,6 +142,26 @@ describe("buildPartialMatrix", () => {
       L13: "fail: page console\nserver console",
     });
     expect(matrix.projects).toEqual(["browser:vue", "harness", "ssr:vue"]);
+  });
+
+  it("keeps each project's scenarios and the run's reference", () => {
+    const matrix = partial("all", "2026-10-01T10:00:00.000Z", [
+      { project: "browser:vue", record: checked("vue", ["initial"]) },
+      { project: "browser:react", record: checked("react", ["initial", "rerendered"]) },
+      { project: "ssr:vue", record: record("vue", { L6: { status: "pass" } }) },
+    ]);
+    expect(matrix.scenariosByProject).toEqual({
+      "browser:react": { "basics/hello": { react: ["initial", "rerendered"] } },
+      "browser:vue": { "basics/hello": { vue: ["initial"] } },
+      "ssr:vue": {},
+    });
+    expect(matrix.scenarios).toEqual({
+      "basics/hello": { react: ["initial", "rerendered"], vue: ["initial"] },
+    });
+    expect(matrix.reference).toBe("vue");
+    expect(
+      buildPartialMatrix({ ...matrix, records: [], empty: [], reference: undefined }).reference,
+    ).toBeNull();
   });
 });
 
@@ -168,6 +214,27 @@ describe("mergeMatrices", () => {
     expect(mergeMatrices([removed, quarantined]).quarantine).toEqual([]);
     expect(() => mergeMatrices([{ ...failing, version: 1 } as never])).toThrow(/version 1/);
   });
+
+  it("adds up the scenarios of every run, as it keeps the cells a newer run did not record", () => {
+    const first = partial("browser-vue", "2026-10-01T10:00:00.000Z", [
+      { project: "browser:vue", record: checked("vue", ["initial"]) },
+    ]);
+    const second = partial("browser-vue", "2026-10-01T11:00:00.000Z", [
+      { project: "browser:vue", record: checked("vue", ["rerendered"]) },
+      { project: "browser:react", record: checked("react", ["initial"]) },
+    ]);
+    const { matrix } = mergeMatrices([second, first]);
+    expect(matrix.scenarios).toEqual({
+      "basics/hello": { react: ["initial"], vue: ["initial", "rerendered"] },
+    });
+  });
+
+  it("takes the reference of the newest run that has one", () => {
+    const outside = partial("compile", "2026-10-01T12:00:00.000Z", [], ["compile"], [], null);
+    const harness = partial("all", "2026-10-01T11:00:00.000Z", [], ["compile"], [], "vue");
+    expect(mergeMatrices([outside, harness]).reference).toBe("vue");
+    expect(mergeMatrices([outside]).reference).toBeNull();
+  });
 });
 
 describe("narrowing", () => {
@@ -185,7 +252,7 @@ describe("withoutProjects", () => {
     const matrix = {
       ...partial("all", "2026-10-01T10:00:00.000Z", [
         { project: "compile", record: record("vue", { L2: { status: "pass" } }) },
-        { project: "browser:vue", record: record("vue", { L7: { status: "pass" } }) },
+        { project: "browser:vue", record: checked("vue", ["initial"]) },
       ]),
       empty: ["browser:vue"],
     };
@@ -193,6 +260,8 @@ describe("withoutProjects", () => {
     expect(kept?.projects).toEqual(["compile"]);
     expect(kept?.empty).toEqual([]);
     expect(kept?.cases).toEqual({ "basics/hello": { vue: { L2: "pass" } } });
+    expect(kept?.scenariosByProject).toEqual({ compile: {} });
+    expect(kept?.scenarios).toEqual({});
     expect(withoutProjects(matrix, new Set(["ssr:vue"]))).toBe(matrix);
     expect(withoutProjects(matrix, new Set(["compile", "browser:vue"]))).toBeUndefined();
   });

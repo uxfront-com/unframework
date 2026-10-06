@@ -1,0 +1,27 @@
+{
+  "description": "A list in a list, a conditional in a list item, and a list as the else branch of a conditional.",
+  "ssr": {
+    "open": {
+      "props": {
+        "closed": false,
+        "courses": [
+          {
+            "id": "starters",
+            "title": "Starters",
+            "dishes": [
+              { "id": "soup", "name": "Tomato soup", "price": 5.5, "vegetarian": true },
+              { "id": "wings", "name": "Chicken wings", "price": 7, "vegetarian": false }
+            ]
+          },
+          {
+            "id": "desserts",
+            "title": "Desserts",
+            "dishes": [{ "id": "tart", "name": "Lemon tart", "price": 4.25, "vegetarian": true }]
+          },
+          { "id": "specials", "title": "Specials", "dishes": [] }
+        ]
+      }
+    },
+    "closed": { "props": { "closed": true, "courses": [] } }
+  }
+}

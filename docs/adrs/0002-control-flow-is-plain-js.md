@@ -1,6 +1,6 @@
 # ADR-0002: Control flow is plain JS, and `v-model` is the only directive
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0036
 - **Date:** 2026-10-01
 - **Plan:** §11 C2; §3, §4.3, §4.6, §5.4, §6, R4, Appendix A, Appendix B, Appendix C
 

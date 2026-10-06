@@ -1,0 +1,8 @@
+error[UF2002]: A prop's default must be a static value: Vue hoists defaults out of the component, and Angular reads them before any input is set.
+ --> diagnostics/non-static-prop-default/Pager.uf.tsx:7:51
+  |
+7 | export default function Pager({ page, pageCount = Number.MAX_SAFE_INTEGER }: PagerProps) {
+  |                                                   ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: Write the value itself: a literal, or an array or object of literals.
+  = see: https://unframework.dev/diagnostics/UF2002

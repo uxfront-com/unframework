@@ -1,0 +1,712 @@
+{
+  "irVersion": 1,
+  "file": "bindings/style-object/UsageMeter.uf.tsx",
+  "components": [
+    {
+      "name": "UsageMeter",
+      "span": {
+        "start": 113,
+        "end": 1120
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 44,
+              "end": 50
+            }
+          },
+          "binding": "label@150",
+          "span": {
+            "start": 37,
+            "end": 51
+          }
+        },
+        {
+          "name": "percent",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 63,
+              "end": 69
+            }
+          },
+          "binding": "percent@157",
+          "span": {
+            "start": 54,
+            "end": 70
+          }
+        },
+        {
+          "name": "colour",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 81,
+              "end": 87
+            }
+          },
+          "binding": "colour@166",
+          "span": {
+            "start": 73,
+            "end": 88
+          }
+        },
+        {
+          "name": "thickness",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 102,
+              "end": 108
+            }
+          },
+          "binding": "thickness@174",
+          "span": {
+            "start": 91,
+            "end": 109
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "UsageMeterProps",
+          "span": {
+            "start": 187,
+            "end": 202
+          }
+        },
+        "span": {
+          "start": 148,
+          "end": 202
+        }
+      },
+      "types": [
+        "UsageMeterProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@150",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 150,
+            "end": 155
+          }
+        },
+        {
+          "id": "percent@157",
+          "name": "percent",
+          "kind": "prop",
+          "span": {
+            "start": 157,
+            "end": 164
+          }
+        },
+        {
+          "id": "colour@166",
+          "name": "colour",
+          "kind": "prop",
+          "span": {
+            "start": 166,
+            "end": 172
+          }
+        },
+        {
+          "id": "thickness@174",
+          "name": "thickness",
+          "kind": "prop",
+          "span": {
+            "start": 174,
+            "end": 183
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "usage-meter",
+            "span": {
+              "start": 226,
+              "end": 245
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Bound",
+                    "property": "color",
+                    "value": {
+                      "code": "colour",
+                      "span": {
+                        "start": 272,
+                        "end": 278
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "colour@166",
+                          "span": {
+                            "start": 272,
+                            "end": 278
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 265,
+                      "end": 278
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "property": "font-weight",
+                    "value": {
+                      "code": "700",
+                      "span": {
+                        "start": 292,
+                        "end": 295
+                      },
+                      "refs": []
+                    },
+                    "span": {
+                      "start": 280,
+                      "end": 295
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "property": "line-height",
+                    "value": {
+                      "code": "1.5",
+                      "span": {
+                        "start": 309,
+                        "end": 312
+                      },
+                      "refs": []
+                    },
+                    "span": {
+                      "start": 297,
+                      "end": 312
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "margin-bottom",
+                    "value": "4px",
+                    "span": {
+                      "start": 314,
+                      "end": 333
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 256,
+                  "end": 336
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 347,
+                    "end": 352
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@150",
+                      "span": {
+                        "start": 347,
+                        "end": 352
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 346,
+                  "end": 353
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ": ",
+                "span": {
+                  "start": 353,
+                  "end": 355
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "percent",
+                  "span": {
+                    "start": 356,
+                    "end": 363
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "percent@157",
+                      "span": {
+                        "start": 356,
+                        "end": 363
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 355,
+                  "end": 364
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "%",
+                "span": {
+                  "start": 364,
+                  "end": 372
+                }
+              }
+            ],
+            "span": {
+              "start": 253,
+              "end": 376
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "progressbar",
+                "span": {
+                  "start": 396,
+                  "end": 414
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-label",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 435,
+                    "end": 440
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@150",
+                      "span": {
+                        "start": 435,
+                        "end": 440
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 423,
+                  "end": 441
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-valuemin",
+                "value": "0",
+                "span": {
+                  "start": 450,
+                  "end": 467
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-valuemax",
+                "value": "100",
+                "span": {
+                  "start": 476,
+                  "end": 495
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-valuenow",
+                "value": {
+                  "code": "percent",
+                  "span": {
+                    "start": 519,
+                    "end": 526
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "percent@157",
+                      "span": {
+                        "start": 519,
+                        "end": 526
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 504,
+                  "end": 527
+                }
+              },
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Bound",
+                    "property": "--meter-colour",
+                    "value": {
+                      "code": "colour",
+                      "span": {
+                        "start": 573,
+                        "end": 579
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "colour@166",
+                          "span": {
+                            "start": 573,
+                            "end": 579
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 555,
+                      "end": 579
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "property": "--meter-value",
+                    "value": {
+                      "code": "percent",
+                      "span": {
+                        "start": 608,
+                        "end": 615
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "percent@157",
+                          "span": {
+                            "start": 608,
+                            "end": 615
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 591,
+                      "end": 615
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "width",
+                    "value": "200px",
+                    "span": {
+                      "start": 627,
+                      "end": 641
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "height",
+                    "value": "12px",
+                    "span": {
+                      "start": 653,
+                      "end": 667
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "border-style",
+                    "value": "solid",
+                    "span": {
+                      "start": 679,
+                      "end": 699
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "property": "border-width",
+                    "value": {
+                      "code": "`${thickness}px`",
+                      "span": {
+                        "start": 724,
+                        "end": 740
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "thickness@174",
+                          "span": {
+                            "start": 727,
+                            "end": 736
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 711,
+                      "end": 740
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "property": "border-color",
+                    "value": {
+                      "code": "colour",
+                      "span": {
+                        "start": 765,
+                        "end": 771
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "colour@166",
+                          "span": {
+                            "start": 765,
+                            "end": 771
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 752,
+                      "end": 771
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 536,
+                  "end": 783
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "div",
+                "attributes": [
+                  {
+                    "kind": "Style",
+                    "declarations": [
+                      {
+                        "kind": "Bound",
+                        "property": "width",
+                        "value": {
+                          "code": "`${percent}%`",
+                          "span": {
+                            "start": 831,
+                            "end": 844
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "percent@157",
+                              "span": {
+                                "start": 834,
+                                "end": 841
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 824,
+                          "end": 844
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "property": "height",
+                        "value": "100%",
+                        "span": {
+                          "start": 846,
+                          "end": 860
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "property": "background-color",
+                        "value": "var(--meter-colour)",
+                        "span": {
+                          "start": 862,
+                          "end": 900
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 815,
+                      "end": 903
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 800,
+                  "end": 919
+                }
+              }
+            ],
+            "span": {
+              "start": 383,
+              "end": 932
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "usage-meter-caption",
+                "span": {
+                  "start": 950,
+                  "end": 977
+                }
+              },
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Bound",
+                    "property": "color",
+                    "value": {
+                      "code": "colour",
+                      "span": {
+                        "start": 1002,
+                        "end": 1008
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "colour@166",
+                          "span": {
+                            "start": 1002,
+                            "end": 1008
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 995,
+                      "end": 1008
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "font-family",
+                    "value": "\"UF Test Sans\", sans-serif",
+                    "span": {
+                      "start": 1010,
+                      "end": 1050
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 986,
+                  "end": 1053
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "percent",
+                  "span": {
+                    "start": 1071,
+                    "end": 1078
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "percent@157",
+                      "span": {
+                        "start": 1071,
+                        "end": 1078
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1070,
+                  "end": 1079
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " of 100 used",
+                "span": {
+                  "start": 1079,
+                  "end": 1098
+                }
+              }
+            ],
+            "span": {
+              "start": 939,
+              "end": 1102
+            }
+          }
+        ],
+        "span": {
+          "start": 221,
+          "end": 1113
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "UsageMeter",
+      "span": {
+        "start": 113,
+        "end": 1120
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "UsageMeterProps",
+      "exported": true,
+      "code": "interface UsageMeterProps {\n  label: string;\n  percent: number;\n  colour: string;\n  thickness: number;\n}",
+      "span": {
+        "start": 7,
+        "end": 111
+      }
+    }
+  ]
+}

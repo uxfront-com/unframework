@@ -1,0 +1,6 @@
+- region "Review":
+  - list:
+    - listitem: Unbox
+    - listitem: Assemble
+  - meter "Score": 7 out of 10
+  - paragraph: "Product: Walnut desk"

@@ -1,0 +1,11 @@
+- article "Shipping label":
+  - paragraph:
+    - strong: "To:"
+    - text: Ada Lovelace
+  - paragraph: London SW1Y 4JH United Kingdom
+  - paragraph: Handle with care
+  - text: "Ada Lovelace 12 St James's Square London SW1Y 4JH Parcel: 1 of 2 Weight: 2.5 kg"
+  - paragraph:
+    - text: Sent by
+    - emphasis: Unframework Ltd
+    - text: ", on two lines."

@@ -2,11 +2,20 @@ import { createRequire } from "node:module";
 
 import {
   checkInvariants,
+  createBoundAttribute,
+  createBranch,
+  createClassAttribute,
   createComponent,
   createElement,
   createExport,
+  createExpression,
+  createIf,
+  createInterpolation,
   createModule,
   createStaticAttribute,
+  createStaticClass,
+  createStaticStyle,
+  createStyleAttribute,
   createText,
   HTML_ELEMENTS,
   isComponentName,
@@ -126,4 +135,79 @@ describe("names", () => {
       expect(codes(diagnostics).includes("UF1103")).toBe(!isExportName(name));
     },
   );
+});
+
+/** An expression the IR holds as written, reading nothing. */
+function expression(code: string) {
+  return createExpression(code, { start: 0, end: code.length });
+}
+
+// M1's facts (ADR-0037, ADR-0038, ADR-0040): the analyser reports each source, and the invariants
+// reject the IR it would lower to, from the same tables in @unframework/ir.
+describe("what the targets render differently, in M1", () => {
+  it.each<[string, ElementNode, string?]>([
+    ["<p hidden={on}>a</p>", el("p", {}, "a"), "hidden"],
+    ['<iframe title="t" src={label}></iframe>', el("iframe", { title: "t" }), "src"],
+    ['<p tabindex="01">a</p>', el("p", { tabindex: "01" }, "a")],
+    [
+      '<div><img src="/a.png" alt="" width="10px" /></div>',
+      el("div", {}, el("img", { src: "/a.png", alt: "", width: "10px" })),
+    ],
+    ["<table>{label}</table>", el("table", {}, createInterpolation(expression("label"), at))],
+    [
+      "<div><select>{label}</select></div>",
+      el("div", {}, el("select", {}, createInterpolation(expression("label"), at))),
+    ],
+    [
+      "<textarea>{label}</textarea>",
+      el("textarea", {}, createInterpolation(expression("label"), at)),
+    ],
+    [
+      "<svg><g>{label}</g></svg>",
+      el("svg", {}, el("g", {}, createInterpolation(expression("label"), at))),
+    ],
+    ['<pre>{"\\na"}</pre>', el("pre", {}, "\na")],
+    [
+      '<pre>{on && "\\na"}</pre>',
+      el("pre", {}, createIf([createBranch(expression("on"), [createText("\na", at)], at)], at)),
+    ],
+    ["<svg><g> <circle /></g></svg>", el("svg", {}, el("g", {}, " ", el("circle")))],
+    ["<svg><div /></svg>", el("svg", {}, el("div"))],
+    ["<div><circle /></div>", el("div", {}, el("circle"))],
+    [
+      "<svg><title><tspan>a</tspan></title></svg>",
+      el("svg", {}, el("title", {}, el("tspan", {}, "a"))),
+    ],
+    ['<svg><path d="M0 0" fill /></svg>', el("svg", {}, el("path", { d: "M0 0", fill: true }))],
+  ])("are reported in %s, and rejected in a plugin's IR", (jsx, render, bound) => {
+    const { diagnostics } = component(jsx, { props: "label: string; on: boolean" });
+    expect(diagnostics.filter((diagnostic) => diagnostic.severity === "error")).not.toEqual([]);
+    const tree = bound
+      ? {
+          ...render,
+          attributes: [...render.attributes, createBoundAttribute(bound, expression("x"), at)],
+        }
+      : render;
+    expect(invariantsOf(tree)).not.toEqual([]);
+  });
+
+  it.each<[string, ElementNode]>([
+    ['<p class={["a", "a", label]}>x</p>', el("p", {}, "x")],
+    ['<p style={{ margin: "0", marginTop: label }}>x</p>', el("p", {}, "x")],
+  ])("reports %s, whose class or style sets a name twice", (jsx, render) => {
+    const { diagnostics } = component(jsx, { props: "label: string" });
+    expect(codes(diagnostics).some((code) => code === "UF3007" || code === "UF3022")).toBe(true);
+    const twice = {
+      ...render,
+      attributes: jsx.includes("class")
+        ? [createClassAttribute([createStaticClass("a", at), createStaticClass("a", at)], at)]
+        : [
+            createStyleAttribute(
+              [createStaticStyle("margin", "0", at), createStaticStyle("margin-top", "1px", at)],
+              at,
+            ),
+          ],
+    };
+    expect(invariantsOf(twice)).not.toEqual([]);
+  });
 });

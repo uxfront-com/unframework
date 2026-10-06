@@ -2,7 +2,9 @@
 //   L7   the normalised DOM and Playwright's ARIA snapshot, against __expected__/dom|aria.<name>.*
 //   L10  geometry, then pixels, through the visual command
 //   L11  axe-core on the container: no violations, or exactly the case's declared rules
-// Each layer is recorded separately in `task.meta.uf`; the test then fails with every message.
+// Each layer is recorded separately in `task.meta.uf`, and so is the scenario. It resolves even
+// when a layer fails (ADR-0043): the spec's own assertions after it still run and are recorded as
+// L8, and the setup file's afterEach then fails the test with every failed layer.
 import axe from "axe-core";
 import { inject, TestRunner } from "vitest";
 import type { RunnerTestCase } from "vitest";
@@ -11,7 +13,7 @@ import type { Locator } from "vitest/browser";
 
 import "../commands.ts";
 import { caseOfFile } from "../harness.ts";
-import { checkLayers } from "../layers.ts";
+import { recordLayerChecks, recordScenario } from "../layers.ts";
 import { KEBAB_CASE } from "../node/names.ts";
 import { LIVE_REFERENCE_SKIP } from "../visual-types.ts";
 import type { PixelTolerance } from "../visual-types.ts";
@@ -44,7 +46,11 @@ const AXE_OPTIONS = {
   rules: { region: { enabled: false } },
 } satisfies axe.RunOptions;
 
-/** Runs L7, L10 and L11 for one scenario of the current test's case. */
+/**
+ * Runs L7, L10 and L11 for one scenario of the current test's case and records them. Only a
+ * misuse rejects (a name that is not kebab-case, a tolerance without a reason, a call outside a
+ * test): that is the spec's own error, recorded as L8.
+ */
 export async function expectParity(
   view: ParityView,
   name: string,
@@ -63,66 +69,62 @@ export async function expectParity(
   const harness = inject("ufHarness");
   const caseId = caseOfFile(test.file.filepath, harness);
   const declaredAxe = harness.cases[caseId]?.axe ?? [];
+  const subject = { case: caseId, target: view.target, quarantine: harness.quarantine };
+  recordScenario(test, subject, name);
   await view.settle();
 
-  await checkLayers(
-    test,
-    { case: caseId, target: view.target, quarantine: harness.quarantine },
-    {
-      async L7() {
-        const failures: string[] = [];
-        const dom = await commands.ufArtefact({
-          case: caseId,
-          file: `dom.${name}.html`,
-          contents: asFile(view.html()),
-        });
-        if (!dom.pass) failures.push(dom.message);
-        const snapshot = await commands.ufAriaSnapshot(view.locator.serialize());
-        const aria = await commands.ufArtefact({
-          case: caseId,
-          file: `aria.${name}.yaml`,
-          contents: asFile(snapshot),
-        });
-        if (!aria.pass) failures.push(aria.message);
-        if (failures.length) throw new Error(failures.join("\n\n"));
-      },
-      async L10() {
-        const result = await captureVisual(test, {
-          case: caseId,
-          name,
-          container: view.container,
-          locator: view.locator,
-          ...(options.tolerance ? { tolerance: options.tolerance } : {}),
-        });
-        if (!result.pass) {
-          throw new Error(`${result.outcome} (${result.mode}, ${result.role}): ${result.message}`);
-        }
-        return result.outcome === "published-reference" ? { skip: LIVE_REFERENCE_SKIP } : undefined;
-      },
-      async L11() {
-        const results = await axe.run(view.container, AXE_OPTIONS);
-        const actual = [...new Set(results.violations.map((violation) => violation.id))].sort();
-        const expected = [...new Set(declaredAxe)].sort();
-        if (actual.join("\n") === expected.join("\n")) return;
-        const unexpected = results.violations.filter(
-          (violation) => !expected.includes(violation.id),
-        );
-        const missing = expected.filter((id) => !actual.includes(id));
-        const lines = unexpected.map(
-          (violation) =>
-            `  ${violation.id} (${violation.impact ?? "no impact"}): ${violation.help} at ${violation.nodes
-              .map((node) => node.target.join(" "))
-              .join(", ")}`,
-        );
-        if (missing.length) {
-          lines.push(`  declared in case.json but not reported: ${missing.join(", ")}`);
-        }
-        throw new Error(
-          `axe-core violations differ from case.json's "axe" list:\n${lines.join("\n")}`,
-        );
-      },
+  await recordLayerChecks(test, subject, {
+    async L7() {
+      const failures: string[] = [];
+      const dom = await commands.ufArtefact({
+        case: caseId,
+        file: `dom.${name}.html`,
+        contents: asFile(view.html()),
+      });
+      if (!dom.pass) failures.push(dom.message);
+      const snapshot = await commands.ufAriaSnapshot(view.locator.serialize());
+      const aria = await commands.ufArtefact({
+        case: caseId,
+        file: `aria.${name}.yaml`,
+        contents: asFile(snapshot),
+      });
+      if (!aria.pass) failures.push(aria.message);
+      if (failures.length) throw new Error(failures.join("\n\n"));
     },
-  );
+    async L10() {
+      const result = await captureVisual(test, {
+        case: caseId,
+        name,
+        container: view.container,
+        locator: view.locator,
+        ...(options.tolerance ? { tolerance: options.tolerance } : {}),
+      });
+      if (!result.pass) {
+        throw new Error(`${result.outcome} (${result.mode}, ${result.role}): ${result.message}`);
+      }
+      return result.outcome === "published-reference" ? { skip: LIVE_REFERENCE_SKIP } : undefined;
+    },
+    async L11() {
+      const results = await axe.run(view.container, AXE_OPTIONS);
+      const actual = [...new Set(results.violations.map((violation) => violation.id))].sort();
+      const expected = [...new Set(declaredAxe)].sort();
+      if (actual.join("\n") === expected.join("\n")) return;
+      const unexpected = results.violations.filter((violation) => !expected.includes(violation.id));
+      const missing = expected.filter((id) => !actual.includes(id));
+      const lines = unexpected.map(
+        (violation) =>
+          `  ${violation.id} (${violation.impact ?? "no impact"}): ${violation.help} at ${violation.nodes
+            .map((node) => node.target.join(" "))
+            .join(", ")}`,
+      );
+      if (missing.length) {
+        lines.push(`  declared in case.json but not reported: ${missing.join(", ")}`);
+      }
+      throw new Error(
+        `axe-core violations differ from case.json's "axe" list:\n${lines.join("\n")}`,
+      );
+    },
+  });
 }
 
 /** Artefacts are text files with exactly one trailing newline. */

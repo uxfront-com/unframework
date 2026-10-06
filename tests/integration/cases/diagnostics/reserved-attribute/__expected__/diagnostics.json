@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3005",
+    "severity": "error",
+    "message": "`slot` is template syntax: Svelte rejects it outside a component and Astro moves the element into a slot.",
+    "file": "diagnostics/reserved-attribute/Panel.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 11,
+      "offset": 165
+    },
+    "end": {
+      "line": 5,
+      "column": 15,
+      "offset": 169
+    },
+    "help": "Slots land with composition."
+  }
+]

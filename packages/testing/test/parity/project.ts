@@ -59,15 +59,26 @@ export function fixtureHarness(
         reason: "fixture",
         issue: "#late",
       },
+      // A failing assertion, recorded as quarantined: the test passes unless another layer fails.
+      { case: "stub/behaviour-known", target: "dom", layer: "L8", reason: "fixture", issue: "#L8" },
+      // An entry whose case passes L8: the run's reporter fails it as stale (behaviour.test.ts).
+      {
+        case: "stub/behaviour-stale",
+        target: "dom",
+        layer: "L8",
+        reason: "fixture",
+        issue: "#stale",
+      },
     ],
     cases: fixtureCases(),
   });
 }
 
 /**
- * The `parity` project: the stub target in Chromium, with the harness's browser and commands.
- * It runs the `*.parity.spec.ts` specs; `include` picks others, such as the `*.late.spec.ts`
- * ones that fail on purpose.
+ * The `parity` project: the stub target in Chromium, with the harness's browser and commands,
+ * and the corpus's rule that every test asserts something (`requireAssertions`, ADR-0043). It
+ * runs the `*.parity.spec.ts` specs; `include` picks others, such as the `*.late.spec.ts` ones
+ * that fail on purpose.
  */
 export function parityProject(
   env: Readonly<Record<string, string | undefined>> = process.env,
@@ -80,6 +91,8 @@ export function parityProject(
       root: packageRoot,
       include: [...include],
       provide: { target: "dom", ufHarness: fixtureHarness(env) },
+      // The harness's: the setup bounds `expect.element` by the poll timeout, and requires one.
+      expect: { requireAssertions: true, poll: { timeout: 5_000 } },
       browser: parityBrowser({ name: "parity" }),
     },
   };

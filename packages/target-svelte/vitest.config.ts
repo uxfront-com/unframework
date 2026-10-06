@@ -31,7 +31,8 @@ const config: ViteUserConfig = defineConfig({
       browserProject({
         provider: playwright(),
         vite: await toolchain.vite("browser", context),
-        modules: { target, extension: ".svelte", formatted: false },
+        // The script block is formatted (ADR-0041), so the formatted output differs too.
+        modules: { target, extension: ".svelte", formatted: true },
       }),
     ],
   },

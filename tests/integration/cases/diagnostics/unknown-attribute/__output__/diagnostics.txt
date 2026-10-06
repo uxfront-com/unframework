@@ -1,0 +1,8 @@
+error[UF3006]: `alt` is not an attribute of <a>.
+ --> diagnostics/unknown-attribute/DocsLink.uf.tsx:4:21
+  |
+4 |     <a href="/docs" alt="Documentation">
+  |                     ^^^
+  |
+  = help: `alt` is an attribute of <area>, <img> and <input>.
+  = see: https://unframework.dev/diagnostics/UF3006

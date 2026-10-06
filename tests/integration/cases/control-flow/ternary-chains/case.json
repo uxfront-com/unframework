@@ -1,0 +1,9 @@
+{
+  "description": "An else-if chain of conditionals whose branches are text, several nodes, a single element and a final else.",
+  "ssr": {
+    "pending": { "props": { "status": "pending" } },
+    "shipped": { "props": { "status": "shipped", "carrier": "Royal Mail" } },
+    "delivered": { "props": { "status": "delivered" } },
+    "cancelled": { "props": { "status": "cancelled" } }
+  }
+}

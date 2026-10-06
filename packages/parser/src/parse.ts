@@ -33,6 +33,10 @@ export interface ParsedModule {
  * Parses a module with oxc. The language follows the extension: `.tsx` files (including
  * `.uf.tsx`) are TSX, everything else is TypeScript. Never throws: syntax problems, and the
  * module's early errors (duplicate declarations and exports), are returned in `errors`.
+ *
+ * Every node carries `range` beside `start` and `end`: the analyser's scope analysis
+ * (`@typescript-eslint/scope-manager`, ADR-0035) reads it to resolve references, and fails
+ * without it.
  */
 export function parseModule(file: string, source: string): ParsedModule {
   const result = parseSync(file, source, {
@@ -41,6 +45,7 @@ export function parseModule(file: string, source: string): ParsedModule {
     astType: "ts",
     preserveParens: false,
     showSemanticErrors: true,
+    range: true,
   });
   const errors = result.errors.map((error): ParseError => {
     const labels = error.labels.map((label) => ({

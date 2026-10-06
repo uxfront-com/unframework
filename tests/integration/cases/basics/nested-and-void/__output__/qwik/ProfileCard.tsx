@@ -7,8 +7,8 @@ export default component$(() => {
         <img
           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%23345'/%3E%3C/svg%3E"
           alt="Ada's avatar"
-          width="48"
-          height="48"
+          width={48}
+          height={48}
         />
         <h2 id="profile-name">Ada Lovelace</h2>
       </header>

@@ -1,0 +1,8 @@
+- region "Messages":
+  - heading "Inbox" [level=2]
+  - list
+  - paragraph: All caught up
+  - heading "Archive" [level=2]
+  - list:
+    - listitem: Old invoice
+  - paragraph: 1 archived

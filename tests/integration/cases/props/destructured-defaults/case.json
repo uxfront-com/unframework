@@ -1,0 +1,17 @@
+{
+  "description": "Destructured defaults (string, number, boolean, array and object) taken when a prop is left out or undefined, and overridden when it is given.",
+  "ssr": {
+    "defaults": { "props": { "message": "Backups run every night." } },
+    "overridden": {
+      "props": {
+        "message": "The database is read-only until 06:00.",
+        "title": "Maintenance",
+        "tone": "warning",
+        "priority": 3,
+        "expanded": true,
+        "tags": ["ops", "database"],
+        "author": { "name": "Ada" }
+      }
+    }
+  }
+}

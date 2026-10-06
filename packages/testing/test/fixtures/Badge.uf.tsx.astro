@@ -1,0 +1,12 @@
+---
+interface Props {
+  label: string;
+  tone?: "info" | "warn";
+  items?: string[];
+  count?: number;
+}
+
+const { label, tone = "info", items = [], count } = Astro.props;
+---
+
+<div><p class={tone} data-count={count}>{label}</p>{tone === "warn" ? <strong>warning</strong> : null}<ul>{items.map((item) => <li>{item}</li>)}</ul></div>

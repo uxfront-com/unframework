@@ -9,6 +9,9 @@ import { describe, expect, it } from "vitest";
 import { REPO_ROOT, ROOT } from "./paths.ts";
 import { selectTargets } from "./targets.ts";
 
+/** The targets whose toolchain lints with ESLint too: oxlint cannot read their templates. */
+const ESLINT_TARGETS: ReadonlySet<string> = new Set(["vue", "svelte", "astro", "angular"]);
+
 interface DryTask {
   taskId: string;
   inputs: Record<string, string>;
@@ -34,12 +37,16 @@ describe("the integration test task", () => {
     expect(Object.keys(test.inputs)).toContain("../../.github/workflows/ci.yml");
   });
 
-  it("hashes every toolchain's tsconfig through its transit node", () => {
+  it("hashes every toolchain's tsconfig and lint configuration through its transit node", () => {
     for (const target of selectTargets(undefined)) {
       const id = `@unframework/toolchain-${target}#transit`;
       expect(test.dependencies).toContain(id);
       const transit = tasks.find((task) => task.taskId === id);
-      expect(Object.keys(transit?.inputs ?? {}), id).toContain("tsconfig.json");
+      const inputs = Object.keys(transit?.inputs ?? {});
+      expect(inputs, id).toContain("tsconfig.json");
+      // L5 (ADR-0042): oxlint everywhere, and ESLint for the template languages.
+      expect(inputs, id).toContain("output.oxlintrc.json");
+      if (ESLINT_TARGETS.has(target)) expect(inputs, id).toContain("eslint.config.js");
     }
   });
 });

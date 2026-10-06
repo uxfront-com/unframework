@@ -1,0 +1,20 @@
+{
+  "description": "An object of class toggles (a shorthand key, quoted keys, a key with two names); with every toggle off the element has no class name.",
+  "ssr": {
+    "active": {
+      "props": { "label": "Dashboard", "href": "/dashboard", "active": true, "muted": false }
+    },
+    "all-off": {
+      "props": { "label": "Reports", "href": "/reports", "active": false, "muted": false }
+    },
+    "muted-danger": {
+      "props": {
+        "label": "Delete account",
+        "href": "/account/delete",
+        "active": false,
+        "muted": true,
+        "danger": true
+      }
+    }
+  }
+}

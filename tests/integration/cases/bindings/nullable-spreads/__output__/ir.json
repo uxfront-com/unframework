@@ -1,0 +1,980 @@
+{
+  "irVersion": 1,
+  "file": "bindings/nullable-spreads/ShipmentCard.uf.tsx",
+  "components": [
+    {
+      "name": "ShipmentCard",
+      "span": {
+        "start": 421,
+        "end": 1143
+      },
+      "props": [
+        {
+          "name": "reference",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 203,
+              "end": 209
+            }
+          },
+          "binding": "reference@462",
+          "span": {
+            "start": 192,
+            "end": 210
+          }
+        },
+        {
+          "name": "carrier",
+          "optional": false,
+          "type": {
+            "code": "LabelAttributes | null",
+            "span": {
+              "start": 222,
+              "end": 244
+            }
+          },
+          "binding": "carrier@475",
+          "span": {
+            "start": 213,
+            "end": 245
+          }
+        },
+        {
+          "name": "eta",
+          "optional": true,
+          "type": {
+            "code": "LabelAttributes | null",
+            "span": {
+              "start": 254,
+              "end": 276
+            }
+          },
+          "default": {
+            "code": "null",
+            "span": {
+              "start": 492,
+              "end": 496
+            },
+            "refs": []
+          },
+          "binding": "eta@486",
+          "span": {
+            "start": 248,
+            "end": 277
+          }
+        },
+        {
+          "name": "parcel",
+          "optional": false,
+          "type": {
+            "code": "Parcel",
+            "span": {
+              "start": 288,
+              "end": 294
+            }
+          },
+          "binding": "parcel@500",
+          "span": {
+            "start": 280,
+            "end": 295
+          }
+        },
+        {
+          "name": "tracked",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 307,
+              "end": 314
+            }
+          },
+          "binding": "tracked@510",
+          "span": {
+            "start": 298,
+            "end": 315
+          }
+        },
+        {
+          "name": "tracking",
+          "optional": false,
+          "type": {
+            "code": "LabelAttributes",
+            "span": {
+              "start": 328,
+              "end": 343
+            }
+          },
+          "binding": "tracking@521",
+          "span": {
+            "start": 318,
+            "end": 344
+          }
+        },
+        {
+          "name": "stops",
+          "optional": false,
+          "type": {
+            "code": "(LabelAttributes | undefined)[]",
+            "span": {
+              "start": 354,
+              "end": 385
+            }
+          },
+          "binding": "stops@533",
+          "span": {
+            "start": 347,
+            "end": 386
+          }
+        },
+        {
+          "name": "signature",
+          "optional": true,
+          "type": {
+            "code": "LabelAttributes",
+            "span": {
+              "start": 401,
+              "end": 416
+            }
+          },
+          "binding": "signature@542",
+          "span": {
+            "start": 389,
+            "end": 417
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ShipmentCardProps",
+          "span": {
+            "start": 556,
+            "end": 573
+          }
+        },
+        "span": {
+          "start": 458,
+          "end": 573
+        }
+      },
+      "types": [
+        "LabelAttributes",
+        "Parcel",
+        "ShipmentCardProps"
+      ],
+      "bindings": [
+        {
+          "id": "reference@462",
+          "name": "reference",
+          "kind": "prop",
+          "span": {
+            "start": 462,
+            "end": 471
+          }
+        },
+        {
+          "id": "carrier@475",
+          "name": "carrier",
+          "kind": "prop",
+          "span": {
+            "start": 475,
+            "end": 482
+          }
+        },
+        {
+          "id": "eta@486",
+          "name": "eta",
+          "kind": "prop",
+          "span": {
+            "start": 486,
+            "end": 489
+          }
+        },
+        {
+          "id": "parcel@500",
+          "name": "parcel",
+          "kind": "prop",
+          "span": {
+            "start": 500,
+            "end": 506
+          }
+        },
+        {
+          "id": "tracked@510",
+          "name": "tracked",
+          "kind": "prop",
+          "span": {
+            "start": 510,
+            "end": 517
+          }
+        },
+        {
+          "id": "tracking@521",
+          "name": "tracking",
+          "kind": "prop",
+          "span": {
+            "start": 521,
+            "end": 529
+          }
+        },
+        {
+          "id": "stops@533",
+          "name": "stops",
+          "kind": "prop",
+          "span": {
+            "start": 533,
+            "end": 538
+          }
+        },
+        {
+          "id": "signature@542",
+          "name": "signature",
+          "kind": "prop",
+          "span": {
+            "start": 542,
+            "end": 551
+          }
+        },
+        {
+          "id": "stop@862",
+          "name": "stop",
+          "kind": "loopVar",
+          "span": {
+            "start": 862,
+            "end": 866
+          }
+        },
+        {
+          "id": "index@868",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 868,
+            "end": 873
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "shipment-card",
+            "span": {
+              "start": 601,
+              "end": 622
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "reference",
+              "span": {
+                "start": 635,
+                "end": 644
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "reference@462",
+                  "span": {
+                    "start": 635,
+                    "end": 644
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 623,
+              "end": 645
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Spread",
+                "value": {
+                  "code": "carrier",
+                  "span": {
+                    "start": 660,
+                    "end": 667
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "carrier@475",
+                      "span": {
+                        "start": 660,
+                        "end": 667
+                      }
+                    }
+                  ]
+                },
+                "keys": [
+                  {
+                    "name": "id",
+                    "span": {
+                      "start": 30,
+                      "end": 32
+                    }
+                  },
+                  {
+                    "name": "title",
+                    "span": {
+                      "start": 44,
+                      "end": 49
+                    }
+                  }
+                ],
+                "nullish": true,
+                "span": {
+                  "start": 656,
+                  "end": 668
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Carrier",
+                "span": {
+                  "start": 669,
+                  "end": 676
+                }
+              }
+            ],
+            "span": {
+              "start": 653,
+              "end": 680
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Spread",
+                "value": {
+                  "code": "eta",
+                  "span": {
+                    "start": 694,
+                    "end": 697
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "eta@486",
+                      "span": {
+                        "start": 694,
+                        "end": 697
+                      }
+                    }
+                  ]
+                },
+                "keys": [
+                  {
+                    "name": "id",
+                    "span": {
+                      "start": 30,
+                      "end": 32
+                    }
+                  },
+                  {
+                    "name": "title",
+                    "span": {
+                      "start": 44,
+                      "end": 49
+                    }
+                  }
+                ],
+                "nullish": true,
+                "span": {
+                  "start": 690,
+                  "end": 698
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Estimated delivery",
+                "span": {
+                  "start": 699,
+                  "end": 717
+                }
+              }
+            ],
+            "span": {
+              "start": 687,
+              "end": 721
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Spread",
+                "value": {
+                  "code": "parcel.tag",
+                  "span": {
+                    "start": 735,
+                    "end": 745
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "parcel@500",
+                      "span": {
+                        "start": 735,
+                        "end": 741
+                      }
+                    }
+                  ]
+                },
+                "keys": [
+                  {
+                    "name": "id",
+                    "span": {
+                      "start": 30,
+                      "end": 32
+                    }
+                  },
+                  {
+                    "name": "title",
+                    "span": {
+                      "start": 44,
+                      "end": 49
+                    }
+                  }
+                ],
+                "nullish": true,
+                "span": {
+                  "start": 731,
+                  "end": 746
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "parcel.label",
+                  "span": {
+                    "start": 748,
+                    "end": 760
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "parcel@500",
+                      "span": {
+                        "start": 748,
+                        "end": 754
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 747,
+                  "end": 761
+                }
+              }
+            ],
+            "span": {
+              "start": 728,
+              "end": 765
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Spread",
+                "value": {
+                  "code": "tracked ? tracking : undefined",
+                  "span": {
+                    "start": 780,
+                    "end": 810
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tracked@510",
+                      "span": {
+                        "start": 780,
+                        "end": 787
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "tracking@521",
+                      "span": {
+                        "start": 790,
+                        "end": 798
+                      }
+                    },
+                    {
+                      "kind": "Global",
+                      "name": "undefined",
+                      "span": {
+                        "start": 801,
+                        "end": 810
+                      }
+                    }
+                  ]
+                },
+                "keys": [
+                  {
+                    "name": "id",
+                    "span": {
+                      "start": 30,
+                      "end": 32
+                    }
+                  },
+                  {
+                    "name": "title",
+                    "span": {
+                      "start": 44,
+                      "end": 49
+                    }
+                  }
+                ],
+                "nullish": true,
+                "span": {
+                  "start": 775,
+                  "end": 812
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Live tracking",
+                "span": {
+                  "start": 813,
+                  "end": 826
+                }
+              }
+            ],
+            "span": {
+              "start": 772,
+              "end": 830
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "stops",
+                  "span": {
+                    "start": 851,
+                    "end": 856
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "stops@533",
+                      "span": {
+                        "start": 851,
+                        "end": 856
+                      }
+                    }
+                  ]
+                },
+                "item": "stop@862",
+                "index": "index@868",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 899,
+                    "end": 904
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@868",
+                      "span": {
+                        "start": 899,
+                        "end": 904
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [
+                    {
+                      "kind": "Spread",
+                      "value": {
+                        "code": "stop",
+                        "span": {
+                          "start": 910,
+                          "end": 914
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "stop@862",
+                            "span": {
+                              "start": 910,
+                              "end": 914
+                            }
+                          }
+                        ]
+                      },
+                      "keys": [
+                        {
+                          "name": "id",
+                          "span": {
+                            "start": 30,
+                            "end": 32
+                          }
+                        },
+                        {
+                          "name": "title",
+                          "span": {
+                            "start": 44,
+                            "end": 49
+                          }
+                        }
+                      ],
+                      "nullish": true,
+                      "span": {
+                        "start": 906,
+                        "end": 915
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "kind": "Text",
+                      "value": "Stop ",
+                      "span": {
+                        "start": 916,
+                        "end": 934
+                      }
+                    },
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "index + 1",
+                        "span": {
+                          "start": 935,
+                          "end": 944
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "index@868",
+                            "span": {
+                              "start": 935,
+                              "end": 940
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 934,
+                        "end": 945
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 890,
+                    "end": 961
+                  }
+                },
+                "span": {
+                  "start": 851,
+                  "end": 972
+                }
+              }
+            ],
+            "span": {
+              "start": 837,
+              "end": 985
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "signature",
+                  "span": {
+                    "start": 993,
+                    "end": 1002
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "signature@542",
+                      "span": {
+                        "start": 993,
+                        "end": 1002
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Spread",
+                        "value": {
+                          "code": "signature",
+                          "span": {
+                            "start": 1013,
+                            "end": 1022
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "signature@542",
+                              "span": {
+                                "start": 1013,
+                                "end": 1022
+                              }
+                            }
+                          ]
+                        },
+                        "keys": [
+                          {
+                            "name": "id",
+                            "span": {
+                              "start": 30,
+                              "end": 32
+                            }
+                          },
+                          {
+                            "name": "title",
+                            "span": {
+                              "start": 44,
+                              "end": 49
+                            }
+                          }
+                        ],
+                        "nullish": false,
+                        "span": {
+                          "start": 1009,
+                          "end": 1023
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Signed on delivery",
+                        "span": {
+                          "start": 1024,
+                          "end": 1042
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1006,
+                      "end": 1046
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 993,
+                  "end": 1046
+                }
+              }
+            ],
+            "span": {
+              "start": 993,
+              "end": 1046
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "!parcel.seal",
+                  "span": {
+                    "start": 1055,
+                    "end": 1067
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "parcel@500",
+                      "span": {
+                        "start": 1056,
+                        "end": 1062
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Not sealed",
+                        "span": {
+                          "start": 1073,
+                          "end": 1083
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1070,
+                      "end": 1087
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1055,
+                  "end": 1087
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Spread",
+                        "value": {
+                          "code": "parcel.seal",
+                          "span": {
+                            "start": 1097,
+                            "end": 1108
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "parcel@500",
+                              "span": {
+                                "start": 1097,
+                                "end": 1103
+                              }
+                            }
+                          ]
+                        },
+                        "keys": [
+                          {
+                            "name": "id",
+                            "span": {
+                              "start": 30,
+                              "end": 32
+                            }
+                          },
+                          {
+                            "name": "title",
+                            "span": {
+                              "start": 44,
+                              "end": 49
+                            }
+                          }
+                        ],
+                        "nullish": false,
+                        "span": {
+                          "start": 1093,
+                          "end": 1109
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Sealed",
+                        "span": {
+                          "start": 1110,
+                          "end": 1116
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1090,
+                      "end": 1120
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1090,
+                  "end": 1120
+                }
+              }
+            ],
+            "span": {
+              "start": 1055,
+              "end": 1120
+            }
+          }
+        ],
+        "span": {
+          "start": 592,
+          "end": 1136
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ShipmentCard",
+      "span": {
+        "start": 421,
+        "end": 1143
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "LabelAttributes",
+      "exported": false,
+      "code": "interface LabelAttributes {\n  id: string;\n  title?: string;\n}",
+      "span": {
+        "start": 0,
+        "end": 61
+      }
+    },
+    {
+      "name": "Parcel",
+      "exported": false,
+      "code": "interface Parcel {\n  label: string;\n  tag?: LabelAttributes;\n  seal?: LabelAttributes;\n}",
+      "span": {
+        "start": 63,
+        "end": 151
+      }
+    },
+    {
+      "name": "ShipmentCardProps",
+      "exported": true,
+      "code": "interface ShipmentCardProps {\n  reference: string;\n  carrier: LabelAttributes | null;\n  eta?: LabelAttributes | null;\n  parcel: Parcel;\n  tracked: boolean;\n  tracking: LabelAttributes;\n  stops: (LabelAttributes | undefined)[];\n  signature?: LabelAttributes;\n}",
+      "span": {
+        "start": 160,
+        "end": 419
+      }
+    }
+  ]
+}

@@ -26,9 +26,13 @@ const RESET = `
   -webkit-text-size-adjust: 100%;
 }
 html, body { margin: 0; padding: 0; background: #ffffff; color: #000000; }
-/* Chromium's UA sheet does not inherit font-family into form controls; without this they render
-   with a system font, which the font audit rejects. */
-button, input, select, textarea { font-family: inherit; }
+/* Chromium's UA sheet does not inherit font-family into form controls, and gives the code
+   elements the generic monospace family; without this they render with a system font, which the
+   font audit rejects. They inherit the bundled family instead of bundling a monospace one: one
+   family, one font file per weight, and the same text on every target either way. */
+button, input, select, textarea, code, kbd, listing, plaintext, pre, samp, tt, xmp {
+  font-family: inherit;
+}
 *, *::before, *::after {
   animation-duration: 0s !important;
   animation-delay: 0s !important;

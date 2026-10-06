@@ -1,0 +1,19 @@
+{
+  "description": "Union-typed props narrowed by `Array.isArray`, `typeof` and a discriminant, and read as the narrowed type inside each branch.",
+  "ssr": {
+    "array-and-number": {
+      "props": {
+        "tags": ["design", "research"],
+        "limit": 12.6,
+        "result": { "ok": true, "match": "Quarterly report" }
+      }
+    },
+    "string-and-text": {
+      "props": {
+        "tags": "design",
+        "limit": "Unlimited",
+        "result": { "ok": false, "error": "Nothing matches these filters." }
+      }
+    }
+  }
+}

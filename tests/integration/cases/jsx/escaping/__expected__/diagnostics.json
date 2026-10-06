@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF3011",
+    "severity": "warning",
+    "message": "`&check;` is an HTML character reference, which JSX does not decode: every target renders it as the text `&check;`.",
+    "file": "jsx/escaping/TemplateTip.uf.tsx",
+    "start": {
+      "line": 27,
+      "column": 15,
+      "offset": 938
+    },
+    "end": {
+      "line": 27,
+      "column": 22,
+      "offset": 945
+    },
+    "help": "Write `&#x2713;` for U+2713, or `&amp;check;` for the text itself.",
+    "fixes": [
+      {
+        "title": "Write `&#x2713;`",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 938,
+              "end": 945
+            },
+            "text": "&#x2713;"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -24,8 +24,8 @@
     "@uxfront/oxlint-config": "^0.1.0",
     "@uxfront/typescript-config": "catalog:",
     "oxfmt": "catalog:",
-    "oxlint": "^1.85.0",
-    "oxlint-tsgolint": "^7.0.2002",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "turbo": "^2.11.2",
     "typescript": "7.0.2"
   },

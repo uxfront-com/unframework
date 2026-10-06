@@ -1,0 +1,315 @@
+{
+  "irVersion": 1,
+  "file": "bindings/class-string/Banner.uf.tsx",
+  "components": [
+    {
+      "name": "Banner",
+      "span": {
+        "start": 97,
+        "end": 370
+      },
+      "props": [
+        {
+          "name": "message",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 42,
+              "end": 48
+            }
+          },
+          "binding": "message@130",
+          "span": {
+            "start": 33,
+            "end": 49
+          }
+        },
+        {
+          "name": "tone",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 58,
+              "end": 64
+            }
+          },
+          "binding": "tone@139",
+          "span": {
+            "start": 52,
+            "end": 65
+          }
+        },
+        {
+          "name": "emphasis",
+          "optional": true,
+          "type": {
+            "code": "string | null",
+            "span": {
+              "start": 79,
+              "end": 92
+            }
+          },
+          "binding": "emphasis@145",
+          "span": {
+            "start": 68,
+            "end": 93
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "BannerProps",
+          "span": {
+            "start": 157,
+            "end": 168
+          }
+        },
+        "span": {
+          "start": 128,
+          "end": 168
+        }
+      },
+      "types": [
+        "BannerProps"
+      ],
+      "bindings": [
+        {
+          "id": "message@130",
+          "name": "message",
+          "kind": "prop",
+          "span": {
+            "start": 130,
+            "end": 137
+          }
+        },
+        {
+          "id": "tone@139",
+          "name": "tone",
+          "kind": "prop",
+          "span": {
+            "start": 139,
+            "end": 143
+          }
+        },
+        {
+          "id": "emphasis@145",
+          "name": "emphasis",
+          "kind": "prop",
+          "span": {
+            "start": 145,
+            "end": 153
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Static",
+                "value": "banner",
+                "span": {
+                  "start": 200,
+                  "end": 208
+                }
+              },
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "tone",
+                  "span": {
+                    "start": 210,
+                    "end": 214
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tone@139",
+                      "span": {
+                        "start": 210,
+                        "end": 214
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 210,
+                  "end": 214
+                }
+              }
+            ],
+            "span": {
+              "start": 192,
+              "end": 216
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "note",
+            "span": {
+              "start": 217,
+              "end": 228
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Dynamic",
+                    "value": {
+                      "code": "emphasis",
+                      "span": {
+                        "start": 246,
+                        "end": 254
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "emphasis@145",
+                          "span": {
+                            "start": 246,
+                            "end": 254
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 246,
+                      "end": 254
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 239,
+                  "end": 255
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "message",
+                  "span": {
+                    "start": 257,
+                    "end": 264
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "message@130",
+                      "span": {
+                        "start": 257,
+                        "end": 264
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 256,
+                  "end": 265
+                }
+              }
+            ],
+            "span": {
+              "start": 236,
+              "end": 269
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Dynamic",
+                    "value": {
+                      "code": "`banner-footer banner-footer-${tone}`",
+                      "span": {
+                        "start": 286,
+                        "end": 323
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "tone@139",
+                          "span": {
+                            "start": 317,
+                            "end": 321
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 286,
+                      "end": 323
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 279,
+                  "end": 324
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Shown to every visitor.",
+                "span": {
+                  "start": 325,
+                  "end": 348
+                }
+              }
+            ],
+            "span": {
+              "start": 276,
+              "end": 352
+            }
+          }
+        ],
+        "span": {
+          "start": 187,
+          "end": 363
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Banner",
+      "span": {
+        "start": 97,
+        "end": 370
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "BannerProps",
+      "exported": true,
+      "code": "interface BannerProps {\n  message: string;\n  tone: string;\n  emphasis?: string | null;\n}",
+      "span": {
+        "start": 7,
+        "end": 95
+      }
+    }
+  ]
+}

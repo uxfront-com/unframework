@@ -1,0 +1,353 @@
+{
+  "irVersion": 1,
+  "file": "props/props-parameter/AuthorByline.uf.tsx",
+  "components": [
+    {
+      "name": "AuthorByline",
+      "span": {
+        "start": 122,
+        "end": 402
+      },
+      "props": [
+        {
+          "name": "author",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 47,
+              "end": 53
+            }
+          },
+          "binding": "author@159",
+          "span": {
+            "start": 39,
+            "end": 54
+          }
+        },
+        {
+          "name": "published",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 68,
+              "end": 74
+            }
+          },
+          "binding": "published@159",
+          "span": {
+            "start": 57,
+            "end": 75
+          }
+        },
+        {
+          "name": "minutes",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 87,
+              "end": 93
+            }
+          },
+          "binding": "minutes@159",
+          "span": {
+            "start": 78,
+            "end": 94
+          }
+        },
+        {
+          "name": "affiliation",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 111,
+              "end": 117
+            }
+          },
+          "binding": "affiliation@159",
+          "span": {
+            "start": 97,
+            "end": 118
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "object",
+        "name": "props",
+        "type": {
+          "code": "AuthorBylineProps",
+          "span": {
+            "start": 166,
+            "end": 183
+          }
+        },
+        "span": {
+          "start": 159,
+          "end": 183
+        }
+      },
+      "types": [
+        "AuthorBylineProps"
+      ],
+      "bindings": [
+        {
+          "id": "author@159",
+          "name": "author",
+          "kind": "prop",
+          "span": {
+            "start": 159,
+            "end": 164
+          }
+        },
+        {
+          "id": "published@159",
+          "name": "published",
+          "kind": "prop",
+          "span": {
+            "start": 159,
+            "end": 164
+          }
+        },
+        {
+          "id": "minutes@159",
+          "name": "minutes",
+          "kind": "prop",
+          "span": {
+            "start": 159,
+            "end": 164
+          }
+        },
+        {
+          "id": "affiliation@159",
+          "name": "affiliation",
+          "kind": "prop",
+          "span": {
+            "start": 159,
+            "end": 164
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "byline",
+            "span": {
+              "start": 205,
+              "end": 219
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "By ",
+            "span": {
+              "start": 220,
+              "end": 230
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "props.author",
+              "span": {
+                "start": 231,
+                "end": 243
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "author@159",
+                  "span": {
+                    "start": 231,
+                    "end": 243
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 230,
+              "end": 244
+            }
+          },
+          {
+            "kind": "Text",
+            "value": ", ",
+            "span": {
+              "start": 244,
+              "end": 246
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "props.affiliation ?? \"independent\"",
+              "span": {
+                "start": 247,
+                "end": 281
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "affiliation@159",
+                  "span": {
+                    "start": 247,
+                    "end": 264
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 246,
+              "end": 282
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "br",
+            "attributes": [],
+            "children": [],
+            "span": {
+              "start": 289,
+              "end": 295
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "time",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "datetime",
+                "value": {
+                  "code": "props.published",
+                  "span": {
+                    "start": 318,
+                    "end": 333
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "published@159",
+                      "span": {
+                        "start": 318,
+                        "end": 333
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 308,
+                  "end": 334
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "props.published",
+                  "span": {
+                    "start": 336,
+                    "end": 351
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "published@159",
+                      "span": {
+                        "start": 336,
+                        "end": 351
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 335,
+                  "end": 352
+                }
+              }
+            ],
+            "span": {
+              "start": 302,
+              "end": 359
+            }
+          },
+          {
+            "kind": "Text",
+            "value": " · ",
+            "span": {
+              "start": 359,
+              "end": 362
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "props.minutes",
+              "span": {
+                "start": 363,
+                "end": 376
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "minutes@159",
+                  "span": {
+                    "start": 363,
+                    "end": 376
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 362,
+              "end": 377
+            }
+          },
+          {
+            "kind": "Text",
+            "value": " min read",
+            "span": {
+              "start": 377,
+              "end": 391
+            }
+          }
+        ],
+        "span": {
+          "start": 202,
+          "end": 395
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "AuthorByline",
+      "span": {
+        "start": 122,
+        "end": 402
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "AuthorBylineProps",
+      "exported": true,
+      "code": "interface AuthorBylineProps {\n  author: string;\n  published: string;\n  minutes: number;\n  affiliation?: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 120
+      }
+    }
+  ]
+}

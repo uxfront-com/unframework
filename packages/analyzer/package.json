@@ -42,6 +42,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@typescript-eslint/scope-manager": "catalog:",
     "@unframework/diagnostics": "workspace:*",
     "@unframework/ir": "workspace:*",
     "@unframework/parser": "workspace:*"

@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3001",
+    "severity": "error",
+    "message": "<sapn> is not an HTML element.",
+    "file": "diagnostics/unknown-element/Notice.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 8,
+      "offset": 143
+    },
+    "end": {
+      "line": 5,
+      "column": 12,
+      "offset": 147
+    },
+    "help": "Components are PascalCase (`<Card>`), SVG elements sit inside an <svg>, and MathML is not supported yet."
+  }
+]

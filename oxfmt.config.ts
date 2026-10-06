@@ -9,6 +9,9 @@ export default defineConfig({
     // formats its own output, and the harness writes the expectations.
     "tests/integration/cases/**/__output__/**",
     "tests/integration/cases/**/__expected__/**",
+    // Diagnostic cases are deliberately wrong: some do not parse, and formatting would rewrite
+    // the whitespace and the spellings they report.
+    "tests/integration/cases/diagnostics/**",
     "packages/testing/test/parity/cases/**/__expected__/**",
     // Generated from the IR's types: `pnpm --filter @unframework/ir generate --check` compares
     // it byte for byte.

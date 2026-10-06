@@ -1,0 +1,9 @@
+error[UF3014]: `key` belongs on the element a list's `.map` renders: elsewhere React and Vue remount the element when it changes, and the others ignore it.
+ --> diagnostics/misplaced-key/Intro.uf.tsx:5:10
+  |
+5 |       <p key="intro">Welcome.</p>
+  |          ^^^
+  |
+  = help: Remove it.
+  = fix (safe): Remove `key`
+  = see: https://unframework.dev/diagnostics/UF3014

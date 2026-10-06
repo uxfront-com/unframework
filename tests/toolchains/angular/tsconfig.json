@@ -7,12 +7,13 @@
   // (harness/toolchain-strictness.unit.test.ts). L3 checks with the same
   // options in memory (@unframework/target-angular/toolchain, `strictOptions`), where the
   // extended diagnostics stay warnings so it can tell them apart; a unit test keeps the two in
-  // step.
+  // step. The library is ES2024's, as on every other target: an expression valid there
+  // (`toSorted()`, the analyser's own fix for `sort()`) must type-check here too.
   "compilerOptions": {
     "target": "es2022",
     "module": "preserve",
     "moduleResolution": "bundler",
-    "lib": ["es2022", "dom", "dom.iterable"],
+    "lib": ["es2024", "dom", "dom.iterable"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,

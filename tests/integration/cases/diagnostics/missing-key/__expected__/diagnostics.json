@@ -1,0 +1,41 @@
+[
+  {
+    "code": "UF3013",
+    "severity": "error",
+    "message": "A list's element needs a `key`: the frameworks match each item's element across renders by it.",
+    "file": "diagnostics/missing-key/TagList.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 10,
+      "offset": 254
+    },
+    "end": {
+      "line": 10,
+      "column": 12,
+      "offset": 256
+    },
+    "help": "Key it by something unique and stable in the item: `key={item.id}`.",
+    "fixes": [
+      {
+        "title": "Key the element by its index, `key={index}`",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 238,
+              "end": 238
+            },
+            "text": ", index"
+          },
+          {
+            "span": {
+              "start": 256,
+              "end": 256
+            },
+            "text": " key={index}"
+          }
+        ]
+      }
+    ]
+  }
+]
