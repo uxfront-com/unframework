@@ -224,20 +224,32 @@ describe("normalizeHtml: options", () => {
   });
 });
 
+/** The fastest of five normalisations of a document, in milliseconds, after one to warm up. */
+function fastest(html: string): number {
+  normalizeHtml(html);
+  const timings = Array.from({ length: 5 }, () => {
+    const start = performance.now();
+    normalizeHtml(html, { target: "react" });
+    return performance.now() - start;
+  });
+  return Math.min(...timings);
+}
+
 describe("normalizeHtml: performance", () => {
-  it("normalises a 1,000-element document well under 50 ms", () => {
+  // A shared CI runner, busy with every package's tests at once, takes several times as long
+  // as a laptop: the time grows linearly with the document, which a fixed budget alone cannot
+  // tell from a slow machine. A tenfold document takes about ten times as long; quadratic work
+  // would take a hundred.
+  it("normalises a 1,000-element document in linear time, well under 250 ms", () => {
     const item =
       '<li class="item b a" data-hk="00" :="ii_0"><a href="#x" style="color:red;margin: 0">' +
       '\n  Item <b>bold</b> <!-- -->text\n</a><!--[--><input type="checkbox" checked="checked"' +
       ' aria-describedby="_r_1_"><span id="_r_1_">hint</span><!--]--></li>';
+    const small = `<ul>${item.repeat(20)}</ul>`;
     const html = `<ul>${item.repeat(200)}</ul>`;
     expect(html.match(/<[a-z]/g)!.length).toBe(1001);
-    normalizeHtml(html);
-    const timings = Array.from({ length: 5 }, () => {
-      const start = performance.now();
-      normalizeHtml(html, { target: "react" });
-      return performance.now() - start;
-    });
-    expect(Math.min(...timings)).toBeLessThan(50);
+    const [smallTime, time] = [fastest(small), fastest(html)];
+    expect(time).toBeLessThan(250);
+    expect(time / smallTime).toBeLessThan(30);
   });
 });

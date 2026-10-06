@@ -45,11 +45,13 @@ export function goldenFiles(): string[] {
  * name and its component source.
  */
 export function corpusSources(): { name: string; file: string; source: string }[] {
+  // The checks read the path within the corpus: CI checks the repo out under `/__w/`.
   return filesUnder(casesDir)
-    .filter((path) => path.endsWith(".uf.tsx") && !path.includes("/__"))
-    .map((path) => ({
-      name: path.slice(casesDir.length + 1, path.lastIndexOf("/")),
-      file: path.slice(casesDir.length + 1),
+    .map((path) => ({ path, file: path.slice(casesDir.length + 1) }))
+    .filter(({ file }) => file.endsWith(".uf.tsx") && !file.includes("/__"))
+    .map(({ path, file }) => ({
+      name: file.slice(0, file.lastIndexOf("/")),
+      file,
       source: readFileSync(path, "utf8"),
     }))
     .filter(({ name }) => !name.startsWith("diagnostics/"));

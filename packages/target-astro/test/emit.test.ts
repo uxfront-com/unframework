@@ -455,20 +455,24 @@ describe("props: the frontmatter (design §5.7, ADR-0034)", () => {
     );
   });
 
-  it("types the callers of a component that reads no prop by its exported `Props` (L4)", async () => {
-    const directory = join(scratch.path, "callers");
-    mkdirSync(directory, { recursive: true });
-    writeFileSync(join(directory, "List.astro"), emitted(readsNothingNamed));
-    const caller = join(directory, "Caller.astro");
-    writeFileSync(
-      caller,
-      '---\nimport List from "./List.astro";\n---\n\n<div><List /><List items={[]} /></div>\n',
-    );
-    const results = await astroTypecheck([caller], { toolchainDir, root: integrationRoot });
-    expect(results.get(caller)).toEqual([
-      expect.objectContaining({ code: "TS2322", message: expect.stringMatching(/'items'/) }),
-    ]);
-  });
+  it(
+    "types the callers of a component that reads no prop by its exported `Props` (L4)",
+    { timeout: 60_000 },
+    async () => {
+      const directory = join(scratch.path, "callers");
+      mkdirSync(directory, { recursive: true });
+      writeFileSync(join(directory, "List.astro"), emitted(readsNothingNamed));
+      const caller = join(directory, "Caller.astro");
+      writeFileSync(
+        caller,
+        '---\nimport List from "./List.astro";\n---\n\n<div><List /><List items={[]} /></div>\n',
+      );
+      const results = await astroTypecheck([caller], { toolchainDir, root: integrationRoot });
+      expect(results.get(caller)).toEqual([
+        expect.objectContaining({ code: "TS2322", message: expect.stringMatching(/'items'/) }),
+      ]);
+    },
+  );
 
   it("formats the frontmatter as TypeScript, and leaves the markup as printed (ADR-0041)", async () => {
     expect(await compiled(defaults)).toBe(

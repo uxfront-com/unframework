@@ -184,7 +184,9 @@ export function describeClientParity(
     );
 
     if (!alone.length) return;
-    it("renders each case alone as the reference describes", async () => {
+    // Vite compiles each case's component when it is first imported: a sweep of a hundred
+    // cases takes seconds, and many times that on CI, where every package's tests run at once.
+    it("renders each case alone as the reference describes", { timeout: 120_000 }, async () => {
       for (const component of alone) {
         const only = cases[component.only!]!;
         if (unsupported(only)) continue;

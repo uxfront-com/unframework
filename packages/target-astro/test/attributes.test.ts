@@ -156,8 +156,11 @@ describe("attributes Astro's types do not declare (L4)", () => {
     },
   );
 
-  it("render as the attributes themselves: static, bound and from a spread", async () => {
-    const output = emitted(`interface Typing { autocorrect?: "on" | "off" }
+  it(
+    "render as the attributes themselves: static, bound and from a spread",
+    { timeout: 60_000 },
+    async () => {
+      const output = emitted(`interface Typing { autocorrect?: "on" | "off" }
 export interface NoteProps { mode: "on" | "off"; typing: Typing }
 export default function Note({ mode, typing }: NoteProps) {
   return (
@@ -169,33 +172,34 @@ export default function Note({ mode, typing }: NoteProps) {
     </div>
   );
 }`);
-    // Astro's types declare `autocorrect` on a form: it is written there as an attribute.
-    expect(output.slice(output.indexOf("---\n\n", 4) + 5)).toBe(
-      [
-        "<div>",
-        '  <form autocorrect="off" aria-label="Search">x</form>',
-        '  <p {...{ autocorrect: "on" }}>y</p>',
-        "  <p {...{ autocorrect: mode }}>z</p>",
-        "  <p {...{ autocorrect: typing.autocorrect }}>w</p>",
-        "</div>",
-        "",
-      ].join("\n"),
-    );
-    const html = await renderToString(await loadAstroComponent(scratch.path, output), {
-      props: { mode: "off", typing: {} },
-    });
-    expect(html).toBe(
-      [
-        '<div><form autocorrect="off" aria-label="Search">x</form>',
-        '<p autocorrect="on">y</p><p autocorrect="off">z</p><p>w</p></div>',
-      ].join(""),
-    );
-    const directory = join(scratch.path, "render");
-    mkdirSync(directory, { recursive: true });
-    const path = join(directory, "Note.astro");
-    writeFileSync(path, output);
-    expect(await astroTypecheck([path], { toolchainDir, root: integrationRoot })).toEqual(
-      new Map([[path, []]]),
-    );
-  });
+      // Astro's types declare `autocorrect` on a form: it is written there as an attribute.
+      expect(output.slice(output.indexOf("---\n\n", 4) + 5)).toBe(
+        [
+          "<div>",
+          '  <form autocorrect="off" aria-label="Search">x</form>',
+          '  <p {...{ autocorrect: "on" }}>y</p>',
+          "  <p {...{ autocorrect: mode }}>z</p>",
+          "  <p {...{ autocorrect: typing.autocorrect }}>w</p>",
+          "</div>",
+          "",
+        ].join("\n"),
+      );
+      const html = await renderToString(await loadAstroComponent(scratch.path, output), {
+        props: { mode: "off", typing: {} },
+      });
+      expect(html).toBe(
+        [
+          '<div><form autocorrect="off" aria-label="Search">x</form>',
+          '<p autocorrect="on">y</p><p autocorrect="off">z</p><p>w</p></div>',
+        ].join(""),
+      );
+      const directory = join(scratch.path, "render");
+      mkdirSync(directory, { recursive: true });
+      const path = join(directory, "Note.astro");
+      writeFileSync(path, output);
+      expect(await astroTypecheck([path], { toolchainDir, root: integrationRoot })).toEqual(
+        new Map([[path, []]]),
+      );
+    },
+  );
 });
