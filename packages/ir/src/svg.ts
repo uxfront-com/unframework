@@ -190,12 +190,20 @@ export function isSvgElement(tag: string): boolean {
   return SVG_ELEMENTS.has(tag);
 }
 
+/**
+ * SVG's descriptive elements, which are not rendered: they take the core attributes only
+ * (`SVG_DESCRIPTIVE_ATTRIBUTES`). A presentation attribute styles nothing there, and Vue types
+ * `<title>` with HTML's attributes, so one fails vue-tsc (L4).
+ */
+export const SVG_DESCRIPTIVE_ELEMENTS: ReadonlySet<string> = words("desc title");
+
+/** The attributes of a descriptive element, besides ARIA's and `data-*`. */
+export const SVG_DESCRIPTIVE_ATTRIBUTES: ReadonlySet<string> = words("class id lang style");
+
 /** Whether an attribute (case-exact) is an attribute of the SVG element. */
 export function isSvgAttribute(tag: string, name: string): boolean {
-  return (
-    SVG_GLOBAL_ATTRIBUTES.has(name) ||
-    (SVG_ELEMENT_ATTRIBUTES.get(tag)?.has(name) ?? false) ||
-    ARIA_ATTRIBUTES.has(name) ||
-    isDataAttribute(name)
-  );
+  const own = SVG_DESCRIPTIVE_ELEMENTS.has(tag)
+    ? SVG_DESCRIPTIVE_ATTRIBUTES.has(name)
+    : SVG_GLOBAL_ATTRIBUTES.has(name) || (SVG_ELEMENT_ATTRIBUTES.get(tag)?.has(name) ?? false);
+  return own || ARIA_ATTRIBUTES.has(name) || isDataAttribute(name);
 }

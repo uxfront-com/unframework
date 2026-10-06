@@ -1,0 +1,305 @@
+{
+  "irVersion": 1,
+  "file": "props/null-and-absent/ContactLine.uf.tsx",
+  "components": [
+    {
+      "name": "ContactLine",
+      "span": {
+        "start": 109,
+        "end": 520
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 44,
+              "end": 50
+            }
+          },
+          "binding": "name@147",
+          "span": {
+            "start": 38,
+            "end": 51
+          }
+        },
+        {
+          "name": "phone",
+          "optional": true,
+          "type": {
+            "code": "string | null",
+            "span": {
+              "start": 62,
+              "end": 75
+            }
+          },
+          "binding": "phone@153",
+          "span": {
+            "start": 54,
+            "end": 76
+          }
+        },
+        {
+          "name": "verified",
+          "optional": true,
+          "type": {
+            "code": "boolean | null",
+            "span": {
+              "start": 90,
+              "end": 104
+            }
+          },
+          "binding": "verified@160",
+          "span": {
+            "start": 79,
+            "end": 105
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ContactLineProps",
+          "span": {
+            "start": 172,
+            "end": 188
+          }
+        },
+        "span": {
+          "start": 145,
+          "end": 188
+        }
+      },
+      "types": [
+        "ContactLineProps"
+      ],
+      "bindings": [
+        {
+          "id": "name@147",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 147,
+            "end": 151
+          }
+        },
+        {
+          "id": "phone@153",
+          "name": "phone",
+          "kind": "prop",
+          "span": {
+            "start": 153,
+            "end": 158
+          }
+        },
+        {
+          "id": "verified@160",
+          "name": "verified",
+          "kind": "prop",
+          "span": {
+            "start": 160,
+            "end": 168
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "contact-line",
+            "span": {
+              "start": 216,
+              "end": 236
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "name",
+              "span": {
+                "start": 249,
+                "end": 253
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "name@147",
+                  "span": {
+                    "start": 249,
+                    "end": 253
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 237,
+              "end": 254
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "data-phone",
+                "value": {
+                  "code": "phone === null ? \"withheld\" : phone",
+                  "span": {
+                    "start": 277,
+                    "end": 312
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "phone@153",
+                      "span": {
+                        "start": 277,
+                        "end": 282
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "phone@153",
+                      "span": {
+                        "start": 307,
+                        "end": 312
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 265,
+                  "end": 313
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Phone: ",
+                "span": {
+                  "start": 314,
+                  "end": 330
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "phone === null ? \"withheld\" : (phone ?? \"not given yet\")",
+                  "span": {
+                    "start": 331,
+                    "end": 387
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "phone@153",
+                      "span": {
+                        "start": 331,
+                        "end": 336
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "phone@153",
+                      "span": {
+                        "start": 362,
+                        "end": 367
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 330,
+                  "end": 388
+                }
+              }
+            ],
+            "span": {
+              "start": 262,
+              "end": 399
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "verified === null ? \"Verification pending\" : verified ? \"Verified\" : \"Not verified\"",
+                  "span": {
+                    "start": 410,
+                    "end": 493
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "verified@160",
+                      "span": {
+                        "start": 410,
+                        "end": 418
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "verified@160",
+                      "span": {
+                        "start": 455,
+                        "end": 463
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 409,
+                  "end": 494
+                }
+              }
+            ],
+            "span": {
+              "start": 406,
+              "end": 498
+            }
+          }
+        ],
+        "span": {
+          "start": 207,
+          "end": 513
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ContactLine",
+      "span": {
+        "start": 109,
+        "end": 520
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ContactLineProps",
+      "exported": true,
+      "code": "interface ContactLineProps {\n  name: string;\n  phone?: string | null;\n  verified?: boolean | null;\n}",
+      "span": {
+        "start": 7,
+        "end": 107
+      }
+    }
+  ]
+}

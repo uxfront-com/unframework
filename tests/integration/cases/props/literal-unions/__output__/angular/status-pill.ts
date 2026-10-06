@@ -16,7 +16,7 @@ export interface StatusPillProps {
     @let level = this.level();
     <span
       class="pill"
-      [class]="[('pill-' + status), ('pill-' + size), ('pill-level-' + level)].join(' ')"
+      [class]="['pill-' + status, 'pill-' + size, 'pill-level-' + level].join(' ')"
     >{{ status === "active" ? "Active" : status === "paused" ? "Paused" : "Archived" }}{{ level === 3 ? " (critical)" : "" }}</span>
   `,
 })

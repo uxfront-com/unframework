@@ -13,8 +13,8 @@ export default function SaveIndicator(props: SaveIndicatorProps) {
         <em>Saving</em>
       </Show>
       , {props.changes === 1 ? "1 change" : `${props.changes} changes`}
-      <Show when={props.savedAt} fallback=" just now">
-        <time datetime={props.savedAt}>{" at " + props.savedAt}</time>
+      <Show keyed when={props.savedAt} fallback=" just now">
+        {(savedAt) => <time datetime={savedAt}>{" at " + savedAt}</time>}
       </Show>
     </p>
   );

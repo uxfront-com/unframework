@@ -13,9 +13,9 @@ One `<kebab-name>.ts` file per component (design §5.5):
 - **Inputs.** Every prop is a public signal input, whether the template reads it or not (a
   prop is the component's API, and Angular reports a value for an undeclared input):
   `input.required<T>()` when required, `input<T>()` when optional, and
-  `input<T, T | undefined>(default, { transform: (value) => (value === undefined ? default :
-  value) })` with a default, so an explicit `undefined` takes the default as JavaScript's
-  destructuring does, and `null` stays a value.
+  `input<T, T | undefined>(default, { transform })` with a default, whose transform is
+  `(value) => (value === undefined ? default : value)`: an explicit `undefined` takes the
+  default, as JavaScript's destructuring does, and `null` stays a value.
 - **Template.** One `@let label = this.label();` per input the template reads, then the markup
   of the Angular dialect (`@unframework/codegen`'s `angularDialect`): `{{ }}`, `@if`/`@for`,
   `[attr.x]` bindings, a static `class` beside one `[class]`, a static `style` beside

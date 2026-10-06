@@ -10,13 +10,28 @@ import type { AST } from "@unframework/parser";
 import { checkExpression, findToken, shadowing, span } from "./expressions.ts";
 import { containsJsx, lowerElement } from "./lower.ts";
 import type { Place } from "./lower.ts";
+import { angularChecks, narrowingAt, referencePath } from "./narrowing.ts";
 import type { LoopVariable, RenderContext } from "./render.ts";
-import { describe, elementsOf, mayBeNullish, NUMBER, outside } from "./types/kinds.ts";
+import {
+  describe,
+  elementsOf,
+  mayBeNullish,
+  NUMBER,
+  outside,
+  union,
+  UNDEFINED,
+} from "./types/kinds.ts";
 
 /** The canonical form, for the messages. */
 const CANONICAL = "`source.map((item, index) => <element key={…}>…</element>)`";
 
-/** Lowers a list, `source.map(callback)` whose callback holds JSX, or reports why it cannot be. */
+/**
+ * Lowers a list, `source.map(callback)` whose callback holds JSX, or reports why it cannot be.
+ * `source?.map(…)` is reported: `?.` does nothing on a source that is never nullish where it is
+ * read (UF3023), and a list cannot render a nullish one (UF3018), which `(source ?? []).map(…)`
+ * renders alike. A source that a condition around it tests where the targets' checkers read it
+ * differently is not supported yet (UF1002): neither spelling passes every checker.
+ */
 export function lowerList(
   call: AST.CallExpression,
   place: Place,
@@ -25,23 +40,72 @@ export function lowerList(
   const { reporter, source } = render;
   const mark = reporter.diagnostics.length;
   const callee = call.callee as AST.StaticMemberExpression;
-  const list = checkExpression(callee.object, render);
+  const checked = checkExpression(callee.object, render);
+  // A `?.` inside the source ends the whole chain, `.map` included, as `undefined`.
+  const list = checked.shortCircuits
+    ? { ...checked, kinds: union(checked.kinds, UNDEFINED) }
+    : checked;
+  const path = referencePath(callee.object, render);
+  const narrowing =
+    path && mayBeNullish(list.kinds) ? narrowingAt(callee.object, path, render) : undefined;
   const outsideKinds = outside(list.kinds, ["array"]);
-  if (outsideKinds.length) {
+  const token = findToken(
+    source,
+    callee.object.end,
+    callee.property.start,
+    callee.optional ? "?." : ".",
+  );
+  // `?.` says the source can be nullish, whatever kinds the model reads.
+  const optional = callee.optional && mayBeNullish(list.kinds);
+  if (narrowing?.kind === "unfollowed" && angularChecks(path!, render)) {
+    // Angular narrows the source, where it rejects `??` (NG8102), and a JSX target's callback
+    // or a form the compiler does not follow may not, where `.map` fails its type check.
+    reporter.report(
+      "UF1002",
+      callee.object,
+      narrowing.reason === "callback"
+        ? "A list over a property that may be absent is not supported yet in a list's callback when a condition outside it tests the property: Angular's checker narrows it there, where it rejects `(source ?? []).map(…)` (NG8102), and TypeScript does not narrow a property inside the JSX targets' callbacks, where `source.map(…)` fails their type check."
+        : "A list over a value that may be absent is not supported yet where a condition around it tests the value in a form the compiler does not follow (an equality with a value that is no literal, such as `member === current`): Angular's checker may narrow it there, where it rejects `(source ?? []).map(…)` (NG8102), and the compiler cannot tell whether every target's checker takes `source.map(…)`.",
+      {
+        help: "Test the source itself (`items && …`, `items !== undefined && …`), inside the list's callback if it is in one, or give the prop the default `[]`.",
+        related: [{ span: span(narrowing.condition), message: "The condition tests it here" }],
+      },
+    );
+  } else if (outsideKinds.length || optional) {
     const nullable = outsideKinds.every((kind) => kind === "null" || kind === "undefined");
+    // `source?.map(…)`, and a chain a `?.` in the source ends, render nothing for a nullish
+    // source, as `(source ?? []).map(…)` does.
+    const fixes: Fix[] =
+      (optional || checked.shortCircuits) && nullable && token
+        ? [
+            {
+              title: "Write `(source ?? []).map(…)`",
+              confidence: "safe",
+              edits: [
+                { span: { start: callee.object.start, end: callee.object.start }, text: "(" },
+                {
+                  span: { start: token.start, end: token.start + (callee.optional ? 2 : 1) },
+                  text: " ?? []).",
+                },
+              ],
+            },
+          ]
+        : [];
     reporter.report(
       "UF3018",
       callee.object,
-      `A list renders an array, and this source can be ${describe(outsideKinds)}, which the targets iterate differently.`,
+      outsideKinds.length
+        ? `A list renders an array, and this source can be ${describe(outsideKinds)}, which the targets iterate differently.`
+        : "A list renders an array, and `?.` reads this source as one that can be `null` or `undefined`, which the targets iterate differently.",
       {
         help: nullable
           ? "Default it to an empty array: `(items ?? []).map(…)`, or give the prop the default `[]`."
           : "Render an array.",
+        ...(fixes.length ? { fixes } : {}),
       },
     );
   }
   if (callee.optional && !mayBeNullish(list.kinds)) {
-    const token = findToken(source, callee.object.end, callee.property.start, "?.");
     if (token) {
       reporter.report(
         "UF3023",
@@ -59,6 +123,17 @@ export function lowerList(
         },
       );
     }
+  }
+  // `.map?.(…)`: an array's `map` is always there, and each output calls it plainly.
+  const optionalCall = call.optional
+    ? findToken(source, callee.end, call.arguments[0]?.start ?? call.end, "?.")
+    : undefined;
+  if (optionalCall) {
+    const at = { start: optionalCall.start, end: optionalCall.start + 2 };
+    reporter.report("UF3023", at, "`?.` calls a method that is always there, so it does nothing.", {
+      help: "Remove the `?.`.",
+      fixes: [{ title: "Remove `?.`", confidence: "safe", edits: [{ span: at, text: "" }] }],
+    });
   }
   const [callback, ...others] = call.arguments;
   if (others.length || !callback || callback.type !== "ArrowFunctionExpression") {
@@ -93,7 +168,9 @@ export function lowerList(
           help:
             parameter.type === "ObjectPattern"
               ? "Name the item, and read its members as `item.name`."
-              : "Name the parameter.",
+              : parameter.type === "ArrayPattern"
+                ? "Name the item, and read its parts as `entry[0]` and `entry[1]`."
+                : "Name the parameter.",
         },
       );
     } else if (parameter.typeAnnotation) {
@@ -111,9 +188,8 @@ export function lowerList(
     );
   }
   if (!body) {
-    reporter.report("UF3015", callback.body, bodyProblem(callback), {
-      help: "Filter the list first (`items.filter((item) => item.shown).map(…)`), and return one element.",
-    });
+    const { message, help } = bodyProblem(callback);
+    reporter.report("UF3015", callback.body, message, { help });
     return undefined;
   }
   // The loop variables: in scope in the key and the body.
@@ -139,12 +215,13 @@ export function lowerList(
   }
   render.enclosing.push(...variables);
   const lowered = lowerElement(body, place, render, true);
-  // Read off the source: an element the analyser cannot check still has its key.
+  // Read off the source: an element the analyser cannot check still has its key, which is
+  // JSX's `key` only, in lower case.
   const written = body.openingElement.attributes.find(
     (attribute): attribute is AST.JSXAttribute =>
       attribute.type === "JSXAttribute" &&
       attribute.name.type === "JSXIdentifier" &&
-      attribute.name.name.toLowerCase() === "key",
+      attribute.name.name === "key",
   );
   const key = valid
     ? lowerKey(lowered.key ?? written, body, callback, variables, render)
@@ -167,8 +244,12 @@ function bodyOf(callback: AST.ArrowFunctionExpression): AST.JSXElement | undefin
   return body.type === "JSXElement" ? body : undefined;
 }
 
-/** Why a callback's body is not one element. */
-function bodyProblem(callback: AST.ArrowFunctionExpression): string {
+/**
+ * Why a callback's body is not one element, and what to write: an item that renders one element
+ * or another keeps its place in one element that holds the conditional; one that renders or not
+ * is filtered out first.
+ */
+function bodyProblem(callback: AST.ArrowFunctionExpression): { message: string; help: string } {
   const { body } = callback;
   const returned =
     body.type === "BlockStatement"
@@ -179,12 +260,37 @@ function bodyProblem(callback: AST.ArrowFunctionExpression): string {
         )?.argument
       : body;
   if (returned?.type === "JSXFragment") {
-    return `A list renders one element per item, and a fragment cannot carry the item's key: ${CANONICAL}.`;
+    return {
+      message: `A list renders one element per item, and a fragment cannot carry the item's key: ${CANONICAL}.`,
+      help: "Wrap the elements in one element, and key it: `<li key={item.id}>…</li>`.",
+    };
+  }
+  if (returned?.type === "JSXElement") {
+    return {
+      message: `A list's callback only returns its element: ${CANONICAL}.`,
+      help: "Remove the other statements, and return the element.",
+    };
+  }
+  if (
+    returned?.type === "ConditionalExpression" &&
+    containsJsx(returned.consequent) &&
+    containsJsx(returned.alternate)
+  ) {
+    return {
+      message: `A list renders one element per item, not a conditional: return one element that holds the conditional, ${CANONICAL}.`,
+      help: "Move the conditional into one keyed element, which every item renders: `<li key={item.id}>{item.href ? <a href={item.href}>…</a> : <span>…</span>}</li>`.",
+    };
   }
   if (returned && containsJsx(returned)) {
-    return `A list renders one element per item, not a conditional: filter the list first, then ${CANONICAL}.`;
+    return {
+      message: `A list renders one element per item, not a conditional: filter the list first, then ${CANONICAL}.`,
+      help: "Filter the list first (`items.filter((item) => item.shown).map(…)`), and return one element.",
+    };
   }
-  return `A list's callback returns one element: ${CANONICAL}.`;
+  return {
+    message: `A list's callback returns one element: ${CANONICAL}.`,
+    help: "Return one element, keyed by the item: `<li key={item.id}>…</li>`.",
+  };
 }
 
 /**
@@ -250,6 +356,23 @@ function lowerKey(
       value.expression,
       `The key must identify the item: read \`${variables[0]?.name ?? "item"}\` or ${variables[1] ? `\`${variables[1].name}\`` : "the index"}. A key that reads neither is the same for every item, which Vue and Svelte reject.`,
       { help: "Key the element by something unique and stable in the item: `key={item.id}`." },
+    );
+    return undefined;
+  }
+  // Angular's `track` reads only its own item, `$index` and the component's members (NG8009).
+  const outer = render.enclosing.find(
+    (variable) =>
+      !variables.includes(variable) &&
+      checked.expression.refs.some((ref) => ref.kind === "Binding" && ref.binding === variable.id),
+  );
+  if (outer) {
+    reporter.report(
+      "UF3018",
+      value.expression,
+      `The key must identify the item within its own list, and this one reads \`${outer.name}\`, a variable of a list around it, which Angular's \`track\` cannot read.`,
+      {
+        help: `Key the element by its own item: \`key={${variables[0]?.name ?? "item"}.id}\`.`,
+      },
     );
     return undefined;
   }

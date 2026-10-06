@@ -1,3 +1,4 @@
+import { reservedParameterName } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
 import { applyAndRecheck, codes, component, only, problems, root } from "./helpers.ts";
@@ -317,6 +318,31 @@ describe("parameters (UF3024)", () => {
     expect(fixed).toContain(to);
   });
 
+  // The walk reports these parts without reading them, so it cannot tell that nothing reads a
+  // parameter there: a removal would leave the part reading a name nothing declares.
+  it.each([
+    ["items.map((item) => <b>{item}</b>).length", "UF3012"],
+    ["items.filter((item) => item++).length", "UF3021"],
+    ["items.filter((item) => String.raw`${item}`).length", "UF1002"],
+    ["items.filter((item) => function () { return item; }).length", "UF3021"],
+    ["items.filter((item) => ({ get x() { return item; } })).length", "UF1002"],
+    ["items.filter((item) => items.some((other = item) => other)).length", "UF1002"],
+    ["items.filter((item, index) => { if (index) return item; }).length", "UF1002"],
+    // A tag names what it reads, which scope analysis resolves.
+    ["items.filter((Tag) => <Tag />).length", "UF3012"],
+    ["items.filter((item) => <item.Tag />).length", "UF3012"],
+  ])("reads a parameter in %s as read", (expression, code) => {
+    const { diagnostics } = check(expression);
+    expect(codes(diagnostics)).toContain(code);
+    expect(codes(diagnostics)).not.toContain("UF3024");
+  });
+
+  it("removes a parameter that a part the walk reports does not read", () => {
+    const { source, diagnostics } = check("items.filter((item, index) => item++).length");
+    expect(problems(source, diagnostics)).toEqual(["UF3024 index", "UF3021 item++"]);
+    expect(applyAndRecheck(source, diagnostics)).toContain("items.filter((item) => item++)");
+  });
+
   it("removes an unread parameter rather than report its shadowing too", () => {
     const { source, diagnostics } = check("items.filter((item, label) => item).join()");
     expect(problems(source, diagnostics)).toEqual(["UF3024 label"]);
@@ -411,6 +437,81 @@ describe("bindings", () => {
   });
 });
 
+describe("names Vue's compiled code declares", () => {
+  it.each([
+    ["<ul>{items.map((__props) => <li key={__props}>a</li>)}</ul>", "__props"],
+    [
+      "<ul>{items.map((_ssrInterpolate) => <li key={_ssrInterpolate}>a</li>)}</ul>",
+      "_ssrInterpolate",
+    ],
+    ["<p>{items.filter((_ctx) => _ctx).join()}</p>", "_ctx"],
+  ])("reports the parameter in %s (UF3024)", (jsx, at) => {
+    const { source, diagnostics } = component(jsx, { props: PROPS });
+    expect(problems(source, diagnostics)).toEqual([`UF3024 ${at}`]);
+    expect(diagnostics[0]!.message).toContain("Vue's compiled render functions declare");
+  });
+
+  it("leaves a bare `_` free", () => {
+    const { diagnostics } = component("<ul>{items.map((_) => <li key={_}>{_}</li>)}</ul>", {
+      props: PROPS,
+    });
+    expect(diagnostics).toEqual([]);
+  });
+});
+
+describe("the Fragment Astro's output imports", () => {
+  it.each([
+    ["<ul>{items.map((Fragment) => <li key={Fragment}>a</li>)}</ul>", "Fragment"],
+    ["<p>{items.filter((Fragment) => Fragment).join()}</p>", "Fragment"],
+  ])("reports the parameter in %s (UF3024)", (jsx, at) => {
+    const { source, diagnostics } = component(jsx, { props: PROPS });
+    expect(problems(source, diagnostics)).toEqual([`UF3024 ${at}`]);
+    expect(diagnostics[0]!.message).toContain("Astro's output renders `<>` with");
+  });
+});
+
+// Angular's expression lexer reads its keywords anywhere: `@for (as of items; …)` and
+// `(as) => as` do not parse. The others are reserved words, or `undefined`, a global.
+describe("Angular's expression keywords", () => {
+  it.each([
+    ["<ul>{items.map((as) => <li key={as}>{as}</li>)}</ul>", "as"],
+    ["<p>{items.filter((as) => as).length}</p>", "as"],
+  ])("reports the parameter in %s (UF3024)", (jsx, at) => {
+    const { source, diagnostics } = component(jsx, { props: PROPS });
+    expect(problems(source, diagnostics)).toEqual([`UF3024 ${at}`]);
+    expect(diagnostics[0]!.message).toContain("is a keyword in Angular's template expressions");
+  });
+});
+
+// The names `checkInvariants` keeps loop variables from (`reservedParameterName`) are the names
+// the analyser reports, whatever the component declares.
+describe("the names no parameter takes", () => {
+  it.each([
+    "String",
+    "undefined",
+    "props",
+    "rawProps",
+    "Fragment",
+    "$index",
+    "$x",
+    "_ctx",
+    "__props",
+    "as",
+    "_",
+    "item",
+    "on",
+    "x$",
+  ])("reports %s as the IR reserves it", (name) => {
+    const { diagnostics } = component(
+      `<ul>{items.map((${name}) => <li key={${name}}>a</li>)}</ul>`,
+      {
+        props: PROPS,
+      },
+    );
+    expect(codes(diagnostics)).toEqual(reservedParameterName(name) ? ["UF3024"] : []);
+  });
+});
+
 describe("names Angular's @for declares", () => {
   it.each([
     ["<p>{items.filter(($index) => $index).join()}</p>", "$index"],
@@ -418,5 +519,30 @@ describe("names Angular's @for declares", () => {
   ])("reports the parameter in %s (UF3024)", (jsx, at) => {
     const { source, diagnostics } = component(jsx, { props: PROPS });
     expect(problems(source, diagnostics)).toEqual([`UF3024 ${at}`]);
+  });
+});
+
+// Angular writes some characters of a regular expression as escapes, which match the same text
+// but show in its `source` and string form.
+describe("the text of a regular expression Angular respells", () => {
+  it.each([
+    "<p>{/a;b/.source}</p>",
+    '<p>{String(/"x"/)}</p>',
+    "<p>{`${/a  b/}`}</p>",
+    '<p>{/[(]/ + ""}</p>',
+    "<p>{/x{{/.toString()}</p>",
+  ])("reports %s (UF1002)", (jsx) => {
+    const { diagnostics } = component(jsx, { props: PROPS });
+    expect(codes(diagnostics)).toEqual(["UF1002"]);
+    expect(diagnostics[0]!.message).toContain("Angular's template writes those characters");
+  });
+
+  it.each([
+    "<p>{/ab/.source}</p>",
+    '<p>{/a;b/.test(label) ? "y" : "n"}</p>',
+    '<p>{label.replace(/[;"]/g, "-")}</p>',
+    "<p>{label.split(/; /).length}</p>",
+  ])("accepts %s", (jsx) => {
+    expect(component(jsx, { props: PROPS }).diagnostics).toEqual([]);
   });
 });

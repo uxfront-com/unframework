@@ -118,8 +118,9 @@ export function union(...all: Kinds[]): Kinds {
   if (strings) result.strings = strings;
   if (numbers) result.numbers = numbers;
   if (booleans) result.booleans = booleans;
-  const objects = all.flatMap((item) => item.objects ?? []);
-  const elements = all.flatMap((item) => item.elements ?? []);
+  // A shape or an element that two of them share is one.
+  const objects = [...new Set(all.flatMap((item) => item.objects ?? []))];
+  const elements = [...new Set(all.flatMap((item) => item.elements ?? []))];
   if (objects.length) result.objects = objects;
   if (elements.length) result.elements = elements;
   return result;

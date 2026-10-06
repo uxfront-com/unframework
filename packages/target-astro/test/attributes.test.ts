@@ -1,5 +1,5 @@
-// The attributes Astro's JSX types declare (L4): every (element, attribute) pair the IR's
-// vocabulary accepts, bound and (for booleans) bare, through `astro check`. Printed with the bare
+// The attributes Astro's JSX types declare (L4): every (element, attribute) pair the analyser
+// accepts, by element and by name, bound and (for booleans) bare, through `astro check`. Printed with the bare
 // Astro dialect, exactly the pairs `isUntypedAttribute` names fail, as a missing declaration;
 // printed as the target prints them, none does. So the target's list is neither short nor long.
 // Values are typed `never` here: whether a value's type fits an attribute is the analyser's
@@ -8,7 +8,6 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { astroDialect, printMarkup } from "@unframework/codegen";
-import type { MarkupDialect } from "@unframework/codegen";
 import {
   ARIA_ATTRIBUTES,
   BOOLEAN_ATTRIBUTES,
@@ -26,11 +25,14 @@ import {
   SVG_ELEMENTS,
   SVG_GLOBAL_ATTRIBUTES,
   SVG_PRESENTATION_ATTRIBUTES,
+  UNPORTABLE_ELEMENTS,
   UNRENDERABLE_ELEMENTS,
 } from "@unframework/ir";
 import type { Attribute, ElementNode } from "@unframework/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
+// The analyser's verdict on a name, whatever its value: the pairs it rejects never reach a target.
+import { nameProblem } from "../../analyzer/src/attribute-names.ts";
 import { isUntypedAttribute, printComponentMarkup } from "../src/markup.ts";
 import { astroTypecheck } from "../src/toolchain/check.ts";
 import { renderToString } from "../src/toolchain/server.ts";
@@ -43,25 +45,38 @@ afterAll(() => scratch.remove());
 
 const at = span(0, 0);
 
-/** Attributes another rule owns: class and style have their own forms, and `slot`/`is` are UF3005. */
-const OWN_FORMS = new Set(["class", "style", "slot", "is"]);
+/** Attributes with forms of their own (ADR-0038). */
+const OWN_FORMS = new Set(["class", "style"]);
 
 /** Elements written at the top level of a component's markup that HTML would move or drop. */
 const UNPLACEABLE = new Set(["html", "head", "body", "title", "base", "link", "meta", "noscript"]);
 
-/** One element per (element, attribute) pair: bound to `x`, and bare when it is a boolean. */
+/** An attribute bound to `x`. */
+const bound = (name: string) => createBoundAttribute(name, createExpression("x", at), at);
+
+/**
+ * One element per (element, attribute) pair the analyser accepts (an element it renders, a name
+ * it takes there): bound to `x`, and bare when it is an HTML boolean attribute.
+ */
 function vocabulary(): ElementNode[] {
   const elements: ElementNode[] = [];
   const add = (tag: string, attribute: Attribute) =>
     elements.push(createElement(tag, [attribute], [], at));
-  const bound = (name: string) => createBoundAttribute(name, createExpression("x", at), at);
   for (const tag of [...HTML_ELEMENTS].toSorted()) {
-    if (UNRENDERABLE_ELEMENTS.has(tag) || UNPLACEABLE.has(tag)) continue;
-    const names = [...GLOBAL_ATTRIBUTES, ...(ELEMENT_ATTRIBUTES.get(tag) ?? []), ...ARIA_ATTRIBUTES];
+    if (UNRENDERABLE_ELEMENTS.has(tag) || UNPORTABLE_ELEMENTS.has(tag) || UNPLACEABLE.has(tag)) {
+      continue;
+    }
+    const names = [
+      ...GLOBAL_ATTRIBUTES,
+      ...(ELEMENT_ATTRIBUTES.get(tag) ?? []),
+      ...ARIA_ATTRIBUTES,
+    ];
     for (const name of names.toSorted()) {
       if (OWN_FORMS.has(name)) continue;
-      add(tag, bound(name));
-      if (BOOLEAN_ATTRIBUTES.has(name)) add(tag, createStaticAttribute(name, true, at));
+      if (!nameProblem(tag, "html", name, name, true)) add(tag, bound(name));
+      if (BOOLEAN_ATTRIBUTES.has(name) && !nameProblem(tag, "html", name, name, false)) {
+        add(tag, createStaticAttribute(name, true, at));
+      }
     }
   }
   for (const tag of [...SVG_ELEMENTS].toSorted()) {
@@ -72,7 +87,7 @@ function vocabulary(): ElementNode[] {
       ...ARIA_ATTRIBUTES,
     ];
     for (const name of names.toSorted()) {
-      if (OWN_FORMS.has(name)) continue;
+      if (OWN_FORMS.has(name) || nameProblem(tag, "svg", name, name, true)) continue;
       const attribute = bound(name);
       elements.push(
         tag === "svg"
@@ -91,97 +106,93 @@ function component(markup: string): string {
 
 /** The element and attribute named on a printed line: `<img ismap={x} />`, `<img {...{ ismap`. */
 function pairOn(line: string): string {
-  const found = /<([A-Za-z]+) (?:\{\.\.\.\{ )?([^\s={]+)/.exec(line);
+  const found = /<([A-Za-z][A-Za-z0-9]*) (?:\{\.\.\.\{ )?([^\s={]+)/.exec(line);
   if (!found) throw new Error(`No attribute on \`${line}\`.`);
   return `${found[1]} ${found[2]}`;
 }
 
 describe("attributes Astro's types do not declare (L4)", () => {
-  it("are exactly the ones the target writes as spreads, which then pass", { timeout: 180_000 }, async () => {
-    const elements = vocabulary();
-    const render = createFragment(elements, at);
-    const plain: MarkupDialect = astroDialect;
-    const files = {
-      plain: join(scratch.path, "Plain.astro"),
-      target: join(scratch.path, "Target.astro"),
-    };
-    writeFileSync(files.plain, component(printMarkup(render, plain)));
-    writeFileSync(files.target, component(printComponentMarkup(createComponent("T", render, at))));
-    const results = await astroTypecheck(Object.values(files), {
-      toolchainDir,
-      root: integrationRoot,
-    });
+  it(
+    "are exactly the ones the target writes as spreads, which then pass",
+    { timeout: 180_000 },
+    async () => {
+      const elements = vocabulary();
+      // A few hundred elements per component: TypeScript's parser recurses once per sibling.
+      const chunks = Array.from({ length: Math.ceil(elements.length / 400) }, (_, index) =>
+        createFragment(elements.slice(index * 400, (index + 1) * 400), at),
+      );
+      const files = chunks.flatMap((render, index) => {
+        const plain = join(scratch.path, `Plain${index}.astro`);
+        const printed = join(scratch.path, `Target${index}.astro`);
+        writeFileSync(plain, component(printMarkup(render, astroDialect)));
+        writeFileSync(printed, component(printComponentMarkup(createComponent("T", render, at))));
+        return [{ plain, printed }];
+      });
+      const results = await astroTypecheck(
+        files.flatMap(({ plain, printed }) => [plain, printed]),
+        { toolchainDir, root: integrationRoot },
+      );
 
-    const lines = readFileSync(files.plain, "utf8").split("\n");
-    const failing = new Set(
-      (results.get(files.plain) ?? []).map((message) => {
-        expect(message.message, pairOn(lines[message.line! - 1]!)).toMatch(
-          /Property '[^']+' does not exist on type/,
-        );
-        return pairOn(lines[message.line! - 1]!);
-      }),
-    );
-    const untyped = new Set(
-      elements.flatMap((element) => {
-        const target = element.tag === "svg" && element.children.length ? element.children[0]! : element;
-        if (target.kind !== "Element" || target.tag === "svg" || SVG_ELEMENTS.has(target.tag)) {
-          return [];
+      const failing = new Set<string>();
+      for (const { plain, printed } of files) {
+        const lines = readFileSync(plain, "utf8").split("\n");
+        for (const message of results.get(plain) ?? []) {
+          const pair = pairOn(lines[message.line! - 1]!);
+          expect(message.message, pair).toMatch(/Property '[^']+' does not exist on type/);
+          failing.add(pair);
         }
-        const [attribute] = target.attributes;
-        const name = attribute!.kind === "Static" || attribute!.kind === "Bound" ? attribute!.name : "";
-        return isUntypedAttribute(target.tag, name) ? [`${target.tag} ${name}`] : [];
-      }),
-    );
-    expect([...failing].toSorted()).toEqual([...untyped].toSorted());
-    expect(results.get(files.target)).toEqual([]);
-  });
+        expect(results.get(printed), printed).toEqual([]);
+      }
+      const untyped = new Set(
+        elements.flatMap((element) => {
+          const [attribute] = element.attributes;
+          if (element.tag === "svg" || !attribute) return [];
+          const name =
+            attribute.kind === "Static" || attribute.kind === "Bound" ? attribute.name : "";
+          return isUntypedAttribute(element.tag, name) ? [`${element.tag} ${name}`] : [];
+        }),
+      );
+      expect([...failing].toSorted()).toEqual([...untyped].toSorted());
+    },
+  );
 
-  it("render as the attributes themselves: static, bare, bound and from a spread", async () => {
-    const output = emitted(`interface Extra { nonce?: string; writingsuggestions?: string }
-export interface MapProps { url: string; on: boolean; extra: Extra }
-export default function Area({ url, on, extra }: MapProps) {
+  it("render as the attributes themselves: static, bound and from a spread", async () => {
+    const output = emitted(`interface Typing { autocorrect?: "on" | "off" }
+export interface NoteProps { mode: "on" | "off"; typing: Typing }
+export default function Note({ mode, typing }: NoteProps) {
   return (
     <div>
-      <img src="/a.png" alt="a" ismap />
-      <img src="/a.png" alt="a" ismap={on} />
-      <map name="m"><area href="/a" alt="a" ping={url} /></map>
-      <form rel="noopener" autocorrect="off" aria-label="Search">x</form>
-      <p autocorrect="on" {...extra}>y</p>
+      <form autocorrect="off" aria-label="Search">x</form>
+      <p autocorrect="on">y</p>
+      <p autocorrect={mode}>z</p>
+      <p {...typing}>w</p>
     </div>
   );
 }`);
+    // Astro's types declare `autocorrect` on a form: it is written there as an attribute.
     expect(output.slice(output.indexOf("---\n\n", 4) + 5)).toBe(
       [
         "<div>",
-        '  <img src="/a.png" alt="a" {...{ ismap: "" }} />',
-        '  <img src="/a.png" alt="a" {...{ ismap: on ? "" : undefined }} />',
-        '  <map name="m">',
-        '    <area href="/a" alt="a" {...{ ping: url }} />',
-        "  </map>",
-        '  <form {...{ rel: "noopener" }} autocorrect="off" aria-label="Search">x</form>',
-        "  <p",
-        '    {...{ autocorrect: "on" }}',
-        "    {...{ nonce: extra.nonce }}",
-        "    {...{ writingsuggestions: extra.writingsuggestions }}",
-        "  >y</p>",
+        '  <form autocorrect="off" aria-label="Search">x</form>',
+        '  <p {...{ autocorrect: "on" }}>y</p>',
+        "  <p {...{ autocorrect: mode }}>z</p>",
+        "  <p {...{ autocorrect: typing.autocorrect }}>w</p>",
         "</div>",
         "",
       ].join("\n"),
     );
     const html = await renderToString(await loadAstroComponent(scratch.path, output), {
-      props: { url: "/p", on: false, extra: { nonce: "n", writingsuggestions: "" } },
+      props: { mode: "off", typing: {} },
     });
     expect(html).toBe(
       [
-        '<div><img src="/a.png" alt="a" ismap><img src="/a.png" alt="a">',
-        '<map name="m"><area href="/a" alt="a" ping="/p"></map>',
-        '<form rel="noopener" autocorrect="off" aria-label="Search">x</form>',
-        '<p autocorrect="on" nonce="n" writingsuggestions>y</p></div>',
+        '<div><form autocorrect="off" aria-label="Search">x</form>',
+        '<p autocorrect="on">y</p><p autocorrect="off">z</p><p>w</p></div>',
       ].join(""),
     );
     const directory = join(scratch.path, "render");
     mkdirSync(directory, { recursive: true });
-    const path = join(directory, "Area.astro");
+    const path = join(directory, "Note.astro");
     writeFileSync(path, output);
     expect(await astroTypecheck([path], { toolchainDir, root: integrationRoot })).toEqual(
       new Map([[path, []]]),

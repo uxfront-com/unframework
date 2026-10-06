@@ -18,7 +18,6 @@ import type {
   IfBranch,
   Namespace,
   RenderNode,
-  SpreadAttribute,
   UfComponent,
 } from "@unframework/ir";
 
@@ -143,11 +142,23 @@ export interface MarkupDialect {
   /**
    * Writes a static attribute of a `tag` element so that the element gets exactly this value:
    * `name="…"` with the value escaped, or the language's binding when a static value cannot
-   * express it.
+   * express it. `context`, which the printer always passes, is the element with the rest of
+   * its attributes, for a language that writes a value by what is beside it (Svelte's server
+   * escapes a static value twice on an element with a spread).
    */
-  attribute(name: string, value: string, tag: string): string;
+  attribute(name: string, value: string, tag: string, context?: AttributeContext): string;
   /** `<br />` or `<br>`. */
   voidElement: "self-closing" | "html";
+  /**
+   * Whether a childless SVG element of a tag closes itself (`<circle />`, ADR-0040), as it does
+   * unless the language says otherwise: Svelte warns on `<title />`, whose name is HTML's too.
+   */
+  selfClosingSvg?(tag: string): boolean;
+  /**
+   * The name a `tag` element in `namespace` is written with, when the language reads its
+   * content by its name (Angular reads a `<title>` as text unless it is written `<svg:title>`).
+   */
+  elementName?(tag: string, namespace: Namespace): string;
   /**
    * Whether the template compiler drops whitespace-only text that holds a line break and sits
    * between two elements or blocks (Vue's `condense`, Angular's whitespace removal, Astro's JSX
@@ -210,7 +221,7 @@ export interface MarkupOptions {
   attribute?(attribute: Attribute, element: ElementNode): string | undefined;
   /**
    * The component the markup belongs to: its bindings resolve the references `rewrite`
-   * spells, and its props tell whether a spread's object may be absent.
+   * spells.
    */
   component?: UfComponent;
   /**
@@ -294,7 +305,10 @@ export function test(code: string): string {
   return needsParentheses(code, "test") ? `(${code})` : code;
 }
 
-/** The object of a spread read key by key (`attrs.id`, `attrs?.["data-x"]`, ADR-0039). */
+/**
+ * The object of a spread read key by key (`attrs.id`, `attrs?.["data-x"]`, ADR-0039): through
+ * `?.` when it may be nullish there, as the spread's `nullish` says.
+ */
 export function member(object: string, key: string, optional: boolean): string {
   const target = operand(object);
   if (isIdentifierName(key)) return `${target}${optional ? "?." : "."}${key}`;
@@ -568,19 +582,23 @@ export function printMarkup(
     };
     const children = itemsOf(element.children, element, inner);
     const isVoid = namespace === "html" && isVoidElement(element.tag);
-    // A childless SVG element closes itself in every dialect (ADR-0040): the HTML parser
-    // honours `/>` in foreign content, and every template compiler reads it.
+    // A childless SVG element closes itself (ADR-0040): the HTML parser honours `/>` in foreign
+    // content, and every template compiler reads it, though one may warn (`selfClosingSvg`).
     const selfClosing =
       (isVoid && inner.dialect.voidElement === "self-closing") ||
-      (namespace === "svg" && children.length === 0);
+      (namespace === "svg" &&
+        children.length === 0 &&
+        (inner.dialect.selfClosingSvg?.(element.tag) ?? true));
+    const name = inner.dialect.elementName?.(element.tag, namespace) ?? element.tag;
     return {
       kind: "element",
-      tag: element.tag,
+      tag: name,
       attributes: attributesOf(element, directives, inner.dialect, namespace),
       end: selfClosing ? " />" : ">",
       children,
-      close: isVoid || selfClosing ? "" : `</${element.tag}>`,
-      inlineOnly: inner.preformatted || region !== undefined,
+      close: isVoid || selfClosing ? "" : `</${name}>`,
+      // Astro keeps the whitespace in a `<title>`, whose content is text in every namespace.
+      inlineOnly: inner.preformatted || region !== undefined || element.tag === "title",
       blockLevel: isBlockElement(element.tag),
       ...(region ? { region } : {}),
     };
@@ -632,7 +650,7 @@ export function printMarkup(
               text:
                 attribute.value === true
                   ? attribute.name
-                  : of.attribute(attribute.name, attribute.value, element.tag),
+                  : of.attribute(attribute.name, attribute.value, element.tag, context),
             });
           }
           break;
@@ -672,9 +690,8 @@ export function printMarkup(
           break;
         case "Spread": {
           const object = code(attribute.value);
-          const optional = mayBeAbsent(attribute);
           for (const key of attribute.keys) {
-            const value = member(object, key.name, optional);
+            const value = member(object, key.name, attribute.nullish);
             if (key.name === "class") {
               claimClass();
               classParts.push({ kind: "Dynamic", value });
@@ -691,20 +708,6 @@ export function printMarkup(
     if (classAt !== undefined)
       printed.splice(classAt, 0, ...of.classAttribute(classParts, context));
     return (of.orderAttributes?.(printed) ?? printed).map(({ text }) => text);
-  }
-
-  /**
-   * Whether a spread's object may be absent, so its keys read through `?.`: an optional prop
-   * without a default. Angular rejects `?.` on a value that cannot be nullish (NG8107).
-   */
-  function mayBeAbsent(spread: SpreadAttribute): boolean {
-    const [reference, ...more] = spread.value.refs;
-    if (!component || !reference || more.length > 0 || reference.kind !== "Binding") return false;
-    const whole =
-      reference.span.start === spread.value.span.start &&
-      reference.span.end === spread.value.span.end;
-    const prop = component.props.find(({ binding }) => binding === reference.binding);
-    return whole && prop !== undefined && prop.optional && prop.default === undefined;
   }
 
   /**

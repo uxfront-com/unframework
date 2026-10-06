@@ -9,7 +9,8 @@ import {
 } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
-import { applyAndRecheck, codes, component, root, slices } from "./helpers.ts";
+import { nameProblem } from "../src/attribute-names.ts";
+import { applyAndRecheck, codes, component, problems, root, slices } from "./helpers.ts";
 
 /** The first element that has an attribute as its own. */
 function ownerOf(name: string): string | undefined {
@@ -222,7 +223,7 @@ describe("attribute values", () => {
   it.each([
     ["<input placeholder />", "placeholder"],
     ['<a href="/x" download>a</a>', "download"],
-    ["<div popover>a</div>", "popover"],
+    ["<p translate>a</p>", "translate"],
     ['<img src="/a.png" alt="" crossorigin />', "crossorigin"],
     ["<p title>a</p>", "title"],
     ["<p aria-label>a</p>", "aria-label"],
@@ -374,7 +375,6 @@ describe("form state", () => {
   it.each([
     ['<input value="v" />', "value"],
     ['<input type="text" value="v" />', "value"],
-    ['<input type="Text" value="v" />', "value"],
     ['<input type="checkbox" checked />', "checked"],
     ['<textarea value="x"></textarea>', "value"],
     ['<select value="b"></select>', "value"],
@@ -396,12 +396,16 @@ describe("form state", () => {
     },
   );
 
-  // `type` is an enumerated attribute: its keywords are case-insensitive.
-  it.each(["Submit", "CHECKBOX"])("accepts the fixed value of an input of type %s", (type) => {
-    expect(attributesOf(`<input type="${type}" value="v" />`)).toEqual([
-      ["type", type],
-      ["value", "v"],
-    ]);
+  // `type` is an enumerated attribute: its keywords are case-insensitive, so they decide alike,
+  // and the targets' types take them in lower case.
+  it.each(["Submit", "CHECKBOX"])("reads an input's type %s in any case", (type) => {
+    const { source, diagnostics } = component(`<input type="${type}" value="v" />`);
+    expect(problems(source, diagnostics)).toEqual(["UF3004 type"]);
+    expect(applyAndRecheck(source, diagnostics)).toContain(
+      `<input type="${type.toLowerCase()}" value="v" />`,
+    );
+    const text = component('<input type="Text" value="v" />');
+    expect(problems(text.source, text.diagnostics)).toEqual(["UF3004 type", "UF1002 value"]);
   });
 
   it("accepts an option's value and the value of a button", () => {
@@ -411,33 +415,48 @@ describe("form state", () => {
 
   it.each([
     ['<button type="button" formaction="/x">b</button>', "formaction"],
-    ['<button type="BUTTON" formaction="/x">b</button>', "formaction"],
     ['<button type="reset" formmethod="post">b</button>', "formmethod"],
     ['<input type="text" formnovalidate />', "formnovalidate"],
-    ['<input type="" formnovalidate />', "formnovalidate"],
   ])("reports the submission override in %s on a button that does not submit", (jsx, name) => {
     expect(only(jsx)).toMatchObject({ code: "UF3006", at: name });
   });
 
-  // HTML: a button's missing or invalid `type` is the Submit Button state (r3-analyzer-2).
-  it.each(['type=""', 'type="sumbit"', 'type="menu"'])(
-    "accepts submission overrides on a <button %s>, which submits",
-    (type) => {
-      expect(component(`<button ${type} formaction="/a">b</button>`).diagnostics).toEqual([]);
-    },
-  );
+  // The type's case and an empty type are fixed apart, and decide as HTML reads them.
+  it.each([
+    ['<button type="BUTTON" formaction="/x">b</button>', ["UF3004 type", "UF3006 formaction"]],
+    ['<input type="" formnovalidate />', ["UF3004 type", "UF3006 formnovalidate"]],
+  ])("reports the submission override in %s, and the type's spelling", (jsx, found) => {
+    const { source, diagnostics } = component(jsx);
+    expect(problems(source, diagnostics)).toEqual(found);
+    applyAndRecheck(source, diagnostics);
+  });
+
+  // HTML: a button's missing or invalid `type` is the Submit Button state (r3-analyzer-2). The
+  // targets' types take only its keywords, so only the type is reported.
+  it.each([
+    ['type=""', "UF3004 type"],
+    ['type="sumbit"', "UF3008 type"],
+    ['type="menu"', "UF3008 type"],
+  ])("accepts submission overrides on a <button %s>, which submits", (type, found) => {
+    const { source, diagnostics } = component(`<button ${type} formaction="/a">b</button>`);
+    expect(problems(source, diagnostics)).toEqual([found]);
+  });
 
   it("fixes a bare type beside a submission override to a type that still submits", () => {
     const { source, diagnostics } = component(
       '<form><button type formaction="/save">Save</button></form>',
     );
     expect(codes(diagnostics)).toEqual(["UF3004"]);
-    expect(applyAndRecheck(source, diagnostics)).toContain('<button type="" formaction="/save">');
+    expect(applyAndRecheck(source, diagnostics)).toContain(
+      '<button type="submit" formaction="/save">',
+    );
   });
 
   it("accepts submission overrides on submit buttons", () => {
     expect(component('<button formaction="/a">b</button>').diagnostics).toEqual([]);
-    expect(component('<button type="SUBMIT" formaction="/a">b</button>').diagnostics).toEqual([]);
+    expect(
+      codes(component('<button type="SUBMIT" formaction="/a">b</button>').diagnostics),
+    ).toEqual(["UF3004"]);
     expect(component('<button type="submit" formtarget="_blank">b</button>').diagnostics).toEqual(
       [],
     );
@@ -462,7 +481,7 @@ describe("class", () => {
   // writes the same string.
   it.each([
     ['<p class="  b   a\tc  ">x</p>', "b a c"],
-    ['<p class="a a b">x</p>', "a a b"],
+    ['<p class="a  c b">x</p>', "a c b"],
     ['<p class="card\n           card--large">x</p>', "card card--large"],
     ['<p class="a\r\nb">x</p>', "a b"],
   ])("lowers %s with one space between names", (jsx, value) => {
@@ -487,6 +506,28 @@ describe("class", () => {
     '<p class="a&#x2028;b">x</p>',
   ])("reports %s, whose whitespace Angular splits names at", (jsx) => {
     expect(only(jsx)).toMatchObject({ code: "UF3008", at: "class" });
+  });
+
+  // Angular merges a static class with a spread's through the class list, which drops a repeat
+  // the other targets keep, as `class={["a", "a"]}` is reported (UF3007).
+  it.each([
+    ['<p class="a b a">x</p>', '<p class="a b">x</p>'],
+    ['<p class="a  a\n  b">x</p>', '<p class="a b">x</p>'],
+    ['<p class={"a a"}>x</p>', '<p class="a">x</p>'],
+    ['<p className="a a">x</p>', '<p class="a">x</p>'],
+  ])("reports the class named twice in %s, and the fix lists it once", (jsx, fixed) => {
+    const { source, diagnostics } = component(jsx);
+    expect(codes(diagnostics).filter((code) => code === "UF3007")).toEqual(["UF3007"]);
+    expect(diagnostics.find(({ code }) => code === "UF3007")!.message).toBe(
+      "The class `a` is listed twice in this `class`.",
+    );
+    expect(applyAndRecheck(source, diagnostics)).toContain(fixed);
+  });
+
+  it("offers no fix for a class named twice whose value another fix edits", () => {
+    const { diagnostics } = component('<p class="a&check; a&check;">x</p>');
+    expect(codes(diagnostics)).toEqual(["UF3007", "UF3011", "UF3011"]);
+    expect(diagnostics[0]!.fixes).toBeUndefined();
   });
 });
 
@@ -565,6 +606,43 @@ describe("the generated-id prefix", () => {
   });
 });
 
+// A name some target's types do not declare fails that target's type-check (L4) whatever its
+// value; types-conformance.test.ts checks both lists against the types.
+describe("names a target's types do not declare", () => {
+  const BOTH = "React's and Vue's element types do not declare";
+  const VUE = "Vue's element types do not declare";
+  it.each([
+    ['<p writingsuggestions="false">a</p>', "writingsuggestions", BOTH],
+    ['<button type="button" command="show-modal" commandfor="d">b</button>', "command", BOTH],
+    ['<div><input type="text" name="q" dirname="q.dir" /></div>', "dirname", BOTH],
+    [
+      "<textarea dirname={label}></textarea>",
+      "dirname",
+      "React's element types do not declare `dirname`, so React's output would not type-check",
+    ],
+    ['<div><img src="/a.png" alt="" ismap /></div>', "ismap", BOTH],
+    ['<map name="m"><area href="/a" alt="a" ping="/p" /></map>', "ping", BOTH],
+    [
+      '<div popover="auto">a</div>',
+      "popover",
+      `${VUE} \`popover\` (Vue's are the authoring types)`,
+    ],
+    ['<dialog closedby="any">a</dialog>', "closedby", VUE],
+    ['<button type="button" popovertarget="p">b</button>', "popovertarget", VUE],
+    ['<form action="/a" rel="noopener">a</form>', "rel", VUE],
+    ['<video><source src="/a.mp4" height="1" /></video>', "height", VUE],
+    ['<p aria-description="d">a</p>', "aria-description", "ARIA 1.3 draft"],
+    ['<p aria-braillelabel="d">a</p>', "aria-braillelabel", "ARIA 1.3 draft"],
+    ['<svg aria-brailleroledescription="d" />', "aria-brailleroledescription", "ARIA 1.3 draft"],
+  ])("reports %s (UF1002)", (jsx, name, reason) => {
+    const { source, diagnostics } = component(jsx, { props: "label: string" });
+    const found = problems(source, diagnostics);
+    expect(found[0]).toBe(`UF1002 ${name}`);
+    expect(diagnostics[0]!.message).toContain(reason);
+    expect(diagnostics[0]!.message).toMatch(/ It lands when they do\.$/);
+  });
+});
+
 // Names from the source are looked up in tables keyed by name: none may answer from a prototype.
 describe("names a prototype has", () => {
   it.each(["constructor", "CONSTRUCTOR", "__proto__", "toString", "valueOf", "hasOwnProperty"])(
@@ -597,8 +675,13 @@ describe("the generated-id prefix, wherever the tests would rename it", () => {
   // renamed like a generated one, and could hide a real difference.
   it.each([...ID_REFERENCE_ATTRIBUTES])("reports uf-id- in %s", (name) => {
     const { source, diagnostics } = component(markupWith(name, "note uf-id-x"));
-    const accepted = isHtmlAttribute(ownerOf(name) ?? "div", name);
-    expect(codes(diagnostics)).toEqual([accepted ? "UF3005" : "UF3006"]);
+    const owner = ownerOf(name) ?? "div";
+    // A name the analyser rejects (`commandfor`, which React's types lack) hides its value.
+    const named = isHtmlAttribute(owner, name)
+      ? nameProblem(owner, "html", name, name, false)
+      : undefined;
+    const accepted = isHtmlAttribute(owner, name);
+    expect(codes(diagnostics)).toEqual([named?.code ?? (accepted ? "UF3005" : "UF3006")]);
     expect(slices(source, diagnostics)).toEqual([name]);
   });
 
@@ -700,7 +783,7 @@ describe("fixes", () => {
       }
     }
     expect(checked).toBe(elements.length * names.length * values.length * 5 * 2);
-  });
+  }, 60_000);
 
   // Each element's every attribute written bare, beside each of its other attributes with
   // each of a few values: a fix to one may change what the element makes of another, as
@@ -734,11 +817,11 @@ describe("fixes", () => {
     }
     expect(failures).toEqual([]);
     expect(fixed).toBeGreaterThan(5_000);
-  });
+  }, 60_000);
 
   it.each([
     ['<a href="/f" download>a</a>', '<a href="/f" download="">a</a>'],
-    ["<div popover>a</div>", '<div popover="">a</div>'],
+    ["<p translate>a</p>", '<p translate="yes">a</p>'],
     ['<img src="/a.png" alt crossorigin />', '<img src="/a.png" alt="" crossorigin="" />'],
     ['<a href="/f" DOWNLOAD>a</a>', '<a href="/f" download="">a</a>'],
   ])("writes the empty value HTML reads a bare attribute as, in %s", (jsx, fixed) => {

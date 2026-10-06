@@ -1,0 +1,14 @@
+{
+  "description": "SVG titles that name their icons: one of several parts (text and interpolations, an optional one among them), and one holding a conditional.",
+  "ssr": {
+    "sending": {
+      "props": {
+        "fileName": "report.pdf",
+        "percent": 40,
+        "paused": false,
+        "eta": "About a minute left"
+      }
+    },
+    "paused": { "props": { "fileName": "slides.key", "percent": 75, "paused": true } }
+  }
+}

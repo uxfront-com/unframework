@@ -1,0 +1,48 @@
+[
+  {
+    "code": "UF1102",
+    "severity": "error",
+    "message": "Card is an arrow function in a `const`, and a component is a function declaration.",
+    "file": "diagnostics/arrow-component/Card.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 14,
+      "offset": 222
+    },
+    "end": {
+      "line": 7,
+      "column": 18,
+      "offset": 226
+    },
+    "help": "Declare it as a function: `export function Card(props: Props) { return …; }`.",
+    "fixes": [
+      {
+        "title": "Declare `Card` as a function",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 216,
+              "end": 229
+            },
+            "text": "function Card"
+          },
+          {
+            "span": {
+              "start": 252,
+              "end": 255
+            },
+            "text": "{ return "
+          },
+          {
+            "span": {
+              "start": 294,
+              "end": 295
+            },
+            "text": "; }"
+          }
+        ]
+      }
+    ]
+  }
+]

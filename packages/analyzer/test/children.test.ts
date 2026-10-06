@@ -145,6 +145,40 @@ describe("conditionals", () => {
     expect(diagnostics[0]!.message).toContain(`\`${operator}\` renders`);
   });
 
+  // `??` keeps `0` and `""`, which a truthiness test would replace by the fallback.
+  it.each([
+    ["{maybe || <b>none</b>}", "{maybe ? maybe : <b>none</b>}", "`value ? value"],
+    ["{maybe ?? <b>none</b>}", "{maybe != null ? maybe : <b>none</b>}", "`value != null ? value"],
+    ["{tally ?? <b>none</b>}", "{tally != null ? tally : <b>none</b>}", "`value != null ? value"],
+    [
+      '{box.note ?? <b className="x">none</b>}',
+      '{box.note != null ? box.note : <b class="x">none</b>}',
+      "`value != null",
+    ],
+  ])("writes %s as a conditional (UF3025)", (child, fixed, help) => {
+    const { source, diagnostics } = component(`<p>${child}</p>`, {
+      props: `${PROPS}; tally?: number; box: { note?: string }`,
+    });
+    expect(diagnostics[0]!.help).toContain(help);
+    expect(applyAndRecheck(source, diagnostics)).toContain(`<p>${fixed}</p>`);
+  });
+
+  it.each([
+    // A call reads its value twice, a boolean renders no text, and `items` is no text.
+    ["{maybe?.trim() ?? <b>none</b>}", "{flag ?? <b>none</b>}", "{list ?? <b>none</b>}"],
+    // Text cannot be inside a <table>, and a comment would be lost.
+    ["<table>{maybe ?? <tbody />}</table>", "<p>{maybe /* x */ ?? <b>none</b>}</p>"],
+  ])("offers no rewrite of %s", (...children) => {
+    for (const child of children) {
+      const jsx = child.startsWith("<") ? child : `<p>${child}</p>`;
+      const { diagnostics } = component(jsx, {
+        props: `${PROPS}; flag?: boolean; list?: string[]`,
+      });
+      const found = diagnostics.find((diagnostic) => diagnostic.code === "UF3025");
+      expect(found?.fixes, child).toBeUndefined();
+    }
+  });
+
   it("still checks both sides of an unsupported conditional", () => {
     const { source, diagnostics } = component('<p>{lable || <b className="x">a</b>}</p>');
     expect(problems(source, diagnostics)).toEqual([
@@ -188,6 +222,23 @@ describe("where text and expressions sit", () => {
     }
   });
 
+  // The parser reads an <iframe>'s content as raw text: the servers' escapes and the comments
+  // that mark a conditional stay as written, and a client's DOM holds the text.
+  it.each([
+    ['<iframe title="t">a &amp; b</iframe>', "UF3003 a &amp; b"],
+    ['<iframe title="t">{label}</iframe>', "UF3003 {label}"],
+    ['<iframe title="t">{on && " "}</iframe>', 'UF3003 on && " "'],
+    ['<iframe title="t">{on ? "a" : "b"}</iframe>', 'UF3003 {on ? "a" : "b"}'],
+  ])("reports the content of %s", (jsx, problem) => {
+    const { source, diagnostics } = component(jsx, { props: PROPS });
+    expect(problems(source, diagnostics)).toEqual([problem]);
+    expect(diagnostics[0]!.message).toContain("reads an <iframe>'s content as raw text");
+  });
+
+  it("accepts whitespace in an <iframe>, which reads alike", () => {
+    expect(component('<iframe title="t">{" "}</iframe>').diagnostics).toEqual([]);
+  });
+
   it.each([
     ['<pre>{"\\nx"}</pre>', '"\\nx"'],
     ['<pre>{""}{"\\nx"}</pre>', '"\\nx"'],
@@ -201,6 +252,40 @@ describe("where text and expressions sit", () => {
   it("accepts a line feed after the start", () => {
     expect(component('<pre>a{"\\nb"}</pre>').diagnostics).toEqual([]);
     expect(component('<pre>{label}{"\\n"}{label}</pre>', { props: PROPS }).diagnostics).toEqual([]);
+    expect(
+      component('<pre>{on ? <b>x</b> : <i>y</i>}{"\\nb"}</pre>', { props: PROPS }).diagnostics,
+    ).toEqual([]);
+  });
+
+  // React's and Astro's servers write nothing for a conditional or a list that renders nothing,
+  // so the parser drops the line feed after it; the other targets write a comment first.
+  it.each([
+    ['<pre>{on && <b>x</b>}{"\\ny"}</pre>', '"\\ny"'],
+    ['<pre>{on ? null : <b>x</b>}{"\\ny"}</pre>', '"\\ny"'],
+    ['<pre>{items.map((item) => <b key={item}>{item}</b>)}{"\\ny"}</pre>', '"\\ny"'],
+    [
+      '<pre>{on && <b>x</b>}{items.map((item) => <b key={item}>{item}</b>)}{"\\ny"}</pre>',
+      '"\\ny"',
+    ],
+    ['<pre>{on ? items.map((item) => <b key={item}>{item}</b>) : <i />}{"\\ny"}</pre>', '"\\ny"'],
+    ['<pre>{on && <>{items.map((item) => <b key={item}>{item}</b>)}{"\\ny"}</>}</pre>', '"\\ny"'],
+  ])("reports the line feed after what renders nothing in %s (UF3017)", (jsx, at) => {
+    const { source, diagnostics } = component(jsx, { props: PROPS });
+    expect(problems(source, diagnostics)).toEqual([`UF3017 ${at}`]);
+    expect(diagnostics[0]!.message).toContain(
+      "React's and Astro's servers write nothing before it",
+    );
+  });
+
+  // What a fix lets lower can render nothing as it would once lowered: each fix keeps UF3017.
+  it.each([
+    '<pre>{items.map((item) => <b>{item}</b>)}{"\\ny"}</pre>',
+    '<pre>{on && <b className="x">x</b>}{"\\ny"}</pre>',
+    '<pre>{on ? <bR /> : <i />}{"\\ny"}</pre>',
+    '<pre>{on ? <dIV /> : null}{"\\ny"}</pre>',
+  ])("reads what renders nothing in %s as a fix leaves it", (jsx) => {
+    const { source, diagnostics } = component(jsx, { props: PROPS });
+    applyAndRecheck(source, diagnostics);
   });
 
   it.each([

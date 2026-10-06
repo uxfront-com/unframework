@@ -2,7 +2,7 @@
   "name": "@unframework/repo-tests",
   "version": "0.0.0",
   "private": true,
-  "description": "Repo invariants: the package layering rules and the package template every package follows.",
+  "description": "Repo invariants: the package layering rules, the package template every package follows, and the diagnostics reference page against the catalogue.",
   "type": "module",
   "scripts": {
     "check-types": "tsc --noEmit",
@@ -10,6 +10,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@unframework/diagnostics": "workspace:*",
     "@uxfront/typescript-config": "catalog:",
     "oxc-parser": "catalog:",
     "vitest": "catalog:"

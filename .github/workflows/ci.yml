@@ -92,7 +92,7 @@ jobs:
         run: pnpm exec turbo run test --filter='!@unframework/integration' --continue --concurrency=2
 
   # L1 and L2: every case compiled to all seven targets, against the golden outputs; and the
-  # harness's own unit tests.
+  # harness's own unit tests, the canaries' corruptions of every case among them.
   integration-compile:
     name: "Integration: compile"
     runs-on: ubuntu-latest
@@ -129,7 +129,8 @@ jobs:
           overwrite: true
           retention-days: 7
 
-  # L3 and L4: one framework-compiler pass and one type-checker run per target over every case.
+  # L3, L4 and L5: one framework-compiler pass, one type-checker run and one lint run (oxlint, and
+  # ESLint for the template languages) per target over every case.
   integration-toolchains:
     name: "Integration: toolchain (${{ matrix.target }})"
     runs-on: ubuntu-latest
@@ -207,7 +208,7 @@ jobs:
           overwrite: true
           retention-days: 7
 
-  # L7, L10, L11 and L13 in Chromium. The job runs in the Playwright image that generates the
+  # L7, L8, L10, L11 and L13 in Chromium. The job runs in the Playwright image that generates the
   # Linux baselines (`pnpm test:baselines`), so fonts and rendering libraries are the same.
   # Not sharded while the corpus fits the job's ten minutes. To shard (plan §7.9), add a
   # `shard` dimension to the matrix, pass `--shard ${{ matrix.shard }}/<n>` and put the shard in
@@ -269,14 +270,21 @@ jobs:
           overwrite: true
           retention-days: 7
 
-  # Each live layer has a canary: a corruption that layer must catch. The job fails if any
-  # canary passes (plan §7.7).
+  # Each live layer has a canary: a corruption that layer must catch. A job fails if any of its
+  # canaries passes (plan §7.7). Each entry is what `pnpm test:canaries` takes: a layer's
+  # canaries, or one canary where a layer has two that run the browser projects, since one
+  # browser canary runs every spec on seven targets. harness/canaries.unit.test.ts holds the
+  # matrix to every canary, once, and at most one browser canary per job.
   canaries:
-    name: Canaries
+    name: "Canaries (${{ matrix.canaries }})"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble
+    strategy:
+      fail-fast: false
+      matrix:
+        canaries: [L1, L2, L3, L4, L5, L6, L7, L8, L10-root-hidden, L10-root-inverted, L11, L13]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -296,14 +304,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Canaries
-        run: pnpm test:canaries
+        run: pnpm test:canaries ${{ matrix.canaries }}
 
       # A canary that was not caught leaves its Vitest log and matrix in .canary/<id>.
       - name: Upload the canary runs
         if: ${{ failure() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: canaries
+          name: canaries-${{ matrix.canaries }}
           path: tests/integration/.canary
           include-hidden-files: true
           if-no-files-found: ignore

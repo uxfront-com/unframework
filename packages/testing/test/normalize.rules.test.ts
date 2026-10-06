@@ -496,6 +496,40 @@ describe("rule 4b: canonicalizeBooleanAttributes", () => {
     expect(normalizeHtml("<input disabled>")).not.toBe(normalizeHtml("<input>"));
     expect(normalizeHtml('<input disabled="false">')).not.toBe(normalizeHtml("<input disabled>"));
   });
+
+  // Qwik 2.0 beta's client: `<input disabled readOnly required={on} />` renders
+  // `disabled="true" readonly="true" required=""`, where its server and Vue write them empty.
+  it.each([
+    [
+      '<input disabled="true" readonly="TRUE" required="">',
+      '<input disabled="" readonly="" required="">',
+    ],
+    ['<details open="true"></details>', '<details open=""></details>'],
+    ['<div hidden="true"></div>', '<div hidden=""></div>'],
+  ])("writes Qwik's %s as an empty value", (html, expected) => {
+    const root = parseHtml(html);
+    canonicalizeBooleanAttributes(root, "qwik");
+    expect(printTree(root)).toBe(`${expected}\n`);
+    expect(normalizeHtml(html, { target: "qwik" })).toBe(
+      normalizeHtml(expected, { target: "vue" }),
+    );
+  });
+
+  it('keeps "true" from every other target, and "false" and until-found from Qwik', () => {
+    for (const target of NORMALIZE_TARGETS.filter((name) => name !== "qwik")) {
+      expect(normalizeHtml('<input disabled="true">', { target })).not.toBe(
+        normalizeHtml("<input disabled>", { target }),
+      );
+    }
+    expect(normalizeHtml('<input disabled="true">')).not.toBe(normalizeHtml("<input disabled>"));
+    for (const html of ['<input disabled="false">', '<div hidden="until-found"></div>']) {
+      expect(normalizeHtml(html, { target: "qwik" })).toBe(normalizeHtml(html));
+    }
+    // Not a boolean attribute on this element, or outside HTML: kept on Qwik too.
+    for (const html of ['<div open="true"></div>', '<svg><rect hidden="true"></rect></svg>']) {
+      expect(normalizeHtml(html, { target: "qwik" })).toBe(normalizeHtml(html));
+    }
+  });
 });
 
 describe("rule 7: canonicalizeGeneratedIds", () => {

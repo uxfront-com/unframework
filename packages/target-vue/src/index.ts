@@ -40,8 +40,7 @@ export const vue: Target = defineTarget({
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { block, rewrite } = scriptSetup(component, context.module);
-    // The component resolves the names of loop variables and tells whether a spread's object
-    // may be absent (read through `?.`).
+    // The component resolves the names of loop variables.
     const template = printMarkup(component.render, vueDialect, {
       level: 1,
       component,

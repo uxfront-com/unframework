@@ -6,14 +6,22 @@ component, written as a React developer would write it (design §5.1):
 - the type declarations the props use, copied as written (exported as in the source), then
   `export default function Badge({ label, tone = "info" }: BadgeProps)`, or
   `function Plain(props: PlainProps)` with `props.label` kept. A prop that no expression reads is
-  left out with its default, and a parameter nothing reads is `_props`: unused bindings fail L5.
+  left out with its default, and a parameter nothing reads is `_props` (an object form's keeps a
+  name that is `_` and more, and takes `_` before any other: `_props`, `__`): unused bindings
+  fail L5.
 - expressions exactly as the source writes them; conditionals as ternary chains ending in
   `null` (never `&&`, which renders a `0`); lists as `.map((item, index) => <li key={…}>…)`,
   with the index only when something reads it; a root fragment as `<>…</>`.
 - React's prop names (`className`, `htmlFor`, `tabIndex`, `strokeWidth`) and its rules for
-  boolean props and form controls (a `<textarea>`'s text becomes its `defaultValue`). The
-  attributes `@types/react` types as numbers are written as numbers (`tabIndex={0}`); a bound
-  boolean attribute React does not know (`ismap`) is written `ismap={x ? "" : undefined}`.
+  form controls (a `<textarea>`'s text becomes its `defaultValue`). Every boolean attribute the
+  IR holds is one of React's boolean props, written bare or bound as it is. The attributes
+  `@types/react` types as numbers are written as numbers (`tabIndex={0}`).
+- an SVG `<title>` of several parts as one string, ``<title>{`${label} icon`}</title>``, branches
+  and all: React's server renderer writes a title whose children are an array as an empty one. A
+  part that may be nullish is written `part ?? ""`, so that it renders nothing as on the other
+  targets, only where TypeScript reads its syntax as sometimes nullish: TS2869 and TS2871 reject
+  the guard on `n + 1`, on `a ?? "x"` and on `a ?? null`, whose nullish fallback becomes `""`
+  instead (`a ?? ""`). A `string` or `number` prop that is never absent needs no guard.
 - `className="a b"` for a static class; any other class goes through `cx`, an inline helper
   printed after the component (`className={cx("badge", tone, { active })}`): the
   `class-binding` capability is emulated.
@@ -41,4 +49,6 @@ The tests and tooling build, check and run React output through three entries:
   the component's HTML only.
 
 `test/attributes.test.ts` checks the attribute spellings and values against `@types/react` for
-every attribute the IR can hold, and pins the names its types lack.
+every attribute the IR can hold (the names its types lack are the IR's `UNDECLARED_ATTRIBUTES`,
+which the analyser rejects), and pins the one gap left: SVG's `<title>`, which React types as
+HTML's.

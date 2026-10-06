@@ -33,8 +33,9 @@
     ],
     // Angular components are decorated classes, which may have no member.
     "typescript/no-extraneous-class": ["error", { "allowWithDecorator": true }],
-    // The targets write `</script` in copied strings as `<\/script` (design §4.4); every other
-    // escape is the author's.
+    // A useless escape in an output is in code it copies, so it is the author's, `<\/script`
+    // included: UF1002 asks for it where a copied string would end a Vue or Svelte script block.
+    // Only the Vue target escapes one itself, as a guard (design §4.4).
     "no-useless-escape": "off",
 
     // Off: they judge the author's expressions and literals.

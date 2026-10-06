@@ -37,5 +37,10 @@
       style:height="100%"
       style:background-color="var(--meter-colour)"
     ></div>
-  </div>
+  </div
+  ><p
+    class="usage-meter-caption"
+    style:color={colour}
+    style:font-family={"\"UF Test Sans\", sans-serif"}
+  >{percent} of 100 used</p>
 </div>

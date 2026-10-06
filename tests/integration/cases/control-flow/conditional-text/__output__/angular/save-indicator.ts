@@ -15,7 +15,7 @@ export interface SaveIndicatorProps {
     @let changes = this.changes();
     @let savedAt = this.savedAt();
     <p class="save-indicator" role="status">
-      @if (saving) {<em>Saving</em>} @else {Saved}, {{ changes === 1 ? "1 change" : ("" + changes + " changes") }}@if (savedAt) {<time
+      @if (saving) {<em>Saving</em>} @else {Saved}, {{ changes === 1 ? "1 change" : changes + " changes" }}@if (savedAt) {<time
         [attr.datetime]="savedAt"
       >{{ " at " + savedAt }}</time>} @else { just now}
     </p>

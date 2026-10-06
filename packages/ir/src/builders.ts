@@ -260,13 +260,14 @@ export function createBoundStyle(property: string, value: Expression, at: Span):
   return { kind: "Bound", property, value, span: at };
 }
 
-/** Builds a spread of an object with known keys. */
+/** Builds a spread of an object with known keys, which may be nullish where it is spread. */
 export function createSpreadAttribute(
   value: Expression,
   keys: SpreadKey[],
+  nullish: boolean,
   at: Span,
 ): SpreadAttribute {
-  return { kind: "Spread", value, keys, span: at };
+  return { kind: "Spread", value, keys, nullish, span: at };
 }
 
 /** Builds a key a spread renders. */

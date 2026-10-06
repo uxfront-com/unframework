@@ -53,7 +53,7 @@ import type {
 
 import { parseExpressionSource } from "../src/index.ts";
 import type { RewriteRules } from "../src/index.ts";
-import { parseHtml } from "./render-parity.ts";
+import { comparableValue, parseHtml } from "./render-parity.ts";
 import type { DomElement, DomNode } from "./render-parity.ts";
 
 /** A prop of a case: its TypeScript type, and the value the case passes (none when absent). */
@@ -90,8 +90,10 @@ export class Builder {
   readonly bindings: Binding[] = [];
   readonly propBindings: Map<string, Binding> = new Map();
   private readonly loops: Map<string, BindingId>[] = [];
+  private readonly props: Readonly<Record<string, PropSpec>>;
 
   constructor(props: Readonly<Record<string, PropSpec>>) {
+    this.props = props;
     for (const name of Object.keys(props)) {
       const at = claim(name.length);
       const binding = createBinding(name, "prop", span(at, at + name.length));
@@ -259,12 +261,26 @@ export class Builder {
     );
   }
 
-  spread(code: string, ...keys: string[]): Attribute {
+  /** A spread of `source`'s keys: a prop by its name, or code that says whether it is nullish. */
+  spread(source: string | { code: string; nullish: boolean }, ...keys: string[]): Attribute {
+    const { code, nullish } = typeof source === "string" ? this.propSource(source) : source;
     return createSpreadAttribute(
       this.e(code),
       keys.map((key) => createSpreadKey(key, here())),
+      nullish,
       here(),
     );
+  }
+
+  /**
+   * A prop as a spread's source: nullish, as the analyser would find, when the case leaves it
+   * out (it is then declared optional) or its type ends in `| null` or `| undefined`.
+   */
+  private propSource(name: string): { code: string; nullish: boolean } {
+    const spec = this.props[name];
+    if (!spec) throw new Error(`\`${name}\` is no prop of the case.`);
+    const passed = "value" in spec && spec.value !== undefined;
+    return { code: name, nullish: !passed || /\|\s*(?:null|undefined)\s*$/.test(spec.type) };
   }
 
   fragment(...children: (RenderNode | string)[]): FragmentNode {
@@ -410,16 +426,9 @@ function canonicalNode(node: DomNode): DomNode {
       const tokens = value.split(/[\t\n\f\r ]+/).filter(Boolean);
       if (tokens.length) attributes[name] = tokens.toSorted().join(" ");
     } else if (name === "style") {
-      const declarations = value
-        .split(";")
-        .map((declaration) => {
-          const colon = declaration.indexOf(":");
-          return colon < 0
-            ? ""
-            : `${declaration.slice(0, colon).trim()}: ${declaration.slice(colon + 1).trim()}`;
-        })
-        .filter((declaration) => declaration !== "" && !declaration.endsWith(": "));
-      if (declarations.length) attributes[name] = declarations.toSorted().join("; ");
+      // Split outside strings, parentheses and comments: a `;` in a string ends no declaration.
+      const declarations = comparableValue(name, value);
+      if (declarations !== undefined) attributes[name] = declarations;
     } else attributes[name] = value;
   }
   return {
@@ -578,6 +587,137 @@ export const MARKUP_CASES: readonly MarkupCase[] = [
     props: { s: { type: "string", value: "x" } },
     render: (b) => b.el("p", [], b.i("JSON.stringify({ s })")),
     expected: `<p>{"s":"x"}</p>`,
+  },
+  {
+    // Angular's lexers find an interpolation's `}}`, a block's `;` and `)` and a comment's `//`
+    // outside quotes, a regular expression's included, and its whitespace processing condenses
+    // runs in one: the dialect writes escapes there.
+    name: "regular expressions that hold quotes, `;`, parentheses, slashes and spaces",
+    props: { s: { type: "string", value: `/a'b"c;d)e  f` } },
+    render: (b) =>
+      b.el(
+        "p",
+        [b.bind("title", `/'|"/.test(s) ? "quoted" : "plain"`)],
+        b.i(`/'/.test(s) ? "q" : "p"`),
+        "|",
+        b.i('/"|`/.test(s) ? "q2" : "p2"'),
+        "|",
+        b.i(`/e  f/.test(s) ? "run" : "none"`),
+        "|",
+        b.i(`/^\\//.test(s) ? "slash" : "none"`),
+        "|",
+        b.i(`s.replace(/[;)]/g, "-")`),
+        "|",
+        b.if([`/[;)]/.test(s)`, b.el("b", [], "block")]),
+        b.for(`s.split(/[;)]/)`, "part", undefined, "part", () => b.el("i", [], b.i("part"))),
+      ),
+    expected: `<p title="quoted">q|q2|run|slash|/a'b"c-d-e  f|<b>block</b><i>/a'b"c</i><i>d</i><i>e  f</i></p>`,
+  },
+  {
+    // Angular's template lexer opens a tag at a `<` before a letter or `!`, in an interpolation
+    // too: a named group, a named back-reference and a negative lookbehind hold one.
+    name: "regular expressions with named groups and lookbehinds",
+    props: { s: { type: "string", value: "aa" } },
+    render: (b) =>
+      b.el(
+        "p",
+        [],
+        b.i(`s && /(?<x>a)\\k<x>/.test(s) ? "named" : "none"`),
+        "|",
+        b.i(`/(?<!b)a/.test(s) ? "behind" : "none"`),
+      ),
+    expected: "<p>named|behind</p>",
+  },
+  {
+    // Angular turns U+E500, its `&ngsp;` marker, into a space in text and in interpolated
+    // literals, in a `<pre>` too.
+    name: "U+E500 in text and in string literals",
+    props: { s: { type: "string", value: "s" } },
+    render: (b) =>
+      b.el(
+        "div",
+        [],
+        b.el(
+          "p",
+          [b.bind("title", 's + "\ue500"')],
+          "x\ue500y",
+          b.i('s + "\ue500"'),
+          "|",
+          b.i('"p\ue500q"'),
+        ),
+        b.el("pre", [], "a\ue500 b"),
+      ),
+    expected: '<div><p title="s\ue500">x\ue500ys\ue500|p\ue500q</p><pre>a\ue500 b</pre></div>',
+  },
+  {
+    // Angular decodes an interpolation's references with `/&([^;]+);/`, so a bare `&` would take
+    // the `;` of one after it, and its search for a comment knows no escapes, in text it writes
+    // as a literal too (a run of spaces, U+E500).
+    name: "ampersands before references, and quotes before a `//` in literal text",
+    props: {
+      s: { type: "string", value: "R&D" },
+      on: { type: "boolean", value: true },
+      t: { type: "string", value: "t" },
+    },
+    render: (b) =>
+      b.el(
+        "div",
+        [b.bind("title", '(on&&s) || "none"')],
+        b.el("p", [], b.i('on && /R&D/.test(s) ? "rd" : "other"'), "|", b.i('(on&&t) || "none"')),
+        b.el("p", [], 'Visit "https://a.b".  Thanks'),
+        b.el("p", [], 'a\ue500 "b//c'),
+      ),
+    expected: [
+      '<div title="R&amp;D">',
+      "<p>rd|t</p>",
+      '<p>Visit "https://a.b".  Thanks</p>',
+      '<p>a\ue500 "b//c</p>',
+      "</div>",
+    ].join(""),
+  },
+  {
+    // angular-eslint lints the raw text of the template literal an Angular template sits in,
+    // where a backslash is doubled: no quote, `/`, bracket or parenthesis may follow one.
+    name: "apostrophes and quotes in strings, and escaped characters in regular expressions",
+    props: {
+      name: { type: "string", value: 'say "hi"' },
+      saved: { type: "boolean", value: false },
+    },
+    render: (b) =>
+      b.el(
+        "div",
+        [b.bind("title", `saved ? "Saved" : "Don't forget"`), b.bind("aria-label", "`${name}'s`")],
+        b.el(
+          "p",
+          [],
+          b.i(`saved ? "Saved" : 'Not "saved" yet'`),
+          "|",
+          b.i('name + "it\'s \\"x\\""'),
+        ),
+        b.el("p", [], 'Visit "https://a.b".  Thanks'),
+        b.if([`name === 'say "hi"'`, b.el("b", [], "hi")]),
+        b.el("p", [b.bind("title", '/a\\/b|[\\]]|\\(/.test(name) ? "match" : "none"')], "r"),
+      ),
+    expected: [
+      `<div title="Don't forget" aria-label="say &quot;hi&quot;'s">`,
+      `<p>Not "saved" yet|say "hi"it's "x"</p>`,
+      '<p>Visit "https://a.b".  Thanks</p><b>hi</b><p title="none">r</p>',
+      "</div>",
+    ].join(""),
+  },
+  {
+    // Angular's expression lexer reads only ASCII whitespace and the no-break space.
+    name: "whitespace outside ASCII between an expression's tokens",
+    props: { s: { type: "string", value: "s" }, on: { type: "boolean", value: true } },
+    render: (b) =>
+      b.el(
+        "p",
+        [b.bind("title", "s +\u3000s")],
+        b.i("s\u2003+ s"),
+        b.i("s +\ufeffs"),
+        b.if(["on\u2028&& s", b.el("b", [], "on")]),
+      ),
+    expected: '<p title="ss">ssss<b>on</b></p>',
   },
 
   // Conditionals (ADR-0036): truthiness, chains, empty branches, branches that are not one element.
@@ -941,6 +1081,61 @@ export const MARKUP_CASES: readonly MarkupCase[] = [
       b.el("p", [b.cls("base", ["on", "true"]), b.spread("attrs", "id", "class", "data-x")], "x"),
     expected: `<p class="base on">x</p>`,
   },
+  // Every source that may be nullish reads its keys through `?.`, not only an optional prop: a
+  // `null`, an optional member, a conditional and a list's item (the spread's `nullish`).
+  {
+    name: "spreads of nullish sources: null, an absent member and a conditional",
+    props: {
+      empty: { type: '{ id?: string; "data-x"?: string } | null', value: null },
+      box: { type: "{ inner?: { id?: string; class?: string } }", value: {} },
+      on: { type: "boolean", value: false },
+      attrs: { type: "{ id?: string; class?: string }", value: { id: "i", class: "c" } },
+    },
+    render: (b) =>
+      b.el(
+        "div",
+        [],
+        b.el("p", [b.spread("empty", "id", "data-x")], "a"),
+        b.el(
+          "p",
+          [b.attr("class", "base"), b.spread({ code: "box.inner", nullish: true }, "id", "class")],
+          "b",
+        ),
+        b.el(
+          "p",
+          [b.spread({ code: "on ? attrs : undefined", nullish: true }, "id", "class")],
+          "c",
+        ),
+        b.el(
+          "p",
+          [b.spread({ code: "on ? undefined : attrs", nullish: true }, "id", "class")],
+          "d",
+        ),
+      ),
+    expected: `<div><p>a</p><p class="base">b</p><p>c</p><p id="i" class="c">d</p></div>`,
+  },
+  {
+    name: "a spread of list items that may be absent",
+    props: {
+      rows: {
+        type: "({ id?: string; class?: string } | undefined)[]",
+        value: [undefined, { id: "r", class: "c" }],
+      },
+    },
+    render: (b) =>
+      b.el(
+        "ul",
+        [],
+        b.for("rows", "row", "i", "i", () =>
+          b.el(
+            "li",
+            [b.attr("class", "row"), b.spread({ code: "row", nullish: true }, "id", "class")],
+            "x",
+          ),
+        ),
+      ),
+    expected: `<ul><li class="row">x</li><li class="row c" id="r">x</li></ul>`,
+  },
   {
     name: "a spread with keys that are not identifiers, and a boolean key",
     props: {
@@ -1020,6 +1215,30 @@ export const MARKUP_CASES: readonly MarkupCase[] = [
         "x",
       ),
     expected: `<p class="{{a}} @b t" style="content: &quot;{{ x }} {y} @if&quot;; color: red">x</p>`,
+  },
+  {
+    // Vue's compiler parses a static `style` again, knowing no strings: it splits at a `;` in
+    // one, not before a value whose first parenthesis is a `)`, and it removes comments. Its
+    // dialect binds such a value instead (Angular reads each of these as written).
+    name: "static style values that Vue's style parser misreads",
+    props: { c: { type: "string", value: "blue" } },
+    render: (b) =>
+      b.el(
+        "div",
+        [],
+        b.el("p", [b.style(["font-family", '"A;B", serif'], ["color", "red"])], "a"),
+        b.el("p", [b.style(["margin", "0"], ["content", '")" "("'])], "b"),
+        b.el("p", [b.style(["content", "'x;y'"], ["margin", "1px/**/2px"])], "c"),
+        b.el("p", [b.style(["font-family", '"C;D", serif'], ["color", { code: "c" }])], "d"),
+      ),
+    expected: [
+      "<div>",
+      '<p style="font-family: &quot;A;B&quot;, serif; color: red">a</p>',
+      '<p style="margin: 0; content: &quot;)&quot; &quot;(&quot;">b</p>',
+      `<p style="content: 'x;y'; margin: 1px/**/2px">c</p>`,
+      '<p style="font-family: &quot;C;D&quot;, serif; color: blue">d</p>',
+      "</div>",
+    ].join(""),
   },
 
   // SVG (ADR-0040).

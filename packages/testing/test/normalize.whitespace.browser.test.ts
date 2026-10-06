@@ -117,6 +117,36 @@ const SAME: readonly (readonly [string, string, string])[] = [
     '<div>a<div style="display: run-in"> b</div></div>',
     '<div>a<div style="display: run-in">b</div></div>',
   ],
+  [
+    "a line break after a zero-width space and an annotation's start, and none",
+    "<div><ruby>dd\u200b<rt>\na</rt></ruby></div>",
+    "<div><ruby>dd\u200b<rt>a</rt></ruby></div>",
+  ],
+  [
+    "a line break after a zero-width space and the start of an annotation in a ruby container, and none",
+    '<div><span style="display: ruby">dd\u200b<span style="display: contents"><span style="display: ruby-text">\na</span></span></span></div>',
+    '<div><span style="display: ruby">dd\u200b<span style="display: contents"><span style="display: ruby-text">a</span></span></span></div>',
+  ],
+  [
+    "a line break after a zero-width space and an annotation outside a ruby, in an anonymous one, and a space",
+    '<div>dd\u200b<span style="display: ruby-text">\na</span></div>',
+    '<div>dd\u200b<span style="display: ruby-text"> a</span></div>',
+  ],
+  [
+    "a line break after a zero-width space and an <rt> in a ruby that is no ruby container, and a space",
+    '<div><ruby style="display: inline">dd\u200b<rt>\na</rt></ruby></div>',
+    '<div><ruby style="display: inline">dd\u200b<rt> a</rt></ruby></div>',
+  ],
+  [
+    "spaces around a table cell in a block container, an anonymous block-level table",
+    '<div>a <span style="display: table-cell">b</span> c</div>',
+    '<div>a<span style="display: table-cell">b</span>c</div>',
+  ],
+  [
+    "a space between two table cells in a block container, in one anonymous table",
+    '<div><span style="display: table-cell">a</span> <span style="display: table-cell">b</span></div>',
+    '<div><span style="display: table-cell">a</span><span style="display: table-cell">b</span></div>',
+  ],
 ];
 
 const DIFFERENT: readonly (readonly [string, string, string])[] = [
@@ -231,6 +261,56 @@ const DIFFERENT: readonly (readonly [string, string, string])[] = [
     '<p>a<span style="display: math"> b</span></p>',
     '<p>a<span style="display: math">b</span></p>',
   ],
+  [
+    "a line break after a zero-width space and an annotation's start, and a space",
+    "<div><ruby>dd\u200b<rt>\na</rt></ruby></div>",
+    "<div><ruby>dd\u200b<rt> a</rt></ruby></div>",
+  ],
+  [
+    "a space at the start of a block ruby in a ruby, which inlinifies it as an inline ruby, and none",
+    '<div><ruby>a<ruby style="display: block ruby"> b</ruby></ruby></div>',
+    '<div><ruby>a<ruby style="display: block ruby">b</ruby></ruby></div>',
+  ],
+  [
+    "a space at the end of a block ruby in a ruby, which inlinifies it as an inline ruby, and none",
+    '<div><ruby><ruby style="display: block ruby">a </ruby>b</ruby></div>',
+    '<div><ruby><ruby style="display: block ruby">a</ruby>b</ruby></div>',
+  ],
+  [
+    "a line break after a zero-width space and an annotation outside a ruby, in an anonymous one, and none",
+    '<div>dd\u200b<span style="display: ruby-text">\na</span></div>',
+    '<div>dd\u200b<span style="display: ruby-text">a</span></div>',
+  ],
+  [
+    "a line break after a zero-width space and an <rt> in a ruby that is no ruby container, and none",
+    '<div><ruby style="display: inline">dd\u200b<rt>\na</rt></ruby></div>',
+    '<div><ruby style="display: inline">dd\u200b<rt>a</rt></ruby></div>',
+  ],
+  [
+    "a line break after a zero-width space and an annotation in an inline in a ruby, and none",
+    '<div><ruby><span>dd\u200b<span style="display: ruby-text">\na</span></span></ruby></div>',
+    '<div><ruby><span>dd\u200b<span style="display: ruby-text">a</span></span></ruby></div>',
+  ],
+  [
+    "a line break and a line break after a zero-width space and an annotation outside a ruby, and a space",
+    '<div>dd\u200b\n<span style="display: ruby-text">\nccc</span></div>',
+    '<div>dd\u200b <span style="display: ruby-text">\nccc</span></div>',
+  ],
+  [
+    "spaces around a table cell in an inline box, an anonymous inline table, and none",
+    '<p><span>a <span style="display: table-cell">b</span> c</span></p>',
+    '<p><span>a<span style="display: table-cell">b</span>c</span></p>',
+  ],
+  [
+    "a space between inlines in a table row a flex container blockifies, and none",
+    '<div style="display: flex"><span style="display: table-row"><b>a</b> <b>b</b></span></div>',
+    '<div style="display: flex"><span style="display: table-row"><b>a</b><b>b</b></span></div>',
+  ],
+  [
+    "a tab after a <wbr> beside a table row in a blockified ruby, and a line break",
+    '<div style="display: flex"><ruby><span style="display: table-row">a</span>\n<wbr>\tb</ruby></div>',
+    '<div style="display: flex"><ruby><span style="display: table-row">a</span>\n<wbr>\nb</ruby></div>',
+  ],
 ];
 
 describe("rule 6 against Chromium's layout", () => {
@@ -265,10 +345,11 @@ const WORDS = ["a", "bb", "ccc", "a\u200Bb", "dd\u200B"];
 
 /**
  * What a fragment is built from: inline, atomic, block, flex, table, `display: contents` and
- * out-of-flow boxes, list items, rubies and their annotations, bidi isolates, quotation marks,
- * preserved whitespace, line breaks and break opportunities. Stylesheets are out of scope: the rule
- * reads inline styles only (display.ts). So are table-internal displays on other elements
- * until M1 (see `boxFromDisplay`).
+ * out-of-flow boxes, list items, rubies and their annotations (in a ruby container or not),
+ * bidi isolates, quotation marks, preserved whitespace, line breaks and break opportunities,
+ * and table-internal boxes, which a bound `display` puts anywhere (M1): inside a table, or in
+ * an anonymous one. Stylesheets are out of scope: the rule reads inline styles only
+ * (display.ts).
  */
 const ELEMENTS = [
   "<span>",
@@ -283,7 +364,11 @@ const ELEMENTS = [
   '<span style="position: absolute">',
   "<li>",
   "<ruby>",
+  '<ruby style="display: inline">',
+  '<ruby style="display: block ruby">',
+  '<span style="display: ruby">',
   "<rt>",
+  '<span style="display: ruby-text">',
   "<rp>",
   "<bdi>",
   '<span dir="rtl">',
@@ -293,6 +378,11 @@ const ELEMENTS = [
   '<span style="white-space: pre-wrap">',
   '<span style="display: inline-table">',
   '<span style="display: inline-flex">',
+  '<span style="display: table-cell">',
+  '<span style="display: table-row">',
+  '<span style="display: table-row-group">',
+  '<span style="display: table-caption">',
+  '<span style="display: table-column">',
   "<br>",
   "<wbr>",
   '<img width="8" height="8">',

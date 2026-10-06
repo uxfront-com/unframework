@@ -1,4 +1,5 @@
 import { parseStyle, printStyle, sortDeclarations } from "../style.ts";
+import type { NormalizeTarget } from "../targets.ts";
 import { attributeName, forEachElement, HTML_NAMESPACE } from "../tree.ts";
 import type { TreeParent } from "../tree.ts";
 
@@ -72,19 +73,22 @@ const BOOLEAN_ATTRIBUTES: Readonly<Record<string, readonly string[]>> = {
  * `disabled=""`, `disabled="disabled"`). Any other value (`disabled="false"`) is invalid HTML
  * that still switches the state on, so it is kept for the reader to see. `hidden="until-found"`
  * is a state of its own and stays too.
+ *
+ * Qwik's client is the one exception (ADR-0031: noise is per target): Qwik 2.0 beta writes a
+ * boolean attribute that is on as `name="true"`, a constant one through `setAttribute(name,
+ * true)` and a bound one too, but for the few whose DOM property has the same lower-case name,
+ * where its server writes `name=""`. The IR only ever turns a boolean attribute on with `true`,
+ * so on Qwik `"true"` is that, and only Qwik's `"true"` is rewritten.
  */
-export function canonicalizeBooleanAttributes(root: TreeParent): void {
+export function canonicalizeBooleanAttributes(root: TreeParent, target?: NormalizeTarget): void {
   forEachElement(root, (element) => {
     if (element.namespaceURI !== HTML_NAMESPACE) return;
     const own = BOOLEAN_ATTRIBUTES[element.tagName] ?? [];
     for (const attribute of element.attrs) {
       const name = attributeName(attribute);
-      if (
-        (GLOBAL_BOOLEAN_ATTRIBUTES.includes(name) || own.includes(name)) &&
-        attribute.value.toLowerCase() === name
-      ) {
-        attribute.value = "";
-      }
+      if (!GLOBAL_BOOLEAN_ATTRIBUTES.includes(name) && !own.includes(name)) continue;
+      const value = attribute.value.toLowerCase();
+      if (value === name || (target === "qwik" && value === "true")) attribute.value = "";
     }
   });
 }

@@ -87,6 +87,18 @@ export function vueClassValue(parts: readonly ClassPart[]): string {
   return `[${classArrayItems(bound, false).join(", ")}]`;
 }
 
+/**
+ * Whether Vue reads a static declaration's value back as written from the `style` attribute: its
+ * compiler parses the attribute again (`parseStringStyle` in `@vue/shared`). It removes the
+ * comments, which joins the two tokens a comment alone separates; it splits at each `;` that
+ * no `)` follows before a `(`, inside a string too (`content: "a;b"`); and so it does not split
+ * before a value whose first parenthesis is a `)` (`content: ")"`), which joins that value to
+ * the declaration before it. A value with none of those keeps itself and its neighbours whole.
+ */
+function vueReadsStatic(value: string): boolean {
+  return !value.includes("/*") && !/;(?![^(]*\))/.test(value) && !/^[^()]*\)/.test(value);
+}
+
 /** The bound declarations as an object Vue's `:style` takes: camel-case or custom keys. */
 function styleObject(parts: readonly StylePart[]): string {
   return `{ ${parts
@@ -163,7 +175,13 @@ export const vueDialect: MarkupDialect = {
     }
     return printed;
   },
-  styleAttribute: (parts) => {
+  styleAttribute: (written) => {
+    // A static declaration Vue would misread joins the bound ones, whose values it takes whole.
+    const parts = written.map((part): StylePart =>
+      part.kind === "Static" && !vueReadsStatic(part.value)
+        ? { kind: "Bound", property: part.property, value: JSON.stringify(part.value) }
+        : part,
+    );
     const value = staticStyleValue(parts);
     const printed: PrintedAttribute[] = value
       ? [{ name: "style", text: vueDialect.attribute("style", value, "") }]

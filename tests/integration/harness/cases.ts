@@ -53,8 +53,9 @@ function readCase(casesDir: string, id: string): CaseInfo {
   const files = readdirSync(dir);
   const inputs = files.filter((file) => file.endsWith(".uf.tsx"));
   if (inputs.length !== 1) {
+    // Harness components (slot content, plan §7.1) arrive with slots, in M3.
     throw new Error(
-      `Case ${id} must hold exactly one .uf.tsx input in M0, found ${inputs.length ? inputs.join(", ") : "none"}.`,
+      `Case ${id} must hold exactly one .uf.tsx input, found ${inputs.length ? inputs.join(", ") : "none"}.`,
     );
   }
   const specs = files.filter((file) => file.endsWith(".test.ts"));
@@ -120,6 +121,8 @@ export interface ExpectedDiagnostic {
   code: string;
   severity: "error" | "warning" | "info";
   target?: string;
+  /** The fixes L1 applies, which the L1-fix-no-op canary corrupts. */
+  fixes?: readonly unknown[];
 }
 
 /**

@@ -1,8 +1,10 @@
 // The emitter's output for M1's constructs (design §5.5), judged by Angular itself: sources
 // lowered by the analyser and emitted as the compiler writes them pass ngtsc with strict
 // templates and its extended diagnostics (L3), the toolchain's type check (L4) and its linters
-// (L5) with no message, and Angular's server platform renders the DOM the source describes for
-// the props given, left out or explicitly `undefined`. The render-parity kit compares every
+// (L5) with no message, for these sources and for every case of the corpus (whose committed
+// goldens the compile project compares with this run's output, L2), and Angular's server platform
+// renders the DOM the source describes for the props given, left out or explicitly `undefined`.
+// The render-parity kit compares every
 // construct with the reference; these pin the shapes only Angular needs: the `@let` reads, a
 // prop in a `track`, the defaults' transforms, the globals as members and template literals as
 // concatenations.
@@ -22,7 +24,16 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { canonical } from "../../codegen/test/markup-cases.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { renderToString } from "../src/toolchain/server.ts";
-import { context, formatted, ngtscPlugin, removeScratch, scratchDir } from "./helpers.ts";
+import {
+  context,
+  corpusSources,
+  emitFormatted,
+  formatted,
+  lower,
+  ngtscPlugin,
+  removeScratch,
+  scratchDir,
+} from "./helpers.ts";
 
 afterAll(removeScratch);
 
@@ -107,10 +118,121 @@ export default function Totals({ values, first, second }: TotalsProps) {
   );
 }
 `,
+  // ES2023's copying array methods, the analyser's fixes for the mutating ones (UF3021): L3 and
+  // L4 check them with ES2024's library, as every other target's checker does.
+  Ranking: `
+export interface RankingProps {
+  scores: number[];
+}
+
+export default function Ranking({ scores }: RankingProps) {
+  return (
+    <ol title={scores.toReversed().join(" ")}>
+      {scores.toSorted((a, b) => b - a).toSpliced(2).map((score) => <li key={score}>{score}</li>)}
+    </ol>
+  );
+}
+`,
+  // Blank text right after a block, which Angular's parser would drop while it looks for the
+  // block's `@else` or `@empty`: a space, a non-breaking space, a space in \`<pre>\`.
+  Spacing: `
+export interface SpacingProps {
+  on: boolean;
+  names: string[];
+}
+
+export default function Spacing({ on, names }: SpacingProps) {
+  return (
+    <div>
+      <p>{on && <i>a</i>}{" "}<b>b</b></p>
+      <p>{on ? <i>c</i> : <u>d</u>}{"\u00a0"}<b>e</b></p>
+      <p>{names.map((name) => <i key={name}>{name}</i>)}{" "}<b>f</b></p>
+      <pre>{on && <i>g</i>}{" "}<b>h</b></pre>
+    </div>
+  );
+}
+`,
+  // What Angular's template reads in literals and between tokens: a regular expression's
+  // quotes, `;`, parentheses, `//` and named groups, U+E500, whitespace outside ASCII, the
+  // blocks in an SVG title, a bare `&` before a reference in an interpolation, and a quote
+  // before a `//` in text it writes as a literal.
+  Patterns: `
+export interface PatternsProps {
+  label: string;
+  on: boolean;
+}
+
+export default function Patterns({ label, on }: PatternsProps) {
+  return (
+    <div title={/'/.test(label) ? "quoted" : "plain"}>
+      {/^\\//.test(label) && <b>slash</b>}
+      {label.split(/[;)]/).map((part) => <i key={part}>{part}</i>)}
+      <p>x\ue500y{label\u3000+ label}|{on && /(?<x>a)\\k<x>/.test(label) ? "named" : "none"}</p>
+      <svg viewBox="0 0 2 2"><title>{label}{on && " on"}</title></svg>
+      <p>{(label&&"set") || "none"}|{label && /R&D/.test(label) ? "rd" : "other"}</p>
+      <p>{'Visit "https://a.b".  Thanks'}</p>
+    </div>
+  );
+}
+`,
+  // Quotes in strings: angular-eslint lints the raw text of the template literal the template
+  // sits in, where a backslash before a quote is doubled and ends the string (L5), so every
+  // string takes the quote its value does not hold, and an escaped regular expression character
+  // is written as a code.
+  Quotes: `
+export interface QuotesProps {
+  name: string;
+  saved: boolean;
+}
+
+export default function Quotes({ name, saved }: QuotesProps) {
+  return (
+    <div title={saved ? "Saved" : "Don't forget to save"} aria-label={\`\${name}'s results\`}>
+      <p>{saved ? "Saved" : 'Not "saved" yet'}|{\`Results for "\${name}"\`}|{name + "it's \\"x\\""}</p>
+      <p>Visit "https://a.b".  Thanks</p>
+      {name === 'say "hi"' && <b>hi</b>}
+      <ul>{[name].map((x) => <li key={x + "'"}>{x}</li>)}</ul>
+      <p title={/a\\/b|[\\]]|\\(/.test(name) ? "match" : "none"}>{/^\\(/.test(name) && "paren"}</p>
+    </div>
+  );
+}
+`,
   // The object form, and a component named after Angular's decorator.
   Component: `
 export function Component(props: { author: string; minutes?: number }) {
   return <p>By {props.author}, {props.minutes ?? 1} min</p>;
+}
+`,
+  // Spreads (ADR-0039): a source that may be nullish reads its keys through `?.`, and one a
+  // condition narrows through `.`, as NG8107 requires of a narrowed member.
+  Spreads: `
+interface Attrs {
+  id: string;
+  title?: string;
+  class?: string;
+}
+
+interface Box {
+  inner?: Attrs;
+}
+
+export interface SpreadsProps {
+  empty: Attrs | null;
+  box: Box;
+  opt?: Attrs;
+  rows: (Attrs | undefined)[];
+}
+
+export default function Spreads({ empty, box, opt, rows }: SpreadsProps) {
+  return (
+    <div>
+      <p {...empty}>a</p>
+      <p class="b" {...box.inner}>b</p>
+      {box.inner && <i {...box.inner}>c</i>}
+      {!opt ? null : <b {...opt}>d</b>}
+      <ul>{rows.map((row, index) => <li key={index} {...row}>e</li>)}</ul>
+    </div>
+  );
 }
 `,
 };
@@ -124,29 +246,61 @@ beforeAll(async () => {
   }
 });
 
+/**
+ * What L3, L4 and L5 report about each file, by its path: the files are written to a scratch
+ * directory of their own, under `prefix` when two share a name.
+ */
+async function toolchainMessages(
+  files: readonly (OutputFile & { prefix?: string })[],
+): Promise<Record<string, string[]>> {
+  const directory = scratchDir();
+  const written = files.map((file) => ({
+    path: join(directory, `${file.prefix ?? ""}${file.path}`),
+    contents: file.contents,
+  }));
+  for (const file of written) writeFileSync(file.path, file.contents);
+  const paths = written.map((file) => file.path);
+  const [compiledFiles, checked, linted] = await Promise.all([
+    toolchain.frameworkCompile(written, context),
+    toolchain.typecheck(paths, context),
+    toolchain.lint(paths, context),
+  ]);
+  return Object.fromEntries(
+    paths.map((path) => [
+      path.slice(directory.length + 1),
+      [
+        ...(compiledFiles.get(path)?.errors ?? []),
+        ...(compiledFiles.get(path)?.warnings ?? []),
+        ...(checked.get(path) ?? []),
+        ...(linted.get(path) ?? []),
+      ].map(({ code, line, message }) => `${code ?? ""} ${line ?? ""}: ${message}`),
+    ]),
+  );
+}
+
 describe("angular output", () => {
   it("passes Angular's compiler, its type check and its linters with no message", async () => {
-    const directory = scratchDir();
-    const files = [...outputs.values()].map((file) => ({
-      path: join(directory, file.path),
-      contents: file.contents,
-    }));
-    for (const file of files) writeFileSync(file.path, file.contents);
-    const paths = files.map((file) => file.path);
-    const [compiledFiles, checked, linted] = await Promise.all([
-      toolchain.frameworkCompile(files, context),
-      toolchain.typecheck(paths, context),
-      toolchain.lint(paths, context),
-    ]);
-    const messages = (file: string) => [
-      ...(compiledFiles.get(file)?.errors ?? []),
-      ...(compiledFiles.get(file)?.warnings ?? []),
-      ...(checked.get(file) ?? []),
-      ...(linted.get(file) ?? []),
-    ];
-    expect(Object.fromEntries(paths.map((file) => [file, messages(file)]))).toEqual(
-      Object.fromEntries(paths.map((file) => [file, []])),
+    const messages = await toolchainMessages([...outputs.values()]);
+    expect(Object.values(messages).length).toBe(outputs.size);
+    expect(Object.values(messages).flat()).toEqual([]);
+  });
+
+  // The corpus's committed goldens are this emitter's output as of the last `pnpm test:update`;
+  // this judges its output as of now, lowered from each case's source.
+  it("passes them for every case of the corpus too", { timeout: 120_000 }, async () => {
+    const cases = corpusSources();
+    expect(cases.length).toBeGreaterThan(20);
+    const files = await Promise.all(
+      cases.map(async ({ name, file, source }) =>
+        (await emitFormatted(lower(source, file, true))).map((output) => ({
+          ...output,
+          prefix: `${name.replace(/\//g, "-")}-`,
+        })),
+      ),
     );
+    const messages = await toolchainMessages(files.flat());
+    expect(Object.keys(messages).length).toBe(files.flat().length);
+    expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
   });
 
   it.each([
@@ -172,12 +326,24 @@ describe("angular output", () => {
     },
     {
       name: "Owner",
-      props: { owner: { name: "ada", email: "a@b" }, phone: " 1 ", count: 2, tags: ["t"], value: "v" },
+      props: {
+        owner: { name: "ada", email: "a@b" },
+        phone: " 1 ",
+        count: 2,
+        tags: ["t"],
+        value: "v",
+      },
       html: '<div><p>ADA</p><a href="mailto:a@b">3</a><p>1</p><p>2.0</p><p>T</p><p>V</p></div>',
     },
     {
       name: "Rows",
-      props: { prefix: "#", rows: [{ id: "1", label: "a" }, { id: "2", label: "b" }] },
+      props: {
+        prefix: "#",
+        rows: [
+          { id: "1", label: "a" },
+          { id: "2", label: "b" },
+        ],
+      },
       html: "<ul><li>#a</li><li>#b</li><li>A</li><li>B</li></ul>",
     },
     {
@@ -186,9 +352,70 @@ describe("angular output", () => {
       html: '<p title="[1,3]" style="width: 1px">3|12|3!|undefined</p>',
     },
     {
+      name: "Ranking",
+      props: { scores: [2, 9, 4] },
+      html: '<ol title="4 9 2"><li>9</li><li>4</li></ol>',
+    },
+    {
+      name: "Spacing",
+      props: { on: true, names: ["x", "y"] },
+      html: "<div><p><i>a</i> <b>b</b></p><p><i>c</i>\u00a0<b>e</b></p><p><i>x</i><i>y</i> <b>f</b></p><pre><i>g</i> <b>h</b></pre></div>",
+    },
+    {
+      name: "Spacing",
+      props: { on: false, names: [] },
+      html: "<div><p> <b>b</b></p><p><u>d</u>\u00a0<b>e</b></p><p> <b>f</b></p><pre> <b>h</b></pre></div>",
+    },
+    {
+      name: "Quotes",
+      props: { name: 'say "hi"', saved: false },
+      html: [
+        '<div title="Don\'t forget to save" aria-label="say &quot;hi&quot;\'s results">',
+        '<p>Not "saved" yet|Results for "say "hi""|say "hi"it\'s "x"</p>',
+        '<p>Visit "https://a.b".  Thanks</p><b>hi</b><ul><li>say "hi"</li></ul>',
+        '<p title="none"></p></div>',
+      ].join(""),
+    },
+    {
       name: "Component",
       props: { author: "Ada" },
       html: "<p>By Ada, 1 min</p>",
+    },
+    {
+      name: "Patterns",
+      props: { label: "/aa;b)c", on: true },
+      html: [
+        '<div title="plain"><b>slash</b><i>/aa</i><i>b</i><i>c</i>',
+        "<p>x\ue500y/aa;b)c/aa;b)c|named</p>",
+        '<svg viewBox="0 0 2 2"><title>/aa;b)c on</title></svg>',
+        '<p>set|other</p><p>Visit "https://a.b".  Thanks</p></div>',
+      ].join(""),
+    },
+    {
+      name: "Patterns",
+      props: { label: "R&D", on: false },
+      html: [
+        '<div title="plain"><i>R&amp;D</i>',
+        "<p>x\ue500yR&amp;DR&amp;D|none</p>",
+        '<svg viewBox="0 0 2 2"><title>R&amp;D</title></svg>',
+        '<p>set|rd</p><p>Visit "https://a.b".  Thanks</p></div>',
+      ].join(""),
+    },
+
+    {
+      name: "Spreads",
+      props: { empty: null, box: {}, rows: [undefined] },
+      html: '<div><p>a</p><p class="b">b</p><ul><li>e</li></ul></div>',
+    },
+    {
+      name: "Spreads",
+      props: {
+        empty: { id: "e" },
+        box: { inner: { id: "i", class: "c" } },
+        opt: { id: "o", title: "t" },
+        rows: [{ id: "r" }],
+      },
+      html: '<div><p id="e">a</p><p class="b c" id="i">b</p><i id="i" class="c">c</i><b id="o" title="t">d</b><ul><li id="r">e</li></ul></div>',
     },
   ])("renders $name for $props as the source does", async ({ name, props, html }) => {
     expect(canonical(await render(name, props))).toEqual(canonical(html));

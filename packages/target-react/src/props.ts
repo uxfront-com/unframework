@@ -163,8 +163,9 @@ export const REACT_PROP_NAMES: Readonly<Record<string, string>> = {
 /**
  * HTML attributes whose presence alone turns them on, keyed by their HTML spelling. React 19
  * takes them as boolean props: a truthy value renders `name=""`, and a falsy one, the empty
- * string included, removes the attribute. HTML treats `disabled=""` and `disabled="disabled"`
- * alike, so the React target passes `true` whatever the static value. From react-dom's
+ * string included, removes the attribute. Every boolean attribute the IR can hold is one of
+ * these (test/attributes.test.ts checks it), so the target writes them bare and binds them as
+ * they are; the analyser rejects the ones React's types lack (`ismap`). From react-dom's
  * `setProp` (19.3), plus the ones React sets as DOM properties (`multiple`, `muted`) or
  * handles itself (`autofocus`, and `checked`, which becomes `defaultChecked`).
  */

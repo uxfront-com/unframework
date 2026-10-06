@@ -1,10 +1,10 @@
 // How React writes what the JSX printer's defaults (design §4.2) write differently: React's
-// prop names, number-typed props as numbers, boolean attributes React does not know, `className`
-// through an inline `cx`, style objects typed for custom properties, and spreads written out key
-// by key (design §5.1).
+// prop names, number-typed props as numbers, `className` through an inline `cx`, style objects
+// typed for custom properties, and spreads written out key by key (design §5.1). Every boolean
+// attribute the IR can hold is one of React's boolean props (test/attributes.test.ts), so the
+// defaults write it bare and bind it as it is.
 import {
   expressionCode,
-  isBooleanAttribute,
   isIdentifier,
   isNumberTypedAttribute,
   js,
@@ -15,10 +15,10 @@ import {
   staticJsxAttribute,
   styleObject,
 } from "@unframework/codegen";
-import type { ImportSet, JsxContext, JsxDialect, ParenthesesSlot } from "@unframework/codegen";
+import type { ImportSet, JsxContext, JsxDialect } from "@unframework/codegen";
 import type { ClassAttribute, ElementNode } from "@unframework/ir";
 
-import { BOOLEAN_PROPS, formControlProp, REACT_PROP_NAMES } from "./props.ts";
+import { formControlProp, REACT_PROP_NAMES } from "./props.ts";
 
 type JsxAttribute = ReturnType<typeof js.jsxAttribute>;
 type Expression = Parameters<typeof js.jsxExpressionContainer>[0];
@@ -37,8 +37,6 @@ export function reactDialect(names: ReactNames): JsxDialect {
   return {
     attributeName: (name, element) =>
       formControlProp(name, element) ?? REACT_PROP_NAMES[name] ?? name,
-    // React drops `attr=""` on its boolean props, and warns about `true` on any other attribute.
-    presentAttributeValue: (name) => (BOOLEAN_PROPS.has(name) ? true : ""),
 
     staticAttribute(attribute, element, context) {
       const { name, value } = attribute;
@@ -56,9 +54,7 @@ export function reactDialect(names: ReactNames): JsxDialect {
     },
 
     boundAttribute: (attribute, element, context) => [
-      boundAttribute(attribute.name, element, context, (slot) =>
-        jsxExpression(attribute.value, context, slot),
-      ),
+      prop(attribute.name, element, context, jsxExpression(attribute.value, context)),
     ],
 
     classAttribute: (attribute, element, context) => [
@@ -87,9 +83,7 @@ export function reactDialect(names: ReactNames): JsxDialect {
       );
       return attribute.keys
         .filter((key) => !(merged && key.name === "class"))
-        .map((key) =>
-          boundAttribute(key.name, element, context, () => spreadRead(attribute, key, context)),
-        );
+        .map((key) => prop(key.name, element, context, spreadRead(attribute, key, context)));
     },
   };
 }
@@ -104,28 +98,6 @@ function prop(
   return js.jsxAttribute(
     jsxAttributeName(name, element, context),
     js.jsxExpressionContainer(value),
-  );
-}
-
-/**
- * A bound attribute (or a spread's key). React renders a boolean as the attribute's presence
- * only for its own boolean props; on any other boolean attribute (`ismap`) it warns about
- * `true` and drops it, so the value becomes the empty string or nothing.
- */
-function boundAttribute(
-  name: string,
-  element: ElementNode,
-  context: JsxContext,
-  value: (slot: ParenthesesSlot) => Expression,
-): JsxAttribute {
-  const unknownBoolean = isBooleanAttribute(name) && !BOOLEAN_PROPS.has(name);
-  return prop(
-    name,
-    element,
-    context,
-    unknownBoolean
-      ? js.conditionalExpression(value("test"), js.stringLiteral(""), js.identifier("undefined"))
-      : value("argument"),
   );
 }
 

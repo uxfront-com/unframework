@@ -6,7 +6,7 @@
       "name": "UsageMeter",
       "span": {
         "start": 113,
-        "end": 950
+        "end": 1120
       },
       "props": [
         {
@@ -582,11 +582,107 @@
               "start": 383,
               "end": 932
             }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "usage-meter-caption",
+                "span": {
+                  "start": 950,
+                  "end": 977
+                }
+              },
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Bound",
+                    "property": "color",
+                    "value": {
+                      "code": "colour",
+                      "span": {
+                        "start": 1002,
+                        "end": 1008
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "colour@166",
+                          "span": {
+                            "start": 1002,
+                            "end": 1008
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 995,
+                      "end": 1008
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "font-family",
+                    "value": "\"UF Test Sans\", sans-serif",
+                    "span": {
+                      "start": 1010,
+                      "end": 1050
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 986,
+                  "end": 1053
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "percent",
+                  "span": {
+                    "start": 1071,
+                    "end": 1078
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "percent@157",
+                      "span": {
+                        "start": 1071,
+                        "end": 1078
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1070,
+                  "end": 1079
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " of 100 used",
+                "span": {
+                  "start": 1079,
+                  "end": 1098
+                }
+              }
+            ],
+            "span": {
+              "start": 939,
+              "end": 1102
+            }
           }
         ],
         "span": {
           "start": 221,
-          "end": 943
+          "end": 1113
         }
       }
     }
@@ -598,7 +694,7 @@
       "local": "UsageMeter",
       "span": {
         "start": 113,
-        "end": 950
+        "end": 1120
       }
     }
   ],

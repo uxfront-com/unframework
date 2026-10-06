@@ -14,6 +14,7 @@ import {
   SVG_UNRENDERABLE_ELEMENTS,
   SVG_WHITESPACE_KEEPING_ELEMENT,
 } from "../src/index.ts";
+import { SVG_DESCRIPTIVE_ATTRIBUTES, SVG_DESCRIPTIVE_ELEMENTS } from "../src/svg.ts";
 
 // The tables name one another; a typo would silently reject valid SVG or accept a name the
 // targets render differently. The analyser's conformance tests check them against parse5, Vue's
@@ -71,6 +72,19 @@ describe("the SVG vocabulary", () => {
     expect(isSvgAttribute("svg", "xmlns")).toBe(false);
     expect(isSvgAttribute("circle", "title")).toBe(false);
     expect(isSvgAttribute("text", "systemLanguage")).toBe(false);
+  });
+
+  it("takes only the core, ARIA and data attributes on <title> and <desc>", () => {
+    expect([...SVG_DESCRIPTIVE_ELEMENTS].filter((tag) => !SVG_ELEMENTS.has(tag))).toEqual([]);
+    for (const tag of SVG_DESCRIPTIVE_ELEMENTS) {
+      for (const name of [...SVG_DESCRIPTIVE_ATTRIBUTES, "aria-label", "data-x"]) {
+        expect(isSvgAttribute(tag, name), `${tag} ${name}`).toBe(true);
+      }
+      for (const name of ["fill", "transform", "opacity", "role", "tabindex", "x"]) {
+        expect(isSvgAttribute(tag, name), `${tag} ${name}`).toBe(false);
+      }
+    }
+    expect(isSvgAttribute("text", "fill")).toBe(true);
   });
 
   it("reads SVG's case exactly", () => {

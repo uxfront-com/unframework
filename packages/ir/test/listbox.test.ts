@@ -82,12 +82,17 @@ describe("listBoxSize with bindings and control flow", () => {
   it("finds the attribute that may make a select a list box", () => {
     const size = bound("size");
     expect(listBoxSize(select([size], option()))).toBe(size);
-    const spread = createSpreadAttribute(label(), [createSpreadKey("size", at)], at);
+    const spread = createSpreadAttribute(label(), [createSpreadKey("size", at)], false, at);
     expect(listBoxSize(select([spread], option()))).toBe(spread);
     const multiple = bound("multiple");
     const staticSize = createStaticAttribute("size", "2", at);
     expect(listBoxSize(select([staticSize, multiple], option()))).toBe(staticSize);
-    const spreadMultiple = createSpreadAttribute(label(), [createSpreadKey("multiple", at)], at);
+    const spreadMultiple = createSpreadAttribute(
+      label(),
+      [createSpreadKey("multiple", at)],
+      false,
+      at,
+    );
     expect(listBoxSize(select([staticSize, spreadMultiple], option()))).toBe(staticSize);
   });
 

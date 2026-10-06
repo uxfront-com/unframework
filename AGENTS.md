@@ -21,7 +21,11 @@ in a real browser.
 ## Where the project is
 
 - **M0, the walking skeleton, is done:** the whole pipeline and the verification machine, around
-  static elements, text and attributes. **M1, props and static JSX, is next** (plan §9).
+  static elements, text and attributes.
+- **M1, props and static JSX, is done:** typed signature props with static defaults, expressions,
+  conditionals, keyed lists, fragments, bound attributes, `class` and `style` in their literal
+  forms, spreads with known keys and SVG, documented on unframework.dev (`apps/web/content/docs`).
+  L5 (lint) and L8 (behaviour) are live. **M2, reactivity, events and behaviour, is next** (plan §9).
 - Anything outside the built subset is rejected as UF1002 (`unsupported-syntax`) until its
   milestone lands. The authoring types already accept the whole language (plan §4).
 - The plan describes the target state. The code is the truth for what is built:
@@ -32,13 +36,13 @@ in a real browser.
 
 ## Read first
 
-| Document                            | Read it                                                                                                                                                                          |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/plan.md`                      | For the architecture. Cited everywhere as §n, principles P1–P8, goals G1–G7, layers L1–L15, milestones M0–M10, decisions C1–C4 and D1–D13, risks R1–R14.                         |
-| `docs/adrs/README.md` and the index | Before you reopen a decision. ADR-0018 onwards record what the M0 spikes and the M0 build settled. An accepted ADR is newer than the plan: where the two differ, follow the ADR. |
-| `tests/integration/README.md`       | Before you touch the corpus or the harness.                                                                                                                                      |
-| `packages/<name>/README.md`         | Before you change a package. Each README states the package's contract and its toolchain. Keep the README true when you change the contract.                                     |
-| `.github/CONTRIBUTING.md`           | For scripts, the package template and releases.                                                                                                                                  |
+| Document                            | Read it                                                                                                                                                                                                         |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/plan.md`                      | For the architecture. Cited everywhere as §n, principles P1–P8, goals G1–G7, layers L1–L15, milestones M0–M10, decisions C1–C4 and D1–D13, risks R1–R14.                                                        |
+| `docs/adrs/README.md` and the index | Before you reopen a decision. ADR-0018 to ADR-0033 record what the M0 spikes and build settled, ADR-0034 onwards what M1 settled. An accepted ADR is newer than the plan: where the two differ, follow the ADR. |
+| `tests/integration/README.md`       | Before you touch the corpus or the harness.                                                                                                                                                                     |
+| `packages/<name>/README.md`         | Before you change a package. Each README states the package's contract and its toolchain. Keep the README true when you change the contract.                                                                    |
+| `.github/CONTRIBUTING.md`           | For scripts, the package template and releases.                                                                                                                                                                 |
 
 ## Layout
 
@@ -47,7 +51,8 @@ packages/        ir, diagnostics           pure data and the UF catalogue (no de
                  parser                    P1: oxc (TS-ESTree) and lightningcss; no TypeScript API
                  codegen                   the target kit: defineTarget, capabilities, JS/JSX/markup
                                            printers, oxfmt, the Toolchain contract (/toolchain-node)
-                 analyzer                  P2 analyse and P3 lower the returned JSX into IR
+                 analyzer                  P2 analyse (scopes through @typescript-eslint/scope-manager)
+                                           and P3 lower the props and the returned JSX into IR
                  target-<name> ×7          emit() and capabilities; /toolchain{,/client,/server} for tests
                  compiler                  compile(): the passes in order, for each selected target
                  unplugin                  the Vite plugin (other bundlers in M6)
@@ -56,8 +61,8 @@ packages/        ir, diagnostics           pure data and the UF catalogue (no de
                  unframework               the authoring stubs and the JSX types (vendored from
                                            @vue/runtime-dom), with type probes
 tests/integration  the corpus (cases/<area>/<name>/) and its harness (harness/, scripts/)
-tests/toolchains   one per target: the checker and tsconfig that type-check its golden outputs
-tests/repo         repo invariants: package layering and the package template
+tests/toolchains   one per target: the checker, tsconfig and lint configs for its golden outputs
+tests/repo         repo invariants: package layering, the package template, the diagnostics page
 apps/web           unframework.dev: a Nuxt homepage and Docus docs (content/docs)
 docs/              plan.md and adrs/
 ```
@@ -80,10 +85,11 @@ pnpm format                           # oxfmt; pnpm lint:fix for oxlint's fixes
 # Narrower loops while you work
 pnpm --filter @unframework/analyzer test                          # one package's own tests
 pnpm --filter @unframework/integration test -- --project compile  # L1 and L2 only: the fastest corpus check
-pnpm --filter @unframework/integration test -- --project "toolchain:angular"   # L3 and L4, one target
+pnpm --filter @unframework/integration test -- --project "toolchain:angular"   # L3, L4 and L5, one target
 pnpm --filter @unframework/integration test -- --project "ssr:svelte"          # L6, one target
-pnpm --filter @unframework/integration test -- --project "browser:vue"         # L7, L10, L11 and L13
+pnpm --filter @unframework/integration test -- --project "browser:vue"         # L7, L8, L10, L11 and L13
 UF_TARGETS=vue,react pnpm --filter @unframework/integration test  # some targets only
+pnpm --filter web build                                           # the docs: prerenders every page, fails on a broken link
 
 # Commands that write artefacts (never in CI)
 pnpm test:update                      # golden outputs and shared expectations; needs vue among the targets
@@ -114,6 +120,11 @@ judges only what ran. CI's parity job requires every (case, target, layer) cell.
 - In update mode, only Vue, the reference target (D10), writes the shared expectations. Every other
   target must match them in the same run. A change to Vue's rendering changes the expectations of
   all seven targets.
+- A feature is done when it also has its docs page (plan §9), in `apps/web/content/docs`. Every
+  example there is copied verbatim from a corpus case's source and its reviewed golden outputs, so
+  when `pnpm test:update` changes an output a page quotes, update the page too. Put
+  `<!-- prettier-ignore -->` before each copied block: oxfmt formats a fenced block's code, which
+  would change its whitespace.
 
 ### Never hand-edit generated files
 
@@ -151,9 +162,11 @@ Generate each of these with its command. The formatter and the linter skip them 
 
 - The same input and the same versions give byte-identical output. Never put time, randomness,
   environment data, absolute paths or file-system order into output.
-- The dependencies that shape output (oxc, oxfmt) are pinned exactly in the catalog.
-- oxfmt formats code only (TS, TSX, JS). Markup keeps the printer's whitespace-safe layout,
-  because whitespace in a template changes the DOM (ADR-0026).
+- The dependencies that shape output (oxc, oxfmt, and `@typescript-eslint/scope-manager`, which
+  shapes the IR) are pinned exactly in the catalog.
+- oxfmt formats code only: TS, TSX and JS files, Vue's and Svelte's script blocks and Astro's
+  frontmatter (ADR-0041). Markup keeps the printer's whitespace-safe layout, because whitespace in
+  a template changes the DOM (ADR-0026).
 
 ### Layering and TypeScript
 
@@ -238,6 +251,10 @@ Generate each of these with its command. The formatter and the linter skip them 
 4. If a mechanical rewrite exists, attach a fix with a confidence of `safe` or `likely`. The tests
    apply every fix and compile the result again.
 5. Add a `cases/diagnostics/<name>` case that triggers it, or an `EXEMPT_CODES` entry with a reason.
+6. Add its section to `apps/web/content/docs/3.reference/2.diagnostics.md`, under its band, with
+   the catalogue entry's text and the anchor `[UFxxxx]{#UFxxxx}`: `docsUrl()` links
+   `/diagnostics/UFxxxx`, which redirects there. `tests/repo` fails a section that differs from
+   its entry.
 
 **Add an IR node or attribute kind.**
 
@@ -277,15 +294,15 @@ Never rewrite an accepted ADR. Supersede it with a new ADR, or amend it with one
 
 These are the hard cells (plan §6). Each one has, or will have, its own `semantics/*` cases.
 
-| Target  | Watch for                                                                                                                                                                                                             |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| React   | The body re-runs on every render, but the source's setup runs once: keep snapshots, local shadows and mirror refs (R1). React prop names (`className`).                                                               |
-| Vue     | The reference target: its output writes every shared expectation. It renders single-selection list boxes differently, so `listbox` is unsupported.                                                                    |
-| Svelte  | Runes mode is forced (`<svelte:options runes>`). Svelte drops whitespace and unmatched selectors, so the printer and the compiler-owned CSS scoping handle them.                                                      |
-| Solid   | Solid 1.9 now, `solid@2` as a separate variant later. The props are a proxy (`mergeProps`), so never destructure them.                                                                                                |
-| Angular | Inputs are set after construction, the host element wraps the root (`display: contents`, D6), and there is no attribute spread. TypeScript 6 checks the output. Virtual modules go through our ngtsc step (ADR-0027). |
-| Qwik    | Experimental and pinned exactly (2.0 beta). Respect the QRL `$` capture rules and `track` in tasks. L3 runs the real optimizer.                                                                                       |
-| Astro   | Static, with no client runtime. `interactivity` is unsupported, so handlers are reported as inert. SSR runs through the Container API.                                                                                |
+| Target  | Watch for                                                                                                                                                                                                                                                                                                                                                                            |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| React   | The body re-runs on every render, but the source's setup runs once: keep snapshots, local shadows and mirror refs (R1). React prop names (`className`). `className` takes one string, so `class-binding` is emulated (`cx`).                                                                                                                                                         |
+| Vue     | The reference target: its output writes every shared expectation. It renders single-selection list boxes differently, so `listbox` is unsupported. Every optional prop without a default gets `= undefined`, or Vue casts an absent boolean to `false` (ADR-0034).                                                                                                                   |
+| Svelte  | Runes mode is forced (`<svelte:options runes>`). Svelte drops whitespace and unmatched selectors, so the printer and the compiler-owned CSS scoping handle them. Never `class:` directives: they remove a token a dynamic class adds (ADR-0038).                                                                                                                                     |
+| Solid   | Solid 1.9 now, `solid@2` as a separate variant later. The props are a proxy (`mergeProps`), so never destructure them: every read is `props.x`, and a list index is `index()`.                                                                                                                                                                                                       |
+| Angular | Inputs are set after construction; a default takes a transform so that `undefined` applies it. The host element wraps the root (`display: contents`, ADR-0010). There is no attribute spread, so spreads are written out per key. Its template parser bounds the expression subset (ADR-0035). TypeScript 6 checks the output. Virtual modules go through our ngtsc step (ADR-0027). |
+| Qwik    | Experimental and pinned exactly (2.0 beta). Respect the QRL `$` capture rules and `track` in tasks. L3 runs the real optimizer, which lowers destructured defaults to `??`.                                                                                                                                                                                                          |
+| Astro   | Static, with no client runtime. `interactivity` is unsupported, so handlers are reported as inert. SSR runs through the Container API.                                                                                                                                                                                                                                               |
 
 ## Code and prose
 

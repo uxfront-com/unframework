@@ -6,7 +6,8 @@
 // - cleanup: whatever a test mounted is unmounted inside the capture window, so unmount warnings
 //   count too;
 // - behaviour: the test's own errors (its assertions, its hooks, a test without assertions, a
-//   failed unmount) recorded as L8, then one error with every failed layer (ADR-0043).
+//   failed unmount) recorded as L8, then one error with every failed layer (ADR-0043);
+// - bounds: `expect.element` waits the project's poll timeout, not the whole test's.
 import { afterAll, afterEach, aroundEach, beforeAll, beforeEach, inject } from "vitest";
 import type { RunnerTestCase } from "vitest";
 
@@ -19,12 +20,14 @@ import {
   unexpectedConsole,
 } from "./browser/console.ts";
 import { installDeterminism } from "./browser/determinism.ts";
+import { boundElementTimeout } from "./browser/element-timeout.ts";
 import { currentTarget } from "./browser/target.ts";
 import { cleanup } from "./browser/view.ts";
 import { caseOfFile } from "./harness.ts";
 import { recordLayer } from "./layers.ts";
 
 installConsoleCapture();
+boundElementTimeout();
 
 beforeAll(async () => {
   await installDeterminism();

@@ -10,6 +10,9 @@ export type Shape =
   | "multiline"
   | "lists"
   | "bindings"
+  | "untyped"
+  | "runtimeText"
+  | "assignedValues"
   | "svgAndFragment";
 
 /** Source by shape. */
@@ -113,12 +116,91 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
     "  );",
     "}",
   ].join("\n"),
-  /** A root fragment holding SVG, a conditional and text. */
+  /** An attribute Svelte's element types declare on some elements only: written, bound, spread. */
+  untyped: [
+    'type Toggle = "on" | "off";',
+    "",
+    "interface Hints {",
+    "  autocorrect?: Toggle;",
+    "}",
+    "",
+    "export default function Note({ mode, hints }: { mode?: Toggle; hints: Hints }) {",
+    "  return (",
+    '    <form aria-label="Note">',
+    '      <p autocorrect="off">a</p>',
+    "      <input autocorrect={mode} />",
+    "      <div {...hints}>b</div>",
+    "    </form>",
+    "  );",
+    "}",
+  ].join("\n"),
+  /**
+   * Static text Svelte's server renders through its runtime: `style:` directives, the attributes
+   * of an element with a spread and of an `<option>`; and a static style with a run of spaces.
+   */
+  runtimeText: [
+    "export default function Quote({ tone }: { tone: string }) {",
+    "  return (",
+    "    <div>",
+    "      <blockquote style={{ fontFamily: '\"Segoe UI\", serif', content: \"'a  b'\", color: tone }}>",
+    "        q",
+    "      </blockquote>",
+    '      <p autocorrect="off" title=\'Name & "title" <x>\' class="q&r" style=\'content: "&"\'>',
+    "        c",
+    "      </p>",
+    '      <select aria-label="Pick">',
+    "        <option value='a & \"b\"'>a</option>",
+    "      </select>",
+    "      <p style=\"content: 'a  b'; color: red\">p</p>",
+    "    </div>",
+    "  );",
+    "}",
+  ].join("\n"),
+  /**
+   * Bound values Svelte's `set_value` would skip writing when they equal the element's own,
+   * never nullish: the analyser reports one that may be there (UF1002).
+   */
+  assignedValues: [
+    "export default function Steps({",
+    "  steps,",
+    "  score,",
+    "  label,",
+    "  mode,",
+    "}: {",
+    "  steps: string[];",
+    "  score: number;",
+    "  label: string;",
+    "  mode: string;",
+    "}) {",
+    "  return (",
+    "    <form>",
+    "      <ol>",
+    "        {steps.map((step, index) => (",
+    "          <li key={step} value={steps.length - 1 - index}>",
+    "            {step}",
+    "          </li>",
+    "        ))}",
+    "      </ol>",
+    '      <meter min="0" max="10" value={score} title=\'Score & "rank"\'>',
+    "        m",
+    "      </meter>",
+    '      <progress max="10" value={score}>p</progress>',
+    "      <data value={label}>d</data>",
+    '      <button type="button" value={label}>',
+    "        b",
+    "      </button>",
+    '      <input type="checkbox" name="c" value={mode} />',
+    "    </form>",
+    "  );",
+    "}",
+  ].join("\n"),
+  /** A root fragment holding SVG (an empty `<title>` too), a conditional and text. */
   svgAndFragment: [
     "export default function Icon({ r, label }: { r: number; label?: string }) {",
     "  return (",
     "    <>",
     '      <svg viewBox="0 0 2 2">',
+    "        <title></title>",
     '        <circle cx="1" cy="1" r={r} />',
     "      </svg>",
     '      {label && <p>{label}</p>}{" "}tail',

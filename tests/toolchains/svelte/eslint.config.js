@@ -9,7 +9,17 @@ export default [
   {
     files: ["**/*.svelte"],
     languageOptions: { parserOptions: { parser: tseslint.parser } },
+    plugins: { "@typescript-eslint": tseslint.plugin },
     rules: {
+      // The baseline's unused-variable rule, which oxlint does not run on a `.svelte` file: the
+      // markup reads the script's bindings where oxlint cannot see them, and
+      // svelte-eslint-parser counts those reads. typescript-eslint's, with the options oxlint's
+      // takes by default (a variable or a parameter whose name starts with `_` is ignored). It
+      // also reports a value only a type reads, which oxlint's does not: that value is dead too.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
+      ],
       // ESLint's `noInlineConfig` does not reach the markup's `<!-- eslint-disable -->`
       // comments, which this rule implements: an output must not silence its linter.
       "svelte/comment-directive": "off",
@@ -17,6 +27,12 @@ export default [
       "svelte/block-lang": ["error", { script: "ts" }],
       // The printer writes whitespace that Svelte would trim or condense as a string-literal
       // mustache (`{" "}`), Svelte's own spelling for it; whitespace is the printer's (ADR-0026).
+      // So is a static value the dialect writes as a string literal (`title={"…"}`,
+      // `style:font-family={"…"}`) where Svelte's server would render it unlike its client: one
+      // holding `&`, `<` or `"`, which the server escapes twice in a `style:` directive, on an
+      // `<option>` and on an element that carries one of the dialect's object spreads
+      // (`{...{ autocorrect }}`), and a `style` or `style:` value holding whitespace the server
+      // folds (packages/codegen/src/markup/svelte.ts).
       "svelte/no-useless-mustaches": "off",
       // SvelteKit's router: the outputs are plain components, and a link's href is the author's.
       "svelte/no-navigation-without-resolve": "off",

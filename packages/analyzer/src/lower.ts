@@ -4,6 +4,7 @@
 // has it. Constructs outside the subset, and markup the targets would render differently, are
 // reported and left out, so one problem never hides the next.
 
+import type { Fix } from "@unframework/diagnostics";
 import {
   createElement,
   createIf,
@@ -14,6 +15,7 @@ import {
   isVoidElement,
   isWhitespaceText,
   LEADING_LINE_FEED_ELEMENTS,
+  RAW_TEXT_ELEMENTS,
   SVG_TEXT_ELEMENTS,
   SVG_WHITESPACE_KEEPING_ELEMENT,
   TEXTLESS_ELEMENTS,
@@ -41,14 +43,18 @@ import { checkExpression, span } from "./expressions.ts";
 import { htmlOnlyReferences, readJsxText } from "./jsx/text.ts";
 import { lowerList } from "./lists.ts";
 import { isStaticString, reportCharacters, valueOf } from "./literals.ts";
+import { referencePath } from "./narrowing.ts";
 import type { RenderContext } from "./render.ts";
-import { describe, outside } from "./types/kinds.ts";
+import { describe, has, mayBeNullish, outside } from "./types/kinds.ts";
+import type { Kinds } from "./types/kinds.ts";
 
 /** Where nodes are lowered: the open elements around them, the parent last. */
 export interface Place {
   readonly ancestors: readonly OpenElement[];
   /** The namespace of the nodes here: an `<svg>` and everything inside it are SVG. */
   readonly namespace: Namespace;
+  /** Whether the nodes here start a conditional's branch, which Solid creates on its own. */
+  readonly branch?: boolean;
 }
 
 /** The place at a component's root. */
@@ -102,6 +108,17 @@ export function lowerElement(
   const tag = check.as;
   const namespace = elementNamespace(tag, place.namespace);
   checkPlacement(tag, name, place.ancestors, reporter);
+  if (namespace === "svg" && tag === "title" && (listBody || place.branch)) {
+    // dom-expressions creates a branch's or a list's element from a template of its own, in SVG
+    // only for the tags it knows as SVG's, and leaves out `title`, which HTML has too.
+    reporter.unsupported(
+      name,
+      `An SVG <title> that starts ${listBody ? "a list's element" : "a conditional's branch"} is not supported yet: Solid creates it in HTML's namespace, where it titles nothing.`,
+      {
+        help: "Wrap it in a <g>, which Solid creates in SVG with what it holds, or render it always.",
+      },
+    );
+  }
   const content = hasContent(node.children);
   const { attributes, key, binds, braces } = lowerAttributes(node.openingElement, {
     tag,
@@ -160,11 +177,30 @@ interface TextPart {
 const PARTS = new WeakMap<TextNode, readonly TextPart[]>();
 
 /**
+ * A child that was reported and left out, in its place: whether it can render nothing, as what
+ * it would lower to once fixed can (a list, a conditional without an else).
+ */
+interface LeftOut {
+  readonly kind: "LeftOut";
+  readonly empty: boolean;
+}
+
+/** A place in a child list: a lowered node, or a child left out there. */
+type Slot = RenderNode | LeftOut;
+
+/**
  * Each lowered child list with the children that were reported and left out in their places:
- * which text comes first is read from what the source writes, so a fix that lets a reported
+ * which text can come first is read from what the source writes, so a fix that lets a reported
  * child lower changes no other diagnostic.
  */
-const SLOTS = new WeakMap<readonly RenderNode[], readonly (RenderNode | undefined)[]>();
+const SLOTS = new WeakMap<readonly RenderNode[], readonly Slot[]>();
+
+/**
+ * Whether each conditional can render nothing, as the source writes it: the branches whose
+ * content was all reported, and the empty ones at its end, are dropped from the If, and would
+ * not be once fixed.
+ */
+const CAN_BE_EMPTY = new WeakMap<IfNode, boolean>();
 
 /**
  * A child list being collected: texts side by side are joined into one when something else is
@@ -174,8 +210,8 @@ class Children {
   readonly nodes: RenderNode[] = [];
   /** Whether a child binds anything, as written (`LoweredElement.binds`). */
   binds = false;
-  /** The nodes, and `undefined` where a child was reported and left out. */
-  readonly #slots: (RenderNode | undefined)[] = [];
+  /** The nodes, and where each child that was reported and left out sits. */
+  readonly #slots: Slot[] = [];
   #pending: TextPart[] = [];
   readonly #place: Place;
   readonly #render: RenderContext;
@@ -198,34 +234,40 @@ class Children {
     if (!value) return;
     const at = { start: parts[0]!.container.start, end: parts.at(-1)!.container.end };
     const placed = checkTextPlacement(value, at, parts, this.#place, this.#render);
-    if (!placed || parts.some((part) => !part.lowered)) return;
+    if (!placed || parts.some((part) => !part.lowered)) {
+      this.#slots.push({ kind: "LeftOut", empty: false });
+      return;
+    }
     const text = createText(value, at);
     PARTS.set(text, parts);
     this.nodes.push(text);
     this.#slots.push(text);
   }
 
-  /** Adds a node, or marks the place of one that was reported and left out. */
-  node(node: RenderNode | undefined): void {
+  /**
+   * Adds a node, or marks the place of one that was reported and left out, which `empty` says
+   * can render nothing once lowered.
+   */
+  node(node: RenderNode | undefined, empty = false): void {
     this.flush();
     if (node) this.nodes.push(node);
-    this.#slots.push(node);
+    this.#slots.push(node ?? { kind: "LeftOut", empty });
   }
 
   /**
    * Adds what may render nothing at all (a conditional whose branches are all empty), which a
    * run of text then continues across. Its diagnostics stay after the text's before it.
    */
-  maybe(lower: () => RenderNode | undefined): void {
+  maybe(lower: () => { node: RenderNode | undefined; empty: boolean }): void {
     const { reporter } = this.#render;
     const mark = reporter.diagnostics.length;
-    const node = lower();
+    const { node, empty } = lower();
     if (!node && !reporter.hasErrorsSince(mark)) return;
     const later = reporter.diagnostics.splice(mark);
     this.flush();
     reporter.diagnostics.push(...later);
     if (node) this.nodes.push(node);
-    this.#slots.push(node);
+    this.#slots.push(node ?? { kind: "LeftOut", empty });
   }
 
   finish(): RenderNode[] {
@@ -363,26 +405,41 @@ function lowerChild(
       if (containsJsx(expression.right) || containsJsx(expression.left)) {
         children.flush();
         children.binds = true;
+        const mark = reporter.diagnostics.length;
+        const left = checkExpression(expression.left, render);
+        const checks = reporter.diagnostics.splice(mark);
+        const nullish = expression.operator === "??";
         reporter.report(
           "UF3025",
           expression,
           `\`${expression.operator}\` renders its left side's value or the JSX on its right, which no template target can write as one conditional.`,
-          { help: "Write the conditional with `?:`, such as `value ? value : <p>None</p>`." },
+          {
+            help: nullish
+              ? 'Write the conditional with `?:` and `!= null`, such as `value != null ? value : <p>None</p>`, which renders `0` and `""` as `??` does.'
+              : "Write the conditional with `?:`, such as `value ? value : <p>None</p>`.",
+            ...(left.clean && !textPlacementProblem(place, render)
+              ? { fixes: conditionalFix(expression, left.kinds, render) }
+              : {}),
+          },
         );
-        checkExpression(expression.left, render);
+        reporter.diagnostics.push(...checks);
         lowerBranch(expression.right, place, render);
         children.node(undefined);
         return;
       }
       break;
     case "CallExpression":
-      if (isList(expression)) {
+    case "ChainExpression": {
+      const list = listCall(expression);
+      if (list) {
         children.flush();
         children.binds = true;
-        children.node(lowerList(expression, place, render));
+        // A list renders elements or nothing, as it would once a fix lets it lower.
+        children.node(lowerList(list, place, render), true);
         return;
       }
       break;
+    }
   }
   children.flush();
   children.binds = true;
@@ -410,6 +467,45 @@ function lowerChild(
   children.node(node);
 }
 
+/**
+ * The fix of `x || <B />` and `x ?? <B />` (UF3025): the conditional `x ? x : <B />`, or
+ * `x != null ? x : <B />`, which renders as they do where `x` is a reference, read twice alike,
+ * that renders as text (a string or a number) where it is there. None otherwise.
+ */
+function conditionalFix(
+  expression: AST.LogicalExpression,
+  kinds: Kinds,
+  render: RenderContext,
+): Fix[] {
+  const { left, right, operator } = expression;
+  const { source } = render;
+  const between = { start: left.end, end: right.start };
+  const reference =
+    (left.type === "Identifier" || left.type === "MemberExpression") &&
+    referencePath(left, render) !== undefined;
+  const text =
+    mayBeNullish(kinds) &&
+    outside(kinds, ["string", "number", "null", "undefined"]).length === 0 &&
+    (has(kinds, "string") || has(kinds, "number"));
+  if (
+    !reference ||
+    !text ||
+    source.slice(between.start, between.end).trim() !== operator ||
+    render.comments.some((comment) => comment.start >= between.start && comment.end <= between.end)
+  ) {
+    return [];
+  }
+  const value = source.slice(left.start, left.end);
+  const test = operator === "??" ? " != null ?" : " ?";
+  return [
+    {
+      title: `Write \`${value}${test} ${value} : …\``,
+      confidence: "safe",
+      edits: [{ span: between, text: `${test} ${value} : ` }],
+    },
+  ];
+}
+
 /** Whether an expression holds JSX anywhere in it. */
 export function containsJsx(node: unknown): boolean {
   if (!node || typeof node !== "object") return false;
@@ -421,16 +517,22 @@ export function containsJsx(node: unknown): boolean {
   );
 }
 
-/** Whether a call is `source.map(callback)` whose callback holds JSX: a list (ADR-0036). */
-function isList(node: AST.CallExpression): boolean {
-  const { callee } = node;
-  return (
-    callee.type === "MemberExpression" &&
+/**
+ * The call of a list (ADR-0036), `source.map(callback)` whose callback holds JSX, or
+ * `undefined`. `source?.map(…)` is one too, which oxc wraps in a ChainExpression: the list
+ * reports its `?.`, which only a nullable source needs, and a list cannot render.
+ */
+function listCall(node: AST.CallExpression | AST.ChainExpression): AST.CallExpression | undefined {
+  const call = node.type === "ChainExpression" ? node.expression : node;
+  if (call.type !== "CallExpression") return undefined;
+  const { callee } = call;
+  return callee.type === "MemberExpression" &&
     !callee.computed &&
     callee.property.type === "Identifier" &&
     callee.property.name === "map" &&
-    node.arguments.some((argument) => containsJsx(argument))
-  );
+    call.arguments.some((argument) => containsJsx(argument))
+    ? call
+    : undefined;
 }
 
 /** Lowers what a branch of a conditional renders, as a child list of its own. */
@@ -439,8 +541,9 @@ function lowerBranch(
   place: Place,
   render: RenderContext,
 ): RenderNode[] {
-  const children = new Children(place, render);
-  lowerChild(expression, span(expression), children, place, render);
+  const at: Place = { ...place, branch: true };
+  const children = new Children(at, render);
+  lowerChild(expression, span(expression), children, at, render);
   return children.finish();
 }
 
@@ -454,7 +557,7 @@ function lowerIf(
   node: AST.ConditionalExpression | AST.LogicalExpression,
   place: Place,
   render: RenderContext,
-): IfNode | undefined {
+): { node: IfNode | undefined; empty: boolean } {
   const branches: IfBranch[] = [];
   let current: AST.Expression = node;
   for (;;) {
@@ -485,27 +588,38 @@ function lowerIf(
     branches.push(createBranch(undefined, lowerBranch(next, place, render), span(next)));
     break;
   }
+  // Without an else, or with a branch that can render nothing, it can render nothing, read
+  // before the empty branches at its end are dropped.
+  const empty =
+    branches.at(-1)!.condition !== undefined ||
+    branches.some((branch) => leading(branch.children).empty);
   while (branches.length && !branches.at(-1)!.children.length) branches.pop();
-  if (!branches.length) return undefined;
+  if (!branches.length) return { node: undefined, empty };
   const problem = textPlacementProblem(place, render);
   if (problem) {
-    const textarea = place.namespace === "html" && place.ancestors.at(-1)?.tag === "textarea";
+    // A <textarea>'s and a raw-text element's content is text, where the comments that mark a
+    // conditional render as text too.
+    const parent = place.namespace === "html" ? place.ancestors.at(-1)?.tag : undefined;
+    const textContent = parent === "textarea" || RAW_TEXT_ELEMENTS.has(parent ?? "");
     const text = branches.some((branch) =>
       branch.children.some((child) => child.kind === "Text" && !isWhitespaceText(child.value)),
     );
-    if (textarea || text) {
-      problem("A conditional that renders text", span(node));
-      return undefined;
+    if (textContent || text) {
+      problem(text ? "A conditional that renders text" : "A conditional", span(node));
+      return { node: undefined, empty };
     }
   }
-  return createIf(branches, span(node));
+  const lowered = createIf(branches, span(node));
+  CAN_BE_EMPTY.set(lowered, empty);
+  return { node: lowered, empty };
 }
 
 /**
  * Where text that an expression renders cannot sit (design §1.3): a returned report function
- * that reports it there, or `undefined`. Text the parser moves (a table part) or drops (a
- * `<select>`) is UF3003; a `<textarea>`'s content is its value, form state that lands in M3
- * (UF1002); SVG renders text only in its text elements (UF3003).
+ * that reports it there, or `undefined`. Text the parser moves (a table part), drops (a
+ * `<select>`) or reads as raw text (an `<iframe>`) is UF3003; a `<textarea>`'s content is its
+ * value, form state that lands in M3 (UF1002); SVG renders text only in its text elements
+ * (UF3003).
  */
 export function textPlacementProblem(
   place: Place,
@@ -535,10 +649,15 @@ export function textPlacementProblem(
     reporter.report("UF3003", at, `${what} cannot be inside <${parent.tag}>: ${reason}`, {
       help: TEXTLESS_ELEMENTS.has(parent.tag)
         ? "Put it in a cell, or in a <caption>."
-        : "Render it in an <option>.",
+        : RAW_TEXT_ELEMENTS.has(parent.tag)
+          ? RAW_TEXT_HELP
+          : "Render it in an <option>.",
       related,
     });
 }
+
+/** What to do with the content of a raw-text element, which a browser never shows. */
+const RAW_TEXT_HELP = "Remove it: a browser shows an <iframe>'s document, never its content.";
 
 /**
  * Checks a JSX text: every JSX implementation must read it the same way (UF3009), and HTML must
@@ -574,9 +693,10 @@ function checkJsxText(
 }
 
 /**
- * Checks where a text sits (design §1.3): in a table part the parser moves it out (UF3003);
- * whitespace that Svelte drops (in a `<select>`, a `<datalist>`, a table part, or SVG outside a
- * `<text>`) is UF3003 with a fix that removes it. Returns whether the text can be lowered there.
+ * Checks where a text sits (design §1.3): in a table part the parser moves it out, and in an
+ * `<iframe>` it reads it as raw text (UF3003); whitespace that Svelte drops (in a `<select>`, a
+ * `<datalist>`, a table part, or SVG outside a `<text>`) is UF3003 with a fix that removes it.
+ * Returns whether the text can be lowered there.
  */
 function checkTextPlacement(
   value: string,
@@ -590,8 +710,9 @@ function checkTextPlacement(
   const { reporter } = render;
   const related = [{ span: parent.name, message: `The <${parent.tag}>` }];
   const whitespace = isWhitespaceText(value);
-  // Whitespace there renders nothing, so removing it is safe, unless a fix for a divergence
-  // in it (`&#9;`) edits it already.
+  // Whitespace between elements renders nothing, so removing it is safe, unless a fix for a
+  // divergence in it (`&#9;`) edits it already. In an SVG `<title>` or `<desc>`, whose text is
+  // an accessible name or description, it may separate two values, and stays.
   const removal = (help: string) => ({
     help,
     fixes: parts.some((part) => part.edited)
@@ -615,12 +736,20 @@ function checkTextPlacement(
     ) {
       return true;
     }
-    reporter.report(
-      "UF3003",
-      at,
-      `Text that is only whitespace cannot be inside an SVG <${parent.tag}>: Svelte's compiler drops it outside a <text>, and the other targets keep it.`,
-      removal("Remove it, or put the elements on lines of their own, where JSX drops it."),
-    );
+    const message = `Text that is only whitespace cannot be inside an SVG <${parent.tag}>: Svelte's compiler drops it outside a <text>, and the other targets keep it.`;
+    if (SVG_TEXT_ELEMENTS.has(parent.tag)) {
+      reporter.report("UF3003", at, message, {
+        help: "Write the values and the space between them as one expression, as in {`${name} ${status}`}, whose text Svelte keeps.",
+        related,
+      });
+    } else {
+      reporter.report(
+        "UF3003",
+        at,
+        message,
+        removal("Remove it, or put the elements on lines of their own, where JSX drops it."),
+      );
+    }
     return false;
   }
   if (TEXTLESS_ELEMENTS.has(parent.tag)) {
@@ -642,6 +771,17 @@ function checkTextPlacement(
     }
     return false;
   }
+  // The servers' escapes stay as written in raw text, and React's `<!-- -->` between texts
+  // (`checkInvariants` rejects it too). Whitespace reads alike.
+  if (RAW_TEXT_ELEMENTS.has(parent.tag) && !whitespace) {
+    reporter.report(
+      "UF3003",
+      at,
+      `Text cannot be inside <${parent.tag}>: ${UNINTERPOLATED_ELEMENTS.get(parent.tag)!}`,
+      { help: RAW_TEXT_HELP, related },
+    );
+    return false;
+  }
   // Svelte's compiler drops it (`checkInvariants` rejects it too).
   if (WHITESPACE_DROPPING_ELEMENTS.has(parent.tag) && whitespace) {
     reporter.report(
@@ -658,31 +798,60 @@ function checkTextPlacement(
 /**
  * A line feed that starts the text of a `<pre>`, a `<textarea>` or a `<listing>` (UF3017): the
  * HTML parser drops it, and React's server renderer writes another to keep it. The text can
- * start the element directly or in the first branch of a conditional.
+ * start the element directly, in a branch of a conditional, or after a conditional or a list
+ * that renders nothing, where React's and Astro's servers write nothing before it (the other
+ * targets write a comment, which keeps it).
  */
 function checkLeadingLineFeed(
   tag: string,
   children: readonly RenderNode[],
   render: RenderContext,
 ): void {
-  for (const text of leadingTexts(children)) {
+  for (const { text, after } of leading(children).texts) {
     if (!text.value.startsWith("\n")) continue;
     const first = PARTS.get(text)?.find((part) => part.value !== "") ?? { span: text.span };
     render.reporter.report(
       "UF3017",
       first.span,
-      `This text starts with a line feed, which the HTML parser drops at the start of a <${tag}>, and React's server renderer writes twice.`,
+      after
+        ? `This text starts with a line feed, which the HTML parser drops at the start of a <${tag}>: when what comes before it renders nothing, React's and Astro's servers write nothing before it, and the other targets a comment.`
+        : `This text starts with a line feed, which the HTML parser drops at the start of a <${tag}>, and React's server renderer writes twice.`,
       { help: "Start the text with something other than a line feed." },
     );
   }
 }
 
-/** The texts that can start a child list: its first child, or a branch's, through ifs. */
-function leadingTexts(children: readonly RenderNode[]): TextNode[] {
-  const first = (SLOTS.get(children) ?? children)[0];
-  if (first?.kind === "Text") return [first];
-  if (first?.kind !== "If") return [];
-  return first.branches.flatMap((branch) => leadingTexts(branch.children));
+/**
+ * The texts that can start a child list, read through conditionals and past what can render
+ * nothing (a list, a conditional without an else), each with whether it comes after such a
+ * node; and whether the list can render nothing.
+ */
+function leading(
+  children: readonly RenderNode[],
+  after = false,
+): { texts: { text: TextNode; after: boolean }[]; empty: boolean } {
+  const texts: { text: TextNode; after: boolean }[] = [];
+  for (const slot of SLOTS.get(children) ?? children) {
+    if (slot.kind === "Text") {
+      texts.push({ text: slot, after });
+      return { texts, empty: false };
+    }
+    // A list's body is an element: it renders elements, or nothing.
+    if (slot.kind === "For" || (slot.kind === "LeftOut" && slot.empty)) {
+      after = true;
+      continue;
+    }
+    if (slot.kind !== "If") return { texts, empty: false };
+    let empty = CAN_BE_EMPTY.get(slot) ?? slot.branches.at(-1)?.condition !== undefined;
+    for (const branch of slot.branches) {
+      const inner = leading(branch.children, after);
+      texts.push(...inner.texts);
+      empty ||= inner.empty;
+    }
+    if (!empty) return { texts, empty: false };
+    after = true;
+  }
+  return { texts, empty: true };
 }
 
 /** Whether JSX children have content: an element, an expression, or text some JSX reads. */

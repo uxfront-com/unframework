@@ -11,17 +11,17 @@ export interface NoticeProps {
 }
 
 export default function Notice(rawProps: NoticeProps) {
-  const props = mergeProps(
-    {
-      title: "Notice",
-      tone: "info",
-      priority: 1,
-      expanded: false,
-      tags: ["general"],
-      author: { name: "System" },
-    } satisfies Partial<NoticeProps>,
-    rawProps,
-  );
+  const defaults: Required<
+    Pick<NoticeProps, "title" | "tone" | "priority" | "expanded" | "tags" | "author">
+  > = {
+    title: "Notice",
+    tone: "info",
+    priority: 1,
+    expanded: false,
+    tags: ["general"],
+    author: { name: "System" },
+  };
+  const props = mergeProps(defaults, rawProps);
   return (
     <section class="notice" aria-label={props.title} data-tone={props.tone}>
       <h2>{props.title}</h2>

@@ -1,4 +1,11 @@
-import { cssPropertiesOverlap, cssValueProblem, isCssPropertyName } from "./css.ts";
+import {
+  angularLowercases,
+  angularMisreads,
+  cssPropertiesOverlap,
+  cssValueProblem,
+  isCssPropertyName,
+  isKnownCssProperty,
+} from "./css.ts";
 import {
   BINDABLE_BOOLEAN_ATTRIBUTES,
   canonicalNumber,
@@ -9,6 +16,7 @@ import {
   isNumberTypedAttribute,
   isVoidElement,
   NUMERIC_ATTRIBUTES,
+  TEXT_ONLY_ELEMENTS,
   unanalysableUrl,
   unkeptCharacter,
   UNRENDERABLE_ELEMENTS,
@@ -18,7 +26,10 @@ import {
   isComponentName,
   isExportName,
   isIdentifier,
+  RESERVED_TYPE_NAMES,
+  reservedParameterName,
   reservedPropName,
+  reservedPropsParameterName,
 } from "./names.ts";
 import {
   CHILDLESS_ATTRIBUTES,
@@ -26,8 +37,10 @@ import {
   isStateAttribute,
   isWhitespaceText,
   LEADING_LINE_FEED_ELEMENTS,
+  RAW_TEXT_ELEMENTS,
   TEMPLATE_SYNTAX_ATTRIBUTES,
   unbindableAttribute,
+  undeclaredAttribute,
   UNINTERPOLATED_ELEMENTS,
   UNPORTABLE_ELEMENTS,
   UNRENDERED_ATTRIBUTES,
@@ -78,24 +91,34 @@ const CANONICAL_CLASS = /^\S+(?: \S+)*$/u;
  *   renders differently (`portability.ts`): template syntax, attributes a framework acts on or
  *   sets as state, `contenteditable` with children, an empty URL React drops, a number in a
  *   form renderers rewrite, a boolean or an attribute a target cannot bind (ADR-0037);
- * - `true` is the value of exactly the HTML boolean attributes, a `class` is canonical, and a
- *   `style` sets each property once, without overlap (ADR-0038);
+ * - `true` is the value of exactly the HTML boolean attributes, a `class` is canonical and names
+ *   each class once, and a `style` sets each property once, without overlap, with custom
+ *   properties in lower case and static values Angular's style parser reads as written
+ *   (ADR-0038);
  * - no value holds code or a document the compiler cannot analyse (`srcdoc`, a `javascript:`
  *   URL, a `data:` URL a frame loads), and text and values hold only characters HTML keeps;
  * - text sits where every target renders it alike: no whitespace-only text where Svelte drops
- *   it, no interpolation where the parser moves or drops text, no leading line feed the parser
- *   drops, never two texts side by side;
- * - props have names every target can declare, static defaults, and one binding each; every
- *   binding's id is its name and offset; every expression is its source text, and refers only to
- *   bindings in scope there and to the allowed globals (ADR-0034, ADR-0035);
- * - conditionals, lists and fragments have the shapes the targets print (ADR-0036).
+ *   it, no interpolation where the parser moves or drops text, no text but whitespace and no
+ *   conditional in a raw-text `<iframe>`, no line feed the parser drops at the start of a
+ *   `<pre>`, after what may render nothing included, never two texts side by side;
+ * - props have names every target can declare, static defaults, and one binding each, and the
+ *   object form's parameter a name no framework declares; a local `Props` is the props type of
+ *   every component whose props reach it; every binding's id is its name and offset; every
+ *   expression is its source text, and refers only to bindings in scope there and to the
+ *   allowed globals, a prop by name or, in the object form, as the parameter's member
+ *   (ADR-0034, ADR-0035);
+ * - conditionals, lists and fragments have the shapes the targets print; a loop variable takes
+ *   no name a target's rewrite or an output would capture, and a key reads its list's item or
+ *   index and no loop variable of a list around it (ADR-0035, ADR-0036).
  *
  * The analyser's IR keeps them by construction, and the compiler checks every module it emits
  * from, a plugin's included. What else the analyser rejects is authoring, which a plugin owns
  * as it owns what its `output` hook writes: how JSX reads text, the names the compiler and the
  * frameworks reserve (`data-uf-*`, `uf-id-`, `data-hk`, `nonce`), nesting the parser repairs,
  * and attributes that are valid but mean nothing where they are written. An expression's code
- * is JavaScript the IR cannot parse: the compiler compares a plugin's with the analyser's.
+ * is JavaScript the IR cannot parse: the compiler compares a plugin's with the analyser's. Nor
+ * does the IR know a value's type, so a spread's `nullish` is the analyser's to set: a plugin
+ * that moves a spread keeps it true wherever the object may be nullish (ADR-0039).
  */
 export function checkInvariants(module: UfModule): IrValidationError[] {
   const errors: IrValidationError[] = [];
@@ -169,14 +192,27 @@ function checkTypeDeclarations(
 ): ReadonlyMap<string, number> {
   const indices = new Map<string, number>();
   let previous: Span | undefined;
+  // `Props` may be a component's own props type, which the outputs keep as it is, unless another
+  // component's props reach it: Astro's output declares that component's own `Props` beside the
+  // copied one, a duplicate or, for an interface, a silent merge.
+  const ownProps =
+    module.components.some(takesProps) &&
+    module.components.every(
+      (component) => takesProps(component) || !component.types.includes("Props"),
+    );
   for (const [index, declaration] of module.types.entries()) {
     const path = `/types/${index}`;
     const { name } = declaration;
+    const reserved = name === "Props" && ownProps ? undefined : RESERVED_TYPE_NAMES.get(name);
     if (!isIdentifier(name)) {
       errors.push({ path: `${path}/name`, message: `must be an identifier, and "${name}" is not` });
     } else if (indices.has(name)) {
       errors.push({ path: `${path}/name`, message: `must declare "${name}" once` });
     } else {
+      // A reserved name is still the declaration the components name: one error, at the name.
+      if (reserved) {
+        errors.push({ path: `${path}/name`, message: `must not be "${name}": ${reserved}` });
+      }
       indices.set(name, index);
     }
     checkSourceText(declaration, path, errors);
@@ -188,12 +224,19 @@ function checkTypeDeclarations(
   return indices;
 }
 
+/** Whether a component's props type is `Props` itself, which no output declares again. */
+function takesProps(component: UfComponent): boolean {
+  return component.propsParameter?.type.code === "Props";
+}
+
 /** What a component's walk shares: the component's bindings and what the walk finds. */
 interface Walk {
   readonly errors: IrValidationError[];
   readonly bindings: ReadonlyMap<BindingId, Binding>;
   /** The object form's parameter name, which a reference to a prop starts with. */
   readonly propsName: string | undefined;
+  /** The props' names, which no loop variable may take. */
+  readonly propNames: ReadonlySet<string>;
   /** How many lists declare each loop variable. */
   readonly loopVariables: Map<BindingId, number>;
 }
@@ -208,6 +251,8 @@ interface Place {
   readonly namespace: Namespace;
   /** Whether the node is inside an SVG `<text>`. */
   readonly inSvgText: boolean;
+  /** Whether a conditional or a list lies between the node and the nearest element. */
+  readonly controlled: boolean;
   /** The bindings in scope: the props, and the loop variables of the lists around the node. */
   readonly scope: ReadonlySet<BindingId>;
 }
@@ -224,6 +269,7 @@ function checkComponent(
     bindings,
     propsName:
       component.propsParameter?.form === "object" ? component.propsParameter.name : undefined,
+    propNames: new Set(component.props.map(({ name }) => name)),
     loopVariables: new Map(),
   };
   checkComponentTypes(component, path, types, errors);
@@ -236,6 +282,7 @@ function checkComponent(
     element: undefined,
     namespace: "html",
     inSvgText: false,
+    controlled: false,
     scope,
   };
   const { render } = component;
@@ -346,6 +393,11 @@ function checkProps(component: UfComponent, path: string, walk: Walk): void {
         path: `${at}/name`,
         message: `must be an identifier, and "${parameter.name}" is not`,
       });
+    } else if (parameter.name !== undefined && reservedPropsParameterName(parameter.name)) {
+      errors.push({
+        path: `${at}/name`,
+        message: `must not start with "$$": ${reservedPropsParameterName(parameter.name)!}`,
+      });
     }
     checkSourceText(parameter.type, `${at}/type`, errors);
   } else if (component.props.length) {
@@ -450,11 +502,20 @@ function checkNode(node: RenderNode, place: Place, walk: Walk): void {
           errors.push({ path: `${place.path}/index`, message: "must differ from the item" });
           continue;
         }
-        if (bindings.get(id)?.kind !== "loopVar") {
+        const binding = bindings.get(id);
+        if (binding?.kind !== "loopVar") {
           errors.push({
             path: `${place.path}/${field}`,
             message: `must name a loop variable of the component, and "${id}" is not one`,
           });
+        } else {
+          const taken = takenName(binding.name, scope, walk);
+          if (taken) {
+            errors.push({
+              path: `${place.path}/${field}`,
+              message: `must not be named "${binding.name}": ${taken}`,
+            });
+          }
         }
         walk.loopVariables.set(id, (walk.loopVariables.get(id) ?? 0) + 1);
         scope.add(id);
@@ -466,11 +527,59 @@ function checkNode(node: RenderNode, place: Place, walk: Walk): void {
         });
       }
       checkExpression(node.key, `${place.path}/key`, scope, walk);
-      checkElement(node.body, { ...place, path: `${place.path}/body`, scope }, walk);
+      checkKey(node.key, declared, `${place.path}/key`, walk);
+      checkElement(
+        node.body,
+        { ...place, path: `${place.path}/body`, scope, controlled: true },
+        walk,
+      );
       return;
     }
     default:
       unreachable(node);
+  }
+}
+
+/**
+ * Why a loop variable cannot take a name where its list is (ADR-0035, UF3024), or `undefined`:
+ * the targets that rewrite names (Solid's `props.label`, Angular's `@let` and `track`) would
+ * read it in place of a prop, the object form's parameter or a loop variable around it of that
+ * name, and the outputs reserve some names whatever the component declares.
+ */
+function takenName(name: string, scope: ReadonlySet<BindingId>, walk: Walk): string | undefined {
+  if (walk.propNames.has(name)) return `it would shadow the prop "${name}"`;
+  if (name === walk.propsName) return "it would shadow the props parameter";
+  for (const id of scope) {
+    const other = walk.bindings.get(id);
+    if (other?.kind === "loopVar" && other.name === name) {
+      return `it would shadow "${id}", a loop variable of a list around it`;
+    }
+  }
+  return reservedParameterName(name);
+}
+
+/**
+ * Checks a list's key (ADR-0036): it reads the list's item or index, as a key that reads neither
+ * is the same for every item, which Vue's and Svelte's compilers reject, and no loop variable of
+ * a list around it, which Angular's `track` cannot read (NG8009).
+ */
+function checkKey(key: Expression, declared: readonly BindingId[], path: string, walk: Walk): void {
+  const read = key.refs.flatMap((ref) => (ref.kind === "Binding" ? [ref.binding] : []));
+  if (!read.some((id) => declared.includes(id))) {
+    walk.errors.push({
+      path,
+      message:
+        "must read the list's item or index: a key that reads neither is the same for every item, which Vue and Svelte reject",
+    });
+  }
+  const outer = read.find(
+    (id) => !declared.includes(id) && walk.bindings.get(id)?.kind === "loopVar",
+  );
+  if (outer !== undefined) {
+    walk.errors.push({
+      path,
+      message: `must not read "${outer}", a loop variable of a list around it: Angular's \`track\` reads only its own item, \`$index\` and the component's members`,
+    });
   }
 }
 
@@ -513,15 +622,18 @@ function checkIf(node: IfNode, place: Place, walk: Walk): void {
       errors.push({ path: at, message: "must render something: an empty else renders nothing" });
     }
     if (branch.condition) checkExpression(branch.condition, `${at}/condition`, place.scope, walk);
-    checkChildren(branch.children, { ...place, path: `${at}/children` }, walk);
+    checkChildren(branch.children, { ...place, path: `${at}/children`, controlled: true }, walk);
   }
   if (branches.length && branches.every((branch) => !branch.children.length)) {
     errors.push({ path: `${place.path}/branches`, message: "must render something in a branch" });
   }
   const problem = dynamicTextProblem(place);
-  const textarea = place.namespace === "html" && place.element?.tag === "textarea";
+  // A <textarea>'s and a raw-text element's content is text, where the comments that mark a
+  // conditional render as text too: any conditional there is one.
+  const tag = place.namespace === "html" ? place.element?.tag : undefined;
+  const textContent = tag === "textarea" || RAW_TEXT_ELEMENTS.has(tag ?? "");
   // Interpolations report themselves, and so does whitespace-only text where Svelte drops it.
-  if (problem && (textarea || holdsText(node))) {
+  if (problem && (textContent || holdsText(node))) {
     errors.push({ path: place.path, message: `must not render text ${problem}` });
   }
 }
@@ -552,6 +664,11 @@ function checkText(value: string, place: Place, walk: Walk): void {
         message: `must not be only whitespace: Svelte's compiler drops it inside <${element.tag}>, and the other targets keep it`,
       });
     }
+  } else if (element && namespace === "html" && RAW_TEXT_ELEMENTS.has(element.tag)) {
+    walk.errors.push({
+      path,
+      message: `must be only whitespace in a <${element.tag}>: ${UNINTERPOLATED_ELEMENTS.get(element.tag)!}`,
+    });
   }
   checkCharacters(value, path, walk.errors);
 }
@@ -562,7 +679,12 @@ function checkElement(element: ElementNode, place: Place, walk: Walk): void {
   const { path } = place;
   const { tag, children } = element;
   const namespace = elementNamespace(tag, place.namespace);
-  const tagProblem = namespace === "svg" ? svgTagProblem(tag, place.element) : htmlTagProblem(tag);
+  const tagProblem =
+    (namespace === "svg" ? svgTagProblem(tag, place.element) : htmlTagProblem(tag)) ??
+    textOnlyProblem(place) ??
+    (namespace === "svg" && tag === "title" && place.controlled
+      ? "must not start a conditional's branch or a list's body in SVG: dom-expressions leaves `title` out of its SVG tags, so Solid creates it in HTML's namespace"
+      : undefined);
   if (tagProblem) errors.push({ path: `${path}/tag`, message: tagProblem });
   checkAttributes(element, namespace, place, walk);
   if (namespace === "html" && isVoidElement(tag) && children.length) {
@@ -585,23 +707,49 @@ function checkElement(element: ElementNode, place: Place, walk: Walk): void {
       element,
       namespace,
       inSvgText: place.inSvgText || (namespace === "svg" && tag === SVG_WHITESPACE_KEEPING_ELEMENT),
+      controlled: false,
       scope: place.scope,
     },
     walk,
   );
 }
 
-/** The texts that can start an element's content: its first child, or a branch's, through ifs. */
+/**
+ * The texts that can start an element's content: its first child, a branch's through ifs, and
+ * the text after a conditional or a list that can render nothing, where React's and Astro's
+ * servers write nothing before it (the other targets write a comment, which keeps the line feed).
+ */
 function leadingTexts(
   children: readonly RenderNode[],
   path: string,
 ): { value: string; path: string }[] {
-  const first = children[0];
-  if (first?.kind === "Text") return [{ value: first.value, path: `${path}/0` }];
-  if (first?.kind !== "If") return [];
-  return first.branches.flatMap((branch, index) =>
-    leadingTexts(branch.children, `${path}/0/branches/${index}/children`),
-  );
+  return leading(children, path).texts;
+}
+
+/** The texts that can start a child list, and whether it can render nothing. */
+function leading(
+  children: readonly RenderNode[],
+  path: string,
+): { texts: { value: string; path: string }[]; empty: boolean } {
+  const texts: { value: string; path: string }[] = [];
+  for (const [index, child] of children.entries()) {
+    if (child.kind === "Text") {
+      texts.push({ value: child.value, path: `${path}/${index}` });
+      return { texts, empty: false };
+    }
+    // A list's body is an element: it renders elements, or nothing.
+    if (child.kind === "For") continue;
+    if (child.kind !== "If") return { texts, empty: false };
+    // Without an else, or with a branch that can render nothing, a conditional can too.
+    let empty = child.branches.at(-1)?.condition !== undefined;
+    for (const [number, branch] of child.branches.entries()) {
+      const inner = leading(branch.children, `${path}/${index}/branches/${number}/children`);
+      texts.push(...inner.texts);
+      empty ||= inner.empty;
+    }
+    if (!empty) return { texts, empty: false };
+  }
+  return { texts, empty: true };
 }
 
 /** Why an HTML-namespace tag is not one a component can render as itself, or `undefined`. */
@@ -614,6 +762,20 @@ function htmlTagProblem(tag: string): string | undefined {
   return isSvgElement(tag)
     ? `must be an HTML element, and <${tag}> is not: SVG elements sit inside an <svg>`
     : `must be an HTML element, and <${tag}> is not`;
+}
+
+/**
+ * Why no element can sit where this one does: inside an HTML element whose content is text, as
+ * the parser reads markup there (`<option>`, `<textarea>`, `<title>`), or `undefined`.
+ */
+function textOnlyProblem(place: Place): string | undefined {
+  const parent = place.element;
+  if (!parent || place.namespace !== "html" || !TEXT_ONLY_ELEMENTS.has(parent.tag)) {
+    return undefined;
+  }
+  // A conditional or a list in a <textarea> reports itself.
+  if (place.controlled && parent.tag === "textarea") return undefined;
+  return `must not be inside <${parent.tag}>: its content is text, and the HTML parser reads markup there as text`;
 }
 
 /** Why an SVG-namespace tag is not one a component can render, or `undefined`. */
@@ -673,9 +835,10 @@ function checkAttributes(
       return false;
     }
     const unportable =
-      namespace === "html"
+      undeclaredAttribute(tag, namespace, name) ??
+      (namespace === "html"
         ? unportableAttribute(tag, name, staticType, children.length > 0)
-        : undefined;
+        : undefined);
     if (unportable) {
       errors.push({ path, message: `must not be set: ${unportable}` });
       return false;
@@ -834,8 +997,9 @@ function checkClass(attribute: ClassAttribute, path: string, place: Place, walk:
 }
 
 /**
- * Checks a `style`'s declarations (ADR-0038): CSS property names, none setting what another
- * sets (the object targets cannot keep their order), and static values that are one CSS value.
+ * Checks a `style`'s declarations (ADR-0038): CSS property names, in lower case as Angular
+ * writes them, none setting what another sets (the object targets cannot keep their order), and
+ * static values that are one CSS value, which Angular's style parser reads as written.
  */
 function checkStyle(attribute: StyleAttribute, path: string, place: Place, walk: Walk): void {
   const { errors } = walk;
@@ -847,6 +1011,16 @@ function checkStyle(attribute: StyleAttribute, path: string, place: Place, walk:
       errors.push({
         path: `${at}/property`,
         message: `must be a CSS property in lower case and without a vendor prefix, or a custom property, and "${property}" is not`,
+      });
+    } else if (!isKnownCssProperty(property)) {
+      errors.push({
+        path: `${at}/property`,
+        message: `must be a CSS property the browsers know (\`CSS_PROPERTIES\`), or a custom property, and "${property}" is not`,
+      });
+    } else if (angularLowercases(property)) {
+      errors.push({
+        path: `${at}/property`,
+        message: `must be in lower case: Angular's compiler and server DOM lowercase a custom property's name, and "${property}" is not`,
       });
     } else {
       const other = properties.find((earlier) => cssPropertiesOverlap(earlier, property));
@@ -862,7 +1036,11 @@ function checkStyle(attribute: StyleAttribute, path: string, place: Place, walk:
       properties.push(property);
     }
     if (declaration.kind === "Static") {
-      const problem = cssValueProblem(declaration.value);
+      const problem =
+        cssValueProblem(declaration.value) ??
+        (angularMisreads(declaration.value)
+          ? "must be read alike by Angular's style parser, which knows neither escapes nor comments and counts the parentheses inside strings"
+          : undefined);
       if (problem) errors.push({ path: `${at}/value`, message: problem });
       checkCharacters(declaration.value, `${at}/value`, errors);
     } else {
@@ -921,21 +1099,28 @@ function checkExpression(
         message: `must name a binding in scope here, and "${ref.binding}" is a loop variable of another list`,
       });
     } else if (
-      text !== binding.name &&
-      !(
-        binding.kind === "prop" &&
-        propsName !== undefined &&
-        text.length > propsName.length + binding.name.length &&
-        text.startsWith(propsName) &&
-        text.endsWith(binding.name)
-      )
+      binding.kind === "prop" && propsName !== undefined
+        ? !isMemberOf(text, propsName, binding.name)
+        : text !== binding.name
     ) {
+      // The targets splice at the span: a prop in the object form is read only as a member of
+      // the parameter, the whole `props.label` (ADR-0035), and in the destructured form by name.
       errors.push({
         path: `${at}/span`,
-        message: `must span "${binding.name}"${binding.kind === "prop" && propsName !== undefined ? ` or "${propsName}.${binding.name}"` : ""}`,
+        message: `must span "${binding.kind === "prop" && propsName !== undefined ? `${propsName}.${binding.name}` : binding.name}"`,
       });
     }
   }
+}
+
+/**
+ * Whether a reference's text reads `member` of the object `object`: `object.member`, with only
+ * whitespace and comments around the dot.
+ */
+function isMemberOf(text: string, object: string, member: string): boolean {
+  if (!text.startsWith(object) || !text.endsWith(member)) return false;
+  const between = text.slice(object.length, text.length - member.length);
+  return between.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*(?:\n|$)|\s+/g, "") === ".";
 }
 
 /**
@@ -987,6 +1172,13 @@ function valueProblem(
   if (name === "class" && !CANONICAL_CLASS.test(value)) {
     return "must be class names separated by single spaces";
   }
+  // Angular merges a static `class` with a bound one through the class list, which drops a
+  // repeated name that the other targets keep (ADR-0038).
+  const repeated =
+    name === "class"
+      ? value.split(" ").find((item, index, all) => all.indexOf(item) !== index)
+      : undefined;
+  if (repeated !== undefined) return `must name the class "${repeated}" once`;
   const unanalysable = unanalysableUrl(tag, name, value);
   if (unanalysable === "javascript") return "must not be a `javascript:` URL";
   if (unanalysable === "data") {

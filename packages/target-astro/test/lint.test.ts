@@ -103,8 +103,21 @@ describe("astro lint (L5)", { timeout: 60_000 }, () => {
       frontmatter: `${FRONTMATTER}debugger;\n`,
       rule: "no-debugger",
     },
+    {
+      // astro-eslint-parser counts Astro's read of `Props` only in a file that names `Astro`:
+      // a component that reads no prop exports it (src/frontmatter.ts).
+      what: "a `Props` nothing reads",
+      markup: "<p>x</p>",
+      frontmatter: "interface Props {\n  label: string;\n}\n",
+      rule: "@typescript-eslint/no-unused-vars",
+    },
   ])("rejects $what ($rule)", async ({ markup, frontmatter, rule }) => {
     expect(await lintCodes(component(markup, frontmatter))).toEqual([rule]);
+  });
+
+  it("accepts an exported `Props` nothing reads, which is the component's API", async () => {
+    const frontmatter = "export interface Props {\n  label: string;\n}\n";
+    expect(await lintCodes(component("<p>x</p>", frontmatter))).toEqual([]);
   });
 
   it.each([

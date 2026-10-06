@@ -6,6 +6,12 @@ import type { Scopes } from "./scope.ts";
 import type { TypeTable } from "./types/from-type.ts";
 import type { Kinds } from "./types/kinds.ts";
 
+/**
+ * A component's function: a declaration, or the arrow function or function expression a `const`
+ * holds, which is reported (UF1102) and still analysed, so that its fix reveals nothing new.
+ */
+export type ComponentFunction = AST.Function | AST.ArrowFunctionExpression;
+
 /** A prop as expressions read it. */
 export interface PropBinding {
   name: string;
@@ -31,7 +37,7 @@ export interface RenderContext {
   readonly scopes: Scopes;
   readonly types: TypeTable;
   /** The component's function: its parameters are the props. */
-  readonly component: AST.Function;
+  readonly component: ComponentFunction;
   /** The props, by name: every member of the props type. */
   readonly props: ReadonlyMap<string, PropBinding>;
   /** The destructured props, by the identifier that declares each. */

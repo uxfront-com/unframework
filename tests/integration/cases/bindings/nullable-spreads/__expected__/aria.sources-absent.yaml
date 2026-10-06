@@ -1,0 +1,7 @@
+- region "Shipment GB-2042":
+  - paragraph: Carrier
+  - paragraph: Estimated delivery
+  - paragraph: Parcel 2 of 2
+  - paragraph: Live tracking
+  - list
+  - paragraph: Not sealed

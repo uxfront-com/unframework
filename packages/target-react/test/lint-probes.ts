@@ -1,10 +1,11 @@
 // What this target emits for M1's constructs, written by hand in the shapes of design §5.1 (kept
 // in step with the emitter's): destructured props with defaults, ternary chains with `null`,
 // keyed `.map`, `className` through an inline `cx`, a style object (`as CSSProperties` for a
-// custom property), React's attribute names and number-typed attributes. The same three components on
-// every target: a badge (props with defaults, a conditional chain, class and style bindings, bound
-// attributes, SVG), a list (nested keyed lists, conditionals inside and around them, a root
-// fragment) and a card (the `props` form, a typed spread written out key by key, a static style).
+// custom property), React's attribute names and number-typed attributes, and an SVG `<title>` of
+// several parts as one template literal. The same three components on every target: a badge
+// (props with defaults, a conditional chain, class and style bindings, bound attributes, SVG), a
+// list (nested keyed lists, conditionals inside and around them, a root fragment) and a card (the
+// `props` form, a typed spread written out key by key, a static style).
 // lint.test.ts pins the L5 configuration against them (ADR-0042): a rule that rejects one of them
 // would force an emitter change.
 
@@ -34,7 +35,7 @@ export default function Badge({ label, tone = "info", count, pill = false, gap, 
       {count !== undefined && count > 0 ? <strong>{count}</strong> : tone === "warn" ? "!" : null}
       {label}{" "}
       <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-        <title>Icon</title>
+        <title>{\`\${label}: \${count ?? ""}\`}</title>
         <circle cx="8" cy="8" r="4" strokeWidth="2" />
         <path d="M0 0h16" />
       </svg>

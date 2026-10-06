@@ -306,9 +306,158 @@ function flowGroup(longhand: string): { name: string; logical: boolean } | undef
   return undefined;
 }
 
+/**
+ * Every CSS property Chromium 153 knows (the browser the tests run, Playwright 1.63), longhands,
+ * shorthands and legacy aliases, without vendor prefixes: the names its CSSOM exposes on a
+ * `style` (in camel case, read as CSS names) and lists in a computed style, that
+ * `CSS.supports(name, "initial")` accepts. A name outside it is almost always a typo, which no
+ * browser applies and Solid's lint (`solid/style-prop`) rejects.
+ */
+export const CSS_PROPERTIES: ReadonlySet<string> = words(`
+  accent-color align-content align-items align-self alignment-baseline all anchor-name anchor-scope
+  animation animation-composition animation-delay animation-direction animation-duration
+  animation-fill-mode animation-iteration-count animation-name animation-play-state animation-range
+  animation-range-end animation-range-start animation-timeline animation-timing-function
+  animation-trigger app-region appearance aspect-ratio backdrop-filter backface-visibility
+  background background-attachment background-blend-mode background-clip background-color
+  background-image background-origin background-position background-position-x
+  background-position-y background-repeat background-size baseline-shift baseline-source block-size
+  border border-block border-block-color border-block-end border-block-end-color
+  border-block-end-style border-block-end-width border-block-start border-block-start-color
+  border-block-start-style border-block-start-width border-block-style border-block-width
+  border-bottom border-bottom-color border-bottom-left-radius border-bottom-right-radius
+  border-bottom-style border-bottom-width border-collapse border-color border-end-end-radius
+  border-end-start-radius border-image border-image-outset border-image-repeat border-image-slice
+  border-image-source border-image-width border-inline border-inline-color border-inline-end
+  border-inline-end-color border-inline-end-style border-inline-end-width border-inline-start
+  border-inline-start-color border-inline-start-style border-inline-start-width border-inline-style
+  border-inline-width border-left border-left-color border-left-style border-left-width
+  border-radius border-right border-right-color border-right-style border-right-width border-shape
+  border-spacing border-start-end-radius border-start-start-radius border-style border-top
+  border-top-color border-top-left-radius border-top-right-radius border-top-style border-top-width
+  border-width bottom box-decoration-break box-shadow box-sizing break-after break-before
+  break-inside buffered-rendering caption-side caret-animation caret-color caret-shape clear clip
+  clip-path clip-rule color color-interpolation color-interpolation-filters color-rendering
+  color-scheme column-count column-fill column-gap column-height column-rule column-rule-break
+  column-rule-color column-rule-inset column-rule-inset-cap column-rule-inset-cap-end
+  column-rule-inset-cap-start column-rule-inset-end column-rule-inset-junction
+  column-rule-inset-junction-end column-rule-inset-junction-start column-rule-inset-start
+  column-rule-style column-rule-visibility-items column-rule-width column-span column-width
+  column-wrap columns contain contain-intrinsic-block-size contain-intrinsic-height
+  contain-intrinsic-inline-size contain-intrinsic-size contain-intrinsic-width container
+  container-name container-type content content-visibility corner-block-end-shape
+  corner-block-start-shape corner-bottom-left-shape corner-bottom-right-shape corner-bottom-shape
+  corner-end-end-shape corner-end-start-shape corner-inline-end-shape corner-inline-start-shape
+  corner-left-shape corner-right-shape corner-shape corner-start-end-shape corner-start-start-shape
+  corner-top-left-shape corner-top-right-shape corner-top-shape counter-increment counter-reset
+  counter-set cursor cx cy d direction display dominant-baseline dynamic-range-limit empty-cells
+  field-sizing fill fill-opacity fill-rule filter flex flex-basis flex-direction flex-flow
+  flex-grow flex-line-count flex-shrink flex-wrap float flood-color flood-opacity font font-family
+  font-feature-settings font-kerning font-language-override font-optical-sizing font-palette
+  font-size font-size-adjust font-stretch font-style font-synthesis font-synthesis-small-caps
+  font-synthesis-style font-synthesis-weight font-variant font-variant-alternates font-variant-caps
+  font-variant-east-asian font-variant-emoji font-variant-ligatures font-variant-numeric
+  font-variant-position font-variation-settings font-weight forced-color-adjust gap grid grid-area
+  grid-auto-columns grid-auto-flow grid-auto-rows grid-column grid-column-end grid-column-gap
+  grid-column-start grid-gap grid-row grid-row-end grid-row-gap grid-row-start grid-template
+  grid-template-areas grid-template-columns grid-template-rows height hyphenate-character
+  hyphenate-limit-chars hyphens image-orientation image-rendering initial-letter inline-size inset
+  inset-block inset-block-end inset-block-start inset-inline inset-inline-end inset-inline-start
+  interactivity interest-delay interest-delay-end interest-delay-start interpolate-size isolation
+  justify-content justify-items justify-self left letter-spacing lighting-color line-break
+  line-height list-style list-style-image list-style-position list-style-type margin margin-block
+  margin-block-end margin-block-start margin-bottom margin-inline margin-inline-end
+  margin-inline-start margin-left margin-right margin-top marker marker-end marker-mid marker-start
+  mask mask-clip mask-composite mask-image mask-mode mask-origin mask-position mask-repeat
+  mask-size mask-type math-depth math-shift math-style max-block-size max-height max-inline-size
+  max-width min-block-size min-height min-inline-size min-width mix-blend-mode object-fit
+  object-position object-view-box offset offset-anchor offset-distance offset-path offset-position
+  offset-rotate opacity order orphans outline outline-color outline-offset outline-style
+  outline-width overflow overflow-anchor overflow-block overflow-clip-margin overflow-inline
+  overflow-wrap overflow-x overflow-y overlay overscroll-behavior overscroll-behavior-block
+  overscroll-behavior-inline overscroll-behavior-x overscroll-behavior-y padding padding-block
+  padding-block-end padding-block-start padding-bottom padding-inline padding-inline-end
+  padding-inline-start padding-left padding-right padding-top page page-break-after
+  page-break-before page-break-inside page-margin-safety page-orientation paint-order perspective
+  perspective-origin place-content place-items place-self pointer-events position position-anchor
+  position-area position-try position-try-fallbacks position-try-order position-visibility
+  print-color-adjust quotes r reading-flow reading-order resize right rotate row-gap row-rule
+  row-rule-break row-rule-color row-rule-inset row-rule-inset-cap row-rule-inset-cap-end
+  row-rule-inset-cap-start row-rule-inset-end row-rule-inset-junction row-rule-inset-junction-end
+  row-rule-inset-junction-start row-rule-inset-start row-rule-style row-rule-visibility-items
+  row-rule-width ruby-align ruby-overhang ruby-position rule rule-break rule-color rule-inset
+  rule-inset-cap rule-inset-end rule-inset-junction rule-inset-start rule-overlap rule-style
+  rule-visibility-items rule-width rx ry scale scroll-axis-lock scroll-behavior
+  scroll-initial-target scroll-margin scroll-margin-block scroll-margin-block-end
+  scroll-margin-block-start scroll-margin-bottom scroll-margin-inline scroll-margin-inline-end
+  scroll-margin-inline-start scroll-margin-left scroll-margin-right scroll-margin-top
+  scroll-marker-group scroll-padding scroll-padding-block scroll-padding-block-end
+  scroll-padding-block-start scroll-padding-bottom scroll-padding-inline scroll-padding-inline-end
+  scroll-padding-inline-start scroll-padding-left scroll-padding-right scroll-padding-top
+  scroll-snap-align scroll-snap-stop scroll-snap-type scroll-target-group scroll-timeline
+  scroll-timeline-axis scroll-timeline-name scrollbar-color scrollbar-gutter scrollbar-width
+  shape-image-threshold shape-margin shape-outside shape-rendering size speak stop-color
+  stop-opacity stroke stroke-dasharray stroke-dashoffset stroke-linecap stroke-linejoin
+  stroke-miterlimit stroke-opacity stroke-width tab-size table-layout text-align text-align-last
+  text-anchor text-autospace text-box text-box-edge text-box-trim text-combine-upright
+  text-decoration text-decoration-color text-decoration-line text-decoration-skip-ink
+  text-decoration-style text-decoration-thickness text-emphasis text-emphasis-color
+  text-emphasis-position text-emphasis-style text-fit text-indent text-justify text-orientation
+  text-overflow text-rendering text-shadow text-size-adjust text-spacing-trim text-transform
+  text-underline-offset text-underline-position text-wrap text-wrap-mode text-wrap-style
+  timeline-scope timeline-trigger timeline-trigger-activation-range
+  timeline-trigger-activation-range-end timeline-trigger-activation-range-start
+  timeline-trigger-active-range timeline-trigger-active-range-end
+  timeline-trigger-active-range-start timeline-trigger-name timeline-trigger-source top
+  touch-action transform transform-box transform-origin transform-style transition
+  transition-behavior transition-delay transition-duration transition-property
+  transition-timing-function translate trigger-scope unicode-bidi user-select vector-effect
+  vertical-align view-timeline view-timeline-axis view-timeline-inset view-timeline-name
+  view-transition-class view-transition-group view-transition-name view-transition-scope visibility
+  white-space white-space-collapse widows width will-change window-drag word-break word-spacing
+  word-wrap writing-mode x y z-index zoom
+`);
+
+/** Whether a declaration's property is a CSS property Chromium knows, or a custom property. */
+export function isKnownCssProperty(name: string): boolean {
+  return CSS_PROPERTIES.has(name) || isCustomProperty(name);
+}
+
 /** Whether a name is a custom property, `--gap`: two hyphens and ASCII name characters. */
 export function isCustomProperty(name: string): boolean {
   return /^--[A-Za-z0-9_-]+$/.test(name);
+}
+
+/**
+ * Whether Angular renames a declaration's property: its compiler and its server DOM lowercase
+ * every property they parse, and a custom property is case-sensitive (`--Gap` becomes `--gap`,
+ * which `var(--Gap)` does not find). The analyser reports it (UF3022), and no IR holds one.
+ */
+export function angularLowercases(property: string): boolean {
+  return /[A-Z]/.test(property);
+}
+
+/**
+ * Whether Angular reads a static value differently from CSS. Its compiler parses a static
+ * `style` again, and its server DOM every style it sets (`parse` in its style parser): it knows
+ * neither escapes nor comments, ends a string at a quote of its kind even when escaped, and
+ * counts the parentheses inside strings. Read that way from the start of its declaration, a
+ * value must hold no `;` that ends it, and end outside its strings and parentheses, or the
+ * declarations after it run into it (`content: "a\";b"`, `content: "("`). The analyser reports
+ * it (UF3022), and no IR holds one.
+ */
+export function angularMisreads(value: string): boolean {
+  let depth = 0;
+  let quote: string | undefined;
+  for (const character of value) {
+    if (character === "(") depth++;
+    else if (character === ")") depth--;
+    else if (character === '"' || character === "'") {
+      if (quote === undefined) quote = character;
+      else if (quote === character) quote = undefined;
+    } else if (character === ";" && depth === 0 && quote === undefined) return true;
+  }
+  return depth !== 0 || quote !== undefined;
 }
 
 /**

@@ -115,7 +115,7 @@ describe("project factories", () => {
     const [, , , ssr, browser] = harnessProjects({ harness, mode, targets: ["missing"] });
     for (const [factory, layers] of [
       [ssr, ["L6", "L13"]],
-      [browser, ["L7", "L10", "L11", "L13"]],
+      [browser, ["L7", "L8", "L10", "L11", "L13"]],
     ] as const) {
       const project = await (factory as () => Promise<UserWorkspaceConfig>)();
       expect(project.test?.include).toEqual(["harness/unavailable.test.ts"]);

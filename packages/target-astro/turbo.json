@@ -5,8 +5,14 @@
     "test": {
       // The toolchain tests check the corpus's committed astro outputs with what
       // tests/toolchains/astro installs: its transit node carries that package's tsconfig and the
-      // locked versions of its tools into this hash.
-      "dependsOn": ["$TURBO_EXTENDS$", "@unframework/toolchain-astro#transit"],
+      // locked versions of its tools into this hash. The emit tests lower their sources with the
+      // analyser's own source (test/source.ts), which is no dependency of this package: its transit
+      // node carries it, and the parser below it, into this hash too.
+      "dependsOn": [
+        "$TURBO_EXTENDS$",
+        "@unframework/toolchain-astro#transit",
+        "@unframework/analyzer#transit"
+      ],
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tests/integration/cases/**/__output__/astro/**"]
     }
   }

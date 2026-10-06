@@ -74,11 +74,13 @@ function content(nodes: ConditionalBranch["branch"]): MarkupPiece {
 /**
  * Astro markup: `{` opens an expression in text, and `>` is written `&gt;` too: Astro's compiler
  * reads it as text, but its ESLint parser (L5) parses text as JSX does, which rejects a bare `>`
- * (ADR-0042). Astro's default `compressHTML: "jsx"`
- * applies JSX's whitespace rules: it removes whitespace that holds a line break between or
- * around elements and expressions, and trims lines around line breaks in text. Text holding a
- * line break or a tab is printed as an expression, and so is text with whitespace at an outer
- * edge of the root, where the target's own line break would meet it.
+ * (ADR-0042). Astro's default `compressHTML: "jsx"` applies JSX's whitespace rules: it removes
+ * whitespace that holds a line break between or around elements and expressions, and trims
+ * lines around line breaks in text. Text holding a line break or a tab is printed as an
+ * expression, and so is text with whitespace at an outer edge of the root, where the target's
+ * own line break would meet it, and text that starts the root with `---`, which a component
+ * without props would start its file with: tools read a file that starts with `---` and a line
+ * break as one that opens a frontmatter (the formatter, ADR-0041, and the harness's canaries).
  *
  * A conditional is a ternary chain whose missing else is `null`, with an empty branch as `null`
  * in its place; a branch that is not one element or one text is a fragment. A list is a `.map`
@@ -95,7 +97,7 @@ export const astroDialect: MarkupDialect = {
   escapeText: (text, position) =>
     (JSX_WHITESPACE.test(text) && !keepsWhitespace(position)) ||
     (isRoot(position.container) &&
-      ((position.first && /^\s/.test(text)) || (position.last && /\s$/.test(text))))
+      ((position.first && /^(?:\s|---)/.test(text)) || (position.last && /\s$/.test(text))))
       ? `{${stringLiteral(text)}}`
       : escapeBraces(escapeHtmlText(text)).replace(/>/g, "&gt;"),
   attribute: quotedAttribute,

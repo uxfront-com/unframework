@@ -5,12 +5,13 @@
 // land in M5.
 
 import type { DiagnosticCode } from "@unframework/diagnostics";
-import { isIdentifier } from "@unframework/ir";
-import type { AST, ComponentDeclaration, TypeDeclarationStatement } from "@unframework/parser";
+import { isIdentifier, RESERVED_TYPE_NAMES } from "@unframework/ir";
+import type { AST, TypeDeclarationStatement } from "@unframework/parser";
 import { visitorKeys } from "@unframework/parser";
 
 import type { Reporter } from "./context.ts";
 import { checkDirectives } from "./expressions.ts";
+import type { ComponentFunction } from "./render.ts";
 import { memberName, TypeTable } from "./types/from-type.ts";
 
 /** The module's type declarations, and which the components' props reach. */
@@ -19,8 +20,14 @@ export interface ModuleTypes {
   readonly declarations: readonly TypeDeclarationStatement[];
   /** The names some component's props type reaches, through local references. */
   readonly reached: ReadonlySet<string>;
-  /** The names written as a component's props annotation itself (`(props: Props)`). */
-  readonly annotations: ReadonlySet<string>;
+  /** Whether some component writes `Props` as its props annotation itself (`(props: Props)`). */
+  readonly ownProps: boolean;
+  /**
+   * The props annotations that reach `Props` without being it (`(props: BadgeProps)`, with
+   * `interface BadgeProps { inner: Props }`): Astro's output declares a `Props` of its own for
+   * each of their components, beside the copied one.
+   */
+  readonly foreignProps: readonly AST.TSType[];
   /**
    * The diagnostics already reported at a span of a type declaration: components that share a
    * declaration report its props' problems once.
@@ -31,23 +38,28 @@ export interface ModuleTypes {
 /** Reads the module's type declarations, and what the candidates' props annotations reach. */
 export function collectTypes(
   declarations: readonly TypeDeclarationStatement[],
-  candidates: readonly ComponentDeclaration[],
+  candidates: readonly { node: ComponentFunction }[],
 ): ModuleTypes {
   const table = new TypeTable(declarations);
   const reached = new Set<string>();
-  const annotations = new Set<string>();
+  let ownProps = false;
+  const foreignProps: AST.TSType[] = [];
   for (const candidate of candidates) {
     const parameter = candidate.node.params[0];
     const annotation =
       parameter && "typeAnnotation" in parameter ? parameter.typeAnnotation : undefined;
     if (!annotation) continue;
     const type = annotation.typeAnnotation;
-    if (type.type === "TSTypeReference" && type.typeName.type === "Identifier") {
-      annotations.add(type.typeName.name);
-    }
-    for (const name of closure(type, table)) reached.add(name);
+    const names = closure(type, table);
+    const own =
+      type.type === "TSTypeReference" &&
+      type.typeName.type === "Identifier" &&
+      type.typeName.name === "Props";
+    if (own) ownProps = true;
+    else if (names.includes("Props")) foreignProps.push(type);
+    for (const name of names) reached.add(name);
   }
-  return { table, declarations, reached, annotations, reported: new Set() };
+  return { table, declarations, reached, ownProps, foreignProps, reported: new Set() };
 }
 
 /**
@@ -111,13 +123,23 @@ export function checkTypeDeclaration(
       { help: "Rename the type." },
     );
   }
-  if (name === "CSSProperties" || (name === "Props" && !types.annotations.has(name))) {
-    reporter.report(
-      "UF2003",
-      id,
-      `A local type cannot be named \`${name}\`: the outputs declare a type of that name${name === "Props" ? " for a component's props" : " for style objects"}.`,
-      { help: "Rename the type." },
-    );
+  // `Props` may be a component's own props type, which the outputs keep as it is, when every
+  // component whose props reach it takes it as its props type: Astro's output declares a
+  // `Props` of its own for any other, beside the copied one (ADR-0034).
+  const own = name === "Props" && types.ownProps && !types.foreignProps.length;
+  const clash = own ? undefined : RESERVED_TYPE_NAMES.get(name);
+  if (clash) {
+    const related =
+      name === "Props"
+        ? types.foreignProps.map((type) => ({
+            span: { start: type.start, end: type.end },
+            message: "These props reach it, and Astro's output declares their own `Props`",
+          }))
+        : [];
+    reporter.report("UF2003", id, `A local type cannot be named \`${name}\`: ${clash}.`, {
+      help: "Rename the type.",
+      ...(related.length ? { related } : {}),
+    });
   }
   if (!types.reached.has(name)) {
     reporter.unsupported(
@@ -189,10 +211,12 @@ export function checkMembers(
   types: ModuleTypes,
   reporter: Reporter,
 ): void {
+  const names = new Set<string>();
   for (const member of members) {
     switch (member.type) {
       case "TSPropertySignature": {
-        if (member.computed || memberName(member.key) === undefined) {
+        const name = member.computed ? undefined : memberName(member.key);
+        if (name === undefined) {
           report(
             types,
             reporter,
@@ -202,6 +226,19 @@ export function checkMembers(
           );
           continue;
         }
+        // TypeScript rejects it (TS2300), and the outputs would declare the prop twice.
+        if (names.has(name)) {
+          report(
+            types,
+            reporter,
+            "UF2001",
+            member.key,
+            `\`${name}\` is declared twice in this type: TypeScript rejects the second, and every target would declare it twice.`,
+            "Declare it once.",
+          );
+          continue;
+        }
+        names.add(name);
         const type = member.typeAnnotation?.typeAnnotation;
         if (!type) {
           report(types, reporter, "UF1002", member, "A member of a props type needs a type.");

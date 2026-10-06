@@ -16,6 +16,7 @@ import { describe, expect, it } from "vitest";
 import { QWIK_ATTRIBUTE_NAMES, QWIK_BOOLEAN_ATTRIBUTES } from "../src/attributes.ts";
 import target from "../src/index.ts";
 import { emitSource } from "./lower.ts";
+import { TITLES } from "./titles.ts";
 
 const at = { start: 0, end: 0 };
 
@@ -173,11 +174,11 @@ describe("qwik target", () => {
     const contents = await emitted(
       element("form", {}, [
         element("button", { formenctype: "text/plain" }),
-        element("dialog", { closedby: "any" }),
+        element("img", { src: "/a.png", alt: "", fetchpriority: "high" }),
       ]),
     );
     expect(contents).toContain('<button formEnctype="text/plain" />');
-    expect(contents).toContain('<dialog closedBy="any" />');
+    expect(contents).toContain('<img src="/a.png" alt="" fetchPriority="high" />');
   });
 
   it("reads HTML attribute names case-insensitively, as HTML does", async () => {
@@ -217,6 +218,10 @@ describe("qwik target", () => {
 });
 
 // M1's shapes (design §5.6), from sources the analyser lowers.
+
+/** A component in the object form that returns `body`. */
+const plain = (body: string) =>
+  `interface PlainProps { label: string; title?: string }\nexport function Plain(props: PlainProps) { return ${body}; }`;
 describe("qwik target: props and expressions", () => {
   it("destructures the props in `component$<Props>`, with their defaults, in source order", async () => {
     const contents = await emitSource(
@@ -228,7 +233,7 @@ describe("qwik target: props and expressions", () => {
         "  pill?: boolean;",
         "}",
         "",
-        "export default function Badge({ tone = \"info\", label, pill = false }: BadgeProps) {",
+        'export default function Badge({ tone = "info", label, pill = false }: BadgeProps) {',
         "  return <p class={{ pill }} data-tone={tone}>{label}</p>;",
         "}",
       ].join("\n"),
@@ -259,9 +264,11 @@ describe("qwik target: props and expressions", () => {
   it("leaves out the props no expression reads, and the parameter when none is read", async () => {
     // An unused binding fails L5 (no-unused-vars); the type argument still types the props.
     const some = await emitSource(
-      'export function Card({ label, title }: { label: string; title?: string }) { return <p>{label}</p>; }',
+      "export function Card({ label, title }: { label: string; title?: string }) { return <p>{label}</p>; }",
     );
-    expect(some).toContain("export const Card = component$<{ label: string; title?: string }>(({ label }) => {");
+    expect(some).toContain(
+      "export const Card = component$<{ label: string; title?: string }>(({ label }) => {",
+    );
     const none = await emitSource(
       "interface CardProps { label: string }\nexport function Card({ label }: CardProps) { return <p>Card</p>; }",
     );
@@ -269,16 +276,14 @@ describe("qwik target: props and expressions", () => {
   });
 
   it("keeps the `props` object as written, and leaves it out when nothing reads it", async () => {
-    const source = (body: string) =>
-      `interface PlainProps { label: string; title?: string }\nexport function Plain(props: PlainProps) { return ${body}; }`;
-    expect(await emitSource(source("<p title={props.title}>{props.label}</p>"))).toContain(
+    expect(await emitSource(plain("<p title={props.title}>{props.label}</p>"))).toContain(
       [
         "export const Plain = component$<PlainProps>((props) => {",
         "  return <p title={props.title}>{props.label}</p>;",
         "});",
       ].join("\n"),
     );
-    expect(await emitSource(source("<p>Plain</p>"))).toContain(
+    expect(await emitSource(plain("<p>Plain</p>"))).toContain(
       "export const Plain = component$<PlainProps>(() => {",
     );
   });
@@ -291,7 +296,7 @@ describe("qwik target: props and expressions", () => {
         "  return (",
         "    <div>",
         "      {count && <b>{count}</b>}",
-        "      {more ? <><i>a</i>b</> : count > 1 ? \"many\" : <s>none</s>}",
+        '      {more ? <><i>a</i>b</> : count > 1 ? "many" : <s>none</s>}',
         "      <ul>{items.map((item) => <li key={item.id}>{item.name}</li>)}</ul>",
         "      <ol>{items.map((item, index) => <li key={index}>{index + 1}</li>)}</ol>",
         "    </div>",
@@ -306,7 +311,7 @@ describe("qwik target: props and expressions", () => {
     );
     // An index no printed expression reads is left out; the key is the body's first attribute.
     expect(contents).toContain("{items.map((item) => (\n");
-    expect(contents).toContain('<li key={item.id}>{item.name}</li>');
+    expect(contents).toContain("<li key={item.id}>{item.name}</li>");
     expect(contents).toContain("{items.map((item, index) => (\n");
     expect(contents).toContain("<li key={index}>{index + 1}</li>");
   });
@@ -329,10 +334,12 @@ describe("qwik target: props and expressions", () => {
   it("names its import around the names the source uses", async () => {
     // An arrow parameter named like Qwik's import keeps its name; the import takes another.
     const contents = await emitSource(
-      "export function Tags({ tags }: { tags: string[] }) { return <p>{tags.filter((component$) => component$ !== \"\").join()}</p>; }",
+      'export function Tags({ tags }: { tags: string[] }) { return <p>{tags.filter((component$) => component$ !== "").join()}</p>; }',
     );
     expect(contents).toContain('import { component$ as component$_1 } from "@qwik.dev/core";');
-    expect(contents).toContain("export const Tags = component$_1<{ tags: string[] }>(({ tags }) => {");
+    expect(contents).toContain(
+      "export const Tags = component$_1<{ tags: string[] }>(({ tags }) => {",
+    );
   });
 });
 
@@ -343,7 +350,7 @@ describe("qwik target: attributes", () => {
         "export function Field({ order, locked, id }: { order: number; locked: boolean; id: string }) {",
         "  return (",
         '    <div tabindex="-1" spellcheck="false" draggable="true">',
-        '      <label for={id}>Name</label>',
+        "      <label for={id}>Name</label>",
         '      <input id={id} tabindex={order} readonly={locked} maxlength="40" />',
         '      <table><tbody><tr><td colspan="2" rowspan={order}>x</td></tr></tbody></table>',
         '      <svg viewBox="0 0 2 2" tabindex="0" aria-valuenow="1"><circle cx="1" cy="1" r="1" stroke-width="2" /></svg>',
@@ -355,7 +362,9 @@ describe("qwik target: attributes", () => {
     // Qwik types these as numbers and booleans: their static strings fail L4.
     expect(contents).toContain("<div tabIndex={-1} spellcheck={false} draggable={true}>");
     expect(contents).toContain("<label for={id}>Name</label>");
-    expect(contents).toContain("<input id={id} tabIndex={order} readOnly={locked} maxLength={40} />");
+    expect(contents).toContain(
+      "<input id={id} tabIndex={order} readOnly={locked} maxLength={40} />",
+    );
     expect(contents).toContain("<td colSpan={2} rowSpan={order}>");
     // SVG keeps its names; `tabindex` and ARIA's numbers are numbers there too.
     expect(contents).toContain('<svg viewBox="0 0 2 2" tabindex={0} aria-valuenow={1}>');
@@ -381,7 +390,9 @@ describe("qwik target: attributes", () => {
     // A lone dynamic part is itself; toggles alone are one object, keyed as the source keys
     // them (one key per entry, shorthand where the condition is the name).
     expect(contents).toContain("<p class={tone}>a</p>");
-    expect(contents).toContain('<p class={{ active, "is-muted": muted, "is-big is-wide": count > 9 }}>b</p>');
+    expect(contents).toContain(
+      '<p class={{ active, "is-muted": muted, "is-big is-wide": count > 9 }}>b</p>',
+    );
     // A condition Qwik's `ClassList` cannot hold (an array) is written `Boolean(…)`.
     expect(contents).toContain(
       '<p class={["pill", tone, { on: active, counted: count, tagged: Boolean(tags) }]}>c</p>',
@@ -393,7 +404,7 @@ describe("qwik target: attributes", () => {
       [
         "interface Todo { id: string; done?: boolean }",
         "export function Todos({ todos }: { todos: Todo[] }) {",
-        "  return <ul>{todos.map((todo) => <li key={todo.id} class={{ done: todo.done, first: todo.id === \"1\" }}>{todo.id}</li>)}</ul>;",
+        '  return <ul>{todos.map((todo) => <li key={todo.id} class={{ done: todo.done, first: todo.id === "1" }}>{todo.id}</li>)}</ul>;',
         "}",
       ].join("\n"),
     );
@@ -417,6 +428,39 @@ describe("qwik target: attributes", () => {
       'export function Box() { return <div style="margin-top: 4px; color: red" />; }',
     );
     expect(parsed).toContain('<div style={{ marginTop: "4px", color: "red" }} />');
+  });
+
+  it("writes an attribute Qwik's types declare under no name as an object spread", async () => {
+    const contents = await emitSource(
+      [
+        "interface Extra { form?: string; title?: string }",
+        "export function Form({ listId, editable, extra }: {",
+        '  listId: string; editable: "true" | "false"; extra: Extra;',
+        "}) {",
+        "  return (",
+        "    <div>",
+        '      <input form="checkout" list={listId} autocorrect="off" />',
+        "      <input {...extra} />",
+        '      <p contenteditable="true" />',
+        "      <p contenteditable={editable} />",
+        '      <p contenteditable="plaintext-only" />',
+        '      <div enterkeyhint="go" />',
+        "    </div>",
+        "  );",
+        "}",
+      ].join("\n"),
+    );
+    // Qwik renders them as written; TypeScript does not check a spread's keys that the
+    // element's type lacks. `autoCorrect` is Qwik's name for the string HTML means.
+    expect(contents).toContain(
+      '<input {...{ form: "checkout" }} {...{ list: listId }} autoCorrect="off" />',
+    );
+    expect(contents).toContain("<input {...{ form: extra.form }} title={extra.title} />");
+    expect(contents).toContain('<div {...{ enterkeyhint: "go" }} />');
+    // `contentEditable` takes "true", "false" and "inherit", all a bound value can be.
+    expect(contents).toContain('<p contentEditable="true" />');
+    expect(contents).toContain("<p contentEditable={editable} />");
+    expect(contents).toContain('<p {...{ contenteditable: "plaintext-only" }} />');
   });
 
   it("writes a spread as one attribute per declared key, merging its `class`", async () => {
@@ -443,5 +487,72 @@ describe("qwik target: attributes", () => {
     expect(contents).toContain(
       "<p title={extra?.title} class={extra?.class} tabIndex={extra?.tabindex}>",
     );
+  });
+});
+
+// Qwik types a `<title>`'s children as a string, in SVG as in HTML: a title gets one child that
+// types as `string | undefined` (ADR-0040). `?? ""` only where the value may be nullish, which
+// TypeScript reads from its syntax (TS2869 rejects it elsewhere) or the target from a prop's type.
+describe("qwik target: SVG titles", () => {
+  it("joins a title of several parts into one string, in branches and lists too", async () => {
+    const contents = await emitSource(TITLES);
+    for (const expected of [
+      "<title>{`${label} icon`}</title>",
+      '<title>{`${note ?? ""}, ${count + 1}, ${count}`}</title>',
+      '<title>{`[${on ? " on" : ""}${count === 0 ? "none" : count === 1 ? `one ${label}` : `${count} of ${label}`}]`}</title>',
+      "<title>{`${label}\\`\\${x}\\` \\\\ \\t`}</title>",
+      // A part that always renders nothing is left out.
+      "<title>ab</title>",
+      '<title>{`${on ? "yes" : "no"}: ${(label.length > 2 ? label : note) ?? ""}`}</title>',
+      // TypeScript reads `a ?? b` by `b` (TS2869, TS2871): no guard after a fallback that is
+      // never nullish, and a nullish fallback becomes "" rather than take one.
+      '<title>{`${note ?? "Untitled"} icon, ${on ? (note ?? "x") : "y"}, ${note ?? ""}.`}</title>',
+      '<title>{on ? `a ${note ?? "x"}` : "b"}</title>',
+      '<title>{`[${on ? (note ?? "") : ""}]`}</title>',
+      '<title>{`Item ${x ?? ""}`}</title>',
+      "<title>{`${label} on`}</title>",
+    ]) {
+      expect(contents).toContain(expected);
+    }
+  });
+
+  it("keeps a lone string or undefined, and makes any other lone value one", async () => {
+    const contents = await emitSource(TITLES);
+    for (const expected of [
+      "<title>{note}</title>",
+      '<title>{on ? label : "Off"}</title>',
+      "<title>{label.toUpperCase()}</title>",
+      "<title>{note ?? undefined}</title>",
+      '<title>{`${n ?? ""}`}</title>',
+      // A number, which Qwik's type does not take, in a template literal; `null` as "".
+      "<title>{`${count}`}</title>",
+      '<title>{n ?? ""}</title>',
+      // A conditional alone: its branches as strings, and `undefined` where Qwik writes `null`.
+      '<title>{on ? `On: ${note ?? ""}` : "Off"}</title>',
+      "<title>{on ? note : undefined}</title>",
+      "<title>{on ? `${count}` : undefined}</title>",
+    ]) {
+      expect(contents).toContain(expected);
+    }
+  });
+
+  it("reads the props object and the defaults the same way", async () => {
+    expect(
+      await emitSource(`export interface P { label: string; tone?: string; size?: number }
+export default function Icon(props: P) {
+  return <svg viewBox="0 0 10 10"><title>{props.label}: {props.tone}</title><title>{props.size}</title><title>{props.tone}</title></svg>;
+}`),
+    ).toContain(
+      [
+        '<title>{`${props.label}: ${props.tone ?? ""}`}</title>',
+        '<title>{`${props.size ?? ""}`}</title>',
+        "<title>{props.tone}</title>",
+      ].join("\n      "),
+    );
+    expect(
+      await emitSource(`export default function Icon({ label = "Icon", size = 2 }: { label?: string; size?: number }) {
+  return <svg viewBox="0 0 10 10"><title>{label}: {size}</title><title>{label}</title></svg>;
+}`),
+    ).toContain("<title>{`${label}: ${size}`}</title>\n      <title>{label}</title>");
   });
 });

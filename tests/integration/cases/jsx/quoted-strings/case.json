@@ -1,0 +1,7 @@
+{
+  "description": "Everyday copy with quotes in expressions: an apostrophe in bound attributes, a double quote in interpolated text, and both quotes in one attribute and one text.",
+  "ssr": {
+    "unsaved": { "props": { "author": "Ada", "saved": false } },
+    "saved": { "props": { "author": "Grace", "saved": true } }
+  }
+}

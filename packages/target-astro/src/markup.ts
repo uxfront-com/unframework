@@ -1,35 +1,27 @@
 // The component's markup: the Astro dialect (`astroDialect`, design §4.3), and the attributes
 // Astro's own types do not declare, which `astro check` (L4) would reject as written.
 import { astroDialect, isIdentifier, printMarkup } from "@unframework/codegen";
-import type { MarkupDialect, MarkupOptions, RewriteRules } from "@unframework/codegen";
+import type { MarkupDialect, RewriteRules } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
 /**
- * HTML attributes the analyser accepts that Astro's JSX types (`astro/astro-jsx.d.ts`, 7.3) do
- * not declare on the element, by tag (`*`: on every element that does not declare it either).
- * `test/attributes.test.ts` pins this list against `astro check` over the IR's vocabulary.
+ * The HTML attributes the analyser accepts that Astro's JSX types (`astro/astro-jsx.d.ts`, 7.3)
+ * declare on some elements only, with those elements: `autocorrect`, a global attribute, is
+ * declared on form controls alone. `test/attributes.test.ts` pins this table against
+ * `astro check` over every pair the analyser accepts, both ways.
  */
-const UNTYPED_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = new Map([
-  ["*", new Set(["autocorrect", "nonce", "writingsuggestions"])],
-  ["area", new Set(["ping"])],
-  ["form", new Set(["rel"])],
-  ["img", new Set(["ismap"])],
-]);
-
-/** The elements Astro's types declare `autocorrect` or `nonce` on, which `*` leaves out. */
-const TYPED_ON: ReadonlyMap<string, ReadonlySet<string>> = new Map([
-  ["autocorrect", new Set(["form", "input", "textarea", "select"])],
-  ["nonce", new Set(["script", "style"])],
+const PARTLY_TYPED_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = new Map([
+  ["autocorrect", new Set(["form", "input", "select", "textarea"])],
 ]);
 
 /** Whether Astro's types reject `name` on an HTML `tag`. */
 export function isUntypedAttribute(tag: string, name: string): boolean {
-  if (UNTYPED_ATTRIBUTES.get(tag)?.has(name)) return true;
-  return UNTYPED_ATTRIBUTES.get("*")!.has(name) && !TYPED_ON.get(name)?.has(tag);
+  const typedOn = PARTLY_TYPED_ATTRIBUTES.get(name);
+  return typedOn !== undefined && !typedOn.has(tag);
 }
 
 /**
- * An attribute as an object spread (`{...{ ping: url }}`): Astro renders each key as it
+ * An attribute as an object spread (`{...{ autocorrect: "off" }}`): Astro renders each key as it
  * renders the attribute, and TypeScript checks a spread's keys only against the ones the
  * element declares, so the attribute keeps its value and passes `astro check`.
  */
@@ -54,21 +46,7 @@ const dialect: MarkupDialect = {
   },
 };
 
-/**
- * A component's markup, with references spelled by `rewrite` when the frontmatter renames
- * what they read. A bare attribute Astro's types lack (`ismap`) is written `""`, which Astro
- * renders bare as well.
- */
+/** A component's markup, with references spelled by `rewrite` when the frontmatter renames them. */
 export function printComponentMarkup(component: UfComponent, rewrite?: RewriteRules): string {
-  const options: MarkupOptions = {
-    component,
-    ...(rewrite ? { rewrite } : {}),
-    attribute: (attribute, element) =>
-      attribute.kind === "Static" &&
-      attribute.value === true &&
-      isUntypedAttribute(element.tag, attribute.name)
-        ? spread(attribute.name, '""')
-        : undefined,
-  };
-  return printMarkup(component.render, dialect, options);
+  return printMarkup(component.render, dialect, { component, ...(rewrite ? { rewrite } : {}) });
 }

@@ -2,7 +2,8 @@
 // (@types/react, L4) for every attribute the IR can hold: each name the target writes must be a
 // prop React declares, and a prop React types as `number` must be written as a number
 // (`tabIndex={0}`, design §5.1). The IR's NUMBER_TYPED_ATTRIBUTES says which those are; this
-// pins it against React (the Qwik target pins it against Qwik).
+// pins it against React (the Qwik target pins it against Qwik). The names React's types lack are
+// the IR's UNDECLARED_ATTRIBUTES, which the analyser rejects for every target.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -21,16 +22,19 @@ import {
   isBooleanAttribute,
   isNumberTypedAttribute,
   isStateAttribute,
+  isSvgAttribute,
   SVG_ELEMENT_ATTRIBUTES,
   SVG_ELEMENTS,
   SVG_GLOBAL_ATTRIBUTES,
   TEMPLATE_SYNTAX_ATTRIBUTES,
+  undeclaredBy,
   UNPORTABLE_ELEMENTS,
   UNRENDERED_ATTRIBUTES,
 } from "@unframework/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";
+import { BOOLEAN_PROPS } from "../src/props.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { packageDir, toolchainDir } from "./fixtures.ts";
 
@@ -43,35 +47,44 @@ type Pair = readonly [tag: string, attribute: string];
 
 /**
  * Names no IR holds whatever their value, so no output writes them: `class` and `style` (their
- * own kinds), template syntax, attributes a target acts on instead of rendering, and documents.
+ * own kinds), template syntax, attributes a target acts on instead of rendering, documents, and
+ * the names some framework's element types lack.
  */
-const neverWritten = (tag: string, name: string) =>
+const neverWritten = (tag: string, namespace: "html" | "svg", name: string) =>
   name === "class" ||
   name === "style" ||
   TEMPLATE_SYNTAX_ATTRIBUTES.has(name) ||
   UNRENDERED_ATTRIBUTES.has(name) ||
   DOCUMENT_ATTRIBUTES.has(name) ||
-  isStateAttribute(tag, name, undefined);
+  undeclaredBy(tag, namespace, name) !== undefined ||
+  (namespace === "html" && isStateAttribute(tag, name, undefined));
 
 /** Every (element, attribute) pair of the IR's vocabulary, HTML and SVG apart. */
 function vocabulary(): { html: Pair[]; svg: Pair[] } {
-  const pairs = (tags: Iterable<string>, names: (tag: string) => Iterable<string>) =>
+  const pairs = (
+    namespace: "html" | "svg",
+    tags: Iterable<string>,
+    names: (tag: string) => Iterable<string>,
+  ) =>
     [...tags].flatMap((tag) =>
       [...new Set(names(tag))]
-        .filter((name) => !neverWritten(tag, name))
+        .filter((name) => !neverWritten(tag, namespace, name))
         .map((name): Pair => [tag, name]),
     );
   return {
     html: pairs(
+      "html",
       [...HTML_ELEMENTS].filter(
         (tag) => tag !== "svg" && tag !== "math" && !UNPORTABLE_ELEMENTS.has(tag),
       ),
       (tag) => [...GLOBAL_ATTRIBUTES, ...ARIA_ATTRIBUTES, ...(ELEMENT_ATTRIBUTES.get(tag) ?? [])],
     ),
-    svg: pairs(SVG_ELEMENTS, (tag) => [
-      ...SVG_GLOBAL_ATTRIBUTES,
-      ...(SVG_ELEMENT_ATTRIBUTES.get(tag) ?? []),
-    ]),
+    // The descriptive elements (`<title>`, `<desc>`) take the core attributes only.
+    svg: pairs("svg", SVG_ELEMENTS, (tag) =>
+      [...SVG_GLOBAL_ATTRIBUTES, ...(SVG_ELEMENT_ATTRIBUTES.get(tag) ?? [])].filter((name) =>
+        isSvgAttribute(tag, name),
+      ),
+    ),
   };
 }
 
@@ -81,30 +94,13 @@ type Elements = { readonly on: readonly string[] } | { readonly except: readonly
 /**
  * Attributes the IR holds that @types/react 19.3 does not declare on some elements: no React
  * spelling makes their output type-check, though React renders them. Pinned so the list only
- * shrinks (an entry that starts passing fails the test). The analyser should reject them for
- * every target until React's types know them (design §0); `title` inside SVG is typed as HTML's
- * `<title>`, which takes no presentation attribute.
+ * shrinks (an entry that starts passing fails the test). There are none: the HTML ones are the
+ * IR's UNDECLARED_ATTRIBUTES, and SVG's `<title>`, which React types as HTML's, takes only the
+ * core attributes (SVG_DESCRIPTIVE_ATTRIBUTES).
  */
 const REACT_NAME_GAPS: Readonly<Record<"html" | "svg", Readonly<Record<string, Elements>>>> = {
-  html: {
-    command: { on: ["button"] },
-    commandfor: { on: ["button"] },
-    dirname: { on: ["input", "textarea"] },
-    disabled: { on: ["link"] },
-    ismap: { on: ["img"] },
-    ping: { on: ["area"] },
-    shadowrootclonable: { on: ["template"] },
-    shadowrootcustomelementregistry: { on: ["template"] },
-    shadowrootdelegatesfocus: { on: ["template"] },
-    shadowrootmode: { on: ["template"] },
-    shadowrootserializable: { on: ["template"] },
-    writingsuggestions: { except: [] },
-  },
-  svg: Object.fromEntries(
-    [...SVG_GLOBAL_ATTRIBUTES]
-      .filter((name) => !/^(?:class|color|id|lang|role|style|tabindex)$/.test(name))
-      .map((name) => [name, { on: ["title"] }]),
-  ),
+  html: {},
+  svg: {},
 };
 
 /** The pinned gaps as (element → attributes), for the pairs given. */
@@ -193,6 +189,14 @@ describe("React's attribute types", { timeout: 120_000 }, () => {
       expect(Object.fromEntries(gaps)).toEqual(gapsOf(pairs, REACT_NAME_GAPS[namespace]));
     },
   );
+
+  // The target writes a boolean attribute bare and binds it as it is (`disabled={locked}`):
+  // React renders presence only for its own boolean props, and warns about `true` elsewhere.
+  it("take every boolean attribute the IR can hold as a boolean prop", () => {
+    const booleans = new Set(html.filter(([, name]) => isBooleanAttribute(name)).map(([, n]) => n));
+    expect(booleans.size).toBeGreaterThan(15);
+    expect([...booleans].filter((name) => !BOOLEAN_PROPS.has(name))).toEqual([]);
+  });
 
   it("take numbers for the number-typed attributes, which the target writes as numbers", async () => {
     // React's JSX elements are typed by name alone, so SVG's sit under a `<div>` too.

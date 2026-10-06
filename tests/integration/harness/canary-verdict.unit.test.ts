@@ -5,22 +5,34 @@ import type { LayerOutcome, ParityMatrix } from "@unframework/testing/node";
 import { describe, expect, it } from "vitest";
 
 import { findCanary } from "./canaries.ts";
+import type { CanaryCase } from "./canaries.ts";
 import { judgeCanary } from "./canary-verdict.ts";
-import type { CanaryCase } from "./canary-verdict.ts";
 
 const spec = (id: string) => `cases/${id}/${id.split("/")[1]}.test.ts`;
 const hello: CanaryCase = {
   id: "basics/hello",
   hasOutput: () => true,
   spec: spec("basics/hello"),
+  hasFixes: () => false,
 };
-const card: CanaryCase = { id: "basics/card", hasOutput: () => true, spec: spec("basics/card") };
+const card: CanaryCase = {
+  id: "basics/card",
+  hasOutput: () => true,
+  spec: spec("basics/card"),
+  hasFixes: () => false,
+};
 const rejected: CanaryCase = {
   id: "diagnostics/rejected",
   hasOutput: () => false,
   spec: undefined,
+  hasFixes: () => false,
 };
-const noSpec: CanaryCase = { id: "basics/no-spec", hasOutput: () => true, spec: undefined };
+const noSpec: CanaryCase = {
+  id: "basics/no-spec",
+  hasOutput: () => true,
+  spec: undefined,
+  hasFixes: () => false,
+};
 
 const fail = (message: string): LayerOutcome => ({ status: "fail", message });
 
@@ -223,6 +235,48 @@ describe("judgeCanary", () => {
     };
     const throws = findCanary("L1-plugin-throws");
     expect(judgeCanary(throws, plugin, ["vue"], [hello, rejected]).problems).toEqual([]);
+  });
+
+  it("judges a fix canary only on the cases whose diagnostics have a fix, with or without output", () => {
+    const l1 = findCanary("L1-fix-no-op");
+    const fixable: CanaryCase = { ...rejected, id: "diagnostics/fixable", hasFixes: () => true };
+    const warned: CanaryCase = {
+      ...hello,
+      id: "jsx/warned",
+      hasFixes: (target) => target === "vue",
+    };
+    const unfixed = fail(
+      "Applying the fixes of UF3004 does not recompile clean:\n  UF3004 `className` is written `class`",
+    );
+    const caught = {
+      status: 1,
+      cells: cells("L1", {
+        "basics/hello": { vue: { status: "pass" }, react: { status: "pass" } },
+        "diagnostics/fixable": { vue: unfixed, react: unfixed },
+        "jsx/warned": { vue: unfixed, react: { status: "pass" } },
+      }),
+    };
+    expect(judgeCanary(l1, caught, ["react", "vue"], [hello, fixable, warned])).toEqual({
+      caught: true,
+      problems: [],
+    });
+    const missed = {
+      status: 1,
+      cells: cells("L1", {
+        "diagnostics/fixable": { vue: { status: "pass" } },
+        "jsx/warned": { vue: fail("__expected__/diagnostics.json differs from this run's output") },
+      }),
+    };
+    expect(judgeCanary(l1, missed, ["vue"], [hello, fixable, warned]).problems).toEqual([
+      "vue › diagnostics/fixable › L1: pass, although the canary corrupted the case",
+      expect.stringMatching(
+        /^vue › jsx\/warned › L1: failed, but not in the compile fixes check \(.+\): __expected__\/diagnostics\.json differs/,
+      ),
+    ]);
+    // A corpus with no fixable case cannot prove it.
+    expect(judgeCanary(l1, caught, ["vue"], [hello]).problems).toEqual([
+      "vue: no case could prove it in the compile projects",
+    ]);
   });
 
   describe("a check that fails a spec's import", () => {

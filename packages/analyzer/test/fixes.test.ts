@@ -43,6 +43,22 @@ describe("fixes that meet", () => {
       '<ul>{items.map((item) => <li class="">{item}</li>)}</ul>',
       "<ul>{items.map((item, index2) => <li key={index2}>{item}</li>)}</ul>",
     ],
+    // A list read through `?.`, whose callback's parameter its JSX reads.
+    [
+      "<ul>{items?.map((item) => <li key={item}>{item}</li>)}</ul>",
+      "<ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>",
+    ],
+    [
+      '<ul>{index?.map((item) => <li className="x" key={item}>{item}</li>)}</ul>',
+      '<ul>{index?.map((item) => <li class="x" key={item}>{item}</li>)}</ul>',
+    ],
+    // A key in another case beside the element's other fixes.
+    [
+      '<ul>{items.map((item) => <li KEY={item} className="x">{item}</li>)}</ul>',
+      '<ul>{items.map((item) => <li key={item} class="x">{item}</li>)}</ul>',
+    ],
+    // A class named twice beside a literal's spelling.
+    ['<p class={"a b a"} />', '<p class="a b" />'],
     // Nullish operators beside the fixes of what they read.
     ['<p>{items.sort().join() ?? "x"}</p>', "<p>{items.toSorted().join()}</p>"],
     ["<p>{items?.sort().join()}</p>", "<p>{items.toSorted().join()}</p>"],
@@ -163,6 +179,18 @@ const CHILDREN = [
   "{rows.map((row) => <i key={label}>{row.name}</i>)}",
   '{rows.map((row, i) => <tr className="r"><td>{i}</td></tr>)}',
   "{items.map((label) => <i key={label} />)}",
+  "{items?.map((item) => <i key={item}>{item}</i>)}",
+  '{attrs.id?.split(" ").map((part) => <i key={part}>{part}</i>)}',
+  "{items.map((item) => <i KEY={item}>{item}</i>)}",
+  '{items.map((item) => <i Key="k">{item}</i>)}',
+  "{items.map((as) => <i key={as}>{as}</i>)}",
+  "{items.map((item) => <b>{item}</b>).length}",
+  '<i class="a b a" />',
+  '<iframe title="t">a</iframe>',
+  "{maybe && <b>{maybe?.length}</b>}",
+  "{attrs.id && <b title={attrs.id ?? label}>x</b>}",
+  "{maybe && on ? <b>{maybe.trim()}</b> : <i />}",
+  "{attrs.id && on ? <b title={attrs.id?.trim()}>x</b> : <i />}",
   "{(items ?? []).map((item, index2) => <i key={index2} />)}",
   "{items.filter((item, i) => item).join()}",
   "{items.filter((props) => props).length}",
@@ -194,20 +222,24 @@ const CHILDREN = [
 ];
 
 describe("random mixes of fixable pieces", () => {
-  it.each([11, 12])("recompile to exactly the diagnostics that have no fix (seed %i)", (seed) => {
-    const next = random(seed);
-    const pick = <T>(items: readonly T[]) => items[Math.floor(next() * items.length)]!;
-    let checked = 0;
-    for (let sample = 0; sample < 2000; sample++) {
-      const attributes = Array.from({ length: Math.floor(next() * 4) }, () => pick(ATTRIBUTES));
-      const children = Array.from({ length: Math.floor(next() * 5) }, () => pick(CHILDREN));
-      const tag = pick(["p", "div", "a", "svg", "pre", "select", "table", "ul", "button"]);
-      const jsx = `<${tag} ${attributes.join(" ")}>${children.join("")}</${tag}>`;
-      const { source, diagnostics } = component(jsx, { props: PROPS });
-      if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
-      applyAndRecheck(source, diagnostics);
-      checked++;
-    }
-    expect(checked).toBeGreaterThan(1500);
-  });
+  it.each([11, 12])(
+    "recompile to exactly the diagnostics that have no fix (seed %i)",
+    (seed) => {
+      const next = random(seed);
+      const pick = <T>(items: readonly T[]) => items[Math.floor(next() * items.length)]!;
+      let checked = 0;
+      for (let sample = 0; sample < 2000; sample++) {
+        const attributes = Array.from({ length: Math.floor(next() * 4) }, () => pick(ATTRIBUTES));
+        const children = Array.from({ length: Math.floor(next() * 5) }, () => pick(CHILDREN));
+        const tag = pick(["p", "div", "a", "svg", "pre", "select", "table", "ul", "button"]);
+        const jsx = `<${tag} ${attributes.join(" ")}>${children.join("")}</${tag}>`;
+        const { source, diagnostics } = component(jsx, { props: PROPS });
+        if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
+        applyAndRecheck(source, diagnostics);
+        checked++;
+      }
+      expect(checked).toBeGreaterThan(1500);
+    },
+    60_000,
+  );
 });

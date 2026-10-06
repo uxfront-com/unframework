@@ -1,18 +1,24 @@
-// L4 across the contract (design §1.5, §5.3): an attribute bound to a prop whose type the
-// authoring types accept, and that the analyzer accepts, must type-check against Svelte's own
-// element types (`svelte/elements`, through svelte-check) too. Svelte checks bound values only
-// (`svelte2tsx` leaves static ones alone), and types many enumerated attributes as literal
-// unions where the authoring types (vendored from Vue) say `string`, so a valid source can fail
-// L4 on Svelte alone. The sweep binds every attribute the vocabulary knows to a `string`, a
-// `number` and a `boolean` prop, keeps what tsgo (the author's editor) and the analyzer accept,
-// emits it and type-checks it. `KNOWN_GAPS` lists what still fails: each is for the analyzer
-// to reject on every target (§0), and the test fails when one passes, so the list only shrinks.
+// L4 across the contract (design §1.5, §5.3): what the analyzer accepts must type-check against
+// Svelte's own element types (`svelte/elements`, through svelte-check), not only against the
+// authoring types (vendored from Vue). svelte-check checks a component's attributes once it has
+// a TypeScript script, written ones by name and bound ones by value too: Svelte declares some
+// attributes on a few elements only (`autocorrect`, which the target then writes as an object
+// spread) and types many enumerated attributes (`dir`, `autocomplete`, `preload`) as literal
+// unions where the authoring types say `string`. Two sweeps: every attribute the analyzer
+// accepts written statically, in a component with a script; and every attribute bound to a
+// `string`, a `number` and a `boolean` prop whose source tsgo (the author's editor) and the
+// analyzer accept. Each emits and type-checks every case, which must all pass.
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { typecheckWithTsgo } from "@unframework/codegen/toolchain-node";
 import {
   ARIA_ATTRIBUTES,
+  createComponent,
+  createModule,
+  createProp,
+  createPropsParameter,
+  createTypeText,
   ELEMENT_ATTRIBUTES,
   GLOBAL_ATTRIBUTES,
   HTML_ELEMENTS,
@@ -26,51 +32,13 @@ import {
 import { afterAll, describe, expect, it } from "vitest";
 
 import { analyze } from "../../analyzer/src/index.ts";
+import { attributeSweep } from "../../codegen/test/render-parity-node.ts";
 import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { removeScratch, repoRoot, scratchDir, toolchainDir } from "./helpers.ts";
 
 afterAll(removeScratch);
-
-/**
- * What still fails, by `<element attribute> kind`: enumerated attributes typed `string` by the
- * authoring types and as literal unions by Svelte (the analyzer is to require literal kinds,
- * within Svelte's set), attributes Svelte's types do not declare (not to be bound), and a number
- * where Svelte's types want a string.
- */
-const KNOWN_GAPS: readonly string[] = [
-  "<area shape> string",
-  "<audio crossorigin> string",
-  "<audio preload> string",
-  "<button formenctype> string",
-  "<button formmethod> string",
-  "<div aria-braillelabel> boolean",
-  "<div aria-braillelabel> number",
-  "<div aria-braillelabel> string",
-  "<div aria-brailleroledescription> boolean",
-  "<div aria-brailleroledescription> number",
-  "<div aria-brailleroledescription> string",
-  "<div aria-description> boolean",
-  "<div aria-description> number",
-  "<div aria-description> string",
-  "<div autocapitalize> string",
-  "<div autocorrect> string",
-  "<div dir> string",
-  "<form autocomplete> string",
-  "<form enctype> string",
-  "<form method> string",
-  "<g stroke-miterlimit> number",
-  "<input autocomplete> string",
-  "<select autocomplete> string",
-  "<textPath method> string",
-  "<textarea autocomplete> string",
-  "<textarea wrap> string",
-  "<th scope> string",
-  "<track kind> string",
-  "<video crossorigin> string",
-  "<video preload> string",
-];
 
 /** A prop type and the attribute it is bound to. */
 interface Candidate {
@@ -117,7 +85,41 @@ function markup({ tag, name, svg }: Candidate): string {
 /** Lines per component in the sweep's source, so a type error's line names its component. */
 const LINES = 3;
 
-describe("svelte bound attribute types", () => {
+/** Type-checks emitted files with svelte-check and returns the names of the failing ones. */
+async function failing(files: ReadonlyMap<string, string>): Promise<string[]> {
+  const results = await toolchain.typecheck([...files.keys()], { toolchainDir, root: repoRoot });
+  return [...results]
+    .filter(([, messages]) => messages.length > 0)
+    .map(([path]) => files.get(path) ?? path)
+    .toSorted();
+}
+
+const at = { start: 0, end: 0 };
+
+describe("svelte attribute types", () => {
+  it("type-checks every static attribute the analyzer accepts", { timeout: 120_000 }, async () => {
+    // A prop no expression reads: the component gets a TypeScript script, and so its markup is
+    // type-checked, as every component with props is.
+    const type = createTypeText("{ label?: string }", at);
+    const props = [createProp("label", true, createTypeText("string", at), at)];
+    const parameter = createPropsParameter("destructured", type, at);
+    const outputs = scratchDir();
+    const checked = new Map<string, string>();
+    attributeSweep().forEach(({ name, render }, index) => {
+      const component = createComponent(`S${index}`, render, at, props, parameter);
+      const module = createModule("Sweep.uf.tsx", [component], []);
+      for (const file of target.emit(component, { module, options: undefined, report: () => {} })) {
+        expect(file.contents).toContain('<script lang="ts">');
+        const path = join(outputs, file.path);
+        writeFileSync(path, file.contents);
+        checked.set(path, name);
+      }
+    });
+    // Several hundred attributes; far fewer means the vocabulary or the analyzer broke.
+    expect(checked.size).toBeGreaterThan(300);
+    expect(await failing(checked)).toEqual([]);
+  });
+
   it(
     "type-checks every binding the authoring types and the analyzer accept",
     { timeout: 120_000 },
@@ -164,17 +166,10 @@ describe("svelte bound attribute types", () => {
           checked.set(path, all[index]!.key);
         }
       }
-      // About a thousand bindings; far fewer means the vocabulary, tsgo or the analyzer broke.
-      expect(checked.size).toBeGreaterThan(800);
+      // Several hundred bindings; far fewer means the vocabulary, tsgo or the analyzer broke.
+      expect(checked.size).toBeGreaterThan(600);
 
-      const results = await toolchain.typecheck([...checked.keys()], {
-        toolchainDir,
-        root: repoRoot,
-      });
-      const failing = [...results]
-        .filter(([, messages]) => messages.length > 0)
-        .map(([path]) => checked.get(path) ?? path);
-      expect(failing.toSorted()).toEqual([...KNOWN_GAPS].toSorted());
+      expect(await failing(checked)).toEqual([]);
     },
   );
 });

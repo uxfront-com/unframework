@@ -84,7 +84,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0029](./0029-artefact-write-policy-as-built.md)                   | The artefact write policy and visual parity, as built                | Accepted                                           | §7.4, §7.6, D9     |
 | [0030](./0030-jsx-text-and-bare-attributes.md)                     | JSX text where every JSX agrees; bare attributes mean "true"         | Accepted                                           | §4.3, §4.6         |
 | [0031](./0031-normalisation-removes-only-the-targets-own-noise.md) | Normalisation removes only the target's own noise                    | Accepted, amended by ADR-0044                      | §7.5               |
-| [0032](./0032-ir-semantic-invariants.md)                           | The IR has semantic invariants, checked after every plugin           | Accepted, amended by ADR-0037, ADR-0038, ADR-0040  | §5.3, §5.10        |
+| [0032](./0032-ir-semantic-invariants.md)                           | The IR has semantic invariants, checked after every plugin           | Accepted, amended by ADR-0034 to ADR-0040          | §5.3, §5.10        |
 | [0033](./0033-framework-rendering-differences-are-capabilities.md) | What a framework renders differently is a declared capability        | Accepted                                           | P4, §5.7, D10      |
 | [0034](./0034-props-in-the-signature.md)                           | Props are a typed signature parameter with static defaults           | Accepted                                           | §4.2, §6, §9 M1    |
 | [0035](./0035-render-expressions.md)                               | Render expressions are a scope-analysed subset                       | Accepted                                           | §4.5, §5.4         |
@@ -116,5 +116,7 @@ a "See also" line.
 
 **0034 onwards** record the decisions of M1, props and static JSX (§9). Where probes against the
 installed frameworks back a decision, the record adds an `## Evidence` section and may run longer
-than 120 lines, as the spike records do. A claim marked "(to verify in M1)" still waits for the
-evidence of the M1 build itself.
+than 120 lines, as the spike records do. They record what M1 built: the Evidence section names
+the tests that pin a claim, by their files in this repository, and states as a probe's finding
+what no test pins. The user-facing account of the same rules is in
+[`apps/web/content/docs`](../../apps/web/content/docs) (Components and Reference).

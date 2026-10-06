@@ -1,11 +1,11 @@
 // The Vitest projects of the harness (plan §7.3, DESIGN §4.4):
 //
-//   compile             node     L1 L2   every case to every target, against __output__
-//   harness             node             the harness's own unit tests
-//   toolchain:<target>  node     L3 L4   the framework compiler and checker, one run per target
-//   ssr:<target>        node     L6 L13  the target's server renderer, through the unplugin
-//   browser:<target>    chromium L7 L10 L11 L13  the shared specs, through the unplugin (and L8,
-//                                                recorded before it is live: ADR-0043)
+//   compile             node     L1 L2     every case to every target, against __output__
+//   harness             node               the harness's own unit tests
+//   toolchain:<target>  node     L3 L4 L5  the framework compiler, checker and linters, one run
+//                                          of each per target
+//   ssr:<target>        node     L6 L13    the target's server renderer, through the unplugin
+//   browser:<target>    chromium L7 L8 L10 L11 L13  the shared specs, through the unplugin
 //
 // Every project sets `extends: false`: inheriting the root config merges its plugins into each
 // project (the browser-projects ADR), and a project must hold its own toolchain only. Toolchains
@@ -47,7 +47,7 @@ const NODE_TEST = { environment: "node", pool: "forks", testTimeout: 60_000 } as
 /** The layers each kind of project records, which an unavailable project fails. */
 const LAYERS_OF: Record<"ssr" | "browser", LayerName[]> = {
   ssr: ["L6", "L13"],
-  browser: ["L7", "L10", "L11", "L13"],
+  browser: ["L7", "L8", "L10", "L11", "L13"],
 };
 
 /** The name of every project, in order: what a run of all of them covers. */
@@ -203,7 +203,8 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
       {
         testTimeout: 60_000,
         expect: {
-          // A locator that never matches fails in seconds, not at the test timeout.
+          // A locator that never matches fails in seconds, not at the test timeout. The testing
+          // setup gives `expect.element` this timeout too: Vitest 5 does not (element-timeout.ts).
           poll: { timeout: 5_000 },
           // A test without an assertion fails L8: every spec asserts what it rendered (ADR-0043).
           requireAssertions: true,

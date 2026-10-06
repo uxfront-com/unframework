@@ -1,0 +1,345 @@
+{
+  "irVersion": 1,
+  "file": "jsx/quoted-strings/DraftNotice.uf.tsx",
+  "components": [
+    {
+      "name": "DraftNotice",
+      "span": {
+        "start": 75,
+        "end": 778
+      },
+      "props": [
+        {
+          "name": "author",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 46,
+              "end": 52
+            }
+          },
+          "binding": "author@113",
+          "span": {
+            "start": 38,
+            "end": 53
+          }
+        },
+        {
+          "name": "saved",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 63,
+              "end": 70
+            }
+          },
+          "binding": "saved@121",
+          "span": {
+            "start": 56,
+            "end": 71
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "DraftNoticeProps",
+          "span": {
+            "start": 130,
+            "end": 146
+          }
+        },
+        "span": {
+          "start": 111,
+          "end": 146
+        }
+      },
+      "types": [
+        "DraftNoticeProps"
+      ],
+      "bindings": [
+        {
+          "id": "author@113",
+          "name": "author",
+          "kind": "prop",
+          "span": {
+            "start": 113,
+            "end": 119
+          }
+        },
+        {
+          "id": "saved@121",
+          "name": "saved",
+          "kind": "prop",
+          "span": {
+            "start": 121,
+            "end": 126
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "draft-notice",
+            "span": {
+              "start": 174,
+              "end": 194
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Draft",
+            "span": {
+              "start": 195,
+              "end": 213
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "img",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "src",
+                "value": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Crect width='32' height='32' fill='%23345'/%3E%3C/svg%3E",
+                "span": {
+                  "start": 234,
+                  "end": 384
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "alt",
+                "value": {
+                  "code": "`${author}'s avatar`",
+                  "span": {
+                    "start": 398,
+                    "end": 418
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "author@113",
+                      "span": {
+                        "start": 401,
+                        "end": 407
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 393,
+                  "end": 419
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "width",
+                "value": "32",
+                "span": {
+                  "start": 428,
+                  "end": 438
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "height",
+                "value": "32",
+                "span": {
+                  "start": 447,
+                  "end": 458
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 221,
+              "end": 467
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "title",
+                "value": {
+                  "code": "saved ? \"Saved\" : \"Don't forget to save\"",
+                  "span": {
+                    "start": 484,
+                    "end": 524
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "saved@121",
+                      "span": {
+                        "start": 484,
+                        "end": 489
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 477,
+                  "end": 525
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "saved ? \"Saved\" : 'Not \"saved\" yet'",
+                  "span": {
+                    "start": 527,
+                    "end": 562
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "saved@121",
+                      "span": {
+                        "start": 527,
+                        "end": 532
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 526,
+                  "end": 563
+                }
+              }
+            ],
+            "span": {
+              "start": 474,
+              "end": 567
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "title",
+                "value": {
+                  "code": "saved ? \"Nothing to save\" : `Press \"Save\" to keep ${author}'s changes`",
+                  "span": {
+                    "start": 584,
+                    "end": 654
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "saved@121",
+                      "span": {
+                        "start": 584,
+                        "end": 589
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "author@113",
+                      "span": {
+                        "start": 636,
+                        "end": 642
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 577,
+                  "end": 655
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "saved ? `${author}'s draft is safe.` : `${author} says: \"I'll save it later.\"`",
+                  "span": {
+                    "start": 666,
+                    "end": 744
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "saved@121",
+                      "span": {
+                        "start": 666,
+                        "end": 671
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "author@113",
+                      "span": {
+                        "start": 677,
+                        "end": 683
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "author@113",
+                      "span": {
+                        "start": 708,
+                        "end": 714
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 665,
+                  "end": 745
+                }
+              }
+            ],
+            "span": {
+              "start": 574,
+              "end": 756
+            }
+          }
+        ],
+        "span": {
+          "start": 165,
+          "end": 771
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "DraftNotice",
+      "span": {
+        "start": 75,
+        "end": 778
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "DraftNoticeProps",
+      "exported": true,
+      "code": "interface DraftNoticeProps {\n  author: string;\n  saved: boolean;\n}",
+      "span": {
+        "start": 7,
+        "end": 73
+      }
+    }
+  ]
+}

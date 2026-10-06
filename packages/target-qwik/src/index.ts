@@ -25,7 +25,9 @@ import {
   qwikAttributeName,
   qwikStaticValue,
 } from "./attributes.ts";
+import type { Namespace } from "./attributes.ts";
 import { qwikClassAttribute } from "./class.ts";
+import { qwikTitles } from "./title.ts";
 import { isPrimitiveValue } from "./values.ts";
 
 /** The Qwik 2 target (experimental while Qwik 2 is in beta). */
@@ -54,15 +56,17 @@ export const qwik: Target = defineTarget({
     // Every name the source declares or reads is taken before the output names its own.
     const imports = new ImportSet(sourceNames(component, module));
     const componentFn = imports.add("@qwik.dev/core", "component$");
-    const jsx = jsxContext({ component, dialect: qwikDialect(component, module) });
+    // The dialect reads the namespaces of the tree it prints, which is the render tree with
+    // Qwik's form of each `<title>`: they are filled in once that tree is built.
+    const namespaces = new Map<ElementNode, Namespace>();
+    const jsx = jsxContext({ component, dialect: qwikDialect(component, module, namespaces) });
+    const render = qwikTitles(component.render, jsx, module);
+    for (const [element, namespace] of elementNamespaces(render))
+      namespaces.set(element, namespace);
     const parameter = propsParameter(component, jsx);
     const definition = js.callExpression(
       js.identifier(componentFn),
-      [
-        js.arrowFunction(parameter ? [parameter] : [], [
-          js.returnStatement(jsxNode(component.render, jsx)),
-        ]),
-      ],
+      [js.arrowFunction(parameter ? [parameter] : [], [js.returnStatement(jsxNode(render, jsx))])],
       component.propsParameter ? [jsx.placeholders.type(component.propsParameter.type.code)] : [],
     );
     return [
@@ -129,8 +133,11 @@ function propsParameter(component: UfComponent, jsx: JsxContext): Parameter | un
  * declare no name for is an object spread, and `class` takes Qwik's own forms. Style objects
  * (camelCase keys, which Qwik's renderer writes in kebab case) are the default.
  */
-function qwikDialect(component: UfComponent, module: UfModule): JsxDialect {
-  const namespaces = elementNamespaces(component.render);
+function qwikDialect(
+  component: UfComponent,
+  module: UfModule,
+  namespaces: ReadonlyMap<ElementNode, Namespace>,
+): JsxDialect {
   const namespaceOf = (element: ElementNode) => namespaces.get(element) ?? "html";
   return {
     attributeName: (name, element) => qwikAttributeName(name, namespaceOf(element)),

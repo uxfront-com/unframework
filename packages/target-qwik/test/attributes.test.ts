@@ -21,9 +21,11 @@ import {
 } from "@unframework/ir";
 import { afterAll, describe, expect, it } from "vitest";
 
+import { enumeratedValues } from "../../analyzer/src/enumerated.ts";
 import { analyze } from "../../analyzer/src/index.ts";
 import { parseModule } from "../../parser/src/index.ts";
 import {
+  isUntypedAttribute,
   QWIK_BOOLEAN_ATTRIBUTES,
   QWIK_UNTYPED_ATTRIBUTES,
   qwikAttributeName,
@@ -68,7 +70,9 @@ function authoringPairs(): [tag: string, attribute: string, type: string][] {
     const entry = interfaces.get(name);
     return entry ? [...entry.parents.flatMap(membersOf), ...entry.members] : [];
   };
-  const elements = vendored.match(/export interface IntrinsicElementAttributes \{([\s\S]*?)\n\}/)![1]!;
+  const elements = vendored.match(
+    /export interface IntrinsicElementAttributes \{([\s\S]*?)\n\}/,
+  )![1]!;
   return [...elements.matchAll(/^ {4}(\w+): (\w*HTMLAttributes);/gm)]
     .filter(([, tag]) => !UNTYPED_ELEMENTS.has(tag!))
     .flatMap(([, tag, type]) => {
@@ -97,6 +101,7 @@ const QWIK_NAME_GAPS: Readonly<Record<string, Elements>> = {
   contextmenu: { except: [] },
   controlslist: { on: ["audio", "video"] },
   crossorigin: { on: ["input"] },
+  dirname: { on: ["textarea"] },
   exportparts: { except: [] },
   hreflang: { on: ["area"] },
   httpequiv: { on: ["meta"] },
@@ -179,11 +184,15 @@ async function typecheckLines(lines: readonly string[], before = ""): Promise<Se
  * UF3002), so no IR carries the pair. Placement problems (`<td>` outside a table) do not count.
  */
 function rejects(tag: string, attribute: string): boolean {
+  // A value of the attribute's kind: an enumerated one's first token (ADR-0037).
+  const enumerated = enumeratedValues(tag, "html", attribute);
+  const token = enumerated?.tokens[0] ?? (enumerated?.boolean ? "true" : undefined);
   const value = BOOLEAN_ATTRIBUTES.has(attribute)
     ? ""
-    : NUMBER_TYPED_GLOBAL_ATTRIBUTES.has(attribute) || NUMBER_TYPED_ATTRIBUTES.get(tag)?.has(attribute)
+    : NUMBER_TYPED_GLOBAL_ATTRIBUTES.has(attribute) ||
+        NUMBER_TYPED_ATTRIBUTES.get(tag)?.has(attribute)
       ? '="1"'
-      : '="x"';
+      : `="${token ?? "x"}"`;
   const written = ` ${attribute}${value}`;
   const source = `export function A() {\n  return <div><${tag}${written}></${tag}></div>;\n}\n`;
   const start = source.indexOf(written) + 1;
@@ -224,26 +233,27 @@ describe("Qwik's attribute types", { timeout: 120_000 }, () => {
   });
 
   it("declare no name for the untyped attributes, which the analyser accepts", async () => {
-    // Written as plain attributes, every one fails; as the target writes them, they pass.
+    // Every entry reaches the target (the analyser accepts it on some element it covers), and
+    // there it is needed: written as a plain attribute it fails, as the target writes it it
+    // passes.
     const pairs = authoringPairs().filter(([tag, attribute]) => {
       const elements = QWIK_UNTYPED_ATTRIBUTES[attribute];
-      return elements !== undefined && covers(elements, tag);
+      return elements !== undefined && covers(elements, tag) && !rejects(tag, attribute);
     });
     expect(new Set(pairs.map(([, attribute]) => attribute))).toEqual(
-      new Set(Object.keys(QWIK_UNTYPED_ATTRIBUTES).filter((name) => name !== "commandfor")),
+      new Set(Object.keys(QWIK_UNTYPED_ATTRIBUTES)),
     );
     const plain = pairs.map(
       ([tag, attribute]) => `<${tag} ${qwikAttributeName(attribute, "html")}="x" />`,
     );
     const failing = await typecheckLines(plain);
     expect([...failing].toSorted((a, b) => a - b)).toEqual(pairs.map((_, index) => index));
-    expect([...(await typecheck(pairs.map(([tag, name]) => [tag, name, "x"]), false))]).toEqual(
-      [],
-    );
-    // `commandfor` is newer than the vendored types; the analyser accepts it on `<button>`.
-    expect(rejects("button", "commandfor")).toBe(false);
-    expect([...(await typecheckLines(['<button commandfor="x" />']))]).toEqual([0]);
-    expect([...(await typecheck([["button", "commandfor", "x"]], false))]).toEqual([]);
+    expect([
+      ...(await typecheck(
+        pairs.map(([tag, name]) => [tag, name, "x"]),
+        false,
+      )),
+    ]).toEqual([]);
   });
 
   it("write the static values of attributes Qwik types as numbers or booleans as Qwik takes them", async () => {
@@ -279,16 +289,14 @@ describe("Qwik's attribute types", { timeout: 120_000 }, () => {
       ),
     ];
     expect(entries.length).toBeGreaterThan(35);
-    const line = ([tag, name]: readonly [string, string], value: string) =>
-      `<${tag} ${qwikAttributeName(name, tag === "svg" ? "svg" : "html")}={${value}} />`;
     const declarations = "declare const n: number;\ndeclare const s: string;";
     const numbers = await typecheckLines(
-      entries.map((entry) => line(entry, "n")),
+      entries.map((entry) => numberLine(entry, "n")),
       declarations,
     );
     expect([...numbers]).toEqual([]);
     const strings = await typecheckLines(
-      entries.map((entry) => line(entry, "s")),
+      entries.map((entry) => numberLine(entry, "s")),
       declarations,
     );
     expect([...strings].toSorted((x, y) => x - y)).toEqual(entries.map((_, index) => index));
@@ -308,12 +316,11 @@ describe("Qwik's attribute types", { timeout: 120_000 }, () => {
     expect([...failing].map((index) => pairs[index])).toEqual([]);
   });
 
-  it("reject some values of their authoring types the analyser accepts (pinned)", async () => {
+  it("accept every bound value of its authoring type that the analyser accepts", async () => {
     // Every attribute the authoring types declare, bound to a value of exactly its authoring
-    // type (as far as the analyser's value kinds allow: ADR-0037), written as the target
-    // writes it. Qwik types these narrower than the authoring types: a source binding a plain
-    // `string` there fails Qwik's L4, and `contenteditable` is written under its HTML name
-    // for that reason. Reported to the analyser (design §0): pinned so it only shrinks.
+    // type as far as the analyser's value kinds allow (ADR-0037: numbers on number-typed
+    // attributes, booleans on boolean ones, the tokens every target lists on enumerated ones),
+    // written as the target writes it.
     const aliases = [...vendored.matchAll(/^(?:export )?type \w+(?:<[^=]*>)? = [^\n]*;$/gm)]
       .map(([alias]) => alias.replace(/^export /, ""))
       .filter((alias) => !/VNodeRef|StyleValue|ClassValue|CSS/.test(alias));
@@ -323,41 +330,34 @@ describe("Qwik's attribute types", { timeout: 120_000 }, () => {
     const pairs = all.filter(
       ([tag, name]) => (tag === "div" || !globals.has(name)) && !rejects(tag, name),
     );
+    expect(pairs.length).toBeGreaterThan(150);
     const declarations = pairs.map(([tag, name, type], index) => {
-      const kinds = BOOLEAN_ATTRIBUTES.has(name)
-        ? "boolean"
-        : NUMBER_TYPED_GLOBAL_ATTRIBUTES.has(name) || NUMBER_TYPED_ATTRIBUTES.get(tag)?.has(name)
-          ? "number"
-          : /^(?:contenteditable|draggable|spellcheck)$/.test(name)
-            ? "string | number | boolean"
-            : "string | number";
+      const enumerated = enumeratedValues(tag, "html", name);
+      const kinds = enumerated
+        ? [
+            ...enumerated.tokens.map((token) => JSON.stringify(token)),
+            ...(enumerated.boolean ? ["boolean"] : []),
+          ].join(" | ") || "never"
+        : BOOLEAN_ATTRIBUTES.has(name)
+          ? "boolean"
+          : NUMBER_TYPED_GLOBAL_ATTRIBUTES.has(name) || NUMBER_TYPED_ATTRIBUTES.get(tag)?.has(name)
+            ? "number"
+            : /^(?:aria-.*|contenteditable|draggable|spellcheck)$/.test(name)
+              ? "string | number | boolean"
+              : "string | number";
       return `declare const v${index}: Extract<${type.replace(/ \| undefined$/, "")}, ${kinds}>;`;
     });
-    const lines = pairs.map(([tag, name], index) => {
-      const written = name === "contenteditable" || isUntyped(tag, name)
-        ? `{...{ ${JSON.stringify(name)}: v${index} }}`
-        : `${qwikAttributeName(name, "html")}={v${index}}`;
-      return `<${tag} ${written} />`;
-    });
+    const lines = pairs.map(([tag, name], index) =>
+      isUntypedAttribute(tag, "html", name)
+        ? `<${tag} {...{ ${JSON.stringify(name)}: v${index} }} />`
+        : `<${tag} ${qwikAttributeName(name, "html")}={v${index}} />`,
+    );
     const failing = await typecheckLines(lines, [...aliases, ...declarations].join("\n"));
-    expect(
-      pairs.filter((_, index) => failing.has(index)).map(([tag, name]) => `${tag} ${name}`),
-    ).toEqual([
-      "audio crossorigin",
-      "audio preload",
-      "div draggable",
-      "div spellcheck",
-      "form autocomplete",
-      "input autocomplete",
-      "select autocomplete",
-      "textarea autocomplete",
-      "video crossorigin",
-      "video preload",
-    ]);
+    expect(pairs.filter((_, index) => failing.has(index))).toEqual([]);
   });
 });
 
-function isUntyped(tag: string, name: string): boolean {
-  const elements = QWIK_UNTYPED_ATTRIBUTES[name];
-  return elements !== undefined && covers(elements, tag);
+/** An element binding a number-typed attribute to `value`, as the target names it. */
+function numberLine([tag, name]: readonly [string, string], value: string): string {
+  return `<${tag} ${qwikAttributeName(name, tag === "svg" ? "svg" : "html")}={${value}} />`;
 }

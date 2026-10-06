@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import {
@@ -17,11 +16,10 @@ import { createHost, strictOptions } from "../src/toolchain/ngtsc.ts";
 import { loadCompiler } from "../src/toolchain/tools.ts";
 import {
   context,
-  corpus,
-  emitFormatted,
   emitModule,
   emitted,
   formatted,
+  lower,
   removeScratch,
   scratchDir,
 } from "./helpers.ts";
@@ -233,18 +231,6 @@ describe("angular target", () => {
     const [file] = emitModule(moduleOf(render));
     expect(templateOf(file!.contents)).toContain("<p>a <b>b</b> c</p>");
   });
-
-  // The compile project owns the goldens; this pins that the emitter (formatted as the compiler
-  // formats it) still writes exactly them.
-  it("emits the corpus's committed golden outputs", async () => {
-    const cases = corpus();
-    expect(cases.length).toBeGreaterThan(0);
-    for (const { name, module, outputDir } of cases) {
-      for (const file of await emitFormatted(module)) {
-        expect(file.contents, name).toBe(readFileSync(join(outputDir, file.path), "utf8"));
-      }
-    }
-  });
 });
 
 /** The class's body of an emitted file, one member per line, as the compiler formats it. */
@@ -399,7 +385,10 @@ export default function Quiet({ label, note }: QuietProps) {
   return <p>{label}</p>;
 }
 `);
-    expect(templateLines(file.contents)).toEqual(["@let label = this.label();", "<p>{{ label }}</p>"]);
+    expect(templateLines(file.contents)).toEqual([
+      "@let label = this.label();",
+      "<p>{{ label }}</p>",
+    ]);
     expect(classBody(file.contents)).toEqual([
       "readonly label = input.required<string>();",
       "readonly hidden = input<boolean>();",
@@ -450,7 +439,9 @@ export default function Field({ value }: input) {
   return <p>{value}</p>;
 }
 `);
-    expect(taken.contents).toMatch(/^import \{ Component, input as input_1 \} from "@angular\/core";/);
+    expect(taken.contents).toMatch(
+      /^import \{ Component, input as input_1 \} from "@angular\/core";/,
+    );
     expect(classBody(taken.contents)).toEqual(["readonly value = input_1.required<string>();"]);
   });
 });
@@ -535,20 +526,101 @@ export default function Stats({ values }: StatsProps) {
     ]);
   });
 
-  // An interface without members declares no key, so the spread prints nothing (ADR-0039).
-  it("declares no variable for a spread that prints nothing", async () => {
+  // Angular's parser drops a text node that `trim()` empties right after a block, while it looks
+  // for the block's `@else` or `@empty`; an interpolated literal is no blank text.
+  it("writes blank text after a block as an interpolated literal", async () => {
     const file = await formatted(`
-interface Nothing {}
+export interface GapProps {
+  on: boolean;
+  names: string[];
+}
 
+export default function Gap({ on, names }: GapProps) {
+  return (
+    <p>
+      {on && <i>a</i>}{" "}<b>b</b>{names.map((name) => <i key={name}>{name}</i>)}{"\u00a0"}<b>c</b>{" "}
+      <i>d</i>
+    </p>
+  );
+}
+`);
+    expect(templateLines(file.contents)).toEqual([
+      "@let on = this.on();",
+      "@let names = this.names();",
+      "<p>",
+      '@if (on) {<i>a</i>}{{ " " }}<b>b</b>',
+      '@for (name of names; track name) {<i>{{ name }}</i>}{{ "\\\\u00a0" }}<b>c</b>&ngsp;<i>d</i>',
+      "</p>",
+    ]);
+  });
+
+  // Angular's lexers read quotes, `;`, parentheses and `//` in a regular expression, its
+  // whitespace processing turns U+E500 into a space and its expression lexer rejects whitespace
+  // outside ASCII; it reads a `<title>`'s content as text unless the tag names SVG's namespace.
+  it("writes what Angular's template would read differently with escapes", async () => {
+    const file = await formatted(`
+export interface MatchProps {
+  label: string;
+  on: boolean;
+}
+
+export default function Match({ label, on }: MatchProps) {
+  return (
+    <div title={/'/.test(label) ? "quoted" : "plain"}>
+      {/^\\//.test(label) && <b>slash</b>}
+      {label.split(/[;)]/).map((part) => <i key={part}>{part}</i>)}
+      <p>x\ue500y{label\u3000+ label}{/(?<x>a)/.test(label) && "named"}</p>
+      <svg viewBox="0 0 2 2"><title>{label}{on && " on"}</title></svg>
+    </div>
+  );
+}
+`);
+    expect(templateLines(file.contents)).toEqual([
+      "@let label = this.label();",
+      "@let on = this.on();",
+      "<div [attr.title]=\"/\\\\x27/.test(label) ? 'quoted' : 'plain'\">",
+      "@if (/^\\\\x2f/.test(label)) {",
+      "<b>slash</b>",
+      "}",
+      "@for (part of label.split(/[\\\\x3b\\\\x29]/); track part) {",
+      "<i>{{ part }}</i>",
+      "}",
+      '<p>{{ "x\\\\ue500y" }}{{ label + label }}@if (/(?<x>a)/.test(label)) {named}</p>',
+      '<svg viewBox="0 0 2 2">',
+      "<svg:title>{{ label }}@if (on) { on}</svg:title>",
+      "</svg>",
+      "</div>",
+    ]);
+  });
+
+  // A spread without keys prints nothing (ADR-0039). The analyser rejects one (UF3004), but a
+  // plugin may drop a spread's keys, and an unread `@let` is NG8112.
+  it("declares no variable for a spread that prints nothing", () => {
+    const module = lower(`
 export interface EmptyProps {
-  attrs: Nothing;
+  attrs: { id?: string };
 }
 
 export default function Empty({ attrs }: EmptyProps) {
   return <p {...attrs}>x</p>;
 }
 `);
-    expect(templateLines(file.contents)).toEqual(["<p>x</p>"]);
+    const [component] = module.components;
+    const render = component!.render as ElementNode;
+    const keyless = {
+      ...module,
+      components: [
+        {
+          ...component!,
+          render: {
+            ...render,
+            attributes: render.attributes.map((attribute) => ({ ...attribute, keys: [] })),
+          },
+        },
+      ],
+    } as UfModule;
+    const [file] = emitModule(keyless);
+    expect(templateLines(file!.contents)).toEqual(["<p>x</p>"]);
   });
 
   it("prints valid TypeScript before formatting too", () => {

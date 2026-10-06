@@ -1,4 +1,4 @@
-import { For, Show } from "solid-js";
+import { For, Match, Switch } from "solid-js";
 
 export interface UploadStep {
   id: string;
@@ -33,12 +33,14 @@ export default function UploadStatus(props: UploadStatusProps) {
       >
         {props.percent}%
       </div>
-      <Show
-        when={props.state === "failed"}
-        fallback={<p>{props.state === "queued" ? "Waiting to start" : "Uploading"}</p>}
-      >
-        <p class="upload-error">{props.error ?? "The upload failed."}</p>
-      </Show>
+      <Switch>
+        <Match when={props.state === "failed"}>
+          <p class="upload-error">{props.error ?? "The upload failed."}</p>
+        </Match>
+        <Match keyed when={props.state === "failed" ? undefined : { state: props.state }}>
+          {({ state }) => <p>{state === "queued" ? "Waiting to start" : "Uploading"}</p>}
+        </Match>
+      </Switch>
       <ol>
         <For each={props.steps}>{(step) => <li>{step.label}</li>}</For>
       </ol>

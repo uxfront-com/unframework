@@ -199,6 +199,64 @@ describe("diagnostics", () => {
     expect(codes(run("export default function () { return <p />; }").diagnostics)).toContain(
       "UF1102",
     );
+    expect(codes(run("export default () => <p />;").diagnostics)).toEqual(["UF1102"]);
+  });
+
+  // React's spelling: a `const` holding an arrow function. A component is a declaration, which
+  // the fix writes; the value is checked as that declaration, so the fix reveals nothing new.
+  it.each([
+    [
+      "interface CardProps { title: string }\nexport const Card = ({ title }: CardProps) => <h2>{title}</h2>;",
+      "export function Card({ title }: CardProps) { return <h2>{title}</h2>; }",
+    ],
+    [
+      "interface CardProps { title: string }\nconst Card = ({ title }: CardProps) => {\n  return <h2>{title}</h2>;\n};\nexport default Card;",
+      "function Card({ title }: CardProps) {\n  return <h2>{title}</h2>;\n}\nexport default Card;",
+    ],
+    [
+      "export const Card = () => (\n  <h2>Hi</h2>\n);",
+      "export function Card() { return <h2>Hi</h2>; }",
+    ],
+    [
+      "const Card = function (props: { title: string }) { return <h2>{props.title}</h2>; };\nexport { Card };",
+      "function Card(props: { title: string }) { return <h2>{props.title}</h2>; }\nexport { Card };",
+    ],
+    [
+      "export const Card = props => <h2>x</h2>;",
+      "export function Card(props) { return <h2>x</h2>; }",
+    ],
+  ])("reports a component written as a value, and declares it: %s", (source, fixed) => {
+    const { module, diagnostics } = run(source);
+    expect(module?.components).toEqual([]);
+    const reported = diagnostics.find((diagnostic) => diagnostic.code === "UF1102")!;
+    expect(reported.message).toMatch(
+      /^Card is an? (arrow function|function expression) in a `const`/,
+    );
+    expect(codes(diagnostics).filter((code) => code === "UF1002")).toEqual([]);
+    expect(applyAndRecheck(source, diagnostics).endsWith(fixed)).toBe(true);
+  });
+
+  it("checks a component written as a value as the declaration its fix writes", () => {
+    const source =
+      'interface CardProps { title: string }\nexport const Card = ({ title }: CardProps) => <h2 className="t" onClick={go}>{title}</h2>;';
+    const { diagnostics } = run(source);
+    expect(codes(diagnostics)).toEqual(["UF1102", "UF1002", "UF3004"]);
+    expect(applyAndRecheck(source, diagnostics)).toContain(
+      'export function Card({ title }: CardProps) { return <h2 class="t"',
+    );
+  });
+
+  it("offers no rewrite of a typed or async value, nor names a lower-case one a component", () => {
+    for (const source of [
+      "export const Card: Fc = () => <h2>x</h2>;",
+      "export const Card = async () => <h2>x</h2>;",
+    ]) {
+      const reported = run(source).diagnostics.find((diagnostic) => diagnostic.code === "UF1102")!;
+      expect(reported.fixes, source).toBeUndefined();
+    }
+    const lower = run("export const card = () => <h2>x</h2>;").diagnostics;
+    expect(codes(lower)).toEqual(["UF1102"]);
+    expect(lower[0]!.message).toContain("PascalCase");
   });
 
   it("reports each JSX construct M1 does not lower, and keeps going", () => {

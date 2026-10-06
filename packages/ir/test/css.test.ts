@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  angularLowercases,
+  angularMisreads,
+  CSS_PROPERTIES,
   CSS_SHORTHANDS,
   cssPropertiesOverlap,
   cssValueProblem,
   isCssPropertyName,
   isCustomProperty,
+  isKnownCssProperty,
   UNITLESS_PROPERTIES,
 } from "../src/index.ts";
 
@@ -70,6 +74,24 @@ describe("the CSS facts", () => {
     expect(cssPropertiesOverlap(b, a)).toBe(overlap);
   });
 
+  it("know every property the other facts name, and standard names only", () => {
+    expect(CSS_PROPERTIES.size).toBeGreaterThan(500);
+    expect([...CSS_PROPERTIES].filter((name) => !isCssPropertyName(name))).toEqual([]);
+    const named = [
+      ...UNITLESS_PROPERTIES,
+      ...CSS_SHORTHANDS.keys(),
+      ...[...CSS_SHORTHANDS.values()].flatMap((longhands) => [...longhands]),
+    ];
+    // Chromium expands `border-spacing` and `mask-position` into longhands of its own prefix.
+    expect(
+      named.filter((name) => !name.startsWith("-webkit-") && !CSS_PROPERTIES.has(name)),
+    ).toEqual([]);
+    expect(isKnownCssProperty("margin-top")).toBe(true);
+    expect(isKnownCssProperty("--anything")).toBe(true);
+    expect(isKnownCssProperty("colour")).toBe(false);
+    expect(isKnownCssProperty("line-clamp")).toBe(false);
+  });
+
   it.each(["margin-top", "z-index", "--gap", "--Gap_2", "all"])(
     "accepts the property %s",
     (name) => {
@@ -118,5 +140,25 @@ describe("the CSS facts", () => {
     expect(UNITLESS_PROPERTIES.has(name)).toBe(false);
     expect(CSS_SHORTHANDS.get(name)).toBeUndefined();
     expect(cssPropertiesOverlap(name, "color")).toBe(false);
+  });
+
+  // Angular's style parser (`parse`), which its compiler and its server DOM read styles with.
+  it.each([
+    ['"a\\";b"', true],
+    ['"("', true],
+    ["red /* it's */", true],
+    ["red /* a; b */", true],
+    ['"a(b)"', false],
+    ["'A\"B', serif", false],
+    ["url(data:image/png;base64,AA==)", false],
+    ["1px", false],
+  ])("reads %j as Angular misreads it: %s", (value, misread) => {
+    expect(angularMisreads(value)).toBe(misread);
+  });
+
+  it("lowercases a custom property with an upper-case letter, as Angular does", () => {
+    expect(angularLowercases("--Gap")).toBe(true);
+    expect(angularLowercases("--gap")).toBe(false);
+    expect(angularLowercases("margin-top")).toBe(false);
   });
 });

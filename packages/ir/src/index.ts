@@ -95,30 +95,42 @@ export type { IrValidationError } from "./validate.ts";
 export { checkInvariants } from "./invariants.ts";
 export {
   ALLOWED_GLOBALS,
+  ANGULAR_KEYWORDS,
   isComponentName,
   isExportName,
   isIdentifier,
   PROP_NAME_PATTERN,
   RESERVED_PROP_NAMES,
+  RESERVED_TYPE_NAMES,
+  reservedParameterName,
   reservedPropName,
+  reservedPropsParameterName,
 } from "./names.ts";
 export { listBoxSize } from "./listbox.ts";
 export {
+  angularRespellsRegex,
   CHILDLESS_ATTRIBUTES,
+  DRAFT_ARIA_ATTRIBUTES,
   FIXED_VALUE_INPUT_TYPES,
   isDroppedEmptyUrl,
   isStateAttribute,
   isWhitespaceText,
   LEADING_LINE_FEED_ELEMENTS,
+  NULLISH_VALUE_ELEMENTS,
+  RAW_TEXT_ELEMENTS,
   STATE_ATTRIBUTES,
   TEMPLATE_SYNTAX_ATTRIBUTES,
   UNBINDABLE_ATTRIBUTES,
   unbindableAttribute,
+  UNDECLARED_ATTRIBUTES,
+  undeclaredAttribute,
+  undeclaredBy,
   UNINTERPOLATED_ELEMENTS,
   UNPORTABLE_ELEMENTS,
   UNRENDERED_ATTRIBUTES,
   WHITESPACE_DROPPING_ELEMENTS,
 } from "./portability.ts";
+export type { TypedFramework } from "./portability.ts";
 export {
   ARIA_ATTRIBUTES,
   BINDABLE_BOOLEAN_ATTRIBUTES,
@@ -177,10 +189,14 @@ export {
 } from "./svg.ts";
 export type { Namespace } from "./svg.ts";
 export {
+  angularLowercases,
+  angularMisreads,
+  CSS_PROPERTIES,
   CSS_SHORTHANDS,
   cssPropertiesOverlap,
   cssValueProblem,
   isCssPropertyName,
   isCustomProperty,
+  isKnownCssProperty,
   UNITLESS_PROPERTIES,
 } from "./css.ts";

@@ -1,0 +1,495 @@
+{
+  "irVersion": 1,
+  "file": "bindings/assigned-values/ReviewSummary.uf.tsx",
+  "components": [
+    {
+      "name": "ReviewSummary",
+      "span": {
+        "start": 111,
+        "end": 618
+      },
+      "props": [
+        {
+          "name": "steps",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 47,
+              "end": 55
+            }
+          },
+          "binding": "steps@151",
+          "span": {
+            "start": 40,
+            "end": 56
+          }
+        },
+        {
+          "name": "score",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 66,
+              "end": 72
+            }
+          },
+          "binding": "score@158",
+          "span": {
+            "start": 59,
+            "end": 73
+          }
+        },
+        {
+          "name": "sku",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 81,
+              "end": 87
+            }
+          },
+          "binding": "sku@165",
+          "span": {
+            "start": 76,
+            "end": 88
+          }
+        },
+        {
+          "name": "product",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 100,
+              "end": 106
+            }
+          },
+          "binding": "product@170",
+          "span": {
+            "start": 91,
+            "end": 107
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ReviewSummaryProps",
+          "span": {
+            "start": 181,
+            "end": 199
+          }
+        },
+        "span": {
+          "start": 149,
+          "end": 199
+        }
+      },
+      "types": [
+        "ReviewSummaryProps"
+      ],
+      "bindings": [
+        {
+          "id": "steps@151",
+          "name": "steps",
+          "kind": "prop",
+          "span": {
+            "start": 151,
+            "end": 156
+          }
+        },
+        {
+          "id": "score@158",
+          "name": "score",
+          "kind": "prop",
+          "span": {
+            "start": 158,
+            "end": 163
+          }
+        },
+        {
+          "id": "sku@165",
+          "name": "sku",
+          "kind": "prop",
+          "span": {
+            "start": 165,
+            "end": 168
+          }
+        },
+        {
+          "id": "product@170",
+          "name": "product",
+          "kind": "prop",
+          "span": {
+            "start": 170,
+            "end": 177
+          }
+        },
+        {
+          "id": "step@302",
+          "name": "step",
+          "kind": "loopVar",
+          "span": {
+            "start": 302,
+            "end": 306
+          }
+        },
+        {
+          "id": "index@308",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 308,
+            "end": 313
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "review-summary",
+            "span": {
+              "start": 227,
+              "end": 249
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Review",
+            "span": {
+              "start": 250,
+              "end": 269
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "steps",
+                  "span": {
+                    "start": 291,
+                    "end": 296
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "steps@151",
+                      "span": {
+                        "start": 291,
+                        "end": 296
+                      }
+                    }
+                  ]
+                },
+                "item": "step@302",
+                "index": "index@308",
+                "key": {
+                  "code": "step",
+                  "span": {
+                    "start": 339,
+                    "end": 343
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "step@302",
+                      "span": {
+                        "start": 339,
+                        "end": 343
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [
+                    {
+                      "kind": "Bound",
+                      "name": "value",
+                      "value": {
+                        "code": "index",
+                        "span": {
+                          "start": 352,
+                          "end": 357
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "index@308",
+                            "span": {
+                              "start": 352,
+                              "end": 357
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 345,
+                        "end": 358
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "step",
+                        "span": {
+                          "start": 373,
+                          "end": 377
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "step@302",
+                            "span": {
+                              "start": 373,
+                              "end": 377
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 372,
+                        "end": 378
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 330,
+                    "end": 394
+                  }
+                },
+                "span": {
+                  "start": 291,
+                  "end": 405
+                }
+              }
+            ],
+            "span": {
+              "start": 277,
+              "end": 418
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "meter",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "min",
+                "value": "0",
+                "span": {
+                  "start": 432,
+                  "end": 439
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "max",
+                "value": "10",
+                "span": {
+                  "start": 440,
+                  "end": 448
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "value",
+                "value": {
+                  "code": "score",
+                  "span": {
+                    "start": 456,
+                    "end": 461
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "score@158",
+                      "span": {
+                        "start": 456,
+                        "end": 461
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 449,
+                  "end": 462
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Score",
+                "span": {
+                  "start": 463,
+                  "end": 481
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "score",
+                  "span": {
+                    "start": 492,
+                    "end": 497
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "score@158",
+                      "span": {
+                        "start": 492,
+                        "end": 497
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 491,
+                  "end": 498
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " out of 10",
+                "span": {
+                  "start": 498,
+                  "end": 515
+                }
+              }
+            ],
+            "span": {
+              "start": 425,
+              "end": 523
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Product: ",
+                "span": {
+                  "start": 533,
+                  "end": 551
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "data",
+                "attributes": [
+                  {
+                    "kind": "Bound",
+                    "name": "value",
+                    "value": {
+                      "code": "sku",
+                      "span": {
+                        "start": 564,
+                        "end": 567
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "sku@165",
+                          "span": {
+                            "start": 564,
+                            "end": 567
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 557,
+                      "end": 568
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "product",
+                      "span": {
+                        "start": 570,
+                        "end": 577
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "product@170",
+                          "span": {
+                            "start": 570,
+                            "end": 577
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 569,
+                      "end": 578
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 551,
+                  "end": 585
+                }
+              }
+            ],
+            "span": {
+              "start": 530,
+              "end": 596
+            }
+          }
+        ],
+        "span": {
+          "start": 218,
+          "end": 611
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ReviewSummary",
+      "span": {
+        "start": 111,
+        "end": 618
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ReviewSummaryProps",
+      "exported": true,
+      "code": "interface ReviewSummaryProps {\n  steps: string[];\n  score: number;\n  sku: string;\n  product: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 109
+      }
+    }
+  ]
+}

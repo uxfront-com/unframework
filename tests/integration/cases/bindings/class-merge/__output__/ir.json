@@ -195,6 +195,7 @@
                 }
               }
             ],
+            "nullish": false,
             "span": {
               "start": 381,
               "end": 389
@@ -324,6 +325,7 @@
                     }
                   }
                 ],
+                "nullish": false,
                 "span": {
                   "start": 480,
                   "end": 489

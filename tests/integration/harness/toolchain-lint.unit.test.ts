@@ -1,10 +1,13 @@
 // L5 is one contract checked seven times (ADR-0042): every toolchain's oxlint runs one baseline
-// configuration, identical but for the framework an output may import, so an output that one
-// target's baseline rejects is rejected by all of them; and every toolchain's `lint` catches a
-// probe that breaks a baseline rule and one of its framework's own rules, in the target's own
-// syntax, which proves its configuration and its plugins load and run. The baselines are
-// compared as oxlint reads them (`--print-config`, which expands the categories into rules),
-// not as the files are written.
+// configuration, identical but for the framework an output may import; and every toolchain's
+// `lint` catches a probe that breaks two baseline rules and one of its framework's own rules, in
+// the target's own syntax, which proves its configuration and its plugins load and run. The
+// baselines are compared as oxlint reads them (`--print-config`, which expands the categories
+// into rules), not as the files are written. Comparing them is not enough on its own: oxlint
+// lints a `.vue`, `.svelte` or `.astro` file's script without `no-unused-vars`, which cannot see
+// the markup's reads, so those toolchains run typescript-eslint's rule in ESLint instead. The
+// probes check that an output one target's lint rejects for a baseline rule, every target's
+// does.
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -40,20 +43,54 @@ const FRAMEWORK_LAYER: Record<string, "oxlint" | "eslint"> = {
   angular: "eslint",
 };
 
-/** The rule every probe breaks: a statement no output has a reason to hold. */
+/** A baseline rule every probe breaks: a statement no output has a reason to hold. */
 const BASELINE_RULE = "no-debugger";
 
-/** Each target's probe, and the framework rule it breaks besides {@link BASELINE_RULE}. */
+/**
+ * The baseline's unused-variable rule, which every probe breaks with a binding nothing reads,
+ * as each target's lint names it: oxlint's, or typescript-eslint's in ESLint where oxlint does
+ * not run it (a template language's script, whose bindings the markup reads).
+ */
+const UNUSED_RULE: Record<string, string> = {
+  react: "no-unused-vars",
+  solid: "no-unused-vars",
+  qwik: "no-unused-vars",
+  angular: "no-unused-vars",
+  vue: "@typescript-eslint/no-unused-vars",
+  svelte: "@typescript-eslint/no-unused-vars",
+  astro: "@typescript-eslint/no-unused-vars",
+};
+
+/**
+ * Each target's probe, and the framework rule it breaks besides {@link BASELINE_RULE} and
+ * {@link UNUSED_RULE}. But for Angular's, whose template reads the class, its markup reads a
+ * binding beside the unused one, which must not count.
+ */
 const PROBES: Record<string, { file: string; contents: string; rule: string }> = {
   react: {
     file: "Probe.tsx",
-    contents: 'export default function Probe() {\n  debugger;\n  return <p class="x">Hi</p>;\n}\n',
+    contents: [
+      "export default function Probe() {",
+      "  debugger;",
+      '  const label = "Hi";',
+      "  const unused = 1;",
+      '  return <p class="x">{label}</p>;',
+      "}",
+      "",
+    ].join("\n"),
     rule: "react/no-unknown-property",
   },
   solid: {
     file: "Probe.tsx",
-    contents:
-      'export default function Probe() {\n  debugger;\n  return <p className="x">Hi</p>;\n}\n',
+    contents: [
+      "export default function Probe() {",
+      "  debugger;",
+      '  const label = "Hi";',
+      "  const unused = 1;",
+      '  return <p className="x">{label}</p>;',
+      "}",
+      "",
+    ].join("\n"),
     rule: "solid/no-react-specific-props",
   },
   qwik: {
@@ -63,7 +100,9 @@ const PROBES: Record<string, { file: string; contents: string; rule: string }> =
       "",
       "export default component$(() => {",
       "  debugger;",
-      '  return <p className="x">Hi</p>;',
+      '  const label = "Hi";',
+      "  const unused = 1;",
+      '  return <p className="x">{label}</p>;',
       "});",
       "",
     ].join("\n"),
@@ -71,18 +110,46 @@ const PROBES: Record<string, { file: string; contents: string; rule: string }> =
   },
   vue: {
     file: "Probe.vue",
-    contents:
-      '<script setup lang="ts">\ndebugger;\n</script>\n\n<template>\n  <p v-html="\'Hi\'"></p>\n</template>\n',
+    contents: [
+      '<script setup lang="ts">',
+      "debugger;",
+      'const html = "Hi";',
+      "const unused = 1;",
+      "</script>",
+      "",
+      "<template>",
+      '  <p v-html="html"></p>',
+      "</template>",
+      "",
+    ].join("\n"),
     rule: "vue/no-v-html",
   },
   svelte: {
     file: "Probe.svelte",
-    contents: '<script lang="ts">\n  debugger;\n</script>\n\n<p>{@html "Hi"}</p>\n',
+    contents: [
+      '<script lang="ts">',
+      "  debugger;",
+      '  const html = "Hi";',
+      "  const unused = 1;",
+      "</script>",
+      "",
+      "<p>{@html html}</p>",
+      "",
+    ].join("\n"),
     rule: "svelte/no-at-html-tags",
   },
   astro: {
     file: "Probe.astro",
-    contents: '---\ndebugger;\n---\n\n<p set:html={"Hi"} />\n',
+    contents: [
+      "---",
+      "debugger;",
+      'const html = "Hi";',
+      "const unused = 1;",
+      "---",
+      "",
+      "<p set:html={html} />",
+      "",
+    ].join("\n"),
     rule: "astro/no-set-html-directive",
   },
   angular: {
@@ -97,6 +164,7 @@ const PROBES: Record<string, { file: string; contents: string; rule: string }> =
       "export default class Probe {",
       "  constructor() {",
       "    debugger;",
+      "    const unused = 1;",
       "  }",
       "}",
       "",
@@ -184,7 +252,7 @@ describe("every toolchain's lint", () => {
   afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
   it.each(TARGETS)(
-    "%s rejects a probe that breaks a baseline rule and a framework rule",
+    "%s rejects a probe that breaks two baseline rules and a framework rule",
     { timeout: 120_000 },
     async (target) => {
       const directory = join(scratch, target);
@@ -200,7 +268,7 @@ describe("every toolchain's lint", () => {
       expect([...results.keys()]).toEqual([probe]);
       const codes = results.get(probe)!.map((message) => message.code ?? message.message);
       expect(codes.toSorted(), JSON.stringify(results.get(probe), null, 2)).toEqual(
-        [BASELINE_RULE, rule].toSorted(),
+        [BASELINE_RULE, UNUSED_RULE[target]!, rule].toSorted(),
       );
     },
   );

@@ -6,6 +6,9 @@ import type { MountedComponent } from "@unframework/codegen";
 import { createElement } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+// The testing package's L10 capture merges a split text run and restores it (ADR-0044); this
+// file proves React's own references to its text nodes survive that. The module imports nothing.
+import { withMergedTextRuns } from "../../testing/src/browser/text-runs.ts";
 import { mount } from "../src/toolchain/client.ts";
 
 interface BadgeProps {
@@ -92,5 +95,27 @@ it("replaces the props whole, updating text, attributes, branches and lists", as
     warning: "warning",
     items: [],
   });
+  expect(logged).toEqual([]);
+});
+
+/** `Price: {amount} EUR`: React writes the text as three text nodes. */
+function Price({ amount }: { amount: number }) {
+  return createElement("p", null, "Price: ", amount, " EUR");
+}
+
+it("rerenders text a capture merged and restored", async () => {
+  mounted = await mount(Price, container, { props: { amount: 12 } });
+  const p = container.querySelector("p")!;
+  const nodes = [...p.childNodes];
+  expect(nodes.map((node) => node.nodeValue)).toEqual(["Price: ", "12", " EUR"]);
+  await withMergedTextRuns(container, async () => {
+    expect([...p.childNodes].map((node) => node.nodeValue)).toEqual(["Price: 12 EUR"]);
+  });
+  expect([...p.childNodes].every((node, index) => node === nodes[index])).toBe(true);
+  expect(p.childNodes).toHaveLength(3);
+  // React writes the new amount into the text node it holds, which is back in its place.
+  await mounted.rerender({ amount: 13 });
+  expect(p.textContent).toBe("Price: 13 EUR");
+  expect([...p.childNodes].every((node, index) => node === nodes[index])).toBe(true);
   expect(logged).toEqual([]);
 });

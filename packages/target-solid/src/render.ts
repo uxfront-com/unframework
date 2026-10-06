@@ -9,7 +9,16 @@
 //   parses: a line feed that the template puts right after `<pre>` (static text that follows
 //   only expressions, `<pre>{name}{"\n"}{street}</pre>`) is dropped there, as HTML drops a
 //   leading line feed, though the server renders it. That line feed is inserted instead.
-import { LEADING_LINE_FEED_ELEMENTS, parseExpression, rewriteExpression } from "@unframework/codegen";
+// - Solid's server compiler escapes an expression's value at run time, but not the string
+//   literals it finds by looking into a conditional, a `+`, the right of `&&`, or a child's
+//   template literal: `{done ? "<b>" : name}` reaches the HTML as `<b>`, where the client renders
+//   text. Such a literal holding a character HTML reads there is wrapped in `String(…)`, the same
+//   string, which the compiler leaves to the run-time escape (see {@link escapedOnServer}).
+import {
+  LEADING_LINE_FEED_ELEMENTS,
+  parseExpression,
+  rewriteExpression,
+} from "@unframework/codegen";
 import type { RewriteRules } from "@unframework/codegen";
 import type {
   ElementNode,
@@ -21,46 +30,81 @@ import type {
   UfComponent,
 } from "@unframework/ir";
 
+import { carriedPaths, samePath, slice, wholePath } from "./narrowing.ts";
+import type { ReferencePath } from "./narrowing.ts";
+
 /**
  * A component's render tree as Solid prints it, with references spelled by `rules`: see the
  * module comment.
  */
-export function forSolid(
-  component: UfComponent,
-  rules: RewriteRules,
-): UfComponent["render"] {
+export function forSolid(component: UfComponent, rules: RewriteRules): UfComponent["render"] {
   const element = <T extends ElementNode | FragmentNode>(node: T): T => {
     const content = children(node.children);
     return {
       ...node,
+      ...(node.kind === "Element"
+        ? {
+            attributes: node.attributes.map((attribute) =>
+              attribute.kind === "Bound"
+                ? { ...attribute, value: escapedOnServer(attribute.value, "attribute") }
+                : attribute,
+            ),
+          }
+        : {}),
       children:
         node.kind === "Element" && LEADING_LINE_FEED_ELEMENTS.has(node.tag)
           ? insertedLineFeed(content)
           : content,
     };
   };
+  // The paths the keyed callbacks around a node receive, which print as plain names.
+  const carried: ReferencePath[][] = [];
   const children = (nodes: readonly RenderNode[]): RenderNode[] =>
     nodes.flatMap((node): RenderNode[] => {
       switch (node.kind) {
         case "Element":
           return [element(node)];
-        case "If":
+        case "If": {
+          const tests = node.branches.flatMap((branch) =>
+            branch.condition ? [branch.condition] : [],
+          );
           return [
             {
               ...node,
-              branches: node.branches.map((branch) => ({
-                ...branch,
-                children: children(branch.children),
-              })),
+              branches: node.branches.map((branch, index) => {
+                carried.push(
+                  carriedPaths(
+                    branch.children,
+                    branch.condition ? tests.slice(0, index + 1) : tests,
+                    Boolean(branch.condition),
+                    carried.flat(),
+                  ),
+                );
+                try {
+                  return { ...branch, children: children(branch.children) };
+                } finally {
+                  carried.pop();
+                }
+              }),
             },
           ];
+        }
         case "For":
           return [{ ...node, body: element(node.body) }];
         case "Interpolation":
+          // The `<Show>` an interpolation may become renders it as a component's content,
+          // which the server escapes whole; one left as text is escaped here.
           return interpolation(node, (part) => {
             const printed = parseExpression(rewriteExpression(part, component, rules));
-            return printed.type === "Identifier";
-          });
+            if (printed.type === "Identifier") return true;
+            // A path a keyed callback receives prints as its plain name (src/narrowing.ts).
+            const path = wholePath(part);
+            return Boolean(path && carried.flat().some((entry) => samePath(entry, path)));
+          }).map((child) =>
+            child.kind === "Interpolation"
+              ? { ...child, value: escapedOnServer(child.value, "child") }
+              : child,
+          );
         case "Text":
           return [node];
         default:
@@ -106,10 +150,7 @@ function insertedLineFeed(nodes: readonly RenderNode[]): RenderNode[] {
  * branches interpolate each side (nothing for `null`, `undefined` or `""`); any other
  * interpolation as it is. Only the outermost conditional counts: the rule reads nothing nested.
  */
-function interpolation(
-  node: InterpolationNode,
-  bare: (part: Expression) => boolean,
-): RenderNode[] {
+function interpolation(node: InterpolationNode, bare: (part: Expression) => boolean): RenderNode[] {
   const parsed = parseExpression(node.value.code);
   if (parsed.type !== "ConditionalExpression") return [node];
   if (!bare(slice(node.value, parsed.consequent)) && !bare(slice(node.value, parsed.alternate))) {
@@ -137,15 +178,92 @@ function isNothing(part: ReturnType<typeof parseExpression>): boolean {
   return part.type === "Literal" && (part.value === null || part.value === "");
 }
 
-/** The part of an expression that a node of its parsed code spans, with its references. */
-function slice(expression: Expression, part: { start: number; end: number }): Expression {
-  const start = expression.span.start + part.start;
-  const end = expression.span.start + part.end;
+/** The characters HTML reads in text (`<`, `&`) and in a quoted attribute value (`"`, `&`). */
+const SIGNIFICANT = { child: /[<&]/, attribute: /["&]/ } as const;
+
+/** A parsed node with its offsets in the expression's code. */
+type Parsed = ReturnType<typeof parseExpression>;
+
+/**
+ * An expression whose string literals Solid's server compiler would write into the HTML
+ * unescaped, with each such literal that holds a character HTML reads in `position` wrapped
+ * in `String(…)`: a call, which the compiler escapes at run time. The value is the same, on
+ * the server and in the browser. It follows babel-plugin-jsx-dom-expressions' own walk
+ * (`escapeExpression`, 0.40): into a conditional's branches, both sides of a binary operator,
+ * the right of `&&`, and a template literal's expressions, whose text it escapes in an
+ * attribute but not in a child, where the whole template is wrapped instead. Anything else it
+ * escapes whole.
+ */
+export function escapedOnServer(
+  expression: Expression,
+  position: "child" | "attribute",
+): Expression {
+  const significant = SIGNIFICANT[position];
+  const wrapped: Parsed[] = [];
+  const visit = (node: Parsed, top: boolean): void => {
+    switch (node.type) {
+      case "Literal":
+        // A literal on its own is static: compiled into the escaped template.
+        if (!top && typeof node.value === "string" && significant.test(node.value)) {
+          wrapped.push(node);
+        }
+        return;
+      case "TemplateLiteral": {
+        const text = node.quasis.map((quasi) => quasi.value.cooked ?? quasi.value.raw).join("");
+        if (node.expressions.length === 0) {
+          if (!top && significant.test(text)) wrapped.push(node);
+          return;
+        }
+        if (position === "child" && significant.test(text)) {
+          wrapped.push(node);
+          return;
+        }
+        for (const part of node.expressions) visit(part, false);
+        return;
+      }
+      case "ConditionalExpression":
+        visit(node.consequent, false);
+        visit(node.alternate, false);
+        return;
+      case "BinaryExpression":
+        if (node.left.type !== "PrivateIdentifier") visit(node.left, false);
+        visit(node.right, false);
+        return;
+      case "LogicalExpression":
+        if (node.operator === "&&") visit(node.right, false);
+        return;
+      default:
+    }
+  };
+  visit(parseExpression(expression.code), true);
+  if (!wrapped.length) return expression;
+  const inserts = wrapped
+    .flatMap((node) => [
+      { at: node.start, text: "String(" },
+      { at: node.end, text: ")" },
+    ])
+    .toSorted((a, b) => a.at - b.at);
+  let code = "";
+  let last = 0;
+  for (const { at, text } of inserts) {
+    code += expression.code.slice(last, at) + text;
+    last = at;
+  }
+  code += expression.code.slice(last);
+  // A reference after an insertion moves by the text inserted before it.
+  const shift = (offset: number) =>
+    inserts.filter(({ at }) => at <= offset).reduce((sum, { text }) => sum + text.length, 0);
+  const start = expression.span.start;
   return {
-    code: expression.code.slice(part.start, part.end),
-    span: { start, end },
-    refs: expression.refs.filter(
-      (reference) => reference.span.start >= start && reference.span.end <= end,
-    ),
+    code,
+    span: { start, end: start + code.length },
+    refs: expression.refs.map((reference) => {
+      const offset = reference.span.start - start;
+      const moved = shift(offset);
+      return {
+        ...reference,
+        span: { start: reference.span.start + moved, end: reference.span.end + moved },
+      };
+    }),
   };
 }

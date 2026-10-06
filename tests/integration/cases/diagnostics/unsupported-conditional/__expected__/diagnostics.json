@@ -14,6 +14,21 @@
       "column": 57,
       "offset": 291
     },
-    "help": "Write the conditional with `?:`, such as `value ? value : <p>None</p>`."
+    "help": "Write the conditional with `?:`, such as `value ? value : <p>None</p>`.",
+    "fixes": [
+      {
+        "title": "Write `message ? message : …`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 271,
+              "end": 275
+            },
+            "text": " ? message : "
+          }
+        ]
+      }
+    ]
   }
 ]

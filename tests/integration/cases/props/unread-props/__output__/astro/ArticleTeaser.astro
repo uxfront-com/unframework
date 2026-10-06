@@ -1,0 +1,22 @@
+---
+export interface ArticleTeaserProps {
+  title: string;
+  summary: string;
+  author: string;
+  minutes?: number;
+  featured?: boolean;
+  category?: string;
+  pinned?: boolean;
+  layout?: "row" | "column";
+}
+
+type Props = ArticleTeaserProps;
+
+const { title, summary, minutes = 5 } = Astro.props;
+---
+
+<article class="article-teaser" aria-label={title}>
+  <h2>{title}</h2>
+  <p>{summary}</p>
+  <p class="article-teaser-meta">{minutes} min read</p>
+</article>

@@ -40,15 +40,19 @@ export function goldenFiles(): string[] {
   return filesUnder(casesDir).filter((path) => /\/__output__\/angular\/[^/]+\.ts$/.test(path));
 }
 
-/** Each corpus case's IR snapshot, with the directory its Angular golden outputs live in. */
-export function corpus(): { name: string; module: UfModule; outputDir: string }[] {
+/**
+ * The corpus's feature cases (not `diagnostics/`, whose sources fail on purpose): each case's
+ * name and its component source.
+ */
+export function corpusSources(): { name: string; file: string; source: string }[] {
   return filesUnder(casesDir)
-    .filter((path) => path.endsWith("/__output__/ir.json"))
+    .filter((path) => path.endsWith(".uf.tsx") && !path.includes("/__"))
     .map((path) => ({
-      name: path.slice(casesDir.length + 1, -"/__output__/ir.json".length),
-      module: JSON.parse(readFileSync(path, "utf8")) as UfModule,
-      outputDir: join(path, "../angular"),
-    }));
+      name: path.slice(casesDir.length + 1, path.lastIndexOf("/")),
+      file: path.slice(casesDir.length + 1),
+      source: readFileSync(path, "utf8"),
+    }))
+    .filter(({ name }) => !name.startsWith("diagnostics/"));
 }
 
 /** What this target emits for a module, unformatted, failing on any diagnostic. */
@@ -74,10 +78,14 @@ export async function emitFormatted(module: UfModule): Promise<OutputFile[]> {
   );
 }
 
-/** The IR of a source, as `compile()` lowers it: it must lower without an error or a warning. */
-export function lower(source: string, file = "Card.uf.tsx"): UfModule {
+/**
+ * The IR of a source, as `compile()` lowers it: it must lower without an error, and without a
+ * warning unless `warnings` allows them (a corpus case may show one on purpose).
+ */
+export function lower(source: string, file = "Card.uf.tsx", warnings = false): UfModule {
   const { module, diagnostics } = analyze(parseModule(file, source));
-  if (diagnostics.length || !module) {
+  const failing = diagnostics.filter(({ severity }) => !warnings || severity === "error");
+  if (failing.length || !module) {
     throw new Error(`${file} does not lower cleanly: ${JSON.stringify(diagnostics, null, 2)}`);
   }
   const broken = checkInvariants(module);

@@ -1,0 +1,190 @@
+{
+  "irVersion": 1,
+  "file": "props/unread-props-object/ArticleSkeleton.uf.tsx",
+  "components": [
+    {
+      "name": "ArticleSkeleton",
+      "span": {
+        "start": 100,
+        "end": 322
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 49,
+              "end": 55
+            }
+          },
+          "binding": "title@140",
+          "span": {
+            "start": 42,
+            "end": 56
+          }
+        },
+        {
+          "name": "summary",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 69,
+              "end": 75
+            }
+          },
+          "binding": "summary@140",
+          "span": {
+            "start": 59,
+            "end": 76
+          }
+        },
+        {
+          "name": "minutes",
+          "optional": true,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 89,
+              "end": 95
+            }
+          },
+          "binding": "minutes@140",
+          "span": {
+            "start": 79,
+            "end": 96
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "object",
+        "name": "_props",
+        "type": {
+          "code": "ArticleSkeletonProps",
+          "span": {
+            "start": 148,
+            "end": 168
+          }
+        },
+        "span": {
+          "start": 140,
+          "end": 168
+        }
+      },
+      "types": [
+        "ArticleSkeletonProps"
+      ],
+      "bindings": [
+        {
+          "id": "title@140",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 140,
+            "end": 146
+          }
+        },
+        {
+          "id": "summary@140",
+          "name": "summary",
+          "kind": "prop",
+          "span": {
+            "start": 140,
+            "end": 146
+          }
+        },
+        {
+          "id": "minutes@140",
+          "name": "minutes",
+          "kind": "prop",
+          "span": {
+            "start": 140,
+            "end": 146
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "article-skeleton",
+            "span": {
+              "start": 196,
+              "end": 220
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-busy",
+            "value": "true",
+            "span": {
+              "start": 221,
+              "end": 237
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Loading article",
+            "span": {
+              "start": 238,
+              "end": 266
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Loading the article",
+                "span": {
+                  "start": 277,
+                  "end": 296
+                }
+              }
+            ],
+            "span": {
+              "start": 274,
+              "end": 300
+            }
+          }
+        ],
+        "span": {
+          "start": 187,
+          "end": 315
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ArticleSkeleton",
+      "span": {
+        "start": 100,
+        "end": 322
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ArticleSkeletonProps",
+      "exported": true,
+      "code": "interface ArticleSkeletonProps {\n  title: string;\n  summary?: string;\n  minutes?: number;\n}",
+      "span": {
+        "start": 7,
+        "end": 98
+      }
+    }
+  ]
+}

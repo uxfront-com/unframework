@@ -98,13 +98,14 @@ let compiled = 0;
 /**
  * Compiles a single-file component as @vitejs/plugin-vue does, `inline` as in a production build
  * (the template inlined into `setup`) or not as under a dev server (a separate render function
- * that reads bindings through `$props` and `$setup`), for the server, and renders it with
+ * that reads bindings through `$props` and `$setup`), for the server, or for the DOM with `ssr`
+ * false (a client render function, which the server renderer runs too), and renders it with
  * `props` as root props. Fails on any warning from the compiler or from Vue.
  */
 export async function renderSfc(
   contents: string,
   props: Record<string, unknown>,
-  { inline }: { inline: boolean },
+  { inline, ssr = true }: { inline: boolean; ssr?: boolean },
 ): Promise<string> {
   const id = `sfc-${compiled++}`;
   const filename = `${id}.vue`;
@@ -121,7 +122,7 @@ export async function renderSfc(
           id,
           inlineTemplate: inline,
           templateOptions: {
-            ssr: true,
+            ssr,
             ssrCssVars: [],
             transformAssetUrls: false,
             compilerOptions: { onWarn },
@@ -135,19 +136,22 @@ export async function renderSfc(
         ast: descriptor.template!.ast,
         filename,
         id,
-        ssr: true,
+        ssr,
         ssrCssVars: [],
         transformAssetUrls: false,
         compilerOptions: {
           onWarn,
-          ...(script ? { bindingMetadata: script.bindings, expressionPlugins: ["typescript"] } : {}),
+          ...(script
+            ? { bindingMetadata: script.bindings, expressionPlugins: ["typescript"] }
+            : {}),
         },
       });
       if (template.errors.length) throw new Error(`template: ${template.errors.join("; ")}`);
       const component = script
         ? script.content.replace("export default ", "const component = ")
         : "const component = {};";
-      code = `${component}\n${template.code}\ncomponent.ssrRender = ssrRender;\nexport default component;\n`;
+      const render = ssr ? "ssrRender = ssrRender" : "render = render";
+      code = `${component}\n${template.code}\ncomponent.${render};\nexport default component;\n`;
     }
   } finally {
     console.warn = warn;

@@ -39,6 +39,18 @@ export default function Nullable({ note = null, size }: { note?: string | null; 
     expect(await render(nullable, { note: "a", size: 0 })).toBe("<p>a 0</p>");
   });
 
+  // Vue's compiler parses a static `style` again and splits at a `;` inside a string: the
+  // output binds such a declaration, whose value Vue then writes whole.
+  it("renders static declarations its style parser would misread", async () => {
+    const source = `
+export default function Quote({ tone }: { tone: string }) {
+  return <p style='font-family: "A;B", serif; margin: 0; content: ")" "("'><b style={{ quotes: '";" ";"', color: tone }}>Q</b></p>;
+}`;
+    expect(await render(source, { tone: "red" })).toBe(
+      '<p style="margin:0;font-family:&quot;A;B&quot;, serif;content:&quot;)&quot; &quot;(&quot;;"><b style="quotes:&quot;;&quot; &quot;;&quot;;color:red;">Q</b></p>',
+    );
+  });
+
   it("gives the object form's absent optional boolean no value either", async () => {
     const source = `
 export default function Flag(props: { on?: boolean; label: string }) {
@@ -68,6 +80,46 @@ export default function None(props: { hidden: string; tone?: string }) {
   return <p>none</p>;
 }`;
     expect(await render(none, { hidden: "b", tone: "c" })).toBe("<p>none</p>");
+  });
+
+  // An optional prop nothing reads is bound under `_name`, a prefix Vue keeps for its own
+  // names. Vue compiles the pattern away, so no local meets the parameters and helpers its
+  // compiled code declares, for the server or for the DOM.
+  it.each([true, false])(
+    "renders unread props whose local is named like Vue's own (server: %s)",
+    async (ssr) => {
+      const source = `
+export default function Internals({ label, items, cache = 1, openBlock = false }: { label: string; items: string[]; ctx?: string; cache?: number; push?: string; parent?: string; attrs?: string; openBlock?: boolean; createElementBlock?: string; toDisplayString?: string; normalizeClass?: string; renderList?: string; createCommentVNode?: string; mergeProps?: string; defineComponent?: string; ssrRenderAttrs?: string; ssrRenderClass?: string; ssrRenderList?: string; ssrInterpolate?: string }) {
+  return <ul class={label}>{items.map((item) => <li key={item}>{item}</li>)}{label === "a" && <li>{label}</li>}</ul>;
+}`;
+      const emitted = await emitSource(source);
+      expect(emitted).toContain("  ctx: _ctx = undefined,\n  cache: _cache = 1,\n");
+      const rendered = (props: Record<string, unknown>) =>
+        renderSfc(emitted, props, { ...mode, ssr });
+      const html = '<ul class="a"><!--[--><li>x</li><!--]--><li>a</li></ul>';
+      expect(await rendered({ label: "a", items: ["x"] })).toBe(html);
+      expect(
+        await rendered({
+          label: "a",
+          items: ["x"],
+          ctx: "c",
+          cache: 2,
+          openBlock: true,
+          attrs: "t",
+        }),
+      ).toBe(html);
+    },
+  );
+
+  // Vue's compiled `setup` declares `__props`: the object is renamed, or the script would not
+  // compile ("Identifier '__props' has already been declared").
+  it("renders the object form under a name Vue's compiled code declares", async () => {
+    const source = `
+export default function Byline(__props: { author: string; note?: string }) {
+  return <p title={__props.note}>{__props.author}</p>;
+}`;
+    expect(await render(source, { author: "Ada" })).toBe("<p>Ada</p>");
+    expect(await render(source, { author: "Ada", note: "n" })).toBe('<p title="n">Ada</p>');
   });
 
   it("reads a prop named after a template global, not the global", async () => {

@@ -1,16 +1,23 @@
-// The canaries' corruptions, on a component of their own: each one must change every target's
-// output (a canary that changes nothing would pass and prove nothing), and only in the way its
-// layer is meant to catch. The runner (`pnpm test:canaries`) then proves each layer catches it
-// on every case of the corpus, and the verdict tests (canary-verdict.unit.test.ts) how it
-// judges a run.
+// The canaries' corruptions, on components of their own and on the corpus: each one must change
+// every target's output of every case it is judged on (a canary that changes nothing would pass
+// and prove nothing), keep the IR valid (a plugin whose IR breaks an invariant is a UF8001, and
+// the targets emit the uncorrupted module instead), and change only what its layer is meant to
+// catch. The runner (`pnpm test:canaries`) then proves each layer catches it on every case of
+// the corpus, and the verdict tests (canary-verdict.unit.test.ts) how it judges a run.
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { compile, TARGET_NAMES } from "@unframework/compiler";
 import type { CompileResult, TargetName } from "@unframework/compiler";
+import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
 import type { ProjectKind } from "@unframework/testing/node";
 import { describe, expect, it } from "vitest";
 
+import { selectCanaries } from "../scripts/canaries.ts";
 import {
   addRootAttribute,
   CANARIES,
+  canaryFixes,
   canaryFormats,
   canaryPlugins,
   canaryProjects,
@@ -20,23 +27,55 @@ import {
   injectScript,
   mismatchClosingTag,
 } from "./canaries.ts";
-import { formattingProblems, nondeterminism } from "./compile-checks.ts";
+import type { Canary, CanaryCase } from "./canaries.ts";
+import { listCases } from "./cases.ts";
+import { checkFixes, formattingProblems, nondeterminism } from "./compile-checks.ts";
+import { REPO_ROOT } from "./paths.ts";
 import { LIVE_LAYERS } from "./quarantine.ts";
 import { REFERENCE } from "./targets.ts";
 
-const filename = "fixture/greeting/Greeting.uf.tsx";
-const source =
-  'export default function Greeting() {\n  return <p class="greeting">Hello, world!</p>;\n}\n';
+const filename = "fixture/task-list/TaskList.uf.tsx";
+/**
+ * An M1-shaped component: local types (one generic, which Svelte's script keeps), props with
+ * defaults (one with parentheses in it), a class binding, a conditional and a list.
+ */
+const source = `export interface Task {
+  id: string;
+  label: string;
+}
+
+export interface TaskListProps {
+  title?: string;
+  tasks: Array<Task>;
+  done: boolean;
+  tone?: "info" | "warning";
+}
+
+export default function TaskList({ title = "Tasks (today)", tasks, done, tone = "info" }: TaskListProps) {
+  return (
+    <section class={["task-list", tone]} aria-label={title}>
+      <h2>{title}</h2>
+      {done ? <p>All done.</p> : <p>Some left.</p>}
+      <ul>
+        {tasks.map((task) => (
+          <li key={task.id}>{task.label}</li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+`;
 
 /** A compile as the compile project runs it under a canary: its source, plugins and format. */
 function compileWith(
   id: string | null,
   target?: TargetName,
   input: string = source,
+  targets: readonly TargetName[] = target ? [target] : TARGET_NAMES,
 ): Promise<CompileResult> {
   return compile(canarySource(id, input), {
     filename,
-    targets: target ? [target] : TARGET_NAMES,
+    targets,
     plugins: canaryPlugins(id, target),
     format: canaryFormats(id),
   });
@@ -48,12 +87,75 @@ const VERIFIED_BY: Record<string, readonly ProjectKind[]> = {
   L2: ["compile"],
   L3: ["toolchain"],
   L4: ["toolchain"],
+  L5: ["toolchain"],
   L6: ["ssr"],
   L7: ["browser"],
+  L8: ["browser"],
   L10: ["browser"],
   L11: ["browser"],
   L13: ["ssr", "browser"],
 };
+
+/** A case as the verdict sees it, for the fix canary. */
+const fixture = (hasFixes: boolean): CanaryCase => ({
+  id: "fixture/badge",
+  hasOutput: () => true,
+  spec: undefined,
+  hasFixes: () => hasFixes,
+});
+
+/** The elements of a render tree, in document order, through branches and list bodies. */
+function elementsOf(nodes: readonly RenderNode[]): ElementNode[] {
+  return nodes.flatMap((node): ElementNode[] => {
+    if (node.kind === "Element") return [node, ...elementsOf(node.children)];
+    if (node.kind === "If") return node.branches.flatMap((branch) => elementsOf(branch.children));
+    if (node.kind === "For") return elementsOf([node.body]);
+    return [];
+  });
+}
+
+/** The root element of a module's first component. */
+function rootElement(ir: UfModule | undefined): ElementNode {
+  const render = ir?.components[0]?.render;
+  if (render?.kind !== "Element") throw new Error("The component's root is no element.");
+  return render;
+}
+
+/** The root element of a source's component, compiled clean under a canary. */
+async function corruptedRoot(id: string, input: string): Promise<ElementNode> {
+  const result = await compileWith(id, "react", input);
+  expect(result.diagnostics).toEqual([]);
+  return rootElement(result.ir);
+}
+
+/** An element's style declarations, as `property: value` (`…` for a bound value). */
+function declarationsOf(element: ElementNode): string[] {
+  return element.attributes.flatMap((attribute) =>
+    attribute.kind === "Style"
+      ? attribute.declarations.map(
+          (declaration) =>
+            `${declaration.property}: ${declaration.kind === "Static" ? declaration.value : "…"}`,
+        )
+      : [],
+  );
+}
+
+/** The tags of the elements that hold the text canaries' marker, under L7-wrong-text. */
+async function markedElements(input: string): Promise<string[]> {
+  const render = (await compileWith("L7-wrong-text", "vue", input)).ir!.components[0]!.render;
+  return elementsOf(render.kind === "Element" ? [render] : render.children)
+    .filter(({ children }) =>
+      children.some((child) => child.kind === "Text" && child.value.endsWith("(canary)")),
+    )
+    .map(({ tag }) => tag);
+}
+
+/** The targets a canary corrupts: every one, or the followers. */
+function corruptedTargets(canary: Canary): TargetName[] {
+  return canary.followersOnly
+    ? TARGET_NAMES.filter((name) => name !== REFERENCE)
+    : [...TARGET_NAMES];
+}
 
 describe("canaries", () => {
   it("cover every live layer, with unique ids", () => {
@@ -78,12 +180,14 @@ describe("canaries", () => {
     expect(canaryProjects(findCanary("L6-golden-guard"))).toEqual(["ssr", "browser"]);
   });
 
-  it("corrupt a source or skip the format step only for the compile project", () => {
+  it("corrupt a source or the fixes, or skip the format step, only for the compile project", () => {
     const compileOnly = CANARIES.filter(
-      (canary) => canary.source !== undefined || canary.format === false,
+      (canary) =>
+        canary.source !== undefined || canary.fixes !== undefined || canary.format === false,
     );
     expect(compileOnly.map((canary) => canary.id)).toEqual([
       "L1-diagnostic-added",
+      "L1-fix-no-op",
       "L2-unformatted",
     ]);
     for (const canary of compileOnly) expect(canaryProjects(canary)).toEqual(["compile"]);
@@ -101,6 +205,44 @@ describe("canaries", () => {
     expect(guardsGoldens(null)).toBe(true);
     expect(guardsGoldens("L7-wrong-text")).toBe(false);
     expect(guardsGoldens("L6-golden-guard")).toBe(true);
+  });
+
+  it("run in CI as a matrix: every canary once, and at most one browser canary per job", () => {
+    const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", "ci.yml"), "utf8");
+    const job = workflow
+      .slice(workflow.indexOf("\njobs:\n"))
+      .split(/^ {2}(?=[a-z0-9-]+:\n)/m)
+      .find((block) => block.startsWith("canaries:\n"));
+    if (!job) throw new Error("ci.yml has no canaries job.");
+    expect(job).toContain("run: pnpm test:canaries ${{ matrix.canaries }}");
+    expect(job).toMatch(/^ {4}timeout-minutes: 10$/m);
+    const entries = /^ {8}canaries: \[([^\]]*)\]/m.exec(job)?.[1]?.split(/,\s*/) ?? [];
+    const jobs = entries.map((entry) => selectCanaries([entry]));
+    expect(
+      jobs
+        .flat()
+        .map(({ id }) => id)
+        .toSorted(),
+    ).toEqual(CANARIES.map(({ id }) => id).toSorted());
+    // One browser canary runs every spec on seven targets: two would not fit the ten minutes.
+    for (const [index, selected] of jobs.entries()) {
+      const browser = selected.filter((canary) => canaryProjects(canary).includes("browser"));
+      expect(browser.length, entries[index]).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("are selected by id or by layer, and an unknown name or a layer without canaries throws", () => {
+    expect(selectCanaries([]).length).toBe(CANARIES.length);
+    expect(selectCanaries(["L5", "L13-console-warn"]).map(({ id }) => id)).toEqual([
+      "L5-debugger",
+      "L5-framework-rule",
+      "L13-console-warn",
+    ]);
+    expect(selectCanaries(["L8", "L8-render-nothing"]).map(({ id }) => id)).toEqual([
+      "L8-render-nothing",
+    ]);
+    expect(() => selectCanaries(["L9"])).toThrow("No canary proves L9: it is not live.");
+    expect(() => selectCanaries(["L5-lint"])).toThrow(/Unknown canary "L5-lint"/);
   });
 
   it("L1 turns into an unexpected UF8001 on every target", async () => {
@@ -124,6 +266,45 @@ describe("canaries", () => {
     // The case's own diagnostic moves a line down.
     expect(corrupted.diagnostics[1]!.span.start).toBe(
       clean.diagnostics[0]!.span.start + 'import "react";\n'.length,
+    );
+    // A file that does not parse reports its syntax error alone, a line down: the evidence.
+    const unparsed = "export default function A() {\n  return <p>a > b</p>;\n}\n";
+    const syntax = await compileWith("L1-diagnostic-added", undefined, unparsed);
+    expect(syntax.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["UF1001"]);
+    const { evidence } = findCanary("L1-diagnostic-added");
+    const moved =
+      'cases/x/__expected__/diagnostics.json differs from this run\'s output:\n-       "line": 2,\n+       "line": 3,';
+    expect(evidence.compile!.diagnostics).toSatisfy((pattern: RegExp) => pattern.test(moved));
+  });
+
+  it("L1-fix-no-op leaves a fix's diagnostic in place, on the cases whose diagnostics have a fix", async () => {
+    // `className` is UF3004, with a safe fix that renames it to `class`.
+    const fixable =
+      'export default function Badge() {\n  return <p className="badge">New</p>;\n}\n';
+    const { diagnostics } = await compileWith(null, undefined, fixable);
+    const recompile = async (fixed: string) =>
+      (await compileWith(null, undefined, fixed)).diagnostics;
+    expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["UF3004"]);
+    for (const target of TARGET_NAMES) {
+      const corrupted = canaryFixes("L1-fix-no-op", fixture(true), target, fixable, diagnostics);
+      // The diagnostics themselves are unchanged, so diagnostics.json still matches.
+      expect(corrupted.map(({ fixes: _fixes, ...rest }) => rest)).toEqual(
+        diagnostics.map(({ fixes: _fixes, ...rest }) => rest),
+      );
+      await expect(checkFixes(fixable, corrupted, target, recompile)).rejects.toThrow(
+        /^Applying the fixes of UF3004 does not recompile clean:\n[\s\S]*\+ UF3004 /,
+      );
+      await expect(
+        checkFixes(fixable, diagnostics, target, recompile),
+        "the fix the canary corrupts works",
+      ).resolves.toBeUndefined();
+    }
+    expect(canaryFixes("L1-fix-no-op", fixture(false), "vue", fixable, diagnostics)).toBe(
+      diagnostics,
+    );
+    expect(canaryFixes(null, fixture(true), "vue", fixable, diagnostics)).toBe(diagnostics);
+    expect(canaryFixes("L7-wrong-text", fixture(true), "vue", fixable, diagnostics)).toBe(
+      diagnostics,
     );
   });
 
@@ -176,48 +357,171 @@ describe("canaries", () => {
     expect(canaryPlugins("L10-root-hidden", REFERENCE)).toEqual([]);
   });
 
-  it("L13 puts the warning in every target's render path", async () => {
+  it("L13 and L5-debugger put their statement in every target's render path", async () => {
     const result = await compileWith("L13-console-warn");
     const contents = (target: string) => result.outputs[target]![0]!.contents;
     expect(contents("react")).toMatch(
-      /function Greeting\(\) \{\s+console\.warn\("\[uf canary\] L13 in react"\);/,
+      /tone = "info",\n\}: TaskListProps\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
     );
-    expect(contents("solid")).toMatch(/function Greeting\(\) \{\s+console\.warn/);
-    expect(contents("qwik")).toMatch(/component\$\(\(\) => \{\s+console\.warn/);
-    expect(contents("vue")).toMatch(/<script setup lang="ts">\s*console\.warn/);
-    expect(contents("svelte")).toMatch(/<script lang="ts">\s*console\.warn/);
-    expect(contents("angular")).toMatch(/constructor\(\) \{\s+console\.warn/);
+    expect(contents("solid")).toMatch(
+      /function TaskList\(rawProps: TaskListProps\) \{\n {2}console\.warn/,
+    );
+    expect(contents("qwik")).toMatch(
+      /component\$<TaskListProps>\(\n {2}\(\{ title = "Tasks \(today\)", tasks, done, tone = "info" \}\) => \{\n {4}console\.warn/,
+    );
+    expect(contents("vue")).toMatch(/<script setup lang="ts">\nconsole\.warn/);
+    expect(contents("svelte")).toMatch(/<script lang="ts">\n {2}console\.warn/);
+    expect(contents("angular")).toMatch(
+      /export default class TaskList \{\n {2}constructor\(\) \{\n {4}console\.warn/,
+    );
     expect(contents("astro")).toMatch(
-      /^---\nconsole\.warn\("\[uf canary\] L13 in astro"\);\n---\n/,
+      /^---\nconsole\.warn\("\[uf canary\] L13 in astro"\);\nexport interface Task \{/,
     );
+    const debug = await compileWith("L5-debugger");
+    for (const target of TARGET_NAMES) {
+      expect(debug.outputs[target]![0]!.contents.match(/\bdebugger;/g), target).toHaveLength(1);
+    }
+  });
+
+  it("L5-framework-rule writes its framework's forbidden idiom on the root element", async () => {
+    const result = await compileWith("L5-framework-rule");
+    const root = (target: string) =>
+      /<section\b[^>]*>/.exec(result.outputs[target]![0]!.contents)?.[0];
+    expect(root("react")).toMatch(/^<section class="uf-canary" className=/);
+    expect(root("solid")).toMatch(/^<section className="uf-canary" class=/);
+    expect(root("qwik")).toMatch(/^<section className="uf-canary" class=/);
+    expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
+    expect(root("svelte")).toMatch(/^<section style:uf-canary="1" class=/);
+    expect(root("angular")).toMatch(/^<section \*ngIf="true" class=/);
+    expect(root("astro")).toMatch(/^<section set:html="uf-canary" class:list=/);
   });
 
   it("L10-root-inverted styles the root element in each target's own syntax", async () => {
-    const result = await compileWith("L10-root-inverted", "react");
-    expect(result.outputs.react![0]!.contents).toContain(
-      '<p style={{ filter: "invert(1)" }} className="greeting">',
-    );
     for (const target of TARGET_NAMES.filter((name) => name !== REFERENCE)) {
       const { outputs } = await compileWith("L10-root-inverted", target);
       const contents = outputs[target]![0]!.contents;
-      expect(contents.match(/style=/g), target).toHaveLength(1);
+      expect(contents.match(/invert\(1\)/g), target).toHaveLength(1);
       expect(contents, target).toMatch(
-        /<p style=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\}) class/,
+        /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\})/,
       );
     }
   });
 
-  it("adds an attribute to the root element only, after any frontmatter or options", () => {
-    const attribute = { jsx: "data-x={1}", markup: 'data-x="1"' };
+  describe("on roots that already set what they set", () => {
+    const styled =
+      'export default function Tag({ label }: { label: string }) {\n  return (\n    <span role="note" style={{ display: "inline-block", filter: "none" }}>\n      {label}\n    </span>\n  );\n}\n';
+    const icon =
+      'export default function Icon({ label }: { label: string }) {\n  return (\n    <svg role="img" viewBox="0 0 24 24">\n      <title>{label}</title>\n      <circle cx="12" cy="12" r="10" />\n    </svg>\n  );\n}\n';
+    it("replace the root's role, on an <svg> root too", async () => {
+      for (const input of [styled, icon]) {
+        const root = await corruptedRoot("L11-invalid-role", input);
+        const roles = root.attributes.filter(
+          (attribute) =>
+            (attribute.kind === "Static" || attribute.kind === "Bound") &&
+            attribute.name === "role",
+        );
+        expect(roles, root.tag).toEqual([
+          expect.objectContaining({ kind: "Static", value: "uf-canary" }),
+        ]);
+      }
+    });
+
+    it("replace the root's own declaration of the property they style", async () => {
+      const hidden = await corruptedRoot("L10-root-hidden", styled);
+      const inverted = await corruptedRoot("L10-root-inverted", styled);
+      expect(declarationsOf(hidden)).toEqual(["filter: none", "display: none"]);
+      expect(declarationsOf(inverted)).toEqual(["display: inline-block", "filter: invert(1)"]);
+      // An <svg> takes no `hidden`: it is hidden by a style of its own.
+      expect(declarationsOf(await corruptedRoot("L10-root-hidden", icon))).toEqual([
+        "display: none",
+      ]);
+    });
+  });
+
+  describe("the text canaries", () => {
+    it("append to the root's text, where every render shows it", async () => {
+      expect(await markedElements(source)).toEqual(["section"]);
+    });
+
+    it("reach the first element that holds text: an SVG <title>, a table's cell", async () => {
+      const icon =
+        'export default function Icon({ label }: { label: string }) {\n  return (\n    <svg role="img" viewBox="0 0 24 24">\n      <circle cx="12" cy="12" r="10" />\n      <title>{label}</title>\n    </svg>\n  );\n}\n';
+      expect(await markedElements(icon)).toEqual(["title"]);
+      const table =
+        "export default function Scores({ score }: { score: number }) {\n  return (\n    <table>\n      <tbody>\n        <tr>\n          <td>{score}</td>\n        </tr>\n      </tbody>\n    </table>\n  );\n}\n";
+      expect(await markedElements(table)).toEqual(["td"]);
+    });
+
+    it("mark every branch of a root fragment whose roots all sit in branches", async () => {
+      const branches =
+        "export default function State({ on }: { on: boolean }) {\n  return <>{on ? <b>On</b> : <i>Off</i>}</>;\n}\n";
+      expect(await markedElements(branches)).toEqual(["b", "i"]);
+    });
+
+    it("merge with the text the element ends with, so no two texts are adjacent", async () => {
+      const { ir, outputs } = await compileWith(
+        "L6-wrong-text",
+        "vue",
+        "export default function A() {\n  return <p>Hello</p>;\n}\n",
+      );
+      expect(rootElement(ir).children).toEqual([
+        expect.objectContaining({ kind: "Text", value: "Hello (canary)" }),
+      ]);
+      expect(outputs.vue![0]!.contents).toContain("<p>Hello (canary)</p>");
+    });
+  });
+
+  it("L8-render-nothing renders an empty element and keeps only the prop bindings", async () => {
+    const { ir, diagnostics } = await compileWith("L8-render-nothing");
+    expect(diagnostics).toEqual([]);
+    const component = ir!.components[0]!;
+    expect(component.render).toMatchObject({
+      kind: "Element",
+      tag: "div",
+      attributes: [],
+      children: [],
+    });
+    expect(component.bindings.map(({ kind }) => kind)).toEqual(["prop", "prop", "prop", "prop"]);
+    expect(component.props.map(({ name }) => name)).toEqual(["title", "tasks", "done", "tone"]);
+  });
+
+  it("rename the last closing tag of each target's template, never a script block's", async () => {
+    const result = await compileWith("L3-mismatched-closing-tag");
+    for (const target of TARGET_NAMES) {
+      const contents = result.outputs[target]![0]!.contents;
+      expect(contents.match(/<\/span>/g), target).toHaveLength(1);
+      expect(contents, target).not.toContain("</section>");
+    }
+    for (const target of ["vue", "svelte"]) {
+      expect(result.outputs[target]![0]!.contents, target).toContain("</script>");
+    }
+    expect(result.outputs.vue![0]!.contents).toMatch(/<\/span>\n<\/template>\n$/);
+  });
+
+  it("add an attribute to the root element only, after any frontmatter, options or script", () => {
+    const attribute = 'data-x="1"';
     expect(
       addRootAttribute(
         {
           path: "Card.astro",
-          contents: '---\nconst a = "<b>";\n---\n<article>\n  <p>a</p>\n</article>\n',
+          contents:
+            '---\nconst a: Array<string> = ["<b>"];\n---\n<article>\n  <p>a</p>\n</article>\n',
         },
         attribute,
       ),
-    ).toBe('---\nconst a = "<b>";\n---\n<article data-x="1">\n  <p>a</p>\n</article>\n');
+    ).toBe(
+      '---\nconst a: Array<string> = ["<b>"];\n---\n<article data-x="1">\n  <p>a</p>\n</article>\n',
+    );
+    expect(
+      addRootAttribute(
+        {
+          path: "Card.svelte",
+          contents:
+            '<svelte:options runes={true} />\n\n<script lang="ts">\n  let { a }: { a: Array<string> } = $props();\n</script>\n\n<hr />\n',
+        },
+        attribute,
+      ),
+    ).toMatch(/<\/script>\n\n<hr data-x="1" \/>\n$/);
     expect(
       addRootAttribute(
         { path: "Card.svelte", contents: "<svelte:options runes={true} />\n\n<hr />\n" },
@@ -227,11 +531,21 @@ describe("canaries", () => {
     expect(
       addRootAttribute(
         {
-          path: "Card.tsx",
+          path: "Card.vue",
           contents:
-            "export default function Card() {\n  return (\n    <div>\n      <p />\n    </div>\n  );\n}\n",
+            '<script setup lang="ts">\nconst a: Array<string> = [];\n</script>\n\n<template>\n  <template v-if="a.length"><p>a</p></template>\n</template>\n',
         },
         attribute,
+      ),
+    ).toContain('<template v-if="a.length"><p data-x="1">a</p></template>');
+    expect(
+      addRootAttribute(
+        {
+          path: "Card.tsx",
+          contents:
+            'import { component$ } from "@qwik.dev/core";\n\nexport default component$<{ a: Array<string> }>(({ a }) => {\n  return (\n    <div>\n      <p />\n    </div>\n  );\n});\n',
+        },
+        "data-x={1}",
       ),
     ).toContain("<div data-x={1}>\n      <p />");
     expect(() =>
@@ -262,10 +576,60 @@ describe("canaries", () => {
     expect(astro).toBe("---\nx();\nconst a = 1;\n---\n<p />\n");
   });
 
+  it("injects into a component body whose parameters hold parentheses of their own", () => {
+    const react = injectScript(
+      {
+        path: "A.tsx",
+        contents:
+          'export default function A({ label = "(a)", format }: { label?: string; format: () => string }) {\n  return <p>{format()}</p>;\n}\n',
+      },
+      "react",
+      "x();",
+      "render",
+    );
+    expect(react).toContain("format: () => string }) {\n  x();\n  return <p>");
+    const qwik = injectScript(
+      {
+        path: "A.tsx",
+        contents:
+          'import { component$ } from "@qwik.dev/core";\n\nexport default component$<{ label?: string }>(\n  ({ label = ")" }) => {\n    return <p>{label}</p>;\n  },\n);\n',
+      },
+      "qwik",
+      "x();",
+      "render",
+    );
+    expect(qwik).toContain('({ label = ")" }) => {\n  x();\n    return <p>');
+    expect(() =>
+      injectScript(
+        {
+          path: "A.tsx",
+          contents:
+            'import { component$ } from "@qwik.dev/core";\n\nexport default component$(() => <p />);\n',
+        },
+        "qwik",
+        "x();",
+        "render",
+      ),
+    ).toThrow(/no component\$ body/);
+    const angular = injectScript(
+      {
+        path: "a.ts",
+        contents: "export default class A {\n  readonly label = input.required<string>();\n}\n",
+      },
+      "angular",
+      "x();",
+      "render",
+    );
+    expect(angular).toBe(
+      "export default class A {\n  constructor() {\n    x();\n  }\n\n  readonly label = input.required<string>();\n}\n",
+    );
+  });
+
   it("fails loudly when an output has no shape to corrupt", () => {
+    // The template's own end is no tag of its markup.
     expect(() =>
       mismatchClosingTag({ path: "A.vue", contents: "<template><br /></template>" }),
-    ).not.toThrow();
+    ).toThrow(/no closing tag/);
     expect(() => mismatchClosingTag({ path: "A.svelte", contents: "<br />" })).toThrow(
       /no closing tag/,
     );
@@ -279,10 +643,77 @@ describe("canaries", () => {
     ).toThrow(/no component class/);
   });
 
-  it("renames a closing tag so it no longer matches", () => {
+  it("renames a closing tag of the markup so it no longer matches", () => {
     expect(mismatchClosingTag({ path: "A.svelte", contents: "<p>a</p>" })).toBe("<p>a</span>");
     expect(mismatchClosingTag({ path: "A.svelte", contents: "<span>a</span>" })).toBe(
       "<span>a</div>",
     );
+    expect(
+      mismatchClosingTag({
+        path: "A.svelte",
+        contents:
+          '<script lang="ts">\n  let a: Array<string> = [];\n</script>\n\n<p title="</b>">a</p>\n',
+      }),
+    ).toBe(
+      '<script lang="ts">\n  let a: Array<string> = [];\n</script>\n\n<p title="</b>">a</span>\n',
+    );
+    expect(
+      mismatchClosingTag({
+        path: "a.ts",
+        contents: "@Component({\n  template: `<p>a</p>`,\n})\nexport default class A {}\n// </b>\n",
+      }),
+    ).toBe("@Component({\n  template: `<p>a</span>`,\n})\nexport default class A {}\n// </b>\n");
   });
+});
+
+describe("every canary on the corpus", () => {
+  const cases = listCases();
+  const compiled = new Map<string, Promise<{ input: string; result: CompileResult }>>();
+  /** A case's source and its clean compile, once per run. */
+  const clean = (info: (typeof cases)[number]) => {
+    let pending = compiled.get(info.id);
+    if (!pending) {
+      const input = readFileSync(info.source, "utf8");
+      pending = compile(input, { filename: info.filename, targets: TARGET_NAMES }).then(
+        (result) => ({ input, result }),
+      );
+      compiled.set(info.id, pending);
+    }
+    return pending;
+  };
+
+  it.each(CANARIES.filter((canary) => canary.plugin && canary.id !== "L1-plugin-throws"))(
+    "$id corrupts every case with output on every target it corrupts, keeping the IR valid",
+    async (canary) => {
+      const problems: string[] = [];
+      for (const info of cases) {
+        const { input, result } = await clean(info);
+        const targets = corruptedTargets(canary).filter(
+          (target) =>
+            result.outputs[target]?.length &&
+            !result.diagnostics.some(
+              (diagnostic) =>
+                diagnostic.severity === "error" &&
+                (diagnostic.target === undefined || diagnostic.target === target),
+            ),
+        );
+        if (!targets.length) continue;
+        const after = await compile(input, {
+          filename: info.filename,
+          targets,
+          plugins: canaryPlugins(canary.id, targets[0]),
+          format: canaryFormats(canary.id),
+        });
+        for (const diagnostic of after.diagnostics.filter(({ code }) => code === "UF8001")) {
+          problems.push(`${info.id}: ${diagnostic.message}`);
+        }
+        for (const target of targets) {
+          if (JSON.stringify(after.outputs[target]) === JSON.stringify(result.outputs[target])) {
+            problems.push(`${info.id} › ${target}: the output did not change`);
+          }
+        }
+      }
+      expect(problems).toEqual([]);
+    },
+  );
 });

@@ -412,10 +412,20 @@ export interface BoundStyle {
  */
 export interface SpreadAttribute {
   kind: "Spread";
-  /** The object spread: a prop or a loop item typed by a local object type. */
+  /**
+   * The object spread: an expression whose type is one object type the module declares, as a
+   * prop, a list's item or a member of one is.
+   */
   value: Expression;
   /** The keys the object's type declares, in member order. */
   keys: SpreadKey[];
+  /**
+   * Whether the object may be `null` or `undefined` where the spread is, as its type says once
+   * the conditions around the spread narrow it: then it renders no key, and the targets read
+   * each key through `?.` (`attrs?.title`). A read through `?.` of an object that cannot be
+   * nullish is an error on Angular (NG8107), and one through `.` of an object that may be throws.
+   */
+  nullish: boolean;
   span: Span;
 }
 

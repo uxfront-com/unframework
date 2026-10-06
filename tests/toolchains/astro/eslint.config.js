@@ -17,7 +17,20 @@ export default [
     // TypeScript wherever ESLint runs.
     languageOptions: { parserOptions: { parser: tseslint.parser } },
     processor: processors["client-side-ts"],
+    plugins: { "@typescript-eslint": tseslint.plugin },
     rules: {
+      // The baseline's unused-variable rule, which oxlint does not run on an `.astro` file: the
+      // markup reads the frontmatter's bindings where oxlint cannot see them, and
+      // astro-eslint-parser counts those reads. It counts the `Props` Astro reads only in a file
+      // that names `Astro`, so the target exports `Props` when nothing reads `Astro.props`
+      // (ADR-0034). typescript-eslint's,
+      // with the options oxlint's takes by default (a variable or a parameter whose name starts
+      // with `_` is ignored). It also reports a value only a type reads, which oxlint's does
+      // not: that value is dead too.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
+      ],
       "astro/no-set-html-directive": "error",
       "astro/no-set-text-directive": "error",
       "astro/no-unsafe-inline-scripts": "error",

@@ -5,7 +5,10 @@ import {
   isIdentifier,
   PROP_NAME_PATTERN,
   RESERVED_PROP_NAMES,
+  RESERVED_TYPE_NAMES,
+  reservedParameterName,
   reservedPropName,
+  reservedPropsParameterName,
 } from "../src/index.ts";
 
 describe("the names", () => {
@@ -36,6 +39,7 @@ describe("the names", () => {
     ["JSON", "declares as a member"],
     ["onClick", "events land in M2"],
     ["ngIf", "Angular reserves"],
+    ["Fragment", "Astro's output renders `<>`"],
     ["label$", "ASCII letters and digits"],
     ["_label", "ASCII letters and digits"],
     ["étiquette", "ASCII letters and digits"],
@@ -59,6 +63,20 @@ describe("the names", () => {
     expect(listed.toSorted()).toEqual(["ref_for", "ref_key"]);
   });
 
+  it("reserves the type names the outputs declare or import", () => {
+    expect([...RESERVED_TYPE_NAMES.keys()]).toEqual([
+      "Props",
+      "CSSProperties",
+      "Component",
+      "Partial",
+      "Record",
+      "Required",
+      "Pick",
+      "Exclude",
+    ]);
+    for (const name of RESERVED_TYPE_NAMES.keys()) expect(isIdentifier(name)).toBe(true);
+  });
+
   it.each(["toString", "valueOf", "hasOwnProperty", "__proto__"])(
     "finds nothing for %s on a prototype",
     (name) => {
@@ -71,4 +89,31 @@ describe("the names", () => {
       );
     },
   );
+
+  it.each([
+    ["String", "the global `String`"],
+    ["undefined", "the global `undefined`"],
+    ["props", "some outputs declare `props`"],
+    ["rawProps", "some outputs declare `rawProps`"],
+    ["Fragment", "Astro's output renders `<>`"],
+    ["$index", "Angular's `@for` declares"],
+    ["$item", "Angular's `@for` declares"],
+    ["_ctx", "Vue's compiled render functions"],
+    ["__props", "Vue's compiled render functions"],
+    ["as", "a keyword in Angular's template expressions"],
+  ])("keeps a list's or an arrow's parameter from the name %j", (name, reason) => {
+    expect(reservedParameterName(name)).toContain(reason);
+  });
+
+  it.each(["item", "_", "index", "label", "x$"])("leaves the parameter name %j free", (name) => {
+    expect(reservedParameterName(name)).toBeUndefined();
+  });
+
+  it("keeps the object form's parameter from the names Astro's compiled component declares", () => {
+    expect(reservedPropsParameterName("$$props")).toContain("Astro's compiled component");
+    expect(reservedPropsParameterName("$$p")).toBeDefined();
+    expect(reservedPropsParameterName("$")).toBeUndefined();
+    expect(reservedPropsParameterName("props")).toBeUndefined();
+    expect(reservedPropsParameterName("Astro")).toBeUndefined();
+  });
 });

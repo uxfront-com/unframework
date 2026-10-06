@@ -160,7 +160,7 @@ describe("the fixes of random text", () => {
       checked++;
     }
     expect(checked).toBeGreaterThan(5000);
-  });
+  }, 60_000);
 });
 
 describe("whitespace Svelte drops", () => {

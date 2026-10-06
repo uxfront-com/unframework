@@ -35,6 +35,12 @@ export default function UsageMeter({ label, percent, colour, thickness }: UsageM
           style={{ width: `${percent}%`, height: "100%", backgroundColor: "var(--meter-colour)" }}
         />
       </div>
+      <p
+        className="usage-meter-caption"
+        style={{ color: colour, fontFamily: '"UF Test Sans", sans-serif' }}
+      >
+        {percent} of 100 used
+      </p>
     </div>
   );
 }

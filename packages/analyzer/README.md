@@ -27,7 +27,9 @@ Passes P2 (analyse) and P3 (lower) of the Unframework compiler (plan §5.1):
 
 ## The M1 subset
 
-Exported components with typed props and static JSX (plan §9 M1, ADR-0034 to ADR-0040):
+Exported components with typed props and static JSX (plan §9 M1, ADR-0034 to ADR-0040). A
+component is a function declaration; one written as a value (`export const Card = (props) => …`)
+is UF1102, checked as the declaration its likely fix writes (`analyze.ts`).
 
 - **Props** (`props.ts`, `declarations.ts`): the one parameter, destructured with static defaults
   or kept as one object read as `props.x`, typed by an object type literal or a local `interface`
@@ -40,17 +42,32 @@ Exported components with typed props and static JSX (plan §9 M1, ADR-0034 to AD
   props, list variables, expression-local arrow parameters and the allowed globals; anything else
   is UF3020, UF3019 (time, chance, locale) or UF1002 (setup code, M2). Impure expressions are
   UF3021, `??` and `?.` on a value that is never nullish UF3023, a parameter that shadows a
-  rewritten name or is never read UF3024. A small syntactic model of value kinds (`types/`) feeds
-  the checks that depend on what a value can be.
+  rewritten name, takes an Angular keyword or is never read UF3024 (a part the walk reports
+  without reading counts as reading every parameter it names). A small syntactic model of value
+  kinds (`types/`) feeds the checks that depend on what a value can be, narrowed where a
+  reference is read by the tests around it (truthiness, `typeof`, `Array.isArray`, a literal, a
+  discriminant) as TypeScript narrows its type, where every target keeps the narrowing
+  (`narrowing.ts`).
 - **Children** (`lower.ts`, `lists.ts`): text, expressions rendered as text (UF3016), conditionals
-  (`c && X`, `?:` chains holding JSX; UF3025 for `||` and `??` with JSX) and keyed lists
+  (`c && X`, `?:` chains holding JSX; UF3025 for `||` and `??` with JSX, fixed as `x ? x : …` and
+  `x != null ? x : …` where `x` is a reference that renders as text) and keyed lists
   (`source.map((item, index) => <el key={…}>`; UF3013 to UF3015, UF3018 for the source and the
-  key). Texts side by side are one text, whatever drops or flattens between them.
-- **Attributes** (`attribute-names.ts`, `attributes.ts`, `class.ts`, `style.ts`, `aria.ts`): name
-  checks first, whatever the value; then static values, literals in braces (written statically,
-  UF3004), bindings whose kinds must fit the attribute (UF3018), `class` parts, `style`
-  declarations (parsed by `@unframework/parser`, UF3022 for what the targets cannot keep apart) and
-  spreads of objects whose keys a local type declares.
+  key; `source?.map(…)` is a list whose `?.` is UF3023, or UF3018 with the fix
+  `(source ?? []).map(…)`). Texts side by side are one text, whatever drops or flattens between
+  them. A line feed that can start a `<pre>`, through conditionals and past what can render
+  nothing, is UF3017; text in an `<iframe>`, which the parser reads as raw text, is UF3003.
+- **Attributes** (`attribute-names.ts`, `attributes.ts`, `enumerated.ts`, `class.ts`, `style.ts`,
+  `aria.ts`): name checks first, whatever the value; then static values, literals in braces
+  (written statically, UF3004), bindings whose kinds must fit the attribute and whose values
+  every typed target's element types accept (UF3018: an enumerated attribute's tokens, a
+  string where a target types one), `class` parts, `style` declarations (parsed by
+  `@unframework/parser`, UF3022 for what the targets cannot keep apart) and spreads of objects
+  whose keys a local type declares. A spread records whether its object may be nullish where
+  it renders (`spread-source.ts`): its kinds say whether its type may be, and the conditions
+  around it narrow it as every target's checker does; a test the compiler does not follow is
+  UF1002, and a source the conditions show is absent UF3004. A bound `value` that may be nullish
+  on the elements whose `value` some targets set as a property (`NULLISH_VALUE_ELEMENTS`) is
+  UF1002.
 
 Every fix leaves exactly the diagnostics that had none once all are applied (the harness's L1),
 which the tests check for each fix, for each pair that can meet, and over random mixes.
@@ -61,4 +78,10 @@ which the tests check for each fix, for each pair that can meet, and over random
 the tools the rules stand for: parse5 (the HTML parser's repairs and SVG adjustments), Svelte, Vue
 and Angular (element and attribute tables, ARIA warnings, Angular's security schema), Babel, oxc
 and esbuild (JSX text), and Angular's template parser over a seeded fuzz of every accepted
-expression form.
+expression form. `types-conformance.test.ts` runs `tsc` (the executable, never the API) over
+probes of every attribute of every element against Vue's, React's, Solid's, Qwik's, Svelte's and
+Astro's element types, resolved from the target packages, under the names each target prints:
+what the analyser accepts in a binding, every target's types accept, and every name it accepts,
+the authoring types, React's and Vue's declare. The IR holds the tables both read
+(`UNDECLARED_ATTRIBUTES`, `UNBINDABLE_ATTRIBUTES`, `RESERVED_TYPE_NAMES`, `CSS_PROPERTIES`), so
+`checkInvariants` rejects the same.

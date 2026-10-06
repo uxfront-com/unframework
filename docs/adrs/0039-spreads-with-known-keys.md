@@ -1,9 +1,9 @@
 # ADR-0039: An attribute spread renders exactly the keys its type declares
 
 - **Status:** Accepted
-- **Date:** 2026-10-02
+- **Date:** 2026-10-05
 - **Plan:** §4.3, §6 (fallthrough), §9 M1, M3; P2, P3, P4, P6; R5; ADR-0010, ADR-0034, ADR-0037,
-  ADR-0038
+  ADR-0038; amends ADR-0032
 
 ## Context
 
@@ -23,49 +23,108 @@ keys the compiler can see, and probes showed that even those render differently:
 ## Decision
 
 - **A spread is accepted only when its keys are known.** `{...expr}` lowers to a **Spread** when
-  the analyzer resolves `expr` to an object type with declared keys: a prop or a loop item typed by
-  an object type literal or a local interface or alias (ADR-0034). The source may be optional
-  (`attrs?: Attrs`); every key then reads through `?.`. Any other source is UF1002, "spreads of
-  objects whose keys the compiler cannot see land with fallthrough (M3)". An object literal
-  spread is UF3004, with a safe fix that writes the attributes out (P3).
+  the value kinds of `expr` (ADR-0035) resolve to one object type the module declares: a prop or
+  a list's item, or a member of one, typed by an object type literal or a local interface or alias
+  (ADR-0034). Any other source, a string, an array or a union of two object types, is UF1002,
+  "spreads of objects whose keys the compiler cannot see land with fallthrough (M3)".
+- **`SpreadAttribute.nullish` says whether the source may be nullish where the spread is**, as its
+  kinds say once the conditions around the spread narrow it (`spread-source.ts` and
+  `narrowing.ts` in the analyzer, ADR-0035): an optional prop, a `T | null` prop or one that
+  defaults to `null`, an optional member, a conditional, an index (`xs[1]`), `.find()` or `.at()`,
+  a list item typed `T | undefined`. The outputs read every key through `?.` exactly when it is
+  set, and the analyzer sets it, since the IR does not know types: a `.` on a source that may be
+  absent throws, and Angular rejects a `?.` on a member it has narrowed to an object (NG8107).
+  - A condition that tests the source clears it where every target's checker narrows it, by
+    TypeScript's rules as ADR-0035 records them: `{attrs && <p {...attrs} />}`, `!attrs` failing,
+    any operand of an `&&`, `!(on || !attrs)`, `attrs !== undefined`, `attrs?.id && …`. An `||` that
+    may hold without the source (`(on || attrs) && …`) leaves it nullable, read through `?.`. A
+    list's item and a destructured prop keep their narrowing inside a list's callback that holds the
+    spread (Solid's keyed callback receives the prop narrowed, ADR-0036); the object form's prop and
+    a member do not.
+  - A branch that renders only where the source is absent renders nothing: UF3004, with a safe fix
+    that removes the spread.
+  - Where the targets' checkers may read the source apart (the object form's prop or a member
+    narrowed outside a list's callback that holds the spread, or a test the compiler does not
+    follow, an equality with a value that is no literal, such as `attrs?.id === label`), a prop or a
+    list's item reads its keys through `?.`, which every target takes, as Angular does not check its
+    own template variables. Only a member, which Angular's checker narrows and then rejects a
+    needless `?.` on (NG8107), is UF1002, with the help to test the source inside the callback, or
+    to spread it without the condition, as a spread of an absent object renders no attribute.
+- **Two spreads have a canonical spelling instead** (UF3004, P3):
+  - a spread of an object literal, with a safe fix that writes out its attributes where each is a
+    name the element takes, written canonically;
+  - a spread whose type declares no keys, which renders nothing, with a safe fix that removes it.
 - **A spread renders exactly its declared keys, on every target.** `SpreadAttribute.keys` lists
   them, each with the span of its member in the type. Keys a value carries beyond its type are not
   rendered; passing them is outside the contract (ADR-0035).
 - **Every key is checked as a written Bound attribute** on that element (ADR-0037): its name, and
-  its member type's kinds against the attribute. A key that is also written, or in two spreads, is
-  UF3007. A `style` key is UF1002 (M4). `key`, `ref`, `children` and the reserved prop names are
-  UF1002 (M3).
+  its member's kinds against the attribute, `undefined` included when the member or the source is
+  optional. So a key the element does not take is UF3006, a boolean attribute that cannot be bound
+  (`hidden`) or an undeclared name is UF1002, and a wrong kind is UF3018. In addition:
+  - `key`, `ref` and `children` are UF1002 (M3): the frameworks read them themselves;
+  - `style` is UF1002 (M4);
+  - a key spelt other than its attribute's name (`className`, `tabIndex`) is UF3004: a spread's keys
+    are attribute names, so the member is renamed in its type;
+  - a key that is also written on the element, or set by another spread, is UF3007.
 - **A `class` key merges** into the element's class: one Static or Class `class` may coexist with
-  one spread `class` key, and the rendered tokens are their union (ADR-0038). The IR's "set once"
-  invariant (ADR-0032) carries this one exception.
+  one spread `class` key, whose kinds are string or nullish (UF3018 otherwise), and the rendered
+  tokens are their union (ADR-0038). This amends ADR-0032: its "set once" invariant carries this
+  one exception, and a spread's keys are checked by the invariants as Bound attributes are
+  (ADR-0037).
 - **Every target expands the spread per declared key**, so the capability `attribute-spread` is
-  native on all seven, and no target prints a native object spread:
-  - React, Solid and Qwik write one prop per key (`id={attrs.id}`, `id={props.attrs?.id}`), with
-    the `class` key inside the element's single class expression;
-  - Vue writes one `:key-name` binding per key, Svelte and Astro one attribute per key, with the
-    `class` key inside `:class`, `class={[…]}` or `class:list`;
-  - Angular writes one `[attr.key-name]` binding per key.
+  native on all seven, and no target prints the author's spread as a native object spread:
+  - React, Solid and Qwik write one prop per key, in the target's name for it (`maxLength`), with
+    the `class` key inside the element's one class expression (`cx` on React and Solid, the class
+    array on Qwik); on Solid, a source a condition narrows is read as the value its keyed
+    callback received (`<Show keyed when={props.signature}>{(signature) => …signature.id…}`,
+    ADR-0036);
+  - Vue writes one binding per key, with the `class` key in `:class`; Svelte and Astro one
+    attribute per key, with it in `class={[…]}` or `class:list`;
+  - Angular writes one `[attr.name]` binding per key, a boolean as `cond ? '' : null`, and the
+    `class` key in its `[class]` binding.
+
+  The JSX targets read the `class` key last in the class expression; the markup targets merge every
+  class source into one class at the first source's place, so a spread written before the
+  element's `class` puts its key first (`class:list={[row.class, "link-row", …]}`).
+
+  A target that writes an attribute its framework's types do not declare on that element as an
+  object spread, such as Qwik's `{...{ list: "colours" }}`, spells one written attribute; that is
+  ADR-0037's, not an author's spread.
+
+The `bindings/spreads` case:
 
 ```tsx
-interface Attrs {
-  id?: string;
+interface HintAttributes {
+  id: string;
   title?: string;
-  class?: string;
 }
 
-export default function Tag({ attrs }: { attrs?: Attrs }) {
-  return (
-    <span class="tag" {...attrs}>
-      tag
-    </span>
-  );
+export interface TextFieldProps {
+  // …
+  field: FieldAttributes; // name, placeholder, autocomplete, maxlength, required, title
+  hint?: HintAttributes;
 }
+
+<input id={inputId} type="text" {...field} />
+<p class="text-field-hint" {...hint}>{hintText}</p>
 ```
 
 ```text
-React    <span id={attrs?.id} title={attrs?.title} className={cx("tag", attrs?.class)}>
-Vue      <span class="tag" :class="attrs?.class" :id="attrs?.id" :title="attrs?.title">
-Angular  <span class="tag" [class]="…" [attr.id]="attrs()?.id" [attr.title]="attrs()?.title">
+React    <input id={inputId} type="text" name={field.name} … maxLength={field.maxlength}
+           required={field.required} title={field.title} />
+         <p className="text-field-hint" id={hint?.id} title={hint?.title}>
+Vue      <p :id="hint?.id" class="text-field-hint" :title="hint?.title">{{ hintText }}</p>
+Angular  <input [attr.id]="inputId" type="text" [attr.name]="field.name" …
+           [attr.required]="field.required ? '' : null" [attr.title]="field.title" />
+```
+
+And the `class` merge of `bindings/class-merge`, `<a href={href} class="text-link" {...link}>`:
+
+```text
+React    <a href={href} className={cx("text-link", link.class)} title={link.title} rel={link.rel}>
+Vue      <a :href="href" class="text-link" :class="link.class" :title="link.title" :rel="link.rel">
+Svelte   <a {href} class={["text-link", link.class]} title={link.title} rel={link.rel}>
+Astro    <a href={href} class:list={["text-link", link.class]} title={link.title} rel={link.rel}>
 ```
 
 ## Consequences
@@ -112,5 +171,32 @@ Angular  <span class="tag" [class]="…" [attr.id]="attrs()?.id" [attr.title]="a
   Qwik drops it, and React drops it with a warning.
 - vue-tsc rejects `v-bind="attrs"` with TS2559 when every key of `attrs` is `data-*`, even with
   `dataAttributes: ["data-*"]`; per-key `:data-x` bindings pass.
-- `bindings/spreads` and `bindings/class-merge` are green at every live layer on all seven targets
-  (to verify in M1).
+- `packages/analyzer/test/bindings.test.ts`, `describe("spreads")`: "lowers a spread of a typed
+  prop, with its declared keys" (UF3007 for a key written twice or two spreads, UF1002 for an
+  array, a string or a `key`, `style`, `hidden` or function member, UF3006 for a key the element
+  does not take, UF3004 for `className`, UF3018 for a number `title`), "removes a spread whose type
+  declares no keys (UF3004)" and "writes a spread object literal as its attributes"; and "merges
+  one spread's class with the element's own".
+- `packages/analyzer/test/bindings.test.ts`, `describe("spreads")`: "reads a list's item that may
+  be absent through `?.`", "narrows the source in %s", "removes a spread whose source a condition
+  shows to be absent (UF3004)" and "reports a spread whose source %s tests in a way it cannot
+  follow (UF1002)". `packages/codegen/test/jsx.test.ts`: "reads a spread's keys directly when its
+  source is always there" and "reads every key through `?.` when the spread's source may be
+  nullish". The markup cases "spreads of nullish sources: null, an absent member and a
+  conditional" and "a spread of list items that may be absent", and the kit's sources "an optional
+  spread source, absent and present", "spreads of sources that may be nullish (present|absent)"
+  and "spreads of a list's items and of narrowed sources (present|absent)", render on every
+  target; `packages/target-angular/test/output.test.ts` compiles them through ngtsc, where a
+  needless `?.` would be NG8107.
+- Each target pins its expansion: React's "writes a spread out key by key, merging its class into
+  the element's", Solid's "writes a spread key by key, through `?.`…", Qwik's "writes a spread as
+  one attribute per declared key, merging its `class`" and Vue's "prints class and style beside
+  their bindings, and a spread one binding per key" (each `packages/target-*/test/emit.test.ts`);
+  the markup cases "a spread whose class key merges…" and "an optional spread, absent" render
+  through the markup targets' own frameworks.
+- The render-parity kit spreads typed props in its tricky and seeded components, an optional source
+  among them, and renders them on all seven targets against the reference evaluator, which renders
+  the declared keys only and merges the `class` key.
+- `bindings/spreads` (a required and an optional source, with and without the hint) and
+  `bindings/class-merge` (a spread `class` beside a static and a bound class) are green at every
+  live layer on all seven targets.

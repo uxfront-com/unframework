@@ -433,7 +433,7 @@ export function styleKey(property: string, keys: "camel" | "kebab"): string {
 
 /**
  * A spread as one attribute per declared key (ADR-0039): `title={attrs.title}`, through `?.`
- * when the source may be absent. A `class` key is left to the element's own `class`, which
+ * when the source may be nullish. A `class` key is left to the element's own `class`, which
  * merges it, when the element has one.
  */
 export function spreadJsxAttributes(
@@ -462,7 +462,8 @@ function hasClass(element: ElementNode): boolean {
 
 /**
  * The value of one of a spread's keys: `attrs.title`, `attrs["aria-label"]`, or through `?.`
- * when the spread's source is an optional prop without a default.
+ * when the analyser found that the source may be nullish there (`attrs?.title`,
+ * `(on ? attrs : undefined)?.title`), as a spread of nothing renders no key.
  */
 export function spreadRead(
   attribute: SpreadAttribute,
@@ -470,9 +471,7 @@ export function spreadRead(
   context: JsxContext,
 ): AST.Expression {
   const source = jsxExpression(attribute.value, context, "operand");
-  if (!mayBeAbsent(attribute.value, context.component)) {
-    return js.memberExpression(source, key.name);
-  }
+  if (!attribute.nullish) return js.memberExpression(source, key.name);
   const read = js.memberExpression(source, key.name, { optional: true });
   return js.chainExpression(read as AST.ChainElement);
 }
@@ -487,20 +486,6 @@ export function spreadClassReads(element: ElementNode, context: JsxContext): AST
     const key = attribute.keys.find((entry) => entry.name === "class");
     return key ? [spreadRead(attribute, key, context)] : [];
   });
-}
-
-/**
- * Whether an expression may be `undefined` because it is exactly an optional prop without a
- * default (`attrs?: Attrs`): a spread of it reads every key through `?.`.
- */
-export function mayBeAbsent(expression: Expression, component: UfComponent): boolean {
-  const [only] = expression.refs;
-  if (expression.refs.length !== 1 || only?.kind !== "Binding") return false;
-  if (only.span.start !== expression.span.start || only.span.end !== expression.span.end) {
-    return false;
-  }
-  const prop = component.props.find((candidate) => candidate.binding === only.binding);
-  return prop !== undefined && prop.optional && prop.default === undefined;
 }
 
 /**

@@ -2,7 +2,7 @@
 // blocks, a static `class` beside one `[class]` binding, a static `style` beside `[style.x]`
 // bindings. Angular's expression language is not JavaScript: its lexer reads fewer escapes and
 // no comments, so literals are re-printed from their values and comments dropped, token by token.
-import { BINDABLE_BOOLEAN_ATTRIBUTES } from "@unframework/ir";
+import { angularLowercases, angularMisreads, BINDABLE_BOOLEAN_ATTRIBUTES } from "@unframework/ir";
 
 import { parseExpression, parseExpressionSource } from "../rewrite.ts";
 import {
@@ -41,13 +41,18 @@ const ANGULAR_SPACE =
   " \\f\\n\\r\\t\\v\\u1680\\u180e\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff";
 const ANGULAR_WHITESPACE_ONLY = new RegExp(`^[${ANGULAR_SPACE}]+$`);
 const ANGULAR_RUN = new RegExp(`[${ANGULAR_SPACE}]{2,}`);
-/** What Angular's processing could see in a string literal: runs, and any space but `" "`. */
-const ANGULAR_LITERAL_SPACE = new RegExp(
-  `[${ANGULAR_SPACE}]{2,}|[${ANGULAR_SPACE.replace(" ", "")}]`,
-  "g",
-);
-/** Angular's whitespace but the plain space, which a literal writes as an escape. */
-const ANGULAR_OTHER_SPACE = new RegExp(`^[${ANGULAR_SPACE.replace(" ", "")}]$`);
+/**
+ * U+E500, which Angular writes for `&ngsp;`: its parser turns the character into a space in all
+ * text, interpolated literals and `<pre>` included, after it has decoded references to it.
+ */
+const NGSP = "\ue500";
+/** Angular's whitespace but the plain space, and U+E500: a literal writes them as escapes. */
+const ANGULAR_OTHER_SPACE = new RegExp(`^[${ANGULAR_SPACE.replace(" ", "")}${NGSP}]$`);
+/**
+ * JavaScript's whitespace outside ASCII, which may separate an expression's tokens: Angular's
+ * expression lexer reads only ASCII whitespace and the no-break space, and rejects the rest.
+ */
+const NON_ASCII_SPACE = /[\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]/g;
 
 /** A decimal number literal as Angular's lexer reads it: digits, `_`, one `.`, an exponent. */
 const DECIMAL = /^(?=\.?\d)(?:\d(?:_?\d)*)?(?:\.(?:\d(?:_?\d)*)?)?(?:[eE][+-]?\d(?:_?\d)*)?$/;
@@ -61,8 +66,8 @@ export type AngularContext = "interpolation" | "attribute" | "block";
 
 /**
  * A character of a re-printed literal that Angular, or the template around the expression,
- * would read differently: its whitespace processing (any space but a plain one), entities and
- * markup (`&`, `<`, `>`) and its block and ICU syntax (`{`, `}`).
+ * would read differently: its whitespace processing (any space but a plain one, and U+E500),
+ * entities and markup (`&`, `<`, `>`) and its block and ICU syntax (`{`, `}`).
  */
 function angularCharacter(character: string): string | undefined {
   // `\n`, `\t` and the other simple escapes keep their short spelling.
@@ -75,30 +80,160 @@ function angularCharacter(character: string): string | undefined {
 /** A run of spaces, which Angular's whitespace processing would condense, as escapes. */
 const escapeSpaceRuns = (text: string) => text.replace(/ {2,}/g, unicodeEscape);
 
+/** `<` where Angular's template lexer opens a tag: before a letter, `/`, `!` or `?`. */
+const TAG_START = /<(?=[A-Za-z!/?])/g;
+
 /**
  * Expression code as Angular reads it where `context` says, re-spelled token by token (design
  * §4.3): string literals from their values, with only the escapes Angular's lexer reads (it
  * reads `"\x41"` as `"x41"`) and none of its delimiters; template literals as concatenations of
- * such strings ({@link withoutTemplateLiterals}); number literals in decimal;
- * comments, which it cannot hold, as a space. In an interpolation, a `}}` outside quotes would
- * end it and `<` before a letter would open a tag; in an interpolation or an attribute value,
- * character references are decoded first and, in an attribute, `"` ends the value.
+ * such strings ({@link withoutTemplateLiterals}); number literals in decimal, kept apart from a
+ * `.` or `?` beside them ({@link angularNumber}); regular
+ * expressions with escapes for what its template reads in them ({@link angularRegex}); comments,
+ * which it cannot hold, as a space; whitespace outside ASCII between tokens, which its lexer
+ * rejects, as a space. In an interpolation, a `}}` outside quotes would end it and `<` before a
+ * letter would open a tag; in an interpolation or an attribute value, character references are
+ * decoded first and, in an attribute, `"` ends the value. In every context, Angular ends the
+ * expression at a `//` it finds outside quotes, which it tracks without escapes, so a closing
+ * `/` before a division gets a space, and no string holds a backslash before a quote
+ * ({@link angularString}).
  */
 export function angularCode(code: string, context: AngularContext): string {
   const interpolation = context === "interpolation";
-  const respelled = mapCode(withoutTemplateLiterals(code), {
-    string: (_, { value }) =>
-      escapeSpaceRuns(quoteString(value, context === "attribute" ? "'" : '"', angularCharacter)),
-    number: (raw, { value }) => (DECIMAL.test(raw) ? raw : String(value)),
-    regex: (raw) =>
-      interpolation ? raw.replace(/(?<=\})\}/g, "\\}").replace(/<(?=[A-Za-z!/?])/g, "\\x3c") : raw,
+  const source = withoutTemplateLiterals(code);
+  const respelled = mapCode(source, {
+    string: (_, { value }) => angularString(value, context === "attribute" ? "'" : '"'),
+    number: (raw, { value, end }, before) => angularNumber(raw, value, before, source[end]),
+    regex: (raw, before) => {
+      const regex = angularRegex(raw, interpolation);
+      if (!interpolation) return regex;
+      // `a</b/` would open a tag; `\}` means `}` in a regular expression either way.
+      return `${before.endsWith("<") ? " " : ""}${regex.replace(/(?<=\})\}/g, "\\}")}`;
+    },
     comment: () => " ",
-    other: (text) =>
-      interpolation ? text.replace(/\}(?=\})/g, "} ").replace(/<(?=[A-Za-z!/?])/g, "< ") : text,
+    other: (text, before) => {
+      const spaced = `${before.endsWith("/") && text.startsWith("/") ? " " : ""}${text.replace(
+        NON_ASCII_SPACE,
+        " ",
+      )}`;
+      return interpolation ? spaced.replace(/\}(?=\})/g, "} ").replace(TAG_START, "< ") : spaced;
+    },
   }).trim();
   if (context === "block") return respelled;
-  const decoded = escapeReferences(respelled);
-  return context === "attribute" ? decoded.replace(/"/g, "&quot;") : decoded;
+  // An attribute value's lexer decodes each reference on its own.
+  if (context === "attribute") return escapeReferences(respelled).replace(/"/g, "&quot;");
+  // Angular decodes an interpolation's references only once it has found its end, with
+  // `/&([^;]+);/`: a bare `&` (`a && b`) would take the `;` of a reference after it, which then
+  // reaches the expression as written. So where a reference is needed, every `&` is one: an `&`
+  // that could start one (`/R&D/`), and a `<` left before a letter, which is a regular
+  // expression's (`(?<name>…)`), where a space would change it, and which would open a tag.
+  return /&[A-Za-z0-9#]/.test(respelled) || respelled.search(TAG_START) !== -1
+    ? respelled.replace(/&/g, "&amp;").replace(TAG_START, "&lt;")
+    : respelled;
+}
+
+/**
+ * A number literal as Angular's lexer reads it: in decimal, as written where it can be. Its
+ * lexer takes every `.` after a number into it (`1.5.toFixed(1)`, `5..toString()`), so a number
+ * a member access follows is parenthesised, as oxfmt writes one for React; and it reads `?.` as
+ * optional chaining, so a leading-dot number after a `?` (`c?.5:1`) gets its `0`.
+ */
+function angularNumber(raw: string, value: number, before: string, next?: string): string {
+  const decimal = DECIMAL.test(raw) ? raw : String(value);
+  if (next === ".") return `(${decimal.replace(/\.$/, "")})`;
+  return before.endsWith("?") && decimal.startsWith(".") ? `0${decimal}` : decimal;
+}
+
+/**
+ * A string literal from its value, with only the escapes Angular's lexer reads, none of its
+ * delimiters and no run of spaces, and no backslash before a quote: the target writes the
+ * template in a TypeScript template literal, whose raw text angular-eslint lints (L5), where
+ * `\'` reads as an escaped backslash and a quote that ends the string; and Angular's search for
+ * a comment (`//`) ends a string at any quote of its kind. So it takes `preferred`, or the other
+ * quote when only `preferred` is in the value (in an attribute, `"` is then written `&quot;`),
+ * and writes its own quote as a `\u` escape when the value holds both.
+ */
+function angularString(value: string, preferred: "'" | '"'): string {
+  const other = preferred === "'" ? '"' : "'";
+  const quote = value.includes(preferred) && !value.includes(other) ? other : preferred;
+  return escapeSpaceRuns(quoteString(value, quote, angularCharacter)).replace(
+    /\\[\s\S]/g,
+    (escape) => (escape === `\\${quote}` ? unicodeEscape(quote) : escape),
+  );
+}
+
+/** A character of a regular expression as an escape that means it with any flags. */
+function regexEscape(character: string): string {
+  const unit = character.charCodeAt(0);
+  return unit < 0x100 ? `\\x${unit.toString(16).padStart(2, "0")}` : unicodeEscape(character);
+}
+
+/**
+ * What a regular expression only ever holds as a literal and Angular's template reads: quotes,
+ * `;`, and its whitespace but the plain space (runs of which are escaped too), and U+E500.
+ */
+const REGEX_ESCAPED = new RegExp(`['"\`;${ANGULAR_SPACE.replace(" ", "")}${NGSP}]`);
+
+/**
+ * A regular expression literal as Angular's template reads it, with escapes (`\x27`) for what
+ * would otherwise end or change it: the lexers that find an interpolation's `}}`, a block
+ * parameter's `;` and `)` and a comment's `//` track quotes, so a quote in `/'/` opens one; the
+ * block lexer counts the parentheses in a class (`/[)]/`); a body that writes `//` (`/^\//`)
+ * holds a comment; and whitespace processing condenses a run of spaces and turns U+E500 into a
+ * space. So each quote, `;`, whitespace character but a lone space, and parenthesis in a class
+ * is an escape, and so is every `/` of a body that would write `//`. A parenthesis outside a
+ * class is a group, which is balanced. An escaped `/`, bracket or parenthesis is an escape of
+ * this kind too (`\x2f`): angular-eslint lints the raw text of the TypeScript template literal
+ * the template sits in, where its backslash is doubled, and the character after it would be
+ * syntax there. In an interpolation, a literal `<` before a letter would open a tag, and is an
+ * escape too; one that opens a group's name or a lookbehind (`(?<x>`, `(?<!`, `\k<x>`) is left
+ * to `angularCode`.
+ */
+function angularRegex(raw: string, interpolation: boolean): string {
+  const close = raw.lastIndexOf("/");
+  const units: { text: string; slash: boolean }[] = [];
+  let inClass = false;
+  for (let index = 1; index < close; index++) {
+    const character = raw[index]!;
+    if (character === "\\") {
+      const escaped = raw[++index]!;
+      // angular-eslint lints the template's raw text, where the backslash is doubled and so
+      // escapes itself: a `/`, a bracket or a parenthesis after it would be syntax there.
+      units.push(
+        REGEX_ESCAPED.test(escaped) || /[ /[\]()]/.test(escaped)
+          ? { text: regexEscape(escaped), slash: false }
+          : { text: `\\${escaped}`, slash: escaped === "/" },
+      );
+      continue;
+    }
+    if (character === "[") inClass = true;
+    else if (character === "]") inClass = false;
+    const syntax =
+      !inClass &&
+      (units.at(-1)?.text === "\\k" ||
+        units
+          .slice(-2)
+          .map((unit) => unit.text)
+          .join("") === "(?");
+    const escape =
+      REGEX_ESCAPED.test(character) ||
+      (inClass && /[()]/.test(character)) ||
+      (interpolation && character === "<" && !syntax && /[A-Za-z!/?]/.test(raw[index + 1] ?? ""));
+    units.push({ text: escape ? regexEscape(character) : character, slash: character === "/" });
+  }
+  // A `{` before another is a literal (a quantifier's starts a number): as an escape, it keeps
+  // the `{{` out of an attribute value, whose lexer would decode what follows it as an
+  // interpolation's text ({@link angularCode}).
+  units.forEach((unit, at) => {
+    if (unit.text.endsWith("{") && units[at + 1]?.text.startsWith("{")) unit.text = "\\x7b";
+  });
+  const write = (slashes: boolean) =>
+    units
+      .map((unit) => (slashes && unit.slash ? "\\x2f" : unit.text))
+      .join("")
+      .replace(/ {2,}/g, (run) => "\\x20".repeat(run.length));
+  const body = `/${write(false)}/`.includes("//") ? write(true) : write(false);
+  return `/${body}/${raw.slice(close + 1)}`;
 }
 
 interface TemplateNode {
@@ -262,7 +397,8 @@ export function withoutTemplateLiterals(code: string): string {
  *
  * Angular's parser puts `<svg>` and everything inside it in the SVG namespace (`:svg:`), which
  * every IR tree has around its SVG elements: a component rooted in an SVG child, which would need
- * `:svg:` prefixes, is UF1002 until M3 (ADR-0040).
+ * `:svg:` prefixes, is UF1002 until M3 (ADR-0040). Its lexer reads a `<title>`'s content as text,
+ * blocks included, unless the tag itself names the namespace, so an SVG title is `<svg:title>`.
  */
 export const angularDialect: MarkupDialect = {
   name: "angular",
@@ -274,6 +410,8 @@ export const angularDialect: MarkupDialect = {
     return `${name}="${escapeBraces(escapeHtmlAttribute(value))}"`;
   },
   voidElement: "self-closing",
+  // A parent `<svg>` does not count: only the tag's own prefix makes the lexer read blocks there.
+  elementName: (tag, namespace) => (namespace === "svg" && tag === "title" ? "svg:title" : tag),
   stripsWhitespaceBetweenElements: true,
   stripsEdgeWhitespace: true,
   literalRegion: (element) =>
@@ -324,6 +462,7 @@ export const angularDialect: MarkupDialect = {
     ];
   },
   styleAttribute: (written) => {
+    readsEveryDeclaration(written);
     // A static value holding `{{` is bound as a string, as a class name is: Angular does not
     // sanitise style bindings.
     const parts = written.map((part): StylePart =>
@@ -376,8 +515,20 @@ export const angularDialect: MarkupDialect = {
   ],
 };
 
-/** Text as M0 writes it for Angular: references, `&ngsp;`, and literals for what it rewrites. */
+/**
+ * Text as M0 writes it for Angular: references, `&ngsp;`, and literals for what it rewrites.
+ * Right after an `@if` or `@for` block, Angular's parser drops a text node that JavaScript's
+ * `trim()` empties while it looks for the block's `@else` or `@empty` (`findConnectedBlocks`):
+ * `&ngsp;`, a non-breaking space, even inside `<pre>`. There the text is an interpolated literal,
+ * which is no blank text, with each space but a lone plain one escaped so it reads.
+ */
 function angularText(text: string, position: TextPosition): string {
+  const afterBlock = position.previous === "If" || position.previous === "For";
+  if (afterBlock && text.trim() === "") {
+    return angularInterpolation(text).replace(/[^\x20-\x7e]/g, unicodeEscape);
+  }
+  // Only an escape in a literal keeps U+E500 from becoming a space, in a `<pre>` too.
+  if (text.includes(NGSP)) return angularInterpolation(text);
   if (keepsWhitespace(position)) return escapeAngular(text, position);
   if (text === " ") return "&ngsp;";
   return ANGULAR_WHITESPACE_ONLY.test(text) || ANGULAR_RUN.test(text)
@@ -419,18 +570,46 @@ const angularLiteralDialect: MarkupDialect = {
           },
         ]
       : staticOnly("a class binding"),
-  styleAttribute: (parts) =>
-    parts.every((part) => part.kind === "Static")
-      ? [
-          {
-            name: "style",
-            text: angularLiteralDialect.attribute("style", staticStyleValue(parts), ""),
-          },
-        ]
-      : staticOnly("a style binding"),
+  styleAttribute: (parts) => {
+    if (parts.some((part) => part.kind !== "Static")) return staticOnly("a style binding");
+    readsEveryDeclaration(parts);
+    return [
+      {
+        name: "style",
+        text: angularLiteralDialect.attribute("style", staticStyleValue(parts), ""),
+      },
+    ];
+  },
   conditional: () => staticOnly("a conditional"),
   list: () => staticOnly("a list"),
 };
+
+/**
+ * Whether Angular reads a declaration back as written. Its compiler parses a static `style`
+ * again (`parse` in its style parser), and its server DOM parses every style it sets the same
+ * way: it splits at a `;` outside quotes and parentheses, but counts the parentheses inside
+ * quotes, ends a quote at an escaped one (`"a\";b"`), knows no comments, and lowercases each
+ * property (`--myColor` becomes `--my-color`). Read from where a declaration starts, the value
+ * must hold no `;` that would end it, and end outside quotes and parentheses, so that the next
+ * declaration starts as written too. The analyser rejects any other (UF3022, ADR-0038).
+ */
+function angularReadsStatic(property: string, value: string): boolean {
+  return !angularLowercases(property) && !angularMisreads(value);
+}
+
+/** Throws for a declaration Angular would misread, which the analyser keeps out of the IR. */
+function readsEveryDeclaration(parts: readonly StylePart[]): void {
+  const misread = parts.find((part) =>
+    part.kind === "Static"
+      ? !angularReadsStatic(part.property, part.value)
+      : angularLowercases(part.property),
+  );
+  if (misread) {
+    throw new Error(
+      `Angular's style parser misreads \`${misread.property}: ${misread.value}\` (UF3022, ADR-0038).`,
+    );
+  }
+}
 
 /** ADR-0037: the analyser keeps anything that binds out of an element that needs the region. */
 function staticOnly(what: string): never {
@@ -445,9 +624,13 @@ const ANGULAR_LITERAL_REGION: LiteralRegion = {
   dialect: angularLiteralDialect,
 };
 
-/** An Angular interpolation of the text, with nothing Angular's whitespace processing changes. */
+/**
+ * An Angular interpolation of the text as a literal ({@link angularString}), with nothing
+ * Angular's whitespace processing changes: any space but a lone plain one, and U+E500, is an
+ * escape.
+ */
 function angularInterpolation(text: string): string {
-  return `{{ ${stringLiteral(text).replace(ANGULAR_LITERAL_SPACE, unicodeEscape)} }}`;
+  return `{{ ${angularString(text, '"')} }}`;
 }
 
 /**

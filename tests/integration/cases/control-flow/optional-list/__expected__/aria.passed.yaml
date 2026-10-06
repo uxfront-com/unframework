@@ -1,0 +1,6 @@
+- region "Build log":
+  - text: $ make build
+  - code: cc -O2 -c main.c
+  - code: ld -o app main.o
+  - list "Warnings":
+    - listitem: "main.c: unused variable 'tmp'"

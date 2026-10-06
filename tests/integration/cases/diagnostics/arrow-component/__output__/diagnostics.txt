@@ -1,0 +1,9 @@
+error[UF1102]: Card is an arrow function in a `const`, and a component is a function declaration.
+ --> diagnostics/arrow-component/Card.uf.tsx:7:14
+  |
+7 | export const Card = ({ title }: CardProps) => <article class="card">{title}</article>;
+  |              ^^^^
+  |
+  = help: Declare it as a function: `export function Card(props: Props) { return …; }`.
+  = fix (likely): Declare `Card` as a function
+  = see: https://unframework.dev/diagnostics/UF1102

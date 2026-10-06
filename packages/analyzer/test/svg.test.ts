@@ -92,6 +92,45 @@ describe("SVG", () => {
     expect(found(jsx)).toEqual([problem]);
   });
 
+  // They are not rendered, and Vue types `<title>` with HTML's attributes.
+  it.each([
+    ['<svg><title fill="red">a</title></svg>', "UF3006 fill"],
+    ['<svg><desc transform="scale(2)">a</desc></svg>', "UF3006 transform"],
+    ['<svg><title role="img">a</title></svg>', "UF3006 role"],
+    ['<svg><desc tabindex="0">a</desc></svg>', "UF3006 tabindex"],
+  ])("takes only the core attributes on <title> and <desc>: %s", (jsx, problem) => {
+    expect(found(jsx)).toEqual([problem]);
+  });
+
+  it("accepts the core, ARIA and data attributes on <title> and <desc>", () => {
+    const { diagnostics } = component(
+      '<svg><title id="t" class="c" lang="en" style="color: red" aria-hidden="true" data-x="1">a</title><desc id="d">b</desc></svg>',
+    );
+    expect(diagnostics).toEqual([]);
+  });
+
+  // dom-expressions leaves `title` out of its SVG tags, so Solid creates a branch's or a list's
+  // own <title> in HTML's namespace.
+  it.each([
+    ["<svg>{on && <title>a</title>}</svg>", ["UF1002 title"]],
+    ["<svg>{on ? <title>a</title> : <title>b</title>}</svg>", ["UF1002 title", "UF1002 title"]],
+    ["<svg>{on && <><title>a</title><g /></>}</svg>", ["UF1002 title"]],
+    ["<svg>{items.map((item) => <title key={item}>{item}</title>)}</svg>", ["UF1002 title"]],
+  ])("reports an SVG <title> that starts a branch or a list's element, in %s", (jsx, found) => {
+    const { source, diagnostics } = component(jsx, { props: "on: boolean; items: string[]" });
+    expect(problems(source, diagnostics)).toEqual(found);
+    expect(diagnostics[0]!.message).toContain("Solid creates it in HTML's namespace");
+  });
+
+  it("accepts an SVG <title> inside a branch's element, and a conditional inside a <title>", () => {
+    for (const jsx of [
+      "<svg>{on && <g><title>a</title></g>}</svg>",
+      '<svg><title>{on ? "a" : "b"}</title></svg>',
+    ]) {
+      expect(component(jsx, { props: "on: boolean" }).diagnostics, jsx).toEqual([]);
+    }
+  });
+
   it.each([
     ["<svg>{label}</svg>", "UF3003 {label}"],
     ["<svg><g>{label}</g></svg>", "UF3003 {label}"],
@@ -105,6 +144,23 @@ describe("SVG", () => {
     expect(codes(diagnostics)).toEqual(["UF3003", "UF3003", "UF3003"]);
     expect(applyAndRecheck(source, diagnostics)).toContain('<svg><g><circle r="1" /></g></svg>');
     expect(component("<svg><text>a <tspan>b</tspan> c</text></svg>").diagnostics).toEqual([]);
+  });
+
+  // A space between two values in a <title> or a <desc> is part of an accessible name: Svelte
+  // drops it, and removing it would change the name, so the help writes one expression.
+  it("reports whitespace between values in an SVG <title>, without a fix that removes it", () => {
+    const { source, diagnostics } = component(
+      '<svg viewBox="0 0 1 1" role="img"><title>{label} {status}</title></svg>',
+      { props: "label: string; status: string" },
+    );
+    expect(problems(source, diagnostics)).toEqual(["UF3003  "]);
+    expect(diagnostics[0]!.fixes).toBeUndefined();
+    expect(diagnostics[0]!.help).toContain("one expression");
+    expect(
+      component('<svg viewBox="0 0 1 1" role="img"><title>{`${label} ${status}`}</title></svg>', {
+        props: "label: string; status: string",
+      }).diagnostics,
+    ).toEqual([]);
   });
 
   it("keeps static text in any SVG element, as every target does", () => {

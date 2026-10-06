@@ -1,5 +1,5 @@
 {
-  "description": "A style object: camelCase properties, custom properties with a string and a number, unitless numbers and bound values.",
+  "description": "A style object: camelCase properties, custom properties with a string and a number, unitless numbers and bound values, and a static font family with a quoted name beside a bound declaration.",
   "ssr": {
     "half": { "props": { "label": "Storage", "percent": 50, "colour": "#1f4d7a", "thickness": 2 } },
     "full": {

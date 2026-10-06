@@ -22,12 +22,10 @@ export const QWIK_ATTRIBUTE_NAMES: Readonly<Record<string, string>> = {
   autocorrect: "autoCorrect",
   cellpadding: "cellPadding",
   cellspacing: "cellSpacing",
-  closedby: "closedBy",
   colspan: "colSpan",
   contenteditable: "contentEditable",
   crossorigin: "crossOrigin",
   datetime: "dateTime",
-  dirname: "dirName",
   disablepictureinpicture: "disablePictureInPicture",
   disableremoteplayback: "disableRemotePlayback",
   enterkeyhint: "enterKeyHint",
@@ -39,7 +37,6 @@ export const QWIK_ATTRIBUTE_NAMES: Readonly<Record<string, string>> = {
   formtarget: "formTarget",
   frameborder: "frameBorder",
   inputmode: "inputMode",
-  ismap: "isMap",
   itemid: "itemID",
   itemprop: "itemProp",
   itemref: "itemRef",
@@ -57,7 +54,6 @@ export const QWIK_ATTRIBUTE_NAMES: Readonly<Record<string, string>> = {
   rowspan: "rowSpan",
   tabindex: "tabIndex",
   usemap: "useMap",
-  writingsuggestions: "writingSuggestions",
 };
 
 /**
@@ -83,7 +79,6 @@ export const QWIK_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set([
   "formnovalidate",
   "hidden",
   "inert",
-  "ismap",
   "itemscope",
   "loop",
   "multiple",
@@ -107,30 +102,29 @@ type Elements = { readonly on: readonly string[] } | { readonly except: readonly
 
 /**
  * HTML attributes the analyser accepts that Qwik 2.0.0-beta.47's JSX types declare under no
- * name on some elements: their DOM property is read-only (`<input form>`, `<input list>`) or
- * missing (`commandfor`), or Qwik declares it on a few elements only (`enterkeyhint`). Qwik
+ * name on some elements: their DOM property is read-only (`<input form>`, `<input list>`), or
+ * Qwik declares it on a few elements only (`enterkeyhint`). Qwik
  * renders them as written, so the target writes each as an object spread, whose keys TypeScript
  * does not check against the element's (`<input {...{ list: "colours" }} />`). Pinned by
  * test/attributes.test.ts, which type-checks every attribute the analyser accepts.
  */
 export const QWIK_UNTYPED_ATTRIBUTES: Readonly<Record<string, Elements>> = {
-  commandfor: { on: ["button"] },
   enterkeyhint: { except: ["input", "textarea"] },
   form: { on: ["input"] },
   list: { on: ["input"] },
 };
 
 /**
- * The `contenteditable` values Qwik's types take under `contentEditable`. Qwik writes any other
- * value, `true` and `false` among them, only under the HTML name, the one its renderer
- * serialises as an enumerated attribute (`false` as `"false"`, where under `contentEditable`
- * it drops the attribute): there it is an object spread too.
+ * The `contenteditable` values Qwik's types take under `contentEditable`, which are also all a
+ * bound value can be (the analyser's enumerated tokens, ADR-0037). A static value they leave
+ * out (`"plaintext-only"`) is written under the HTML name, as an object spread too.
  */
 const QWIK_CONTENT_EDITABLE: ReadonlySet<string> = new Set(["false", "inherit", "true"]);
 
 /**
  * Whether the target writes an attribute as an object spread under its HTML name (see
- * {@link QWIK_UNTYPED_ATTRIBUTES}): `value` is a static value, or `undefined` for a bound one.
+ * {@link QWIK_UNTYPED_ATTRIBUTES} and {@link QWIK_CONTENT_EDITABLE}): `value` is a static value,
+ * or `undefined` for a bound one.
  */
 export function isUntypedAttribute(
   tag: string,
@@ -140,7 +134,9 @@ export function isUntypedAttribute(
 ): boolean {
   if (namespace !== "html") return false;
   const html = name.toLowerCase();
-  if (html === "contenteditable") return typeof value !== "string" || !QWIK_CONTENT_EDITABLE.has(value);
+  if (html === "contenteditable") {
+    return typeof value === "string" && !QWIK_CONTENT_EDITABLE.has(value);
+  }
   const elements = QWIK_UNTYPED_ATTRIBUTES[html];
   if (!elements) return false;
   return "on" in elements ? elements.on.includes(tag) : !elements.except.includes(tag);

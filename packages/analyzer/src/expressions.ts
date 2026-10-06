@@ -6,6 +6,8 @@
 import type { Fix } from "@unframework/diagnostics";
 import {
   ALLOWED_GLOBALS,
+  ANGULAR_KEYWORDS,
+  angularRespellsRegex,
   createBindingReference,
   createExpression,
   createGlobalReference,
@@ -13,9 +15,19 @@ import {
 } from "@unframework/ir";
 import type { Expression, Reference, Span } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
+import { visitorKeys } from "@unframework/parser";
 
 import type { Reporter } from "./context.ts";
 import { readLiteral } from "./literals.ts";
+import {
+  angularChecks,
+  narrowedKinds,
+  narrowingAt,
+  readsAsText,
+  referencePath,
+  usedLoosely,
+} from "./narrowing.ts";
+import type { Narrowing, Unfollowed } from "./narrowing.ts";
 import type { RenderContext } from "./render.ts";
 import {
   arrayOf,
@@ -23,6 +35,7 @@ import {
   booleanLiteral,
   elementsOf,
   FUNCTION,
+  has,
   kinds,
   mayBeNullish,
   memberOf,
@@ -47,6 +60,12 @@ export interface CheckedExpression {
   kinds: Kinds;
   /** Whether checking it reported nothing: a fix may remove it without hiding a diagnostic. */
   clean: boolean;
+  /**
+   * Whether a `?.` in it may end the optional chain it is part of, which then gives `undefined`:
+   * the kinds of an expression that is the start of a longer chain (a list's source in
+   * `items?.slice(0, 2).map(…)`) do not hold that `undefined` themselves.
+   */
+  shortCircuits: boolean;
 }
 
 /** Globals that make the rendering depend on time, chance or the machine (UF3019), and how. */
@@ -125,6 +144,7 @@ export function checkExpression(node: AST.Expression, context: RenderContext): C
     expression: createExpression(source.slice(node.start, node.end), span(node), refs),
     kinds: result,
     clean: reporter.diagnostics.length === mark,
+    shortCircuits: walk.shortCircuits,
   };
 }
 
@@ -172,6 +192,12 @@ type Position = "value" | "argument";
 /** One walk of one expression. */
 class Walk {
   readonly refs: Reference[] = [];
+  /** Whether a `?.` of the chain being walked may end it, so the chain may be `undefined`. */
+  shortCircuits = false;
+  /** The reports of narrowed reads a `+` decides: none where it concatenates a string. */
+  readonly #concatenations = new Map<object, (() => void)[]>();
+  /** The reads reported as narrowed apart (`#readApart`), whose members say nothing new. */
+  readonly #apart = new WeakSet<object>();
   readonly #context: RenderContext;
   /** The arrow parameters in scope, by the identifier that declares each. */
   readonly #locals = new Map<object, Local>();
@@ -190,8 +216,15 @@ class Walk {
         return this.#identifier(node, shorthand);
       case "MemberExpression":
         return this.#member(node);
-      case "ChainExpression":
-        return this.value(node.expression, position, false);
+      case "ChainExpression": {
+        // A `?.` anywhere along the chain ends it as `undefined`, whatever follows it.
+        const outer = this.shortCircuits;
+        this.shortCircuits = false;
+        const chain = this.value(node.expression, position, false);
+        const result = this.shortCircuits ? union(chain, UNDEFINED) : chain;
+        this.shortCircuits = outer;
+        return result;
+      }
       case "CallExpression":
         return this.#call(node);
       case "ArrayExpression":
@@ -224,6 +257,7 @@ class Walk {
         return UNKNOWN;
       case "TaggedTemplateExpression":
         this.#unsupported(node, "Tagged templates are not supported in template expressions yet.");
+        this.#skip(node);
         return UNKNOWN;
       case "TSAsExpression":
       case "TSSatisfiesExpression":
@@ -256,6 +290,7 @@ class Walk {
             help: "Write the JSX as a child, or extract a component (composition lands in M3).",
           },
         );
+        this.#skip(node);
         return UNKNOWN;
       case "AssignmentExpression":
         return this.#impure(node, "An assignment changes state");
@@ -284,13 +319,49 @@ class Walk {
         return this.#impure(node, "A class expression defines code that rendering cannot analyse");
       default:
         this.#unsupported(node, "This expression is not supported in templates yet.");
+        this.#skip(node);
         return UNKNOWN;
+    }
+  }
+
+  /**
+   * Marks as read every parameter that a part the walk reports without reading names (JSX, an
+   * impure or an unsupported expression), so that only a parameter nothing reads is reported as
+   * unread (UF3024), whose fix removes it.
+   */
+  #skip(node: unknown): void {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+      for (const item of node) this.#skip(item);
+      return;
+    }
+    const type = (node as { type?: string }).type ?? "";
+    // A tag names what it reads too (`<Tag />`, `<item.Tag />`), which scope analysis resolves.
+    if (type === "Identifier" || type === "JSXIdentifier") {
+      const resolution = this.#context.scopes.resolve(node as AST.IdentifierReference);
+      const local =
+        resolution.kind === "parameter" ? this.#locals.get(resolution.declaration) : undefined;
+      if (local) local.read = true;
+    }
+    for (const key of visitorKeys[type] ?? []) {
+      this.#skip((node as Record<string, unknown>)[key]);
     }
   }
 
   #literal(node: AST.Expression & { type: "Literal" }): Kinds {
     const { reporter, source } = this.#context;
-    if ("regex" in node && node.regex) return kinds("object");
+    if ("regex" in node && node.regex) {
+      // Angular writes some characters of the expression as escapes, which its text then holds.
+      const raw = source.slice(node.start, node.end);
+      if (angularRespellsRegex(raw) && readsAsText(node, this.#context)) {
+        this.#unsupported(
+          node,
+          "Reading the text of a regular expression that holds a quote, `;`, whitespace other than one space, a parenthesis in a class, `{{` or `<` is not supported yet: Angular's template writes those characters as escapes, which its `source` and string form would hold.",
+          "Write the text as a string, or use the regular expression only through `.test()`, `.exec()` or a string method such as `replace`.",
+        );
+      }
+      return kinds("object");
+    }
     if ("bigint" in node && node.bigint !== undefined) {
       this.#unsupported(
         node,
@@ -395,17 +466,17 @@ class Walk {
           const prop = context.propsByDeclaration.get(resolution.declaration);
           if (prop?.id === undefined) return UNKNOWN;
           this.refs.push(createBindingReference(prop.id, span(node), shorthand));
-          return prop.kinds;
+          return this.#narrowed(node, prop.kinds);
         }
         const loop = context.loopVariables.get(resolution.declaration);
         if (loop) {
           this.refs.push(createBindingReference(loop.id, span(node), shorthand));
-          return loop.kinds;
+          return this.#narrowed(node, loop.kinds);
         }
         const local = this.#locals.get(resolution.declaration);
         if (local) {
           local.read = true;
-          return local.kinds;
+          return this.#narrowed(node, local.kinds);
         }
         return UNKNOWN;
       }
@@ -473,37 +544,184 @@ class Walk {
         if (node.computed) this.value(node.property, "value", false);
         return UNKNOWN;
       }
+      // The reference spans the member, whose text the targets splice as `props.label`.
+      if (object.start !== node.start) this.#parenthesisedProps(node, object);
       if (node.optional) this.#optional(object, node.property.start, NOTHING, ".");
       this.refs.push(createBindingReference(prop.id, span(node)));
-      return prop.kinds;
+      return this.#narrowed(node, prop.kinds);
     }
     const receiver = this.value(object, "value", false);
     const name = this.#memberName(node);
     this.#random(node, name);
     if (node.optional) {
       this.#optional(object, node.property.start, receiver, node.computed ? "" : ".");
+      if (mayBeNullish(receiver)) this.shortCircuits = true;
     }
+    this.#readAbsent(object, receiver);
     let result: Kinds;
     if (object.type === "Identifier" && this.#isGlobal(object) && name !== undefined) {
       result = globalMember(object.name, name, false);
     } else if (node.computed) {
+      // An index adds `undefined` where the model knows the receiver is an array or a string, as
+      // `noUncheckedIndexedAccess` does; a value it cannot type stays `unknown` (ADR-0035), as
+      // an `Object.entries` entry's `entry[0]`, a string to TypeScript.
       result =
         name !== undefined && receiver.objects?.length
           ? memberOf(receiver, name)
-          : union(
-              ...(receiver.primitives.has("array") ? [elementsOf(receiver)] : []),
-              ...(receiver.primitives.has("string") ? [STRING] : []),
-              ...([...receiver.primitives].some(
-                (primitive) => primitive !== "array" && primitive !== "string",
-              )
-                ? [UNKNOWN]
-                : []),
-              UNDEFINED,
-            );
+          : [...receiver.primitives].every((primitive) => primitive === "unknown")
+            ? UNKNOWN
+            : union(
+                ...(receiver.primitives.has("array") ? [elementsOf(receiver)] : []),
+                ...(receiver.primitives.has("string") ? [STRING] : []),
+                ...([...receiver.primitives].some(
+                  (primitive) => primitive !== "array" && primitive !== "string",
+                )
+                  ? [UNKNOWN]
+                  : []),
+                UNDEFINED,
+              );
     } else {
       result = name === undefined ? UNKNOWN : memberOf(receiver, name);
     }
-    return node.optional && mayBeNullish(receiver) ? union(result, UNDEFINED) : result;
+    return this.#narrowed(
+      node,
+      node.optional && mayBeNullish(receiver) ? union(result, UNDEFINED) : result,
+    );
+  }
+
+  /**
+   * A reference's kinds where it is read, as the conditions around it narrow them on every
+   * target (`./narrowing.ts`), as TypeScript does: without `null` and `undefined` where they show
+   * it present, and with only the kinds a `typeof`, an `Array.isArray`, a literal or a
+   * discriminant leaves. Where some target's checker does not narrow it (`#readApart`), a use
+   * that relies on the narrowing is reported.
+   */
+  #narrowed(node: AST.Expression, kindsOf: Kinds): Kinds {
+    const nullable = has(kindsOf, "null") || has(kindsOf, "undefined");
+    const several = isUnion(kindsOf);
+    if (!nullable && !several && !hasLiterals(kindsOf)) return kindsOf;
+    const context = this.#context;
+    const path = referencePath(node, context);
+    if (!path) return kindsOf;
+    const narrowing: Narrowing =
+      nullable || several ? narrowingAt(node, path, context) : { kind: "declared" };
+    // A value a condition shows absent keeps its kinds: what reads it is reported for that
+    // (`#readAbsent`, a spread's UF3004).
+    if (narrowing.kind === "absent") return kindsOf;
+    const narrowed = narrowedKinds(node, path, kindsOf, context);
+    if (narrowing.kind === "unfollowed" && narrowing.reason !== "form") {
+      this.#readApart(node, narrowing);
+    } else if (narrowed.apart) {
+      this.#readApart(node, { kind: "unfollowed", ...narrowed.apart });
+    }
+    return nullable && narrowing.kind === "present"
+      ? without(narrowed.kinds, "null", "undefined")
+      : narrowed.kinds;
+  }
+
+  /**
+   * Reports `?.` or `??` on a reference that a condition around it tests where the targets'
+   * checkers read it differently (UF1002): Angular's rejects the operator where it narrows the
+   * reference (NG8107, NG8102), and some target's checker rejects the reference without it.
+   */
+  #narrowedApart(operand: AST.Expression | AST.Super, at: Span, operator: "?." | "??"): boolean {
+    if (operand.type === "Super") return false;
+    const context = this.#context;
+    const path = referencePath(operand, context);
+    if (!path || !angularChecks(path, context)) return false;
+    const narrowing = narrowingAt(operand, path, context);
+    // Angular forgets a member's narrowing in an arrow function, and never narrows a prop its
+    // `track` reads: the operator passes it there.
+    if (narrowing.kind !== "unfollowed") return false;
+    if (narrowing.reason === "closure" || narrowing.reason === "key") return false;
+    const { message, help } = narrowedApart(operator, narrowing.reason);
+    context.reporter.report("UF1002", at, message, {
+      help,
+      related: [{ span: span(narrowing.condition), message: "The condition tests it here" }],
+    });
+    return true;
+  }
+
+  /**
+   * Reports a use of a value that relies on a narrowing some target's checker does not see
+   * (UF1002): in a list's callback or an arrow function, where TypeScript forgets a property's
+   * narrowing (a member, the object form, and a prop an expression's conditional narrows,
+   * which Solid copies with `props.x`), or in a list's key, which Angular's `track` reads from
+   * the input again. Testing it, passing it to `?.` or `??`, comparing it for equality and
+   * writing it into a string read alike (`usedLoosely`). Where the compiler does not follow the
+   * condition, every target narrows as TypeScript does, and the source's own type check decides.
+   */
+  #readApart(node: AST.Expression, narrowing: Extract<Narrowing, { kind: "unfollowed" }>): void {
+    if (narrowing.reason === "form") return;
+    // A member of a value reported already says nothing new.
+    let object: AST.Expression | AST.Super = node;
+    while (object.type === "MemberExpression" || object.type === "ChainExpression") {
+      object = object.type === "ChainExpression" ? object.expression : object.object;
+      if (this.#apart.has(object)) {
+        this.#apart.add(node);
+        return;
+      }
+    }
+    const context = this.#context;
+    const use = usedLoosely(node, context);
+    if (use === true) return;
+    this.#apart.add(node);
+    const path = referencePath(node, context)!;
+    const { message, help } = readApart(narrowing.reason, angularChecks(path, context));
+    const report = () =>
+      context.reporter.report("UF1002", node, message, {
+        help,
+        related: [{ span: span(narrowing.condition), message: "The condition tests it here" }],
+      });
+    // A `+` concatenates where its other side is a string, which `#binary` knows once read.
+    if (use === false) report();
+    else this.#concatenations.set(use, [...(this.#concatenations.get(use) ?? []), report]);
+  }
+
+  /**
+   * Reports a member read of a value that a condition around it shows to be absent (UF1002):
+   * TypeScript types it `never` there, and the targets whose checkers keep the narrowing reject
+   * the read, through `?.` too.
+   */
+  #readAbsent(object: AST.Expression | AST.Super, receiver: Kinds): void {
+    if (object.type === "Super" || !receiver.objects?.length) return;
+    const context = this.#context;
+    const path = referencePath(object, context);
+    if (!path) return;
+    const narrowing = narrowingAt(object, path, context);
+    if (narrowing.kind !== "absent") return;
+    context.reporter.report(
+      "UF1002",
+      object,
+      "Reading a member of a value that a condition around it shows to be absent is not supported: TypeScript types the value `never` there, and the targets' checkers reject the read.",
+      {
+        help: "Remove the read, which is always absent here, or test the value so that it is there.",
+        related: [{ span: span(narrowing.condition), message: "The condition tests it here" }],
+      },
+    );
+  }
+
+  /** `(props).label`, which is written `props.label` (UF2001): the targets splice it as one name. */
+  #parenthesisedProps(node: AST.MemberExpression, object: AST.IdentifierReference): void {
+    const { source, reporter } = this.#context;
+    const token = findToken(source, object.end, node.property.start, node.optional ? "?." : ".");
+    reporter.report(
+      "UF2001",
+      { start: node.start, end: token?.start ?? object.end },
+      `\`${object.name}\` is read without parentheses: a prop is \`${object.name}.${source.slice(node.property.start, node.property.end)}\`.`,
+      {
+        help: "Remove the parentheses.",
+        fixes: token
+          ? [
+              {
+                title: "Remove the parentheses",
+                confidence: "safe",
+                edits: [{ span: { start: node.start, end: token.start }, text: object.name }],
+              },
+            ]
+          : [],
+      },
+    );
   }
 
   /** `Math.random`, by dot, bracket or optional access, reads chance (UF3019). */
@@ -556,14 +774,17 @@ class Walk {
    * do nothing, which Angular rejects (UF3023). The fix writes `replacement` for it.
    */
   #optional(
-    operand: { start: number; end: number },
+    operand: AST.Expression | AST.Super,
     next: number,
     kindsOf: Kinds,
     replacement: string,
   ): void {
-    if (mayBeNullish(kindsOf)) return;
     const token = findToken(this.#context.source, operand.end, next, "?.");
     if (!token) return;
+    if (mayBeNullish(kindsOf)) {
+      this.#narrowedApart(operand, { start: token.start, end: token.start + 2 }, "?.");
+      return;
+    }
     this.#context.reporter.report(
       "UF3023",
       { start: token.start, end: token.start + 2 },
@@ -633,6 +854,7 @@ class Walk {
     if (node.optional) {
       const next = node.arguments[0]?.start ?? node.end - 1;
       this.#optional(callee, next, calleeKinds, "");
+      if (mayBeNullish(calleeKinds)) this.shortCircuits = true;
     }
     this.#arguments(node.arguments, parameters);
     if (node.optional && mayBeNullish(calleeKinds)) result = union(result, UNDEFINED);
@@ -646,7 +868,9 @@ class Walk {
     else if (callee.property.type === "Identifier") this.#asciiName(callee.property);
     if (callee.optional) {
       this.#optional(callee.object, callee.property.start, receiver, callee.computed ? "" : ".");
+      if (mayBeNullish(receiver)) this.shortCircuits = true;
     }
+    this.#readAbsent(callee.object, receiver);
     return receiver;
   }
 
@@ -751,6 +975,7 @@ class Walk {
           property,
           "Methods, getters and setters in object literals are not supported in template expressions: Angular's templates reject them.",
         );
+        this.#skip(property);
         continue;
       }
       if (property.computed) {
@@ -813,6 +1038,8 @@ class Walk {
           parameter,
           `Arrow function parameters other than plain names are not supported in template expressions yet: ${angular}`,
         );
+        // A default may read the parameters before it, or an outer arrow's.
+        this.#skip(parameter);
         continue;
       }
       const local: Local = { kinds: parameters[index] ?? UNKNOWN, read: false };
@@ -860,8 +1087,7 @@ class Walk {
           : { help: "Write the returned expression as the body: `(item) => item.on`." },
       );
       if (returned) this.value(returned, "value", false);
-      // A block the walk does not read may read every parameter.
-      else for (const { local } of declared) local.read = true;
+      else this.#skip(body);
     } else {
       this.value(body, "value", false);
     }
@@ -971,6 +1197,7 @@ class Walk {
     const { operator } = node;
     if (node.left.type === "PrivateIdentifier") {
       this.#unsupported(node, "`#x in obj` is not supported in template expressions.");
+      this.#skip(node.right);
       return BOOLEAN;
     }
     if (operator === "in" || operator === "instanceof") {
@@ -981,6 +1208,11 @@ class Walk {
     }
     const left = this.value(node.left, "value", false);
     const right = this.value(node.right, "value", false);
+    const pending = this.#concatenations.get(node);
+    if (pending) {
+      this.#concatenations.delete(node);
+      if (!(onlyStrings(left) || onlyStrings(right))) for (const report of pending) report();
+    }
     if (COMPARISON.has(operator)) return BOOLEAN;
     if (!ARITHMETIC.has(operator)) {
       this.#unsupported(
@@ -1006,8 +1238,14 @@ class Walk {
       const { reporter, source } = this.#context;
       const mark = reporter.diagnostics.length;
       const right = this.value(node.right, "value", false);
-      if (mayBeNullish(left)) return union(without(left, "null", "undefined"), right);
       const token = findToken(source, node.left.end, node.right.start, "??");
+      if (mayBeNullish(left)) {
+        if (token) {
+          const at = { start: token.start, end: token.start + 2 };
+          this.#narrowedApart(node.left, at, "??");
+        }
+        return union(without(left, "null", "undefined"), right);
+      }
       if (token) {
         // The fix removes `??` and its right side, which must hold nothing reported, and no
         // comment, which may be reported once the walk ends.
@@ -1055,12 +1293,96 @@ class Walk {
       `${why}: a template expression must not change anything, and renders the same however often it runs.`,
       { help: "Compute the value without side effects, from the props." },
     );
+    this.#skip(node);
     return UNKNOWN;
   }
 
   #unsupported(node: { start: number; end: number }, message: string, help?: string): void {
     this.#context.reporter.unsupported(node, message, help ? { help } : {});
   }
+}
+
+/**
+ * Why `?.` or `??` on a value a condition tests is reported (`Walk.#narrowedApart`), and what
+ * to write instead: Angular's checker rejects the operator where it narrows the value, and the
+ * other spelling fails where some target's checker does not narrow it.
+ */
+function narrowedApart(
+  operator: "?." | "??",
+  reason: "callback" | "form",
+): { message: string; help: string } {
+  const [code, plain] =
+    operator === "?." ? ["NG8107", "`.`"] : ["NG8102", "the value without `??`"];
+  return reason === "callback"
+    ? {
+        message: `\`${operator}\` on a property that a condition outside the list narrows is not supported yet: Angular's checker narrows it in the list, where it rejects the \`${operator}\` (${code}), and TypeScript does not narrow a property in the JSX targets' callbacks, where ${plain} fails their type check.`,
+        help: "Test the value inside the list's callback, where every target narrows it.",
+      }
+    : {
+        message: `\`${operator}\` on a value that a condition around it tests ${UNFOLLOWED_FORMS} is not supported yet: Angular's checker rejects the \`${operator}\` (${code}) where it narrows the value, and the compiler cannot tell whether it does.`,
+        help: NARROWED_HELP,
+      };
+}
+
+/** The tests of a value the compiler does not follow, which TypeScript narrows its own way. */
+const UNFOLLOWED_FORMS =
+  "in a form the compiler does not follow (an equality with a value that is no literal, such as `member === current`)";
+
+/** How to test a value so that every target narrows it. */
+const NARROWED_HELP =
+  "Test the value itself, as in `{box.inner && <p title={box.inner.title} />}` or `{count !== undefined && count > 0 && …}`, where every target narrows it.";
+
+/**
+ * Why a use of a value a condition narrows is reported (`Walk.#readApart`), and what to write
+ * instead: what passes every target there.
+ */
+function readApart(
+  reason: Exclude<Unfollowed, "form">,
+  checked: boolean,
+): { message: string; help: string } {
+  switch (reason) {
+    case "key":
+      return {
+        message:
+          "A list's key that uses a prop a condition narrows is not supported yet other than through `?.`, `??`, a test, an equality or a string: Angular's `track` reads the prop again from its input (`this.count()`), which its checker never narrows.",
+        help: "Give it a value where it may be absent, as in `(count ?? 0) + index` or `label?.length ?? 0`.",
+      };
+    case "closure":
+      return {
+        message:
+          "A value that a condition outside an arrow function narrows (to be there, or to one kind of a union) is not supported yet in the arrow function other than through `?.`, `??`, a test, an equality or a string: TypeScript does not narrow a property in a closure, and Solid copies an expression's conditional with `props.x`.",
+        help: 'Read it through `?.`, or give it a value with `??` (`item.includes(query ?? "")`), which every target takes there, or test it inside the arrow function or in a conditional child, whose branch keeps it.',
+      };
+    default:
+      return {
+        message: `A property that a condition outside the list narrows is not supported yet in the list's callback other than through \`?.\`, \`??\`, a test, an equality or a string: TypeScript does not narrow a property (a member, or a prop of the object form) in a callback${checked ? ", while Angular's checker narrows it, where it rejects `?.` (NG8107)" : ""}.`,
+        help: checked
+          ? "Test the value inside the list's callback, where every target narrows it."
+          : "Read it through `?.` or give it a value with `??`, which every target takes there, or test it inside the list's callback.",
+      };
+  }
+}
+
+/** Whether a value is a string, which `+` concatenates whatever the other side is. */
+function onlyStrings(kindsOf: Kinds): boolean {
+  return kindsOf.primitives.size > 0 && [...kindsOf.primitives].every((kind) => kind === "string");
+}
+
+/** Whether kinds list two literals or more of a kind (`"sm" | "md"`, `boolean`), which a test narrows. */
+function hasLiterals(kindsOf: Kinds): boolean {
+  return (
+    (kindsOf.strings?.size ?? 0) > 1 ||
+    (kindsOf.numbers?.size ?? 0) > 1 ||
+    (has(kindsOf, "boolean") && kindsOf.booleans?.size !== 1)
+  );
+}
+
+/** Whether kinds hold more than one kind of value, which `typeof` or a discriminant narrows. */
+function isUnion(kindsOf: Kinds): boolean {
+  const primitives = [...kindsOf.primitives].filter(
+    (primitive) => primitive !== "null" && primitive !== "undefined" && primitive !== "unknown",
+  );
+  return primitives.length > 1 || (kindsOf.objects?.length ?? 0) > 1;
 }
 
 /**
@@ -1093,13 +1415,26 @@ function callbackParameters(method: string, element: Kinds): Kinds[] {
 
 /**
  * Reports a parameter of a list or an arrow function whose name would capture a target's rewrite
- * (UF3024): a prop's (Solid reads it as `props.label`, Angular as `label()`), the object form's
- * parameter's, a loop variable's around it, an allowed global's, `props` or `rawProps`, which
- * the outputs declare, or one starting with `$`, as the variables Angular's `@for` declares
- * (`$index`). Returns whether it does.
+ * (UF3024): a prop's (Solid reads it as `props.label`, Angular as the template variable its
+ * `@let label = this.label();` declares), the object form's parameter's, a loop variable's
+ * around it, an allowed global's, `props` or `rawProps`, which the outputs declare, `Fragment`,
+ * which Astro's output imports, one starting with `$`, as the variables Angular's `@for`
+ * declares (`$index`), or one starting with `_`, as Vue's compiled code declares (`_ctx`); or a
+ * name Angular's template expressions read as a keyword (`as`). The names besides the
+ * component's are `reservedParameterName`'s in `@unframework/ir`, which `checkInvariants`
+ * reads too. Returns whether it does.
  */
 export function shadowing(parameter: AST.BindingIdentifier, context: RenderContext): boolean {
   const { name } = parameter;
+  if (ANGULAR_KEYWORDS.has(name) && !ALLOWED_GLOBALS.has(name)) {
+    context.reporter.report(
+      "UF3024",
+      parameter,
+      `The parameter \`${name}\` is a keyword in Angular's template expressions, which cannot read it as a name: the Angular output would not compile.`,
+      { help: "Rename the parameter." },
+    );
+    return true;
+  }
   let what: string | undefined;
   if (context.props.has(name)) what = `the prop \`${name}\``;
   else if (context.propsObject?.name === name) what = `the props parameter \`${name}\``;
@@ -1108,9 +1443,15 @@ export function shadowing(parameter: AST.BindingIdentifier, context: RenderConte
   } else if (ALLOWED_GLOBALS.has(name)) what = `the global \`${name}\``;
   else if (name === "props" || name === "rawProps")
     what = `\`${name}\`, which some outputs declare`;
+  else if (name === "Fragment") what = "the `Fragment` Astro's output renders `<>` with";
   // Angular's `@for` declares `$index`, `$count`, `$first`, `$last`, `$even` and `$odd`.
   else if (name.startsWith("$"))
     what = "the names starting with `$` that Angular's `@for` declares";
+  // Vue's compiled render and setup functions declare `_ctx`, `_cache`, `__props` and helpers
+  // (`_toDisplayString`, `_ssrInterpolate`) beside the template's variables. A bare `_` is free.
+  else if (name.length > 1 && name.startsWith("_"))
+    what =
+      "the names starting with `_` that Vue's compiled render functions declare (`_ctx`, `__props`)";
   if (!what) return false;
   context.reporter.report(
     "UF3024",

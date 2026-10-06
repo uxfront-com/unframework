@@ -55,10 +55,16 @@ const VUE_RESERVED: ReadonlySet<string> = new Set([
  * source's, or `undefined`. Vue casts an absent `Boolean` prop without a default to `false`,
  * where every other target leaves it `undefined` (ADR-0034); and once props are destructured,
  * `vue/require-default-prop` asks for a default for each optional one, read or not, so those
- * stay in the pattern even when nothing reads them (a destructured prop compiles to a read of
- * the props object, not a variable, and no linter takes it for an unused one). A required prop
- * is in the pattern when an expression reads it. A component that reads no prop declares them
- * with the macro alone: its defaults would change nothing, and the rule asks for none there.
+ * stay in the pattern even when nothing reads them. Such a prop is bound under a local that
+ * starts with `_` (`size: _size = 2`), which L5's unused-variable rule ignores, as it ignores
+ * the other targets' `_props` (ADR-0042). Vue keeps that prefix for its own names, but it
+ * compiles the pattern away, every read into one of `__props`, so the local never meets the
+ * names its compiled code declares (`_ctx`, `_cache`, `_toDisplayString`), and the template
+ * never reads it. (`withDefaults` without a pattern would need no such local, but it changes
+ * how every read prop is declared, and a template reads a prop named `Map` as the global.) A
+ * required prop is in the pattern when an expression reads it. A component that reads no prop
+ * declares them with the macro alone: its defaults would change nothing, and the rule asks for
+ * none there.
  *
  * The object form is `const props = defineProps<P>()`, through `withDefaults` with an
  * `undefined` default for each optional prop, for the same two reasons.
@@ -85,7 +91,7 @@ interface Declaration {
   rewrite?: RewriteRules;
 }
 
-/** `const { label, tone = "info", count = undefined } = defineProps<P>();` */
+/** `const { label, tone = "info", count = undefined, size: _size = 2 } = defineProps<P>();` */
 function destructuredDeclaration(
   component: UfComponent,
   parameter: PropsParameter,
@@ -99,12 +105,14 @@ function destructuredDeclaration(
   const entries = component.props
     .filter((prop) => isRead(prop) || prop.optional)
     .map((prop) => {
+      const value = prop.default?.code ?? (prop.optional ? "undefined" : undefined);
+      // In the pattern for its default alone: the filter keeps only optional unread props.
+      if (!isRead(prop)) return `${prop.name}: ${scope.claim(`_${prop.name}`)} = ${value}`;
       // Vue 3.5 destructures a prop under another name too (`{ Map: Map_1 }`), and the
       // template reads the local.
       const local = VUE_RESERVED.has(prop.name) ? scope.claim(prop.name) : prop.name;
       if (local !== prop.name && prop.binding !== undefined) renamed.set(prop.binding, local);
       const target = local === prop.name ? prop.name : `${prop.name}: ${local}`;
-      const value = prop.default?.code ?? (prop.optional ? "undefined" : undefined);
       return value === undefined ? target : `${target} = ${value}`;
     });
   return {
@@ -136,7 +144,14 @@ function objectDeclaration(
     ? `withDefaults(${macro}, { ${optional.map((prop) => `${prop.name}: undefined`).join(", ")} })`
     : macro;
   const name = parameter.name!;
-  const local = VUE_RESERVED.has(name) ? scope.claim(name) : name;
+  // Vue keeps the `_` and `$` prefixes for its own names, and its compiled `setup` declares
+  // some: `const __props = defineProps<P>()` does not compile. The object takes the name
+  // `props` there.
+  const local = VUE_RESERVED.has(name)
+    ? scope.claim(name)
+    : /^[_$]/.test(name)
+      ? scope.claim("props")
+      : name;
   return {
     code: `const ${local} = ${call};`,
     ...(local === name

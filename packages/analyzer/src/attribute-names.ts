@@ -12,9 +12,12 @@ import {
   SVG_ELEMENT_ATTRIBUTES,
   SVG_GLOBAL_ATTRIBUTES,
   TEMPLATE_SYNTAX_ATTRIBUTES,
+  undeclaredAttribute,
   UNRENDERED_ATTRIBUTES,
 } from "@unframework/ir";
 import type { Namespace } from "@unframework/ir";
+
+const words = (text: string): ReadonlySet<string> => new Set(text.trim().split(/\s+/));
 
 /** A problem with one attribute: the diagnostic to report on its name. */
 export interface Problem {
@@ -189,6 +192,10 @@ export function nameProblem(
     return formState(tag, name);
   }
   if (!isAttributeOf(tag, namespace, name)) return unknownProblem(tag, namespace, authored, name);
+  const undeclared = undeclaredAttribute(tag, namespace, name);
+  if (undeclared) {
+    return unsupported(`\`${name}\` is not supported yet: ${undeclared}. It lands when they do.`);
+  }
   if (DOCUMENT_ATTRIBUTES.has(name)) {
     return {
       code: "UF3008",
@@ -293,8 +300,6 @@ export function list(items: readonly string[], conjunction: "and" | "or" = "and"
     : `${items.slice(0, -1).join(", ")} ${conjunction} ${items.at(-1)}`;
 }
 
-const words = (text: string): ReadonlySet<string> => new Set(text.trim().split(/\s+/));
-
 /**
  * The HTML attributes the authoring types (the vendored `@vue/runtime-dom` JSX types) declare
  * as a string or string literals only, on every element: a number bound to one is a type error
@@ -359,4 +364,39 @@ export const STRING_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = new M
 /** Whether the authoring types declare an HTML attribute of an element as a string only. */
 export function isStringOnlyAttribute(tag: string, name: string): boolean {
   return STRING_GLOBAL_ATTRIBUTES.has(name) || (STRING_ATTRIBUTES.get(tag)?.has(name) ?? false);
+}
+
+/**
+ * The HTML attributes that another typed target declares as a string only, by element, where
+ * the authoring types also take a number: React's, Solid's, Qwik's, Svelte's or Astro's types
+ * reject a number there (L4), so the analyser does too (UF3018). The conformance tests derive
+ * them from those types.
+ */
+const TARGET_STRING_ATTRIBUTES: ReadonlyMap<string, ReadonlySet<string>> = new Map(
+  Object.entries({
+    a: "download",
+    area: "download ping",
+    button: "command commandfor popovertarget value",
+    form: "rel",
+    input: "dirname popovertarget",
+  }).map(([tag, names]) => [tag, words(names)]),
+);
+
+/**
+ * The SVG attributes some typed target declares as a string only, on any element that takes
+ * them: references, paints, paths, lists and transforms, and the presentation attributes Solid
+ * types as strings.
+ */
+const SVG_STRING_ATTRIBUTES: ReadonlySet<string> = words(`
+  clip-path color cursor d display fill filter flood-color font-family font-size font-stretch
+  font-variant gradientTransform href id in in2 kernelMatrix lang lighting-color marker-end
+  marker-mid marker-start mask orient patternTransform points result specularConstant
+  specularExponent stop-color stroke stroke-dasharray stroke-miterlimit surfaceScale tableValues
+  transform unicode-bidi values viewBox
+`);
+
+/** Whether a typed target other than the authoring types declares an attribute as a string only. */
+export function isTargetStringAttribute(tag: string, namespace: Namespace, name: string): boolean {
+  if (namespace === "svg") return SVG_STRING_ATTRIBUTES.has(name);
+  return TARGET_STRING_ATTRIBUTES.get(tag)?.has(name) ?? false;
 }

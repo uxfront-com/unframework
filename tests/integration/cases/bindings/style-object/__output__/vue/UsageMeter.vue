@@ -29,5 +29,10 @@ const { label, percent, colour, thickness } = defineProps<UsageMeterProps>();
         :style="{ width: `${percent}%` }"
       ></div>
     </div>
+    <p
+      class="usage-meter-caption"
+      style="font-family: &quot;UF Test Sans&quot;, sans-serif"
+      :style="{ color: colour }"
+    >{{ percent }} of 100 used</p>
   </div>
 </template>

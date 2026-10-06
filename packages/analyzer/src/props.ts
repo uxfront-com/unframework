@@ -11,6 +11,7 @@ import {
   createTypeText,
   isIdentifier,
   reservedPropName,
+  reservedPropsParameterName,
 } from "@unframework/ir";
 import type { Binding, Prop, PropsParameter } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
@@ -19,7 +20,7 @@ import type { Reporter } from "./context.ts";
 import { checkCopiedText, checkMembers, closure, report } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
 import { checkDirectives, span } from "./expressions.ts";
-import type { PropBinding } from "./render.ts";
+import type { ComponentFunction, PropBinding } from "./render.ts";
 import { memberName } from "./types/from-type.ts";
 import { has, union, UNDEFINED, without } from "./types/kinds.ts";
 import type { Kinds } from "./types/kinds.ts";
@@ -50,8 +51,9 @@ interface PropMember {
 }
 
 /** Analyses a component's parameters as its props, reporting what no target can declare. */
+
 export function analyzeProps(
-  fn: AST.Function,
+  fn: ComponentFunction,
   types: ModuleTypes,
   source: string,
   comments: readonly AST.Comment[],
@@ -103,6 +105,13 @@ export function analyzeProps(
       `\`${parameter.name}\` is not written in ASCII letters, digits, \`_\` and \`$\`: Angular's expression lexer reads no other.`,
       { help: "Rename the parameter." },
     );
+  } else if (parameter.type === "Identifier" && reservedPropsParameterName(parameter.name)) {
+    reporter.report(
+      "UF2001",
+      { start: parameter.start, end: parameter.start + parameter.name.length },
+      `\`${parameter.name}\` cannot name the props parameter: ${reservedPropsParameterName(parameter.name)!}.`,
+      { help: "Rename the parameter: `props`." },
+    );
   }
   if (parameter.type === "Identifier" && parameter.optional) {
     reporter.report(
@@ -113,6 +122,8 @@ export function analyzeProps(
     );
   }
   checkDirectives(span(annotation), comments, reporter);
+  // The outputs copy the annotation as written, as they copy a type declaration.
+  checkCopiedText(span(annotation), source, reporter, "A props type");
   const members = propsMembers(annotation, types, reporter);
   if (!members) {
     result.failed = true;
@@ -133,7 +144,15 @@ export function analyzeProps(
     ? { start: parameter.start, end: parameter.start + parameter.name.length }
     : undefined;
   if (object) result.object = { declaration: parameter, name: parameter.name };
+  const names = new Set<string>();
   for (const { name, member, type } of members) {
+    // A member declared twice is reported where its type is checked (UF2001), once for every
+    // component that shares the type: each prop is declared once.
+    if (names.has(name)) {
+      result.failed = true;
+      continue;
+    }
+    names.add(name);
     const reserved = reservedPropName(name);
     if (reserved) {
       result.failed = true;
@@ -147,14 +166,15 @@ export function analyzeProps(
       );
     }
     const declared = types.table.kindsOf(type);
-    if (has(declared, "boolean") && has(declared, "string")) {
+    if (castsToTrue(declared, name)) {
       result.failed = true;
       report(
         types,
         reporter,
         "UF1002",
         type,
-        'Props that can be both a boolean and a string are not supported yet: Vue reads `""` and the prop\'s own name as `true`. They land in M5.',
+        'Props that can be both a boolean and any string, `""` or the prop\'s own name are not supported yet: Vue reads `""` and the prop\'s own name as `true`. They land in M5.',
+        'Type the strings as literals other than `""` and the prop\'s name, as in `boolean | "mixed"`.',
       );
     }
     const property = pattern?.get(name);
@@ -380,4 +400,16 @@ function isStatic(node: AST.Expression): boolean {
     default:
       return false;
   }
+}
+
+/**
+ * Whether Vue may read a value of a prop as `true` (ADR-0034): it declares a prop that can be a
+ * boolean and a string as `[Boolean, String]`, and casts `""` and the prop's own name in kebab
+ * case to `true`. A union of string literals that holds neither renders as the others do.
+ */
+function castsToTrue(declared: Kinds, name: string): boolean {
+  if (!has(declared, "boolean") || !has(declared, "string")) return false;
+  const { strings } = declared;
+  const kebab = name.replaceAll(/\B([A-Z])/g, "-$1").toLowerCase();
+  return !strings || strings.has("") || strings.has(kebab);
 }

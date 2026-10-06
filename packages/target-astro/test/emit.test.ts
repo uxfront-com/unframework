@@ -142,7 +142,6 @@ describe("astro target", () => {
   });
 });
 
-
 // M1 (design §5.7): real sources lowered by the analyser, then emitted by this target.
 
 /** Lines of a file, each ending in a line break. */
@@ -152,7 +151,7 @@ const lines = (...rows: string[]) => rows.map((row) => `${row}\n`).join("");
 const markupOf = (output: string) => output.slice(output.indexOf("---\n\n", 4) + 5);
 
 /** Server-renders Astro source with props, as the `ssr:astro` project does. */
-async function render(source: string, props: Record<string, unknown> = {}): Promise<string> {
+async function renderSource(source: string, props: Record<string, unknown> = {}): Promise<string> {
   return renderToString(await loadAstroComponent(scratch.path, source), { props });
 }
 
@@ -200,6 +199,20 @@ export default function Tag(${name}: TagProps) {
 /** A component that reads nothing, its parameter written `parameter`. */
 const readsNothing = (parameter: string) => `export interface ListProps { title?: string }
 export default function List(${parameter}: ListProps) {
+  return <p>x</p>;
+}
+`;
+
+/** A component that reads none of the props of an inline type. */
+const readsNothingInline = `export default function List(_props: { title?: string }) {
+  return <p>x</p>;
+}
+`;
+
+/** A component that reads none of the props of a type the source names `Props`. */
+const readsNothingNamed = `interface Item { id: string }
+interface Props { items: Item[] }
+export default function List({ items }: Props) {
   return <p>x</p>;
 }
 `;
@@ -264,14 +277,14 @@ export interface PanelProps { on: boolean; size: string; gap?: string; attrs: At
 export default function Panel({ on, size, gap, attrs, more, n }: PanelProps) {
   return (
     <div>
-      <select multiple={on} disabled={!on} aria-label="Pick"><option>a</option></select>
+      <input type="file" multiple={on} disabled={!on} aria-label="Files" />
       <p class="a b">s</p>
       <p class={["a", size, { on }]}>d</p>
       <p class="a" {...attrs}>m</p>
       <p {...more}>o</p>
       <p style="color: red; margin-top: 4px">s</p>
       <p style={{ color: "red", marginTop: gap, "--size": size, lineHeight: n }}>b</p>
-      <img src="/a.png" alt="a" ismap={on} />
+      <p autocorrect="off">t</p>
       <svg viewBox="0 0 2 2" aria-hidden="true"><circle cx="1" cy="1" r={n} /></svg>
     </div>
   );
@@ -305,16 +318,16 @@ describe("props: the frontmatter (design §5.7, ADR-0034)", () => {
 
   it("renders the props it is given, and the defaults of the ones it is not", async () => {
     const output = emitted(primitives);
-    await expect(render(output, { name: "Lamp", price: 39.5 })).resolves.toBe(
+    await expect(renderSource(output, { name: "Lamp", price: 39.5 })).resolves.toBe(
       '<article class="product-tile" aria-label="Lamp"><p>Price: 39.5 EUR</p><p>Available</p><button type="button">Add Lamp</button></article>',
     );
-    await expect(render(output, { name: "Desk", price: 0, available: false })).resolves.toBe(
+    await expect(renderSource(output, { name: "Desk", price: 0, available: false })).resolves.toBe(
       '<article class="product-tile" aria-label="Desk"><p>Price: 0 EUR</p><p>Unavailable</p><button type="button" disabled>Add Desk</button></article>',
     );
     // Absent and `undefined` are the same (design §1.1): the default applies.
-    await expect(render(output, { name: "A", price: 1, available: undefined })).resolves.toContain(
-      "<p>Available</p>",
-    );
+    await expect(
+      renderSource(output, { name: "A", price: 1, available: undefined }),
+    ).resolves.toContain("<p>Available</p>");
   });
 
   it("declares an inline props type as `interface Props`, and copies a type named `Props`", () => {
@@ -375,7 +388,7 @@ describe("props: the frontmatter (design §5.7, ADR-0034)", () => {
           "<span>{props.label}</span>",
         ),
       );
-      await expect(render(output, { label: "Hi" })).resolves.toBe("<span>Hi</span>");
+      await expect(renderSource(output, { label: "Hi" })).resolves.toBe("<span>Hi</span>");
     },
   );
 
@@ -406,15 +419,17 @@ describe("props: the frontmatter (design §5.7, ADR-0034)", () => {
     });
   });
 
-  it.each(["{ title }", "props"])(
-    "keeps `Props` but reads no prop when the markup reads none (`%s`)",
+  it.each(["{ title }", "props", "_props"])(
+    "exports `Props` and reads no prop when the markup reads none (`%s`)",
     (parameter) => {
+      // Nothing in the file reads `Props` then, so it is exported: ESLint's unused-variable rule
+      // counts Astro's own read of it only in a file that names `Astro` (L5).
       expect(emitted(readsNothing(parameter))).toBe(
         lines(
           "---",
           "export interface ListProps { title?: string }",
           "",
-          "type Props = ListProps;",
+          "export type Props = ListProps;",
           "---",
           "",
           "<p>x</p>",
@@ -422,6 +437,38 @@ describe("props: the frontmatter (design §5.7, ADR-0034)", () => {
       );
     },
   );
+
+  it("exports an inline `Props`, or the source's own `Props`, when the markup reads no prop", () => {
+    expect(emitted(readsNothingInline)).toBe(
+      lines("---", "export interface Props { title?: string }", "---", "", "<p>x</p>"),
+    );
+    expect(emitted(readsNothingNamed)).toBe(
+      lines(
+        "---",
+        "interface Item { id: string }",
+        "",
+        "export interface Props { items: Item[] }",
+        "---",
+        "",
+        "<p>x</p>",
+      ),
+    );
+  });
+
+  it("types the callers of a component that reads no prop by its exported `Props` (L4)", async () => {
+    const directory = join(scratch.path, "callers");
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(join(directory, "List.astro"), emitted(readsNothingNamed));
+    const caller = join(directory, "Caller.astro");
+    writeFileSync(
+      caller,
+      '---\nimport List from "./List.astro";\n---\n\n<div><List /><List items={[]} /></div>\n',
+    );
+    const results = await astroTypecheck([caller], { toolchainDir, root: integrationRoot });
+    expect(results.get(caller)).toEqual([
+      expect.objectContaining({ code: "TS2322", message: expect.stringMatching(/'items'/) }),
+    ]);
+  });
 
   it("formats the frontmatter as TypeScript, and leaves the markup as printed (ADR-0041)", async () => {
     expect(await compiled(defaults)).toBe(
@@ -490,12 +537,18 @@ describe("control flow (design §5.7)", () => {
   it("renders the first truthy branch, nothing for a falsy `&&`, and every item in order", async () => {
     const output = emitted(controlFlow);
     await expect(
-      render(output, { open: false, busy: false, n: 0, items: ["x", "y"], rows: [["a"], []] }),
+      renderSource(output, {
+        open: false,
+        busy: false,
+        n: 0,
+        items: ["x", "y"],
+        rows: [["a"], []],
+      }),
     ).resolves.toBe(
       "<div><b>c</b> and <i>d</i><p>idle</p><i>0: x</i><i>1: y</i><i>x</i><i>x</i><ol><li>a</li></ol><ol></ol></div>",
     );
     await expect(
-      render(output, { open: true, busy: true, n: 2, items: [], rows: [] }),
+      renderSource(output, { open: true, busy: true, n: 2, items: [], rows: [] }),
     ).resolves.toBe("<div><p>open</p><p>a</p><span>2</span></div>");
   });
 
@@ -504,9 +557,16 @@ describe("control flow (design §5.7)", () => {
     expect(markupOf(output)).toBe(
       lines("<h2>{title}</h2>", "{draft ? (", "  <p>Draft</p>", ") : null}", "<p>a &gt; b</p>"),
     );
-    await expect(render(output, { draft: true, title: "T" })).resolves.toBe(
+    await expect(renderSource(output, { draft: true, title: "T" })).resolves.toBe(
       "<h2>T</h2><p>Draft</p><p>a &gt; b</p>",
     );
+  });
+
+  it("never starts a file without props with `---`, which would read as a frontmatter", async () => {
+    const source = "export default function Rule() {\n  return <>---</>;\n}\n";
+    expect(emitted(source)).toBe('{"---"}\n');
+    expect(await compiled(source)).toBe('{"---"}\n');
+    await expect(renderSource(emitted(source))).resolves.toBe("---");
   });
 });
 
@@ -515,9 +575,8 @@ describe("attributes (design §5.7, ADR-0037 to ADR-0040)", () => {
     expect(markupOf(emitted(attributes))).toBe(
       lines(
         "<div>",
-        '  <select multiple={on ? "" : undefined} disabled={!on} aria-label="Pick">',
-        "    <option>a</option>",
-        "  </select>",
+        // Astro's renderer does not read `multiple` as a boolean (ADR-0037).
+        '  <input type="file" multiple={on ? "" : undefined} disabled={!on} aria-label="Files" />',
         '  <p class="a b">s</p>',
         '  <p class:list={["a", size, { on }]}>d</p>',
         "  <p",
@@ -529,8 +588,9 @@ describe("attributes (design §5.7, ADR-0037 to ADR-0040)", () => {
         '  <p id={more?.id} class:list={[more?.class]} data-x={more?.["data-x"]} title={more?.title}>o</p>',
         '  <p style="color: red; margin-top: 4px">s</p>',
         '  <p style={{ color: "red", marginTop: gap, "--size": size, lineHeight: n }}>b</p>',
-        // Astro's types do not declare `ismap`: a spread keeps it past `astro check` (L4).
-        '  <img src="/a.png" alt="a" {...{ ismap: on ? "" : undefined }} />',
+        // Astro's types declare `autocorrect` on form controls only: a spread keeps it past
+        // `astro check` (L4).
+        '  <p {...{ autocorrect: "off" }}>t</p>',
         '  <svg viewBox="0 0 2 2" aria-hidden="true">',
         '    <circle cx="1" cy="1" r={n} />',
         "  </svg>",
@@ -542,21 +602,28 @@ describe("attributes (design §5.7, ADR-0037 to ADR-0040)", () => {
   it("renders absent values as no attribute, and merges a spread's class into the element's", async () => {
     const output = emitted(attributes);
     await expect(
-      render(output, { on: false, size: "big", attrs: { class: "s", id: "i" }, n: 2 }),
+      renderSource(output, { on: false, size: "big", attrs: { class: "s", id: "i" }, n: 2 }),
     ).resolves.toBe(
       [
-        '<div><select disabled aria-label="Pick"><option>a</option></select>',
+        '<div><input type="file" disabled aria-label="Files">',
         '<p class="a b">s</p><p class="a big">d</p><p class="a s" id="i">m</p><p>o</p>',
         '<p style="color: red; margin-top: 4px">s</p>',
         '<p style="color:red;--size:big;line-height:2">b</p>',
-        '<img src="/a.png" alt="a">',
+        '<p autocorrect="off">t</p>',
         '<svg viewBox="0 0 2 2" aria-hidden="true"><circle cx="1" cy="1" r="2"></circle></svg></div>',
       ].join(""),
     );
     await expect(
-      render(output, { on: true, size: "", gap: "4px", attrs: {}, more: { "data-x": "1" }, n: 0 }),
+      renderSource(output, {
+        on: true,
+        size: "",
+        gap: "4px",
+        attrs: {},
+        more: { "data-x": "1" },
+        n: 0,
+      }),
     ).resolves.toContain(
-      '<select multiple aria-label="Pick"><option>a</option></select><p class="a b">s</p><p class="a on">d</p><p class="a">m</p><p data-x="1">o</p>',
+      '<input type="file" multiple aria-label="Files"><p class="a b">s</p><p class="a on">d</p><p class="a">m</p><p data-x="1">o</p>',
     );
   });
 
@@ -588,10 +655,14 @@ describe("attributes (design §5.7, ADR-0037 to ADR-0040)", () => {
       [],
       [binding],
     );
-    const module = createModule("Flags.uf.tsx", [component], [createExport("default", "Flags", at)]);
+    const module = createModule(
+      "Flags.uf.tsx",
+      [component],
+      [createExport("default", "Flags", at)],
+    );
     const [file] = target.emit(component, { module, options: undefined, report: () => {} });
-    const on = await render(file!.contents, { on: true });
-    const off = await render(file!.contents, { on: false });
+    const on = await renderSource(file!.contents, { on: true });
+    const off = await renderSource(file!.contents, { on: false });
     for (const name of names) {
       expect.soft(on, name).toContain(`<p ${name}>${name}</p>`);
       expect.soft(off, name).toContain(`<p>${name}</p>`);
@@ -607,6 +678,9 @@ describe("the M1 output through the toolchain", { timeout: 60_000 }, () => {
     objectForm,
     objectAstro: objectNamed("Astro"),
     readsNothing: readsNothing("{ title }"),
+    readsNothingObject: readsNothing("_props"),
+    readsNothingInline,
+    readsNothingNamed,
     unread,
     defaults,
     controlFlow,
@@ -638,7 +712,10 @@ describe("the M1 output through the toolchain", { timeout: 60_000 }, () => {
       const clean = Object.fromEntries(paths.map((path) => [path, []]));
       expect(
         Object.fromEntries(
-          [...compiledFiles].map(([path, { errors, warnings }]) => [path, [...errors, ...warnings]]),
+          [...compiledFiles].map(([path, { errors, warnings }]) => [
+            path,
+            [...errors, ...warnings],
+          ]),
         ),
       ).toEqual(clean);
       expect(Object.fromEntries(checked)).toEqual(clean);

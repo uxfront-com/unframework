@@ -32,7 +32,7 @@ describe("the quarantine", () => {
         [
           { ...entry, case: "basics/missing" },
           { ...entry, target: "lit" },
-          { ...entry, layer: "L8" },
+          { ...entry, layer: "L9" },
           { ...entry, layer: "L99" as never },
           { ...entry, reason: " ", issue: "" },
           entry,
@@ -42,7 +42,7 @@ describe("the quarantine", () => {
     ).toEqual([
       'basics/missing › react › L7: no case "basics/missing".',
       'basics/hello › lit › L7: no target "lit".',
-      "basics/hello › react › L8: L8 is not live, so it cannot fail.",
+      "basics/hello › react › L9: L9 is not live, so it cannot fail.",
       'basics/hello › react › L99: no layer "L99".',
       "basics/hello › react › L7: needs a reason.",
       "basics/hello › react › L7: needs an issue.",

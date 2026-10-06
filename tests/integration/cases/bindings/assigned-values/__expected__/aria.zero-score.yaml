@@ -1,0 +1,7 @@
+- region "Review":
+  - list:
+    - listitem: Unbox
+    - listitem: Assemble
+    - listitem: Inspect
+  - meter "Score": 0 out of 10
+  - paragraph: "Product: Oak table"

@@ -50,7 +50,9 @@ describe("solid target", () => {
   });
 
   it("emulates class bindings with the helper it prints, and the rest natively", () => {
-    const cells = Object.entries(target.capabilities).filter(([, cell]) => cell.support !== "native");
+    const cells = Object.entries(target.capabilities).filter(
+      ([, cell]) => cell.support !== "native",
+    );
     expect(cells).toEqual([["class-binding", expect.objectContaining({ helper: "cx" })]]);
   });
 
@@ -117,7 +119,7 @@ describe("solid props (design §5.4)", () => {
       probe(
         'label: string;\n  tone?: "info" | "warn";\n  count?: number;\n  pill?: boolean;',
         '{ label, pill = false, tone = "info", count }',
-        '<span data-tone={tone} data-count={count} aria-pressed={pill}>{label}</span>',
+        "<span data-tone={tone} data-count={count} aria-pressed={pill}>{label}</span>",
       ),
     );
     expect(output).toBe(
@@ -142,6 +144,46 @@ describe("solid props (design §5.4)", () => {
         "",
       ].join("\n"),
     );
+  });
+
+  it("types object defaults by the props' own types, which keep their optional members", async () => {
+    // `satisfies` would keep `{ title: string }`, and `mergeProps` type `props.attrs` without `id`.
+    const output = await emitSource(
+      probe(
+        'attrs?: Attrs;\n  tone?: "info" | "warn";',
+        '{ attrs = { title: "t" }, tone = "info" }',
+        "<p {...attrs} data-tone={tone}>a</p>",
+        "interface Attrs {\n  title: string;\n  id?: string;\n}\n\n",
+      ),
+    );
+    expect(component(output)).toContain(
+      [
+        "export default function Probe(rawProps: ProbeProps) {",
+        '  const defaults: Required<Pick<ProbeProps, "attrs" | "tone">> = {',
+        '    attrs: { title: "t" },',
+        '    tone: "info",',
+        "  };",
+        "  const props = mergeProps(defaults, rawProps);",
+      ].join("\n"),
+    );
+    expect(component(output)).toContain("id={props.attrs.id}");
+  });
+
+  it("types array defaults by the props' own types, not the literals they list", async () => {
+    // `satisfies` would keep `"info"[]`, and `mergeProps` type `props.tones` as `Tone[] | "info"[]`,
+    // whose `includes` takes only `"info"`.
+    const output = await emitSource(
+      probe(
+        "tones?: Tone[];\n  tone: Tone;",
+        '{ tones = ["info"], tone }',
+        '<p>{tones.includes(tone) ? "y" : "n"}</p>',
+        'type Tone = "info" | "warn";\n\n',
+      ),
+    );
+    expect(component(output)).toContain(
+      'const defaults: Required<Pick<ProbeProps, "tones">> = { tones: ["info"] };',
+    );
+    expect(component(output)).toContain("const props = mergeProps(defaults, rawProps);");
   });
 
   it("reads destructured props through `props` when none it reads has a default", async () => {
@@ -184,9 +226,22 @@ describe("solid props (design §5.4)", () => {
   });
 
   it("names props it never reads `_props`, which keeps their type and no unused variable", async () => {
-    const output = await emitSource(probe('tone?: string;', '{ tone = "info" }', "<p>Static</p>"));
+    const output = await emitSource(probe("tone?: string;", '{ tone = "info" }', "<p>Static</p>"));
     expect(component(output)).toBe(
       "export default function Probe(_props: ProbeProps) {\n  return <p>Static</p>;\n}\n",
+    );
+  });
+
+  // A source name `_` and more says it is unused already; oxlint reports a bare `_`.
+  it.each([
+    ["_unused", "_unused"],
+    ["_", "_props"],
+  ])("keeps an object form %s nothing reads as %s", async (name, declared) => {
+    const output = await emitSource(
+      `export default function Probe(${name}: { tone?: string }) {\n  return <p>Static</p>;\n}\n`,
+    );
+    expect(component(output)).toBe(
+      `export default function Probe(${declared}: { tone?: string }) {\n  return <p>Static</p>;\n}\n`,
     );
   });
 
@@ -223,11 +278,11 @@ describe("solid props (design §5.4)", () => {
 describe("solid control flow (design §5.4)", () => {
   it("shows a branch under its condition with <Show>, by truthiness", async () => {
     const output = await emitSource(
-      probe("count: number;", "{ count }", "<p>{count && <b>{count} new</b>}</p>"),
+      probe("count: number;", "{ count }", "<p>{count && <b>New</b>}</p>"),
     );
     expect(output).toContain('import { Show } from "solid-js";');
     expect(component(output)).toContain(
-      "<p>\n      <Show when={props.count}>\n        <b>{props.count} new</b>\n      </Show>\n    </p>",
+      "<p>\n      <Show when={props.count}>\n        <b>New</b>\n      </Show>\n    </p>",
     );
   });
 
@@ -343,6 +398,342 @@ describe("solid control flow (design §5.4)", () => {
   });
 });
 
+// TypeScript narrows what a condition tests inside its branch, in the source and in the targets
+// that write the branch inside the test (a ternary, `{#if}`, `@if`). `<Show>`'s and `<Match>`'s
+// children are no branch of their condition to it: a branch that reads a binding its tests
+// mention takes the values it reads from a keyed callback, as plain names (src/narrowing.ts).
+// test/output.test.ts type-checks these shapes, and test/rewrites.browser.test.ts updates them.
+describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
+  const USER = "interface User {\n  name: string;\n  nick?: string;\n  age?: number;\n}\n\n";
+
+  it("gives a branch the value its one test holds, through a keyed callback", async () => {
+    const output = await emitSource(
+      probe(
+        "user?: User;\n  subtitle?: string;",
+        "{ user, subtitle }",
+        "<div>{user && <p>{user.name}</p>}{user ? <b title={user.name}>{user.name}</b> : <i>anon</i>}{!user ? <i>anon</i> : <p>{user.name}</p>}{subtitle && <p>{subtitle}</p>}</div>",
+        USER,
+      ),
+    );
+    expect(component(output)).toContain(
+      [
+        "      <Show keyed when={props.user}>",
+        "        {(user) => <p>{user.name}</p>}",
+        "      </Show>",
+        "      <Show keyed when={props.user} fallback={<i>anon</i>}>",
+        "        {(user) => <b title={user.name}>{user.name}</b>}",
+        "      </Show>",
+        // A negated test's else shows where its operand holds.
+        "      <Show keyed when={props.user} fallback={<i>anon</i>}>",
+        "        {(user) => <p>{user.name}</p>}",
+        "      </Show>",
+        "      <Show keyed when={props.subtitle}>",
+        "        {(subtitle) => <p>{subtitle}</p>}",
+        "      </Show>",
+      ].join("\n"),
+    );
+  });
+
+  it("keeps <Show> and <Switch> plain where no branch reads what its tests mention", async () => {
+    const output = await emitSource(
+      probe(
+        "on: boolean;\n  user?: User;",
+        "{ on, user }",
+        "<div>{on ? <b>x</b> : user ? <i>user</i> : null}{!user ? null : <b>x</b>}</div>",
+        USER,
+      ),
+    );
+    expect(component(output)).toContain("<Match when={props.user}>");
+    expect(component(output)).toContain("<Show when={props.user}>");
+    expect(output).not.toContain("keyed");
+  });
+
+  it("builds an object of what the branch reads inside the source's own condition", async () => {
+    const output = await emitSource(
+      probe(
+        "count?: number;\n  user?: User;\n  label: string;\n  shape: Circle | Square;",
+        "{ count, user, label, shape }",
+        "<div>{count !== undefined && <b>{count.toFixed(1)}</b>}{label && user && <p>{user.name}</p>}{user?.nick && <p>{user.name} {user.nick.trim()}</p>}<svg>{shape.kind === `circle` && <circle r={shape.r} />}</svg></div>",
+        `${USER}interface Circle {\n  kind: "circle";\n  r: number;\n}\n\ninterface Square {\n  kind: "square";\n  side: number;\n}\n\n`,
+      ),
+    );
+    for (const form of [
+      "<Show keyed when={props.count !== undefined ? { count: props.count } : undefined}>",
+      "{({ count }) => <b>{count.toFixed(1)}</b>}",
+      "<Show keyed when={props.label && props.user ? { user: props.user } : undefined}>",
+      "when={props.user?.nick ? { user: props.user, nick: props.user?.nick } : undefined}",
+      "{({ user, nick }) => (",
+      "<Show keyed when={props.shape.kind === `circle` ? { shape: props.shape } : undefined}>",
+      "{({ shape }) => <circle r={shape.r} />}",
+    ]) {
+      expect(component(output), form).toContain(form);
+    }
+  });
+
+  it("writes an else and a chain that need it as keyed <Match>es repeating the chain", async () => {
+    const output = await emitSource(
+      probe(
+        "value: string | number | null;\n  user?: User;\n  note?: string | null;",
+        "{ value, user, note }",
+        '<div>{typeof value === "string" ? <b>{value.trim()}</b> : value !== null ? <i>{value.toFixed()}</i> : null}{user ? <p>{user.name}</p> : note ? <em>{note.trim()}</em> : <i>none</i>}</div>',
+        USER,
+      ),
+    );
+    expect(component(output)).toContain(
+      [
+        "      <Switch>",
+        '        <Match keyed when={typeof props.value === "string" ? { value: props.value } : undefined}>',
+        "          {({ value }) => <b>{value.trim()}</b>}",
+        "        </Match>",
+        "        <Match",
+        "          keyed",
+        "          when={",
+        '            typeof props.value === "string"',
+        "              ? undefined",
+        "              : props.value !== null",
+        "                ? { value: props.value }",
+        "                : undefined",
+        "          }",
+        "        >",
+        "          {({ value }) => <i>{value.toFixed()}</i>}",
+        "        </Match>",
+        "      </Switch>",
+      ].join("\n"),
+    );
+    expect(component(output)).toContain(
+      [
+        "      <Switch fallback={<i>none</i>}>",
+        "        <Match keyed when={props.user}>",
+        "          {(user) => <p>{user.name}</p>}",
+        "        </Match>",
+        "        <Match keyed when={props.user ? undefined : props.note ? { note: props.note } : undefined}>",
+        "          {({ note }) => <em>{note.trim()}</em>}",
+        "        </Match>",
+        "      </Switch>",
+      ].join("\n"),
+    );
+  });
+
+  it("reads plain values inside the branch, nested conditionals and lists included", async () => {
+    const output = await emitSource(
+      probe(
+        "user?: User;\n  rows: (User | null)[];\n  on: boolean;",
+        "{ user, rows, on }",
+        '<div>{user && <p title={user.nick ? user.nick.trim() : "none"}>{user.age !== undefined ? user.age.toFixed() : "-"}{on && <b>{user.name}</b>}{user.age !== undefined && <i>{user.age.toFixed()}</i>}</p>}<ul>{rows.map((row, index) => <li key={index}>{row && row.name}</li>)}</ul></div>',
+        USER,
+      ),
+    );
+    for (const form of [
+      '<p title={user.nick ? user.nick.trim() : "none"}>',
+      '{user.age !== undefined ? user.age.toFixed() : "-"}',
+      "<Show when={props.on}>\n              <b>{user.name}</b>",
+      "<Show keyed when={user.age !== undefined ? { age: user.age } : undefined}>",
+      // A list's variable taken whole keeps its own name: every read of it is the callback's.
+      "<Show keyed when={row}>\n                {(row) => <>{row.name}</>}",
+    ]) {
+      expect(component(output), form).toContain(form);
+    }
+  });
+
+  it("takes only what its tests read where it renders, the rest of the read as written", async () => {
+    // The else may render where `box.inner` is absent: the `when` cannot read `box.inner.title`
+    // there, so it takes `box.inner`, and the branch reads through `?.` as the source does.
+    const output = await emitSource(
+      probe(
+        "box: { inner?: { title: string; other?: string } };\n  on: boolean;",
+        "{ box, on }",
+        '<div>{box.inner && box.inner.title.length > 3 ? <p>{box.inner.title}</p> : <p>{box.inner?.title ?? "anon"}</p>}{box.inner?.title === "t" ? <p>{box.inner.other}</p> : <i>{box.inner?.title}</i>}{!box.inner || on ? <i>{box.inner?.title}</i> : <b>{box.inner.title}</b>}</div>',
+      ),
+    );
+    for (const form of [
+      "? { title: props.box.inner.title }",
+      "{({ title }) => <p>{title}</p>}",
+      "props.box.inner && props.box.inner.title.length > 3\n              ? undefined\n              : { inner: props.box.inner }",
+      '{({ inner }) => <p>{inner?.title ?? "anon"}</p>}',
+      '<Match keyed when={props.box.inner?.title === "t" ? { inner: props.box.inner } : undefined}>',
+      "{({ inner }) => <p>{inner.other}</p>}",
+      '<Match keyed when={props.box.inner?.title === "t" ? undefined : { inner: props.box.inner }}>',
+      "{({ inner }) => <i>{inner?.title}</i>}",
+      "<Match keyed when={!props.box.inner || props.on ? undefined : { inner: props.box.inner }}>",
+      "{({ inner }) => <b>{inner.title}</b>}",
+    ]) {
+      expect(component(output), form).toContain(form);
+    }
+    expect(output).not.toContain("? undefined\n              : { title:");
+  });
+
+  it("gives a list's callback and an arrow in the branch the plain value", async () => {
+    const output = await emitSource(
+      probe(
+        "user?: User;\n  items: string[];",
+        "{ user, items }",
+        '<div>{user && <ul>{items.map((i) => <li key={i}>{user.name}: {i}</li>)}</ul>}{user && <p>{items.map((i) => user.name + i).join(", ")}</p>}</div>',
+        USER,
+      ),
+    );
+    expect(component(output)).toContain(
+      [
+        "      <Show keyed when={props.user}>",
+        "        {(user) => (",
+        "          <ul>",
+        "            <For each={props.items}>",
+        "              {(i) => (",
+        "                <li>",
+        "                  {user.name}: {i}",
+        "                </li>",
+        "              )}",
+        "            </For>",
+        "          </ul>",
+        "        )}",
+        "      </Show>",
+        "      <Show keyed when={props.user}>",
+        '        {(user) => <p>{props.items.map((i) => user.name + i).join(", ")}</p>}',
+        "      </Show>",
+      ].join("\n"),
+    );
+  });
+
+  it("keeps a branch of one interpolation tracked, in a fragment", async () => {
+    // Solid calls a function child untracked: a bare `user.name + props.label` would not update
+    // when the label changes and the user stays.
+    const output = await emitSource(
+      probe(
+        "user?: User;\n  count?: number;\n  label: string;",
+        "{ user, count, label }",
+        "<p>{user && user.name + label}{count !== undefined && count.toFixed(1) + label}</p>",
+        USER,
+      ),
+    );
+    expect(component(output)).toContain("{(user) => <>{user.name + props.label}</>}");
+    expect(component(output)).toContain("{({ count }) => <>{count.toFixed(1) + props.label}</>}");
+  });
+
+  it("writes `|| undefined` after a test that is the value, where a type has a falsy literal", async () => {
+    // Solid types the value `NonNullable<T>`, which keeps `""` and `0`.
+    const output = await emitSource(
+      probe(
+        'limit: number | "";\n  rows: (0 | { n: number })[];\n  user?: User;',
+        "{ limit, rows, user }",
+        "<div>{limit && <p>{limit.toFixed(1)}</p>}{!limit ? <i>none</i> : <b>{limit.toFixed(0)}</b>}<ul>{rows.map((row, index) => <li key={index}>{row && <b>{row.n}</b>}</li>)}</ul>{user && <p>{user.name}</p>}</div>",
+        USER,
+      ),
+    );
+    for (const form of [
+      "<Show keyed when={props.limit || undefined}>",
+      "<Show keyed when={props.limit || undefined} fallback={<i>none</i>}>",
+      "<Show keyed when={row || undefined}>",
+      "<Show keyed when={props.user || undefined}>",
+    ]) {
+      expect(component(output), form).toContain(form);
+    }
+    // Without a falsy literal in the props' types, the test as it is.
+    const plain = await emitSource(
+      probe("limit?: number;", "{ limit }", "<div>{limit && <p>{limit.toFixed(1)}</p>}</div>"),
+    );
+    expect(component(plain)).toContain("<Show keyed when={props.limit}>");
+    // A `false` literal is falsy too.
+    const flag = await emitSource(
+      probe("user: User | false;", "{ user }", "<div>{user && <p>{user.name}</p>}</div>", USER),
+    );
+    expect(component(flag)).toContain("<Show keyed when={props.user || undefined}>");
+  });
+
+  it('reads a chain `typeof … !== "undefined"` tests to its end', async () => {
+    const output = await emitSource(
+      probe(
+        "box: { inner?: { other?: string } };",
+        "{ box }",
+        '<div>{typeof box.inner?.other !== "undefined" && <p>{box.inner.other.trim()}</p>}{typeof box.inner?.other === "undefined" ? <i>none</i> : <b>{box.inner.other.trim()}</b>}</div>',
+      ),
+    );
+    expect(component(output)).toContain("? { other: props.box.inner?.other }");
+    expect(component(output)).toContain(
+      "? undefined\n              : { other: props.box.inner?.other }",
+    );
+    expect(component(output)).not.toContain("{ inner:");
+  });
+
+  it("takes nothing a callback around it gives at more length", async () => {
+    // The inner callback would receive `box` for `box.name`, which reads the outer `name`.
+    const output = await emitSource(
+      probe(
+        "box: { name?: string; note?: string };",
+        "{ box }",
+        "<div>{box.name && <p>{box.name}{box.note && <b>{box.note}{box.name}</b>}</p>}</div>",
+      ),
+    );
+    expect(component(output)).toContain(
+      "<Show keyed when={box.note}>\n              {(note) => (\n                <b>\n                  {note}\n                  {name}",
+    );
+  });
+
+  it("reads a computed key of a template literal as a property", async () => {
+    const output = await emitSource(
+      probe(
+        "user: User;",
+        "{ user }",
+        "<div>{user[`nick`] && <p>{user[`nick`].trim()}</p>}</div>",
+        USER,
+      ),
+    );
+    expect(component(output)).toContain("<Show keyed when={props.user[`nick`]}>");
+    expect(component(output)).toContain("{(nick) => <p>{nick.trim()}</p>}");
+  });
+
+  it("names a value apart from every name it could capture", async () => {
+    // The object form's parameter shares the prop's name; a nested callback takes another path.
+    const object = await emitSource(
+      `${USER}export default function Probe(user: { user?: User; title: string; data: { user?: User } }) {\n  return <div>{user.user && <p title={user.title}>{user.user.name}</p>}{user.data.user && <p>{user.data.user.name}{user.user && <i>{user.user.name}{user.data.user.name}</i>}</p>}</div>;\n}\n`,
+    );
+    expect(component(object)).toContain("{(user_1) => <p title={user.title}>{user_1.name}</p>}");
+    expect(component(object)).toMatch(
+      /\{\(user_2\) => \([\s\S]*\{\(user_3\) => \([\s\S]*\{user_3\.name\}\s*\{user_2\.name\}/,
+    );
+    // A list's variable the value is named after, read inside, and `class`, no parameter's name.
+    const list = await emitSource(
+      probe(
+        "user?: { a?: { n?: number } };\n  items: string[];\n  attrs: { class?: string };",
+        "{ user, items, attrs }",
+        '<div><ul>{items.map((a) => <li key={a}>{a === "x" && user && user.a && <i title={a}>{String(user.a.n)}</i>}</li>)}</ul>{attrs.class && <b class={attrs.class}>x</b>}</div>',
+      ),
+    );
+    expect(component(list)).toContain("? { a, a_1: props.user.a } : undefined");
+    expect(component(list)).toContain("{({ a, a_1 }) => <i title={a}>{String(a_1.n)}</i>}");
+    expect(component(list)).toContain("{(value) => <b class={cx(value)}>x</b>}");
+  });
+
+  it("takes a method's object, which keeps the method's `this`", async () => {
+    const output = await emitSource(
+      probe("label: string;", "{ label }", "<div>{label.trim && <p>{label.trim()}</p>}</div>"),
+    );
+    expect(component(output)).toContain(
+      "<Show keyed when={props.label.trim ? { label: props.label } : undefined}>",
+    );
+    expect(component(output)).toContain("{({ label }) => <p>{label.trim()}</p>}");
+  });
+});
+
+describe("solid output for its server compiler", () => {
+  it("wraps the literals the server would write unescaped in String(…)", async () => {
+    const output = await emitSource(
+      probe(
+        "on: boolean;\n  label: string;",
+        "{ on, label }",
+        '<p title={on ? \'say "hi"\' : label} data-a={label + " & more"}>\n    {on ? "<b>" : label}\n    {`<${label}>`}\n    {label + "&"}\n    {on ? "plain" : label}\n  </p>',
+      ),
+    );
+    expect(component(output)).toContain(
+      [
+        `    <p title={props.on ? String('say "hi"') : props.label} data-a={props.label + String(" & more")}>`,
+        '      {props.on ? String("<b>") : props.label}',
+        "      {String(`<${props.label}>`)}",
+        '      {props.label + String("&")}',
+        '      {props.on ? "plain" : props.label}',
+      ].join("\n"),
+    );
+  });
+});
+
 describe("solid attributes (design §5.4)", () => {
   it("toggles names with classList beside the static ones, as booleans", async () => {
     const output = await emitSource(
@@ -370,7 +761,7 @@ describe("solid attributes (design §5.4)", () => {
   it("joins dynamic parts with an inline helper, printed after the component", async () => {
     const output = await emitSource(
       probe(
-        'tone?: string;\n  active: boolean;',
+        "tone?: string;\n  active: boolean;",
         "{ tone, active }",
         '<p class={["item", tone, { active }]}>x</p>',
       ),
@@ -448,9 +839,7 @@ describe("solid attributes (design §5.4)", () => {
     expect(component(output)).toContain(
       "<p title={props.extra?.title} class={cx({ on: props.on }, props.extra?.class)}>",
     );
-    expect(component(output)).toContain(
-      "<p class={props.attrs.class} title={props.attrs.title}>",
-    );
+    expect(component(output)).toContain("<p class={props.attrs.class} title={props.attrs.title}>");
   });
 
   it("writes a style as an object with kebab-case keys, and number literals as strings", async () => {
@@ -482,7 +871,7 @@ describe("solid attributes (design §5.4)", () => {
   });
 
   it("writes a spread key by key, through `?.` when its source may be absent", async () => {
-    const attrs = "interface Attrs {\n  id: string;\n  \"aria-label\"?: string;\n}\n\n";
+    const attrs = 'interface Attrs {\n  id: string;\n  "aria-label"?: string;\n}\n\n';
     const output = await emitSource(
       probe(
         "attrs: Attrs;\n  more?: Attrs;",
@@ -504,13 +893,36 @@ describe("solid attributes (design §5.4)", () => {
       probe(
         "locked: boolean;\n  limit: number;\n  label: string;",
         "{ locked, limit, label }",
-        '<label for={label}>\n    <textarea readonly={locked} maxlength={limit} aria-disabled={locked} />\n  </label>',
+        "<label for={label}>\n    <textarea readonly={locked} maxlength={limit} aria-disabled={locked} />\n  </label>",
       ),
     );
     expect(component(output)).toContain(
       "<textarea readonly={props.locked} maxlength={props.limit} aria-disabled={props.locked} />",
     );
     expect(component(output)).toContain("<label for={props.label}>");
+  });
+
+  it("spreads the attributes Solid's types lack on an element, as Solid renders them alike", async () => {
+    const output = await emitSource(
+      probe(
+        "colour: string;\n  order: number;",
+        "{ colour, order }",
+        '<div>\n    <svg viewBox="0 0 8 8" role="img">\n      <title>Fill</title>\n      <linearGradient id="g" opacity="0.5">\n        <stop offset="0" fill={colour} />\n        <stop fill="white" />\n      </linearGradient>\n      <path id="p" d="M0 0h8" />\n      <mpath href="#p" />\n    </svg>\n    <dialog open tabindex={order}>Hi</dialog>\n  </div>',
+      ),
+    );
+    // A plain spread beside props the type declares, or children; alone, or where the type
+    // forbids the attribute (`tabindex` on <dialog>), from an object typed as any record.
+    expect(component(output)).toContain('<linearGradient id="g" {...{ opacity: "0.5" }}>');
+    expect(component(output)).toContain('<stop offset="0" {...{ fill: props.colour }} />');
+    expect(component(output)).toContain(
+      '<stop {...({ fill: "white" } as Record<string, unknown>)} />',
+    );
+    expect(component(output)).toContain(
+      '<mpath {...({ href: "#p" } as Record<string, unknown>)} />',
+    );
+    expect(component(output)).toContain(
+      "<dialog open {...({ tabindex: props.order } as Record<string, unknown>)}>",
+    );
   });
 
   it("keeps SVG names case-exact", async () => {
@@ -523,6 +935,8 @@ describe("solid attributes (design §5.4)", () => {
     );
     expect(component(output)).toContain('<svg viewBox="0 0 8 8" role="img">');
     expect(component(output)).toContain('<linearGradient id="g" />');
-    expect(component(output)).toContain('<circle cx="4" cy="4" r="3" stroke-width={props.width} />');
+    expect(component(output)).toContain(
+      '<circle cx="4" cy="4" r="3" stroke-width={props.width} />',
+    );
   });
 });

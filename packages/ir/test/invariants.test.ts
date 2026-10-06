@@ -34,6 +34,7 @@ import {
 import type {
   Attribute,
   ElementNode,
+  Expression,
   FragmentNode,
   RenderNode,
   StyleDeclaration,
@@ -167,6 +168,8 @@ describe("checkInvariants", () => {
     [element("p", [["class", "a  b"]]), "/attributes/0/value", "class names separated"],
     [element("p", [["class", "a\tb"]]), "/attributes/0/value", "class names separated"],
     [element("p", [["class", "a\u00A0b"]]), "/attributes/0/value", "class names separated"],
+    // Angular merges a static class with a bound one through the class list, which drops it.
+    [element("p", [["class", "a b a"]]), "/attributes/0/value", 'must name the class "a" once'],
     [element("p", [["title", "a\rb"]]), "/attributes/0/value", "U+000D (carriage-return)"],
     [element("p", [], [createText("a\r\nb", at)]), "/children/0/value", "U+000D"],
     [element("p", [], [createText("a\u0000b", at)]), "/children/0/value", "U+0000 (nul)"],
@@ -339,6 +342,8 @@ const bound = (name: string) => createBoundAttribute(name, label(), at);
 const style = (...declarations: StyleDeclaration[]) => createStyleAttribute(declarations, at);
 const text = (value: string) => createText(value, at);
 const interpolation = () => createInterpolation(label(), at);
+/** The item of a list over `label`, which keys it. */
+const item = () => expression("item", 0, [["item", ids.item]]);
 const branch = (children: RenderNode[], condition = true) =>
   createBranch(condition ? label() : undefined, children, at);
 
@@ -368,6 +373,7 @@ describe("checkInvariants on M1's IR", () => {
         createSpreadAttribute(
           label(),
           [createSpreadKey("class", at), createSpreadKey("id", at)],
+          false,
           at,
         ),
       ]),
@@ -376,7 +382,7 @@ describe("checkInvariants on M1's IR", () => {
       "a class beside a spread's class",
       node("p", [
         createClassAttribute([createDynamicClass(label(), at)], at),
-        createSpreadAttribute(label(), [createSpreadKey("class", at)], at),
+        createSpreadAttribute(label(), [createSpreadKey("class", at)], false, at),
       ]),
     ],
     [
@@ -393,15 +399,26 @@ describe("checkInvariants on M1's IR", () => {
       ]),
     ],
     ["an empty class", node("p", [createClassAttribute([], at)])],
+    ["a static class of distinct names", node("p", [createStaticAttribute("class", "a b c", at)])],
     [
       "a style of distinct properties",
       node("p", [
         style(
           createStaticStyle("margin-top", "4px", at),
           createStaticStyle("padding", "0", at),
-          createBoundStyle("--Gap", label(), at),
+          createBoundStyle("--gap", label(), at),
           createStaticStyle("background-image", 'url("data:image/png;base64,AA==")', at),
           createStaticStyle("font-family", '"a;b", serif', at),
+        ),
+      ]),
+    ],
+    [
+      "values Angular's style parser reads as written",
+      node("p", [
+        style(
+          createStaticStyle("content", '"a(b)"', at),
+          createStaticStyle("font-family", "'A\"B', serif", at),
+          createStaticStyle("--gap", "1px", at),
         ),
       ]),
     ],
@@ -436,12 +453,40 @@ describe("checkInvariants on M1's IR", () => {
     ],
     [
       "a list of options",
-      node("select", [], [createFor(label(), ids.item, code("1"), node("option"), at)]),
+      node("select", [], [createFor(label(), ids.item, item(), node("option"), at)]),
     ],
     ["a line feed after the first child of a <pre>", node("pre", [], [node("b"), text("\nx")])],
     [
       "a line feed that is not first in a <pre>'s branch",
       node("pre", [], [createIf([branch([text("x\n")])], at)]),
+    ],
+    [
+      "a line feed after a conditional that always renders an element",
+      node(
+        "pre",
+        [],
+        [createIf([branch([node("b")]), branch([node("i")], false)], at), text("\nx")],
+      ),
+    ],
+    ["whitespace in an iframe", node("iframe", [], [text(" ")])],
+    [
+      "a list keyed by its item and a prop",
+      node(
+        "ul",
+        [],
+        [
+          createFor(
+            label(),
+            ids.item,
+            expression("item + label", 0, [
+              ["item", ids.item],
+              ["label", ids.label],
+            ]),
+            node("li"),
+            at,
+          ),
+        ],
+      ),
     ],
     [
       "an empty middle branch",
@@ -553,25 +598,25 @@ describe("checkInvariants on M1's IR", () => {
     ],
     [
       "a spread's style",
-      node("p", [createSpreadAttribute(label(), [createSpreadKey("style", at)], at)]),
+      node("p", [createSpreadAttribute(label(), [createSpreadKey("style", at)], false, at)]),
       "/attributes/0/keys/0/name",
       "must not be bound: a `style`",
     ],
     [
       "a spread's handler",
-      node("p", [createSpreadAttribute(label(), [createSpreadKey("onclick", at)], at)]),
+      node("p", [createSpreadAttribute(label(), [createSpreadKey("onclick", at)], false, at)]),
       "/attributes/0/keys/0/name",
       "must be an attribute of <p>",
     ],
     [
       "a spread's key",
-      node("p", [createSpreadAttribute(label(), [createSpreadKey("key", at)], at)]),
+      node("p", [createSpreadAttribute(label(), [createSpreadKey("key", at)], false, at)]),
       "/attributes/0/keys/0/name",
       "must be an attribute of <p>",
     ],
     [
       "a spread's hidden",
-      node("p", [createSpreadAttribute(label(), [createSpreadKey("hidden", at)], at)]),
+      node("p", [createSpreadAttribute(label(), [createSpreadKey("hidden", at)], false, at)]),
       "/attributes/0/keys/0/name",
       "Vue's server or Svelte",
     ],
@@ -579,7 +624,7 @@ describe("checkInvariants on M1's IR", () => {
       "a spread's key that is written too",
       node("p", [
         createStaticAttribute("id", "a", at),
-        createSpreadAttribute(label(), [createSpreadKey("id", at)], at),
+        createSpreadAttribute(label(), [createSpreadKey("id", at)], false, at),
       ]),
       "/attributes/1/keys/0/name",
       'must set "id" once',
@@ -587,8 +632,8 @@ describe("checkInvariants on M1's IR", () => {
     [
       "two spreads with a class",
       node("p", [
-        createSpreadAttribute(label(), [createSpreadKey("class", at)], at),
-        createSpreadAttribute(label(), [createSpreadKey("class", at)], at),
+        createSpreadAttribute(label(), [createSpreadKey("class", at)], false, at),
+        createSpreadAttribute(label(), [createSpreadKey("class", at)], false, at),
       ]),
       "/attributes/1/keys/0/name",
       'must set "class" once',
@@ -683,6 +728,38 @@ describe("checkInvariants on M1's IR", () => {
       node("p", [style(createStaticStyle("color", "red; background: blue", at))]),
       "/declarations/0/value",
       "a `;` ends the declaration",
+    ],
+    // Angular's compiler and server DOM parse a style again (UF3022): they lowercase every
+    // property, and know neither escapes nor comments.
+    [
+      "a custom property with an upper-case letter",
+      node("p", [style(createBoundStyle("--Gap", label(), at))]),
+      "/declarations/0/property",
+      "must be in lower case",
+    ],
+    [
+      "a static custom property with an upper-case letter",
+      node("p", [style(createStaticStyle("--myColor", "red", at))]),
+      "/declarations/0/property",
+      "must be in lower case",
+    ],
+    [
+      "a value with an escaped quote of its own kind",
+      node("p", [style(createStaticStyle("content", '"a\\";b"', at))]),
+      "/declarations/0/value",
+      "Angular's style parser",
+    ],
+    [
+      "a parenthesis in a string",
+      node("p", [style(createStaticStyle("content", '"("', at))]),
+      "/declarations/0/value",
+      "Angular's style parser",
+    ],
+    [
+      "a quote in a comment",
+      node("p", [style(createStaticStyle("color", "red /* it's */", at))]),
+      "/declarations/0/value",
+      "Angular's style parser",
     ],
     [
       "an important value",
@@ -781,7 +858,7 @@ describe("checkInvariants on M1's IR", () => {
     ],
     [
       "a list in a textarea",
-      node("textarea", [], [createFor(label(), ids.item, code("1"), node("b"), at)]),
+      node("textarea", [], [createFor(label(), ids.item, item(), node("b"), at)]),
       "/children/0",
       "must not be in a <textarea>",
     ],
@@ -808,6 +885,73 @@ describe("checkInvariants on M1's IR", () => {
       node("pre", [], [createIf([branch([node("b")]), branch([text("\nx")], false)], at)]),
       "/children/0/branches/1/children/0/value",
       "must not start with a line feed",
+    ],
+    // React's and Astro's servers write nothing for what renders nothing, and the parser drops
+    // the line feed after it; the other targets write a comment first.
+    [
+      "a line feed after a conditional without an else",
+      node("pre", [], [createIf([branch([node("b")])], at), text("\nx")]),
+      "/children/1/value",
+      "must not start with a line feed",
+    ],
+    [
+      "a line feed after a conditional with an empty branch",
+      node("pre", [], [createIf([branch([]), branch([node("i")], false)], at), text("\nx")]),
+      "/children/1/value",
+      "must not start with a line feed",
+    ],
+    [
+      "a line feed after a list",
+      node("pre", [], [createFor(label(), ids.item, item(), node("b"), at), text("\nx")]),
+      "/children/1/value",
+      "must not start with a line feed",
+    ],
+    [
+      "a line feed after a list in a <pre>'s branch",
+      node(
+        "pre",
+        [],
+        [
+          createIf(
+            [branch([createFor(label(), ids.item, item(), node("b"), at), text("\nx")])],
+            at,
+          ),
+        ],
+      ),
+      "/children/0/branches/0/children/1/value",
+      "must not start with a line feed",
+    ],
+    // An <iframe>'s content is raw text: the servers' escapes and comments stay as written.
+    [
+      "text in an iframe",
+      node("iframe", [], [text("a & b")]),
+      "/children/0/value",
+      "must be only whitespace in a <iframe>",
+    ],
+    [
+      "an interpolation in an iframe",
+      node("iframe", [], [interpolation()]),
+      "/children/0",
+      "must not be in a <iframe>",
+    ],
+    [
+      "a conditional of whitespace in an iframe",
+      node("iframe", [], [createIf([branch([text(" ")])], at)]),
+      "/children/0",
+      "must not render text in a <iframe>",
+    ],
+    // Lists' keys (ADR-0036).
+    [
+      "a list keyed by a constant",
+      node("ul", [], [createFor(label(), ids.item, code("1"), node("li"), at)]),
+      "/children/0/key",
+      "must read the list's item or index",
+    ],
+    [
+      "a list keyed by a prop",
+      node("ul", [], [createFor(label(), ids.item, label(), node("li"), at)]),
+      "/children/0/key",
+      "must read the list's item or index",
     ],
     // Conditionals and fragments.
     [
@@ -879,6 +1023,82 @@ describe("checkInvariants on M1's IR", () => {
     ],
     ["SVG animation", svg(node("animate")), "/children/0/tag", "SMIL animation"],
     ["an SVG <style>", svg(node("style")), "/children/0/tag", "a component can render: <style>"],
+    [
+      "an element in an <option>",
+      node("select", [], [node("option", [], [node("b", [], [text("a")])])]),
+      "/children/0/children/0/tag",
+      "must not be inside <option>: its content is text",
+    ],
+    [
+      "an element in an <option>, through a branch",
+      node("select", [], [node("option", [], [createIf([branch([node("b")])], at)])]),
+      "/children/0/children/0/branches/0/children/0/tag",
+      "must not be inside <option>",
+    ],
+    [
+      "an element in a <textarea>",
+      node("textarea", [], [node("b")]),
+      "/children/0/tag",
+      "must not be inside <textarea>",
+    ],
+    [
+      "an SVG element in an <iframe>",
+      node("iframe", [], [svg()]),
+      "/children/0/tag",
+      "must not be inside <iframe>",
+    ],
+    [
+      "an SVG <title> that starts a branch",
+      svg(createIf([branch([node("title", [], [text("a")])])], at)),
+      "/children/0/branches/0/children/0/tag",
+      "must not start a conditional's branch or a list's body in SVG",
+    ],
+    [
+      "a bound <select> size",
+      node("select", [bound("size")], [node("option", [], [text("a")])]),
+      "/attributes/0/name",
+      "must not be bound: it decides which option starts selected",
+    ],
+    [
+      "an <option>'s disabled as a spread's key",
+      node(
+        "select",
+        [],
+        [
+          node(
+            "option",
+            [createSpreadAttribute(label(), [createSpreadKey("disabled", at)], false, at)],
+            [text("a")],
+          ),
+        ],
+      ),
+      "/children/0/attributes/0/keys/0/name",
+      "must not be bound: it decides which option starts selected",
+    ],
+    [
+      "an attribute React's types do not declare",
+      node("p", [createStaticAttribute("writingsuggestions", "false", at)]),
+      "/attributes/0/name",
+      "must not be set: React's and Vue's element types do not declare `writingsuggestions`",
+    ],
+    [
+      "an attribute Vue's types do not declare",
+      node("p", [createStaticAttribute("popover", "auto", at)]),
+      "/attributes/0/name",
+      "must not be set: Vue's element types do not declare `popover` (Vue's are the authoring types)",
+    ],
+    [
+      "an ARIA 1.3 draft on an SVG element",
+      svg(node("g", [createStaticAttribute("aria-description", "d", at)])),
+      "/children/0/attributes/0/name",
+      "is an ARIA 1.3 draft, which Vue's and Svelte's element types do not declare",
+    ],
+    [
+      "a CSS property no browser knows",
+      node("p", [style(createStaticStyle("colr", "red", at))]),
+      "/attributes/0/declarations/0/property",
+      "must be a CSS property the browsers know",
+    ],
     [
       "an element in an SVG <title>",
       svg(node("title", [], [node("tspan")])),
@@ -980,6 +1200,89 @@ const loop = (module: UfModule) =>
     { kind: "For" }
   >;
 
+/**
+ * `withProps`' object form, with a `label` prop its `<p>` reads through `reference`, the text of
+ * the reference.
+ */
+function objectForm(reference: string): UfModule {
+  const module = withProps(["label"], "object");
+  module.components[0]!.render = createElement(
+    "p",
+    [],
+    [createInterpolation(expression(reference, 290, [[reference, "label@10"]]), at)],
+    at,
+  );
+  return module;
+}
+
+/** `everyKind` with its list's item renamed `name`. */
+function renamedItem(name: string): UfModule {
+  return changed((module) => {
+    const binding = createBinding(name, "loopVar", span(300, 300 + name.length));
+    component(module).bindings[4] = binding;
+    loop(module).item = binding.id;
+    loop(module).body.children[0] = createInterpolation(
+      expression(name, 360, [[name, binding.id]]),
+      span(359, 360),
+    );
+  });
+}
+
+/** `everyKind` with a list in its list's body, whose item is `name` and key `key`. */
+function nestedList(name: string, id: string, key: Expression): UfModule {
+  return changed((module) => {
+    component(module).bindings.push(createBinding(name, "loopVar", span(380, 380 + name.length)));
+    loop(module).body.children.push(
+      createFor(
+        expression("items", 370, [["items", ids.items]]),
+        id,
+        key,
+        createElement("b", [], [], at),
+        at,
+      ),
+    );
+  });
+}
+
+/**
+ * A module declaring `interface Props`, with two components: each takes the props type named
+ * first, and its props reach the types listed (`Props` among them, or not).
+ */
+function twoComponents(...components: [annotation: string, types: string[]][]): UfModule {
+  const declarations = [
+    createTypeDeclaration("Props", false, "interface Props {}", span(0, 18)),
+    createTypeDeclaration("BadgeProps", false, "interface BadgeProps {}", span(20, 43)),
+    createTypeDeclaration("Other", false, "interface Other {}", span(50, 68)),
+  ];
+  const used = new Set(components.flatMap(([, types]) => types));
+  return createModule(
+    "A.uf.tsx",
+    components.map(([annotation, types], index) =>
+      createComponent(
+        index ? "B" : "A",
+        createElement("p", [], [], at),
+        span(100 * (index + 1), 100 * (index + 1) + 50),
+        [],
+        createPropsParameter(
+          "destructured",
+          createTypeText(
+            annotation,
+            span(100 * (index + 1), 100 * (index + 1) + annotation.length),
+          ),
+          at,
+        ),
+        types.toSorted(
+          (a, b) =>
+            ["Props", "BadgeProps", "Other"].indexOf(a) -
+            ["Props", "BadgeProps", "Other"].indexOf(b),
+        ),
+      ),
+    ),
+    components.map((_, index) => createExport("named", index ? "B" : "A", at)),
+    declarations.filter(({ name }) => used.has(name)),
+  );
+}
+
 /** A module whose component takes the props named, each with its own binding, and renders `<p>`. */
 function withProps(names: string[], form: "destructured" | "object" = "destructured"): UfModule {
   const type = createTypeText("P", span(0, 1));
@@ -1019,18 +1322,15 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
       "props with reserved-looking names",
       () => withProps(["keys", "onward", "ngram", "classes", "Props", "x1"]),
     ],
+    ["a prop read through the object form", () => objectForm("props.label")],
+    ["a prop read through the object form across lines", () => objectForm("props /* p */\n.label")],
     [
-      "a prop read through the object form",
-      () =>
-        changed((module) => {
-          const { propsParameter } = component(module);
-          Object.assign(propsParameter!, { form: "object", name: "props" });
-          delete component(module).props[1]!.default;
-          card(module).children[1] = createInterpolation(
-            expression("props.label", 290, [["props.label", ids.label]]),
-            at,
-          );
-        }),
+      "a local `Props` every component that reaches it takes as its props",
+      () => twoComponents(["Props", ["Props"]], ["Props", ["Props"]]),
+    ],
+    [
+      "a local `Props` beside a component that does not reach it",
+      () => twoComponents(["Props", ["Props"]], ["Other", ["Other"]]),
     ],
     [
       "a shorthand reference",
@@ -1216,15 +1516,12 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
     ],
     [
       "a default in the object form",
-      () =>
-        changed(
-          (module) =>
-            void Object.assign(component(module).propsParameter!, {
-              form: "object",
-              name: "props",
-            }),
-        ),
-      "/props/1/default",
+      () => {
+        const module = withProps(["a"], "object");
+        module.components[0]!.props[0]!.default = expression('"a"', 11);
+        return module;
+      },
+      "/props/0/default",
       "must be absent in the object form",
     ],
     [
@@ -1258,16 +1555,53 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
     ],
     [
       "a prop without a binding in the object form",
-      () =>
-        changed((module) => {
-          Object.assign(component(module).propsParameter!, { form: "object", name: "props" });
-          delete component(module).props[1]!.default;
-          delete component(module).props[3]!.binding;
-          component(module).bindings.splice(3, 1);
-          card(module).attributes.splice(3, 1);
-        }),
-      "/props/3",
+      () => {
+        const module = withProps(["a", "b"], "object");
+        delete module.components[0]!.props[1]!.binding;
+        module.components[0]!.bindings.splice(1, 1);
+        return module;
+      },
+      "/props/1",
       "must have a binding in the object form",
+    ],
+    [
+      "an object form's parameter named as Astro's compiled component names its own",
+      () => {
+        const module = withProps(["a"], "object");
+        module.components[0]!.propsParameter!.name = "$$props";
+        return module;
+      },
+      "/propsParameter/name",
+      "Astro's compiled component declares",
+    ],
+    // A prop's reference spans what each form reads (ADR-0035): the targets splice there.
+    [
+      "a prop read by its name in the object form",
+      () => objectForm("label"),
+      "/value/refs/0/span",
+      'must span "props.label"',
+    ],
+    [
+      "a prop read through another name than the parameter's",
+      () => {
+        const module = objectForm("props.label");
+        module.components[0]!.propsParameter!.name = "p";
+        return module;
+      },
+      "/value/refs/0/span",
+      'must span "p.label"',
+    ],
+    [
+      "a prop read as a member in the destructured form",
+      () => {
+        const module = objectForm("props.label");
+        const { propsParameter } = module.components[0]!;
+        delete propsParameter!.name;
+        propsParameter!.form = "destructured";
+        return module;
+      },
+      "/value/refs/0/span",
+      'must span "label"',
     ],
     [
       "an object form without a name",
@@ -1386,6 +1720,45 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
       "/bindings/4",
       'must be the item or index of one list, and "item@300" is of 2',
     ],
+    // Loop variables that a target's rewrite or an output would capture (UF3024).
+    [
+      "a loop variable named after a prop",
+      () => renamedItem("tone"),
+      "/children/0/children/0/item",
+      'must not be named "tone": it would shadow the prop "tone"',
+    ],
+    [
+      "a loop variable named as an Angular keyword",
+      () => renamedItem("as"),
+      "/children/0/children/0/item",
+      "a keyword in Angular's template expressions",
+    ],
+    [
+      "a loop variable named as Vue's compiled code names its own",
+      () => renamedItem("_ctx"),
+      "/children/0/children/0/item",
+      "Vue's compiled render functions declare",
+    ],
+    [
+      "a loop variable named after one of a list around it",
+      () => nestedList("item", "item@380", expression("item", 390, [["item", "item@380"]])),
+      "/body/children/1/item",
+      'it would shadow "item@300", a loop variable of a list around it',
+    ],
+    [
+      "a key that reads a loop variable of a list around it",
+      () =>
+        nestedList(
+          "other",
+          "other@380",
+          expression("other + item", 390, [
+            ["other", "other@380"],
+            ["item", ids.item],
+          ]),
+        ),
+      "/body/children/1/key",
+      'must not read "item@300", a loop variable of a list around it',
+    ],
     // Types.
     [
       "a component type the module does not declare",
@@ -1400,6 +1773,18 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
       'must name "Attrs" once',
     ],
     [
+      "a type named as one the outputs import",
+      () =>
+        changed(
+          (module) =>
+            void module.types.push(
+              createTypeDeclaration("Record", false, "type Record = {}", span(40, 56)),
+            ),
+        ),
+      "/types/1/name",
+      'must not be "Record": Solid\'s output spreads',
+    ],
+    [
       "a type declared twice",
       () =>
         changed(
@@ -1410,6 +1795,18 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
         ),
       "/types/1/name",
       'must declare "Attrs" once',
+    ],
+    [
+      "a local `Props` another component's props reach",
+      () => twoComponents(["Props", ["Props"]], ["BadgeProps", ["Props", "BadgeProps"]]),
+      "/types/0/name",
+      'must not be "Props": the outputs declare a type of that name',
+    ],
+    [
+      "a local `Props` no component takes as its props",
+      () => twoComponents(["BadgeProps", ["Props", "BadgeProps"]], ["Other", ["Other"]]),
+      "/types/0/name",
+      'must not be "Props"',
     ],
     [
       "a type declaration out of order",

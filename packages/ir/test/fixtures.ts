@@ -136,6 +136,7 @@ export function everyKind(): UfModule {
       createSpreadAttribute(
         expression("attrs", 270, [["attrs", ids.attrs]]),
         [createSpreadKey("id", at(160))],
+        true,
         at(269),
       ),
     ],

@@ -29,20 +29,24 @@ plain, versioned, schema-validated JSON (plan §5.3).
   differently (`portability.ts`), bound or static; no code or document the compiler cannot
   analyse (`srcdoc`, `javascript:` URLs, `data:` URLs a frame loads); text where every target
   renders it alike, with only characters HTML keeps; props every target can declare, with static
-  defaults; bindings in scope, and expressions that fill their spans; and the shapes of
-  conditionals, lists and fragments. The compiler emits from no module that breaks one, a
+  defaults, and a local `Props` only as the props type of every component its props reach;
+  bindings in scope, and expressions that fill their spans (a prop in the object form as the
+  parameter's member); the shapes of conditionals, lists and fragments; and loop variables no
+  target's rewrite captures, keyed by their own list's item or index. The compiler emits from no module that breaks one, a
   plugin's included, and checks itself that a plugin's expressions are the analyser's.
 - **Portability facts:** what the targets render differently from the same markup
   (`portability.ts`): elements Vue does not know, template syntax, attributes a framework acts on
   or sets as state, `contenteditable` with children, empty URLs React drops, whitespace Svelte
   drops, attributes Angular cannot bind, text the parser moves or drops. The analyser reports each
-  at its source, and the invariants reject them in any IR.
+  at its source, and the invariants reject them in any IR; but for a bound `value` that may be
+  nullish where some targets set the property (`NULLISH_VALUE_ELEMENTS`), which the analyser
+  alone can tell: the IR holds no kinds.
 - **Vocabulary:** the HTML elements, attributes and content-model facts the analyser validates
   against, and the printers and targets lay out by (`html.ts`), with the boolean attributes a value
   can be bound to and the attributes React and Qwik type as numbers; the SVG elements and
   attributes, case-exact (`svg.ts`); CSS facts: unitless properties, shorthands as Chromium
   expands them, and what a static value may hold (`css.ts`); the allowed globals and the reserved
-  prop names (`names.ts`). Its tables are maps, read with names from the source.
+  prop and parameter names (`names.ts`). Its tables are maps, read with names from the source.
   `ID_REFERENCE_ATTRIBUTES` and `idReferencesIn` are how the analyser and the tests' normaliser
   both find id references (the generated-id prefix, ADR-0031). `listBoxSize` reads a `<select>` as
   HTML does: a single-selection list box with an option a drop-down would select starts with none

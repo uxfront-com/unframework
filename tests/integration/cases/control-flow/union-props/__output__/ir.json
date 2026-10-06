@@ -1,0 +1,425 @@
+{
+  "irVersion": 1,
+  "file": "control-flow/union-props/FilterSummary.uf.tsx",
+  "components": [
+    {
+      "name": "FilterSummary",
+      "span": {
+        "start": 199,
+        "end": 611
+      },
+      "props": [
+        {
+          "name": "tags",
+          "optional": false,
+          "type": {
+            "code": "string | string[]",
+            "span": {
+              "start": 127,
+              "end": 144
+            }
+          },
+          "binding": "tags@239",
+          "span": {
+            "start": 121,
+            "end": 145
+          }
+        },
+        {
+          "name": "limit",
+          "optional": false,
+          "type": {
+            "code": "number | string",
+            "span": {
+              "start": 155,
+              "end": 170
+            }
+          },
+          "binding": "limit@245",
+          "span": {
+            "start": 148,
+            "end": 171
+          }
+        },
+        {
+          "name": "result",
+          "optional": false,
+          "type": {
+            "code": "LookupResult",
+            "span": {
+              "start": 182,
+              "end": 194
+            }
+          },
+          "binding": "result@252",
+          "span": {
+            "start": 174,
+            "end": 195
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "FilterSummaryProps",
+          "span": {
+            "start": 262,
+            "end": 280
+          }
+        },
+        "span": {
+          "start": 237,
+          "end": 280
+        }
+      },
+      "types": [
+        "LookupResult",
+        "FilterSummaryProps"
+      ],
+      "bindings": [
+        {
+          "id": "tags@239",
+          "name": "tags",
+          "kind": "prop",
+          "span": {
+            "start": 239,
+            "end": 243
+          }
+        },
+        {
+          "id": "limit@245",
+          "name": "limit",
+          "kind": "prop",
+          "span": {
+            "start": 245,
+            "end": 250
+          }
+        },
+        {
+          "id": "result@252",
+          "name": "result",
+          "kind": "prop",
+          "span": {
+            "start": 252,
+            "end": 258
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "filter-summary",
+            "span": {
+              "start": 308,
+              "end": 330
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Filters",
+            "span": {
+              "start": 331,
+              "end": 351
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Tags: ",
+                "span": {
+                  "start": 362,
+                  "end": 368
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "Array.isArray(tags) ? tags.join(\", \") : tags",
+                  "span": {
+                    "start": 369,
+                    "end": 413
+                  },
+                  "refs": [
+                    {
+                      "kind": "Global",
+                      "name": "Array",
+                      "span": {
+                        "start": 369,
+                        "end": 374
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "tags@239",
+                      "span": {
+                        "start": 383,
+                        "end": 387
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "tags@239",
+                      "span": {
+                        "start": 391,
+                        "end": 395
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "tags@239",
+                      "span": {
+                        "start": 409,
+                        "end": 413
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 368,
+                  "end": 414
+                }
+              }
+            ],
+            "span": {
+              "start": 359,
+              "end": 418
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Limit: ",
+                "span": {
+                  "start": 428,
+                  "end": 435
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "typeof limit === \"number\" ? limit.toFixed(0) : limit.toLowerCase()",
+                  "span": {
+                    "start": 436,
+                    "end": 502
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "limit@245",
+                      "span": {
+                        "start": 443,
+                        "end": 448
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "limit@245",
+                      "span": {
+                        "start": 464,
+                        "end": 469
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "limit@245",
+                      "span": {
+                        "start": 483,
+                        "end": 488
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 435,
+                  "end": 503
+                }
+              }
+            ],
+            "span": {
+              "start": 425,
+              "end": 507
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "result.ok",
+                  "span": {
+                    "start": 515,
+                    "end": 524
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "result@252",
+                      "span": {
+                        "start": 515,
+                        "end": 521
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Found ",
+                        "span": {
+                          "start": 530,
+                          "end": 536
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "result.match",
+                          "span": {
+                            "start": 537,
+                            "end": 549
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "result@252",
+                              "span": {
+                                "start": 537,
+                                "end": 543
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 536,
+                          "end": 550
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 527,
+                      "end": 554
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 515,
+                  "end": 554
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "No match: ",
+                        "span": {
+                          "start": 560,
+                          "end": 570
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "result.error",
+                          "span": {
+                            "start": 571,
+                            "end": 583
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "result@252",
+                              "span": {
+                                "start": 571,
+                                "end": 577
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 570,
+                          "end": 584
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 557,
+                      "end": 588
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 557,
+                  "end": 588
+                }
+              }
+            ],
+            "span": {
+              "start": 515,
+              "end": 588
+            }
+          }
+        ],
+        "span": {
+          "start": 299,
+          "end": 604
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "FilterSummary",
+      "span": {
+        "start": 199,
+        "end": 611
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "LookupResult",
+      "exported": false,
+      "code": "type LookupResult = { ok: true; match: string } | { ok: false; error: string };",
+      "span": {
+        "start": 0,
+        "end": 79
+      }
+    },
+    {
+      "name": "FilterSummaryProps",
+      "exported": true,
+      "code": "interface FilterSummaryProps {\n  tags: string | string[];\n  limit: number | string;\n  result: LookupResult;\n}",
+      "span": {
+        "start": 88,
+        "end": 197
+      }
+    }
+  ]
+}

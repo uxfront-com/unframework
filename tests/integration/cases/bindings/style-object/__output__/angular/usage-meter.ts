@@ -32,14 +32,19 @@ export interface UsageMeterProps {
         style="width: 200px; height: 12px; border-style: solid"
         [style.--meter-colour]="colour"
         [style.--meter-value]="percent"
-        [style.border-width]="'' + thickness + 'px'"
+        [style.border-width]="thickness + 'px'"
         [style.border-color]="colour"
       >
         <div
           style="height: 100%; background-color: var(--meter-colour)"
-          [style.width]="'' + percent + '%'"
+          [style.width]="percent + '%'"
         ></div>
       </div>
+      <p
+        class="usage-meter-caption"
+        style="font-family: &quot;UF Test Sans&quot;, sans-serif"
+        [style.color]="colour"
+      >{{ percent }} of 100 used</p>
     </div>
   `,
 })

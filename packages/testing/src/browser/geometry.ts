@@ -3,9 +3,10 @@
 // on every platform once Chromium runs with --font-render-hinting=none (the screenshot ADR).
 //
 // Keys are stable element paths relative to the container: `tag[i]` among same-tag element
-// siblings and `#text[i]` for non-blank text nodes. `display: contents` elements (Angular hosts
-// under D6) are transparent: their children are keyed as children of the parent, so wrapper
-// differences between targets do not shift paths.
+// siblings and `#text[i]` for non-blank text nodes. The capture merges each run of adjacent text
+// nodes into one first (./text-runs.ts), so a target's text-node split never shifts the keys.
+// `display: contents` elements (Angular hosts under D6) are transparent: their children are keyed
+// as children of the parent, so wrapper differences between targets do not shift paths.
 import type { GeometrySnapshot, GeometryBox, GeometryNode } from "../visual-types.ts";
 
 /** The computed properties that explain how a box looks. Width and height come from the box. */

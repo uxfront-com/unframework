@@ -1,0 +1,27 @@
+---
+interface LogLine {
+  id: string;
+  text: string;
+}
+
+export interface BuildLogProps {
+  target: string;
+  failed: boolean;
+  lines?: LogLine[] | null;
+  warnings?: string[];
+}
+
+type Props = BuildLogProps;
+
+const { target, failed, lines, warnings } = Astro.props;
+---
+
+<section class="build-log" aria-label="Build log">
+  <pre>$ make {target}{failed ? <strong> (failed)</strong> : null}
+{(lines ?? []).map((line) => <code>{line.text}{"\n"}</code>)}</pre>
+  <ul aria-label="Warnings">
+    {(warnings ?? []).map((warning) => (
+      <li>{warning}</li>
+    ))}
+  </ul>
+</section>

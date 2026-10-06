@@ -23,7 +23,7 @@ export interface OrderSummaryProps {
     <section class="order-summary" aria-label="Order summary">
       <h2>Order {{ String(orderNumber).padStart(6, "0") }}</h2>
       <p>Customer: {{ customer.trim().toUpperCase() }}</p>
-      <p>{{ "" + quantity + " item" + (quantity === 1 ? "" : "s") + " at " + unitPrice.toFixed(2) + " each" }}</p>
+      <p>{{ quantity + " item" + (quantity === 1 ? "" : "s") + " at " + unitPrice.toFixed(2) + " each" }}</p>
       <p>Subtotal: {{ (unitPrice * quantity).toFixed(2) }}</p>
       <p>Discount: {{ Math.min(Math.max(discount, 0), 50) }}%</p>
       <p>Total: {{ (unitPrice * quantity * (1 - Math.min(Math.max(discount, 0), 50) / 100)).toFixed(2) }}</p>

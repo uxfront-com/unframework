@@ -1,27 +1,48 @@
-// The render-parity kit: IR that is hard to print, a seeded fuzz, the DOM an IR tree describes,
-// and a strict parser for server-rendered HTML. Every target package's render-parity tests import
-// it by relative path (it is test code, not codegen's API): the target's output, formatted or not,
-// goes through the framework's own compiler and renderer, on the server and in the browser, and
-// the DOM that comes out must be exactly the DOM the IR describes under JSX semantics. String
-// tests of the printers cannot show that; only the frameworks can.
+// The render-parity kit: components that are hard to print, seeded fuzzes, the DOM a component
+// renders for its props, and a strict parser for server-rendered HTML. Every target package's
+// render-parity tests import it by relative path (it is test code, not codegen's API): the
+// target's output, formatted or not, goes through the framework's own compiler and renderer, on
+// the server and in the browser, and the DOM that comes out must be exactly the DOM the reference
+// semantics give (design §1, §4.5). String tests of the printers cannot show that; only the
+// frameworks can.
 //
-// This module runs anywhere (Node and the browser). Emitting the cases, the attribute sweep and
-// the Vite plugin that serves them to the browser are in ./render-parity-node.ts; reading a live
-// DOM is in ./render-parity-client.ts.
+// Two kinds of case. M0's are static IR trees (`el()`), which are also the DOM they describe.
+// M1's are source: a component's props and JSX (./render-parity-sources.ts), lowered by the
+// analyser as an author's component is, and rendered with prop values; the reference evaluator
+// (./render-parity-reference.ts) says what they render.
+//
+// This module runs anywhere (Node and the browser). Lowering the sources, emitting the cases,
+// the attribute sweeps and the Vite plugin that serves them to the browser are in
+// ./render-parity-node.ts; reading a live DOM is in ./render-parity-client.ts.
 import {
   createElement,
   createStaticAttribute,
   createText,
+  cssPropertiesOverlap,
+  elementNamespace,
   FIXED_VALUE_INPUT_TYPES,
   isBooleanAttribute,
   isVoidElement,
 } from "@unframework/ir";
-import type { ElementNode, RenderNode } from "@unframework/ir";
+import type {
+  ElementNode,
+  FragmentNode,
+  Namespace,
+  RenderNode,
+  Span,
+  UfComponent,
+  UfModule,
+} from "@unframework/ir";
+
+import { instantiate } from "./render-parity-reference.ts";
 
 /** A DOM node as a comparable value: a text node is its data. */
 export type DomNode = string | DomElement;
 
-/** An element: its tag, its attributes by lower-case name, and its children. */
+/**
+ * An element: its tag, its attributes by name, and its children. Names are as the DOM holds
+ * them: lower case in HTML, SVG's own case in SVG (`viewBox`).
+ */
 export interface DomElement {
   tag: string;
   attributes: Record<string, string>;
@@ -34,16 +55,75 @@ export interface DomElement {
 }
 
 /**
- * One IR tree to render, named for the failure message. A target renders it exactly unless its
- * capability matrix marks a capability the tree uses unsupported (`unsupportedCapabilities`).
+ * One case, named for the failure message. A target renders it exactly unless its capability
+ * matrix marks a capability the case uses unsupported (`unsupportedCapabilities`).
  */
 export interface ParityCase {
   name: string;
-  render: ElementNode;
+  /**
+   * The tree the target emits the case from. An M0 case is a static tree, which is also the DOM
+   * it describes. A source case's is its component's render, lowered alone; what it renders for
+   * its props is the reference evaluator's (`expectedTree`).
+   */
+  render: ElementNode | FragmentNode;
+  /** A source case: what the analyser made of it, and the props it renders with. */
+  lowered?: LoweredCase;
 }
 
-/** A titled list of cases, as every target's render-parity tests run them. */
-export type ParitySuite = readonly [title: string, cases: readonly ParityCase[]];
+/** An M0 case: a static tree with one root element. */
+export interface StaticCase extends ParityCase {
+  render: ElementNode;
+  lowered?: undefined;
+}
+
+/**
+ * A case written as a component's source, as an author writes one (M1): its props parameter,
+ * the type declarations the props use, the JSX it returns, and the values it renders with.
+ * `sourceCase` (./render-parity-node.ts) lowers it; the analyser must accept it.
+ */
+export interface SourceCase {
+  name: string;
+  /** The props parameter as written (`{ label, count = 1 }: { label: string; count?: number }`). */
+  params?: string;
+  /** Top-level type declarations the props use, as written: each name once in a suite. */
+  types?: string;
+  /** What the component returns: one element, or (in a root case) anything a root can be. */
+  jsx: string;
+  /**
+   * The props it renders with, by name. A key left out is an absent prop; a key set to
+   * `undefined` is an explicit `undefined`, which must render the same (design §1.1).
+   */
+  props?: Readonly<Record<string, unknown>>;
+}
+
+/** What `sourceCase` made of a {@link SourceCase}. */
+export interface LoweredCase {
+  /** The module's source: the case's types, and its component, `Case`. */
+  text: string;
+  /** Where the returned JSX is in `text`. */
+  jsx: Span;
+  module: UfModule;
+  component: UfComponent;
+  /** The props it renders with, by the case's own names. */
+  props: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * A titled list of cases, rendered as one component, as every target's render-parity tests run
+ * them. `root` says where the cases sit: each one element in a root `<div>` (`"div"`, the
+ * default), or, for a suite of exactly one case, the component's own root (`"self"`: a root
+ * fragment, or text and control flow at the root's edges). `form` says how a source suite's
+ * component reads its props: destructured (the default) or through one object (`props.x`).
+ */
+export interface ParitySuite {
+  title: string;
+  cases: readonly ParityCase[];
+  root?: SuiteRoot;
+  form?: "destructured" | "object";
+}
+
+/** Where a suite's cases sit in its component (see {@link ParitySuite}). */
+export type SuiteRoot = "div" | "self";
 
 const at = { start: 0, end: 0 };
 
@@ -100,9 +180,10 @@ const ZERO_WIDTH = ["\u200b", "\u200c", "\u200d", "\u2060", "\u00ad", "\u180e"];
  * zero-width characters and line separators, entity look-alikes, delimiters, carriage returns,
  * lines long enough for a formatter to wrap, and the attributes renderers set as properties.
  */
-export const TRICKY_CASES: readonly ParityCase[] = [
+export const TRICKY_CASES: readonly StaticCase[] = [
   { name: "runs of spaces", render: el("p", {}, "a  b   c") },
-  { name: "tabs and line breaks", render: el("p", {}, "a\tb\nc\n\nd\fe\vf") },
+  // A form feed, which HTML keeps; not a vertical tab, which it does not (the IR holds none).
+  { name: "tabs and line breaks", render: el("p", {}, "a\tb\nc\n\nd\fe\t\tf") },
   { name: "edge spaces in text", render: el("p", {}, " lead and trail ") },
   {
     name: "edge spaces beside elements",
@@ -308,9 +389,10 @@ export const TRICKY_CASES: readonly ParityCase[] = [
     render: el(
       "div",
       {},
-      el("input", { disabled: true, readonly: "readonly", required: "" }),
+      // The IR writes a boolean attribute as `true`, and an attribute JSX writes bare as "true".
+      el("input", { disabled: true, readonly: true, required: true }),
       el("details", { open: true }, el("summary", {}, "More")),
-      el("p", { hidden: true, "data-on": true, "aria-hidden": "true" }, "x"),
+      el("p", { hidden: true, "data-on": "true", "aria-hidden": "true" }, "x"),
     ),
   },
   {
@@ -426,7 +508,7 @@ export const TRICKY_CASES: readonly ParityCase[] = [
  * attributes into JavaScript template literals, which do the same. JSX can only write one as
  * `&#13;`.
  */
-export const CARRIAGE_RETURN_CASES: readonly ParityCase[] = [
+export const CARRIAGE_RETURN_CASES: readonly StaticCase[] = [
   { name: "carriage returns in text", render: el("p", {}, "a\rb\r\nc") },
   { name: "carriage returns in preformatted text", render: el("pre", {}, "a\rb\r\nc") },
   {
@@ -436,7 +518,7 @@ export const CARRIAGE_RETURN_CASES: readonly ParityCase[] = [
 ];
 
 /** A small deterministic PRNG (mulberry32), so a seed always gives the same trees (P8). */
-function random(seed: number): () => number {
+export function random(seed: number): () => number {
   let state = seed >>> 0;
   return () => {
     state = (state + 0x6d2b79f5) >>> 0;
@@ -448,7 +530,7 @@ function random(seed: number): () => number {
 }
 
 /** The pieces random text is made of: the characters and sequences printers must guard. */
-const TEXT_PIECES = [
+export const TEXT_PIECES: readonly string[] = [
   "a",
   "b",
   "word",
@@ -525,7 +607,7 @@ interface Context {
  * interactive element, table parts and options only where they belong) and never puts two text
  * nodes side by side, as the IR never does.
  */
-export function fuzzCase(seed: number): ParityCase {
+export function fuzzCase(seed: number): StaticCase {
   const next = random(seed);
   const pick = <T>(items: readonly T[]): T => items[Math.floor(next() * items.length)]!;
   const chance = (probability: number) => next() < probability;
@@ -725,42 +807,204 @@ export function fuzzCase(seed: number): ParityCase {
 }
 
 /** The seeded random trees every target renders: the same seeds everywhere, so a failure reproduces. */
-export const FUZZ_CASES: readonly ParityCase[] = Array.from({ length: 80 }, (_, index) =>
+export const FUZZ_CASES: readonly StaticCase[] = Array.from({ length: 80 }, (_, index) =>
   fuzzCase(index + 1),
 );
 
-/** The case lists every target's render-parity tests run, besides the attribute sweep. */
+/** The M0 suites every target's render-parity tests run, besides the attribute sweeps and M1's. */
 export const PARITY_SUITES: readonly ParitySuite[] = [
-  ["the tricky cases", TRICKY_CASES],
-  ["seeded random trees", FUZZ_CASES],
-  ["carriage returns", CARRIAGE_RETURN_CASES],
+  { title: "the tricky cases", cases: TRICKY_CASES },
+  { title: "seeded random trees", cases: FUZZ_CASES },
+  { title: "carriage returns", cases: CARRIAGE_RETURN_CASES },
 ];
 
 /**
- * The DOM an IR element describes under JSX semantics: every text node exactly as the IR holds
- * it, and every attribute with its value (an attribute without one is empty).
+ * The tree a case renders, as static IR: an M0 case's own tree, or what the reference evaluator
+ * makes of a source case for its props. Cached: the evaluator runs once per case.
  */
-export function domOf(node: ElementNode): DomElement {
+export function expectedTree(parityCase: ParityCase): ElementNode | FragmentNode {
+  const { lowered } = parityCase;
+  if (!lowered) return parityCase.render;
+  let tree = expectedTrees.get(parityCase);
+  if (!tree) {
+    tree = instantiate(lowered.component, lowered.props);
+    expectedTrees.set(parityCase, tree);
+  }
+  return tree;
+}
+
+const expectedTrees = new WeakMap<ParityCase, ElementNode | FragmentNode>();
+
+/** The DOM nodes a case renders: one element, or a root fragment's nodes. */
+export function expectedNodes(parityCase: ParityCase): DomNode[] {
+  return domNodesOf(expectedTree(parityCase));
+}
+
+/** The DOM nodes a static tree describes: an element, or a fragment's nodes. */
+export function domNodesOf(tree: ElementNode | FragmentNode): DomNode[] {
+  if (tree.kind === "Element") return [domOf(tree)];
+  const nodes: DomNode[] = [];
+  for (const child of tree.children) {
+    if (child.kind === "Element") nodes.push(domOf(child));
+    else if (child.kind === "Text") pushText(nodes, child.value);
+    else throw new Error(`a ${child.kind} node is not static`);
+  }
+  return nodes;
+}
+
+/**
+ * The DOM a static IR element describes under JSX semantics: every text node exactly as the IR
+ * holds it, and every attribute with its value (an attribute without one is empty), compared as
+ * {@link comparableValue} says. The namespace follows from the tree, as in the IR: `<svg>`
+ * starts SVG.
+ */
+export function domOf(node: ElementNode, parent: Namespace = "html"): DomElement {
+  const namespace = elementNamespace(node.tag, parent);
   const attributes: Record<string, string> = {};
   for (const attribute of node.attributes) {
-    const name = attribute.name.toLowerCase();
-    attributes[name] = comparableValue(name, attribute.value === true ? "" : attribute.value);
+    if (attribute.kind !== "Static") throw new Error(`a ${attribute.kind} attribute is not static`);
+    const name = namespace === "html" ? attribute.name.toLowerCase() : attribute.name;
+    const value = comparableValue(name, attribute.value === true ? "" : attribute.value, namespace);
+    if (value !== undefined) attributes[name] = value;
   }
   const children: DomNode[] = [];
   for (const child of node.children) {
-    if (child.kind === "Element") children.push(domOf(child));
-    else pushText(children, child.value);
+    if (child.kind === "Element") children.push(domOf(child, namespace));
+    else if (child.kind === "Text") pushText(children, child.value);
+    else throw new Error(`a ${child.kind} node is not static`);
   }
   return { tag: node.tag, attributes, children };
 }
 
 /**
- * HTML's boolean attributes mean their presence: `disabled`, `disabled=""` and
- * `disabled="disabled"` are the same DOM state, and frameworks write whichever they like.
+ * An attribute's value as the comparison sees it, or `undefined` when it counts as no attribute.
+ * What frameworks write differently for the same DOM state, and only that, is made the same
+ * (ADR-0031, ADR-0044, design §6.4):
+ * - HTML's boolean attributes mean their presence: `disabled`, `disabled=""` and
+ *   `disabled="disabled"` are the same state, and frameworks write whichever they like;
+ * - a `class` is its tokens, sorted and joined by one space (order and spacing carry no
+ *   meaning; a doubled token is kept, as a broken merge makes one), and a `class` with no token
+ *   is none (Vue's server writes `class=""` where its client writes nothing);
+ * - a `style` is its declarations (`styleDeclarations`): one with an empty value goes, as the
+ *   CSSOM ignores it, they are sorted by property unless two of them overlap, and a `style` with
+ *   none is no `style`.
  */
-export function comparableValue(name: string, value: string): string {
+export function comparableValue(
+  name: string,
+  value: string,
+  namespace: Namespace = "html",
+): string | undefined {
+  if (name === "class") {
+    const tokens = value.split(ASCII_WHITESPACE).filter((token) => token !== "");
+    return tokens.length ? tokens.toSorted(byCodeUnits).join(" ") : undefined;
+  }
+  if (name === "style") {
+    const declarations = sortDeclarations(
+      styleDeclarations(value).filter((declaration) => declaration.value !== ""),
+    );
+    return declarations.length
+      ? declarations
+          .map(({ property, value: text }) =>
+            text === undefined ? `${property};` : `${property}: ${text};`,
+          )
+          .join(" ")
+      : undefined;
+  }
+  if (namespace !== "html") return value;
   const enumerated = name === "hidden" && value.toLowerCase() === "until-found";
   return isBooleanAttribute(name) && !enumerated ? "" : value;
+}
+
+/** ASCII whitespace, which separates the tokens of a `class` attribute. */
+const ASCII_WHITESPACE = /[\t\n\f\r ]+/;
+
+/** Compares by UTF-16 code units, so an order never depends on a locale. */
+const byCodeUnits = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/** A declaration of a `style` attribute. */
+interface Declaration {
+  /** Lower case, except a custom property (`--x`), whose name is case-sensitive. */
+  property: string;
+  /** Whitespace collapsed; absent for a chunk without a colon, which is kept so it differs. */
+  value?: string;
+}
+
+/**
+ * The declarations of a `style` attribute's value. Deliberately small, as the testing package's
+ * normaliser's parser is: it splits at `;` and `:` outside strings, parentheses and comments, and
+ * collapses whitespace; values are not interpreted (`0` and `0px` stay different), since every
+ * target renders the source's values and only their spacing differs. A chunk without a colon is
+ * kept whole as a property with no value, so a broken declaration still differs.
+ */
+export function styleDeclarations(text: string): Declaration[] {
+  const declarations: Declaration[] = [];
+  for (const chunk of splitTopLevel(text, ";")) {
+    const colon = splitTopLevel(chunk, ":", 2);
+    const property = collapseSpaces(colon[0]!);
+    if (colon.length < 2) {
+      if (property !== "") declarations.push({ property });
+      continue;
+    }
+    declarations.push({
+      property: property.startsWith("--") ? property : property.toLowerCase(),
+      value: collapseSpaces(colon[1]!),
+    });
+  }
+  return declarations;
+}
+
+/** Splits text at top-level separators (outside strings, parentheses and comments). */
+function splitTopLevel(text: string, separator: string, limit = Infinity): string[] {
+  const parts: string[] = [];
+  let current = "";
+  let quote = "";
+  let depth = 0;
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index]!;
+    if (char === "\\" && index + 1 < text.length) {
+      current += char + text[++index];
+    } else if (quote) {
+      current += char;
+      if (char === quote) quote = "";
+    } else if (char === "/" && text[index + 1] === "*") {
+      const end = text.indexOf("*/", index + 2);
+      index = end < 0 ? text.length : end + 1;
+      current += " ";
+    } else if (char === separator && depth === 0 && parts.length < limit - 1) {
+      parts.push(current);
+      current = "";
+    } else {
+      if (char === '"' || char === "'") quote = char;
+      else if (char === "(") depth++;
+      else if (char === ")" && depth > 0) depth--;
+      current += char;
+    }
+  }
+  parts.push(current);
+  return parts;
+}
+
+/** Collapses CSS whitespace (not U+00A0, which belongs to a value) to one space, and trims. */
+function collapseSpaces(text: string): string {
+  return text.replace(/[ \t\n\r\f]+/g, " ").trim();
+}
+
+/**
+ * Declarations sorted by property, unless the order of two of them decides what renders (the
+ * same property twice, a shorthand and its longhand: `cssPropertiesOverlap`), when they keep
+ * theirs. The analyser lets no `style` set overlapping properties, so for the cases the order
+ * never matters, and each target writes its own (an object's key order, the CSSOM's, Angular's
+ * static declarations first).
+ */
+function sortDeclarations(declarations: readonly Declaration[]): Declaration[] {
+  const ordered = declarations.some((declaration, index) =>
+    declarations
+      .slice(index + 1)
+      .some((other) => cssPropertiesOverlap(declaration.property, other.property)),
+  );
+  return ordered
+    ? [...declarations]
+    : declarations.toSorted((a, b) => byCodeUnits(a.property, b.property));
 }
 
 /** Appends text to a node list, merging it into a text node before it. */
@@ -778,17 +1022,76 @@ export interface ParseOptions {
 }
 
 /**
+ * The SVG tag names the HTML parser restores from lower case (the HTML standard's "adjust SVG
+ * tag name" table, which parse5 and browsers implement): every other name in SVG stays as the
+ * parser lower-cased it.
+ */
+const SVG_TAG_NAMES: ReadonlyMap<string, string> = caseTable(`
+  altGlyph altGlyphDef altGlyphItem animateColor animateMotion animateTransform clipPath feBlend
+  feColorMatrix feComponentTransfer feComposite feConvolveMatrix feDiffuseLighting
+  feDisplacementMap feDistantLight feDropShadow feFlood feFuncA feFuncB feFuncG feFuncR
+  feGaussianBlur feImage feMerge feMergeNode feMorphology feOffset fePointLight
+  feSpecularLighting feSpotLight feTile feTurbulence foreignObject glyphRef linearGradient
+  radialGradient textPath
+`);
+
+/** The SVG attribute names the HTML parser restores from lower case ("adjust SVG attributes"). */
+const SVG_ATTRIBUTE_NAMES: ReadonlyMap<string, string> = caseTable(`
+  attributeName attributeType baseFrequency baseProfile calcMode clipPathUnits diffuseConstant
+  edgeMode filterUnits glyphRef gradientTransform gradientUnits kernelMatrix kernelUnitLength
+  keyPoints keySplines keyTimes lengthAdjust limitingConeAngle markerHeight markerUnits
+  markerWidth maskContentUnits maskUnits numOctaves pathLength patternContentUnits
+  patternTransform patternUnits pointsAtX pointsAtY pointsAtZ preserveAlpha preserveAspectRatio
+  primitiveUnits refX refY repeatCount repeatDur requiredExtensions requiredFeatures
+  specularConstant specularExponent spreadMethod startOffset stdDeviation stitchTiles
+  surfaceScale systemLanguage tableValues targetX targetY textLength viewBox viewTarget
+  xChannelSelector yChannelSelector zoomAndPan
+`);
+
+/**
+ * The HTML start tags that end foreign content (the HTML standard's "in foreign content" rule):
+ * the parser closes the `<svg>` and puts one of them back in HTML.
+ */
+const FOREIGN_CONTENT_BREAKERS: ReadonlySet<string> = new Set(
+  `b big blockquote body br center code dd div dl dt em embed h1 h2 h3 h4 h5 h6 head hr i img li
+  listing menu meta nobr ol p pre ruby s small span strong strike sub sup table tt u ul var`
+    .trim()
+    .split(/\s+/),
+);
+
+/** Each camel-case name of a list by its lower case. */
+function caseTable(names: string): ReadonlyMap<string, string> {
+  return new Map(
+    names
+      .trim()
+      .split(/\s+/)
+      .map((name) => [name.toLowerCase(), name]),
+  );
+}
+
+/** A name as the HTML parser reads it in a namespace: lower case, then SVG's case restored. */
+export function parsedName(name: string, namespace: Namespace, table: "tag" | "attribute"): string {
+  const lower = name.toLowerCase();
+  if (namespace !== "svg") return lower;
+  return (table === "tag" ? SVG_TAG_NAMES : SVG_ATTRIBUTE_NAMES).get(lower) ?? lower;
+}
+
+/**
  * Parses the HTML a framework's server renderer wrote. The output of a serialiser is regular,
  * so the parser is strict: anything it does not expect (an unknown entity, a stray `<`, an
  * unclosed or mismatched tag) throws rather than guessing. Comments, which frameworks use as
- * anchors, are dropped and the text around them merged. Two HTML parsing rules apply because
- * frameworks rely on them: tag and attribute names are case-insensitive, and a line feed right
- * after `<pre>` or `<textarea>` is not content. A raw carriage return is kept: every serialiser
- * writes the one it holds as it is, so keeping it compares what each framework rendered.
+ * anchors, are dropped and the text around them merged. The HTML parsing rules frameworks rely
+ * on apply: tag and attribute names are case-insensitive, and inside an `<svg>` SVG's camel-case
+ * names are restored as the HTML parser restores them (`viewBox`, `linearGradient`); an element
+ * there may close itself (`<circle/>`), as a foreign element can; and a line feed right after
+ * `<pre>` or `<textarea>` is not content. A raw carriage return is kept: every serialiser writes
+ * the one it holds as it is, so keeping it compares what each framework rendered.
  */
 export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
   const root: DomElement = { tag: "#root", attributes: {}, children: [] };
-  const stack: DomElement[] = [root];
+  const stack: { element: DomElement; namespace: Namespace }[] = [
+    { element: root, namespace: "html" },
+  ];
   let index = 0;
   const fail = (message: string): never => {
     throw new Error(`${message} at ${index}: ${JSON.stringify(html.slice(index, index + 40))}`);
@@ -802,8 +1105,8 @@ export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
     } else if (html.startsWith("</", index)) {
       const match = /^<\/([a-zA-Z][^\s/>]*)\s*>/.exec(html.slice(index));
       if (!match) fail("malformed end tag");
-      const tag = match![1]!.toLowerCase();
-      if (tag !== parent.tag) fail(`</${tag}> closes <${parent.tag}>`);
+      const tag = parsedName(match![1]!, parent.namespace, "tag");
+      if (tag !== parent.element.tag) fail(`</${tag}> closes <${parent.element.tag}>`);
       stack.pop();
       index += match![0].length;
     } else if (html[index] === "<") {
@@ -811,17 +1114,26 @@ export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
     } else {
       const end = html.indexOf("<", index);
       const stop = end < 0 ? html.length : end;
-      pushText(parent.children, decode(html.slice(index, stop)));
+      pushText(parent.element.children, decode(html.slice(index, stop)));
       index = stop;
     }
   }
-  if (stack.length > 1) fail(`<${stack.at(-1)!.tag}> is never closed`);
+  if (stack.length > 1) fail(`<${stack.at(-1)!.element.tag}> is never closed`);
   return root.children;
 
-  function startTag(parent: DomElement): number {
+  function startTag(parent: { element: DomElement; namespace: Namespace }): number {
     const name = /^<([a-zA-Z][^\s/>]*)/.exec(html.slice(index));
     if (!name) fail("a stray <");
-    const element: DomElement = { tag: name![1]!.toLowerCase(), attributes: {}, children: [] };
+    // In SVG, these tags make the HTML parser leave foreign content: no IR holds one there.
+    if (parent.namespace === "svg" && FOREIGN_CONTENT_BREAKERS.has(name![1]!.toLowerCase())) {
+      fail(`<${name![1]}> inside <svg>`);
+    }
+    const namespace = elementNamespace(name![1]!.toLowerCase(), parent.namespace);
+    const element: DomElement = {
+      tag: parsedName(name![1]!, namespace, "tag"),
+      attributes: {},
+      children: [],
+    };
     index += name![0].length;
     for (;;) {
       index += /^\s*/.exec(html.slice(index))![0].length;
@@ -831,22 +1143,30 @@ export function parseHtml(html: string, options: ParseOptions = {}): DomNode[] {
       );
       if (!attribute) fail("malformed attribute");
       const [source, rawName, double, single, unquoted] = attribute!;
-      const attributeName = rawName!.toLowerCase();
+      const attributeName = parsedName(rawName!, namespace, "attribute");
       if (!options.ignoreAttribute?.(attributeName)) {
-        element.attributes[attributeName] = comparableValue(
+        const value = comparableValue(
           attributeName,
           decode(double ?? single ?? unquoted ?? ""),
+          namespace,
         );
+        if (value !== undefined) element.attributes[attributeName] = value;
       }
       index += source.length;
     }
     const selfClosing = html.startsWith("/>", index);
     index += selfClosing ? 2 : 1;
-    parent.children.push(element);
-    if (isVoidElement(element.tag)) return index;
-    if (selfClosing) fail(`<${element.tag}/> is not a void element`);
-    stack.push(element);
-    if (/^(?:pre|textarea|listing)$/.test(element.tag) && html[index] === "\n") index++;
+    parent.element.children.push(element);
+    if (namespace === "html" && isVoidElement(element.tag)) return index;
+    // A foreign element may close itself; an HTML element that is not void may not.
+    if (selfClosing) {
+      if (namespace === "html") fail(`<${element.tag}/> is not a void element`);
+      return index;
+    }
+    stack.push({ element, namespace });
+    if (namespace === "html" && /^(?:pre|textarea|listing)$/.test(element.tag)) {
+      if (html[index] === "\n") index++;
+    }
     return index;
   }
 
@@ -871,40 +1191,70 @@ const NAMED_REFERENCES: Readonly<Record<string, string>> = {
   nbsp: "\u00a0",
 };
 
-/** One comparison of what the IR describes with what the framework rendered. */
+/** One comparison of what the reference describes with what the framework rendered. */
 export interface ParityResult {
   name: string;
   expected: unknown;
   actual: unknown;
 }
 
+/** What one case must render, as DOM nodes: one element, or a root case's nodes. */
+export interface ExpectedCase {
+  name: string;
+  nodes: DomNode[];
+}
+
 /**
- * Pairs each case with what the framework rendered for it, from the parsed root `<div>` of the
- * parity component. The first result compares the root's children as a whole, so a missing or
- * extra node (whitespace a compiler kept between the cases) is named before the pairs it shifts.
- * `expectedOf` is the DOM each case should render: by default {@link domOf}.
+ * Pairs each case of a suite with what the framework rendered for it, from the parsed output of
+ * the suite's component (`compareRendered`), against what the case renders (`expectedNodes`).
  */
-export function compareCases(
+export function compareCases(rendered: readonly DomNode[], suite: ParitySuite): ParityResult[] {
+  return compareRendered(
+    rendered,
+    suite.root ?? "div",
+    suite.cases.map((parityCase) => ({ name: parityCase.name, nodes: expectedNodes(parityCase) })),
+  );
+}
+
+/**
+ * Pairs each case with what the framework rendered for it. The first result compares an outline
+ * of the rendered nodes (`<tag>` per element, the text of a text node), so a missing or extra
+ * node (whitespace a compiler kept between the cases) is named before the pairs it shifts. In a
+ * `"div"` suite the output is one root `<div>`, and each case is its child at the case's index;
+ * in a `"self"` suite, the one case is the whole output.
+ */
+export function compareRendered(
   rendered: readonly DomNode[],
-  cases: readonly ParityCase[],
-  expectedOf: (render: ElementNode) => DomNode = domOf,
+  root: SuiteRoot,
+  cases: readonly ExpectedCase[],
 ): ParityResult[] {
-  const [root, ...rest] = rendered;
-  if (rest.length || typeof root !== "object" || root.tag !== "div") {
-    throw new Error(`expected one root <div>, got ${JSON.stringify(rendered).slice(0, 200)}`);
-  }
   const outline = (node: DomNode) =>
     typeof node === "string" ? JSON.stringify(node) : `<${node.tag}>`;
+  if (root === "self") {
+    if (cases.length !== 1) throw new Error(`a "self" suite has one case, not ${cases.length}`);
+    const [only] = cases;
+    return [
+      {
+        name: "the component's root nodes",
+        expected: only!.nodes.map(outline),
+        actual: rendered.map(outline),
+      },
+      { name: only!.name, expected: only!.nodes, actual: [...rendered] },
+    ];
+  }
+  const [container, ...rest] = rendered;
+  if (rest.length || typeof container !== "object" || container.tag !== "div") {
+    throw new Error(`expected one root <div>, got ${JSON.stringify(rendered).slice(0, 200)}`);
+  }
   return [
     {
       name: "the root's children, one element per case",
-      expected: cases.map(({ render }) => `<${render.tag}>`),
-      actual: root.children.map(outline),
+      expected: cases.flatMap(({ nodes }) => nodes.map(outline)),
+      actual: container.children.map(outline),
     },
-    ...cases.map(({ name, render }, index) => ({
-      name,
-      expected: expectedOf(render),
-      actual: root.children[index],
-    })),
+    ...cases.map(({ name, nodes }, index) => {
+      if (nodes.length !== 1) throw new Error(`${name}: a "div" suite's case is one element`);
+      return { name, expected: nodes[0], actual: container.children[index] };
+    }),
   ];
 }

@@ -91,7 +91,8 @@ export function parityProject(
       root: packageRoot,
       include: [...include],
       provide: { target: "dom", ufHarness: fixtureHarness(env) },
-      expect: { requireAssertions: true },
+      // The harness's: the setup bounds `expect.element` by the poll timeout, and requires one.
+      expect: { requireAssertions: true, poll: { timeout: 5_000 } },
       browser: parityBrowser({ name: "parity" }),
     },
   };

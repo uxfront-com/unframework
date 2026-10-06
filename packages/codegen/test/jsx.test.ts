@@ -316,6 +316,7 @@ describe("every kind", () => {
             createSpreadAttribute(
               expr("attrs", ["attrs", attrs]),
               [createSpreadKey("class", at), createSpreadKey("data-x", at)],
+              true,
               at,
             ),
           ],
@@ -427,6 +428,7 @@ describe("attributes", () => {
         createSpreadKey("class", at),
         createSpreadKey("aria-label", at),
       ],
+      true,
       at,
     );
     const classes = createClassAttribute(
@@ -449,9 +451,33 @@ describe("attributes", () => {
     const spread = createSpreadAttribute(
       expr("item", ["item", item]),
       [createSpreadKey("title", at)],
+      false,
       at,
     );
     expect(print(el("p", [spread]))).toBe("<p title={item.title} />");
+  });
+
+  // The analyser's `nullish`, not the printer, says when a source may be nullish: a member, a
+  // conditional or an item may be, and a spread of nothing renders no key (ADR-0039).
+  it("reads every key through `?.` when the spread's source may be nullish", () => {
+    const spread = (code: string, ...names: ReferenceTarget[]) =>
+      createSpreadAttribute(
+        expr(code, ...names),
+        [createSpreadKey("title", at), createSpreadKey("data-x", at)],
+        true,
+        at,
+      );
+    expect(print(el("p", [spread("item", ["item", item])]))).toBe(
+      '<p title={item?.title} data-x={item?.["data-x"]} />',
+    );
+    expect(print(el("p", [spread("attrs.inner", ["attrs", attrs])]))).toBe(
+      '<p title={attrs.inner?.title} data-x={attrs.inner?.["data-x"]} />',
+    );
+    expect(
+      print(el("p", [spread("label ? undefined : attrs", ["label", label], ["attrs", attrs])])),
+    ).toBe(
+      '<p title={(label ? undefined : attrs)?.title} data-x={(label ? undefined : attrs)?.["data-x"]} />',
+    );
   });
 
   it("prints a style as an object, static values as strings", async () => {

@@ -34,30 +34,49 @@ const ASTRO_NAMES: ReadonlySet<string> = new Set(["Astro", "Fragment"]);
  * expression reads are destructured: Astro prints no list keys, so a prop that only a key
  * reads is left out too, as is the whole statement when the markup reads none. The object form
  * keeps its object (`const props = Astro.props;`), so its references stay as written.
+ *
+ * A component that reads no prop exports `Props`, as Astro's docs allow: nothing in the file
+ * reads it then, and astro-eslint-parser counts Astro's own read of `Props` only in a file that
+ * names `Astro`, so the linter would report it unused (L5). Exported, it is still what Astro
+ * types the component's callers by, and eslint-plugin-astro allows type exports.
  */
 export function frontmatterOf(component: UfComponent, module: UfModule): Frontmatter {
   const parameter = component.propsParameter;
   if (!parameter) return {};
-  const statements = componentTypes(component, module).map(typeDeclarationCode);
-  const alias = propsAlias(parameter.type.code);
-  if (alias !== undefined) statements.push(alias);
   const read = referencedBindings(component, { includeKeys: false });
-  if (parameter.form === "object") {
-    const object = objectProps(component, module, read);
-    if (object.statement !== undefined) statements.push(object.statement);
-    return { ...lines(statements), ...(object.rewrite ? { rewrite: object.rewrite } : {}) };
-  }
-  const destructured = component.props
+  const props =
+    parameter.form === "object"
+      ? objectProps(component, module, read)
+      : destructured(component, read);
+  const exported = props.statement === undefined;
+  const statements = componentTypes(component, module).map((declaration) =>
+    exported && declaration.name === "Props" && !declaration.exported
+      ? `export ${declaration.code}`
+      : typeDeclarationCode(declaration),
+  );
+  const alias = propsAlias(parameter.type.code);
+  if (alias !== undefined) statements.push(exported ? `export ${alias}` : alias);
+  if (props.statement !== undefined) statements.push(props.statement);
+  return { ...lines(statements), ...(props.rewrite ? { rewrite: props.rewrite } : {}) };
+}
+
+/** How the frontmatter reads the props: absent when the markup reads none. */
+interface PropsRead {
+  statement?: string;
+  rewrite?: RewriteRules;
+}
+
+/** The destructuring of the props the markup reads, in the order the source destructures them. */
+function destructured(component: UfComponent, read: ReadonlySet<BindingId>): PropsRead {
+  const names = component.props
     .flatMap((prop) =>
       prop.binding !== undefined && read.has(prop.binding)
         ? [{ prop, start: bindingStart(component, prop.binding) }]
         : [],
     )
-    // In the order the source destructures them.
     .toSorted((a, b) => a.start - b.start)
     .map(({ prop }) => (prop.default ? `${prop.name} = ${prop.default.code}` : prop.name));
-  if (destructured.length) statements.push(`const { ${destructured.join(", ")} } = Astro.props;`);
-  return lines(statements);
+  return names.length ? { statement: `const { ${names.join(", ")} } = Astro.props;` } : {};
 }
 
 /**
@@ -80,7 +99,7 @@ function objectProps(
   component: UfComponent,
   module: UfModule,
   read: ReadonlySet<BindingId>,
-): { statement?: string; rewrite?: RewriteRules } {
+): PropsRead {
   const name = component.propsParameter!.name!;
   const reads = component.bindings.some(({ id, kind }) => kind === "prop" && read.has(id));
   if (!reads) return {};

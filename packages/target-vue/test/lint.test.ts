@@ -96,6 +96,11 @@ describe("vue lint (L5)", { timeout: 60_000 }, () => {
       rule: "vue/require-default-prop",
     },
     {
+      what: "a destructured prop nothing reads, under its own name",
+      template: "<p>{{ items.length }}</p>",
+      rule: "@typescript-eslint/no-unused-vars",
+    },
+    {
       what: "a list without a key",
       template: '<p v-for="item in items">{{ item }}{{ label }}</p>',
       rule: "vue/require-v-for-key",

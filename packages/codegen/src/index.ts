@@ -13,6 +13,8 @@ export type { KeywordType } from "./js/builders.ts";
 export { printComponentModule, printExpression, printModule, printProgram } from "./js/print.ts";
 export type { ComponentModule } from "./js/print.ts";
 export { Placeholders } from "./js/placeholders.ts";
+export { isAlwaysNullish, nullishText, syntacticNullishness, textTemplate } from "./js/text.ts";
+export type { Nullishness, TextPart } from "./js/text.ts";
 export { componentTypes, exportDeclaration, exportsOf, typeDeclarationCode } from "./exports.ts";
 export {
   bindingOf,
@@ -49,7 +51,6 @@ export {
   jsxText,
   listParameters,
   mapCall,
-  mayBeAbsent,
   spreadClassReads,
   spreadJsxAttributes,
   spreadRead,

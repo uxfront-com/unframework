@@ -244,6 +244,10 @@ describe("props", () => {
     ["onClick", "`onClick` is an event's name: events land in M2."],
     ["ngModel", "`ngModel` is a name Angular reserves for its directives."],
     [
+      "Fragment",
+      "Astro's output renders `<>` with the `Fragment` it imports, which the prop would hide.",
+    ],
+    [
       "ref_key",
       "`ref_key` is not ASCII letters and digits starting with a letter, which every target can declare.",
     ],
@@ -263,16 +267,26 @@ describe("props", () => {
     expect(codes(run(source).diagnostics)).toEqual(["UF2003"]);
   });
 
+  // Vue declares such a prop `[Boolean, String]`, and casts `""` and the prop's kebab-case name
+  // to `true`.
   it.each([
     ["flag?: boolean | string", "boolean | string"],
-    ['flag?: true | "a"', 'true | "a"'],
+    ['flag?: true | ""', 'true | ""'],
+    ['flag?: boolean | "flag"', 'boolean | "flag"'],
+    ['isOpen?: boolean | "is-open"', 'boolean | "is-open"'],
     ["flag?: Mixed", "Mixed"],
-  ])("reports %s, whose empty string Vue reads as true", (member, at) => {
-    const mixed = member.includes("Mixed") ? 'type Mixed = boolean | "on";\n' : "";
+  ])("reports %s, a string of which Vue reads as true", (member, at) => {
+    const mixed = member.includes("Mixed") ? 'type Mixed = boolean | "" | "on";\n' : "";
     const source = `${mixed}interface P { ${member} }\nexport function A(props: P) { return <p />; }`;
     const { diagnostics } = run(source);
     expect(problems(source, diagnostics)).toEqual([`UF1002 ${at}`]);
-    expect(diagnostics[0]!.message).toContain("both a boolean and a string");
+    expect(diagnostics[0]!.message).toContain("both a boolean and any string");
+  });
+
+  it("accepts a boolean beside string literals Vue does not cast, as tri-state ARIA takes", () => {
+    const source =
+      'type Tri = boolean | "mixed";\ninterface P { pressed: Tri; checked?: false | "mixed" }\nexport function A({ pressed, checked }: P) { return <button type="button" aria-pressed={pressed} aria-checked={checked}>x</button>; }';
+    expect(run(source).diagnostics).toEqual([]);
   });
 });
 
@@ -362,6 +376,36 @@ describe("props types", () => {
       "A local type cannot be named `CSSProperties`: the outputs declare a type of that name for style objects.",
     ],
     [
+      "interface Record { a: string }\nexport function A(props: Record) { return <p />; }",
+      "UF2003 Record",
+      "A local type cannot be named `Record`: Solid's output spreads the attributes its types lack from a TypeScript `Record`, which it would hide.",
+    ],
+    [
+      "interface Partial { a: string }\nexport function A(props: Partial) { return <p />; }",
+      "UF2003 Partial",
+      "A local type cannot be named `Partial`: Solid's output checks its defaults with TypeScript's `Partial`, which it would hide.",
+    ],
+    [
+      "interface Pick { x: number }\ninterface P { pick?: Pick }\nexport function A(props: P) { return <p />; }",
+      "UF2003 Pick",
+      "A local type cannot be named `Pick`: Solid's output types its object defaults as TypeScript's `Required<Pick<…>>`, which it would hide.",
+    ],
+    [
+      "interface Required { x: number }\ninterface P { need?: Required }\nexport function A(props: P) { return <p />; }",
+      "UF2003 Required",
+      "A local type cannot be named `Required`: Solid's output types its object defaults as TypeScript's `Required<Pick<…>>`, which it would hide.",
+    ],
+    [
+      "interface Exclude { x: number }\ninterface P { extra?: Exclude }\nexport function A(props: P) { return <p />; }",
+      "UF2003 Exclude",
+      "A local type cannot be named `Exclude`: Angular's output types an input with a default as TypeScript's `Exclude<…, undefined>`, which it would hide.",
+    ],
+    [
+      "interface Component { a: string }\nexport function A(props: Component) { return <p />; }",
+      "UF2003 Component",
+      "A local type cannot be named `Component`: Angular's output imports its `Component` decorator, which is also a type, by that name.",
+    ],
+    [
       "interface Props { a: string }\ninterface P { b: Props }\nexport function A(props: P) { return <p />; }",
       "UF2003 Props",
       "A local type cannot be named `Props`: the outputs declare a type of that name for a component's props.",
@@ -373,11 +417,118 @@ describe("props types", () => {
     expect(module).toBeUndefined();
   });
 
+  // The outputs copy an inline props type as written, as they copy a declaration.
+  it.each([
+    [
+      'export function A(props: { a: "</SCRIPT>" }) { return <p />; }',
+      "UF1002 </SCRIPT",
+      "A props type cannot hold `</script`: it would end the Vue or Svelte script block it is copied into.",
+    ],
+    [
+      "export function A({ a }: {\n  a: string;\n  /*\n---\n  */\n}) { return <p>{a}</p>; }",
+      "UF1002 ---",
+      "A props type cannot hold a line that is only `---`: it would end the Astro frontmatter it is copied into.",
+    ],
+  ])("reports the inline props type in %j", (source, problem, message) => {
+    const { module, diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual([problem]);
+    expect(diagnostics[0]!.message).toBe(message);
+    expect(module?.components ?? []).toEqual([]);
+  });
+
   it("accepts `Props` as a component's own props type", () => {
     expect(
       run("interface Props { a: string }\nexport function A(props: Props) { return <p />; }")
         .diagnostics,
     ).toEqual([]);
+  });
+
+  // Astro's output declares a `Props` of its own for a component whose props type is another,
+  // beside the copied one: a duplicate (TS2300), or two interfaces TypeScript merges.
+  it.each([
+    "interface Props { label: string }\ntype BProps = Props;\nexport function A(props: Props) { return <p />; }\nexport function B({ label }: BProps) { return <p>{label}</p>; }",
+    "interface Props { label: string }\nexport function A(props: Props) { return <p />; }\nexport function B({ inner }: { inner: Props }) { return <p>{inner.label}</p>; }",
+  ])("reports `Props` that another component's props reach (UF2003): %j", (source) => {
+    const { module, diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF2003 Props"]);
+    const [problem] = diagnostics;
+    expect(problem!.message).toBe(
+      "A local type cannot be named `Props`: the outputs declare a type of that name for a component's props.",
+    );
+    expect(problem!.related!.map(({ span }) => source.slice(span.start, span.end))).toEqual([
+      source.includes("BProps)") ? "BProps" : "{ inner: Props }",
+    ]);
+    expect(module).toBeUndefined();
+  });
+
+  it("accepts `Props` as the props type of two components, beside one that does not reach it", () => {
+    const source = [
+      "interface Props { label: string }",
+      "interface Other { b: string }",
+      "export function A(props: Props) { return <p>{props.label}</p>; }",
+      "export function B({ label }: Props) { return <p>{label}</p>; }",
+      "export function C({ b }: Other) { return <p>{b}</p>; }",
+    ].join("\n");
+    const { module, diagnostics } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(module!.components.map((component) => component.types)).toEqual([
+      ["Props"],
+      ["Props"],
+      ["Other"],
+    ]);
+  });
+
+  // TypeScript rejects a member declared twice (TS2300), and the props would be declared twice.
+  it.each([
+    "interface Props { label: string; label?: number }\nexport function A({ label }: Props) { return <p>{label}</p>; }",
+    "export function A(props: { label: string; 'label'?: string }) { return <p>{props.label}</p>; }",
+    "interface P { label: string; label: string }\nexport function A({ label }: P) { return <p>{label}</p>; }\nexport function B({ label }: P) { return <p>{label}</p>; }",
+    "export function A({ user }: { user: { name: string; name: string } }) { return <p>{user.name}</p>; }",
+  ])("reports a member declared twice (UF2001), once: %j", (source) => {
+    const { module, diagnostics } = run(source);
+    expect(codes(diagnostics)).toEqual(["UF2001"]);
+    expect(diagnostics[0]!.message).toMatch(/^`(label|name)` is declared twice in this type/);
+    expect(source.slice(diagnostics[0]!.span.start, diagnostics[0]!.span.end)).toMatch(
+      /^'?(label|name)'?$/,
+    );
+    expect(diagnostics[0]!.span.start).toBeGreaterThan(
+      source.indexOf(source.match(/label|name/)![0]),
+    );
+    expect(module?.components ?? []).toEqual([]);
+  });
+
+  // Astro's compiled component declares `$$props`, `$$result`, `$$slots` and `$$render` where its
+  // output declares the props object: a redeclaration, or a template tag the object hides.
+  it.each(["$$props", "$$result", "$$render", "$$p"])(
+    "reports the props parameter named %s (UF2001)",
+    (name) => {
+      const source = `export function A(${name}: { a: string }) { return <p>{${name}.a}</p>; }`;
+      const { module, diagnostics } = run(source);
+      expect(problems(source, diagnostics)).toEqual([`UF2001 ${name}`]);
+      expect(diagnostics[0]!.message).toContain("Astro's compiled component declares");
+      expect(module?.components ?? []).toEqual([]);
+    },
+  );
+
+  // A prop's reference spans `props.label`, which the targets splice as the object's name and
+  // the member: parentheses around the object would leave the IR invalid.
+  it.each([
+    ["{(props).label}", "{props.label}"],
+    ["{(props /* p */)?.label}", "{props.label}"],
+  ])("reports the parenthesised object in %s (UF2001), and the fix removes it", (read, fixed) => {
+    const source = `export function A(props: { label: string }) { return <p>{${read.slice(1, -1)}}</p>; }`;
+    const { diagnostics } = run(source);
+    expect(codes(diagnostics)[0]).toBe("UF2001");
+    expect(diagnostics[0]!.message).toBe(
+      "`props` is read without parentheses: a prop is `props.label`.",
+    );
+    expect(applyAndRecheck(source, diagnostics)).toContain(`<p>${fixed}</p>`);
+  });
+
+  it("accepts a props parameter named `$`, which Svelte's output renames", () => {
+    expect(run("export function A($: { a: string }) { return <p>{$.a}</p>; }").diagnostics).toEqual(
+      [],
+    );
   });
 
   it("still checks the components when a declaration is reported, and drops the module", () => {

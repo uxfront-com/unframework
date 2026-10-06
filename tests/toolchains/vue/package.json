@@ -2,7 +2,7 @@
   "name": "@unframework/toolchain-vue",
   "version": "0.0.0",
   "private": true,
-  "description": "The vue test toolchain: the checker and tsconfig that type-check every case's vue golden output in one run (L4), with TypeScript 6 until the checker moves to TypeScript 7.",
+  "description": "The vue test toolchain: the checker and tsconfig that type-check every case's vue golden output in one run (L4), with TypeScript 6 until the checker moves to TypeScript 7, and the oxlint and ESLint (eslint-plugin-vue) configs that lint it (L5).",
   "type": "module",
   "scripts": {
     "check": "vue-tsc --noEmit -p tsconfig.json"

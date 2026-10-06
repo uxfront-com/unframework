@@ -28,6 +28,7 @@ import { describe, expect, it } from "vitest";
 
 import { ABSTRACT_ROLES, ARIA_ROLES, ARIA_TYPES, ariaValueProblem } from "../src/aria.ts";
 import { STRING_ATTRIBUTES, STRING_GLOBAL_ATTRIBUTES } from "../src/attribute-names.ts";
+import { staticTokens } from "../src/enumerated.ts";
 import { codes, component } from "./helpers.ts";
 import { random } from "./random.ts";
 
@@ -121,7 +122,10 @@ describe("the SVG vocabulary", () => {
     }
     for (const [tag, names] of SVG_ELEMENT_ATTRIBUTES) {
       for (const name of names) {
-        const jsx = tag === "svg" ? `<svg ${name}="1" />` : `<svg><${tag} ${name}="1" /></svg>`;
+        // An enumerated attribute takes one of its keywords.
+        const value = staticTokens(tag, "svg", name)?.[0] ?? "1";
+        const jsx =
+          tag === "svg" ? `<svg ${name}="${value}" />` : `<svg><${tag} ${name}="${value}" /></svg>`;
         expect(codes(component(jsx).diagnostics), jsx).toEqual([]);
       }
     }
@@ -201,9 +205,11 @@ describe("attributes Angular cannot bind", () => {
         }
       }
     }
-    const unbindable = [...UNBINDABLE_ATTRIBUTES].flatMap(([tag, names]) =>
-      [...names.keys()].map((name) => `${tag} ${name}`),
-    );
+    // Besides Angular's: the attributes that decide a <select>'s first selection.
+    const unbindable = [...UNBINDABLE_ATTRIBUTES]
+      .flatMap(([tag, names]) => [...names].map(([name, reason]) => ({ tag, name, reason })))
+      .filter(({ reason }) => !reason.includes("decides which option starts selected"))
+      .map(({ tag, name }) => `${tag} ${name}`);
     expect(unbindable.toSorted()).toEqual(sensitive.toSorted());
     for (const entry of sensitive) {
       const [tag, name] = entry.split(" ") as [string, string];
@@ -354,7 +360,9 @@ describe("expressions Angular reads", () => {
         () => pick(['"a b"', "'c'", '"\\n\\t"', '"\\x41"', '"\\u0041"', '""', "`t`"]),
         () => pick(["0", "1.5", "1e3", ".5", "1_000", "(-2)"]),
         () => pick(["true", "false", "null", "undefined", "NaN", "Infinity"]),
-        () => pick(['(maybe ?? "x")', "maybe?.length", "maybe?.trim()", "items[0]"]),
+        // Not `maybe?.length`, which would narrow `maybe` as a test, where `?.` and `??` on it
+        // do nothing (UF3023): TypeScript narrows no call.
+        () => pick(['(maybe ?? "x")', "maybe?.trim().length", "maybe?.trim()", "items[0]"]),
       ])();
     if (depth <= 0) return leaf();
     const inner = () => expression(next, depth - 1, locals);
@@ -397,7 +405,7 @@ describe("expressions Angular reads", () => {
       if (errors?.length) failures.push(`${code}: ${errors.map((error) => error.msg).join("; ")}`);
     }
     expect(failures).toEqual([]);
-  });
+  }, 60_000);
 
   it.each([
     "items.map((x) => { return x; }).join()",

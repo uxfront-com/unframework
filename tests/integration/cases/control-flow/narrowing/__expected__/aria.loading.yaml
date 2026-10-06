@@ -1,0 +1,7 @@
+- region "Account":
+  - paragraph: Loading the account
+  - paragraph: "Role: guest"
+  - paragraph: No profile
+  - paragraph: Storage unlimited
+  - paragraph: Trial ends in 12 days
+  - list "Seats"

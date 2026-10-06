@@ -12,6 +12,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import target from "../src/index.ts";
+import { toolchain } from "../src/toolchain/index.ts";
 import {
   AVATAR,
   el,
@@ -21,6 +22,7 @@ import {
   lower,
   packageDir,
   profileCard,
+  toolchainDir,
 } from "./fixtures.ts";
 import type { Emitted } from "./fixtures.ts";
 
@@ -61,6 +63,41 @@ const cxHelper = (name = "cx") =>
     "}",
     "",
   ].join("\n");
+
+/**
+ * SVG titles of one part and of several: React's server renderer writes a `<title>` whose
+ * children are an array as an empty one (ADR-0040), so the output joins several into one string.
+ */
+const TITLES = `export interface P { label: string; note?: string; count: number; on: boolean; xs: string[] }
+export default function Icon({ label, note, count, on, xs }: P) {
+  return (
+    <svg viewBox="0 0 10 10" role="img">
+      <title>{label} icon</title>
+      <g><title>{note}, {count + 1}, {count}</title></g>
+      <g><title>{on ? <>On: {note}</> : "Off"}</title></g>
+      <g><title>[{on && " on"}{count === 0 ? "none" : count === 1 ? <>one {label}</> : <>{count} of {label}</>}]</title></g>
+      <g><title>{label}{"\`\${x}\` \\\\ \\t"}</title></g>
+      <g><title>a{on ? null : undefined}b</title></g>
+      <g><title>{on ? "yes" : "no"}: {label.length > 2 ? label : note}</title></g>
+      <g><title>{note}</title></g>
+      <g><title>{on && note}</title></g>
+      <g><title>{note ?? "Untitled"} icon, {on ? note ?? "x" : "y"}, {note ?? undefined}.</title></g>
+      <g><title>{on ? <>a {note ?? "x"}</> : "b"}</title></g>
+      <g><title>[{on ? note ?? null : null}]</title></g>
+      {xs.map((x) => <g key={x}><title>Item {x}</title></g>)}
+      {on && <g><title>{label} on</title></g>}
+    </svg>
+  );
+}`;
+
+/** What React renders for {@link TITLES}: the first title, then each title in its `<g>`. */
+const titlesHtml = (first: string, ...titles: string[]): string =>
+  [
+    '<svg viewBox="0 0 10 10" role="img">',
+    first,
+    ...titles.map((title) => `<g><title>${title}</title></g>`),
+    "</svg>",
+  ].join("");
 
 describe("react target", () => {
   it("declares every capability", () => {
@@ -140,7 +177,6 @@ describe("react target", () => {
     ["an event handler string", el("button", { type: "button", onclick: "go()" }, "Go")],
     ["a selected option", el("select", {}, el("option", { value: "b", selected: true }, "B"))],
     ['`hidden="until-found"`', el("div", { hidden: "until-found" }, "Found")],
-    ["an element in a textarea", el("textarea", {}, el("b", {}, "bold"))],
     ["a textarea's value beside its text", el("textarea", { value: "A" }, "B")],
   ])("leaves %s to the IR's invariants, which reject it", (_, render) => {
     const at = { start: 0, end: 0 };
@@ -150,6 +186,15 @@ describe("react target", () => {
       [createExport("default", "Fixture", at)],
     );
     expect(checkInvariants(module)).not.toEqual([]);
+  });
+
+  // The analyser rejects an element in a `<textarea>` (UF3003), but the invariants do not yet,
+  // so a plugin could return one: the target then fails loudly (the compiler reports a target
+  // that throws), never emitting a `defaultValue` that drops the element.
+  it("throws on an element in a textarea, which only the analyser rejects so far", () => {
+    expect(() => emit(el("textarea", {}, el("b", {}, "bold")))).toThrow(
+      "A <textarea> holds only text",
+    );
   });
 });
 
@@ -214,6 +259,17 @@ export default function Badge({ tone = "info", label, size }: BadgeProps) {
   return <p>Hi</p>;
 }`),
     ).toContain("export default function A(_props: P) {");
+    // A source name `_` and more says it is unused already; oxlint reports a bare `_`.
+    expect(
+      await output(`${props}export default function A(_props: P) {
+  return <p>Hi</p>;
+}`),
+    ).toContain("export default function A(_props: P) {");
+    expect(
+      await output(`${props}export default function A(_: P) {
+  return <p>Hi</p>;
+}`),
+    ).toContain("export default function A(__: P) {");
   });
 
   it("keeps the props object, and an inline props type, as written", async () => {
@@ -316,14 +372,13 @@ export default function Lists({ items, tags }: P) {
   });
 
   it("spells attributes, static and bound, the way React's props do", async () => {
-    const source = `export interface P { id: string; locked: boolean; order: number; zoomable: boolean }
-export default function Form({ id, locked, order, zoomable }: P) {
+    const source = `export interface P { id: string; locked: boolean; order: number; skip: boolean }
+export default function Form({ id, locked, order, skip }: P) {
   return (
-    <form accept-charset="utf-8">
+    <form accept-charset="utf-8" novalidate>
       <label for={id}>Name</label>
       <input id={id} readonly disabled={locked} tabindex={order} maxlength="10" />
-      <a href="/map"><img src="map.png" alt="Map" ismap={zoomable} /></a>
-      <a href="/map"><img src="map.png" alt="Map" ismap /></a>
+      <button type="submit" formnovalidate={skip}>Send</button>
       <table><tbody><tr><td colspan="2" rowspan="1">Wide</td></tr></tbody></table>
       <div role="heading" aria-level="2" tabindex="-1">Title</div>
     </form>
@@ -331,12 +386,10 @@ export default function Form({ id, locked, order, zoomable }: P) {
 }`;
     const contents = await output(source);
     for (const expected of [
-      '<form acceptCharset="utf-8">',
+      '<form acceptCharset="utf-8" noValidate>',
       "<label htmlFor={id}>Name</label>",
       "<input id={id} readOnly disabled={locked} tabIndex={order} maxLength={10} />",
-      // React renders `true` only on its own boolean props: elsewhere, the empty string.
-      '<img src="map.png" alt="Map" ismap={zoomable ? "" : undefined} />',
-      '<img src="map.png" alt="Map" ismap="" />',
+      '<button type="submit" formNoValidate={skip}>',
       "<td colSpan={2} rowSpan={1}>",
       '<div role="heading" aria-level={2} tabIndex={-1}>',
     ]) {
@@ -366,6 +419,46 @@ export default function Form({ id, locked, order, zoomable }: P) {
         "    </svg>",
       ].join("\n"),
     );
+  });
+
+  // `?? ""` only where the value may be nullish: TypeScript rejects it where its syntax says the
+  // value never is (TS2869), and a prop typed `string` or `number` that is never absent needs none.
+  it("joins an SVG <title> of several parts into one string, in branches and lists too", async () => {
+    const contents = await output(TITLES);
+    for (const expected of [
+      "<title>{`${label} icon`}</title>",
+      '<title>{`${note ?? ""}, ${count + 1}, ${count}`}</title>',
+      // A conditional alone keeps its chain, each branch of several parts joined.
+      '<title>{on ? `On: ${note ?? ""}` : "Off"}</title>',
+      '<title>{`[${on ? " on" : ""}${count === 0 ? "none" : count === 1 ? `one ${label}` : `${count} of ${label}`}]`}</title>',
+      "<title>{`${label}\\`\\${x}\\` \\\\ \\t`}</title>",
+      // A part that always renders nothing is left out.
+      "<title>ab</title>",
+      '<title>{`${on ? "yes" : "no"}: ${(label.length > 2 ? label : note) ?? ""}`}</title>',
+      // One part, or a conditional whose branches render one each, is already one value.
+      "<title>{note}</title>",
+      "<title>{on ? note : null}</title>",
+      // TypeScript reads `a ?? b` by `b` (TS2869, TS2871): no guard after a fallback that is
+      // never nullish, and a nullish fallback becomes "" rather than take one.
+      '<title>{`${note ?? "Untitled"} icon, ${on ? (note ?? "x") : "y"}, ${note ?? ""}.`}</title>',
+      '<title>{on ? `a ${note ?? "x"}` : "b"}</title>',
+      '<title>{`[${on ? (note ?? "") : ""}]`}</title>',
+      '<title>{`Item ${x ?? ""}`}</title>',
+      "<title>{`${label} on`}</title>",
+    ]) {
+      expect(contents).toContain(expected);
+    }
+    expect(
+      await output(`export interface P { label: string; tone?: string }
+export default function Icon(props: P) {
+  return <svg viewBox="0 0 10 10"><title>{props.label}: {props.tone}</title></svg>;
+}`),
+    ).toContain('<title>{`${props.label}: ${props.tone ?? ""}`}</title>');
+    expect(
+      await output(`export default function Icon({ label = "Icon", size = 2 }: { label?: string; size?: number }) {
+  return <svg viewBox="0 0 10 10"><title>{label}: {size}</title></svg>;
+}`),
+    ).toContain("<title>{`${label}: ${size}`}</title>");
   });
 
   it("joins a class from parts with an inline cx, printed after the component", async () => {
@@ -410,13 +503,13 @@ export default function A({ cx, CSSProperties }: P) {
     expect(contents).toContain("className={cx_1(cx)}");
     expect(contents).toContain('style={{ "--x": CSSProperties } as CSSProperties_1}');
     expect(contents).toContain(cxHelper("cx_1"));
-    // An arrow parameter is a name the source declares too.
+    // A type declaration is a name the source declares too.
     expect(
-      await output(`export interface P { label?: string }
-export default function B({ label }: P) {
-  return <p>{[1, 2].map((_props) => _props * 2).join(", ")}</p>;
+      await output(`interface _props { label?: string }
+export default function B({ label }: _props) {
+  return <p>Hi</p>;
 }`),
-    ).toContain("export default function B(_props_1: P) {");
+    ).toContain("export default function B(_props_1: _props) {");
   });
 
   it("writes a style as an object, typed as CSSProperties when it sets a custom property", async () => {
@@ -484,9 +577,6 @@ function renderMarkup(element: Parameters<typeof renderToStaticMarkup>[0]) {
     spy.mockRestore();
   }
 }
-
-/** An image React's server renderer does not preload (it writes a `<link>` for a URL). */
-const PIXEL = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
 
 describe("react output, rendered by React", () => {
   const scratch = join(packageDir, ".uf-tmp", `emit-${randomUUID()}`);
@@ -580,7 +670,6 @@ describe("react output, rendered by React", () => {
       el("input", { readonly: true, required: true }),
       el("details", { open: true }, el("summary", {}, "More")),
       el("div", { inert: true, hidden: true }),
-      el("a", { href: "/map" }, el("img", { src: PIXEL, alt: "Map", ismap: true })),
     );
     expect(await renderOutput(tree)).toEqual({
       html: [
@@ -589,7 +678,6 @@ describe("react output, rendered by React", () => {
         '<input readOnly="" required=""/>',
         '<details open=""><summary>More</summary></details>',
         '<div inert="" hidden=""></div>',
-        `<a href="/map"><img src="${PIXEL}" alt="Map" ismap=""/></a>`,
         "</fieldset>",
       ].join(""),
       errors: [],
@@ -715,20 +803,21 @@ export default function Chip({ tone, on, extra }: P) {
     ]);
   });
 
-  it("renders a bound boolean React does not know as present or absent", async () => {
+  // Every boolean attribute the IR holds is one of React's boolean props, bound as it is.
+  it("renders a bound boolean attribute as present or absent", async () => {
     const renders = await renderSource(
-      `export interface P { zoomable?: boolean | null }
-export default function Atlas({ zoomable }: P) {
-  return <a href="/map"><img src="${PIXEL}" alt="Map" ismap={zoomable} /></a>;
+      `export interface P { locked?: boolean | null }
+export default function Field({ locked }: P) {
+  return <fieldset disabled={locked}><input required={locked} /></fieldset>;
 }`,
-      { zoomable: true },
-      { zoomable: false },
-      { zoomable: null },
+      { locked: true },
+      { locked: false },
+      { locked: null },
     );
     expect(renders).toEqual([
-      { html: `<a href="/map"><img src="${PIXEL}" alt="Map" ismap=""/></a>`, errors: [] },
-      { html: `<a href="/map"><img src="${PIXEL}" alt="Map"/></a>`, errors: [] },
-      { html: `<a href="/map"><img src="${PIXEL}" alt="Map"/></a>`, errors: [] },
+      { html: '<fieldset disabled=""><input required=""/></fieldset>', errors: [] },
+      { html: "<fieldset><input/></fieldset>", errors: [] },
+      { html: "<fieldset><input/></fieldset>", errors: [] },
     ]);
   });
 
@@ -761,5 +850,72 @@ export default function Note({ attrs }: P) {
       { html: '<p class="note x" title="T" aria-label="L">Note</p>', errors: [] },
       { html: '<p class="note">Note</p>', errors: [] },
     ]);
+  });
+
+  // Without one string, React's server renderer writes `<title></title>` and warns.
+  it("renders an SVG <title> of several parts as their text, nullish parts as nothing", async () => {
+    const renders = await renderSource(
+      TITLES,
+      { label: "Star <&>", count: 0, on: true, xs: ["a"] },
+      { label: "L", note: "N", count: 2, on: false, xs: [] },
+    );
+    expect(renders).toEqual([
+      {
+        html: titlesHtml(
+          "<title>Star &lt;&amp;&gt; icon</title>",
+          ", 1, 0",
+          "On: ",
+          "[ onnone]",
+          "Star &lt;&amp;&gt;`${x}` \\ \t",
+          "ab",
+          "yes: Star &lt;&amp;&gt;",
+          "",
+          "",
+          "Untitled icon, x, .",
+          "a x",
+          "[]",
+          "Item a",
+          "Star &lt;&amp;&gt; on",
+        ),
+        errors: [],
+      },
+      {
+        html: titlesHtml(
+          "<title>L icon</title>",
+          "N, 3, 2",
+          "Off",
+          "[2 of L]",
+          "L`${x}` \\ \t",
+          "ab",
+          "no: N",
+          "N",
+          "",
+          "N icon, y, N.",
+          "b",
+          "[]",
+        ),
+        errors: [],
+      },
+    ]);
+  });
+
+  it('type-checks a joined <title>, with `?? ""` only where TypeScript allows it (L4)', async () => {
+    const outcome = await formatOutput(emitComponent(lower(TITLES)).files[0]!);
+    const emitted = join(scratch, "Titles.tsx");
+    writeFileSync(emitted, outcome.file.contents);
+    // The control: the guard on a value whose syntax is never nullish fails.
+    const guarded = join(scratch, "Guarded.tsx");
+    writeFileSync(
+      guarded,
+      'export default function Guarded({ n }: { n: number }) {\n  return <svg><title>{`${n + 1 ?? ""}`}</title></svg>;\n}\n',
+    );
+    const results = await toolchain.typecheck([emitted, guarded], {
+      toolchainDir,
+      root: packageDir,
+    });
+    expect(Object.fromEntries(results)).toEqual({
+      [emitted]: [],
+      [guarded]: [expect.objectContaining({ line: 2, code: "TS2869" })],
+    });
   });
 });

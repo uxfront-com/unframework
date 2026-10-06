@@ -1,4 +1,4 @@
-import { For, Show, mergeProps } from "solid-js";
+import { For, Match, Show, Switch, mergeProps } from "solid-js";
 
 export interface InboxMessage {
   id: string;
@@ -12,10 +12,11 @@ export interface MessageListProps {
 }
 
 export default function MessageList(rawProps: MessageListProps) {
-  const props = mergeProps(
-    { archived: [], emptyText: "Nothing here yet." } satisfies Partial<MessageListProps>,
-    rawProps,
-  );
+  const defaults: Required<Pick<MessageListProps, "archived" | "emptyText">> = {
+    archived: [],
+    emptyText: "Nothing here yet.",
+  };
+  const props = mergeProps(defaults, rawProps);
   return (
     <section class="message-list" aria-label="Messages">
       <h2>Inbox</h2>
@@ -29,9 +30,17 @@ export default function MessageList(rawProps: MessageListProps) {
       <ul>
         <For each={props.archived}>{(message) => <li>{message.subject}</li>}</For>
       </ul>
-      <Show when={props.archived.length === 0} fallback={<p>{props.archived.length} archived</p>}>
-        <p>No archived messages.</p>
-      </Show>
+      <Switch>
+        <Match when={props.archived.length === 0}>
+          <p>No archived messages.</p>
+        </Match>
+        <Match
+          keyed
+          when={props.archived.length === 0 ? undefined : { length: props.archived.length }}
+        >
+          {({ length }) => <p>{length} archived</p>}
+        </Match>
+      </Switch>
     </section>
   );
 }

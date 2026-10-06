@@ -1,6 +1,7 @@
-// The compile project's own checks on the real compiler, with inputs the M0 corpus does not
-// have: a diagnostic with a fix (no M0 case has one, so the corpus never exercises L1's fix
-// check), and outputs that differ between compiles or are not formatted.
+// The compile project's own checks on the real compiler, with inputs the corpus cannot hold:
+// fixes that leave their diagnostic or bring another, and outputs that differ between compiles
+// or are not formatted. On the corpus, the fix check applies the fixes of the diagnostics cases
+// (and jsx/escaping's), and the L1-fix-no-op canary proves it catches a fix that fixes nothing.
 import { compile, TARGET_NAMES } from "@unframework/compiler";
 import type { CompileResult, CompilerPlugin } from "@unframework/compiler";
 import type { Diagnostic } from "@unframework/diagnostics";

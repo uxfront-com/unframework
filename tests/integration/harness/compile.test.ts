@@ -23,7 +23,7 @@ import type { ArtefactContext, LayerCheck, LayerName } from "@unframework/testin
 import { Ajv } from "ajv";
 import { describe, expect, inject, it } from "vitest";
 
-import { canaryFormats, canaryPlugins, canarySource } from "./canaries.ts";
+import { canaryCase, canaryFixes, canaryFormats, canaryPlugins, canarySource } from "./canaries.ts";
 import { listCases, removeStaleArtefacts, staleArtefacts } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
 import { checkFixes, formattingProblems, forTarget, nondeterminism } from "./compile-checks.ts";
@@ -37,7 +37,17 @@ const targets = selectTargets(process.env.UF_TARGETS);
 const owner: ArtefactContext = { role: "owner", update: harness.update, root: ROOT };
 
 /** The layers a case with compile errors has nothing to verify at: there is no output. */
-const NO_OUTPUT_LAYERS: readonly LayerName[] = ["L3", "L4", "L6", "L7", "L10", "L11", "L13"];
+const NO_OUTPUT_LAYERS: readonly LayerName[] = [
+  "L3",
+  "L4",
+  "L5",
+  "L6",
+  "L7",
+  "L8",
+  "L10",
+  "L11",
+  "L13",
+];
 
 const validateIr = new Ajv({ allErrors: true, strict: true }).compile(irSchema);
 
@@ -139,11 +149,10 @@ async function checkDiagnostics(
     }
   }
 
-  // No M0 case has a diagnostic with a fix, so on the corpus this has nothing to apply yet, and
-  // no canary proves it (canaries.ts); compile-checks.unit.test.ts does, on the real compiler.
+  // The L1-fix-no-op canary corrupts the fixes here, on the cases whose diagnostics have one.
   await checkFixes(
     source,
-    result.diagnostics,
+    canaryFixes(harness.canary, canaryCase(info), target, source, result.diagnostics),
     target,
     async (fixed) => (await compileCase(info, fixed, [])).diagnostics,
   );

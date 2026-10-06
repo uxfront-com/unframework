@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import type { EmitContext } from "@unframework/codegen";
 import {
   createComponent,
@@ -7,13 +10,24 @@ import {
   createStaticAttribute,
   createText,
 } from "@unframework/ir";
+import type { Component } from "svelte";
 import { compile } from "svelte/compiler";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";
 import { indent } from "../src/script.ts";
-import { corpus, emitFormatted, emitSource } from "./helpers.ts";
+import { renderToString } from "../src/toolchain/server.ts";
+import {
+  corpus,
+  emitFormatted,
+  emitSource,
+  importScratch,
+  packageDir,
+  removeScratch,
+} from "./helpers.ts";
 import { SHAPES } from "./shapes.ts";
+
+afterAll(removeScratch);
 
 const at = { start: 0, end: 0 };
 
@@ -153,7 +167,21 @@ describe("svelte props", () => {
   // An empty pattern (`let {}: P`) is `no-empty-pattern` (L5).
   it("declares props it never reads under the object form, keeping the props type", async () => {
     expect((await emitSource(SHAPES.unread)).contents).toBe(
-      svelteFile(script("  let props: { label?: string } = $props();"), "<p>Hi</p>"),
+      svelteFile(script("  let _props: { label?: string } = $props();"), "<p>Hi</p>"),
+    );
+  });
+
+  // An unread binding is `no-unused-vars` (L5); a name starting with `_` says it is unused on
+  // purpose, and a `$` would be a rune's.
+  it.each([
+    ["props", "_props"],
+    ["$p", "_p"],
+    ["_props", "_props"],
+    ["_", "__"],
+  ])("names an object form %s that nothing reads %s", async (name, declared) => {
+    const source = `export default function Hi(${name}: { label?: string }) {\n  return <p>Hi</p>;\n}`;
+    expect((await emitSource(source)).contents).toBe(
+      svelteFile(script(`  let ${declared}: { label?: string } = $props();`), "<p>Hi</p>"),
     );
   });
 
@@ -235,11 +263,125 @@ describe("svelte markup", () => {
     );
   });
 
-  it("closes childless SVG elements and keeps a root fragment's text", async () => {
+  // svelte-check rejects an attribute `svelte/elements` does not declare on its element, written
+  // or bound; an object spread renders it alike and is not checked for excess properties.
+  it("writes an attribute Svelte's types lack on its element as an object spread", async () => {
+    expect(await markupOf(SHAPES.untyped)).toBe(
+      [
+        '<form aria-label="Note">',
+        '  <p {...{ autocorrect: "off" }}>a</p',
+        "  ><input autocorrect={mode}",
+        "  /><div {...{ autocorrect: hints.autocorrect }}>b</div>",
+        "</form>",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  // Svelte's server renders every `style:` directive, and every attribute of an `<option>` or
+  // of an element with a spread, through its runtime, which escaped their static text twice
+  // and folded a style's whitespace; it folds a static `style`'s whitespace too (5.57). Its
+  // client does neither, so that text is an expression, which both render as written.
+  it("writes static text Svelte's server would escape twice or fold as expressions", async () => {
+    expect(await markupOf(SHAPES.runtimeText)).toBe(
+      [
+        "<div>",
+        "  <blockquote",
+        '    style:font-family={"\\"Segoe UI\\", serif"}',
+        `    style:content={"'a  b'"}`,
+        "    style:color={tone}",
+        "  >q</blockquote",
+        "  ><p",
+        '    {...{ autocorrect: "off" }}',
+        '    title={"Name \\u0026 \\"title\\" \\u003cx\\u003e"}',
+        '    class={"q\\u0026r"}',
+        '    style={"content: \\"\\u0026\\""}',
+        "  >c</p",
+        '  ><select aria-label="Pick">',
+        '    <option value={"a \\u0026 \\"b\\""}>a</option>',
+        "  </select",
+        `  ><p style={"content: 'a  b'; color: red"}>p</p>`,
+        "</div>",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("renders that text on the server escaped once, with its whitespace", async () => {
+    const { path, contents } = await emitSource(SHAPES.runtimeText);
+    const { js } = compile(contents, { filename: path, generate: "server" });
+    const module = await importScratch<{ default: Component }>("Quote.js", js.code);
+    expect(await renderToString(module.default, { props: { tone: "red" } })).toBe(
+      [
+        "<!--[--><div>",
+        `<blockquote style="font-family: &quot;Segoe UI&quot;, serif; content: 'a  b'; color: red;">q</blockquote>`,
+        '<p autocorrect="off" title="Name &amp; &quot;title&quot; &lt;x>" class="q&amp;r" style="content: &quot;&amp;&quot;">c</p>',
+        '<select aria-label="Pick"><option value="a &amp; &quot;b&quot;">a</option></select>',
+        `<p style="content: 'a  b'; color: red">p</p>`,
+        "</div><!--]-->",
+      ].join(""),
+    );
+  });
+
+  // Svelte's client sets a bound `value` with `set_value`, which writes nothing while the
+  // element's own `value` already holds it (0 on an `<li>` or a `<meter>`, "" on a `<button>`):
+  // an object spread assigns it on every render. The fixture is this output, which
+  // assigned-values.browser.test.ts mounts.
+  it("writes a bound value Svelte would skip writing as an object spread", async () => {
+    const { contents } = await emitSource(SHAPES.assignedValues);
+    expect(contents).toBe(readFileSync(join(packageDir, "test/fixtures/Steps.svelte"), "utf8"));
+    expect(await markupOf(SHAPES.assignedValues)).toBe(
+      [
+        "<form>",
+        "  <ol>",
+        "    {#each steps as step, index (step)}",
+        "      <li {...{ value: steps.length - 1 - index }}>{step}</li>",
+        "    {/each}",
+        "  </ol",
+        '  ><meter min="0" max="10" {...{ value: score }} title={"Score \\u0026 \\"rank\\""}>m</meter',
+        '  ><progress max="10" value={score}>p</progress><data {...{ value: label }}>d</data',
+        '  ><button type="button" {...{ value: label }}>b</button',
+        '  ><input type="checkbox" name="c" {...{ value: mode }} />',
+        "</form>",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("renders those values on the server, the element's own defaults included", async () => {
+    const { path, contents } = await emitSource(SHAPES.assignedValues);
+    const { js } = compile(contents, { filename: path, generate: "server" });
+    const module = await importScratch<{ default: Component }>("Steps.js", js.code);
+    const render = (props: Record<string, unknown>) => renderToString(module.default, { props });
+    expect(await render({ steps: ["a", "b", "c"], score: 0, label: "", mode: "on" })).toBe(
+      [
+        "<!--[--><form><ol><!--[-->",
+        '<li value="2">a</li><li value="1">b</li><li value="0">c</li>',
+        '<!--]--></ol><meter min="0" max="10" value="0" title="Score &amp; &quot;rank&quot;">m</meter>',
+        '<progress max="10" value="0">p</progress><data value="">d</data>',
+        '<button type="button" value="">b</button><input type="checkbox" name="c" value="on"/>',
+        "</form><!--]-->",
+      ].join(""),
+    );
+    expect(await render({ steps: ["a"], score: 7, label: "x", mode: "m" })).toBe(
+      [
+        '<!--[--><form><ol><!--[--><li value="0">a</li><!--]--></ol>',
+        '<meter min="0" max="10" value="7" title="Score &amp; &quot;rank&quot;">m</meter>',
+        '<progress max="10" value="7">p</progress><data value="x">d</data>',
+        '<button type="button" value="x">b</button><input type="checkbox" name="c" value="m"/>',
+        "</form><!--]-->",
+      ].join(""),
+    );
+  });
+
+  // Svelte tells SVG elements from HTML ones by name, and warns on `<title />`
+  // (`element_invalid_self_closing_tag`), whose name is HTML's too.
+  it("closes childless SVG elements, but for a `<title>`, and keeps a root fragment's text", async () => {
     expect(await markupOf(SHAPES.svgAndFragment)).toBe(
       [
         '<svg viewBox="0 0 2 2">',
-        '  <circle cx="1" cy="1" {r} />',
+        "  <title></title",
+        '  ><circle cx="1" cy="1" {r} />',
         "</svg",
         ">{#if label}<p>{label}</p>{/if} tail",
         "",

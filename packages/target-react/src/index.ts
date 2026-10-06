@@ -23,6 +23,7 @@ import type {
 
 import { cxHelper, reactDialect } from "./dialect.ts";
 import type { ReactNames } from "./dialect.ts";
+import { titleChildren } from "./title.ts";
 
 type Parameter = Parameters<typeof js.functionDeclaration>[1][number];
 
@@ -63,7 +64,7 @@ export const react: Target = defineTarget({
     const fn = js.functionDeclaration(
       component.name,
       propsParameters(component, jsx, names.imports),
-      [js.returnStatement(jsxNode(rootForReact(component.render), jsx))],
+      [js.returnStatement(jsxNode(rootForReact(component.render, jsx), jsx))],
     );
     return [
       {
@@ -102,7 +103,12 @@ function propsParameters(
     (prop) => prop.binding !== undefined && context.referenced.has(prop.binding),
   );
   if (parameter.form === "object") {
-    const name = read.length ? parameter.name! : imports.claim(`_${parameter.name!}`);
+    // A name `_` and more says it is unused already: it stays the source's (oxlint still
+    // reports a bare `_`).
+    const name =
+      read.length || /^_./.test(parameter.name!)
+        ? parameter.name!
+        : imports.claim(`_${parameter.name!}`);
     return [js.bindingIdentifier(name, type)];
   }
   if (!read.length) return [js.bindingIdentifier(imports.claim("_props"), type)];
@@ -119,27 +125,30 @@ function propsParameters(
 }
 
 /** {@link forReact} over the render root: an element, or a fragment's roots. */
-function rootForReact(root: ElementNode | FragmentNode): ElementNode | FragmentNode {
+function rootForReact(
+  root: ElementNode | FragmentNode,
+  context: JsxContext,
+): ElementNode | FragmentNode {
   return root.kind === "Element"
-    ? forReact(root)
-    : { ...root, children: root.children.map(childForReact) };
+    ? forReact(root, context)
+    : { ...root, children: root.children.map((child) => childForReact(child, context)) };
 }
 
 /** {@link forReact} over a node, inside conditionals and lists too. */
-function childForReact(node: RenderNode): RenderNode {
+function childForReact(node: RenderNode, context: JsxContext): RenderNode {
   switch (node.kind) {
     case "Element":
-      return forReact(node);
+      return forReact(node, context);
     case "If":
       return {
         ...node,
         branches: node.branches.map((branch) => ({
           ...branch,
-          children: branch.children.map(childForReact),
+          children: branch.children.map((child) => childForReact(child, context)),
         })),
       };
     case "For":
-      return { ...node, body: forReact(node.body) };
+      return { ...node, body: forReact(node.body, context) };
     case "Text":
     case "Interpolation":
       return node;
@@ -149,18 +158,23 @@ function childForReact(node: RenderNode): RenderNode {
 }
 
 /**
- * Applies React's rule for a `<textarea>`: React warns about its children and takes its
- * initial text from `defaultValue`, so the text becomes a `value` attribute, which the dialect
- * writes as `defaultValue`. The IR holds only static text in a `<textarea>`, and no `value` on
- * one (form state, M3).
+ * Applies React's rules for the elements whose children React reads as one value. An SVG
+ * `<title>` gets one child wherever its content has several parts (see `titleChildren`); the
+ * IR holds no HTML `<title>` (UF3002). A `<textarea>`: React warns about its children and takes
+ * its initial text from `defaultValue`, so the text becomes a `value` attribute, which the
+ * dialect writes as `defaultValue`. The IR holds no `value` on one (form state, M3) and no
+ * interpolation, conditional or list in one; the analyser rejects an element there too (UF3003),
+ * and the target throws on one rather than drop it (a target that throws is reported by the
+ * compiler).
  */
-function forReact(node: ElementNode): ElementNode {
+function forReact(node: ElementNode, context: JsxContext): ElementNode {
+  if (node.tag === "title") return { ...node, children: titleChildren(node.children, context) };
   if (node.tag !== "textarea" || node.children.length === 0) {
-    return { ...node, children: node.children.map(childForReact) };
+    return { ...node, children: node.children.map((child) => childForReact(child, context)) };
   }
   const texts = node.children.filter((child): child is TextNode => child.kind === "Text");
   if (texts.length !== node.children.length) {
-    throw new Error("A <textarea> holds only text: checkInvariants rejects anything else.");
+    throw new Error("A <textarea> holds only text: the analyser rejects anything else (UF3003).");
   }
   const content: Attribute = {
     kind: "Static",

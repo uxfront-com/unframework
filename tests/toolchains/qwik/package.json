@@ -2,7 +2,7 @@
   "name": "@unframework/toolchain-qwik",
   "version": "0.0.0",
   "private": true,
-  "description": "The qwik test toolchain: the checker and tsconfig that type-check every case's qwik golden output in one run (L4).",
+  "description": "The qwik test toolchain: the checker and tsconfig that type-check every case's qwik golden output in one run (L4), and the oxlint config, with eslint-plugin-qwik as a JS plugin, that lints it (L5).",
   "type": "module",
   "scripts": {
     "check": "tsc --noEmit -p tsconfig.json"

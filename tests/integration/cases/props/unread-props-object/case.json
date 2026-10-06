@@ -1,0 +1,13 @@
+{
+  "description": "A props object that nothing reads: the component still declares its props, a required one among them, and renders none of them, given or absent.",
+  "ssr": {
+    "required-only": { "props": { "title": "Compilers without a runtime" } },
+    "props-given": {
+      "props": {
+        "title": "Compilers without a runtime",
+        "summary": "One source, seven frameworks.",
+        "minutes": 7
+      }
+    }
+  }
+}

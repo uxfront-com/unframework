@@ -37,22 +37,35 @@ other targets render the root directly, so the DOM differs.
 - Fallthrough attributes go on the host or through a helper directive, and slot presence is
   emulated. Both are declared in the capability matrix (§6), and both are M3's.
 
+The Angular output of `jsx/fragments`, whose root is a fragment with conditionals beside its
+elements (ADR-0034 records the `@let` and input shapes):
+
 ```ts
 @Component({
-  selector: "uf-badge-list",
+  selector: "uf-article-header",
   host: { style: "display: contents" },
-  template: `…`,
+  preserveWhitespaces: false,
+  template: `
+    @let title = this.title();
+    @let subtitle = this.subtitle();
+    …
+    <h2>{{ title }}</h2>
+    @if (subtitle) {
+      <p class="article-subtitle">{{ subtitle }}</p>
+    }
+    …
+  `,
 })
-export class BadgeList {
+export default class ArticleHeader {
   readonly title = input.required<string>();
-  readonly items = input.required<readonly Item[]>();
+  readonly subtitle = input<string>();
+  …
 }
 ```
 
 ```text
-template  <h2>{{ title() }}</h2>@for (item of items(); track item.id) {<p>{{ item.label }}</p>}
-renders   <uf-badge-list style="display: contents;"><h2>…</h2><p>…</p><p>…</p></uf-badge-list>
-unwrapped <h2>…</h2><p>…</p><p>…</p>
+renders   <uf-article-header style="display: contents;"><h2>…</h2><p class="article-subtitle">…</p>…</uf-article-header>
+unwrapped <h2>…</h2><p class="article-subtitle">…</p>…
 ```
 
 ## Consequences
@@ -110,5 +123,23 @@ See also ADR-0018, ADR-0019 and ADR-0024: M0's spikes rendered and measured this
   attributes are a `style` with the single declaration `display: contents` and Angular's own
   attributes; its negative tests keep an authored `uf-*` element and a host with any other
   attribute. L10's geometry treats `display: contents` elements as transparent (ADR-0019).
-- M1's feature cases with root fragments (`jsx/fragments`) and root-level control flow are green on
-  Angular at L6, L7, L10 and L11 (to verify in M1).
+- M1's corpus is green on Angular at every live layer. Its root fragment, `jsx/fragments` (two
+  elements, a root `&&` and a root `?:` with fragment branches, in one host), passes L6, L7, L10
+  and L11 there, as do the M1 cases with a single root. L10 compared it with Vue's capture of the
+  same run (live pixels, ADR-0029). No corpus case has a list at its root; the kit below does.
+- The render-parity kit's root suites, one per root case of
+  `packages/codegen/test/render-parity-sources.ts` (`ROOT_SOURCES`) plus seeded components whose
+  root is a fragment with text, interpolations, conditionals and lists at its edges, render
+  through ngtsc and Angular's server renderer in
+  `packages/target-angular/test/render-parity.test.ts` ("the root: a conditional, a list and a block
+  at the root", "the root: a list at the root", "the root: a conditional that renders nothing", …),
+  and the host's children equal the reference evaluator's DOM. `test/markup-semantics.test.ts`
+  renders the markup printer's root cases the same way.
+- `packages/testing/test/normalize.rules.test.ts` holds the unwrapping rule's tests: "replaces a
+  display: contents host with its children", "unwraps a styled component's host, whose only other
+  attributes are Angular's", "unwraps nested hosts, and joins the text they separated", "keeps a
+  host with %s, so the difference it makes stays visible" (an authored attribute, another
+  declaration, another display, no style, a tag without the `uf-` prefix), "does not erase a
+  fallthrough attribute left on the host" and "keeps a contents wrapper in any other target's
+  output, or without a target". An author cannot write a `uf-*` element in M1: a tag with a hyphen
+  is UF1002.

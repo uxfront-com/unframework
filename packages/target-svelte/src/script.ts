@@ -37,15 +37,22 @@ export function instanceScript(component: UfComponent, module: UfModule): Instan
   const parameter = component.propsParameter;
   if (!parameter) return {};
   const scope = new NameScope(sourceNames(component, module));
+  const read = referencedBindings(component);
   let local: string | undefined;
   let rewrite: RewriteRules | undefined;
   let pattern: string;
   if (parameter.form === "object") {
     local = parameter.name!;
-    // Svelte reserves the `$` prefix for its runes and stores: a script variable named
-    // `$props` or `$p` does not compile (`dollar_prefix_invalid`), so the object takes the
-    // name `props` there, and every `$p.label` reads `props.label`.
-    if (local.startsWith("$")) {
+    // An object nothing reads still declares the props, whose type is the component's API,
+    // under a name starting with `_`: an unused binding fails L5 (`no-unused-vars`), which
+    // leaves such names alone, as React's `_props` (ADR-0034).
+    if (!component.bindings.some(({ id, kind }) => kind === "prop" && read.has(id))) {
+      // A name `_` and more says it is unused already: it stays the source's.
+      if (!/^_./.test(local)) local = scope.claim(`_${local.replace(/^\$/, "")}`);
+    } else if (local.startsWith("$")) {
+      // Svelte reserves the `$` prefix for its runes and stores: a script variable named
+      // `$props` or `$p` does not compile (`dollar_prefix_invalid`), so the object takes the
+      // name `props` there, and every `$p.label` reads `props.label`.
       const renamed = scope.claim("props");
       rewrite = {
         binding: (_, binding, written) =>
@@ -55,7 +62,6 @@ export function instanceScript(component: UfComponent, module: UfModule): Instan
     }
     pattern = local;
   } else {
-    const read = referencedBindings(component);
     const props = new Map(component.props.map((prop) => [prop.binding, prop]));
     const entries = component.bindings.flatMap(({ id, kind }) => {
       const prop = kind === "prop" && read.has(id) ? props.get(id) : undefined;
@@ -63,8 +69,9 @@ export function instanceScript(component: UfComponent, module: UfModule): Instan
       return [prop.default ? `${prop.name} = ${prop.default.code}` : prop.name];
     });
     // A component that reads none of its props still declares them, under the object form:
-    // the props type is its API, and an empty pattern (`let {}`) is `no-empty-pattern`.
-    pattern = entries.length ? `{ ${entries.join(", ")} }` : scope.claim("props");
+    // the props type is its API, and an empty pattern (`let {}`) is `no-empty-pattern`. The
+    // object is named `_props`, as nothing reads it (`no-unused-vars`).
+    pattern = entries.length ? `{ ${entries.join(", ")} }` : scope.claim("_props");
   }
   const declarations = componentTypes(component, module).map(typeDeclarationCode);
   const code = [...declarations, `let ${pattern}: ${parameter.type.code} = $props();`];

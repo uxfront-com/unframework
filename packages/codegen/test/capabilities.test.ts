@@ -84,7 +84,7 @@ describe("requiredCapabilities", () => {
         createClassAttribute([createDynamicClass(label(100), at(100))], at(99)),
         createStyleAttribute([createBoundStyle("color", label(110), at(110))], at(109)),
         createBoundAttribute("title", label(120), at(119)),
-        createSpreadAttribute(label(130), [createSpreadKey("id", at(20))], at(129)),
+        createSpreadAttribute(label(130), [createSpreadKey("id", at(20))], false, at(129)),
         createStaticAttribute("id", "x", at(139)),
       ],
       [createInterpolation(label(150), at(149))],

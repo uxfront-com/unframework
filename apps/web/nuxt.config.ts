@@ -33,6 +33,18 @@ export default defineNuxtConfig({
     name: "Unframework",
   },
 
+  // The docs show the source and each framework's output. Docus highlights `vue`, `ts` and a
+  // few others; these join its list (layers concatenate arrays), or their blocks show as plain text.
+  content: {
+    build: {
+      markdown: {
+        highlight: {
+          langs: ["tsx", "svelte", "astro"],
+        },
+      },
+    },
+  },
+
   // Docus's MCP server needs a server at runtime, and the site is static.
   mcp: {
     enabled: false,
@@ -71,6 +83,12 @@ export default defineNuxtConfig({
     // redirects the same way, since agents may guess it.
     "/docs": { redirect: "/docs/getting-started/introduction" },
     "/raw/docs.md": { redirect: "/raw/docs/getting-started/introduction.md" },
+    // Every diagnostic links its code (`docsUrl()` in @unframework/diagnostics), which opens
+    // the code's section of the reference. The page's path is lower case, as Nuxt Content
+    // writes every path, and each section carries an anchor in the code's own case
+    // (`[UF1001]{#UF1001}`). The Cloudflare preset writes this rule to _redirects, which
+    // fills in the placeholder; `nuxt dev` redirects to the page's top.
+    "/diagnostics/:code": { redirect: "/docs/reference/diagnostics#:code" },
     // Hashed build assets never change, so cache them forever.
     "/_nuxt/**": {
       headers: { "cache-control": "public, max-age=31536000, immutable" },

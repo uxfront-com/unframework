@@ -235,6 +235,11 @@ describe("validateModule", () => {
       "a spread key without a span",
       (module) => (delete (attribute(module, 3).keys as Json[])[0]!.span, module),
     ],
+    ["a spread without nullish", (module) => (delete attribute(module, 3).nullish, module)],
+    [
+      "a spread whose nullish is a string",
+      (module) => ((attribute(module, 3).nullish = "yes"), module),
+    ],
     [
       "a reference of an unknown kind",
       (module) => (

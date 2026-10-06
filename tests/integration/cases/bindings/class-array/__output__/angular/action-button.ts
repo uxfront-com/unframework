@@ -21,7 +21,7 @@ export interface ActionButtonProps {
     <button
       type="button"
       class="button"
-      [class]="[('button-' + size), primary ? 'button-primary' : null, busy ? 'is-busy' : null, busy ? 'button-waiting' : null, badge ? 'has-badge' : null, primary ? 'solid' : 'outline'].join(' ')"
+      [class]="['button-' + size, primary ? 'button-primary' : null, busy ? 'is-busy' : null, busy ? 'button-waiting' : null, badge ? 'has-badge' : null, primary ? 'solid' : 'outline'].join(' ')"
     >{{ label }}</button>
   `,
 })

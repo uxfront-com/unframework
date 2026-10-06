@@ -106,7 +106,7 @@ describe("Angular expression code", () => {
   });
 
   it("writes strings in single quotes in an attribute, and escapes what HTML decodes there", () => {
-    expect(angularCode('a + "b\'" + `"`', "attribute")).toBe(`a + 'b\\'' + '&quot;'`);
+    expect(angularCode('a + "b" + `"`', "attribute")).toBe(`a + 'b' + '&quot;'`);
   });
 
   it("keeps `}}` and tags out of an interpolation, and leaves block parameters undecoded", () => {
@@ -114,6 +114,97 @@ describe("Angular expression code", () => {
       "f({ a: { b: 1 } }) && a< b && /\\x3cb>}\\}/.test(c)",
     );
     expect(angularCode("a && b<c", "block")).toBe("a && b<c");
+  });
+
+  // Angular's lexers look for an interpolation's `}}`, a block's `;` and `)` and a comment's `//`
+  // outside quotes, which they track in a regular expression too; its whitespace processing
+  // condenses runs and turns U+E500 into a space there.
+  it("writes escapes in a regular expression for what Angular's template reads in it", () => {
+    expect(angularCode("/'\"`;/.test(s)", "block")).toBe("/\\x27\\x22\\x60\\x3b/.test(s)");
+    expect(angularCode("s.split(/[;)(]/)", "block")).toBe("s.split(/[\\x3b\\x29\\x28]/)");
+    // A group's parentheses balance; an escaped one, a bracket or a `/` is an escape, since the
+    // raw text angular-eslint lints doubles its backslash, which then escapes only itself.
+    expect(angularCode("/(a)\\)\\[\\]/.test(s)", "block")).toBe("/(a)\\x29\\x5b\\x5d/.test(s)");
+    expect(angularCode("/a  b c\ue500/.test(s)", "interpolation")).toBe(
+      "/a\\x20\\x20b c\\ue500/.test(s)",
+    );
+    // Every `/` of a body that would write `//`, which Angular reads as a comment.
+    expect(angularCode("/^\\//.test(s)", "attribute")).toBe("/^\\x2f/.test(s)");
+    expect(angularCode("/\\/a[/]\\//.test(s)", "block")).toBe("/\\x2fa[/]\\x2f/.test(s)");
+    expect(angularCode("/a[//]/.test(s)", "block")).toBe("/a[\\x2f\\x2f]/.test(s)");
+    expect(angularCode("/\\/a\\/b/.test(s)", "block")).toBe("/\\x2fa\\x2fb/.test(s)");
+    expect(angularCode("/a//2", "block")).toBe("/a/ /2");
+  });
+
+  // Angular's template lexer opens a tag at `<` before a letter or `!`, in an interpolation too.
+  it("writes a regular expression's `<` so that no interpolation opens a tag", () => {
+    expect(angularCode("/a<b/.test(s)", "interpolation")).toBe("/a\\x3cb/.test(s)");
+    expect(angularCode("/a<b/.test(s)", "block")).toBe("/a<b/.test(s)");
+    // A group's name and a lookbehind have no escape: a reference, once every `&` is one.
+    expect(angularCode("s && /(?<x>a)\\k<x>(?<!b)/.test(s)", "interpolation")).toBe(
+      "s &amp;&amp; /(?&lt;x>a)\\k&lt;x>(?&lt;!b)/.test(s)",
+    );
+    expect(angularCode("a</b/.test(s)", "interpolation")).toBe("a< /b/.test(s)");
+  });
+
+  // angular-eslint lints the raw text of the TypeScript template literal around the template,
+  // where a `\'` reads as an escaped backslash and a closing quote, and Angular's search for a
+  // comment (`//`) ends a string at any quote of its kind: no backslash ever comes before a quote.
+  it("writes a string in the quote its value does not hold, or its own quote as an escape", () => {
+    expect(angularCode('"a\\"b" + "c//d"', "interpolation")).toBe(`'a"b' + "c//d"`);
+    expect(angularCode('s ? "Saved" : "Don\'t"', "attribute")).toBe(
+      "s ? 'Saved' : &quot;Don't&quot;",
+    );
+    expect(angularCode("`${s}'s`", "attribute")).toBe("s + &quot;'s&quot;");
+    expect(angularCode('`Results for "${s}"`', "interpolation")).toBe(`'Results for "' + s + '"'`);
+    expect(angularCode(`s === 'say "hi"'`, "block")).toBe(`s === 'say "hi"'`);
+    expect(angularCode(`"it's \\"x\\" // y"`, "interpolation")).toBe(
+      '"it\'s \\u0022x\\u0022 // y"',
+    );
+    expect(angularCode(`"it's \\"x\\""`, "attribute")).toBe("'it\\u0027s &quot;x&quot;'");
+  });
+
+  // Angular's lexer takes every `.` after a number into it, and reads `?.` as optional chaining.
+  it("keeps a number apart from a `.` after it and a `?` before it", () => {
+    expect(angularCode("1.5.toFixed(1) + 5..toString() + 1e3.toString()", "interpolation")).toBe(
+      "(1.5).toFixed(1) + (5).toString() + (1e3).toString()",
+    );
+    expect(angularCode(".5.toFixed(1) + 0x10.toString()", "attribute")).toBe(
+      "(.5).toFixed(1) + (16).toString()",
+    );
+    expect(angularCode("String(n > 1?.5:1)", "block")).toBe("String(n > 1?0.5:1)");
+    expect(angularCode("x?.y ?? .5 + 1.5 .toFixed(1) + 1.5?.toFixed()", "block")).toBe(
+      "x?.y ?? .5 + 1.5 .toFixed(1) + 1.5?.toFixed()",
+    );
+  });
+
+  // Angular decodes an interpolation's references with `/&([^;]+);/` once it has found its end,
+  // so a bare `&` would take the `;` of a reference after it; an attribute value's lexer decodes
+  // each reference on its own, and a block's parameters are read as written.
+  it("writes every `&` as a reference in an interpolation that needs one", () => {
+    expect(angularCode('(a&&b) || "none"', "interpolation")).toBe('(a&amp;&amp;b) || "none"');
+    expect(angularCode("s && /R&D/.test(s)", "interpolation")).toBe(
+      "s &amp;&amp; /R&amp;D/.test(s)",
+    );
+    expect(angularCode("a && b & c", "interpolation")).toBe("a && b & c");
+    expect(angularCode('(a&&b) || "none"', "attribute")).toBe("(a&&amp;b) || 'none'");
+    expect(angularCode("s && /R&D/.test(s)", "block")).toBe("s && /R&D/.test(s)");
+  });
+
+  // An attribute value's lexer reads `{{` as an interpolation, and decodes its text as one.
+  it("keeps `{{` out of a regular expression", () => {
+    expect(angularCode("/a{{b/.test(s)", "attribute")).toBe("/a\\x7b{b/.test(s)");
+    expect(angularCode("/\\{{2}/.test(s)", "block")).toBe("/\\x7b{2}/.test(s)");
+  });
+
+  it("writes U+E500 in a literal as an escape, which Angular's whitespace processing keeps", () => {
+    expect(angularCode('s + "x\\ue500"', "interpolation")).toBe('s + "x\\ue500"');
+    expect(angularCode('s + "x\ue500"', "attribute")).toBe("s + 'x\\ue500'");
+  });
+
+  // Angular's expression lexer reads only ASCII whitespace and the no-break space.
+  it("writes whitespace outside ASCII between tokens as a space", () => {
+    expect(angularCode("a\u3000+\u2028b +\ufeffc\u00a0+ d", "block")).toBe("a + b + c\u00a0+ d");
   });
 
   it("writes template literals as concatenations that are strings from their first `+`", () => {

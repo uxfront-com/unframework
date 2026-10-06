@@ -19,9 +19,9 @@ export default function ShippingLabel(props: ShippingLabelProps) {
       <p>{"  Handle with care "}</p>
       <pre>
         {props.recipient}
-        {"\n"}
+        {["\n"]}
         {props.street}
-        {"\n"}
+        {["\n"]}
         {props.city + "  " + props.postcode}
       </pre>
       <pre>{"Parcel:	1 of 2\nWeight:	2.5 kg"}</pre>

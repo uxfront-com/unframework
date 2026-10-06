@@ -1,4 +1,4 @@
-import type { Diagnostic } from "@unframework/diagnostics";
+import type { Diagnostic, Fix } from "@unframework/diagnostics";
 import {
   createComponent,
   createExport,
@@ -9,12 +9,13 @@ import {
 } from "@unframework/ir";
 import type { TypeDeclaration, UfComponent, UfExport, UfModule } from "@unframework/ir";
 import {
+  exportName,
   findComponents,
   findTypeDeclarations,
   isComponentName,
   typeDeclarationOf,
 } from "@unframework/parser";
-import type { AST, ComponentDeclaration, ParsedModule } from "@unframework/parser";
+import type { AST, ComponentExport, ParsedModule } from "@unframework/parser";
 
 import { Reporter } from "./context.ts";
 import { checkTypeDeclaration, collectTypes } from "./declarations.ts";
@@ -22,7 +23,7 @@ import type { ModuleTypes } from "./declarations.ts";
 import { frameworkOf, isAuthoringModule } from "./frameworks.ts";
 import { containsJsx, lowerElement, lowerRootChildren, ROOT } from "./lower.ts";
 import { analyzeProps } from "./props.ts";
-import type { RenderContext } from "./render.ts";
+import type { ComponentFunction, RenderContext } from "./render.ts";
 import { Scopes } from "./scope.ts";
 import { syntaxError } from "./syntax.ts";
 
@@ -34,6 +35,22 @@ export interface AnalyzeResult {
    */
   module: UfModule | undefined;
   diagnostics: Diagnostic[];
+}
+
+/**
+ * A component candidate: a PascalCase function declaration (`findComponents`), or an exported
+ * PascalCase `const` that holds an arrow function or a function expression returning JSX, which
+ * is reported (UF1102) and analysed as the declaration its fix writes.
+ */
+interface Candidate {
+  name: string;
+  node: ComponentFunction;
+  /** The statement that declares it, including any `export` keywords. */
+  span: { start: number; end: number };
+  /** Empty for a local (non-exported) component. */
+  exports: ComponentExport[];
+  /** The `const` that holds a component written as a value. */
+  value?: AST.VariableDeclaration;
 }
 
 /** Analyses a parsed `.uf.tsx` module and lowers its components into IR (passes P2 and P3). */
@@ -52,7 +69,10 @@ export function analyze(parsed: ParsedModule): AnalyzeResult {
   }
   if (parsed.errors.length) return { module: undefined, diagnostics: reporter.diagnostics };
 
-  const candidates = findComponents(parsed.program);
+  const candidates: Candidate[] = [
+    ...findComponents(parsed.program),
+    ...findValueComponents(parsed.program),
+  ].toSorted((a, b) => a.span.start - b.span.start);
   const componentStatements = new Set(candidates.map((candidate) => candidate.span.start));
   const declarations = findTypeDeclarations(parsed.program);
   const types = collectTypes(declarations, candidates);
@@ -76,9 +96,15 @@ export function analyze(parsed: ParsedModule): AnalyzeResult {
   const scopes = new Scopes(parsed.program);
   const components: UfComponent[] = [];
   const exports: UfExport[] = [];
-  const names = new Map<string, ComponentDeclaration>();
+  const names = new Map<string, Candidate>();
   for (const candidate of candidates) {
     if (!checkComponentExports(candidate, names, reporter)) continue;
+    if (candidate.value) {
+      // Checked as the declaration its fix writes, which then reveals nothing new.
+      reportValueComponent(candidate, candidate.value, parsed, reporter);
+      analyzeComponent(candidate, parsed, types, scopes, reporter);
+      continue;
+    }
     const component = analyzeComponent(candidate, parsed, types, scopes, reporter);
     if (!component) continue;
     components.push(component);
@@ -134,8 +160,8 @@ function moduleTypes(
  * (`Card.vue`, `card.ts`) and case-insensitive file systems would merge two such files.
  */
 function checkComponentExports(
-  candidate: ComponentDeclaration,
-  names: Map<string, ComponentDeclaration>,
+  candidate: Candidate,
+  names: Map<string, Candidate>,
   reporter: Reporter,
 ): boolean {
   if (!candidate.exports.length) return true;
@@ -176,7 +202,7 @@ function spanOf(node: { start: number; end: number }): { start: number; end: num
 /** What the checks of a module's statements need to know about the module. */
 interface ModuleContext {
   source: string;
-  candidates: ComponentDeclaration[];
+  candidates: Candidate[];
   /** The local names the module exports as values (`export { name }`, `export default name`). */
   exported: ReadonlySet<string>;
   reporter: Reporter;
@@ -222,6 +248,17 @@ function checkTopLevelStatement(
   if (typeDeclarationOf(statement)) {
     const declaration = types.declarations.find((item) => item.span.start === statement.start);
     if (declaration) checkTypeDeclaration(declaration, types, source, comments, reporter);
+    return;
+  }
+  const value = valueFunctionOf(statement);
+  if (value && (statement.type === "ExportNamedDeclaration" || exported.has(value.id.name))) {
+    // A PascalCase one is a candidate, reported with its fix (`reportValueComponent`).
+    reporter.report(
+      "UF1102",
+      value.id,
+      `${value.id.name} returns JSX, as a component does, but a component is a function declaration with a PascalCase name.`,
+      { help: "Declare it as `export function Greeting(props: Props) { return …; }`." },
+    );
     return;
   }
   const fn = functionReturningJsx(statement);
@@ -282,6 +319,21 @@ function checkTopLevelStatement(
         reporter.report("UF1102", statement, "A component must be a named function.", {
           help: "Name the function in PascalCase: `export default function Greeting() { … }`.",
         });
+        return;
+      }
+      if (
+        (statement.declaration.type === "ArrowFunctionExpression" ||
+          statement.declaration.type === "FunctionExpression") &&
+        returnsJsx(statement.declaration)
+      ) {
+        reporter.report(
+          "UF1102",
+          statement,
+          "A component must be a named function declaration, and this is a function written as a value.",
+          {
+            help: "Declare it as a function named in PascalCase: `export default function Greeting(props: Props) { return …; }`.",
+          },
+        );
         return;
       }
       break;
@@ -426,7 +478,7 @@ function checkImport(statement: AST.ImportDeclaration, reporter: Reporter): void
 
 /** Checks a component's shape, its props and its setup, and lowers its returned JSX. */
 function analyzeComponent(
-  candidate: ComponentDeclaration,
+  candidate: Candidate,
   parsed: ParsedModule,
   types: ModuleTypes,
   scopes: Scopes,
@@ -452,10 +504,17 @@ function analyzeComponent(
   const props = analyzeProps(fn, types, parsed.source, parsed.comments, reporter);
 
   // A stray `;` does nothing, so `return <p />;;` still ends with its return.
-  const body = (fn.body?.body ?? []).filter((statement) => statement.type !== "EmptyStatement");
+  const block = fn.body?.type === "BlockStatement" ? fn.body : undefined;
+  const body = (block?.body ?? []).filter((statement) => statement.type !== "EmptyStatement");
   const last = body.at(-1);
   for (const statement of body.slice(0, -1)) checkSetup(statement, reporter);
-  const returned = last?.type === "ReturnStatement" ? last.argument : undefined;
+  // An arrow function's expression body is what it returns.
+  const returned =
+    fn.type === "ArrowFunctionExpression" && fn.body.type !== "BlockStatement"
+      ? fn.body
+      : last?.type === "ReturnStatement"
+        ? last.argument
+        : undefined;
   const render: RenderContext = {
     source: parsed.source,
     reporter,
@@ -520,7 +579,7 @@ function analyzeComponent(
  * checked, so the fix reveals nothing new.
  */
 function rootExpression(
-  candidate: ComponentDeclaration,
+  candidate: Candidate,
   returned: AST.Expression,
   render: RenderContext,
 ): void {
@@ -544,6 +603,170 @@ function rootExpression(
     },
   );
   lowerRootChildren(returned, render);
+}
+
+/** The arrow function or function expression a `const` holds, when it returns JSX. */
+function valueFunctionOf(statement: AST.Directive | AST.Statement):
+  | {
+      declaration: AST.VariableDeclaration;
+      id: AST.BindingIdentifier;
+      fn: AST.ArrowFunctionExpression | AST.Function;
+    }
+  | undefined {
+  const declaration =
+    statement.type === "VariableDeclaration"
+      ? statement
+      : statement.type === "ExportNamedDeclaration" &&
+          statement.declaration?.type === "VariableDeclaration"
+        ? statement.declaration
+        : undefined;
+  if (declaration?.declarations.length !== 1) return undefined;
+  const [declarator] = declaration.declarations;
+  const fn = declarator!.init;
+  if (
+    declarator!.id.type !== "Identifier" ||
+    (fn?.type !== "ArrowFunctionExpression" && fn?.type !== "FunctionExpression") ||
+    !returnsJsx(fn)
+  ) {
+    return undefined;
+  }
+  return { declaration, id: declarator!.id, fn };
+}
+
+/** Whether a function returns JSX: its expression body, or its last statement's `return`. */
+function returnsJsx(fn: AST.ArrowFunctionExpression | AST.Function): boolean {
+  if (fn.body && fn.body.type !== "BlockStatement") return containsJsx(fn.body);
+  const last = (fn.body?.body ?? []).filter((item) => item.type !== "EmptyStatement").at(-1);
+  return last?.type === "ReturnStatement" && containsJsx(last.argument);
+}
+
+/**
+ * The components written as values (`export const Card = (props: CardProps) => …`): an exported
+ * PascalCase `const` holding a function that returns JSX, with how it is exported.
+ */
+function findValueComponents(program: AST.Program): Candidate[] {
+  const exportsByLocal = new Map<string, ComponentExport[]>();
+  for (const statement of program.body) {
+    if (
+      statement.type === "ExportNamedDeclaration" &&
+      !statement.source &&
+      statement.exportKind !== "type"
+    ) {
+      for (const specifier of statement.specifiers) {
+        if (specifier.local.type !== "Identifier" || specifier.exportKind === "type") continue;
+        const name = exportName(specifier.exported);
+        const entry: ComponentExport = {
+          kind: name === "default" ? "default" : "named",
+          name,
+          span: { start: specifier.start, end: specifier.end },
+        };
+        exportsByLocal.set(specifier.local.name, [
+          ...(exportsByLocal.get(specifier.local.name) ?? []),
+          entry,
+        ]);
+      }
+    } else if (
+      statement.type === "ExportDefaultDeclaration" &&
+      statement.declaration.type === "Identifier"
+    ) {
+      const local = statement.declaration.name;
+      const entry: ComponentExport = {
+        kind: "default",
+        name: "default",
+        span: { start: statement.start, end: statement.end },
+      };
+      exportsByLocal.set(local, [...(exportsByLocal.get(local) ?? []), entry]);
+    }
+  }
+  const found: Candidate[] = [];
+  for (const statement of program.body) {
+    const value = valueFunctionOf(statement);
+    if (!value || !isComponentName(value.id.name)) continue;
+    const span = { start: statement.start, end: statement.end };
+    const { name } = value.id;
+    const exports: ComponentExport[] = [
+      ...(statement.type === "ExportNamedDeclaration"
+        ? [{ kind: "named" as const, name, span }]
+        : []),
+      ...(exportsByLocal.get(name) ?? []),
+    ];
+    if (exports.length) {
+      found.push({ name, node: value.fn, span, exports, value: value.declaration });
+    }
+  }
+  return found;
+}
+
+/**
+ * A component written as a value (UF1102): a component is a function declaration (plan §4.1),
+ * which the likely fix writes, keeping the parameters, the return type and the body.
+ */
+function reportValueComponent(
+  candidate: Candidate,
+  declaration: AST.VariableDeclaration,
+  parsed: ParsedModule,
+  reporter: Reporter,
+): void {
+  const fn = candidate.node;
+  const what =
+    fn.type === "ArrowFunctionExpression" ? "an arrow function" : "a function expression";
+  const fix = valueComponentFix(candidate.name, fn, declaration, parsed);
+  reporter.report(
+    "UF1102",
+    declaration.declarations[0]!.id,
+    `${candidate.name} is ${what} in a \`const\`, and a component is a function declaration.`,
+    {
+      help: `Declare it as a function: \`export function ${candidate.name}(props: Props) { return …; }\`.`,
+      ...(fix ? { fixes: [fix] } : {}),
+    },
+  );
+}
+
+/** The rewrite of a component written as a value as a function declaration, where one is plain. */
+function valueComponentFix(
+  name: string,
+  fn: ComponentFunction,
+  declaration: AST.VariableDeclaration,
+  { source, comments }: ParsedModule,
+): Fix | undefined {
+  const declarator = declaration.declarations[0]!;
+  if (declarator.id.typeAnnotation || fn.async || fn.generator) return undefined;
+  if (fn.id && fn.id.name !== name) return undefined;
+  const edits: Fix["edits"] = [];
+  if (fn.type === "ArrowFunctionExpression") {
+    const parameters = fn.typeParameters?.end ?? fn.start;
+    const parenthesised = source.slice(parameters).trimStart().startsWith("(");
+    edits.push({
+      span: { start: declaration.start, end: fn.start },
+      text: `function ${name}${parenthesised ? "" : "("}`,
+    });
+    if (!parenthesised) {
+      const parameter = fn.params[0]!;
+      edits.push({ span: { start: parameter.end, end: parameter.end }, text: ")" });
+    }
+    const { body } = fn;
+    const arrow = source.lastIndexOf("=>", body.start);
+    const block = body.type === "BlockStatement";
+    edits.push(
+      { span: { start: arrow, end: body.start }, text: block ? "" : "{ return " },
+      {
+        span: { start: block ? fn.end : body.end, end: declaration.end },
+        text: block ? "" : "; }",
+      },
+    );
+  } else {
+    const parameters = fn.typeParameters?.start ?? source.indexOf("(", fn.id?.end ?? fn.start);
+    edits.push(
+      { span: { start: declaration.start, end: parameters }, text: `function ${name}` },
+      { span: { start: fn.end, end: declaration.end }, text: "" },
+    );
+  }
+  // A comment in a span the fix replaces would be lost.
+  const lost = comments.some((comment) =>
+    edits.some(({ span }) => comment.start < span.end && comment.end > span.start),
+  );
+  if (lost) return undefined;
+  return { title: `Declare \`${name}\` as a function`, confidence: "likely", edits };
 }
 
 /**

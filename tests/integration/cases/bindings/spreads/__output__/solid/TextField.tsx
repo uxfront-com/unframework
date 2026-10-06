@@ -1,7 +1,7 @@
 interface FieldAttributes {
   name: string;
   placeholder?: string;
-  autocomplete?: string;
+  autocomplete?: "email" | "username";
   maxlength?: number;
   required?: boolean;
   title?: string;

@@ -18,6 +18,7 @@ import {
   isDroppedEmptyUrl,
   isNumberTypedAttribute,
   isStateAttribute,
+  NULLISH_VALUE_ELEMENTS,
   NUMERIC_ATTRIBUTES,
   TRUE_VALUED_ATTRIBUTES,
   unanalysableUrl,
@@ -26,12 +27,13 @@ import {
 import type { Attribute, Namespace, NumberKind, Span, SpreadKey } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
 
-import { ariaValueProblem, roleProblem } from "./aria.ts";
+import { ARIA_TYPES, ariaValueProblem, roleProblem } from "./aria.ts";
 import {
   canonicalName,
   formState,
   isAttributeOf,
   isStringOnlyAttribute,
+  isTargetStringAttribute,
   MUTED_REASON,
   nameProblem,
   unsupported,
@@ -42,6 +44,7 @@ import { lowerClass } from "./class.ts";
 import type { LoweredClass } from "./class.ts";
 import { reportCharacter, reportDivergence, reportHtmlOnlyReference } from "./context.ts";
 import type { RawSpan, Reporter } from "./context.ts";
+import { emptyValue, enumeratedProblem, enumeratedStaticProblem } from "./enumerated.ts";
 import { checkExpression, span } from "./expressions.ts";
 import type { CheckedExpression } from "./expressions.ts";
 import { htmlOnlyReferences, readJsxAttribute } from "./jsx/text.ts";
@@ -49,16 +52,10 @@ import type { HtmlOnlyReference, Piece } from "./jsx/text.ts";
 import { isStaticString, piecesOf, reportCharacters, valueOf } from "./literals.ts";
 import type { StaticString } from "./literals.ts";
 import type { RenderContext } from "./render.ts";
+import { spreadSource } from "./spread-source.ts";
 import { lowerStaticStyle, lowerStyleObject } from "./style.ts";
 import type { LoweredStyle } from "./style.ts";
-import {
-  declaredShapeOf,
-  describe,
-  mayBeNullish,
-  outside,
-  union,
-  UNDEFINED,
-} from "./types/kinds.ts";
+import { declaredShapeOf, describe, has, outside, union, UNDEFINED } from "./types/kinds.ts";
 import type { Kinds, Primitive } from "./types/kinds.ts";
 
 export { list } from "./attribute-names.ts";
@@ -158,7 +155,7 @@ export function lowerAttributes(
     const previous = after;
     after = item.end;
     if (item.type === "JSXSpreadAttribute") {
-      entries.push(readSpread(item, opening, element));
+      entries.push(readSpread(item, previous, opening, element));
       continue;
     }
     const nameNode = item.name;
@@ -172,8 +169,18 @@ export function lowerAttributes(
     }
     const name = canonicalName(element.tag, element.namespace, authored);
     if (name === "key") {
-      if (element.listBody) key = item;
-      else misplacedKey(item, previous, reporter);
+      if (!element.listBody) misplacedKey(item, previous, reporter);
+      else if (key) {
+        reporter.report("UF3007", nameNode, `\`key\` is set twice on this <${element.tag}>.`, {
+          help: "Keep one: the targets disagree about which value wins.",
+          related: [{ span: span(key.name), message: "First set here" }],
+        });
+      } else {
+        // Only JSX's own `key` keys an element, and any other case of it is an ordinary
+        // attribute in JSX: it is reported, and lifted all the same, so its fix reveals nothing.
+        if (authored !== "key") keyCase(item, nameNode, reporter);
+        key = item;
+      }
       continue;
     }
     const problem = nameProblem(
@@ -219,6 +226,33 @@ function misplacedKey(item: AST.JSXAttribute, after: number, reporter: Reporter)
           title: "Remove `key`",
           confidence: "safe",
           edits: [{ span: { start: after, end: item.end }, text: "" }],
+        },
+      ],
+    },
+  );
+}
+
+/**
+ * A list's key written in another case (`KEY={item.id}`, UF3004). A key in braces gets the
+ * rename; any other is a constant key, whose fix (UF3014) writes the whole attribute.
+ */
+function keyCase(
+  item: AST.JSXAttribute,
+  nameNode: AST.JSXIdentifier | AST.JSXNamespacedName,
+  reporter: Reporter,
+): void {
+  const authored = nameNode.type === "JSXIdentifier" ? nameNode.name : "";
+  if (item.value?.type !== "JSXExpressionContainer") return;
+  reporter.report(
+    "UF3004",
+    nameNode,
+    `\`${authored}\` is written \`key\`: only JSX's \`key\`, in lower case, keys a list's element, and any other case is an attribute.`,
+    {
+      fixes: [
+        {
+          title: `Rename \`${authored}\` to \`key\``,
+          confidence: "safe",
+          edits: [{ span: span(nameNode), text: "key" }],
         },
       ],
     },
@@ -381,6 +415,19 @@ function rewritable(node: StaticString, source: string): boolean {
   );
 }
 
+/** The ARIA attributes whose value is text or ids (`aria-label`, `aria-controls`), with what they take. */
+const ARIA_TEXT: ReadonlyMap<string, string> = new Map(
+  [...ARIA_TYPES].flatMap(([name, { type }]): [string, string][] =>
+    type === "string"
+      ? [[name, "text"]]
+      : type === "id"
+        ? [[name, "an id"]]
+        : type === "idlist"
+          ? [[name, "a list of ids"]]
+          : [],
+  ),
+);
+
 /** The attributes that render a boolean as `"true"` or `"false"` (ADR-0037). */
 function trueFalseAttribute(name: string): boolean {
   return (
@@ -432,10 +479,14 @@ const ASCII_WHITESPACE = /^[\t\n\f\r ]+$/;
 /**
  * Reads a spread (ADR-0039): an object literal is written as its attributes (UF3004); any other
  * value must be a prop or an item whose type the module declares, whose keys it renders exactly,
- * each checked as a bound attribute of the element.
+ * each checked as a bound attribute of the element, and read through `?.` where the value may be
+ * nullish (`./spread-source.ts`). A type that declares no keys, or a source that is absent
+ * wherever the spread renders, renders nothing (UF3004, removed). `after` is where the source
+ * before it ends.
  */
 function readSpread(
   item: AST.JSXSpreadAttribute,
+  after: number,
   opening: AST.JSXOpeningElement,
   element: ElementContext,
 ): SpreadRead {
@@ -464,7 +515,48 @@ function readSpread(
     }
     return { node: item, binds: true, attribute: undefined, keys: [] };
   }
-  const optional = mayBeNullish(checked.kinds);
+  const removal = (): Fix[] =>
+    checked.clean && !reporter.hasErrorsSince(mark)
+      ? [
+          {
+            title: "Remove the spread",
+            confidence: "safe",
+            edits: [{ span: { start: after, end: item.end }, text: "" }],
+          },
+        ]
+      : [];
+  if (!shape.members().size) {
+    // It binds nothing, so it leaves an element Angular writes as literal (ADR-0037) as it is.
+    reporter.report("UF3004", item, "This spread renders nothing: its type declares no keys.", {
+      help: "Remove the spread.",
+      fixes: removal(),
+    });
+    return { node: item, binds: false, attribute: undefined, keys: [] };
+  }
+  // Whether the source may be nullish here, once the conditions around the spread narrow it:
+  // the targets then read each key through `?.`.
+  const source = spreadSource(item, checked.kinds, render);
+  if (source.kind === "absent") {
+    reporter.report(
+      "UF3004",
+      item,
+      "This spread renders nothing: a condition around it holds only where its source is absent.",
+      {
+        help: "Remove the spread.",
+        related: [{ span: span(source.condition), message: "The condition tests the source here" }],
+        fixes: removal(),
+      },
+    );
+    return { node: item, binds: false, attribute: undefined, keys: [] };
+  }
+  if (source.kind === "unfollowed") {
+    reporter.report("UF1002", item, source.message, {
+      help: source.help,
+      related: [{ span: span(source.condition), message: "The condition tests the source here" }],
+    });
+  }
+  // An unfollowed source checks its keys as though it may be nullish, as its type says.
+  const nullish = source.kind !== "read" || source.nullish;
   const keys: SpreadKey[] = [];
   const read: { name: string; key: Span }[] = [];
   for (const [authored, member] of shape.members()) {
@@ -488,9 +580,9 @@ function readSpread(
       report(reporter, item, problem, related);
       continue;
     }
-    const kinds = member.optional || optional ? union(member.kinds(), UNDEFINED) : member.kinds();
+    const kinds = member.optional || nullish ? union(member.kinds(), UNDEFINED) : member.kinds();
     const bound =
-      name === "class" ? classKeyProblem(kinds) : boundProblem(tag, namespace, name, kinds);
+      name === "class" ? classKeyProblem(kinds) : boundValueProblem(tag, namespace, name, kinds);
     if (bound) {
       report(reporter, item, bound, related);
       continue;
@@ -503,7 +595,7 @@ function readSpread(
     binds: true,
     attribute: reporter.hasErrorsSince(mark)
       ? undefined
-      : createSpreadAttribute(checked.expression, keys, span(item)),
+      : createSpreadAttribute(checked.expression, keys, nullish, span(item)),
     keys: read,
   };
 }
@@ -587,7 +679,7 @@ function objectSpread(
       continue;
     }
     const checked = checkExpression(value, render);
-    if (!checked.clean || boundProblem(tag, namespace, name, checked.kinds)) fixable = false;
+    if (!checked.clean || boundValueProblem(tag, namespace, name, checked.kinds)) fixable = false;
     if (
       value.type === "Literal" ||
       value.type === "UnaryExpression" ||
@@ -703,8 +795,7 @@ function checkAgainstElement(
       (form.kind === "static"
         ? valueProblem(tag, namespace, entry, form.value, unique)
         : form.kind === "bound"
-          ? (boundProblem(tag, namespace, name, form.value.kinds) ??
-            ariaBindingProblem(name, form.value.kinds))
+          ? boundValueProblem(tag, namespace, name, form.value.kinds)
           : undefined);
     const removes = found?.fixes?.some((fix) =>
       fix.edits.some((edit) => edit.span.start <= nameNode.start && edit.span.end >= nameNode.end),
@@ -1006,8 +1097,9 @@ function elementProblem(
 }
 
 /**
- * Problems with a bound value (ADR-0037): attributes Angular cannot bind or whose `false`
- * renders as `"false"` somewhere (UF1002), and kinds of value the attribute does not render
+ * Problems with a bound value (ADR-0037): attributes that cannot be bound (Angular's, and
+ * those deciding a `<select>`'s first selection) or whose `false` renders as `"false"` somewhere
+ * (UF1002), and kinds of value the attribute does not render
  * alike on every target (UF3018). `unknown` is accepted.
  */
 export function boundProblem(
@@ -1022,6 +1114,13 @@ export function boundProblem(
       return unsupported(
         `A bound \`${name}\` on <${tag}> is not supported yet: ${unbindable}`,
         "Write a static value.",
+      );
+    }
+    const nullish = name === "value" ? NULLISH_VALUE_ELEMENTS.get(tag) : undefined;
+    if (nullish && (has(kinds, "null") || has(kinds, "undefined"))) {
+      return unsupported(
+        `A bound \`value\` on <${tag}> that may be null or undefined is not supported yet: ${nullish}`,
+        `Render the element only where the value is there, as in \`{value != null && ${tag === "input" ? "<input value={value} />" : `<${tag} value={value}>…</${tag}>`}}\`, or give it a fallback, as in \`value={value ?? ${tag === "li" || tag === "meter" || tag === "progress" ? "0" : '""'}}\`.`,
       );
     }
     if (isBooleanAttribute(name) && !BINDABLE_BOOLEAN_ATTRIBUTES.has(name)) {
@@ -1043,6 +1142,11 @@ export function boundProblem(
     allowed = ["number", "null", "undefined"];
     message = (can) => `React and Qwik type \`${name}\` as a number, and this value can be ${can}.`;
     help = "Bind a number: `Number(value)`.";
+  } else if (ARIA_TEXT.has(name)) {
+    allowed = ["string", "null", "undefined"];
+    message = (can) =>
+      `\`${name}\` takes ${ARIA_TEXT.get(name)}, which the targets' types declare as a string, and this value can be ${can}.`;
+    help = "Bind a string: `String(value)`.";
   } else if (trueFalseAttribute(name)) {
     allowed = ["string", "number", "boolean", "null", "undefined"];
     message = (can) =>
@@ -1053,6 +1157,11 @@ export function boundProblem(
     message = (can) =>
       `The authoring types declare \`${name}\` as a string, which React's, Solid's and Qwik's types check, and this value can be ${can}.`;
     help = "Bind a string: `String(value)`.";
+  } else if (isTargetStringAttribute(tag, namespace, name)) {
+    allowed = ["string", "null", "undefined"];
+    message = (can) =>
+      `Some targets' types declare \`${name}\` as a string only, and this value can be ${can}.`;
+    help = "Bind a string: `String(value)`.";
   } else {
     allowed = ["string", "number", "null", "undefined"];
     message = (can) =>
@@ -1061,6 +1170,24 @@ export function boundProblem(
   }
   const out = outside(kinds, allowed);
   return out.length ? { code: "UF3018", message: message(describe(out)), help } : undefined;
+}
+
+/**
+ * Everything wrong with a bound value or a spread's key: its kinds, then the values ARIA defines
+ * (UF3008), then the tokens an enumerated attribute's types accept on every target (UF3018).
+ * The conformance tests check what it accepts against the targets' element types.
+ */
+export function boundValueProblem(
+  tag: string,
+  namespace: Namespace,
+  name: string,
+  kinds: Kinds,
+): Problem | undefined {
+  return (
+    boundProblem(tag, namespace, name, kinds) ??
+    ariaBindingProblem(name, kinds) ??
+    enumeratedProblem(tag, namespace, name, kinds)
+  );
 }
 
 /**
@@ -1132,22 +1259,25 @@ function valueProblem(
   }
   if (value === null) {
     if (TRUE_VALUED_ATTRIBUTES.has(name) || isDataAttribute(name)) return undefined;
-    // HTML reads a bare attribute as the empty string, so that is the likely meaning; the fix
-    // is offered only where the compiler accepts it (not `src=""` or `rows=""`).
-    const empty = !valueProblem(tag, namespace, attribute, "", unique);
+    // HTML reads a bare attribute as the empty string, so that is the likely meaning, written as
+    // the keyword HTML reads it as where the targets' types take no empty value
+    // (`popover="auto"`). The fix is offered only where the compiler accepts the value (not
+    // `src=""` or `rows=""`).
+    const empty = emptyValue(tag, namespace, name);
+    const fixable = !valueProblem(tag, namespace, attribute, empty, unique);
     return {
       code: "UF3004",
       message: `\`${name}\` needs a value: in JSX an attribute without one means the string "true".`,
-      help: `Write the value, such as \`${name}=""\`.`,
-      fixes: empty
+      help: `Write the value, such as \`${name}="${empty}"\`.`,
+      fixes: fixable
         ? [
             {
-              title: `Write \`${name}=""\``,
+              title: `Write \`${name}="${empty}"\``,
               confidence: "likely",
               edits: [
                 {
                   span: { start: attribute.nameNode.end, end: attribute.nameNode.end },
-                  text: '=""',
+                  text: `="${empty}"`,
                 },
               ],
             },
@@ -1208,7 +1338,13 @@ function valueProblem(
   if (isNumberTypedAttribute(namespace === "html" ? tag : "", name)) {
     return numberTypedProblem(attribute, value);
   }
-  return undefined;
+  return enumeratedStaticProblem(
+    tag,
+    namespace,
+    name,
+    value,
+    node.value ? span(node.value) : undefined,
+  );
 }
 
 /**
@@ -1259,8 +1395,8 @@ function generatedIdProblem(name: string, value: string): Problem | undefined {
 
 /**
  * A `class` with no names, which Vue renders as `class=""` and Svelte and Angular leave out,
- * or with a name holding whitespace that is not ASCII's, which Angular splits at (it reads
- * names with JavaScript's `\s`) and Vue and Svelte keep in the name.
+ * with a name holding whitespace that is not ASCII's, which Angular splits at (it reads
+ * names with JavaScript's `\s`) and Vue and Svelte keep in the name, or with a name twice.
  */
 function classProblem(attribute: Read, value: string, unique: boolean): Problem | undefined {
   const { node } = attribute;
@@ -1282,12 +1418,38 @@ function classProblem(attribute: Read, value: string, unique: boolean): Problem 
     };
   }
   const space = /[^\S\t\n\f\r ]/.exec(value)?.[0];
-  if (space === undefined) return undefined;
-  const code = `U+${space.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`;
+  if (space !== undefined) {
+    const code = `U+${space.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`;
+    return {
+      code: "UF3008",
+      message: `A class name holds whitespace (${code}): Angular splits names there, and the other targets keep it in the name.`,
+      help: "Separate class names with spaces, and keep other whitespace out of them.",
+    };
+  }
+  // Angular merges a static `class` with a bound one (a spread's) through the class list, which
+  // drops a repeated name the other targets keep, as a `class={…}` part's (UF3007).
+  const names = classNames(value).split(" ");
+  const repeated = names.find((name, index) => names.indexOf(name) !== index);
+  if (repeated === undefined) return undefined;
+  const { form } = attribute;
+  const once = [...new Set(names)].join(" ");
+  const text = `"${once}"`;
+  // The fix writes the whole value, a literal in braces included; nothing else may edit it.
+  const fixable =
+    form.kind === "static" && !form.reported && !form.references.length && !/["&]/.test(once);
   return {
-    code: "UF3008",
-    message: `A class name holds whitespace (${code}): Angular splits names there, and the other targets keep it in the name.`,
-    help: "Separate class names with spaces, and keep other whitespace out of them.",
+    code: "UF3007",
+    message: `The class \`${repeated}\` is listed twice in this \`class\`.`,
+    help: "List it once.",
+    fixes: fixable
+      ? [
+          {
+            title: `Write \`class=${text}\``,
+            confidence: "safe",
+            edits: [{ span: { start: attribute.nameNode.end, end: node.end }, text: `=${text}` }],
+          },
+        ]
+      : [],
   };
 }
 

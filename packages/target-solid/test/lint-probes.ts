@@ -1,6 +1,7 @@
 // What this target will emit for M1's constructs, written by hand before the emitter does, in the
 // shapes of design §5.4: `mergeProps` over `rawProps` and `props.x`, `<Switch>`/`<Match>` and
-// `<Show>`, `<For>` with `index()`, a class helper and `classList`, kebab-case style objects
+// `<Show>`, keyed where a branch reads what its test narrows, `<For>` with `index()`, a class
+// helper and `classList`, kebab-case style objects
 // (number literals as strings). The same three components on every target: a badge (props with
 // defaults, a conditional chain, class and style bindings, bound attributes, SVG), a list (nested
 // keyed lists, conditionals inside and around them, a root fragment) and a card (the `props` form,
@@ -25,7 +26,7 @@ export default function Badge(rawProps: BadgeProps) {
   return (
     <span
       id="badge"
-      class={cx(["badge", { pill: props.pill }, \`tone-\${props.tone}\`])}
+      class={cx("badge", { pill: props.pill }, \`tone-\${props.tone}\`)}
       style={{ color: "red", "line-height": "1.5", "margin-top": props.gap, "--gap": props.gap }}
       aria-hidden={props.quiet}
       data-tone={props.tone}
@@ -49,17 +50,16 @@ export default function Badge(rawProps: BadgeProps) {
   );
 }
 
-/** Joins class names as Vue's \`:class\` does: strings, arrays, and the keys of truthy entries. */
-function cx(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value.map(cx).filter(Boolean).join(" ");
-  if (value && typeof value === "object") {
-    return Object.entries(value)
-      .filter(([, on]) => on)
-      .map(([name]) => name)
-      .join(" ");
+/** Joins class names: strings as they are, and the names of an object's truthy entries. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") names.push(part);
+    else if (part && typeof part === "object") {
+      for (const [name, on] of Object.entries(part)) if (on) names.push(name);
+    }
   }
-  return "";
+  return names.join(" ");
 }
 `,
   "LinkCard.tsx": `interface LinkAttrs {
@@ -77,8 +77,8 @@ export interface LinkCardProps {
 
 export default function LinkCard(props: LinkCardProps) {
   return (
-    <div class={cx(["card", props.accent])} style={{ padding: "4px", border: "1px solid" }}>
-      <a href={props.link.href} title={props.link.title} class={cx(["card-link", props.link.class])}>
+    <div class={cx("card", props.accent)} style={{ padding: "4px", border: "1px solid" }}>
+      <a href={props.link.href} title={props.link.title} class={cx("card-link", props.link.class)}>
         {props.label}
       </a>
       <p id={props.extra?.id} role={props.extra?.role}>
@@ -88,17 +88,16 @@ export default function LinkCard(props: LinkCardProps) {
   );
 }
 
-/** Joins class names as Vue's \`:class\` does: strings, arrays, and the keys of truthy entries. */
-function cx(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) return value.map(cx).filter(Boolean).join(" ");
-  if (value && typeof value === "object") {
-    return Object.entries(value)
-      .filter(([, on]) => on)
-      .map(([name]) => name)
-      .join(" ");
+/** Joins class names: strings as they are, and the names of an object's truthy entries. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") names.push(part);
+    else if (part && typeof part === "object") {
+      for (const [name, on] of Object.entries(part)) if (on) names.push(name);
+    }
   }
-  return "";
+  return names.join(" ");
 }
 `,
   "TodoList.tsx": `import { For, Show } from "solid-js";
@@ -108,6 +107,7 @@ interface Todo {
   title: string;
   done?: boolean;
   tags: string[];
+  owner?: { name: string };
 }
 
 export interface TodoListProps {
@@ -127,6 +127,9 @@ export default function TodoList(props: TodoListProps) {
             {(todo, index) => (
               <li classList={{ done: Boolean(todo.done) }}>
                 {index() + 1}. {todo.title}
+                <Show keyed when={todo.owner}>
+                  {(owner) => <i>{owner.name}</i>}
+                </Show>
                 <Show when={todo.tags.length > 0}>
                   <ul>
                     <For each={todo.tags}>{(tag) => <li>{tag}</li>}</For>

@@ -45,6 +45,14 @@ describeTargets("basics/hello", () => {
   not kebab-case, a tolerance without a reason). No landmark wraps the mount root, so a
   component may render its own `<main>`; axe's `region` rule (all content inside landmarks) is
   off, because placing a component in the page's landmarks is the page's job.
+- **L10 sees each run of text as one node.** Frameworks split one run of text into DOM text
+  nodes differently (`Price: {price} EUR` is three nodes on React, Solid and Qwik, one on Vue,
+  and Vue splits a text branch from the text beside it), and Chromium starts each node at a
+  1/64 px edge, which moves later glyphs by a fraction of a pixel. So for the capture (geometry
+  and pixels) every run of adjacent text nodes in the mount root, comments between them
+  included, is merged into its first node, never across an element, then restored: the same
+  nodes, with their data, so a framework's references stay valid (ADR-0044). L7 already reads a
+  run as one text.
 - **L10 follows the environment.** In CI and in the baseline environment (the Playwright image
   `pnpm test:baselines` runs, `BASELINE_ENVIRONMENT`) it compares with the committed
   `__expected__/geometry.<name>.json` and `__screenshots__/<name>-chromium-linux.png`, and only
@@ -82,6 +90,8 @@ Every spec of the corpus follows these rules, which L8 and its canary rely on (A
   when the file loads and discards nothing: a message logged while the modules evaluate or in a
   `beforeAll` hook fails the next test, marked as logged before it; the console is judged after
   the unmount's scheduled work has run; and a message after a file's last test fails the file.
+  It gives every `expect.element` without a timeout the project's `expect.poll.timeout`, which
+  the project must set: Vitest 5 would otherwise wait for the whole test's timeout.
   After L13 it records **L8**, the spec's own behaviour: failed with the test's own errors (its
   assertions, its hooks, Vitest's "no assertion" error, a failed unmount), but not a
   `LayerFailure`, and then fails the test with one error holding every other failed layer (L8's
@@ -138,13 +148,17 @@ empty value; declarations are sorted by property unless the order of two of them
 renders (`@unframework/ir`'s `cssPropertiesOverlap`: the same property, a shorthand and its
 longhand, a flow-relative longhand and a physical one), as frameworks disagree on these
 even with themselves (ADR-0044). Class tokens keep their duplicates: a doubled class means a
-broken merge.
+broken merge. A boolean attribute's `="true"` is written empty on Qwik only, whose client writes
+an attribute that is on that way.
 Only the named target's framework noise is removed (Angular's hosts only from Angular's
 output); without a target nothing is noise. Generated ids are the compiler's `uf-id-…` ids, by
 provenance, in the references `@unframework/ir` lists (the analyzer reserves the prefix in the
 same ones): authored ids are never renamed. Whitespace collapses as Chromium lays it out, rubies
 and bidi isolates included; a whitespace text that collapses away beside a ruby stays, printed
-as `""`, because Chromium's ruby layout still sees it. `serializeDom` and `normalizeDom` read a
+as `""`, because Chromium's ruby layout still sees it. Where a table-internal box (a bound
+`display: table-cell`, say) sits in an inline box, Chromium wraps it in an anonymous inline
+table, which the model does not build: that line keeps its whitespace as written, so outputs
+that write it differently differ. `serializeDom` and `normalizeDom` read a
 live subtree, form-control state included; `normalizeDom` throws on a live element, attribute
 or text that the HTML parser would rebuild differently (an SVG child created in the HTML
 namespace, `viewbox`, a table row without its `<tbody>`, a carriage return).

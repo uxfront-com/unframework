@@ -8,7 +8,7 @@ export default function Banner(props: BannerProps) {
   return (
     <div class={cx("banner", props.tone)} role="note">
       <p class={cx(props.emphasis)}>{props.message}</p>
-      <p class={cx(`banner-footer banner-footer-${props.tone}`)}>Shown to every visitor.</p>
+      <p class={`banner-footer banner-footer-${props.tone}`}>Shown to every visitor.</p>
     </div>
   );
 }

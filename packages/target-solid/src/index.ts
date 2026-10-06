@@ -49,10 +49,15 @@ export const solid: Target = defineTarget({
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     // Every name the source declares or reads is taken before the output claims its own
     // (`props`, `Show`, `cx`), so none of them captures a reference (design §4.2).
-    const imports = new ImportSet(new NameScope(sourceNames(component, context.module)));
+    const names = sourceNames(component, context.module);
+    const imports = new ImportSet(new NameScope(names));
     const placeholders = new Placeholders();
     const props = solidProps(component, imports, placeholders);
-    const { dialect, helpers } = solidJsx(imports);
+    const types = componentTypes(component, context.module);
+    const { dialect, helpers } = solidJsx(imports, names, component, [
+      component.propsParameter?.type.code ?? "",
+      ...types.map((declaration) => declaration.code),
+    ]);
     const jsx = jsxContext({
       component,
       dialect,
@@ -75,7 +80,7 @@ export const solid: Target = defineTarget({
         contents: printComponentModule(
           {
             imports,
-            types: componentTypes(component, context.module),
+            types,
             body: statements,
             helpers: helpers(),
             placeholders,

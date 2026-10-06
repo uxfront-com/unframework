@@ -24,9 +24,9 @@ const CASES = listCases().map((info) => info.id);
 const LAYERS_OF: Record<string, LayerName[]> = {
   compile: ["L1", "L2"],
   harness: [],
-  toolchain: ["L3", "L4"],
+  toolchain: ["L3", "L4", "L5"],
   ssr: ["L6", "L13"],
-  browser: ["L7", "L10", "L11", "L13"],
+  browser: ["L7", "L8", "L10", "L11", "L13"],
 };
 
 /**

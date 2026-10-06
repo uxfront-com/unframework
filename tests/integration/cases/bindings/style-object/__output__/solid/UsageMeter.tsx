@@ -42,6 +42,12 @@ export default function UsageMeter(props: UsageMeterProps) {
           }}
         />
       </div>
+      <p
+        class="usage-meter-caption"
+        style={{ color: props.colour, "font-family": '"UF Test Sans", sans-serif' }}
+      >
+        {props.percent} of 100 used
+      </p>
     </div>
   );
 }

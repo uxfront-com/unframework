@@ -1,0 +1,8 @@
+- region "Account":
+  - paragraph: Signed out
+  - paragraph: "Role: guest"
+  - paragraph: No profile
+  - paragraph: Storage 0.0 GB
+  - paragraph: Renews on 1 November 2026
+  - list "Seats":
+    - listitem: Vacant

@@ -5,17 +5,22 @@
 import { LAYERS } from "@unframework/testing/node";
 import type { LayerName, QuarantineEntry } from "@unframework/testing/node";
 
-/** Empty in M0: every live layer is green on every target. */
+/** Empty: every live layer is green on every target. */
 export const QUARANTINE: readonly QuarantineEntry[] = [];
 
-/** The layers a quarantine entry may name: the live ones, where a failure can occur. */
+/**
+ * The layers a quarantine entry may name: the live ones, where a failure can occur. M1 made L5
+ * (lint, ADR-0042) and L8 (behaviour, ADR-0043) live.
+ */
 export const LIVE_LAYERS: readonly LayerName[] = [
   "L1",
   "L2",
   "L3",
   "L4",
+  "L5",
   "L6",
   "L7",
+  "L8",
   "L10",
   "L11",
   "L13",

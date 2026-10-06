@@ -1,0 +1,3 @@
+- region "Build log":
+  - text: $ make install
+  - list "Warnings"

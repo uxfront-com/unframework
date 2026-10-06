@@ -15,7 +15,7 @@ const expected: SummaryExpectations = {
   cases: ["basics/hello"],
   targets: ["vue"],
   liveLayers: ["L1", "L7"],
-  notLiveReason: "not live in M0",
+  notLiveReason: "not live in M1",
 };
 
 const check: RunMode = { update: false, pixels: "baseline", canary: null };
@@ -117,20 +117,20 @@ describe("summarise", () => {
     expect(result.problems).toEqual([]);
     expect(result.matrix.cases["basics/hello"]?.vue).toEqual({
       L1: "pass",
-      L2: "skip(not live in M0)",
-      L3: "skip(not live in M0)",
-      L4: "skip(not live in M0)",
-      L5: "skip(not live in M0)",
-      L6: "skip(not live in M0)",
+      L2: "skip(not live in M1)",
+      L3: "skip(not live in M1)",
+      L4: "skip(not live in M1)",
+      L5: "skip(not live in M1)",
+      L6: "skip(not live in M1)",
       L7: "pass",
-      L8: "skip(not live in M0)",
-      L9: "skip(not live in M0)",
-      L10: "skip(not live in M0)",
-      L11: "skip(not live in M0)",
-      L12: "skip(not live in M0)",
-      L13: "skip(not live in M0)",
-      L14: "skip(not live in M0)",
-      L15: "skip(not live in M0)",
+      L8: "skip(not live in M1)",
+      L9: "skip(not live in M1)",
+      L10: "skip(not live in M1)",
+      L11: "skip(not live in M1)",
+      L12: "skip(not live in M1)",
+      L13: "skip(not live in M1)",
+      L14: "skip(not live in M1)",
+      L15: "skip(not live in M1)",
     });
     expect(result.markdown).toContain("Every project ran: every cell is checked.");
     expect(result.markdown).toContain("| vue | pass | pass |");
@@ -600,7 +600,7 @@ describe("summarise: parity scenarios", () => {
     cases: ["basics/hello"],
     targets: ["vue", "react"],
     liveLayers: ["L1", "L7"],
-    notLiveReason: "not live in M0",
+    notLiveReason: "not live in M1",
   };
 
   /** A run of every project in which each target's browser test checked these scenarios. */

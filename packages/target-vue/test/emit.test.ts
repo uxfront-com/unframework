@@ -132,14 +132,26 @@ export default function Badge({ label, tone = "info", count, pill = false }: Bad
   });
 
   // `vue/require-default-prop` asks for a default for each optional prop once props are
-  // destructured; a required prop nothing reads is left out.
-  it("keeps every optional prop in the pattern, read or not, and leaves out unread required ones", async () => {
+  // destructured, and the unused-variable rule ignores a local starting with `_`; a required
+  // prop nothing reads is left out.
+  it("keeps every optional prop in the pattern, an unread one under a `_` local, and leaves out unread required ones", async () => {
     const source = `
-export default function Note({ text, hint, size, flag }: { text: string; hint: string; size?: number; flag?: boolean }) {
+export default function Note({ text, hint, size = 2, flag }: { text: string; hint: string; size?: number; flag?: boolean; tone?: string }) {
   return <p>{text}</p>;
 }`;
     expect(await emitSource(source, false)).toContain(
-      "const { text, size = undefined, flag = undefined } = defineProps<{ text: string; hint: string; size?: number; flag?: boolean }>();",
+      "const { text, size: _size = 2, flag: _flag = undefined, tone: _tone = undefined } = defineProps<{ text: string; hint: string; size?: number; flag?: boolean; tone?: string }>();",
+    );
+  });
+
+  it("claims an unread prop's local around the source's names", async () => {
+    const source = `
+type _size = number;
+export default function Note({ text, size }: { text: string; size?: _size; Map?: string }) {
+  return <p>{text}</p>;
+}`;
+    expect(await emitSource(source, false)).toContain(
+      "const { text, size: _size_1 = undefined, Map: _Map = undefined } = defineProps<{ text: string; size?: _size; Map?: string }>();",
     );
   });
 
@@ -252,6 +264,19 @@ export default function Legend(withDefaults: { title?: string }) {
     );
   });
 
+  it("declares an object named with Vue's own prefixes as `props`", async () => {
+    const source = `
+export default function Byline(__props: { author: string }) {
+  return <p title={__props.author}>{__props.author}</p>;
+}`;
+    expect(await emitSource(source)).toBe(
+      sfc(
+        ["const props = defineProps<{ author: string }>();"],
+        ['<p :title="props.author">{{ props.author }}</p>'],
+      ),
+    );
+  });
+
   it("expands a shorthand property whose prop it renames", async () => {
     const source = `
 export default function Probe({ Set, label }: { Set: string; label: string }) {
@@ -314,8 +339,8 @@ export default function Status({ state, note }: { state: string; note?: string }
     expect(await emitSource(source)).toContain(
       [
         "<div>",
-        '    <p v-if="state === \'done\'">Done</p>',
-        '    <template v-else-if="state === \'busy\'">Busy <b>now</b></template>',
+        "    <p v-if=\"state === 'done'\">Done</p>",
+        "    <template v-else-if=\"state === 'busy'\">Busy <b>now</b></template>",
         "    <p v-else>{{ note }}</p>",
         '    <i v-if="note">{{ note }}</i>',
         "  </div>",
@@ -366,5 +391,29 @@ export default function Tile({ tone, gap, big, attrs }: { tone: string; gap?: st
         "  >Tile</p>",
       ].join("\n"),
     );
+  });
+
+  // Vue's compiler parses a static `style` again with `parseStringStyle`, which splits at a `;`
+  // inside a string, does not split before a value whose first parenthesis is `)`, and drops
+  // comments: such a declaration is bound, and a bound object's values are taken whole.
+  it("binds the static declarations Vue's style parser would misread", async () => {
+    const source = `
+export default function Quote({ tone }: { tone: string }) {
+  return (
+    <p style='font-family: "A;B", serif; margin: 0; content: ")" "("; padding: 1px/**/2px'>
+      <b style={{ quotes: '";" ";"', color: tone }}>Quote</b>
+    </p>
+  );
+}`;
+    const output = await emitSource(source);
+    expect(output).toContain(
+      [
+        "<p",
+        '    style="margin: 0"',
+        `    :style="{ fontFamily: '&quot;A;B&quot;, serif', content: '&quot;)&quot; &quot;(&quot;', padding: '1px/**/2px' }"`,
+        "  >",
+      ].join("\n"),
+    );
+    expect(output).toContain(`<b :style="{ quotes: '&quot;;&quot; &quot;;&quot;', color: tone }">`);
   });
 });

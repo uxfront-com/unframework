@@ -1,0 +1,8 @@
+error[UF1002]: A bound `value` on <meter> that may be null or undefined is not supported yet: Svelte sets the <meter>'s `value` property, which writes "0" once it is null or undefined, and Solid writes "0" for `null`, where the other targets leave the attribute out.
+ --> diagnostics/nullable-bound-value/Rating.uf.tsx:9:28
+  |
+9 |     <meter min="0" max="5" value={stars} aria-label="Rating">
+  |                            ^^^^^
+  |
+  = help: Render the element only where the value is there, as in `{value != null && <meter value={value}>…</meter>}`, or give it a fallback, as in `value={value ?? 0}`.
+  = see: https://unframework.dev/diagnostics/UF1002

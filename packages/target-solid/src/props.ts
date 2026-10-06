@@ -4,7 +4,7 @@
 // A destructured source reads every prop as `props.label`, and its defaults go through
 // `mergeProps`, which keeps the merged object reactive and applies a default when a prop is
 // absent or `undefined`, as JavaScript's destructuring does (`null` stays a value).
-import { js, referencedBindings } from "@unframework/codegen";
+import { js, parseExpression, referencedBindings } from "@unframework/codegen";
 import type { ImportSet, Placeholders, RewriteRules } from "@unframework/codegen";
 import { walk } from "@unframework/ir";
 import type { BindingId, Prop, UfComponent } from "@unframework/ir";
@@ -31,7 +31,8 @@ export interface SolidProps {
  * - the destructured form: `function Badge(props: BadgeProps)` with every prop read as
  *   `props.label`, or, when a prop the output reads has a default,
  *   `function Badge(rawProps: BadgeProps) { const props = mergeProps({ tone: "info" } satisfies
- *   Partial<BadgeProps>, rawProps); … }`.
+ *   Partial<BadgeProps>, rawProps); … }`; with a default that holds an object literal, the
+ *   defaults are a `const defaults: Required<Pick<BadgeProps, "attrs">> = { … };` of their own.
  *
  * Props the output never reads take no default (design §5: their defaults are dead code), and
  * a props object the output never reads is `_props`, the name oxlint's `no-unused-vars` leaves
@@ -60,8 +61,14 @@ export function solidProps(
     (prop) => prop.binding !== undefined && referenced.has(prop.binding),
   );
   if (read.length === 0) {
+    // An object form's name `_` and more says it is unused already: it stays the source's
+    // (oxlint still reports a bare `_`).
+    const name =
+      parameter.form === "object" && /^_./.test(parameter.name!)
+        ? parameter.name!
+        : imports.claim("_props");
     return {
-      parameters: [js.bindingIdentifier(imports.claim("_props"), type())],
+      parameters: [js.bindingIdentifier(name, type())],
       statements: [],
       rules: { binding: (reference, binding, written) => loopVariable(binding.id, written) },
     };
@@ -89,20 +96,52 @@ export function solidProps(
       binding.kind === "prop" ? `${props}.${binding.name}` : loopVariable(binding.id, written),
   };
   if (!raw) return { parameters: [js.bindingIdentifier(props, type())], statements: [], rules };
-  const merged = js.callExpression(js.identifier(imports.add("solid-js", "mergeProps")), [
-    js.satisfiesExpression(
-      js.objectExpression(
-        defaults.map((prop) => [prop.name, placeholders.expression(prop.default.code)]),
-      ),
-      js.typeReference("Partial", [type()]),
-    ),
-    js.identifier(raw),
-  ]);
+  const values = js.objectExpression(
+    defaults.map((prop) => [prop.name, placeholders.expression(prop.default.code)]),
+  );
+  const mergeProps = (first: Parameters<typeof js.callExpression>[1][number]) =>
+    js.callExpression(js.identifier(imports.add("solid-js", "mergeProps")), [
+      first,
+      js.identifier(raw),
+    ]);
+  if (!defaults.some((prop) => holdsContainer(parseExpression(prop.default.code)))) {
+    return {
+      parameters: [js.bindingIdentifier(raw, type())],
+      statements: [
+        js.variableDeclaration(
+          "const",
+          props,
+          mergeProps(js.satisfiesExpression(values, js.typeReference("Partial", [type()]))),
+        ),
+      ],
+      rules,
+    };
+  }
+  // `satisfies` keeps an object or array literal's own type, which lacks the optional members
+  // its value leaves out (`{ title: "t" }` for `Attrs`), or holds only the literals it lists
+  // (`["info"]` for `Tone[]`), and `mergeProps` types the prop by both: a read of one fails L4
+  // (`tones.includes(tone)`). Annotated, the defaults take the props' own types, checked as
+  // literals. A scalar's literal type is a member of its prop's, which `mergeProps` keeps.
+  const named = imports.claim("defaults");
+  const keys = defaults.map((prop) => JSON.stringify(prop.name)).join(" | ");
+  const annotation = placeholders.type(`Required<Pick<${parameter.type.code}, ${keys}>>`);
   return {
     parameters: [js.bindingIdentifier(raw, type())],
-    statements: [js.variableDeclaration("const", props, merged)],
+    statements: [
+      js.variableDeclaration("const", named, values, annotation),
+      js.variableDeclaration("const", props, mergeProps(js.identifier(named))),
+    ],
     rules,
   };
+}
+
+/** Whether a default is or holds an object or array literal (`{ title: "t" }`, `["info"]`). */
+function holdsContainer(node: unknown): boolean {
+  if (Array.isArray(node)) return node.some(holdsContainer);
+  if (typeof node !== "object" || node === null) return false;
+  const { type } = node as { type?: unknown };
+  if (type === "ObjectExpression" || type === "ArrayExpression") return true;
+  return Object.entries(node).some(([key, value]) => key !== "type" && holdsContainer(value));
 }
 
 /** The ids of the lists' index parameters, which Solid's `<For>` passes as accessors. */

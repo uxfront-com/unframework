@@ -2,8 +2,6 @@
 // through the toolchain's L3 (@vue/compiler-sfc), L4 (vue-tsc with strict templates) and L5
 // (oxlint and eslint-plugin-vue): each choice the emitter makes for a lint rule or a type check is
 // pinned here, beside the goldens the other toolchain tests check.
-import { join } from "node:path";
-
 import type { ToolchainContext } from "@unframework/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -17,7 +15,8 @@ const context: ToolchainContext = { toolchainDir, root: packageDir };
 /** Sources by the file their component is emitted to. */
 const SHAPES: Readonly<Record<string, string>> = {
   // Optional props nothing reads keep their default in the pattern (`vue/require-default-prop`),
-  // a required one nothing reads is left out, and an unread boolean gets one too.
+  // under a `_` local the unused-variable rule ignores; a required one nothing reads is left
+  // out, and an unread boolean gets one too.
   "Partial.vue": `
 export interface PartialProps {
   label: string;
@@ -86,15 +85,18 @@ export default function Defaults({ tags = ["a"], list = [1, 2], meta = { by: "x"
 export default function Inline({ label, on = false }: { label: string; on?: boolean }) {
   return <button type="button" disabled={on} aria-pressed={on}>{label}</button>;
 }`,
+  // Unread props whose `_` local is named like the parameters and helpers of Vue's compiled
+  // code, and like nothing vue-tsc declares (render.test.ts renders it).
+  "Internals.vue": `
+export default function Internals({ label, items, cache = 1, openBlock = false }: { label: string; items: string[]; ctx?: string; cache?: number; push?: string; parent?: string; attrs?: string; openBlock?: boolean; toDisplayString?: string; normalizeClass?: string; renderList?: string; mergeProps?: string; defineComponent?: string; ssrRenderAttrs?: string; ssrInterpolate?: string }) {
+  return <ul class={label}>{items.map((item) => <li key={item}>{item}</li>)}{label === "a" && <li>{label}</li>}</ul>;
+}`,
 };
 
 describe("vue output shapes (L3, L4, L5)", { timeout: 60_000 }, () => {
   it("compile, type-check and lint clean", async () => {
-    const emitted = Object.fromEntries(
-      await Promise.all(
-        Object.entries(SHAPES).map(async ([name, source]) => [name, await emitSource(source)]),
-      ),
-    ) as Record<string, string>;
+    const emitted: Record<string, string> = {};
+    for (const [name, source] of Object.entries(SHAPES)) emitted[name] = await emitSource(source);
     const paths = writeScratch(emitted);
     const files = Object.entries(paths).map(([name, path]) => ({ path, contents: emitted[name]! }));
     const [compiled, typed, linted] = await Promise.all([
@@ -127,6 +129,19 @@ describe("vue output shapes (L3, L4, L5)", { timeout: 60_000 }, () => {
     ]);
   });
 
+  // Why an unread prop takes a `_` local: under its own name, it is an unused variable.
+  it("would fail L5 with an unread optional prop under its own name", async () => {
+    const contents = (await emitSource(SHAPES["Partial.vue"]!)).replaceAll(/(\w+): _\1 =/g, "$1 =");
+    expect(contents).toContain("  tone = undefined,\n  size = 2,\n  quiet = undefined,\n");
+    const [path] = Object.values(writeScratch({ "Partial.vue": contents }));
+    const messages = (await toolchain.lint([path!], context)).get(path!) ?? [];
+    expect(messages.map(({ code, message }) => `${code}: ${message.split(".")[0]}`)).toEqual([
+      "@typescript-eslint/no-unused-vars: 'tone' is assigned a value but never used",
+      "@typescript-eslint/no-unused-vars: 'size' is assigned a value but never used",
+      "@typescript-eslint/no-unused-vars: 'quiet' is assigned a value but never used",
+    ]);
+  });
+
   // Why a prop named after a macro is declared under another local.
   it("would fail L4 with a local named after a macro", async () => {
     const contents = (await emitSource(SHAPES["Renamed.vue"]!))
@@ -139,6 +154,3 @@ describe("vue output shapes (L3, L4, L5)", { timeout: 60_000 }, () => {
     expect(codes).toContain("TS2451");
   });
 });
-
-/** The scratch files of this test live under the package, where `vue` resolves. */
-export const scratchRoot: string = join(packageDir, ".uf-tmp");
