@@ -15,7 +15,7 @@ import List from "../fixtures/List.uf.tsx";
 import styles from "../fixtures/Counter.css";
 
 function renderLabel() {
-  // JSX returned from a helper (plan §4.6). Caught by: compiler.
+  // JSX returned from a helper (plan §4.6). Caught by: compiler (UF3012).
   return <b>From a helper</b>;
 }
 
@@ -46,17 +46,17 @@ export function BlindSpots() {
       <input v-model={open.value && "x"} />
       {/* Open string unions upstream declares as `... | (string & {})`. Inherited by design. */}
       <input type="definitely-not-a-type" autocomplete="nonsense" />
-      {/* JSX outside the returned tree (plan §4.6). Caught by: compiler. */}
+      {/* JSX outside the returned tree (plan §4.6). Caught by: compiler (UF3012). */}
       {label}
       {renderLabel()}
-      {/* In-place mutation (ADR-0008). Caught by: compiler, with a fix. */}
+      {/* In-place mutation (ADR-0008). Caught by: compiler (UF2004), with a fix. */}
       <button type="button" onClick={() => list.value.push(1)}>
         Push
       </button>
       <button type="button" onClick={() => (form.value.name = "Ada")}>
         Rename
       </button>
-      {/* Non-deterministic rendering (plan §4.5). Caught by: compiler. */}
+      {/* Non-deterministic rendering (plan §4.5). Caught by: compiler (UF3019). */}
       <span>{Math.random()}</span>
     </div>
   );
@@ -126,7 +126,7 @@ export function ConditionalRoot({ show }: { show: boolean }) {
 }
 
 export function ConditionalReturn({ show }: { show: boolean }) {
-  // An early or conditional return (plan §4.6). Caught by: compiler.
+  // An early or conditional return (plan §4.6). Caught by: compiler (UF2012).
   if (!show) return null;
   return <div />;
 }
@@ -134,7 +134,7 @@ export function ConditionalReturn({ show }: { show: boolean }) {
 export function MisplacedReactiveApis({ show }: { show: boolean }) {
   const count = ref(0);
   // A lifecycle hook inside a condition, and a reactive API inside a nested function (plan §4.6).
-  // Caught by: compiler.
+  // Caught by: compiler (UF2005).
   if (show) onMounted(() => {});
   const later = () => computed(() => count.value * 2);
   return <output>{later().value}</output>;

@@ -3,8 +3,10 @@ import { join } from "node:path";
 
 import { afterAll, describe, expect, it } from "vitest";
 
+import { vueEventInterface } from "../src/listeners.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { goldenFiles, removeScratch, toolchainDir, writeScratch } from "./helpers.ts";
+import { M2_SHAPES } from "./lint-probes.ts";
 
 const context = { toolchainDir, root: toolchainDir };
 /** vue-tsc takes about a second; give it room on a loaded machine. */
@@ -60,6 +62,55 @@ describe("vue typecheck", () => {
       },
     ]);
   });
+
+  it(
+    "type-checks the shapes M2 emits (lint-probes.ts) under strictTemplates",
+    checker,
+    async () => {
+      const files = writeScratch(M2_SHAPES);
+      const results = await toolchain.typecheck(Object.values(files), context);
+      for (const [name, path] of Object.entries(files)) expect(results.get(path), name).toEqual([]);
+    },
+  );
+
+  // A handler the template cannot hold moves to the script, its event parameter typed with the
+  // interface Vue's element types give the event (`vueEventInterface`): `@vue/runtime-dom` types
+  // `error` as a plain `Event`, where lib.dom has `ErrorEvent`.
+  it(
+    "takes a handler typed as Vue types its event, and refuses lib.dom's where they differ",
+    checker,
+    async () => {
+      const handler = (type: string) =>
+        [
+          '<script setup lang="ts">',
+          "const failures: string[] = [];",
+          "",
+          `function onError(event: ${type}) {`,
+          "  failures.push(event.type);",
+          "}",
+          "</script>",
+          "",
+          "<template>",
+          '  <img src="/missing.png" alt="" @error="onError" />',
+          "</template>",
+          "",
+        ].join("\n");
+      const { "Vue.vue": vue, "Dom.vue": dom } = writeScratch({
+        "Vue.vue": handler(vueEventInterface("error")),
+        "Dom.vue": handler("ErrorEvent"),
+      });
+      const results = await toolchain.typecheck([vue!, dom!], context);
+      expect(results.get(vue!)).toEqual([]);
+      expect(results.get(dom!)).toEqual([
+        expect.objectContaining({
+          code: "TS2345",
+          message: expect.stringContaining(
+            "Type '(event: ErrorEvent) => void' is not assignable to type '(payload: Event) => void'.",
+          ),
+        }),
+      ]);
+    },
+  );
 
   it("reports an error in a file a checked file imports, under that file", checker, async () => {
     const { "Uses.vue": uses, "helper.ts": helper } = writeScratch({

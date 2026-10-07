@@ -1,0 +1,15 @@
+{
+  "description": "A keyed list in a ref, replaced whole: appended with a spread, filtered, reordered with toSpliced, and its empty state.",
+  "ssr": {
+    "initial": {
+      "props": {
+        "initial": [
+          { "id": "write", "label": "Write the report" },
+          { "id": "review", "label": "Review the pull request" },
+          { "id": "ship", "label": "Ship the release" }
+        ]
+      }
+    },
+    "empty": { "props": { "initial": [] } }
+  }
+}

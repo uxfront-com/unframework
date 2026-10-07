@@ -1,0 +1,3 @@
+- region "Auto-refresh":
+  - button "Auto-refresh"
+  - status: Paused

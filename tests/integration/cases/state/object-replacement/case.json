@@ -1,0 +1,8 @@
+{
+  "description": "An object ref replaced whole with a spread copy: a write of one field keeps the others.",
+  "ssr": {
+    "initial": {
+      "props": { "initial": { "name": "Ada Lovelace", "title": "Analyst", "available": false } }
+    }
+  }
+}

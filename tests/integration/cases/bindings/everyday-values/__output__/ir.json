@@ -79,6 +79,7 @@
           }
         }
       ],
+      "setup": [],
       "render": {
         "kind": "Element",
         "tag": "figure",

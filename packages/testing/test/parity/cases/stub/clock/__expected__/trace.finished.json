@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "tick 500ms",
+      "dom": [
+        "<p role=\"status\">",
+        "  \"0\"",
+        "</p>",
+        "<button type=\"button\" uf:focused=\"\">",
+        "  \"Start\"",
+        "</button>"
+      ],
+      "aria": [
+        "- status: \"0\"",
+        "- button \"Start\""
+      ],
+      "events": {
+        "changed": [
+          [
+            0,
+            1
+          ]
+        ]
+      }
+    }
+  ]
+}

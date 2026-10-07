@@ -1,4 +1,4 @@
-error[UF3020]: `lable` is not a prop, a list's item or index, or a global a template expression can read.
+error[UF3020]: `lable` is not a prop, a setup binding, a list's item or index, or a global a template expression can read.
  --> diagnostics/unresolved-reference/Greeting.uf.tsx:8:29
   |
 8 |   return <h2 title={label}>{lable}</h2>;

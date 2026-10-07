@@ -1,0 +1,6 @@
+{
+  "description": "A document listener added in onMounted and removed in onUnmounted: a click listener that reads the menu's template ref at each click (click outside).",
+  "ssr": {
+    "initial": {}
+  }
+}

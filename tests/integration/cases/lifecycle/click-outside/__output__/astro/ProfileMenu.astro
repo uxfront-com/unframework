@@ -1,0 +1,20 @@
+---
+const open = false as boolean;
+---
+
+<section class="profile-menu" aria-label="Profile">
+  <div class="menu">
+    <button type="button" aria-expanded={open}>Account</button>
+    {open ? (
+      <ul aria-label="Account actions">
+        <li>
+          <button type="button">Settings</button>
+        </li>
+        <li>
+          <button type="button">Sign out</button>
+        </li>
+      </ul>
+    ) : null}
+  </div>
+  <p>Outside the menu</p>
+</section>

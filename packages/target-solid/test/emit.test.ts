@@ -35,25 +35,39 @@ describe("solid target", () => {
       "bound-attribute",
       "class-binding",
       "conditional",
+      "conditional-event-control",
       "element",
+      "event-capture",
+      "event-once",
+      "event-passive",
+      "event-semantics",
       "fragment",
       "interactivity",
       "interpolation",
+      "late-prop",
       "list",
       "listbox",
+      "next-tick",
       "props",
       "static-attribute",
       "style-binding",
       "svg",
       "text",
+      "use-id",
     ]);
   });
 
-  it("emulates class bindings with the helper it prints, and the rest natively", () => {
+  it("emulates watchers, nextTick and class bindings with the helpers it prints, the rest natively", () => {
+    // Nothing is unsupported: the watchers' scheduler coalesces every shape of a synchronous run
+    // of client code (src/helpers.ts).
     const cells = Object.entries(target.capabilities).filter(
       ([, cell]) => cell.support !== "native",
     );
-    expect(cells).toEqual([["class-binding", expect.objectContaining({ helper: "cx" })]]);
+    expect(cells).toEqual([
+      ["interactivity", expect.objectContaining({ helper: "createWatcher" })],
+      ["next-tick", expect.objectContaining({ helper: "nextTick" })],
+      ["class-binding", expect.objectContaining({ helper: "cx" })],
+    ]);
   });
 
   it("emits basics/hello as its golden output", async () => {
@@ -113,7 +127,7 @@ describe("solid target", () => {
   });
 });
 
-describe("solid props (design §5.4)", () => {
+describe("solid props", () => {
   it("merges defaults into the props it never destructures, with the copied types above", async () => {
     const output = await emitSource(
       probe(
@@ -275,7 +289,7 @@ describe("solid props (design §5.4)", () => {
   });
 });
 
-describe("solid control flow (design §5.4)", () => {
+describe("solid control flow", () => {
   it("shows a branch under its condition with <Show>, by truthiness", async () => {
     const output = await emitSource(
       probe("count: number;", "{ count }", "<p>{count && <b>New</b>}</p>"),
@@ -401,12 +415,14 @@ describe("solid control flow (design §5.4)", () => {
 // TypeScript narrows what a condition tests inside its branch, in the source and in the targets
 // that write the branch inside the test (a ternary, `{#if}`, `@if`). `<Show>`'s and `<Match>`'s
 // children are no branch of their condition to it: a branch that reads a binding its tests
-// mention takes the values it reads from a keyed callback, as plain names (src/narrowing.ts).
-// test/output.test.ts type-checks these shapes, and test/rewrites.browser.test.ts updates them.
+// mention reads it through its callback's accessor, not keyed, so the branch keeps its DOM when
+// the value changes (ADR-0036 as M2 amends it); one whose expressions narrow it further takes the
+// values themselves, keyed (src/narrowing.ts). test/output.test.ts type-checks these shapes, and
+// test/rewrites.browser.test.ts updates them.
 describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
   const USER = "interface User {\n  name: string;\n  nick?: string;\n  age?: number;\n}\n\n";
 
-  it("gives a branch the value its one test holds, through a keyed callback", async () => {
+  it("gives a branch the value its one test holds, through the callback's accessor", async () => {
     const output = await emitSource(
       probe(
         "user?: User;\n  subtitle?: string;",
@@ -417,19 +433,89 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
     );
     expect(component(output)).toContain(
       [
-        "      <Show keyed when={props.user}>",
-        "        {(user) => <p>{user.name}</p>}",
-        "      </Show>",
-        "      <Show keyed when={props.user} fallback={<i>anon</i>}>",
-        "        {(user) => <b title={user.name}>{user.name}</b>}",
+        "      <Show when={props.user}>{(user) => <p>{user().name}</p>}</Show>",
+        "      <Show when={props.user} fallback={<i>anon</i>}>",
+        "        {(user) => <b title={user().name}>{user().name}</b>}",
         "      </Show>",
         // A negated test's else shows where its operand holds.
-        "      <Show keyed when={props.user} fallback={<i>anon</i>}>",
-        "        {(user) => <p>{user.name}</p>}",
+        "      <Show when={props.user} fallback={<i>anon</i>}>",
+        "        {(user) => <p>{user().name}</p>}",
         "      </Show>",
-        "      <Show keyed when={props.subtitle}>",
-        "        {(subtitle) => <p>{subtitle}</p>}",
+        "      <Show when={props.subtitle}>{(subtitle) => <p>{subtitle()}</p>}</Show>",
+      ].join("\n"),
+    );
+  });
+
+  it("reads a value plainly where no test can narrow it: a comparison, a type with no union", async () => {
+    const output = await emitSource(
+      probe(
+        "count: number;\n  tags: string[];\n  tone: Tone;\n  user: User;",
+        "{ count, tags, tone, user }",
+        '<div>{count > 2 ? <p>{count} items</p> : null}{tags.length === 0 ? <p>No tags</p> : <ul>{tags.map((tag) => <li key={tag}>{tag}</li>)}</ul>}{tags.length ? <p>{tags.length} tags</p> : null}{user.name === "Ada" ? <p>{user.name}</p> : null}{tone === "info" ? <p>{tone}</p> : null}</div>',
+        `type Tone = "info" | "warning";\n\n${USER}`,
+      ),
+    );
+    expect(component(output)).toContain(
+      [
+        // `>` narrows nothing; a number, an array and its `length`, and an interface's member
+        // typed `string` are no union: their tests narrow nothing either.
+        "      <Show when={props.count > 2}>",
+        "        <p>{props.count} items</p>",
         "      </Show>",
+        "      <Show",
+        "        when={props.tags.length === 0}",
+        "        fallback={",
+        "          <ul>",
+        "            <For each={props.tags}>{(tag) => <li>{tag}</li>}</For>",
+        "          </ul>",
+        "        }",
+        "      >",
+        "        <p>No tags</p>",
+        "      </Show>",
+        "      <Show when={props.tags.length}>",
+        "        <p>{props.tags.length} tags</p>",
+        "      </Show>",
+        '      <Show when={props.user.name === "Ada"}>',
+        "        <p>{props.user.name}</p>",
+        "      </Show>",
+        // A union of literals is narrowed by a comparison with one of them.
+        '      <Show when={props.tone === "info" ? { tone: props.tone } : undefined}>',
+        "        {(narrowed) => <p>{narrowed().tone}</p>}",
+        "      </Show>",
+      ].join("\n"),
+    );
+  });
+
+  it("reads state plainly where its type has no union, from its argument or initial value", async () => {
+    const output = await emitSource(
+      [
+        'import { computed, ref } from "unframework";',
+        "",
+        "export default function Probe() {",
+        "  const results = ref<string[]>([]);",
+        "  const total = computed(() => results.value.length);",
+        "  const user = ref<{ name: string } | null>(null);",
+        "  return (",
+        "    <div>",
+        "      {results.value.length > 0 ? <p>{results.value.join()}</p> : <p>None</p>}",
+        "      {total.value > 2 ? <p>{total.value} results</p> : null}",
+        "      {user.value ? <p>{user.value.name}</p> : null}",
+        "    </div>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(component(output)).toContain(
+      [
+        "      <Show when={results().length > 0} fallback={<p>None</p>}>",
+        "        <p>{results().join()}</p>",
+        "      </Show>",
+        "      <Show when={total() > 2}>",
+        "        <p>{total()} results</p>",
+        "      </Show>",
+        // A nullable state is narrowed by its truthiness.
+        "      <Show when={user()}>{(user) => <p>{user().name}</p>}</Show>",
       ].join("\n"),
     );
   });
@@ -458,19 +544,20 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
       ),
     );
     for (const form of [
-      "<Show keyed when={props.count !== undefined ? { count: props.count } : undefined}>",
-      "{({ count }) => <b>{count.toFixed(1)}</b>}",
-      "<Show keyed when={props.label && props.user ? { user: props.user } : undefined}>",
-      "when={props.user?.nick ? { user: props.user, nick: props.user?.nick } : undefined}",
-      "{({ user, nick }) => (",
-      "<Show keyed when={props.shape.kind === `circle` ? { shape: props.shape } : undefined}>",
-      "{({ shape }) => <circle r={shape.r} />}",
+      "<Show when={props.count !== undefined ? { count: props.count } : undefined}>",
+      "{(narrowed) => <b>{narrowed().count.toFixed(1)}</b>}",
+      "<Show when={props.label && props.user ? { user: props.user } : undefined}>",
+      "{(narrowed) => <p>{narrowed().user.name}</p>}",
+      "<Show when={props.user?.nick ? { user: props.user, nick: props.user?.nick } : undefined}>",
+      "{narrowed().user.name} {narrowed().nick.trim()}",
+      "<Show when={props.shape.kind === `circle` ? { shape: props.shape } : undefined}>",
+      "{(narrowed) => <circle r={narrowed().shape.r} />}",
     ]) {
       expect(component(output), form).toContain(form);
     }
   });
 
-  it("writes an else and a chain that need it as keyed <Match>es repeating the chain", async () => {
+  it("writes an else and a chain that need it as <Match>es repeating the chain", async () => {
     const output = await emitSource(
       probe(
         "value: string | number | null;\n  user?: User;\n  note?: string | null;",
@@ -482,11 +569,10 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
     expect(component(output)).toContain(
       [
         "      <Switch>",
-        '        <Match keyed when={typeof props.value === "string" ? { value: props.value } : undefined}>',
-        "          {({ value }) => <b>{value.trim()}</b>}",
+        '        <Match when={typeof props.value === "string" ? { value: props.value } : undefined}>',
+        "          {(narrowed) => <b>{narrowed().value.trim()}</b>}",
         "        </Match>",
         "        <Match",
-        "          keyed",
         "          when={",
         '            typeof props.value === "string"',
         "              ? undefined",
@@ -495,7 +581,7 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
         "                : undefined",
         "          }",
         "        >",
-        "          {({ value }) => <i>{value.toFixed()}</i>}",
+        "          {(narrowed) => <i>{narrowed().value.toFixed()}</i>}",
         "        </Match>",
         "      </Switch>",
       ].join("\n"),
@@ -503,18 +589,16 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
     expect(component(output)).toContain(
       [
         "      <Switch fallback={<i>none</i>}>",
-        "        <Match keyed when={props.user}>",
-        "          {(user) => <p>{user.name}</p>}",
-        "        </Match>",
-        "        <Match keyed when={props.user ? undefined : props.note ? { note: props.note } : undefined}>",
-        "          {({ note }) => <em>{note.trim()}</em>}",
+        "        <Match when={props.user}>{(user) => <p>{user().name}</p>}</Match>",
+        "        <Match when={props.user ? undefined : props.note ? { note: props.note } : undefined}>",
+        "          {(narrowed) => <em>{narrowed().note.trim()}</em>}",
         "        </Match>",
         "      </Switch>",
       ].join("\n"),
     );
   });
 
-  it("reads plain values inside the branch, nested conditionals and lists included", async () => {
+  it("keys a branch whose expressions narrow its value further, nested ones and lists included", async () => {
     const output = await emitSource(
       probe(
         "user?: User;\n  rows: (User | null)[];\n  on: boolean;",
@@ -524,12 +608,16 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
       ),
     );
     for (const form of [
+      // TypeScript narrows no call: `user().nick ? user().nick.trim()` would fail L4.
+      "<Show keyed when={props.user}>",
       '<p title={user.nick ? user.nick.trim() : "none"}>',
       '{user.age !== undefined ? user.age.toFixed() : "-"}',
       "<Show when={props.on}>\n              <b>{user.name}</b>",
-      "<Show keyed when={user.age !== undefined ? { age: user.age } : undefined}>",
-      // A list's variable taken whole keeps its own name: every read of it is the callback's.
-      "<Show keyed when={row}>\n                {(row) => <>{row.name}</>}",
+      "<Show when={user.age !== undefined ? { age: user.age } : undefined}>",
+      "{(narrowed) => <i>{narrowed().age.toFixed()}</i>}",
+      // A list's variable taken whole keeps its own name where no client code reads it: every
+      // render read of it is the accessor's.
+      "<Show when={row}>{(row) => <>{row().name}</>}</Show>",
     ]) {
       expect(component(output), form).toContain(form);
     }
@@ -547,22 +635,22 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
     );
     for (const form of [
       "? { title: props.box.inner.title }",
-      "{({ title }) => <p>{title}</p>}",
+      "{(narrowed) => <p>{narrowed().title}</p>}",
       "props.box.inner && props.box.inner.title.length > 3\n              ? undefined\n              : { inner: props.box.inner }",
-      '{({ inner }) => <p>{inner?.title ?? "anon"}</p>}',
-      '<Match keyed when={props.box.inner?.title === "t" ? { inner: props.box.inner } : undefined}>',
-      "{({ inner }) => <p>{inner.other}</p>}",
-      '<Match keyed when={props.box.inner?.title === "t" ? undefined : { inner: props.box.inner }}>',
-      "{({ inner }) => <i>{inner?.title}</i>}",
-      "<Match keyed when={!props.box.inner || props.on ? undefined : { inner: props.box.inner }}>",
-      "{({ inner }) => <b>{inner.title}</b>}",
+      '{(narrowed) => <p>{narrowed().inner?.title ?? "anon"}</p>}',
+      '<Match when={props.box.inner?.title === "t" ? { inner: props.box.inner } : undefined}>',
+      "{(narrowed) => <p>{narrowed().inner.other}</p>}",
+      '<Match when={props.box.inner?.title === "t" ? undefined : { inner: props.box.inner }}>',
+      "{(narrowed) => <i>{narrowed().inner?.title}</i>}",
+      "<Match when={!props.box.inner || props.on ? undefined : { inner: props.box.inner }}>",
+      "{(narrowed) => <b>{narrowed().inner.title}</b>}",
     ]) {
       expect(component(output), form).toContain(form);
     }
     expect(output).not.toContain("? undefined\n              : { title:");
   });
 
-  it("gives a list's callback and an arrow in the branch the plain value", async () => {
+  it("reads the accessor in a list's callback and an arrow in the branch", async () => {
     const output = await emitSource(
       probe(
         "user?: User;\n  items: string[];",
@@ -573,21 +661,21 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
     );
     expect(component(output)).toContain(
       [
-        "      <Show keyed when={props.user}>",
+        "      <Show when={props.user}>",
         "        {(user) => (",
         "          <ul>",
         "            <For each={props.items}>",
         "              {(i) => (",
         "                <li>",
-        "                  {user.name}: {i}",
+        "                  {user().name}: {i}",
         "                </li>",
         "              )}",
         "            </For>",
         "          </ul>",
         "        )}",
         "      </Show>",
-        "      <Show keyed when={props.user}>",
-        '        {(user) => <p>{props.items.map((i) => user.name + i).join(", ")}</p>}',
+        "      <Show when={props.user}>",
+        '        {(user) => <p>{props.items.map((i) => user().name + i).join(", ")}</p>}',
         "      </Show>",
       ].join("\n"),
     );
@@ -604,8 +692,10 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
         USER,
       ),
     );
-    expect(component(output)).toContain("{(user) => <>{user.name + props.label}</>}");
-    expect(component(output)).toContain("{({ count }) => <>{count.toFixed(1) + props.label}</>}");
+    expect(component(output)).toContain("{(user) => <>{user().name + props.label}</>}");
+    expect(component(output)).toContain(
+      "{(narrowed) => <>{narrowed().count.toFixed(1) + props.label}</>}",
+    );
   });
 
   it("writes `|| undefined` after a test that is the value, where a type has a falsy literal", async () => {
@@ -619,10 +709,10 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
       ),
     );
     for (const form of [
-      "<Show keyed when={props.limit || undefined}>",
-      "<Show keyed when={props.limit || undefined} fallback={<i>none</i>}>",
-      "<Show keyed when={row || undefined}>",
-      "<Show keyed when={props.user || undefined}>",
+      "<Show when={props.limit || undefined}>",
+      "<Show when={props.limit || undefined} fallback={<i>none</i>}>",
+      "<Show when={row || undefined}>",
+      "<Show when={props.user || undefined}>",
     ]) {
       expect(component(output), form).toContain(form);
     }
@@ -630,12 +720,12 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
     const plain = await emitSource(
       probe("limit?: number;", "{ limit }", "<div>{limit && <p>{limit.toFixed(1)}</p>}</div>"),
     );
-    expect(component(plain)).toContain("<Show keyed when={props.limit}>");
+    expect(component(plain)).toContain("<Show when={props.limit}>");
     // A `false` literal is falsy too.
     const flag = await emitSource(
       probe("user: User | false;", "{ user }", "<div>{user && <p>{user.name}</p>}</div>", USER),
     );
-    expect(component(flag)).toContain("<Show keyed when={props.user || undefined}>");
+    expect(component(flag)).toContain("<Show when={props.user || undefined}>");
   });
 
   it('reads a chain `typeof … !== "undefined"` tests to its end', async () => {
@@ -663,7 +753,7 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
       ),
     );
     expect(component(output)).toContain(
-      "<Show keyed when={box.note}>\n              {(note) => (\n                <b>\n                  {note}\n                  {name}",
+      "<Show when={narrowed().box.note}>\n              {(note) => (\n                <b>\n                  {note()}\n                  {narrowed().name}",
     );
   });
 
@@ -676,8 +766,9 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
         USER,
       ),
     );
-    expect(component(output)).toContain("<Show keyed when={props.user[`nick`]}>");
-    expect(component(output)).toContain("{(nick) => <p>{nick.trim()}</p>}");
+    expect(component(output)).toContain(
+      "<Show when={props.user[`nick`]}>{(nick) => <p>{nick().trim()}</p>}</Show>",
+    );
   });
 
   it("names a value apart from every name it could capture", async () => {
@@ -685,9 +776,9 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
     const object = await emitSource(
       `${USER}export default function Probe(user: { user?: User; title: string; data: { user?: User } }) {\n  return <div>{user.user && <p title={user.title}>{user.user.name}</p>}{user.data.user && <p>{user.data.user.name}{user.user && <i>{user.user.name}{user.data.user.name}</i>}</p>}</div>;\n}\n`,
     );
-    expect(component(object)).toContain("{(user_1) => <p title={user.title}>{user_1.name}</p>}");
+    expect(component(object)).toContain("{(user_1) => <p title={user.title}>{user_1().name}</p>}");
     expect(component(object)).toMatch(
-      /\{\(user_2\) => \([\s\S]*\{\(user_3\) => \([\s\S]*\{user_3\.name\}\s*\{user_2\.name\}/,
+      /\{\(user_2\) => \([\s\S]*\{\(user_3\) => \([\s\S]*\{user_3\(\)\.name\}\s*\{user_2\(\)\.name\}/,
     );
     // A list's variable the value is named after, read inside, and `class`, no parameter's name.
     const list = await emitSource(
@@ -698,8 +789,10 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
       ),
     );
     expect(component(list)).toContain("? { a, a_1: props.user.a } : undefined");
-    expect(component(list)).toContain("{({ a, a_1 }) => <i title={a}>{String(a_1.n)}</i>}");
-    expect(component(list)).toContain("{(value) => <b class={cx(value)}>x</b>}");
+    expect(component(list)).toContain(
+      "{(narrowed) => <i title={narrowed().a}>{String(narrowed().a_1.n)}</i>}",
+    );
+    expect(component(list)).toContain("{(value) => <b class={cx(value())}>x</b>}");
   });
 
   it("takes a method's object, which keeps the method's `this`", async () => {
@@ -707,9 +800,9 @@ describe("solid narrowing (TypeScript narrows what a condition tests)", () => {
       probe("label: string;", "{ label }", "<div>{label.trim && <p>{label.trim()}</p>}</div>"),
     );
     expect(component(output)).toContain(
-      "<Show keyed when={props.label.trim ? { label: props.label } : undefined}>",
+      "<Show when={props.label.trim ? { label: props.label } : undefined}>",
     );
-    expect(component(output)).toContain("{({ label }) => <p>{label.trim()}</p>}");
+    expect(component(output)).toContain("{(narrowed) => <p>{narrowed().label.trim()}</p>}");
   });
 });
 
@@ -734,7 +827,7 @@ describe("solid output for its server compiler", () => {
   });
 });
 
-describe("solid attributes (design §5.4)", () => {
+describe("solid attributes", () => {
   it("toggles names with classList beside the static ones, as booleans", async () => {
     const output = await emitSource(
       probe(

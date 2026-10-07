@@ -1,0 +1,9 @@
+error[UF2022]: `focusField` is passed to `onMounted` by name: the targets write the callback into their own effect or hook (Angular's method, Qwik's task), which takes it written in place.
+  --> diagnostics/function-value/SearchField.uf.tsx:12:13
+   |
+12 |   onMounted(focusField);
+   |             ^^^^^^^^^^
+   |
+   = help: Write the callback in place: `onMounted(() => { … })`.
+   = fix (safe): Wrap `focusField` in an arrow function
+   = see: https://unframework.dev/diagnostics/UF2022

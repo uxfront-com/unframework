@@ -1,6 +1,6 @@
 # ADR-0041: Script blocks and Astro frontmatter are formatted as TypeScript on their own
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0051
 - **Date:** 2026-10-05
 - **Plan:** §5.8, §6 (signature props), §7.2 (L2), §9 M1; G2, P8; R14; amends ADR-0026
 

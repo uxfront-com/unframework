@@ -1,0 +1,6 @@
+{
+  "description": "A late optional prop: absent at mount, added by a rerender and removed again, read by a computed, a watcher and the template.",
+  "ssr": {
+    "first-page": { "props": { "total": 5 } }
+  }
+}

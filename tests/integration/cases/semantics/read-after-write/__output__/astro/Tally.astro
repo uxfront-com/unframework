@@ -1,0 +1,14 @@
+---
+const count = 0 as number;
+const trail = [] as string[];
+---
+
+<section class="tally" aria-label="Tally">
+  <p role="status">Count: {count}</p>
+  <button type="button">Add two</button>
+  <button type="button">Add five</button>
+  <button type="button">Count up three</button>
+  <button type="button">Add ten</button>
+  <button type="button">Log the phases</button>
+  <p>Phases: {trail.join(" then ")}</p>
+</section>

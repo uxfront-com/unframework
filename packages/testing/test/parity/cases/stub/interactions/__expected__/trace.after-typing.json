@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "focus getByLabel('Name')",
+      "dom": [
+        "<p role=\"status\">",
+        "  \"0\"",
+        "</p>",
+        "<button type=\"button\">",
+        "  \"Add one\"",
+        "</button>",
+        "<label>",
+        "  \"Name \"",
+        "  <input type=\"text\" uf:focused=\"\" uf:value=\"\">",
+        "</label>"
+      ],
+      "aria": [
+        "- status: \"0\"",
+        "- button \"Add one\"",
+        "- text: Name",
+        "- textbox \"Name\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "fill getByLabel('Name') \"Ada\"",
+      "dom": [
+        "<p role=\"status\">",
+        "  \"0\"",
+        "</p>",
+        "<button type=\"button\">",
+        "  \"Add one\"",
+        "</button>",
+        "<label>",
+        "  \"Name \"",
+        "  <input type=\"text\" uf:focused=\"\" uf:value=\"Ada\">",
+        "</label>"
+      ],
+      "aria": [
+        "- status: \"0\"",
+        "- button \"Add one\"",
+        "- text: Name",
+        "- textbox \"Name\": Ada"
+      ],
+      "events": {
+        "named": [
+          [
+            {
+              "name": "Ada"
+            }
+          ]
+        ]
+      }
+    }
+  ]
+}

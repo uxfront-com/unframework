@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"start\":5}",
+      "dom": [
+        "<p role=\"status\">",
+        "  \"5\"",
+        "</p>",
+        "<button type=\"button\">",
+        "  \"Add one\"",
+        "</button>",
+        "<label>",
+        "  \"Name \"",
+        "  <input type=\"text\" uf:value=\"\">",
+        "</label>"
+      ],
+      "aria": [
+        "- status: \"5\"",
+        "- button \"Add one\"",
+        "- text: Name",
+        "- textbox \"Name\""
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+---
+const tags = [] as string[];
+const helpOpen = false as boolean;
+---
+
+<form class="tag-form" aria-label="Tags">
+  <label>New tag<input name="tag" /></label>
+  <button type="submit">Add tag</button>
+  <a href="/help/tags">How tags work</a>
+  {helpOpen ? (
+    <p>A tag is one word: commas are not allowed.</p>
+  ) : null}
+  <ul aria-label="Added tags">
+    {tags.map((tag) => (
+      <li>{tag}</li>
+    ))}
+  </ul>
+</form>

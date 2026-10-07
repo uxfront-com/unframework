@@ -1,0 +1,932 @@
+{
+  "irVersion": 1,
+  "file": "semantics/nested-branches/AccountMenu.uf.tsx",
+  "components": [
+    {
+      "name": "AccountMenu",
+      "span": {
+        "start": 140,
+        "end": 1345
+      },
+      "props": [
+        {
+          "name": "owner",
+          "optional": true,
+          "type": {
+            "code": "User",
+            "span": {
+              "start": 131,
+              "end": 135
+            }
+          },
+          "binding": "owner@178",
+          "span": {
+            "start": 123,
+            "end": 136
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "AccountMenuProps",
+          "span": {
+            "start": 187,
+            "end": 203
+          }
+        },
+        "span": {
+          "start": 176,
+          "end": 203
+        }
+      },
+      "types": [
+        "User",
+        "AccountMenuProps"
+      ],
+      "emits": {
+        "binding": "emit@215",
+        "type": {
+          "code": "{ greeted: [name: string] }",
+          "span": {
+            "start": 234,
+            "end": 261
+          }
+        },
+        "events": [
+          {
+            "name": "greeted",
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 252,
+                    "end": 258
+                  }
+                },
+                "span": {
+                  "start": 246,
+                  "end": 258
+                }
+              }
+            ],
+            "span": {
+              "start": 236,
+              "end": 259
+            }
+          }
+        ],
+        "span": {
+          "start": 209,
+          "end": 265
+        }
+      },
+      "bindings": [
+        {
+          "id": "owner@178",
+          "name": "owner",
+          "kind": "prop",
+          "span": {
+            "start": 178,
+            "end": 183
+          }
+        },
+        {
+          "id": "emit@215",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 215,
+            "end": 219
+          }
+        },
+        {
+          "id": "step@275",
+          "name": "step",
+          "kind": "state",
+          "span": {
+            "start": 275,
+            "end": 279
+          }
+        },
+        {
+          "id": "user@304",
+          "name": "user",
+          "kind": "state",
+          "span": {
+            "start": 304,
+            "end": 308
+          }
+        },
+        {
+          "id": "start@347",
+          "name": "start",
+          "kind": "localFn",
+          "span": {
+            "start": 347,
+            "end": 352
+          }
+        },
+        {
+          "id": "signIn@401",
+          "name": "signIn",
+          "kind": "localFn",
+          "span": {
+            "start": 401,
+            "end": 407
+          }
+        },
+        {
+          "id": "signOut@462",
+          "name": "signOut",
+          "kind": "localFn",
+          "span": {
+            "start": 462,
+            "end": 469
+          }
+        },
+        {
+          "id": "greet@513",
+          "name": "greet",
+          "kind": "localFn",
+          "span": {
+            "start": 513,
+            "end": 518
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "step@275",
+          "initial": {
+            "code": "\"intro\"",
+            "span": {
+              "start": 286,
+              "end": 293
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 269,
+            "end": 295
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "user@304",
+          "type": {
+            "code": "User | null",
+            "span": {
+              "start": 315,
+              "end": 326
+            }
+          },
+          "initial": {
+            "code": "null",
+            "span": {
+              "start": 328,
+              "end": 332
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 298,
+            "end": 334
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "start@347",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    step.value = \"account\";\n  }",
+              "span": {
+                "start": 355,
+                "end": 388
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "step@275",
+                  "operator": "=",
+                  "span": {
+                    "start": 361,
+                    "end": 383
+                  },
+                  "target": {
+                    "start": 361,
+                    "end": 371
+                  },
+                  "value": {
+                    "start": 374,
+                    "end": 383
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 352,
+              "end": 388
+            }
+          },
+          "span": {
+            "start": 338,
+            "end": 388
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "signIn@401",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    user.value = { name: \"Ada\" };\n  }",
+              "span": {
+                "start": 410,
+                "end": 449
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "user@304",
+                  "operator": "=",
+                  "span": {
+                    "start": 416,
+                    "end": 444
+                  },
+                  "target": {
+                    "start": 416,
+                    "end": 426
+                  },
+                  "value": {
+                    "start": 429,
+                    "end": 444
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 407,
+              "end": 449
+            }
+          },
+          "span": {
+            "start": 392,
+            "end": 449
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "signOut@462",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    user.value = null;\n  }",
+              "span": {
+                "start": 472,
+                "end": 500
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "user@304",
+                  "operator": "=",
+                  "span": {
+                    "start": 478,
+                    "end": 495
+                  },
+                  "target": {
+                    "start": 478,
+                    "end": 488
+                  },
+                  "value": {
+                    "start": 491,
+                    "end": 495
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 469,
+              "end": 500
+            }
+          },
+          "span": {
+            "start": 453,
+            "end": 500
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "greet@513",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 525,
+                    "end": 531
+                  }
+                },
+                "span": {
+                  "start": 519,
+                  "end": 531
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"greeted\", name);\n  }",
+              "span": {
+                "start": 533,
+                "end": 565
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@215",
+                  "event": "greeted",
+                  "span": {
+                    "start": 539,
+                    "end": 560
+                  },
+                  "arguments": [
+                    {
+                      "start": 555,
+                      "end": 559
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 518,
+              "end": 565
+            }
+          },
+          "span": {
+            "start": 504,
+            "end": 565
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "account-menu",
+            "span": {
+              "start": 591,
+              "end": 611
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Account",
+            "span": {
+              "start": 612,
+              "end": 632
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "step.value === \"intro\"",
+                  "span": {
+                    "start": 641,
+                    "end": 663
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "step@275",
+                      "span": {
+                        "start": 641,
+                        "end": 651
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "button",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "type",
+                        "value": "button",
+                        "span": {
+                          "start": 684,
+                          "end": 697
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "click",
+                        "handler": {
+                          "kind": "Function",
+                          "binding": "start@347",
+                          "span": {
+                            "start": 707,
+                            "end": 712
+                          }
+                        },
+                        "span": {
+                          "start": 698,
+                          "end": 713
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Start",
+                        "span": {
+                          "start": 714,
+                          "end": 739
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 676,
+                      "end": 748
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 641,
+                  "end": 748
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "If",
+                    "branches": [
+                      {
+                        "condition": {
+                          "code": "user.value === null",
+                          "span": {
+                            "start": 783,
+                            "end": 802
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "user@304",
+                              "span": {
+                                "start": 783,
+                                "end": 793
+                              }
+                            }
+                          ]
+                        },
+                        "children": [
+                          {
+                            "kind": "Element",
+                            "tag": "button",
+                            "attributes": [
+                              {
+                                "kind": "Static",
+                                "name": "type",
+                                "value": "button",
+                                "span": {
+                                  "start": 827,
+                                  "end": 840
+                                }
+                              },
+                              {
+                                "kind": "Event",
+                                "event": "click",
+                                "handler": {
+                                  "kind": "Function",
+                                  "binding": "signIn@401",
+                                  "span": {
+                                    "start": 850,
+                                    "end": 856
+                                  }
+                                },
+                                "span": {
+                                  "start": 841,
+                                  "end": 857
+                                }
+                              }
+                            ],
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "Sign in",
+                                "span": {
+                                  "start": 858,
+                                  "end": 893
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 819,
+                              "end": 902
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 783,
+                          "end": 902
+                        }
+                      },
+                      {
+                        "children": [
+                          {
+                            "kind": "Element",
+                            "tag": "button",
+                            "attributes": [
+                              {
+                                "kind": "Static",
+                                "name": "type",
+                                "value": "button",
+                                "span": {
+                                  "start": 939,
+                                  "end": 952
+                                }
+                              },
+                              {
+                                "kind": "Event",
+                                "event": "click",
+                                "handler": {
+                                  "kind": "Function",
+                                  "binding": "signOut@462",
+                                  "span": {
+                                    "start": 962,
+                                    "end": 969
+                                  }
+                                },
+                                "span": {
+                                  "start": 953,
+                                  "end": 970
+                                }
+                              }
+                            ],
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "Sign out",
+                                "span": {
+                                  "start": 971,
+                                  "end": 1007
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 931,
+                              "end": 1016
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 931,
+                          "end": 1016
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 783,
+                      "end": 1028
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 769,
+                  "end": 1041
+                }
+              }
+            ],
+            "span": {
+              "start": 641,
+              "end": 1049
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "user.value !== null",
+                  "span": {
+                    "start": 1058,
+                    "end": 1077
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "user@304",
+                      "span": {
+                        "start": 1058,
+                        "end": 1068
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Signed in as ",
+                        "span": {
+                          "start": 1083,
+                          "end": 1096
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "user.value.name",
+                          "span": {
+                            "start": 1097,
+                            "end": 1112
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "user@304",
+                              "span": {
+                                "start": 1097,
+                                "end": 1107
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1096,
+                          "end": 1113
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1080,
+                      "end": 1117
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1058,
+                  "end": 1117
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Nobody signed in",
+                        "span": {
+                          "start": 1123,
+                          "end": 1139
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1120,
+                      "end": 1143
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1120,
+                  "end": 1143
+                }
+              }
+            ],
+            "span": {
+              "start": 1058,
+              "end": 1143
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "owner",
+                  "span": {
+                    "start": 1152,
+                    "end": 1157
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "owner@178",
+                      "span": {
+                        "start": 1152,
+                        "end": 1157
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "button",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "type",
+                        "value": "button",
+                        "span": {
+                          "start": 1178,
+                          "end": 1191
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "click",
+                        "handler": {
+                          "kind": "Inline",
+                          "function": {
+                            "parameters": [],
+                            "body": {
+                              "code": "greet(owner.name)",
+                              "span": {
+                                "start": 1207,
+                                "end": 1224
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Binding",
+                                  "binding": "greet@513",
+                                  "span": {
+                                    "start": 1207,
+                                    "end": 1212
+                                  },
+                                  "call": true
+                                },
+                                {
+                                  "kind": "Binding",
+                                  "binding": "owner@178",
+                                  "span": {
+                                    "start": 1213,
+                                    "end": 1218
+                                  },
+                                  "narrowed": [
+                                    {
+                                      "span": {
+                                        "start": 1213,
+                                        "end": 1218
+                                      },
+                                      "scope": "template"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "expression": true,
+                            "span": {
+                              "start": 1201,
+                              "end": 1224
+                            }
+                          },
+                          "span": {
+                            "start": 1201,
+                            "end": 1224
+                          }
+                        },
+                        "span": {
+                          "start": 1192,
+                          "end": 1225
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "`Greet ${owner.name}`",
+                          "span": {
+                            "start": 1238,
+                            "end": 1259
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "owner@178",
+                              "span": {
+                                "start": 1247,
+                                "end": 1252
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 1237,
+                          "end": 1260
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1170,
+                      "end": 1278
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1152,
+                  "end": 1278
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "No owner",
+                        "span": {
+                          "start": 1302,
+                          "end": 1310
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1299,
+                      "end": 1314
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1299,
+                  "end": 1314
+                }
+              }
+            ],
+            "span": {
+              "start": 1152,
+              "end": 1322
+            }
+          }
+        ],
+        "span": {
+          "start": 582,
+          "end": 1338
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "AccountMenu",
+      "span": {
+        "start": 140,
+        "end": 1345
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "User",
+      "exported": false,
+      "code": "interface User {\n  name: string;\n}",
+      "span": {
+        "start": 49,
+        "end": 83
+      }
+    },
+    {
+      "name": "AccountMenuProps",
+      "exported": true,
+      "code": "interface AccountMenuProps {\n  owner?: User;\n}",
+      "span": {
+        "start": 92,
+        "end": 138
+      }
+    }
+  ]
+}

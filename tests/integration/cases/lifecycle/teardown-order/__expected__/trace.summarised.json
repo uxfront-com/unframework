@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "fill getByRole('textbox', { name: 'Query' }) \"vue\"",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-session\">",
+        "  <label>",
+        "    \"Query\"",
+        "    <input name=\"query\" uf:focused=\"\" uf:value=\"vue\">",
+        "  </label>",
+        "  <ul aria-label=\"Results\">",
+        "    <li>",
+        "      \"vue\"",
+        "    </li>",
+        "    <li>",
+        "      \"vue docs\"",
+        "    </li>",
+        "  </ul>",
+        "  <button type=\"button\">",
+        "    \"Clear results\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - text: Query",
+        "  - textbox \"Query\": vue",
+        "  - list \"Results\":",
+        "    - listitem: vue",
+        "    - listitem: vue docs",
+        "  - button \"Clear results\""
+      ],
+      "events": {
+        "effectCleaned": [
+          [
+            ""
+          ]
+        ],
+        "searched": [
+          [
+            "vue",
+            2
+          ]
+        ],
+        "summary": [
+          [
+            "0 results for \"\""
+          ],
+          [
+            "2 results for \"vue\""
+          ]
+        ],
+        "watchCleaned": [
+          [
+            ""
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Clear results' })",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-session\">",
+        "  <label>",
+        "    \"Query\"",
+        "    <input name=\"query\" uf:value=\"vue\">",
+        "  </label>",
+        "  <ul aria-label=\"Results\"></ul>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Clear results\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - text: Query",
+        "  - textbox \"Query\": vue",
+        "  - list \"Results\"",
+        "  - button \"Clear results\""
+      ],
+      "events": {
+        "summary": [
+          [
+            "0 results for \"vue\""
+          ]
+        ]
+      }
+    },
+    {
+      "action": "fill getByRole('textbox', { name: 'Query' }) \"vite\"",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-session\">",
+        "  <label>",
+        "    \"Query\"",
+        "    <input name=\"query\" uf:focused=\"\" uf:value=\"vite\">",
+        "  </label>",
+        "  <ul aria-label=\"Results\">",
+        "    <li>",
+        "      \"vite\"",
+        "    </li>",
+        "    <li>",
+        "      \"vite docs\"",
+        "    </li>",
+        "  </ul>",
+        "  <button type=\"button\">",
+        "    \"Clear results\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - text: Query",
+        "  - textbox \"Query\": vite",
+        "  - list \"Results\":",
+        "    - listitem: vite",
+        "    - listitem: vite docs",
+        "  - button \"Clear results\""
+      ],
+      "events": {
+        "effectCleaned": [
+          [
+            "vue"
+          ]
+        ],
+        "searchCleaned": [
+          [
+            "vue"
+          ]
+        ],
+        "searched": [
+          [
+            "vite",
+            2
+          ]
+        ],
+        "summary": [
+          [
+            "2 results for \"vite\""
+          ]
+        ],
+        "watchCleaned": [
+          [
+            "vue"
+          ]
+        ]
+      }
+    }
+  ]
+}

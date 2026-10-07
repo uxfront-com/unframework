@@ -24,12 +24,18 @@ export const toolchain: Toolchain = {
       // as missing).
       plugins: svelte({ configFile: false }),
       resolve: { dedupe: ["svelte"] },
-      // The dependency scanner never sees compiled output: list the runtime entries it imports,
-      // or the first run discovers them late and reloads mid-test.
+      // The dependency scanner never sees compiled output: list the runtime entries it imports
+      // (`svelte/events` for the listeners written as attachments), or the first run discovers
+      // them late and reloads mid-test.
       ...(mode === "browser"
         ? {
             optimizeDeps: {
-              include: ["svelte", "svelte/internal/client", "svelte/internal/disclose-version"],
+              include: [
+                "svelte",
+                "svelte/events",
+                "svelte/internal/client",
+                "svelte/internal/disclose-version",
+              ],
             },
           }
         : {}),

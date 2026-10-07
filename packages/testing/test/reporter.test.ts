@@ -15,7 +15,7 @@ import type { HarnessContext } from "../src/harness.ts";
 import type { QuarantineEntry, UfLayerMeta } from "../src/layers.ts";
 import { buildPartialMatrix, MATRIX_VERSION, stringifyMatrix } from "../src/node/matrix.ts";
 import type { PartialMatrix } from "../src/node/matrix.ts";
-import { ParityReporter, runName } from "../src/node/reporter.ts";
+import { ParityReporter, runName, testKey } from "../src/node/reporter.ts";
 
 let root: string;
 let reportsDir: string;
@@ -320,6 +320,66 @@ describe("ParityReporter", () => {
     expect(errors.join("\n")).not.toContain("> types");
   });
 
+  it("names each test's record after the test, without the target describeTargets adds", () => {
+    const reporter = new ParityReporter({ reportsDir });
+    reporter.onInit(vitest(["browser:vue", "browser:astro"]));
+    const skip = { status: "skip", reason: "requires interactivity: inert" } as const;
+    reporter.onTestRunEnd(
+      [
+        testModule("browser:vue", [
+          test(
+            "browser:vue",
+            { ...hello("vue", { L7: { status: "pass" } }), scenarios: ["after-click", "initial"] },
+            "passed",
+            "basics/hello [vue] > clicks",
+          ),
+        ]),
+        testModule("browser:astro", [
+          test(
+            "browser:astro",
+            { ...hello("astro", { L7: skip, L8: skip }), skipped: skip.reason },
+            "skipped",
+            "basics/hello [astro] > clicks",
+          ),
+        ]),
+      ],
+      [],
+      "passed",
+    );
+    expect(reporter.matrix?.tests).toEqual({
+      "basics/hello": {
+        astro: { "basics/hello > clicks": { scenarios: [], skipped: skip.reason } },
+        vue: { "basics/hello > clicks": { scenarios: ["after-click", "initial"] } },
+      },
+    });
+    expect(reporter.matrix?.testsByProject["browser:astro"]).toEqual({
+      "basics/hello": {
+        astro: { "basics/hello > clicks": { scenarios: [], skipped: skip.reason } },
+      },
+    });
+    expect(process.exitCode).toBe(exitCode);
+  });
+
+  it("fails the run when two tests of a case share a name", () => {
+    const reporter = new ParityReporter({ reportsDir });
+    reporter.onInit(vitest(["browser:vue"]));
+    const record = { ...hello("vue", { L7: { status: "pass" } }), scenarios: ["initial"] };
+    reporter.onTestRunEnd(
+      [
+        testModule("browser:vue", [
+          test("browser:vue", record, "passed", "basics/hello [vue] > renders"),
+          test("browser:vue", record, "passed", "basics/hello [vue] > renders"),
+        ]),
+      ],
+      [],
+      "passed",
+    );
+    expect(process.exitCode).toBe(1);
+    expect(errors.join("\n")).toContain(
+      'browser:vue: two tests of basics/hello are named "basics/hello > renders"',
+    );
+  });
+
   it("supersedes, project by project, the records of earlier runs of the projects it ran", () => {
     mkdirSync(reportsDir, { recursive: true });
     const earlier = (run: string, projects: string[]) =>
@@ -474,5 +534,21 @@ describe("runName", () => {
     const name = runName(projects);
     expect(name.length).toBeLessThanOrEqual(80);
     expect(runName([...projects].reverse())).toBe(name);
+  });
+});
+
+describe("testKey", () => {
+  it("takes the target out of the suite's name, wherever the suite nests", () => {
+    expect(testKey("state/counter [vue] > increments", "vue")).toBe("state/counter > increments");
+    expect(testKey("state/counter [vue] > a group > increments", "vue")).toBe(
+      "state/counter > a group > increments",
+    );
+    expect(testKey("compile > basics/hello > basics/hello › vue", "vue")).toBe(
+      "compile > basics/hello > basics/hello › vue",
+    );
+    // Only the suite's suffix: a test named after a target keeps its name.
+    expect(testKey("state/counter [react] > renders [react] too", "react")).toBe(
+      "state/counter > renders [react] too",
+    );
   });
 });

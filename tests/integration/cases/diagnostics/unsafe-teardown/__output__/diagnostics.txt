@@ -1,0 +1,8 @@
+error[UF2026]: An `onUnmounted` callback reads the template ref `grid`: Vue empties a template ref before `onUnmounted` runs and React before an effect's cleanup, while Svelte, Angular and Qwik still hold the element.
+  --> diagnostics/unsafe-teardown/PhotoGrid.uf.tsx:11:20
+   |
+11 |     emit("closed", grid.value?.childElementCount ?? 0);
+   |                    ^^^^^^^^^^
+   |
+   = help: Read the element in the callback that sets up the work (`onMounted`, the watcher's callback), and keep it in a local or a setup `let` for the teardown.
+   = see: https://unframework.dev/diagnostics/UF2026

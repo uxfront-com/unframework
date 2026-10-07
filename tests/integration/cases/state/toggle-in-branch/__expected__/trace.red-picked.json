@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Red' })",
+      "dom": [
+        "<section aria-label=\"Filters\" class=\"filter-panel\">",
+        "  <button aria-expanded=\"true\" type=\"button\">",
+        "    \"Hide colours\"",
+        "  </button>",
+        "  <div class=\"colours\">",
+        "    <button type=\"button\" uf:focused=\"\">",
+        "      \"Red\"",
+        "    </button>",
+        "    <button type=\"button\">",
+        "      \"Blue\"",
+        "    </button>",
+        "    <button type=\"button\">",
+        "      \"Reset\"",
+        "    </button>",
+        "  </div>",
+        "  <div class=\"selection\">",
+        "    <p>",
+        "      \"Colour: Red\"",
+        "    </p>",
+        "    <button type=\"button\">",
+        "      \"Clear Red\"",
+        "    </button>",
+        "  </div>",
+        "  <button type=\"button\">",
+        "    \"Add a note\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Filters\":",
+        "  - button \"Hide colours\" [expanded]",
+        "  - button \"Red\"",
+        "  - button \"Blue\"",
+        "  - button \"Reset\"",
+        "  - paragraph: \"Colour: Red\"",
+        "  - button \"Clear Red\"",
+        "  - button \"Add a note\""
+      ],
+      "events": {}
+    }
+  ]
+}

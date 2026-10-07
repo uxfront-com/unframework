@@ -2,8 +2,10 @@
 // case needs, so every rule of ADR-0028's bar is proven on its own; then against the
 // workspace's real oxlint, so the flags and the report's shape are oxlint's own.
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -271,8 +273,9 @@ describe("lintWithOxlint", () => {
 });
 
 /**
- * A toolchain directory with a stand-in ESLint 10, whose API records how it was used and
- * answers what `behaviour` says: `results`, by default a clean result for each file.
+ * A toolchain directory with a stand-in ESLint 10, whose API records how it was used (and the
+ * tsconfig a typed run gave the parser, as it read it) and answers what `behaviour` says:
+ * `results`, by default a clean result for each file.
  */
 function eslintToolchain(
   behaviour: { results?: unknown; throw?: string; stderr?: string },
@@ -295,6 +298,7 @@ function eslintToolchain(
       "    this.options = options;",
       "  }",
       "  async lintFiles(files) {",
+      "    const project = this.options.overrideConfig.languageOptions?.parserOptions?.project;",
       '    writeFileSync(join(root, "invocation.json"), JSON.stringify({',
       "      options: this.options,",
       "      files,",
@@ -303,6 +307,7 @@ function eslintToolchain(
       "        NODE_OPTIONS: process.env.NODE_OPTIONS ?? null,",
       "        NODE_PATH: process.env.NODE_PATH ?? null,",
       "      },",
+      '      ...(project ? { tsconfig: JSON.parse(readFileSync(project, "utf8")) } : {}),',
       "    }));",
       '    const behaviour = JSON.parse(readFileSync(join(root, "behaviour.json"), "utf8"));',
       "    if (behaviour.throw) throw new Error(behaviour.throw);",
@@ -399,6 +404,38 @@ describe("lintWithEslint", () => {
     });
   });
 
+  it("types the files for type-aware rules through a temporary tsconfig", async () => {
+    const toolchainDir = eslintToolchain({});
+    const base = join(writeTree(temporaryDir(), { "tsconfig.json": "{}\n" }), "tsconfig.json");
+    const context = { toolchainDir, root: toolchainDir };
+    const results = await lintWithEslint(Object.values(files), context, { tsconfig: base });
+    expect(Object.fromEntries(results)).toEqual({ [files.a]: [], [files.b]: [], [files.c]: [] });
+    const { options, tsconfig } = invocation(toolchainDir) as unknown as {
+      options: { overrideConfig: { languageOptions: { parserOptions: { project: string } } } };
+      tsconfig: unknown;
+    };
+    const { project } = options.overrideConfig.languageOptions.parserOptions;
+    expect(options.overrideConfig).toEqual({
+      linterOptions: { noInlineConfig: true },
+      languageOptions: { parserOptions: { project, tsconfigRootDir: dirname(project) } },
+    });
+    // It extends the given tsconfig and lists exactly the files, as ESLint sees them.
+    expect(tsconfig).toEqual({
+      extends: realpathSync(base),
+      include: [],
+      files: Object.values(real),
+    });
+    // In a directory of its own under the toolchain directory, removed once the run ends, also
+    // when ESLint fails.
+    expect(dirname(dirname(project))).toBe(join(realpathSync(toolchainDir), ".uf-tmp"));
+    expect(existsSync(dirname(project))).toBe(false);
+    const failing = eslintToolchain({ throw: "Cannot read file: tsconfig.json" });
+    await expect(
+      lintWithEslint([files.a], { toolchainDir: failing, root: failing }, { tsconfig: base }),
+    ).rejects.toThrow(/it could not lint the files/);
+    expect(readdirSync(join(failing, ".uf-tmp"))).toEqual([]);
+  });
+
   it("rejects a file it did not lint", async () => {
     const ignored = eslintToolchain({
       results: [
@@ -442,6 +479,14 @@ describe("lintWithEslint", () => {
       `${join(bare, "eslint.config.js")} does not exist: ESLint lints with the toolchain's configuration.`,
     );
     await expect(lintEs(eslintToolchain({}), [])).rejects.toThrow("lint received no files");
+    const untyped = eslintToolchain({});
+    const missing = join(untyped, "tsconfig.json");
+    await expect(
+      lintWithEslint([files.a], { toolchainDir: untyped, root: untyped }, { tsconfig: missing }),
+    ).rejects.toThrow(
+      `${missing} does not exist: type-aware rules read the files' types through it.`,
+    );
+    expect(existsSync(join(untyped, ".uf-tmp"))).toBe(false);
   });
 });
 

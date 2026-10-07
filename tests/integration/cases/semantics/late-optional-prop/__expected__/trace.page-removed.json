@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"total\":5}",
+      "dom": [
+        "<nav aria-label=\"Pages\" class=\"page-count\">",
+        "  <p role=\"status\">",
+        "    \"Page 1 of 5\"",
+        "  </p>",
+        "  <p>",
+        "    \"Direct: 1\"",
+        "  </p>",
+        "</nav>"
+      ],
+      "aria": [
+        "- navigation \"Pages\":",
+        "  - status: Page 1 of 5",
+        "  - paragraph: \"Direct: 1\""
+      ],
+      "events": {
+        "pageChange": [
+          [
+            1,
+            3
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+- region "Comment":
+  - text: Comment
+  - textbox "Comment"
+  - paragraph: 0 characters
+  - button "Like" [pressed]

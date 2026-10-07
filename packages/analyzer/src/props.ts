@@ -1,4 +1,4 @@
-// A component's props (ADR-0034, design §1.1): its one parameter, destructured with static
+// A component's props (ADR-0034): its one parameter, destructured with static
 // defaults or kept as one object, typed by an object type the module declares or writes inline.
 // The props are the type's members, in member order; each gets a binding expressions read it
 // through, and the kinds of value it can have.
@@ -328,7 +328,7 @@ function destructured(
 }
 
 /**
- * Checks a prop's default (design §1.1) and returns it when it is valid: on an optional prop,
+ * Checks a prop's default (ADR-0034) and returns it when it is valid: on an optional prop,
  * `null` on one whose type admits `null` (Qwik applies a destructured default to `null` too),
  * and static (UF2002): a literal, a negated number, a template literal without expressions, or
  * an array or object literal of those.
@@ -368,8 +368,11 @@ function checkDefault(
   return reporter.hasErrorsSince(mark) ? undefined : value;
 }
 
-/** Whether a default is static (design §1.1). */
-function isStatic(node: AST.Expression): boolean {
+/**
+ * Whether a default is static (ADR-0034): a prop's, and a parameter's of a function the setup
+ * writes (ADR-0045), which the outputs evaluate where they declare it.
+ */
+export function isStatic(node: AST.Expression): boolean {
   switch (node.type) {
     case "Literal":
       return !("regex" in node && node.regex) && !("bigint" in node && node.bigint !== undefined);

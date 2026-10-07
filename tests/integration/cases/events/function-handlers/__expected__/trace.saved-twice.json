@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Save' })",
+      "dom": [
+        "<section aria-label=\"Note\" class=\"note-editor\">",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <label>",
+        "    \"Title\"",
+        "    <input name=\"title\" uf:value=\"\">",
+        "  </label>",
+        "  <label>",
+        "    \"Body\"",
+        "    <textarea name=\"body\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <p role=\"status\">",
+        "    \"Saved 1 times, last key none\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Save and close\"",
+        "  </button>",
+        "  <label>",
+        "    \"Tag\"",
+        "    <input name=\"tag\" uf:value=\"\">",
+        "  </label>",
+        "  <button type=\"button\">",
+        "    \"Add tag\"",
+        "  </button>",
+        "  <p>",
+        "    \"Tags:\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Note\":",
+        "  - button \"Save\"",
+        "  - text: Title",
+        "  - textbox \"Title\"",
+        "  - text: Body",
+        "  - textbox \"Body\"",
+        "  - status: Saved 1 times, last key none",
+        "  - button \"Save and close\"",
+        "  - text: Tag",
+        "  - textbox \"Tag\"",
+        "  - button \"Add tag\"",
+        "  - paragraph: \"Tags:\""
+      ],
+      "events": {
+        "saved": [
+          [
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Save and close' })",
+      "dom": [
+        "<section aria-label=\"Note\" class=\"note-editor\">",
+        "  <button type=\"button\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <label>",
+        "    \"Title\"",
+        "    <input name=\"title\" uf:value=\"\">",
+        "  </label>",
+        "  <label>",
+        "    \"Body\"",
+        "    <textarea name=\"body\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <p role=\"status\">",
+        "    \"Saved 2 times, last key none\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Save and close\"",
+        "  </button>",
+        "  <label>",
+        "    \"Tag\"",
+        "    <input name=\"tag\" uf:value=\"\">",
+        "  </label>",
+        "  <button type=\"button\">",
+        "    \"Add tag\"",
+        "  </button>",
+        "  <p>",
+        "    \"Tags:\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Note\":",
+        "  - button \"Save\"",
+        "  - text: Title",
+        "  - textbox \"Title\"",
+        "  - text: Body",
+        "  - textbox \"Body\"",
+        "  - status: Saved 2 times, last key none",
+        "  - button \"Save and close\"",
+        "  - text: Tag",
+        "  - textbox \"Tag\"",
+        "  - button \"Add tag\"",
+        "  - paragraph: \"Tags:\""
+      ],
+      "events": {
+        "saved": [
+          [
+            2
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+- region "Channels":
+  - status: "Channel: #random"
+  - 'button "Join #random"'
+  - 'button "Join #General"'

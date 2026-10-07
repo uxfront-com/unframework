@@ -1,0 +1,6 @@
+{
+  "description": "Controls that depend on more than the event: a once key listener that prevents only a first Enter, and a helper that prevents Enter only while suggestions are open.",
+  "ssr": {
+    "initial": {}
+  }
+}

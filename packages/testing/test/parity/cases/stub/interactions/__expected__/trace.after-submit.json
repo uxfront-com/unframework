@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Send' })",
+      "dom": [
+        "<form>",
+        "  <button type=\"submit\" uf:focused=\"\">",
+        "    \"Send\"",
+        "  </button>",
+        "</form>",
+        "<p role=\"status\">",
+        "  \"Sent\"",
+        "</p>"
+      ],
+      "aria": [
+        "- button \"Send\"",
+        "- status: Sent"
+      ],
+      "events": {
+        "submitted": [
+          []
+        ]
+      }
+    }
+  ]
+}

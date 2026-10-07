@@ -167,13 +167,34 @@ export function expressionStatement(expression: AST.Expression): AST.ExpressionS
 }
 
 /**
- * `const name = init;`, or a pattern (`const { a, b } = init;`). A type annotation goes on a
- * named binding (`let props: Props = $props();`).
+ * `if (test) { … } else { … }`: a list of statements is a block, and `alternate` an `else`
+ * (another `if` for `else if`).
+ */
+export function ifStatement(
+  test: AST.Expression,
+  consequent: AST.Statement | AST.Statement[],
+  alternate?: AST.Statement | AST.Statement[],
+): AST.IfStatement {
+  const statement = (body: AST.Statement | AST.Statement[]) =>
+    Array.isArray(body) ? blockStatement(body) : body;
+  return {
+    type: "IfStatement",
+    test,
+    consequent: statement(consequent),
+    alternate: alternate === undefined ? null : statement(alternate),
+    ...at,
+  } as AST.IfStatement;
+}
+
+/**
+ * `const name = init;`, or a pattern (`const { a, b } = init;`, `const [count, setCount] =
+ * useState(0);`). A type annotation goes on a named binding (`let props: Props = $props();`).
+ * `let timer: number | undefined;` takes no initialiser (`null`).
  */
 export function variableDeclaration(
   kind: "const" | "let",
-  name: string | AST.ObjectPattern,
-  init: AST.Expression,
+  name: string | AST.ObjectPattern | AST.ArrayPattern,
+  init: AST.Expression | null,
   typeAnnotation?: AST.TSType,
 ): AST.VariableDeclaration {
   const id = typeof name === "string" ? bindingIdentifier(name, typeAnnotation) : name;
@@ -192,13 +213,13 @@ export function functionDeclaration(
   name: string,
   params: AST.ParamPattern[],
   body: AST.Statement[],
-  options: { returnType?: AST.TSType } = {},
+  options: { returnType?: AST.TSType; async?: boolean } = {},
 ): AST.Function {
   return {
     type: "FunctionDeclaration",
     id: bindingIdentifier(name),
     generator: false,
-    async: false,
+    async: Boolean(options.async),
     declare: false,
     params,
     body: blockStatement(body) as AST.FunctionBody,
@@ -209,21 +230,23 @@ export function functionDeclaration(
   } as unknown as AST.Function;
 }
 
+/** `(params) => body`, or `async (params): T => body` with the options. */
 export function arrowFunction(
   params: AST.ParamPattern[],
   body: AST.Statement[] | AST.Expression,
+  options: { async?: boolean; returnType?: AST.TSType } = {},
 ): AST.ArrowFunctionExpression {
   const expression = !Array.isArray(body);
   return {
     type: "ArrowFunctionExpression",
     id: null,
     generator: false,
-    async: false,
+    async: Boolean(options.async),
     params,
     body: expression ? body : blockStatement(body),
     expression,
     typeParameters: null,
-    returnType: null,
+    returnType: options.returnType ? tsTypeAnnotation(options.returnType) : null,
     ...at,
   } as unknown as AST.ArrowFunctionExpression;
 }
@@ -242,6 +265,26 @@ export function callExpression(
     typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
     ...at,
   } as AST.CallExpression;
+}
+
+/** `new callee(args)`, with type arguments when given (`new Map<string, number>()`). */
+export function newExpression(
+  callee: AST.Expression,
+  args: AST.Argument[],
+  typeArguments: readonly AST.TSType[] = [],
+): AST.NewExpression {
+  return {
+    type: "NewExpression",
+    callee,
+    arguments: args,
+    typeArguments: typeArguments.length ? typeParameterInstantiation(typeArguments) : null,
+    ...at,
+  } as AST.NewExpression;
+}
+
+/** `await argument`. */
+export function awaitExpression(argument: AST.Expression): AST.AwaitExpression {
+  return { type: "AwaitExpression", argument, ...at };
 }
 
 /** A rest parameter, `...parts: unknown[]`. */
@@ -275,6 +318,26 @@ export function objectPattern(
     typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
     ...at,
   } as AST.ObjectPattern;
+}
+
+/**
+ * An array pattern, `[count, setCount]`: each element a binding by name, a pattern, or a hole
+ * (`null`).
+ */
+export function arrayPattern(
+  elements: (string | AST.BindingPattern | null)[],
+  typeAnnotation?: AST.TSType,
+): AST.ArrayPattern {
+  return {
+    type: "ArrayPattern",
+    decorators: [],
+    elements: elements.map((element) =>
+      typeof element === "string" ? bindingIdentifier(element) : element,
+    ),
+    optional: false,
+    typeAnnotation: typeAnnotation ? tsTypeAnnotation(typeAnnotation) : null,
+    ...at,
+  } as AST.ArrayPattern;
 }
 
 /** A shorthand property of an object pattern, `name` or `name = defaultValue`. */
@@ -367,6 +430,29 @@ export function unaryExpression(
   argument: AST.Expression,
 ): AST.UnaryExpression {
   return { type: "UnaryExpression", operator, prefix: true, argument, ...at };
+}
+
+/** `this`. */
+export function thisExpression(): AST.ThisExpression {
+  return { type: "ThisExpression", ...at };
+}
+
+/** `left = right`, or a compound assignment (`left += right`, `left ??= right`). */
+export function assignmentExpression(
+  operator: AST.AssignmentOperator,
+  left: AST.IdentifierReference | AST.MemberExpression,
+  right: AST.Expression,
+): AST.AssignmentExpression {
+  return { type: "AssignmentExpression", operator, left, right, ...at };
+}
+
+/** `argument++`, `argument--`, or with `prefix` `++argument`. */
+export function updateExpression(
+  operator: AST.UpdateOperator,
+  argument: AST.IdentifierReference | AST.MemberExpression,
+  prefix = false,
+): AST.UpdateExpression {
+  return { type: "UpdateExpression", operator, prefix, argument, ...at };
 }
 
 export function arrayExpression(elements: AST.ArrayExpressionElement[]): AST.ArrayExpression {
@@ -494,10 +580,12 @@ export function decorator(expression: AST.Expression): AST.Decorator {
   return { type: "Decorator", expression, ...at } as AST.Decorator;
 }
 
+/** A class, with the interfaces it implements by name (`implements OnInit`). */
 export function classDeclaration(
   name: string,
   decorators: AST.Decorator[],
   body: AST.ClassElement[] = [],
+  options: { implements?: readonly string[] } = {},
 ): AST.Class {
   return {
     type: "ClassDeclaration",
@@ -506,7 +594,12 @@ export function classDeclaration(
     typeParameters: null,
     superClass: null,
     superTypeArguments: null,
-    implements: [],
+    implements: (options.implements ?? []).map((interfaceName): AST.TSClassImplements => ({
+      type: "TSClassImplements",
+      expression: identifier(interfaceName),
+      typeArguments: null,
+      ...at,
+    })),
     body: { type: "ClassBody", body, ...at },
     abstract: false,
     declare: false,
@@ -541,6 +634,51 @@ export function propertyDefinition(
     optional: false,
     definite: false,
     readonly: Boolean(options.readonly),
+    accessibility: options.accessibility ?? null,
+    ...at,
+  };
+}
+
+/**
+ * A method, `protected increment(event: MouseEvent): void { … }`, with its modifiers; `kind:
+ * "constructor"` writes the constructor (named `constructor`), whose body a target fills
+ * (Angular's effects).
+ */
+export function methodDefinition(
+  name: string,
+  params: AST.ParamPattern[],
+  body: AST.Statement[],
+  options: {
+    kind?: "method" | "constructor";
+    async?: boolean;
+    static?: boolean;
+    accessibility?: AST.TSAccessibility;
+    returnType?: AST.TSType;
+  } = {},
+): AST.MethodDefinition {
+  const kind = options.kind ?? "method";
+  return {
+    type: "MethodDefinition",
+    decorators: [],
+    key: identifier(kind === "constructor" ? "constructor" : name) as unknown as AST.IdentifierName,
+    value: {
+      type: "FunctionExpression",
+      id: null,
+      generator: false,
+      async: Boolean(options.async),
+      declare: false,
+      params,
+      body: blockStatement(body) as AST.FunctionBody,
+      expression: false,
+      typeParameters: null,
+      returnType: options.returnType ? tsTypeAnnotation(options.returnType) : null,
+      ...at,
+    } as unknown as AST.Function,
+    kind,
+    computed: false,
+    static: Boolean(options.static),
+    override: false,
+    optional: false,
     accessibility: options.accessibility ?? null,
     ...at,
   };

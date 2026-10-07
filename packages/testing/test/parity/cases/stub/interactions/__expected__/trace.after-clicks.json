@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add one' })",
+      "dom": [
+        "<p role=\"status\">",
+        "  \"1\"",
+        "</p>",
+        "<button type=\"button\" uf:focused=\"\">",
+        "  \"Add one\"",
+        "</button>",
+        "<label>",
+        "  \"Name \"",
+        "  <input type=\"text\" uf:value=\"\">",
+        "</label>"
+      ],
+      "aria": [
+        "- status: \"1\"",
+        "- button \"Add one\"",
+        "- text: Name",
+        "- textbox \"Name\""
+      ],
+      "events": {
+        "change": [
+          [
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Add one' })",
+      "dom": [
+        "<p role=\"status\">",
+        "  \"2\"",
+        "</p>",
+        "<button type=\"button\" uf:focused=\"\">",
+        "  \"Add one\"",
+        "</button>",
+        "<label>",
+        "  \"Name \"",
+        "  <input type=\"text\" uf:value=\"\">",
+        "</label>"
+      ],
+      "aria": [
+        "- status: \"2\"",
+        "- button \"Add one\"",
+        "- text: Name",
+        "- textbox \"Name\""
+      ],
+      "events": {
+        "change": [
+          [
+            2
+          ]
+        ]
+      }
+    }
+  ]
+}

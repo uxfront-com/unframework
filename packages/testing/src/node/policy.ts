@@ -1,4 +1,4 @@
-// The artefact write policy (DESIGN §4.4), as plain functions every driver shares: the browser
+// The artefact write policy (ADR-0029), as plain functions every driver shares: the browser
 // commands, the SSR harness and the compile project.
 //
 //   check mode   compare with the committed file; a missing file fails. Never write.

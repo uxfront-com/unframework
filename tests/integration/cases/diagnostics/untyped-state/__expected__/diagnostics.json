@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2021",
+    "severity": "error",
+    "message": "`timer` is a setup `let` with neither a type nor an initial value that gives it one: the outputs that declare it (React's `useRef`, Angular's field) cannot type it.",
+    "file": "diagnostics/untyped-state/CopyButton.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 7,
+      "offset": 350
+    },
+    "end": {
+      "line": 8,
+      "column": 12,
+      "offset": 355
+    },
+    "help": "Annotate it, as in `let timer: ReturnType<typeof setTimeout> | undefined;`, or give it an initial value."
+  }
+]

@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3029",
+    "severity": "error",
+    "message": "A handler is code, not a string: the compiler analyses a handler, and every target runs it as a function.",
+    "file": "diagnostics/invalid-handler/PrintButton.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 56,
+      "offset": 271
+    },
+    "end": {
+      "line": 5,
+      "column": 72,
+      "offset": 287
+    },
+    "help": "Name a local function (`onClick={save}`), or write an arrow function (`onClick={() => save()}`)."
+  }
+]

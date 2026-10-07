@@ -1,0 +1,9 @@
+error[UF2018]: A watcher's callback reads the template ref `list`, and runs before the DOM updates: Vue and Svelte would read the DOM as it was, React and Solid as it is now.
+  --> diagnostics/early-dom-read/ActivityFeed.uf.tsx:12:22
+   |
+12 |     emit("rendered", list.value?.childElementCount ?? 0);
+   |                      ^^^^^^^^^^
+   |
+   = help: Run it after the DOM updates: `watch(source, callback, { flush: "post" })`.
+   = fix (likely): Add `{ flush: "post" }`
+   = see: https://unframework.dev/diagnostics/UF2018

@@ -1,0 +1,27 @@
+---
+export interface BallotProps {
+  limit: number;
+  label?: string;
+  choices: string[];
+}
+
+type Props = BallotProps;
+
+const { limit, label = "Vote", choices } = Astro.props;
+
+const votes = limit;
+const picked = "none" as string;
+---
+
+<section class="ballot" aria-label={label}>
+  <p role="status">{votes} votes left</p>
+  <p>Picked: {picked}</p>
+  <ul aria-label="Choices">
+    {choices.map((choice) => (
+      <li>
+        <button type="button">{choice}</button>
+      </li>
+    ))}
+  </ul>
+  <button type="button">Count the answers</button>
+</section>

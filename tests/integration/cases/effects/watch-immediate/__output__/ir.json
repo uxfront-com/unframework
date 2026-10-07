@@ -1,0 +1,325 @@
+{
+  "irVersion": 1,
+  "file": "effects/watch-immediate/SectionHeading.uf.tsx",
+  "components": [
+    {
+      "name": "SectionHeading",
+      "span": {
+        "start": 121,
+        "end": 512
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 110,
+              "end": 116
+            }
+          },
+          "binding": "title@162",
+          "span": {
+            "start": 103,
+            "end": 117
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "SectionHeadingProps",
+          "span": {
+            "start": 171,
+            "end": 190
+          }
+        },
+        "span": {
+          "start": 160,
+          "end": 190
+        }
+      },
+      "types": [
+        "SectionHeadingProps"
+      ],
+      "emits": {
+        "binding": "emit@202",
+        "type": {
+          "code": "{ change: [title: string, previous?: string]; ready: [] }",
+          "span": {
+            "start": 221,
+            "end": 278
+          }
+        },
+        "events": [
+          {
+            "name": "change",
+            "parameters": [
+              {
+                "name": "title",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 239,
+                    "end": 245
+                  }
+                },
+                "span": {
+                  "start": 232,
+                  "end": 245
+                }
+              },
+              {
+                "name": "previous",
+                "optional": true,
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 258,
+                    "end": 264
+                  }
+                },
+                "span": {
+                  "start": 247,
+                  "end": 264
+                }
+              }
+            ],
+            "span": {
+              "start": 223,
+              "end": 265
+            }
+          },
+          {
+            "name": "ready",
+            "parameters": [],
+            "span": {
+              "start": 267,
+              "end": 276
+            }
+          }
+        ],
+        "span": {
+          "start": 196,
+          "end": 282
+        }
+      },
+      "bindings": [
+        {
+          "id": "title@162",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 162,
+            "end": 167
+          }
+        },
+        {
+          "id": "emit@202",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 202,
+            "end": 206
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Getter",
+              "getter": {
+                "parameters": [],
+                "body": {
+                  "code": "title",
+                  "span": {
+                    "start": 303,
+                    "end": 308
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@162",
+                      "span": {
+                        "start": 303,
+                        "end": 308
+                      }
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 297,
+                  "end": 308
+                }
+              },
+              "span": {
+                "start": 297,
+                "end": 308
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 315,
+                  "end": 320
+                }
+              },
+              {
+                "name": "previous",
+                "span": {
+                  "start": 322,
+                  "end": 330
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n      emit(\"change\", value, previous);\n    }",
+              "span": {
+                "start": 335,
+                "end": 381
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@202",
+                  "event": "change",
+                  "span": {
+                    "start": 343,
+                    "end": 374
+                  },
+                  "arguments": [
+                    {
+                      "start": 358,
+                      "end": 363
+                    },
+                    {
+                      "start": 365,
+                      "end": 373
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 314,
+              "end": 381
+            }
+          },
+          "immediate": true,
+          "span": {
+            "start": 286,
+            "end": 412
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    emit(\"ready\");\n  }",
+              "span": {
+                "start": 432,
+                "end": 456
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@202",
+                  "event": "ready",
+                  "span": {
+                    "start": 438,
+                    "end": 451
+                  },
+                  "arguments": []
+                }
+              ]
+            },
+            "span": {
+              "start": 426,
+              "end": 456
+            }
+          },
+          "span": {
+            "start": 416,
+            "end": 458
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "h2",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "section-heading",
+            "span": {
+              "start": 473,
+              "end": 496
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "title",
+              "span": {
+                "start": 498,
+                "end": 503
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "title@162",
+                  "span": {
+                    "start": 498,
+                    "end": 503
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 497,
+              "end": 504
+            }
+          }
+        ],
+        "span": {
+          "start": 469,
+          "end": 509
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SectionHeading",
+      "span": {
+        "start": 121,
+        "end": 512
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "SectionHeadingProps",
+      "exported": true,
+      "code": "interface SectionHeadingProps {\n  title: string;\n}",
+      "span": {
+        "start": 69,
+        "end": 119
+      }
+    }
+  ]
+}

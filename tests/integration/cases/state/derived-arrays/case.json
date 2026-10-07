@@ -1,0 +1,14 @@
+{
+  "description": "Values the code builds itself: computed values that sort the result of filter and slice, reverse the result of map, group a list into a fresh record (with an if or ??=), and reduce a list into a fresh record or Map (acc[k] = v, ||= then push, set); a nested immutable update that pushes onto a copied array; two textareas sized and classed by their handlers, through a template ref and through event.currentTarget, beside elements that bind a class and a style.",
+  "ssr": {
+    "initial": {
+      "props": {
+        "initial": [
+          { "id": 1, "title": "Plan release", "kind": "code", "rank": 3, "done": false },
+          { "id": 2, "title": "Write docs", "kind": "docs", "rank": 1, "done": false },
+          { "id": 3, "title": "Fix login", "kind": "code", "rank": 2, "done": false }
+        ]
+      }
+    }
+  }
+}

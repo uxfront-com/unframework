@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2010",
+    "severity": "error",
+    "message": "`clicks` is a setup `let`, which is not reactive, read in a template expression: what reads it would never see it change.",
+    "file": "diagnostics/non-reactive-read/ClickCounter.uf.tsx",
+    "start": {
+      "line": 12,
+      "column": 16,
+      "offset": 350
+    },
+    "end": {
+      "line": 12,
+      "column": 22,
+      "offset": 356
+    },
+    "help": "Hold a value a template, a getter or an effect reads in a `ref`."
+  }
+]

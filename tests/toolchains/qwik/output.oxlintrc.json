@@ -4,7 +4,7 @@
 // but for the import allow-list (tests/integration/harness/toolchain-lint.unit.test.ts compares
 // them).
 //
-// L5 judges the emitter's idiom, not the author's code (design §6.1). A rule that can only fire
+// L5 judges the emitter's idiom, not the author's code (ADR-0042). A rule that can only fire
 // on what the author wrote (an expression, a literal, text, markup) is off below: oxlint sees
 // the author's expressions only in the JSX targets' output, so it would fail one target's copy
 // of an expression and pass another's (P4). The author's own linter judges the source.
@@ -35,8 +35,22 @@
     "typescript/no-extraneous-class": ["error", { "allowWithDecorator": true }],
     // A useless escape in an output is in code it copies, so it is the author's, `<\/script`
     // included: UF1002 asks for it where a copied string would end a Vue or Svelte script block.
-    // Only the Vue target escapes one itself, as a guard (design §4.4).
+    // Only the Vue target escapes one itself, as a guard (ADR-0051).
     "no-useless-escape": "off",
+
+    // Off: they judge the author's statements, which every target copies but Astro, which drops
+    // client code (ADR-0045): where the author nests a function, and one correct spelling over
+    // another (`sort()` on a fresh array, `instanceof Array`, `new Array(length)`, `Promise.all`
+    // of one promise, an `on…` handler property). No target writes them itself. The targets' own
+    // placement of the setup's functions (React, Solid and Qwik move what captures nothing to
+    // module scope, ADR-0045) is pinned by their emitter tests.
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/no-array-reverse": "off",
+    "unicorn/no-array-sort": "off",
+    "unicorn/no-instanceof-builtins": "off",
+    "unicorn/no-new-array": "off",
+    "unicorn/no-single-promise-in-promise-methods": "off",
+    "unicorn/prefer-add-event-listener": "off",
 
     // Off: they judge the author's expressions and literals.
     "no-compare-neg-zero": "off",
@@ -90,14 +104,21 @@
         "qwik/no-async-prevent-default": "error",
         "qwik/no-await-navigate-in-use-task": "error",
         "qwik/no-react-props": "error",
-        "qwik/no-use-visible-task": "error",
+        // Off (ADR-0048, amending ADR-0042): `onMounted`, `onUnmounted`, `watchEffect` and
+        // `flush: "post"` watchers run after the DOM has rendered, in the browser only, which only
+        // a visible task does (`useTask$` runs before the render, and on the server). The rule
+        // judges whether the author's effect should wait for the DOM at all; the source's
+        // `onMounted` already says it does. The target passes `strategy: "document-ready"`, so
+        // the task runs once the document is ready, never on its visibility.
+        "qwik/no-use-visible-task": "off",
         "qwik/prefer-classlist": "error",
         "qwik/scope-use-task": "error",
         "qwik/serializer-signal-usage": "error",
         "qwik/unused-server": "error",
         "qwik/use-method-usage": "error",
-        // Type-aware: a JS plugin gets no type information, and typescript-eslint cannot load
-        // TypeScript 7, which this toolchain's tsgo needs. A recorded gap (ADR-0042).
+        // Type-aware: a JS plugin gets no type information. They run in ESLint, through
+        // typescript-eslint on TypeScript 6, from the lint host beside this toolchain
+        // (../qwik-eslint/eslint.config.js; the M2 amendment of ADR-0042).
         "qwik/use-async-top": "off",
         "qwik/valid-lexical-scope": "off",
         // An image's size and a link's href are the author's markup.

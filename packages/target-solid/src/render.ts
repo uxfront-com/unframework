@@ -1,10 +1,11 @@
 // The IR as Solid's JSX needs it printed, where that differs from the IR's own shape:
 //
 // - An interpolated conditional whose branch prints as a bare name (`{done ? title : "-"}`,
-//   with `title` a list's item, or a global such as `undefined`; a prop prints as
-//   `props.title`) is a case of `<Show>` to eslint-plugin-solid (`solid/prefer-show`, which L5
-//   runs, ADR-0042): it reads it as content shown under a condition, and so does the output,
-//   which keeps the same text.
+//   with `title` a list's item, a setup constant, a value a keyed branch's callback received, or a
+//   global such as `undefined`; a prop prints as `props.title`, state as `count()` and a value an
+//   accessor reads as `user()`) is a case of `<Show>` to eslint-plugin-solid
+//   (`solid/prefer-show`, which L5 runs, ADR-0042): it reads it as content shown under a
+//   condition, and so does the output, which keeps the same text.
 // - Solid compiles an element's static content into an HTML template, which the browser
 //   parses: a line feed that the template puts right after `<pre>` (static text that follows
 //   only expressions, `<pre>{name}{"\n"}{street}</pre>`) is dropped there, as HTML drops a
@@ -30,14 +31,19 @@ import type {
   UfComponent,
 } from "@unframework/ir";
 
-import { carriedPaths, samePath, slice, wholePath } from "./narrowing.ts";
+import { carriedPaths, narrowsFurther, samePath, slice, wholePath } from "./narrowing.ts";
+import type { BindingTypes } from "./narrowing.ts";
 import type { ReferencePath } from "./narrowing.ts";
 
 /**
  * A component's render tree as Solid prints it, with references spelled by `rules`: see the
  * module comment.
  */
-export function forSolid(component: UfComponent, rules: RewriteRules): UfComponent["render"] {
+export function forSolid(
+  component: UfComponent,
+  rules: RewriteRules,
+  types: BindingTypes,
+): UfComponent["render"] {
   const element = <T extends ElementNode | FragmentNode>(node: T): T => {
     const content = children(node.children);
     return {
@@ -57,8 +63,10 @@ export function forSolid(component: UfComponent, rules: RewriteRules): UfCompone
           : content,
     };
   };
-  // The paths the keyed callbacks around a node receive, which print as plain names.
-  const carried: ReferencePath[][] = [];
+  // The paths the branch callbacks around a node receive, and those a keyed one receives, which
+  // print as plain names (src/narrowing.ts); an accessor's read is a call.
+  const around: ReferencePath[][] = [];
+  const keyed: ReferencePath[][] = [];
   const children = (nodes: readonly RenderNode[]): RenderNode[] =>
     nodes.flatMap((node): RenderNode[] => {
       switch (node.kind) {
@@ -72,18 +80,20 @@ export function forSolid(component: UfComponent, rules: RewriteRules): UfCompone
             {
               ...node,
               branches: node.branches.map((branch, index) => {
-                carried.push(
-                  carriedPaths(
-                    branch.children,
-                    branch.condition ? tests.slice(0, index + 1) : tests,
-                    Boolean(branch.condition),
-                    carried.flat(),
-                  ),
+                const paths = carriedPaths(
+                  branch.children,
+                  branch.condition ? tests.slice(0, index + 1) : tests,
+                  Boolean(branch.condition),
+                  around.flat(),
+                  types,
                 );
+                around.push(paths);
+                keyed.push(narrowsFurther(branch.children, paths) ? paths : []);
                 try {
                   return { ...branch, children: children(branch.children) };
                 } finally {
-                  carried.pop();
+                  around.pop();
+                  keyed.pop();
                 }
               }),
             },
@@ -99,7 +109,7 @@ export function forSolid(component: UfComponent, rules: RewriteRules): UfCompone
             if (printed.type === "Identifier") return true;
             // A path a keyed callback receives prints as its plain name (src/narrowing.ts).
             const path = wholePath(part);
-            return Boolean(path && carried.flat().some((entry) => samePath(entry, path)));
+            return Boolean(path && keyed.flat().some((entry) => samePath(entry, path)));
           }).map((child) =>
             child.kind === "Interpolation"
               ? { ...child, value: escapedOnServer(child.value, "child") }

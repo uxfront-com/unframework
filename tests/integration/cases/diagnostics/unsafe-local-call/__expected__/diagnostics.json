@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2024",
+    "severity": "error",
+    "message": "`markRead` touches the component's state, and is called in a function that runs at once, whose result counts (an array method's callback, a comparator): Qwik's output calls such a local function as a QRL, which it awaits, and the callback cannot.",
+    "file": "diagnostics/unsafe-local-call/Inbox.uf.tsx",
+    "start": {
+      "line": 18,
+      "column": 39,
+      "offset": 619
+    },
+    "end": {
+      "line": 18,
+      "column": 47,
+      "offset": 627
+    },
+    "help": "Call it directly in the body of the handler or the function, or compute the new state at once and write it."
+  }
+]

@@ -1,0 +1,26 @@
+---
+const log = [] as string[];
+const nickname = "" as string;
+const cardFocuses = 0 as number;
+const cardBlurs = 0 as number;
+---
+
+<section class="profile-fields" aria-label="Profile">
+  <div class="name-group" role="group" aria-label="Name fields">
+    <label>Name<input name="name" /></label>
+  </div>
+  <label>Nickname<input name="nickname" /></label>
+  <p>Nickname: {nickname}</p>
+  <label><input type="checkbox" name="public" />Public profile</label>
+  <label><input type="checkbox" name="locked" />Locked</label>
+  <div class="card" role="group" aria-label="Card" tabindex="-1">
+    <p>{cardFocuses > cardBlurs ? "Card focused" : "Card not focused"}</p>
+    <p>Card blurs: {cardBlurs}</p>
+    <button type="button">Inside the card</button>
+  </div>
+  <ol aria-label="Log">
+    {log.map((entry) => (
+      <li>{entry}</li>
+    ))}
+  </ol>
+</section>

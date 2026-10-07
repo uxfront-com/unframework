@@ -1,0 +1,597 @@
+{
+  "irVersion": 1,
+  "file": "lifecycle/unmount-timers/AutoRefresh.uf.tsx",
+  "components": [
+    {
+      "name": "AutoRefresh",
+      "span": {
+        "start": 166,
+        "end": 1011
+      },
+      "props": [
+        {
+          "name": "interval",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 155,
+              "end": 161
+            }
+          },
+          "binding": "interval@204",
+          "span": {
+            "start": 145,
+            "end": 162
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "AutoRefreshProps",
+          "span": {
+            "start": 216,
+            "end": 232
+          }
+        },
+        "span": {
+          "start": 202,
+          "end": 232
+        }
+      },
+      "types": [
+        "AutoRefreshProps"
+      ],
+      "emits": {
+        "binding": "emit@244",
+        "type": {
+          "code": "{ refresh: [count: number] }",
+          "span": {
+            "start": 263,
+            "end": 291
+          }
+        },
+        "events": [
+          {
+            "name": "refresh",
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 282,
+                    "end": 288
+                  }
+                },
+                "span": {
+                  "start": 275,
+                  "end": 288
+                }
+              }
+            ],
+            "span": {
+              "start": 265,
+              "end": 289
+            }
+          }
+        ],
+        "span": {
+          "start": 238,
+          "end": 295
+        }
+      },
+      "bindings": [
+        {
+          "id": "interval@204",
+          "name": "interval",
+          "kind": "prop",
+          "span": {
+            "start": 204,
+            "end": 212
+          }
+        },
+        {
+          "id": "emit@244",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 244,
+            "end": 248
+          }
+        },
+        {
+          "id": "enabled@305",
+          "name": "enabled",
+          "kind": "state",
+          "span": {
+            "start": 305,
+            "end": 312
+          }
+        },
+        {
+          "id": "timer@333",
+          "name": "timer",
+          "kind": "localVar",
+          "span": {
+            "start": 333,
+            "end": 338
+          }
+        },
+        {
+          "id": "refreshes@390",
+          "name": "refreshes",
+          "kind": "localVar",
+          "span": {
+            "start": 390,
+            "end": 399
+          }
+        },
+        {
+          "id": "tick@417",
+          "name": "tick",
+          "kind": "localFn",
+          "span": {
+            "start": 417,
+            "end": 421
+          }
+        },
+        {
+          "id": "toggle@494",
+          "name": "toggle",
+          "kind": "localFn",
+          "span": {
+            "start": 494,
+            "end": 500
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "enabled@305",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 319,
+              "end": 324
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 299,
+            "end": 326
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "timer@333",
+          "type": {
+            "code": "ReturnType<typeof setInterval> | undefined",
+            "span": {
+              "start": 340,
+              "end": 382
+            }
+          },
+          "span": {
+            "start": 329,
+            "end": 383
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "refreshes@390",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 402,
+              "end": 403
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 386,
+            "end": 404
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "tick@417",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    refreshes += 1;\n    emit(\"refresh\", refreshes);\n  }",
+              "span": {
+                "start": 424,
+                "end": 481
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "refreshes@390",
+                  "operator": "+=",
+                  "span": {
+                    "start": 430,
+                    "end": 444
+                  },
+                  "target": {
+                    "start": 430,
+                    "end": 439
+                  },
+                  "value": {
+                    "start": 443,
+                    "end": 444
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@244",
+                  "event": "refresh",
+                  "span": {
+                    "start": 450,
+                    "end": 476
+                  },
+                  "arguments": [
+                    {
+                      "start": 466,
+                      "end": 475
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "refreshes@390",
+                  "span": {
+                    "start": 466,
+                    "end": 475
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 421,
+              "end": 481
+            }
+          },
+          "span": {
+            "start": 408,
+            "end": 481
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "toggle@494",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    if (enabled.value) {\n      clearInterval(timer);\n      enabled.value = false;\n    } else {\n      timer = setInterval(tick, interval);\n      enabled.value = true;\n    }\n  }",
+              "span": {
+                "start": 503,
+                "end": 680
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "enabled@305",
+                  "span": {
+                    "start": 513,
+                    "end": 526
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "clearInterval",
+                  "span": {
+                    "start": 536,
+                    "end": 549
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "timer@333",
+                  "span": {
+                    "start": 550,
+                    "end": 555
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "enabled@305",
+                  "operator": "=",
+                  "span": {
+                    "start": 564,
+                    "end": 585
+                  },
+                  "target": {
+                    "start": 564,
+                    "end": 577
+                  },
+                  "value": {
+                    "start": 580,
+                    "end": 585
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "timer@333",
+                  "operator": "=",
+                  "span": {
+                    "start": 606,
+                    "end": 641
+                  },
+                  "target": {
+                    "start": 606,
+                    "end": 611
+                  },
+                  "value": {
+                    "start": 614,
+                    "end": 641
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "setInterval",
+                  "span": {
+                    "start": 614,
+                    "end": 625
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tick@417",
+                  "span": {
+                    "start": 626,
+                    "end": 630
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "interval@204",
+                  "span": {
+                    "start": 632,
+                    "end": 640
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "enabled@305",
+                  "operator": "=",
+                  "span": {
+                    "start": 649,
+                    "end": 669
+                  },
+                  "target": {
+                    "start": 649,
+                    "end": 662
+                  },
+                  "value": {
+                    "start": 665,
+                    "end": 669
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 500,
+              "end": 680
+            }
+          },
+          "span": {
+            "start": 485,
+            "end": 680
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "unmounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    clearInterval(timer);\n  }",
+              "span": {
+                "start": 702,
+                "end": 733
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "clearInterval",
+                  "span": {
+                    "start": 708,
+                    "end": 721
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "timer@333",
+                  "span": {
+                    "start": 722,
+                    "end": 727
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 696,
+              "end": 733
+            }
+          },
+          "span": {
+            "start": 684,
+            "end": 735
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "auto-refresh",
+            "span": {
+              "start": 761,
+              "end": 781
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Auto-refresh",
+            "span": {
+              "start": 782,
+              "end": 807
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 823,
+                  "end": 836
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-pressed",
+                "value": {
+                  "code": "enabled.value",
+                  "span": {
+                    "start": 851,
+                    "end": 864
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "enabled@305",
+                      "span": {
+                        "start": 851,
+                        "end": 864
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 837,
+                  "end": 865
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "toggle@494",
+                  "span": {
+                    "start": 875,
+                    "end": 881
+                  }
+                },
+                "span": {
+                  "start": 866,
+                  "end": 882
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Auto-refresh",
+                "span": {
+                  "start": 883,
+                  "end": 911
+                }
+              }
+            ],
+            "span": {
+              "start": 815,
+              "end": 920
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 930,
+                  "end": 943
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "enabled.value ? \"Refreshing\" : \"Paused\"",
+                  "span": {
+                    "start": 945,
+                    "end": 984
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "enabled@305",
+                      "span": {
+                        "start": 945,
+                        "end": 958
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 944,
+                  "end": 985
+                }
+              }
+            ],
+            "span": {
+              "start": 927,
+              "end": 989
+            }
+          }
+        ],
+        "span": {
+          "start": 752,
+          "end": 1004
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "AutoRefresh",
+      "span": {
+        "start": 166,
+        "end": 1011
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "AutoRefreshProps",
+      "exported": true,
+      "code": "interface AutoRefreshProps {\n  /** Milliseconds between two refreshes. */\n  interval: number;\n}",
+      "span": {
+        "start": 69,
+        "end": 164
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-// L4 across the contract (design §1.5, §5.3): what the analyzer accepts must type-check against
+// L4 across the contract (ADR-0037): what the analyzer accepts must type-check against
 // Svelte's own element types (`svelte/elements`, through svelte-check), not only against the
 // authoring types (vendored from Vue). svelte-check checks a component's attributes once it has
 // a TypeScript script, written ones by name and bound ones by value too: Svelte declares some

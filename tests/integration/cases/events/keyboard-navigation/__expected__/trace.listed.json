@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "type getByRole('combobox', { name: 'City' }) \"Ba\"",
+      "dom": [
+        "<section aria-label=\"Trip\" class=\"city-picker\">",
+        "  <form aria-label=\"Destination\" role=\"search\">",
+        "    <label>",
+        "      \"City\"",
+        "      <input aria-autocomplete=\"list\" aria-controls=\"uf-id-1\" aria-expanded=\"true\" name=\"city\" role=\"combobox\" type=\"search\" uf:focused=\"\" uf:value=\"Ba\">",
+        "    </label>",
+        "    <div aria-label=\"Cities\" id=\"uf-id-1\" role=\"listbox\">",
+        "      <button aria-selected=\"false\" id=\"uf-id-2\" role=\"option\" tabindex=\"-1\" type=\"button\">",
+        "        \"Basel\"",
+        "      </button>",
+        "    </div>",
+        "    <button type=\"submit\">",
+        "      \"Search\"",
+        "    </button>",
+        "  </form>",
+        "  <p role=\"status\">",
+        "    \"No city chosen\"",
+        "  </p>",
+        "  <label>",
+        "    \"Note\"",
+        "    <textarea name=\"note\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <ul aria-label=\"Notes\"></ul>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Trip\":",
+        "  - search \"Destination\":",
+        "    - text: City",
+        "    - combobox \"City\" [expanded]: Ba",
+        "    - listbox \"Cities\":",
+        "      - option \"Basel\"",
+        "    - button \"Search\"",
+        "  - status: No city chosen",
+        "  - text: Note",
+        "  - textbox \"Note\"",
+        "  - list \"Notes\""
+      ],
+      "events": {}
+    }
+  ]
+}

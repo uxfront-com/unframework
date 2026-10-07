@@ -11,7 +11,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { join, relative } from "node:path";
 
 import { LAYERS } from "@unframework/testing/node";
-import type { LayerName, ParityMatrix, ProjectKind } from "@unframework/testing/node";
+import type { LayerName, PartialMatrix, ProjectKind } from "@unframework/testing/node";
 
 import { canaryCase, canaryProjects, CANARIES, findCanary } from "../harness/canaries.ts";
 import type { Canary, CanaryCase } from "../harness/canaries.ts";
@@ -57,7 +57,14 @@ function runCanary(
   mkdirSync(directory, { recursive: true });
   const env: NodeJS.ProcessEnv = { ...process.env, UF_CANARY: canary.id };
   delete env.UF_UPDATE;
-  const args = canaryProjects(canary).flatMap((kind) => ["--project", PROJECTS[kind]]);
+  const args = canaryProjects(canary).flatMap((kind) =>
+    // A canary of some targets runs their projects only: the others have nothing corrupted.
+    canary.targets && kind !== "compile" && kind !== "harness"
+      ? canary.targets
+          .filter((target) => targets.includes(target))
+          .flatMap((target) => ["--project", `${kind}:${target}`])
+      : ["--project", PROJECTS[kind]],
+  );
   const started = performance.now();
   const { status, stdout } = runVitest(args, env, "pipe");
   const seconds = (performance.now() - started) / 1000;
@@ -65,11 +72,11 @@ function runCanary(
   writeFileSync(log, stdout);
   const matrixFile = join(directory, "parity-matrix.json");
   const matrix = existsSync(matrixFile)
-    ? (JSON.parse(readFileSync(matrixFile, "utf8")) as ParityMatrix)
+    ? (JSON.parse(readFileSync(matrixFile, "utf8")) as PartialMatrix)
     : undefined;
   const loadFailures = readLoadFailures(join(directory, LOAD_FAILURES));
   return {
-    ...judgeCanary(canary, { status, cells: matrix?.cases, loadFailures }, targets, cases),
+    ...judgeCanary(canary, { status, projects: matrix?.byProject, loadFailures }, targets, cases),
     log,
     seconds,
   };
@@ -86,6 +93,7 @@ function main(): number {
     print(
       `[uf:canaries] ${canary.id} (${canary.layer}, ${canaryProjects(canary).join(" + ")}): ${verdict.caught ? "caught" : "NOT CAUGHT"} in ${verdict.seconds.toFixed(1)} s`,
     );
+    for (const note of verdict.notes) print(`    (${note})`);
     for (const problem of verdict.problems) print(`    ${problem}`);
     if (!verdict.caught) {
       print(`    log: ${relative(ROOT, verdict.log)}`);

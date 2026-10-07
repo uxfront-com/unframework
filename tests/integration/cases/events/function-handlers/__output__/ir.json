@@ -1,0 +1,1164 @@
+{
+  "irVersion": 1,
+  "file": "events/function-handlers/NoteEditor.uf.tsx",
+  "components": [
+    {
+      "name": "NoteEditor",
+      "span": {
+        "start": 65,
+        "end": 1769
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@112",
+        "type": {
+          "code": "{ saved: [count: number]; tagged: [tag: string, via: string] }",
+          "span": {
+            "start": 131,
+            "end": 193
+          }
+        },
+        "events": [
+          {
+            "name": "saved",
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 148,
+                    "end": 154
+                  }
+                },
+                "span": {
+                  "start": 141,
+                  "end": 154
+                }
+              }
+            ],
+            "span": {
+              "start": 133,
+              "end": 155
+            }
+          },
+          {
+            "name": "tagged",
+            "parameters": [
+              {
+                "name": "tag",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 171,
+                    "end": 177
+                  }
+                },
+                "span": {
+                  "start": 166,
+                  "end": 177
+                }
+              },
+              {
+                "name": "via",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 184,
+                    "end": 190
+                  }
+                },
+                "span": {
+                  "start": 179,
+                  "end": 190
+                }
+              }
+            ],
+            "span": {
+              "start": 157,
+              "end": 191
+            }
+          }
+        ],
+        "span": {
+          "start": 106,
+          "end": 197
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@112",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 112,
+            "end": 116
+          }
+        },
+        {
+          "id": "saves@207",
+          "name": "saves",
+          "kind": "state",
+          "span": {
+            "start": 207,
+            "end": 212
+          }
+        },
+        {
+          "id": "lastKey@231",
+          "name": "lastKey",
+          "kind": "state",
+          "span": {
+            "start": 231,
+            "end": 238
+          }
+        },
+        {
+          "id": "tags@262",
+          "name": "tags",
+          "kind": "state",
+          "span": {
+            "start": 262,
+            "end": 266
+          }
+        },
+        {
+          "id": "tag@296",
+          "name": "tag",
+          "kind": "state",
+          "span": {
+            "start": 296,
+            "end": 299
+          }
+        },
+        {
+          "id": "tagField@319",
+          "name": "tagField",
+          "kind": "templateRef",
+          "span": {
+            "start": 319,
+            "end": 327
+          }
+        },
+        {
+          "id": "save@378",
+          "name": "save",
+          "kind": "localFn",
+          "span": {
+            "start": 378,
+            "end": 382
+          }
+        },
+        {
+          "id": "recordKey@457",
+          "name": "recordKey",
+          "kind": "localFn",
+          "span": {
+            "start": 457,
+            "end": 466
+          }
+        },
+        {
+          "id": "addTag@538",
+          "name": "addTag",
+          "kind": "localFn",
+          "span": {
+            "start": 538,
+            "end": 544
+          }
+        },
+        {
+          "id": "onTagKeydown@791",
+          "name": "onTagKeydown",
+          "kind": "localFn",
+          "span": {
+            "start": 791,
+            "end": 803
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "saves@207",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 219,
+              "end": 220
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 201,
+            "end": 222
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "lastKey@231",
+          "initial": {
+            "code": "\"none\"",
+            "span": {
+              "start": 245,
+              "end": 251
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 225,
+            "end": 253
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "tags@262",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 273,
+              "end": 281
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 283,
+              "end": 285
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 256,
+            "end": 287
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "tag@296",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 306,
+              "end": 308
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 290,
+            "end": 310
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "tagField@319",
+          "type": {
+            "code": "HTMLInputElement",
+            "span": {
+              "start": 345,
+              "end": 361
+            }
+          },
+          "span": {
+            "start": 313,
+            "end": 365
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "save@378",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    saves.value += 1;\n    emit(\"saved\", saves.value);\n  }",
+              "span": {
+                "start": 385,
+                "end": 444
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "saves@207",
+                  "operator": "+=",
+                  "span": {
+                    "start": 391,
+                    "end": 407
+                  },
+                  "target": {
+                    "start": 391,
+                    "end": 402
+                  },
+                  "value": {
+                    "start": 406,
+                    "end": 407
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@112",
+                  "event": "saved",
+                  "span": {
+                    "start": 413,
+                    "end": 439
+                  },
+                  "arguments": [
+                    {
+                      "start": 427,
+                      "end": 438
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "saves@207",
+                  "span": {
+                    "start": 427,
+                    "end": 438
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 382,
+              "end": 444
+            }
+          },
+          "span": {
+            "start": 369,
+            "end": 444
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "recordKey@457",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 474,
+                    "end": 487
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 467,
+                  "end": 487
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    lastKey.value = event.key;\n  }",
+              "span": {
+                "start": 489,
+                "end": 525
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "lastKey@231",
+                  "operator": "=",
+                  "span": {
+                    "start": 495,
+                    "end": 520
+                  },
+                  "target": {
+                    "start": 495,
+                    "end": 508
+                  },
+                  "value": {
+                    "start": 511,
+                    "end": 520
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 511,
+                    "end": 520
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 466,
+              "end": 525
+            }
+          },
+          "span": {
+            "start": 448,
+            "end": 525
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "addTag@538",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "MouseEvent | KeyboardEvent",
+                  "span": {
+                    "start": 552,
+                    "end": 578
+                  }
+                },
+                "event": "UIEvent",
+                "span": {
+                  "start": 545,
+                  "end": 578
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (tag.value === \"\") return;\n    tags.value = [...tags.value, tag.value];\n    emit(\"tagged\", tag.value, event.type);\n    tag.value = \"\";\n    if (tagField.value) tagField.value.value = \"\";\n  }",
+              "span": {
+                "start": 580,
+                "end": 778
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tag@296",
+                  "span": {
+                    "start": 590,
+                    "end": 599
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "tags@262",
+                  "operator": "=",
+                  "span": {
+                    "start": 620,
+                    "end": 659
+                  },
+                  "target": {
+                    "start": 620,
+                    "end": 630
+                  },
+                  "value": {
+                    "start": 633,
+                    "end": 659
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tags@262",
+                  "span": {
+                    "start": 637,
+                    "end": 647
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tag@296",
+                  "span": {
+                    "start": 649,
+                    "end": 658
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@112",
+                  "event": "tagged",
+                  "span": {
+                    "start": 665,
+                    "end": 702
+                  },
+                  "arguments": [
+                    {
+                      "start": 680,
+                      "end": 689
+                    },
+                    {
+                      "start": 691,
+                      "end": 701
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tag@296",
+                  "span": {
+                    "start": 680,
+                    "end": 689
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "type",
+                  "span": {
+                    "start": 691,
+                    "end": 701
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "tag@296",
+                  "operator": "=",
+                  "span": {
+                    "start": 708,
+                    "end": 722
+                  },
+                  "target": {
+                    "start": 708,
+                    "end": 717
+                  },
+                  "value": {
+                    "start": 720,
+                    "end": 722
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tagField@319",
+                  "span": {
+                    "start": 732,
+                    "end": 746
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tagField@319",
+                  "span": {
+                    "start": 748,
+                    "end": 762
+                  },
+                  "narrowed": [
+                    {
+                      "span": {
+                        "start": 748,
+                        "end": 762
+                      },
+                      "scope": "local"
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 544,
+              "end": 778
+            }
+          },
+          "span": {
+            "start": 529,
+            "end": 778
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "onTagKeydown@791",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 811,
+                    "end": 824
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 804,
+                  "end": 824
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key === \"Enter\") addTag(event);\n  }",
+              "span": {
+                "start": 826,
+                "end": 877
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 836,
+                    "end": 845
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "addTag@538",
+                  "span": {
+                    "start": 859,
+                    "end": 865
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 803,
+              "end": 877
+            }
+          },
+          "span": {
+            "start": 782,
+            "end": 877
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "note-editor",
+            "span": {
+              "start": 903,
+              "end": 922
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Note",
+            "span": {
+              "start": 923,
+              "end": 940
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 956,
+                  "end": 969
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "save@378",
+                  "span": {
+                    "start": 979,
+                    "end": 983
+                  }
+                },
+                "span": {
+                  "start": 970,
+                  "end": 984
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Save",
+                "span": {
+                  "start": 985,
+                  "end": 1005
+                }
+              }
+            ],
+            "span": {
+              "start": 948,
+              "end": 1014
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Title",
+                "span": {
+                  "start": 1028,
+                  "end": 1051
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "title",
+                    "span": {
+                      "start": 1058,
+                      "end": 1070
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "keydown",
+                    "handler": {
+                      "kind": "Function",
+                      "binding": "recordKey@457",
+                      "span": {
+                        "start": 1082,
+                        "end": 1091
+                      }
+                    },
+                    "span": {
+                      "start": 1071,
+                      "end": 1092
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 1051,
+                  "end": 1095
+                }
+              }
+            ],
+            "span": {
+              "start": 1021,
+              "end": 1110
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Body",
+                "span": {
+                  "start": 1124,
+                  "end": 1146
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "textarea",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "body",
+                    "span": {
+                      "start": 1156,
+                      "end": 1167
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "keydown",
+                    "handler": {
+                      "kind": "Function",
+                      "binding": "recordKey@457",
+                      "span": {
+                        "start": 1179,
+                        "end": 1188
+                      }
+                    },
+                    "span": {
+                      "start": 1168,
+                      "end": 1189
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 1146,
+                  "end": 1192
+                }
+              }
+            ],
+            "span": {
+              "start": 1117,
+              "end": 1207
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 1217,
+                  "end": 1230
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Saved ",
+                "span": {
+                  "start": 1231,
+                  "end": 1246
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "saves.value",
+                  "span": {
+                    "start": 1247,
+                    "end": 1258
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "saves@207",
+                      "span": {
+                        "start": 1247,
+                        "end": 1258
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1246,
+                  "end": 1259
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " times, last key ",
+                "span": {
+                  "start": 1259,
+                  "end": 1276
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "lastKey.value",
+                  "span": {
+                    "start": 1277,
+                    "end": 1290
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "lastKey@231",
+                      "span": {
+                        "start": 1277,
+                        "end": 1290
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1276,
+                  "end": 1291
+                }
+              }
+            ],
+            "span": {
+              "start": 1214,
+              "end": 1302
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1317,
+                  "end": 1330
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "save@378",
+                  "span": {
+                    "start": 1340,
+                    "end": 1344
+                  }
+                },
+                "span": {
+                  "start": 1331,
+                  "end": 1345
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Save and close",
+                "span": {
+                  "start": 1346,
+                  "end": 1376
+                }
+              }
+            ],
+            "span": {
+              "start": 1309,
+              "end": 1385
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Tag",
+                "span": {
+                  "start": 1399,
+                  "end": 1420
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Ref",
+                    "binding": "tagField@319",
+                    "span": {
+                      "start": 1437,
+                      "end": 1451
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "tag",
+                    "span": {
+                      "start": 1462,
+                      "end": 1472
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "input",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "InputEvent",
+                            "span": {
+                              "start": 1493,
+                              "end": 1498
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "(tag.value = (event.currentTarget as HTMLInputElement).value)",
+                          "span": {
+                            "start": 1503,
+                            "end": 1564
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "tag@296",
+                              "operator": "=",
+                              "span": {
+                                "start": 1503,
+                                "end": 1564
+                              },
+                              "target": {
+                                "start": 1504,
+                                "end": 1513
+                              },
+                              "value": {
+                                "start": 1516,
+                                "end": 1563
+                              },
+                              "arrowBody": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 1517,
+                                "end": 1536
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1492,
+                          "end": 1564
+                        }
+                      },
+                      "span": {
+                        "start": 1492,
+                        "end": 1564
+                      }
+                    },
+                    "span": {
+                      "start": 1483,
+                      "end": 1565
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "keydown",
+                    "handler": {
+                      "kind": "Function",
+                      "binding": "onTagKeydown@791",
+                      "span": {
+                        "start": 1587,
+                        "end": 1599
+                      }
+                    },
+                    "span": {
+                      "start": 1576,
+                      "end": 1600
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 1420,
+                  "end": 1611
+                }
+              }
+            ],
+            "span": {
+              "start": 1392,
+              "end": 1626
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1641,
+                  "end": 1654
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "addTag@538",
+                  "span": {
+                    "start": 1664,
+                    "end": 1670
+                  }
+                },
+                "span": {
+                  "start": 1655,
+                  "end": 1671
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add tag",
+                "span": {
+                  "start": 1672,
+                  "end": 1695
+                }
+              }
+            ],
+            "span": {
+              "start": 1633,
+              "end": 1704
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Tags: ",
+                "span": {
+                  "start": 1714,
+                  "end": 1720
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "tags.value.join(\", \")",
+                  "span": {
+                    "start": 1721,
+                    "end": 1742
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tags@262",
+                      "span": {
+                        "start": 1721,
+                        "end": 1731
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1720,
+                  "end": 1743
+                }
+              }
+            ],
+            "span": {
+              "start": 1711,
+              "end": 1747
+            }
+          }
+        ],
+        "span": {
+          "start": 894,
+          "end": 1762
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "NoteEditor",
+      "span": {
+        "start": 65,
+        "end": 1769
+      }
+    }
+  ],
+  "types": []
+}

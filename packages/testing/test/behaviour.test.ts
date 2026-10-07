@@ -57,7 +57,7 @@ it("records L8 in the parity matrix, and fails a stale L8 quarantine entry", asy
   const cells = reporter.matrix?.cases;
   // Every failure of the cell's tests, each once, in the order of the tests.
   expect(cells?.["stub/behaviour"]?.dom?.L8, output).toMatch(
-    /^fail: VitestBrowserElementError: Cannot find element with locator: getByTestId\('uf-root-\d+'\)\.getByText\('Goodbye'\)\n\nARIA tree:\n- paragraph: Hello\nThe test asserted nothing: [^\n]*\nUnmounting failed: \[fixture\] unmount\nError: \[fixture\] the spec's afterEach$/,
+    /^fail: VitestBrowserElementError: Cannot find element with locator: getByTestId\('uf-root-\d+'\)\.getByText\('Goodbye'\)\n\nARIA tree:\n- paragraph: Hello\nTimeoutError: locator\.hover: Timeout 5000ms exceeded\.\nCall log:\n {2}- waiting for [^\n]*getByRole\('button', \{ name: 'Goodbye', exact: true \}\)\n\nThe test asserted nothing: [^\n]*\nUnmounting failed: \[fixture\] unmount\nError: \[fixture\] the spec's afterEach$/,
   );
   expect(cells?.["stub/behaviour-known"]?.dom?.L8, output).toBe("quarantined(#L8)");
   expect(cells?.["stub/behaviour-stale"]?.dom, output).toEqual({

@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Check for new books' })",
+      "dom": [
+        "<section aria-label=\"Reading list\" class=\"reading-list\">",
+        "  <label>",
+        "    \"Search\"",
+        "    <input name=\"query\" type=\"search\" uf:value=\"\">",
+        "  </label>",
+        "  <p role=\"status\">",
+        "    \"0 found\"",
+        "  </p>",
+        "  <ul aria-label=\"Books\"></ul>",
+        "  <div aria-label=\"Shelf\" role=\"group\">",
+        "    <button aria-pressed=\"true\" type=\"button\">",
+        "      \"All\"",
+        "    </button>",
+        "    <button aria-pressed=\"false\" type=\"button\">",
+        "      \"Unread\"",
+        "    </button>",
+        "  </div>",
+        "  <button aria-pressed=\"true\" type=\"button\" uf:focused=\"\">",
+        "    \"Check for new books\"",
+        "  </button>",
+        "  <p>",
+        "    \"Checks: 0\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Refresh shelves\"",
+        "  </button>",
+        "  <ul aria-label=\"Shelves\">",
+        "    <li>",
+        "      \"Fiction: not counted\"",
+        "    </li>",
+        "    <li>",
+        "      \"History: not counted\"",
+        "    </li>",
+        "  </ul>",
+        "  <p>",
+        "    \"Up to date\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Reading list\":",
+        "  - text: Search",
+        "  - searchbox \"Search\"",
+        "  - status: 0 found",
+        "  - list \"Books\"",
+        "  - group \"Shelf\":",
+        "    - button \"All\" [pressed]",
+        "    - button \"Unread\"",
+        "  - button \"Check for new books\" [pressed]",
+        "  - paragraph: \"Checks: 0\"",
+        "  - button \"Refresh shelves\"",
+        "  - list \"Shelves\":",
+        "    - listitem: \"Fiction: not counted\"",
+        "    - listitem: \"History: not counted\"",
+        "  - paragraph: Up to date"
+      ],
+      "events": {
+        "started": [
+          []
+        ]
+      }
+    }
+  ]
+}

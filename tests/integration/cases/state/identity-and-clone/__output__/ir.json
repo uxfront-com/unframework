@@ -1,0 +1,789 @@
+{
+  "irVersion": 1,
+  "file": "state/identity-and-clone/FruitPicker.uf.tsx",
+  "components": [
+    {
+      "name": "FruitPicker",
+      "span": {
+        "start": 169,
+        "end": 1348
+      },
+      "props": [
+        {
+          "name": "fruits",
+          "optional": false,
+          "type": {
+            "code": "Fruit[]",
+            "span": {
+              "start": 157,
+              "end": 164
+            }
+          },
+          "binding": "fruits@207",
+          "span": {
+            "start": 149,
+            "end": 165
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "FruitPickerProps",
+          "span": {
+            "start": 217,
+            "end": 233
+          }
+        },
+        "span": {
+          "start": 205,
+          "end": 233
+        }
+      },
+      "types": [
+        "Fruit",
+        "FruitPickerProps"
+      ],
+      "emits": {
+        "binding": "emit@245",
+        "type": {
+          "code": "{ kept: [name: string, colour: string] }",
+          "span": {
+            "start": 264,
+            "end": 304
+          }
+        },
+        "events": [
+          {
+            "name": "kept",
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 279,
+                    "end": 285
+                  }
+                },
+                "span": {
+                  "start": 273,
+                  "end": 285
+                }
+              },
+              {
+                "name": "colour",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 295,
+                    "end": 301
+                  }
+                },
+                "span": {
+                  "start": 287,
+                  "end": 301
+                }
+              }
+            ],
+            "span": {
+              "start": 266,
+              "end": 302
+            }
+          }
+        ],
+        "span": {
+          "start": 239,
+          "end": 308
+        }
+      },
+      "bindings": [
+        {
+          "id": "fruits@207",
+          "name": "fruits",
+          "kind": "prop",
+          "span": {
+            "start": 207,
+            "end": 213
+          }
+        },
+        {
+          "id": "emit@245",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 245,
+            "end": 249
+          }
+        },
+        {
+          "id": "selected@318",
+          "name": "selected",
+          "kind": "state",
+          "span": {
+            "start": 318,
+            "end": 326
+          }
+        },
+        {
+          "id": "basket@362",
+          "name": "basket",
+          "kind": "state",
+          "span": {
+            "start": 362,
+            "end": 368
+          }
+        },
+        {
+          "id": "pick@401",
+          "name": "pick",
+          "kind": "localFn",
+          "span": {
+            "start": 401,
+            "end": 405
+          }
+        },
+        {
+          "id": "keep@466",
+          "name": "keep",
+          "kind": "localFn",
+          "span": {
+            "start": 466,
+            "end": 470
+          }
+        },
+        {
+          "id": "fruit@788",
+          "name": "fruit",
+          "kind": "loopVar",
+          "span": {
+            "start": 788,
+            "end": 793
+          }
+        },
+        {
+          "id": "fruit@1217",
+          "name": "fruit",
+          "kind": "loopVar",
+          "span": {
+            "start": 1217,
+            "end": 1222
+          }
+        },
+        {
+          "id": "index@1224",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 1224,
+            "end": 1229
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "selected@318",
+          "type": {
+            "code": "Fruit | null",
+            "span": {
+              "start": 333,
+              "end": 345
+            }
+          },
+          "initial": {
+            "code": "null",
+            "span": {
+              "start": 347,
+              "end": 351
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 312,
+            "end": 353
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "basket@362",
+          "type": {
+            "code": "Fruit[]",
+            "span": {
+              "start": 375,
+              "end": 382
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 384,
+              "end": 386
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 356,
+            "end": 388
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "pick@401",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "fruit",
+                "type": {
+                  "code": "Fruit",
+                  "span": {
+                    "start": 413,
+                    "end": 418
+                  }
+                },
+                "span": {
+                  "start": 406,
+                  "end": 418
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    selected.value = fruit;\n  }",
+              "span": {
+                "start": 420,
+                "end": 453
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "selected@318",
+                  "operator": "=",
+                  "span": {
+                    "start": 426,
+                    "end": 448
+                  },
+                  "target": {
+                    "start": 426,
+                    "end": 440
+                  },
+                  "value": {
+                    "start": 443,
+                    "end": 448
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 405,
+              "end": 453
+            }
+          },
+          "span": {
+            "start": 392,
+            "end": 453
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "keep@466",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    const current = selected.value;\n    if (!current) return;\n    const copy = structuredClone(current);\n    basket.value = [...basket.value, copy];\n    emit(\"kept\", copy.name, copy.colour);\n  }",
+              "span": {
+                "start": 473,
+                "end": 669
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "selected@318",
+                  "span": {
+                    "start": 495,
+                    "end": 509
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "structuredClone",
+                  "span": {
+                    "start": 554,
+                    "end": 569
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "basket@362",
+                  "operator": "=",
+                  "span": {
+                    "start": 584,
+                    "end": 622
+                  },
+                  "target": {
+                    "start": 584,
+                    "end": 596
+                  },
+                  "value": {
+                    "start": 599,
+                    "end": 622
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "basket@362",
+                  "span": {
+                    "start": 603,
+                    "end": 615
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@245",
+                  "event": "kept",
+                  "span": {
+                    "start": 628,
+                    "end": 664
+                  },
+                  "arguments": [
+                    {
+                      "start": 641,
+                      "end": 650
+                    },
+                    {
+                      "start": 652,
+                      "end": 663
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 470,
+              "end": 669
+            }
+          },
+          "span": {
+            "start": 457,
+            "end": 669
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "fruit-picker",
+            "span": {
+              "start": 695,
+              "end": 715
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Fruit",
+            "span": {
+              "start": 716,
+              "end": 734
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Fruits",
+                "span": {
+                  "start": 746,
+                  "end": 765
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "fruits",
+                  "span": {
+                    "start": 776,
+                    "end": 782
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "fruits@207",
+                      "span": {
+                        "start": 776,
+                        "end": 782
+                      }
+                    }
+                  ]
+                },
+                "item": "fruit@788",
+                "key": {
+                  "code": "fruit.name",
+                  "span": {
+                    "start": 819,
+                    "end": 829
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "fruit@788",
+                      "span": {
+                        "start": 819,
+                        "end": 824
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Element",
+                      "tag": "button",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "type",
+                          "value": "button",
+                          "span": {
+                            "start": 866,
+                            "end": 879
+                          }
+                        },
+                        {
+                          "kind": "Bound",
+                          "name": "aria-pressed",
+                          "value": {
+                            "code": "fruit === selected.value",
+                            "span": {
+                              "start": 908,
+                              "end": 932
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "fruit@788",
+                                "span": {
+                                  "start": 908,
+                                  "end": 913
+                                }
+                              },
+                              {
+                                "kind": "Binding",
+                                "binding": "selected@318",
+                                "span": {
+                                  "start": 918,
+                                  "end": 932
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 894,
+                            "end": 933
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "event": "click",
+                          "handler": {
+                            "kind": "Inline",
+                            "function": {
+                              "parameters": [],
+                              "body": {
+                                "code": "pick(fruit)",
+                                "span": {
+                                  "start": 963,
+                                  "end": 974
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "pick@401",
+                                    "span": {
+                                      "start": 963,
+                                      "end": 967
+                                    },
+                                    "call": true
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "fruit@788",
+                                    "span": {
+                                      "start": 968,
+                                      "end": 973
+                                    }
+                                  }
+                                ]
+                              },
+                              "expression": true,
+                              "span": {
+                                "start": 957,
+                                "end": 974
+                              }
+                            },
+                            "span": {
+                              "start": 957,
+                              "end": 974
+                            }
+                          },
+                          "span": {
+                            "start": 948,
+                            "end": 975
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "fruit.name",
+                            "span": {
+                              "start": 1005,
+                              "end": 1015
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "fruit@788",
+                                "span": {
+                                  "start": 1005,
+                                  "end": 1010
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 1004,
+                            "end": 1016
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 844,
+                        "end": 1038
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 810,
+                    "end": 1054
+                  }
+                },
+                "span": {
+                  "start": 776,
+                  "end": 1065
+                }
+              }
+            ],
+            "span": {
+              "start": 742,
+              "end": 1078
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1093,
+                  "end": 1106
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "keep@466",
+                  "span": {
+                    "start": 1116,
+                    "end": 1120
+                  }
+                },
+                "span": {
+                  "start": 1107,
+                  "end": 1121
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Keep a copy",
+                "span": {
+                  "start": 1122,
+                  "end": 1149
+                }
+              }
+            ],
+            "span": {
+              "start": 1085,
+              "end": 1158
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Basket",
+                "span": {
+                  "start": 1169,
+                  "end": 1188
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "basket.value",
+                  "span": {
+                    "start": 1199,
+                    "end": 1211
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "basket@362",
+                      "span": {
+                        "start": 1199,
+                        "end": 1211
+                      }
+                    }
+                  ]
+                },
+                "item": "fruit@1217",
+                "index": "index@1224",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 1255,
+                    "end": 1260
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@1224",
+                      "span": {
+                        "start": 1255,
+                        "end": 1260
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "`${fruit.name} (${fruit.colour})`",
+                        "span": {
+                          "start": 1263,
+                          "end": 1296
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "fruit@1217",
+                            "span": {
+                              "start": 1266,
+                              "end": 1271
+                            }
+                          },
+                          {
+                            "kind": "Binding",
+                            "binding": "fruit@1217",
+                            "span": {
+                              "start": 1281,
+                              "end": 1286
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 1262,
+                        "end": 1297
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 1246,
+                    "end": 1302
+                  }
+                },
+                "span": {
+                  "start": 1199,
+                  "end": 1313
+                }
+              }
+            ],
+            "span": {
+              "start": 1165,
+              "end": 1326
+            }
+          }
+        ],
+        "span": {
+          "start": 686,
+          "end": 1341
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "FruitPicker",
+      "span": {
+        "start": 169,
+        "end": 1348
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Fruit",
+      "exported": true,
+      "code": "interface Fruit {\n  name: string;\n  colour: string;\n}",
+      "span": {
+        "start": 56,
+        "end": 109
+      }
+    },
+    {
+      "name": "FruitPickerProps",
+      "exported": true,
+      "code": "interface FruitPickerProps {\n  fruits: Fruit[];\n}",
+      "span": {
+        "start": 118,
+        "end": 167
+      }
+    }
+  ]
+}

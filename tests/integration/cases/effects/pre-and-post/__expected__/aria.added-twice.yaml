@@ -1,0 +1,7 @@
+- region "Search":
+  - paragraph: Ready
+  - text: Query
+  - textbox "Query"
+  - list "Results"
+  - status: "4"
+  - button "Add one"

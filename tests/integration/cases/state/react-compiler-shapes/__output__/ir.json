@@ -1,0 +1,1288 @@
+{
+  "irVersion": 1,
+  "file": "state/react-compiler-shapes/DisplaySettings.uf.tsx",
+  "components": [
+    {
+      "name": "DisplaySettings",
+      "span": {
+        "start": 171,
+        "end": 2513
+      },
+      "props": [],
+      "types": [
+        "Settings",
+        "SaveReply"
+      ],
+      "emits": {
+        "binding": "emit@223",
+        "type": {
+          "code": "{\n    applied: [theme: string, size: number];\n    saved: [id: number];\n  }",
+          "span": {
+            "start": 242,
+            "end": 316
+          }
+        },
+        "events": [
+          {
+            "name": "applied",
+            "parameters": [
+              {
+                "name": "theme",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 265,
+                    "end": 271
+                  }
+                },
+                "span": {
+                  "start": 258,
+                  "end": 271
+                }
+              },
+              {
+                "name": "size",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 279,
+                    "end": 285
+                  }
+                },
+                "span": {
+                  "start": 273,
+                  "end": 285
+                }
+              }
+            ],
+            "span": {
+              "start": 248,
+              "end": 286
+            }
+          },
+          {
+            "name": "saved",
+            "parameters": [
+              {
+                "name": "id",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 304,
+                    "end": 310
+                  }
+                },
+                "span": {
+                  "start": 300,
+                  "end": 310
+                }
+              }
+            ],
+            "span": {
+              "start": 292,
+              "end": 311
+            }
+          }
+        ],
+        "span": {
+          "start": 217,
+          "end": 320
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@223",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 223,
+            "end": 227
+          }
+        },
+        {
+          "id": "settings@330",
+          "name": "settings",
+          "kind": "state",
+          "span": {
+            "start": 330,
+            "end": 338
+          }
+        },
+        {
+          "id": "maxSize@394",
+          "name": "maxSize",
+          "kind": "state",
+          "span": {
+            "start": 394,
+            "end": 401
+          }
+        },
+        {
+          "id": "saving@421",
+          "name": "saving",
+          "kind": "state",
+          "span": {
+            "start": 421,
+            "end": 427
+          }
+        },
+        {
+          "id": "label@450",
+          "name": "label",
+          "kind": "state",
+          "span": {
+            "start": 450,
+            "end": 455
+          }
+        },
+        {
+          "id": "failure@486",
+          "name": "failure",
+          "kind": "state",
+          "span": {
+            "start": 486,
+            "end": 493
+          }
+        },
+        {
+          "id": "finish@511",
+          "name": "finish",
+          "kind": "localVar",
+          "span": {
+            "start": 511,
+            "end": 517
+          }
+        },
+        {
+          "id": "apply@573",
+          "name": "apply",
+          "kind": "localFn",
+          "span": {
+            "start": 573,
+            "end": 578
+          }
+        },
+        {
+          "id": "grow@775",
+          "name": "grow",
+          "kind": "localFn",
+          "span": {
+            "start": 775,
+            "end": 779
+          }
+        },
+        {
+          "id": "save@939",
+          "name": "save",
+          "kind": "localFn",
+          "span": {
+            "start": 939,
+            "end": 943
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "settings@330",
+          "type": {
+            "code": "Settings",
+            "span": {
+              "start": 345,
+              "end": 353
+            }
+          },
+          "initial": {
+            "code": "{ theme: \"light\", size: 14 }",
+            "span": {
+              "start": 355,
+              "end": 383
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 324,
+            "end": 385
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "maxSize@394",
+          "initial": {
+            "code": "20",
+            "span": {
+              "start": 408,
+              "end": 410
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 388,
+            "end": 412
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "saving@421",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 434,
+              "end": 439
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 415,
+            "end": 441
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "label@450",
+          "initial": {
+            "code": "\"Never saved\"",
+            "span": {
+              "start": 462,
+              "end": 475
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 444,
+            "end": 477
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "failure@486",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 500,
+              "end": 502
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 480,
+            "end": 504
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "finish@511",
+          "type": {
+            "code": "((reply: SaveReply) => void) | undefined",
+            "span": {
+              "start": 519,
+              "end": 559
+            }
+          },
+          "span": {
+            "start": 507,
+            "end": 560
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "apply@573",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "patch",
+                "type": {
+                  "code": "Partial<Settings>",
+                  "span": {
+                    "start": 586,
+                    "end": 603
+                  }
+                },
+                "span": {
+                  "start": 579,
+                  "end": 603
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    const { theme = settings.value.theme, size = settings.value.size } = patch;\n    settings.value = { theme, size };\n    emit(\"applied\", theme, size);\n  }",
+              "span": {
+                "start": 605,
+                "end": 762
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "settings@330",
+                  "span": {
+                    "start": 627,
+                    "end": 641
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "settings@330",
+                  "span": {
+                    "start": 656,
+                    "end": 670
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "settings@330",
+                  "operator": "=",
+                  "span": {
+                    "start": 691,
+                    "end": 723
+                  },
+                  "target": {
+                    "start": 691,
+                    "end": 705
+                  },
+                  "value": {
+                    "start": 708,
+                    "end": 723
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@223",
+                  "event": "applied",
+                  "span": {
+                    "start": 729,
+                    "end": 757
+                  },
+                  "arguments": [
+                    {
+                      "start": 745,
+                      "end": 750
+                    },
+                    {
+                      "start": 752,
+                      "end": 756
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 578,
+              "end": 762
+            }
+          },
+          "span": {
+            "start": 564,
+            "end": 762
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "grow@775",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    const clamp = (value: number, max = maxSize.value) => Math.min(value, max);\n    apply({ size: clamp(settings.value.size + 4) });\n  }",
+              "span": {
+                "start": 782,
+                "end": 920
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "maxSize@394",
+                  "span": {
+                    "start": 824,
+                    "end": 837
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Math",
+                  "span": {
+                    "start": 842,
+                    "end": 846
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "apply@573",
+                  "span": {
+                    "start": 868,
+                    "end": 873
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "settings@330",
+                  "span": {
+                    "start": 888,
+                    "end": 902
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 779,
+              "end": 920
+            }
+          },
+          "span": {
+            "start": 766,
+            "end": 920
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "save@939",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    saving.value = true;\n    failure.value = \"\";\n    try {\n      const reply = await new Promise<SaveReply>((resolve) => {\n        finish = resolve;\n      });\n      if (reply.error) throw new Error(reply.error);\n      const id = reply.id ?? 0;\n      label.value = id === 0 ? \"Saved as a draft\" : `Saved as #${id}`;\n      emit(\"saved\", id);\n    } catch (error) {\n      failure.value = error instanceof Error ? error.message : \"Saving failed\";\n    } finally {\n      saving.value = false;\n    }\n  }",
+              "span": {
+                "start": 946,
+                "end": 1443
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "saving@421",
+                  "operator": "=",
+                  "span": {
+                    "start": 952,
+                    "end": 971
+                  },
+                  "target": {
+                    "start": 952,
+                    "end": 964
+                  },
+                  "value": {
+                    "start": 967,
+                    "end": 971
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "failure@486",
+                  "operator": "=",
+                  "span": {
+                    "start": 977,
+                    "end": 995
+                  },
+                  "target": {
+                    "start": 977,
+                    "end": 990
+                  },
+                  "value": {
+                    "start": 993,
+                    "end": 995
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 1037,
+                    "end": 1044
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "finish@511",
+                  "operator": "=",
+                  "span": {
+                    "start": 1079,
+                    "end": 1095
+                  },
+                  "target": {
+                    "start": 1079,
+                    "end": 1085
+                  },
+                  "value": {
+                    "start": 1088,
+                    "end": 1095
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Error",
+                  "span": {
+                    "start": 1140,
+                    "end": 1145
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "label@450",
+                  "operator": "=",
+                  "span": {
+                    "start": 1198,
+                    "end": 1261
+                  },
+                  "target": {
+                    "start": 1198,
+                    "end": 1209
+                  },
+                  "value": {
+                    "start": 1212,
+                    "end": 1261
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@223",
+                  "event": "saved",
+                  "span": {
+                    "start": 1269,
+                    "end": 1286
+                  },
+                  "arguments": [
+                    {
+                      "start": 1283,
+                      "end": 1285
+                    }
+                  ]
+                },
+                {
+                  "kind": "Write",
+                  "binding": "failure@486",
+                  "operator": "=",
+                  "span": {
+                    "start": 1316,
+                    "end": 1388
+                  },
+                  "target": {
+                    "start": 1316,
+                    "end": 1329
+                  },
+                  "value": {
+                    "start": 1332,
+                    "end": 1388
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Error",
+                  "span": {
+                    "start": 1349,
+                    "end": 1354
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "saving@421",
+                  "operator": "=",
+                  "span": {
+                    "start": 1412,
+                    "end": 1432
+                  },
+                  "target": {
+                    "start": 1412,
+                    "end": 1424
+                  },
+                  "value": {
+                    "start": 1427,
+                    "end": 1432
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 943,
+              "end": 1443
+            }
+          },
+          "span": {
+            "start": 924,
+            "end": 1443
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "display-settings",
+            "span": {
+              "start": 1469,
+              "end": 1493
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Display",
+            "span": {
+              "start": 1494,
+              "end": 1514
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 1525,
+                  "end": 1538
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Theme ",
+                "span": {
+                  "start": 1539,
+                  "end": 1554
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "settings.value.theme",
+                  "span": {
+                    "start": 1555,
+                    "end": 1575
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "settings@330",
+                      "span": {
+                        "start": 1555,
+                        "end": 1569
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1554,
+                  "end": 1576
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ", size ",
+                "span": {
+                  "start": 1576,
+                  "end": 1583
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "settings.value.size",
+                  "span": {
+                    "start": 1584,
+                    "end": 1603
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "settings@330",
+                      "span": {
+                        "start": 1584,
+                        "end": 1598
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1583,
+                  "end": 1604
+                }
+              }
+            ],
+            "span": {
+              "start": 1522,
+              "end": 1615
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1630,
+                  "end": 1643
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "apply({ theme: \"dark\" })",
+                      "span": {
+                        "start": 1659,
+                        "end": 1683
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "apply@573",
+                          "span": {
+                            "start": 1659,
+                            "end": 1664
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1653,
+                      "end": 1683
+                    }
+                  },
+                  "span": {
+                    "start": 1653,
+                    "end": 1683
+                  }
+                },
+                "span": {
+                  "start": 1644,
+                  "end": 1684
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Dark",
+                "span": {
+                  "start": 1685,
+                  "end": 1705
+                }
+              }
+            ],
+            "span": {
+              "start": 1622,
+              "end": 1714
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1729,
+                  "end": 1742
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "grow@775",
+                  "span": {
+                    "start": 1752,
+                    "end": 1756
+                  }
+                },
+                "span": {
+                  "start": 1743,
+                  "end": 1757
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Larger",
+                "span": {
+                  "start": 1758,
+                  "end": 1780
+                }
+              }
+            ],
+            "span": {
+              "start": 1721,
+              "end": 1789
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1804,
+                  "end": 1817
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(maxSize.value = 30)",
+                      "span": {
+                        "start": 1833,
+                        "end": 1853
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "maxSize@394",
+                          "operator": "=",
+                          "span": {
+                            "start": 1833,
+                            "end": 1853
+                          },
+                          "target": {
+                            "start": 1834,
+                            "end": 1847
+                          },
+                          "value": {
+                            "start": 1850,
+                            "end": 1852
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1827,
+                      "end": 1853
+                    }
+                  },
+                  "span": {
+                    "start": 1827,
+                    "end": 1853
+                  }
+                },
+                "span": {
+                  "start": 1818,
+                  "end": 1854
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Allow up to 30",
+                "span": {
+                  "start": 1855,
+                  "end": 1885
+                }
+              }
+            ],
+            "span": {
+              "start": 1796,
+              "end": 1894
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1909,
+                  "end": 1922
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "save@939",
+                  "span": {
+                    "start": 1932,
+                    "end": 1936
+                  }
+                },
+                "span": {
+                  "start": 1923,
+                  "end": 1937
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Save",
+                "span": {
+                  "start": 1938,
+                  "end": 1958
+                }
+              }
+            ],
+            "span": {
+              "start": 1901,
+              "end": 1967
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "saving.value ? \"Saving\" : failure.value === \"\" ? label.value : `Failed: ${failure.value}`",
+                  "span": {
+                    "start": 1987,
+                    "end": 2076
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "saving@421",
+                      "span": {
+                        "start": 1987,
+                        "end": 1999
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "failure@486",
+                      "span": {
+                        "start": 2013,
+                        "end": 2026
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "label@450",
+                      "span": {
+                        "start": 2036,
+                        "end": 2047
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "failure@486",
+                      "span": {
+                        "start": 2061,
+                        "end": 2074
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1986,
+                  "end": 2077
+                }
+              }
+            ],
+            "span": {
+              "start": 1974,
+              "end": 2088
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "group",
+                "span": {
+                  "start": 2100,
+                  "end": 2112
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Server",
+                "span": {
+                  "start": 2113,
+                  "end": 2132
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 2150,
+                      "end": 2163
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "finish?.({ id: 7 })",
+                          "span": {
+                            "start": 2179,
+                            "end": 2198
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "finish@511",
+                              "span": {
+                                "start": 2179,
+                                "end": 2185
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 2173,
+                          "end": 2198
+                        }
+                      },
+                      "span": {
+                        "start": 2173,
+                        "end": 2198
+                      }
+                    },
+                    "span": {
+                      "start": 2164,
+                      "end": 2199
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Reply with an id",
+                    "span": {
+                      "start": 2200,
+                      "end": 2236
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2142,
+                  "end": 2245
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 2262,
+                      "end": 2275
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "finish?.({})",
+                          "span": {
+                            "start": 2291,
+                            "end": 2303
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "finish@511",
+                              "span": {
+                                "start": 2291,
+                                "end": 2297
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 2285,
+                          "end": 2303
+                        }
+                      },
+                      "span": {
+                        "start": 2285,
+                        "end": 2303
+                      }
+                    },
+                    "span": {
+                      "start": 2276,
+                      "end": 2304
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Reply as a draft",
+                    "span": {
+                      "start": 2305,
+                      "end": 2341
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2254,
+                  "end": 2350
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 2367,
+                      "end": 2380
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "finish?.({ error: \"Disk full\" })",
+                          "span": {
+                            "start": 2396,
+                            "end": 2428
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "finish@511",
+                              "span": {
+                                "start": 2396,
+                                "end": 2402
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 2390,
+                          "end": 2428
+                        }
+                      },
+                      "span": {
+                        "start": 2390,
+                        "end": 2428
+                      }
+                    },
+                    "span": {
+                      "start": 2381,
+                      "end": 2429
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Reply with an error",
+                    "span": {
+                      "start": 2430,
+                      "end": 2469
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2359,
+                  "end": 2478
+                }
+              }
+            ],
+            "span": {
+              "start": 2095,
+              "end": 2491
+            }
+          }
+        ],
+        "span": {
+          "start": 1460,
+          "end": 2506
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "DisplaySettings",
+      "span": {
+        "start": 171,
+        "end": 2513
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Settings",
+      "exported": true,
+      "code": "interface Settings {\n  theme: string;\n  size: number;\n}",
+      "span": {
+        "start": 56,
+        "end": 111
+      }
+    },
+    {
+      "name": "SaveReply",
+      "exported": false,
+      "code": "interface SaveReply {\n  id?: number;\n  error?: string;\n}",
+      "span": {
+        "start": 113,
+        "end": 169
+      }
+    }
+  ]
+}

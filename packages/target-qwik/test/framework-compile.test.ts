@@ -1,19 +1,20 @@
-import { globSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import type { ToolchainFile } from "@unframework/codegen";
 import { describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
+import { goldens as qwikGoldens } from "./goldens.ts";
 
 const repo = fileURLToPath(new URL("../../..", import.meta.url));
 const context = {
   toolchainDir: `${repo}tests/toolchains/qwik`,
   root: `${repo}tests/integration`,
 };
-const goldens: ToolchainFile[] = globSync("tests/integration/cases/**/__output__/qwik/*", {
-  cwd: repo,
-}).map((path) => ({ path: `${repo}${path}`, contents: readFileSync(`${repo}${path}`, "utf8") }));
+const goldens: ToolchainFile[] = qwikGoldens("tests/integration/cases/**/__output__/qwik/*").map(
+  (path) => ({ path, contents: readFileSync(path, "utf8") }),
+);
 const fixture = (name: string): string =>
   fileURLToPath(new URL(`fixtures/${name}`, import.meta.url));
 
@@ -26,12 +27,13 @@ function component(name: string, body: string): ToolchainFile {
 }
 
 describe("frameworkCompile (L3, the Qwik optimizer)", () => {
+  // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output with no errors and no warnings", async () => {
     expect(goldens.length).toBeGreaterThanOrEqual(2);
     const results = await toolchain.frameworkCompile(goldens, context);
     expect([...results.keys()].toSorted()).toEqual(goldens.map((file) => file.path).toSorted());
     for (const result of results.values()) expect(result).toEqual({ errors: [], warnings: [] });
-  });
+  }, 60_000);
 
   it("accepts the fixtures, interactive and attribute-heavy ones included", async () => {
     const files = ["Attributes.tsx", "Counter.tsx", "Greeting.tsx", "NullProps.tsx"].map(

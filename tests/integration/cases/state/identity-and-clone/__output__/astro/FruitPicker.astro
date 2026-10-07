@@ -1,0 +1,33 @@
+---
+export interface Fruit {
+  name: string;
+  colour: string;
+}
+
+export interface FruitPickerProps {
+  fruits: Fruit[];
+}
+
+type Props = FruitPickerProps;
+
+const { fruits } = Astro.props;
+
+const selected = null as Fruit | null;
+const basket = [] as Fruit[];
+---
+
+<section class="fruit-picker" aria-label="Fruit">
+  <ul aria-label="Fruits">
+    {fruits.map((fruit) => (
+      <li>
+        <button type="button" aria-pressed={fruit === selected}>{fruit.name}</button>
+      </li>
+    ))}
+  </ul>
+  <button type="button">Keep a copy</button>
+  <ol aria-label="Basket">
+    {basket.map((fruit) => (
+      <li>{`${fruit.name} (${fruit.colour})`}</li>
+    ))}
+  </ol>
+</section>

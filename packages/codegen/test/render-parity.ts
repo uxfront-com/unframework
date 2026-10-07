@@ -3,7 +3,7 @@
 // render-parity tests import it by relative path (it is test code, not codegen's API): the
 // target's output, formatted or not, goes through the framework's own compiler and renderer, on
 // the server and in the browser, and the DOM that comes out must be exactly the DOM the reference
-// semantics give (design §1, §4.5). String tests of the printers cannot show that; only the
+// semantics give (ADR-0034 to ADR-0040). String tests of the printers cannot show that; only the
 // frameworks can.
 //
 // Two kinds of case. M0's are static IR trees (`el()`), which are also the DOM they describe.
@@ -91,7 +91,7 @@ export interface SourceCase {
   jsx: string;
   /**
    * The props it renders with, by name. A key left out is an absent prop; a key set to
-   * `undefined` is an explicit `undefined`, which must render the same (design §1.1).
+   * `undefined` is an explicit `undefined`, which must render the same (ADR-0034).
    */
   props?: Readonly<Record<string, unknown>>;
 }
@@ -879,7 +879,7 @@ export function domOf(node: ElementNode, parent: Namespace = "html"): DomElement
 /**
  * An attribute's value as the comparison sees it, or `undefined` when it counts as no attribute.
  * What frameworks write differently for the same DOM state, and only that, is made the same
- * (ADR-0031, ADR-0044, design §6.4):
+ * (ADR-0031, ADR-0044):
  * - HTML's boolean attributes mean their presence: `disabled`, `disabled=""` and
  *   `disabled="disabled"` are the same state, and frameworks write whichever they like;
  * - a `class` is its tokens, sorted and joined by one space (order and spacing carry no

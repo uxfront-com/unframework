@@ -115,8 +115,9 @@ it("updates the branches that narrow, as their references come and go", async ()
   const bo = ["Bo", "Bo", "Bo", "Bo", "-Bo", "London", "t", "-RR3", "3", "2.6", "2.5", ""];
   expect(texts()).toEqual([...bo, "E", "Bo", "Bo", "a", "Bo", "Bo: x", "Box", "Bo", "2.6"]);
   expect(nickTitle()).toBe("none");
-  // Keyed, a branch whose value changed (another user) renders again.
-  expect(container.querySelectorAll("p")[0]).not.toBe(paragraph);
+  // Not keyed, a branch whose value changed (another user) keeps its DOM and reads the new
+  // value through its accessor (ADR-0036 as M2 amends it).
+  expect(container.querySelectorAll("p")[0]).toBe(paragraph);
   // Every reference absent, or of the other type.
   await mounted.rerender?.({
     rows: [],
@@ -169,7 +170,7 @@ it("updates the branches that narrow, as their references come and go", async ()
   const seven = [...ada6, "30Ada", "London", "t", "S--", "7", "7.0", ...tail.slice(0, -1)];
   expect(texts()).toEqual([...seven, "AdaL", "7.0L"]);
   // The same user and count, another label: a branch whose value stays renders the label, as
-  // Solid runs a keyed callback untracked and only its fragment's memo reads the label.
+  // Solid runs a branch's callback untracked and only its fragment's memo reads the label.
   await mounted.rerender?.({ ...props, count: 7, rows, label: "M" });
   expect(texts()).toEqual([...seven, "AdaM", "7.0M"]);
   await mounted.unmount();

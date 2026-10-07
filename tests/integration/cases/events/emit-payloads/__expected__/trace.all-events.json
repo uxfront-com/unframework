@@ -1,0 +1,281 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Refresh' })",
+      "dom": [
+        "<div aria-label=\"docs/readme.md\" class=\"file-row\" role=\"group\">",
+        "  <span>",
+        "    \"docs/readme.md (2048 bytes)\"",
+        "  </span>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Refresh\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Open\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Archive\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Select\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Share\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Share with a note\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- group \"docs/readme.md\":",
+        "  - text: docs/readme.md (2048 bytes)",
+        "  - button \"Refresh\"",
+        "  - button \"Open\"",
+        "  - button \"Archive\"",
+        "  - button \"Select\"",
+        "  - button \"Share\"",
+        "  - button \"Share with a note\""
+      ],
+      "events": {
+        "refresh": [
+          []
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Open' })",
+      "dom": [
+        "<div aria-label=\"docs/readme.md\" class=\"file-row\" role=\"group\">",
+        "  <span>",
+        "    \"docs/readme.md (2048 bytes)\"",
+        "  </span>",
+        "  <button type=\"button\">",
+        "    \"Refresh\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Open\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Archive\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Select\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Share\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Share with a note\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- group \"docs/readme.md\":",
+        "  - text: docs/readme.md (2048 bytes)",
+        "  - button \"Refresh\"",
+        "  - button \"Open\"",
+        "  - button \"Archive\"",
+        "  - button \"Select\"",
+        "  - button \"Share\"",
+        "  - button \"Share with a note\""
+      ],
+      "events": {
+        "open": [
+          [
+            "docs/readme.md"
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Archive' })",
+      "dom": [
+        "<div aria-label=\"docs/readme.md\" class=\"file-row\" role=\"group\">",
+        "  <span>",
+        "    \"docs/readme.md (2048 bytes)\"",
+        "  </span>",
+        "  <button type=\"button\">",
+        "    \"Refresh\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Open\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Archive\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Select\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Share\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Share with a note\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- group \"docs/readme.md\":",
+        "  - text: docs/readme.md (2048 bytes)",
+        "  - button \"Refresh\"",
+        "  - button \"Open\"",
+        "  - button \"Archive\"",
+        "  - button \"Select\"",
+        "  - button \"Share\"",
+        "  - button \"Share with a note\""
+      ],
+      "events": {
+        "move": [
+          [
+            "docs/readme.md",
+            "archive/docs/readme.md"
+          ]
+        ],
+        "refresh": [
+          []
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Select' })",
+      "dom": [
+        "<div aria-label=\"docs/readme.md\" class=\"file-row\" role=\"group\">",
+        "  <span>",
+        "    \"docs/readme.md (2048 bytes)\"",
+        "  </span>",
+        "  <button type=\"button\">",
+        "    \"Refresh\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Open\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Archive\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Select\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Share\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Share with a note\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- group \"docs/readme.md\":",
+        "  - text: docs/readme.md (2048 bytes)",
+        "  - button \"Refresh\"",
+        "  - button \"Open\"",
+        "  - button \"Archive\"",
+        "  - button \"Select\"",
+        "  - button \"Share\"",
+        "  - button \"Share with a note\""
+      ],
+      "events": {
+        "pick": [
+          [
+            {
+              "path": "docs/readme.md",
+              "size": 2048
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Share' })",
+      "dom": [
+        "<div aria-label=\"docs/readme.md\" class=\"file-row\" role=\"group\">",
+        "  <span>",
+        "    \"docs/readme.md (2048 bytes)\"",
+        "  </span>",
+        "  <button type=\"button\">",
+        "    \"Refresh\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Open\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Archive\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Select\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Share\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Share with a note\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- group \"docs/readme.md\":",
+        "  - text: docs/readme.md (2048 bytes)",
+        "  - button \"Refresh\"",
+        "  - button \"Open\"",
+        "  - button \"Archive\"",
+        "  - button \"Select\"",
+        "  - button \"Share\"",
+        "  - button \"Share with a note\""
+      ],
+      "events": {
+        "share": [
+          [
+            "docs/readme.md"
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Share with a note' })",
+      "dom": [
+        "<div aria-label=\"docs/readme.md\" class=\"file-row\" role=\"group\">",
+        "  <span>",
+        "    \"docs/readme.md (2048 bytes)\"",
+        "  </span>",
+        "  <button type=\"button\">",
+        "    \"Refresh\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Open\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Archive\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Select\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Share\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Share with a note\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- group \"docs/readme.md\":",
+        "  - text: docs/readme.md (2048 bytes)",
+        "  - button \"Refresh\"",
+        "  - button \"Open\"",
+        "  - button \"Archive\"",
+        "  - button \"Select\"",
+        "  - button \"Share\"",
+        "  - button \"Share with a note\""
+      ],
+      "events": {
+        "share": [
+          [
+            "docs/readme.md",
+            "Please review"
+          ]
+        ]
+      }
+    }
+  ]
+}

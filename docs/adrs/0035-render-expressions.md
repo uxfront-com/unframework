@@ -1,6 +1,6 @@
 # ADR-0035: Render expressions are a scope-analysed subset that every target reads alike
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0045
 - **Date:** 2026-10-05
 - **Plan:** §4.5 (Determinism), §4.6, §5.3, §5.4, §9 M1; G5, P2, P3, P4, P5, P8; R4, R5;
   ADR-0002, ADR-0033; amends ADR-0032

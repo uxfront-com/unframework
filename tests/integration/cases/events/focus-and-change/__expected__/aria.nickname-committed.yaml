@@ -1,0 +1,16 @@
+- region "Profile":
+  - group "Name fields":
+    - text: Name
+    - textbox "Name"
+  - text: Nickname
+  - textbox "Nickname": Ada
+  - paragraph: "Nickname: Ada"
+  - checkbox "Public profile"
+  - text: Public profile
+  - checkbox "Locked"
+  - text: Locked
+  - group "Card":
+    - paragraph: Card not focused
+    - paragraph: "Card blurs: 0"
+    - button "Inside the card"
+  - list "Log"

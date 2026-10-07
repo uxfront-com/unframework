@@ -50,16 +50,16 @@ export default function ShipmentCard(rawProps: ShipmentCardProps) {
           )}
         </For>
       </ol>
-      <Show keyed when={props.signature}>
+      <Show when={props.signature}>
         {(signature) => (
-          <p id={signature.id} title={signature.title}>
+          <p id={signature().id} title={signature().title}>
             Signed on delivery
           </p>
         )}
       </Show>
-      <Show keyed when={props.parcel.seal} fallback={<p>Not sealed</p>}>
+      <Show when={props.parcel.seal} fallback={<p>Not sealed</p>}>
         {(seal) => (
-          <p id={seal.id} title={seal.title}>
+          <p id={seal().id} title={seal().title}>
             Sealed
           </p>
         )}

@@ -1,0 +1,6 @@
+{
+  "description": "Watchers run once per handler after its writes, only when their source changed, with the previous value, and clean up right before their next callback.",
+  "ssr": {
+    "initial": {}
+  }
+}

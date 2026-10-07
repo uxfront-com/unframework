@@ -1,0 +1,672 @@
+{
+  "irVersion": 1,
+  "file": "events/conditional-controls/ReplyBox.uf.tsx",
+  "components": [
+    {
+      "name": "ReplyBox",
+      "span": {
+        "start": 36,
+        "end": 1122
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "started@81",
+          "name": "started",
+          "kind": "state",
+          "span": {
+            "start": 81,
+            "end": 88
+          }
+        },
+        {
+          "id": "suggesting@111",
+          "name": "suggesting",
+          "kind": "state",
+          "span": {
+            "start": 111,
+            "end": 121
+          }
+        },
+        {
+          "id": "accepted@144",
+          "name": "accepted",
+          "kind": "state",
+          "span": {
+            "start": 144,
+            "end": 152
+          }
+        },
+        {
+          "id": "accept@175",
+          "name": "accept",
+          "kind": "localFn",
+          "span": {
+            "start": 175,
+            "end": 181
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "started@81",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 95,
+              "end": 100
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 75,
+            "end": 102
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "suggesting@111",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 128,
+              "end": 133
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 105,
+            "end": 135
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "accepted@144",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 159,
+              "end": 160
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 138,
+            "end": 162
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "accept@175",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 189,
+                    "end": 202
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 182,
+                  "end": 202
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    event.preventDefault();\n    suggesting.value = false;\n    accepted.value += 1;\n  }",
+              "span": {
+                "start": 204,
+                "end": 292
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 210,
+                    "end": 230
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "suggesting@111",
+                  "operator": "=",
+                  "span": {
+                    "start": 238,
+                    "end": 262
+                  },
+                  "target": {
+                    "start": 238,
+                    "end": 254
+                  },
+                  "value": {
+                    "start": 257,
+                    "end": 262
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "accepted@144",
+                  "operator": "+=",
+                  "span": {
+                    "start": 268,
+                    "end": 287
+                  },
+                  "target": {
+                    "start": 268,
+                    "end": 282
+                  },
+                  "value": {
+                    "start": 286,
+                    "end": 287
+                  }
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "preventDefault",
+                "span": {
+                  "start": 210,
+                  "end": 233
+                }
+              }
+            ],
+            "span": {
+              "start": 181,
+              "end": 292
+            }
+          },
+          "span": {
+            "start": 166,
+            "end": 292
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "reply-box",
+            "span": {
+              "start": 318,
+              "end": 335
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Reply",
+            "span": {
+              "start": 336,
+              "end": 354
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Message",
+                "span": {
+                  "start": 369,
+                  "end": 394
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "textarea",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "message",
+                    "span": {
+                      "start": 414,
+                      "end": 428
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "keydown",
+                    "once": true,
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "KeyboardEvent",
+                            "span": {
+                              "start": 455,
+                              "end": 460
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "{\n            if (event.key === \"Enter\") event.preventDefault();\n            started.value = true;\n          }",
+                          "span": {
+                            "start": 465,
+                            "end": 575
+                          },
+                          "refs": [
+                            {
+                              "kind": "Event",
+                              "member": "key",
+                              "span": {
+                                "start": 483,
+                                "end": 492
+                              }
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "preventDefault",
+                              "span": {
+                                "start": 506,
+                                "end": 526
+                              },
+                              "call": true
+                            },
+                            {
+                              "kind": "Write",
+                              "binding": "started@81",
+                              "operator": "=",
+                              "span": {
+                                "start": 542,
+                                "end": 562
+                              },
+                              "target": {
+                                "start": 542,
+                                "end": 555
+                              },
+                              "value": {
+                                "start": 558,
+                                "end": 562
+                              }
+                            }
+                          ]
+                        },
+                        "eventControls": [
+                          {
+                            "method": "preventDefault",
+                            "condition": {
+                              "code": "event.key === \"Enter\"",
+                              "span": {
+                                "start": 483,
+                                "end": 504
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Event",
+                                  "member": "key",
+                                  "span": {
+                                    "start": 483,
+                                    "end": 492
+                                  }
+                                }
+                              ]
+                            },
+                            "span": {
+                              "start": 479,
+                              "end": 529
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 454,
+                          "end": 575
+                        }
+                      },
+                      "span": {
+                        "start": 454,
+                        "end": 575
+                      }
+                    },
+                    "span": {
+                      "start": 439,
+                      "end": 576
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 394,
+                  "end": 587
+                }
+              }
+            ],
+            "span": {
+              "start": 362,
+              "end": 602
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "started.value ? \"Started\" : \"Not started\"",
+                  "span": {
+                    "start": 613,
+                    "end": 654
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "started@81",
+                      "span": {
+                        "start": 613,
+                        "end": 626
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 612,
+                  "end": 655
+                }
+              }
+            ],
+            "span": {
+              "start": 609,
+              "end": 659
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Answer",
+                "span": {
+                  "start": 673,
+                  "end": 697
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "textarea",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "answer",
+                    "span": {
+                      "start": 717,
+                      "end": 730
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "keydown",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "KeyboardEvent",
+                            "span": {
+                              "start": 753,
+                              "end": 758
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "{\n            if (suggesting.value && event.key === \"Enter\") accept(event);\n          }",
+                          "span": {
+                            "start": 763,
+                            "end": 850
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "suggesting@111",
+                              "span": {
+                                "start": 781,
+                                "end": 797
+                              }
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "key",
+                              "span": {
+                                "start": 801,
+                                "end": 810
+                              }
+                            },
+                            {
+                              "kind": "Binding",
+                              "binding": "accept@175",
+                              "span": {
+                                "start": 824,
+                                "end": 830
+                              },
+                              "call": true
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 752,
+                          "end": 850
+                        }
+                      },
+                      "span": {
+                        "start": 752,
+                        "end": 850
+                      }
+                    },
+                    "span": {
+                      "start": 741,
+                      "end": 851
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 697,
+                  "end": 862
+                }
+              }
+            ],
+            "span": {
+              "start": 666,
+              "end": 877
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 900,
+                  "end": 913
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-pressed",
+                "value": {
+                  "code": "suggesting.value",
+                  "span": {
+                    "start": 936,
+                    "end": 952
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "suggesting@111",
+                      "span": {
+                        "start": 936,
+                        "end": 952
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 922,
+                  "end": 953
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(suggesting.value = !suggesting.value)",
+                      "span": {
+                        "start": 977,
+                        "end": 1015
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "suggesting@111",
+                          "operator": "=",
+                          "span": {
+                            "start": 977,
+                            "end": 1015
+                          },
+                          "target": {
+                            "start": 978,
+                            "end": 994
+                          },
+                          "value": {
+                            "start": 997,
+                            "end": 1014
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "suggesting@111",
+                          "span": {
+                            "start": 998,
+                            "end": 1014
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 971,
+                      "end": 1015
+                    }
+                  },
+                  "span": {
+                    "start": 971,
+                    "end": 1015
+                  }
+                },
+                "span": {
+                  "start": 962,
+                  "end": 1016
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Suggestions",
+                "span": {
+                  "start": 1024,
+                  "end": 1051
+                }
+              }
+            ],
+            "span": {
+              "start": 884,
+              "end": 1060
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Accepted: ",
+                "span": {
+                  "start": 1070,
+                  "end": 1080
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "accepted.value",
+                  "span": {
+                    "start": 1081,
+                    "end": 1095
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "accepted@144",
+                      "span": {
+                        "start": 1081,
+                        "end": 1095
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1080,
+                  "end": 1096
+                }
+              }
+            ],
+            "span": {
+              "start": 1067,
+              "end": 1100
+            }
+          }
+        ],
+        "span": {
+          "start": 309,
+          "end": 1115
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ReplyBox",
+      "span": {
+        "start": 36,
+        "end": 1122
+      }
+    }
+  ],
+  "types": []
+}

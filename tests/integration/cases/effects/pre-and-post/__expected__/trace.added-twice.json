@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add one' })",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-results\">",
+        "  <p>",
+        "    \"Ready\"",
+        "  </p>",
+        "  <label>",
+        "    \"Query\"",
+        "    <input name=\"query\" uf:value=\"\">",
+        "  </label>",
+        "  <ul aria-label=\"Results\"></ul>",
+        "  <output>",
+        "    \"2\"",
+        "  </output>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add one\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - paragraph: Ready",
+        "  - text: Query",
+        "  - textbox \"Query\"",
+        "  - list \"Results\"",
+        "  - status: \"2\"",
+        "  - button \"Add one\""
+      ],
+      "events": {
+        "ready": [
+          [
+            "Ready"
+          ]
+        ],
+        "shown": [
+          [
+            "2"
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Add one' })",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-results\">",
+        "  <p>",
+        "    \"Ready\"",
+        "  </p>",
+        "  <label>",
+        "    \"Query\"",
+        "    <input name=\"query\" uf:value=\"\">",
+        "  </label>",
+        "  <ul aria-label=\"Results\"></ul>",
+        "  <output>",
+        "    \"4\"",
+        "  </output>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add one\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - paragraph: Ready",
+        "  - text: Query",
+        "  - textbox \"Query\"",
+        "  - list \"Results\"",
+        "  - status: \"4\"",
+        "  - button \"Add one\""
+      ],
+      "events": {
+        "shown": [
+          [
+            "4"
+          ]
+        ]
+      }
+    }
+  ]
+}

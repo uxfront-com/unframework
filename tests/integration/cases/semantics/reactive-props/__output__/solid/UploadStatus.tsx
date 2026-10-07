@@ -37,8 +37,8 @@ export default function UploadStatus(props: UploadStatusProps) {
         <Match when={props.state === "failed"}>
           <p class="upload-error">{props.error ?? "The upload failed."}</p>
         </Match>
-        <Match keyed when={props.state === "failed" ? undefined : { state: props.state }}>
-          {({ state }) => <p>{state === "queued" ? "Waiting to start" : "Uploading"}</p>}
+        <Match when={props.state === "failed" ? undefined : { state: props.state }}>
+          {(narrowed) => <p>{narrowed().state === "queued" ? "Waiting to start" : "Uploading"}</p>}
         </Match>
       </Switch>
       <ol>

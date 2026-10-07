@@ -1,0 +1,6 @@
+{
+  "description": "A radio group named by one useId, each radio's id that id suffixed with its index, beside a second useId that describes the group.",
+  "ssr": {
+    "sizes": { "props": { "legend": "Size", "sizes": ["S", "M", "L"] } }
+  }
+}

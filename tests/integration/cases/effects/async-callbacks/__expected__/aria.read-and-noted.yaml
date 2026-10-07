@@ -1,0 +1,8 @@
+- region "Mailbox":
+  - heading "Inbox, all read" [level=2]
+  - status: 0 unread
+  - paragraph: "Status: idle"
+  - button "Save"
+  - button "Refresh every second"
+  - button "Mark all read"
+  - button "Note"

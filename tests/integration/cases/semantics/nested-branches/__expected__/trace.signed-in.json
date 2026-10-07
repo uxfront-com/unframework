@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Sign in' })",
+      "dom": [
+        "<section aria-label=\"Account\" class=\"account-menu\">",
+        "  <button type=\"button\">",
+        "    \"Sign out\"",
+        "  </button>",
+        "  <p>",
+        "    \"Signed in as Ada\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Greet Grace\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Account\":",
+        "  - button \"Sign out\"",
+        "  - paragraph: Signed in as Ada",
+        "  - button \"Greet Grace\""
+      ],
+      "events": {}
+    }
+  ]
+}

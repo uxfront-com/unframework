@@ -1,0 +1,787 @@
+{
+  "irVersion": 1,
+  "file": "events/custom-controls/CommentCard.uf.tsx",
+  "components": [
+    {
+      "name": "CommentCard",
+      "span": {
+        "start": 49,
+        "end": 1336
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@97",
+        "type": {
+          "code": "{ liked: [liked: boolean, by: string] }",
+          "span": {
+            "start": 116,
+            "end": 155
+          }
+        },
+        "events": [
+          {
+            "name": "liked",
+            "parameters": [
+              {
+                "name": "liked",
+                "type": {
+                  "code": "boolean",
+                  "span": {
+                    "start": 133,
+                    "end": 140
+                  }
+                },
+                "span": {
+                  "start": 126,
+                  "end": 140
+                }
+              },
+              {
+                "name": "by",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 146,
+                    "end": 152
+                  }
+                },
+                "span": {
+                  "start": 142,
+                  "end": 152
+                }
+              }
+            ],
+            "span": {
+              "start": 118,
+              "end": 153
+            }
+          }
+        ],
+        "span": {
+          "start": 91,
+          "end": 159
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@97",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 97,
+            "end": 101
+          }
+        },
+        {
+          "id": "text@169",
+          "name": "text",
+          "kind": "state",
+          "span": {
+            "start": 169,
+            "end": 173
+          }
+        },
+        {
+          "id": "liked@193",
+          "name": "liked",
+          "kind": "state",
+          "span": {
+            "start": 193,
+            "end": 198
+          }
+        },
+        {
+          "id": "autosize@225",
+          "name": "autosize",
+          "kind": "localFn",
+          "span": {
+            "start": 225,
+            "end": 233
+          }
+        },
+        {
+          "id": "toggleLike@437",
+          "name": "toggleLike",
+          "kind": "localFn",
+          "span": {
+            "start": 437,
+            "end": 447
+          }
+        },
+        {
+          "id": "onLikeKeydown@577",
+          "name": "onLikeKeydown",
+          "kind": "localFn",
+          "span": {
+            "start": 577,
+            "end": 590
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "text@169",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 180,
+              "end": 182
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 163,
+            "end": 184
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "liked@193",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 205,
+              "end": 210
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 187,
+            "end": 212
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "autosize@225",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "Event",
+                  "span": {
+                    "start": 241,
+                    "end": 246
+                  }
+                },
+                "event": "Event",
+                "span": {
+                  "start": 234,
+                  "end": 246
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    const area = event.currentTarget as HTMLTextAreaElement;\n    text.value = area.value;\n    area.style.height = `${Math.max(area.value.split(\"\\n\").length, 2) * 1.5}em`;\n  }",
+              "span": {
+                "start": 248,
+                "end": 424
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "currentTarget",
+                  "span": {
+                    "start": 267,
+                    "end": 286
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "text@169",
+                  "operator": "=",
+                  "span": {
+                    "start": 315,
+                    "end": 338
+                  },
+                  "target": {
+                    "start": 315,
+                    "end": 325
+                  },
+                  "value": {
+                    "start": 328,
+                    "end": 338
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Math",
+                  "span": {
+                    "start": 367,
+                    "end": 371
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 233,
+              "end": 424
+            }
+          },
+          "span": {
+            "start": 216,
+            "end": 424
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "toggleLike@437",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "MouseEvent | KeyboardEvent",
+                  "span": {
+                    "start": 455,
+                    "end": 481
+                  }
+                },
+                "event": "UIEvent",
+                "span": {
+                  "start": 448,
+                  "end": 481
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    liked.value = !liked.value;\n    emit(\"liked\", liked.value, event.type);\n  }",
+              "span": {
+                "start": 483,
+                "end": 564
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "liked@193",
+                  "operator": "=",
+                  "span": {
+                    "start": 489,
+                    "end": 515
+                  },
+                  "target": {
+                    "start": 489,
+                    "end": 500
+                  },
+                  "value": {
+                    "start": 503,
+                    "end": 515
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "liked@193",
+                  "span": {
+                    "start": 504,
+                    "end": 515
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@97",
+                  "event": "liked",
+                  "span": {
+                    "start": 521,
+                    "end": 559
+                  },
+                  "arguments": [
+                    {
+                      "start": 535,
+                      "end": 546
+                    },
+                    {
+                      "start": 548,
+                      "end": 558
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "liked@193",
+                  "span": {
+                    "start": 535,
+                    "end": 546
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "type",
+                  "span": {
+                    "start": 548,
+                    "end": 558
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 447,
+              "end": 564
+            }
+          },
+          "span": {
+            "start": 428,
+            "end": 564
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "onLikeKeydown@577",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 598,
+                    "end": 611
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 591,
+                  "end": 611
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key === \" \") event.preventDefault();\n    if (event.key === \"Enter\" || event.key === \" \") toggleLike(event);\n  }",
+              "span": {
+                "start": 613,
+                "end": 740
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 623,
+                    "end": 632
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 642,
+                    "end": 662
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 674,
+                    "end": 683
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 699,
+                    "end": 708
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "toggleLike@437",
+                  "span": {
+                    "start": 718,
+                    "end": 728
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "preventDefault",
+                "condition": {
+                  "code": "event.key === \" \"",
+                  "span": {
+                    "start": 623,
+                    "end": 640
+                  },
+                  "refs": [
+                    {
+                      "kind": "Event",
+                      "member": "key",
+                      "span": {
+                        "start": 623,
+                        "end": 632
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 619,
+                  "end": 665
+                }
+              }
+            ],
+            "span": {
+              "start": 590,
+              "end": 740
+            }
+          },
+          "span": {
+            "start": 568,
+            "end": 740
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "comment-card",
+            "span": {
+              "start": 766,
+              "end": 786
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Comment",
+            "span": {
+              "start": 787,
+              "end": 807
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Comment",
+                "span": {
+                  "start": 822,
+                  "end": 847
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "textarea",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "comment",
+                    "span": {
+                      "start": 857,
+                      "end": 871
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "rows",
+                    "value": "2",
+                    "span": {
+                      "start": 872,
+                      "end": 880
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "input",
+                    "handler": {
+                      "kind": "Function",
+                      "binding": "autosize@225",
+                      "span": {
+                        "start": 890,
+                        "end": 898
+                      }
+                    },
+                    "span": {
+                      "start": 881,
+                      "end": 899
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 847,
+                  "end": 902
+                }
+              }
+            ],
+            "span": {
+              "start": 815,
+              "end": 917
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "meter",
+                "span": {
+                  "start": 929,
+                  "end": 942
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "presentation",
+                "span": {
+                  "start": 943,
+                  "end": 962
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "div",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "fill",
+                    "span": {
+                      "start": 977,
+                      "end": 989
+                    }
+                  },
+                  {
+                    "kind": "Style",
+                    "declarations": [
+                      {
+                        "kind": "Bound",
+                        "property": "width",
+                        "value": {
+                          "code": "`${Math.min(text.value.length, 100)}%`",
+                          "span": {
+                            "start": 1006,
+                            "end": 1044
+                          },
+                          "refs": [
+                            {
+                              "kind": "Global",
+                              "name": "Math",
+                              "span": {
+                                "start": 1009,
+                                "end": 1013
+                              }
+                            },
+                            {
+                              "kind": "Binding",
+                              "binding": "text@169",
+                              "span": {
+                                "start": 1018,
+                                "end": 1028
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 999,
+                          "end": 1044
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 990,
+                      "end": 1047
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 972,
+                  "end": 1050
+                }
+              }
+            ],
+            "span": {
+              "start": 924,
+              "end": 1063
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "text.value.length",
+                  "span": {
+                    "start": 1074,
+                    "end": 1091
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "text@169",
+                      "span": {
+                        "start": 1074,
+                        "end": 1084
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1073,
+                  "end": 1092
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " characters",
+                "span": {
+                  "start": 1092,
+                  "end": 1103
+                }
+              }
+            ],
+            "span": {
+              "start": 1070,
+              "end": 1107
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "like",
+                "span": {
+                  "start": 1127,
+                  "end": 1139
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "button",
+                "span": {
+                  "start": 1148,
+                  "end": 1161
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "tabindex",
+                "value": "0",
+                "span": {
+                  "start": 1170,
+                  "end": 1182
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-pressed",
+                "value": {
+                  "code": "liked.value",
+                  "span": {
+                    "start": 1205,
+                    "end": 1216
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "liked@193",
+                      "span": {
+                        "start": 1205,
+                        "end": 1216
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1191,
+                  "end": 1217
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "toggleLike@437",
+                  "span": {
+                    "start": 1235,
+                    "end": 1245
+                  }
+                },
+                "span": {
+                  "start": 1226,
+                  "end": 1246
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "keydown",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "onLikeKeydown@577",
+                  "span": {
+                    "start": 1266,
+                    "end": 1279
+                  }
+                },
+                "span": {
+                  "start": 1255,
+                  "end": 1280
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Like",
+                "span": {
+                  "start": 1288,
+                  "end": 1308
+                }
+              }
+            ],
+            "span": {
+              "start": 1114,
+              "end": 1314
+            }
+          }
+        ],
+        "span": {
+          "start": 757,
+          "end": 1329
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "CommentCard",
+      "span": {
+        "start": 49,
+        "end": 1336
+      }
+    }
+  ],
+  "types": []
+}

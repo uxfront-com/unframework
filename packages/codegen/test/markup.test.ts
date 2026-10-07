@@ -3,8 +3,22 @@
 // here but by each markup target's render-parity and markup-semantics tests, which run the
 // framework's own compiler and server renderer over the same trees (codegen/test/render-parity.ts,
 // codegen/test/markup-cases.ts).
-import { createElement, createStaticAttribute, createText } from "@unframework/ir";
-import type { ElementNode, FragmentNode, RenderNode } from "@unframework/ir";
+import {
+  createBinding,
+  createComponent,
+  createElement,
+  createEventAttribute,
+  createFor,
+  createFunctionCode,
+  createFunctionHandler,
+  createInlineHandler,
+  createParameter,
+  createRefAttribute,
+  createStaticAttribute,
+  createText,
+  span,
+} from "@unframework/ir";
+import type { Attribute, ElementNode, FragmentNode, Handler, RenderNode } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -19,6 +33,9 @@ import {
   vueDialect,
 } from "../src/markup.ts";
 import type { MarkupOptions } from "../src/markup.ts";
+import type { RewriteRules } from "../src/rewrite.ts";
+import { codeAt, expressionAt } from "./expressions.ts";
+import type { CodeTarget } from "./expressions.ts";
 import { suite } from "./markup-cases.ts";
 import type { Builder, PropSpec } from "./markup-cases.ts";
 
@@ -297,6 +314,59 @@ describe("layout", () => {
     expect(printMarkup(parent, svelteDialect)).toBe(
       `<p\n  class="${"y".repeat(80)}"\n  title="t"\n>text</p>`,
     );
+  });
+
+  // Code copied from the source keeps the source's indentation on its continuation lines: the
+  // printer moves them to the attribute's column, never a line inside a literal.
+  describe("code that spans lines", () => {
+    /** An element whose one attribute the caller writes as `written`, indented one level. */
+    const print = (written: string, dialect = svelteDialect) =>
+      printMarkup(el("section", [el("button", [text("Go")], [["x", true]])]), dialect, {
+        attribute: () => written,
+      });
+
+    it("moves a handler's body one level in from the attribute, and its closing brace to it", () => {
+      expect(print("onclick={() => {\n          a();\n          b();\n        }}")).toBe(
+        "<section>\n  <button\n    onclick={() => {\n      a();\n      b();\n    }}\n  >Go</button>\n</section>",
+      );
+      expect(
+        print('{@attach (node) => on(node, "click", once(() => {\n          a();\n        }))}'),
+      ).toBe(
+        '<section>\n  <button\n    {@attach (node) => on(node, "click", once(() => {\n      a();\n    }))}\n  >Go</button>\n</section>',
+      );
+    });
+
+    it("moves lines that close nothing the first line opened one level in", () => {
+      expect(print('title={long\n          ? "a"\n          : "b"}')).toBe(
+        '<section>\n  <button\n    title={long\n      ? "a"\n      : "b"}\n  >Go</button>\n</section>',
+      );
+    });
+
+    it("never moves a line inside a template literal, or a string continued on the next", () => {
+      expect(print("title={long\n          ? `a\n   b ${c}`\n          : 'd\\\n  e'}")).toBe(
+        "<section>\n  <button\n    title={long\n      ? `a\n   b ${c}`\n      : 'd\\\n  e'}\n  >Go</button>\n</section>",
+      );
+      expect(
+        print(':title="long\n          ? &quot;a&quot;\n          : `b\n c`"', vueDialect),
+      ).toBe(
+        '<section>\n  <button\n    :title="long\n      ? &quot;a&quot;\n      : `b\n c`"\n  >Go</button>\n</section>',
+      );
+    });
+
+    it("keeps a static value's lines as they are: they are its content", () => {
+      const node = el("section", [el("button", [text("Go")], [["title", "a\n      b"]])]);
+      for (const dialect of [svelteDialect, vueDialect, astroDialect]) {
+        expect(printMarkup(node, dialect)).toBe(
+          '<section>\n  <button title="a\n      b">Go</button>\n</section>',
+        );
+      }
+    });
+
+    it("keeps the lines of code it cannot parse as they are", () => {
+      expect(print("title={long\n          ? `a\n   b`\n          :}")).toBe(
+        "<section>\n  <button\n    title={long\n          ? `a\n   b`\n          :}\n  >Go</button>\n</section>",
+      );
+    });
   });
 });
 
@@ -1087,5 +1157,200 @@ describe("roots and SVG", () => {
         rewrite: cases.rules(true),
       }),
     ).toThrow("binds nothing");
+  });
+});
+
+describe("listeners and template refs", () => {
+  const save = createBinding("save", "localFn", span(10, 14));
+  const count = createBinding("count", "state", span(20, 25));
+  const input = createBinding("input", "templateRef", span(30, 35));
+  const onclick = createBinding("onclick", "localFn", span(40, 47));
+  const item = createBinding("item", "loopVar", span(50, 54));
+  const index = createBinding("index", "loopVar", span(56, 61));
+  const bindings = [save, count, input, onclick, item, index];
+  let offset = 1000;
+  const code = (text: string, ...targets: CodeTarget[]) => {
+    const found = codeAt(offset, text, ...targets);
+    offset += text.length + 10;
+    return found;
+  };
+  const named = (binding = save) => createFunctionHandler(binding.id, at);
+  /** `() => body`, or `(event) => body` with an event parameter. */
+  const inline = (body: string, targets: CodeTarget[], event = false) =>
+    createInlineHandler(
+      createFunctionCode(
+        event ? [createParameter("event", at, { event: "MouseEvent" })] : [],
+        code(body, ...targets),
+        at,
+        { expression: true },
+      ),
+      at,
+    );
+  const increment = () =>
+    inline("count.value++", [
+      {
+        write: "count.value++",
+        binding: count,
+        operator: "++",
+        target: "count.value",
+        arrowBody: true,
+      },
+    ]);
+  const listener = (
+    event: string,
+    handler: Handler,
+    options: Parameters<typeof createEventAttribute>[3] = {},
+  ) => createEventAttribute(event, handler, at, options);
+  const button = (...attributes: Attribute[]) => createElement("button", attributes, [], at);
+  const component = (render: ElementNode) =>
+    createComponent("Counter", render, at, [], undefined, [], bindings);
+  /** Vue's and Svelte's spelling: a ref's value is its variable in the template. */
+  const unwrapped: RewriteRules = {
+    binding: (_, binding, written) =>
+      binding.kind === "state" || binding.kind === "templateRef" ? binding.name : written,
+  };
+  const options = (render: ElementNode, extra: MarkupOptions = {}): MarkupOptions => ({
+    component: component(render),
+    rewrite: unwrapped,
+    ...extra,
+  });
+
+  it("writes Vue listeners with their modifiers, and refs, in `vue/attributes-order`", () => {
+    const render = button(
+      listener("click", named()),
+      createStaticAttribute("type", "button", at),
+      createRefAttribute(input.id, at),
+      createStaticAttribute("id", "go", at),
+      listener("keydown", increment(), { capture: true }),
+      listener("wheel", named(), { passive: true }),
+      listener("focus", named(), { once: true }),
+    );
+    expect(printMarkup(render, vueDialect, { ...options(render), printWidth: Infinity })).toBe(
+      '<button id="go" ref="input" type="button" @click="save" @keydown.capture="() => count++" @wheel.passive="save" @focus.once="save"></button>',
+    );
+  });
+
+  it("escapes a Vue listener's code for its attribute, statements included", () => {
+    const render = button(
+      listener("click", inline("alert(\"a&b\" + 'c')", [["alert", "Global"]])),
+      listener("dblclick", named()),
+    );
+    expect(
+      printMarkup(render, vueDialect, {
+        ...options(render),
+        printWidth: Infinity,
+        handler: (attribute) =>
+          attribute.event === "dblclick" ? 'count++; save("x&y")' : undefined,
+      }),
+    ).toBe(
+      `<button @click="() => alert('a&amp;b' + 'c')" @dblclick="count++; save('x&amp;y')"></button>`,
+    );
+  });
+
+  it("writes Svelte's event attributes and `bind:this`", () => {
+    const render = button(
+      listener("click", named()),
+      listener("click", increment(), { capture: true }),
+      listener("keydown", named(onclick)),
+      createRefAttribute(input.id, at),
+    );
+    expect(printMarkup(render, svelteDialect, { ...options(render), printWidth: Infinity })).toBe(
+      "<button onclick={save} onclickcapture={() => count++} onkeydown={onclick} bind:this={input}></button>",
+    );
+    const shorthand = button(listener("click", named(onclick)));
+    expect(printMarkup(shorthand, svelteDialect, options(shorthand))).toBe(
+      "<button {onclick}></button>",
+    );
+    for (const option of [{ once: true }, { passive: true }]) {
+      const render = button(listener("click", named(), option));
+      expect(() => printMarkup(render, svelteDialect, options(render))).toThrow(
+        "the Svelte target writes it",
+      );
+    }
+  });
+
+  it("writes Angular listeners from the statement its target supplies, and `#name` refs", () => {
+    const render = button(
+      listener("click", named()),
+      listener("keydown", increment()),
+      createRefAttribute(input.id, at),
+    );
+    const statements: MarkupOptions["handler"] = (attribute) =>
+      attribute.event === "click" ? "save($event)" : 'count.set(count() + 1); note("a<b & `c`")';
+    expect(
+      printMarkup(render, angularDialect, {
+        ...options(render),
+        printWidth: Infinity,
+        handler: statements,
+      }),
+    ).toBe(
+      // Angular's lexer reads literals re-printed from their values: `&` and `<` as escapes.
+      '<button (click)="save($event)" (keydown)="count.set(count() + 1); note(\'a\\u003cb \\u0026 `c`\')" #input></button>',
+    );
+    expect(() => printMarkup(render, angularDialect, options(render))).toThrow(
+      "the Angular target supplies a template statement",
+    );
+    for (const option of [{ capture: true }, { once: true }, { passive: true }]) {
+      const optioned = button(listener("click", named(), option));
+      expect(() =>
+        printMarkup(optioned, angularDialect, { ...options(optioned), handler: () => "save()" }),
+      ).toThrow("the Angular target writes it");
+    }
+  });
+
+  it("refuses a listener or a ref in Angular's literal region, where nothing binds", () => {
+    for (const attribute of [listener("click", named()), createRefAttribute(input.id, at)]) {
+      const render = button(createStaticAttribute("title", "{{ x }}", at), attribute);
+      expect(() =>
+        printMarkup(render, angularDialect, { ...options(render), handler: () => "save()" }),
+      ).toThrow("ngNonBindable region binds nothing");
+    }
+  });
+
+  it("writes nothing for Astro's inert listeners and refs, and refuses them in plain HTML", () => {
+    const render = button(listener("click", named()), createRefAttribute(input.id, at));
+    expect(printMarkup(render, astroDialect, options(render))).toBe("<button></button>");
+    expect(() => printMarkup(render, htmlDialect)).toThrow(
+      "Plain HTML cannot print a `click` listener",
+    );
+    expect(() => printMarkup(button(createRefAttribute(input.id, at)), htmlDialect)).toThrow(
+      "Plain HTML cannot print a template ref",
+    );
+  });
+
+  it("keeps a list's index a handler reads, where the language runs handlers", () => {
+    const list = createFor(
+      expressionAt(2000, "items", ["items", "Global"]),
+      item.id,
+      expressionAt(2010, "item", ["item", item]),
+      createElement(
+        "li",
+        [
+          listener(
+            "click",
+            inline("save(index)", [{ call: "save", binding: save }, ["index", index]]),
+          ),
+        ],
+        [],
+        at,
+      ),
+      at,
+      index.id,
+    );
+    const render = createElement("ul", [], [list], at);
+    expect(printMarkup(render, vueDialect, { ...options(render), printWidth: Infinity })).toBe(
+      '<ul>\n  <li v-for="(item, index) in items" :key="item" @click="() => save(index)"></li>\n</ul>',
+    );
+    // Astro's handlers are inert: the index, which only a handler reads, is left out.
+    expect(printMarkup(render, astroDialect, options(render))).toBe(
+      "<ul>\n  {items.map(() => (\n    <li></li>\n  ))}\n</ul>",
+    );
+  });
+
+  it("prints handlers as written without a component", () => {
+    const render = button(listener("click", named()), listener("keydown", increment()));
+    expect(printMarkup(render, svelteDialect, { printWidth: Infinity })).toBe(
+      "<button onclick={save} onkeydown={() => count.value++}></button>",
+    );
   });
 });

@@ -1,11 +1,13 @@
 // Attribute names (plan §4.6, ADR-0017, ADR-0040): the HTML or SVG name each written name
 // stands for, and the problems a name has whatever its value. The name checks run first, for
-// every form of value (design §1.5), so `onClick={f}` and `key={x}` get their own diagnostics.
+// every form of value (ADR-0037), so `key={x}` gets its own diagnostics; listeners and
+// template refs are attributes of their own kinds, lowered apart (`./listeners.ts`).
 
 import type { DiagnosticCode, Fix } from "@unframework/diagnostics";
 import {
   ARIA_ATTRIBUTES,
   DOCUMENT_ATTRIBUTES,
+  DOM_EVENTS,
   ELEMENT_ATTRIBUTES,
   isHtmlAttribute,
   isSvgAttribute,
@@ -14,6 +16,8 @@ import {
   TEMPLATE_SYNTAX_ATTRIBUTES,
   undeclaredAttribute,
   UNRENDERED_ATTRIBUTES,
+  UNSUPPORTED_EVENTS,
+  WINDOW_EVENTS,
 } from "@unframework/ir";
 import type { Namespace } from "@unframework/ir";
 
@@ -39,25 +43,10 @@ export const ALIASES: ReadonlyMap<string, string> = new Map([
   ["httpequiv", "http-equiv"],
 ]);
 
-/** The events of HTML's event handler content attributes (`onclick`, `oninput`, …). */
-const HTML_EVENTS: ReadonlySet<string> = new Set(
-  (
-    "abort afterprint animationcancel animationend animationiteration animationstart auxclick " +
-    "beforeinput beforematch beforeprint beforetoggle beforeunload blur cancel canplay " +
-    "canplaythrough change click close command contextlost contextmenu contextrestored copy " +
-    "cuechange cut dblclick drag dragend dragenter dragleave dragover dragstart drop " +
-    "durationchange emptied ended error focus focusin focusout formdata gotpointercapture " +
-    "hashchange input invalid keydown keypress keyup languagechange load loadeddata " +
-    "loadedmetadata loadstart lostpointercapture message messageerror mousedown mouseenter " +
-    "mouseleave mousemove mouseout mouseover mouseup offline online pagehide pagereveal pageshow " +
-    "pageswap paste pause play playing pointercancel pointerdown pointerenter pointerleave " +
-    "pointermove pointerout pointerover pointerup popstate progress ratechange " +
-    "rejectionhandled reset resize scroll scrollend securitypolicyviolation seeked seeking " +
-    "select selectionchange selectstart slotchange stalled storage submit suspend timeupdate " +
-    "toggle touchcancel touchend touchmove touchstart transitioncancel transitionend " +
-    "transitionrun transitionstart unhandledrejection unload volumechange waiting wheel"
-  ).split(" "),
-);
+/** Whether a name is an event's, of any target an element, the window or HTML knows (ADR-0047). */
+function isEventName(name: string): boolean {
+  return DOM_EVENTS.has(name) || WINDOW_EVENTS.has(name) || UNSUPPORTED_EVENTS.has(name);
+}
 
 /**
  * Names a framework gives meaning of its own, by lower-case name: they are props, not
@@ -83,7 +72,7 @@ const FRAMEWORK_PROPS: ReadonlyMap<string, string> = new Map(
 
 /** What brings an attribute the targets cannot render alike yet, as its diagnostic's help. */
 const LATER: ReadonlyMap<string, string> = new Map([
-  ["autofocus", "Focus lands with template refs."],
+  ["autofocus", "Focus the element from `onMounted`, through a template ref."],
   ["is", "Custom elements are not supported yet."],
   ["slot", "Slots land with composition."],
 ]);
@@ -128,28 +117,30 @@ export function isAttributeOf(tag: string, namespace: Namespace, name: string): 
 }
 
 /**
- * Problems a name has whatever its value: constructs that land later (events, `ref`,
- * `v-model`), framework syntax, what the targets render differently, names that are not the
- * element's attributes, and `srcdoc`, whose value is a document. Names compare in lower case,
- * as HTML's do, so `ONCLICK` is caught too. `bound` words the event's message for a binding.
+ * Problems a name has whatever its value: constructs that land later (`v-model`, listeners and
+ * template refs in a spread), framework syntax, what the targets render differently, names that
+ * are not the element's attributes, and `srcdoc`, whose value is a document. Names compare in
+ * lower case, as HTML's do, so `ONCLICK` is caught too. An element's own listeners and `ref` are
+ * lowered before the names are checked (`./listeners.ts`); a spread's keys reach this.
  */
 export function nameProblem(
   tag: string,
   namespace: Namespace,
   authored: string,
   name: string,
-  bound: boolean,
 ): Problem | undefined {
   const lower = name.toLowerCase();
-  if (lower === "ref") return unsupported(`The \`${authored}\` attribute is not supported yet.`);
+  if (lower === "ref") {
+    return unsupported(
+      `A spread's \`${authored}\` key is not supported: a template ref is attached by the element's own \`ref={input}\`.`,
+    );
+  }
   if (lower.startsWith("v-")) {
     return unsupported(`The \`${authored}\` directive is not supported yet.`);
   }
-  if (lower.startsWith("on") && (/^on[A-Z]/.test(authored) || HTML_EVENTS.has(lower.slice(2)))) {
+  if (lower.startsWith("on") && (/^on[A-Z]/.test(authored) || isEventName(lower.slice(2)))) {
     return unsupported(
-      bound
-        ? `Event handlers such as \`${authored}\` are not supported yet: events land in M2.`
-        : `Static event attributes such as \`${authored}\` are not supported yet; event handlers land with events.`,
+      `Listeners in a spread, such as \`${authored}\`, are not supported yet: they land with fallthrough (M3). An element's own listener is written on it: \`onClick={save}\`.`,
     );
   }
   if (lower === "innerhtml") {

@@ -1,0 +1,437 @@
+{
+  "irVersion": 1,
+  "file": "semantics/late-optional-prop/PageCount.uf.tsx",
+  "components": [
+    {
+      "name": "PageCount",
+      "span": {
+        "start": 132,
+        "end": 598
+      },
+      "props": [
+        {
+          "name": "page",
+          "optional": true,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 104,
+              "end": 110
+            }
+          },
+          "default": {
+            "code": "1",
+            "span": {
+              "start": 175,
+              "end": 176
+            },
+            "refs": []
+          },
+          "binding": "page@168",
+          "span": {
+            "start": 97,
+            "end": 111
+          }
+        },
+        {
+          "name": "total",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 121,
+              "end": 127
+            }
+          },
+          "binding": "total@178",
+          "span": {
+            "start": 114,
+            "end": 128
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "PageCountProps",
+          "span": {
+            "start": 187,
+            "end": 201
+          }
+        },
+        "span": {
+          "start": 166,
+          "end": 201
+        }
+      },
+      "types": [
+        "PageCountProps"
+      ],
+      "emits": {
+        "binding": "emit@213",
+        "type": {
+          "code": "{ pageChange: [page: number, previous: number] }",
+          "span": {
+            "start": 232,
+            "end": 280
+          }
+        },
+        "events": [
+          {
+            "name": "pageChange",
+            "parameters": [
+              {
+                "name": "page",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 253,
+                    "end": 259
+                  }
+                },
+                "span": {
+                  "start": 247,
+                  "end": 259
+                }
+              },
+              {
+                "name": "previous",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 271,
+                    "end": 277
+                  }
+                },
+                "span": {
+                  "start": 261,
+                  "end": 277
+                }
+              }
+            ],
+            "span": {
+              "start": 234,
+              "end": 278
+            }
+          }
+        ],
+        "span": {
+          "start": 207,
+          "end": 284
+        }
+      },
+      "bindings": [
+        {
+          "id": "page@168",
+          "name": "page",
+          "kind": "prop",
+          "span": {
+            "start": 168,
+            "end": 172
+          }
+        },
+        {
+          "id": "total@178",
+          "name": "total",
+          "kind": "prop",
+          "span": {
+            "start": 178,
+            "end": 183
+          }
+        },
+        {
+          "id": "emit@213",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 213,
+            "end": 217
+          }
+        },
+        {
+          "id": "label@294",
+          "name": "label",
+          "kind": "derived",
+          "span": {
+            "start": 294,
+            "end": 299
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Derived",
+          "binding": "label@294",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "`Page ${page} of ${total}`",
+              "span": {
+                "start": 317,
+                "end": 343
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "page@168",
+                  "span": {
+                    "start": 325,
+                    "end": 329
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "total@178",
+                  "span": {
+                    "start": 336,
+                    "end": 341
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 311,
+              "end": 343
+            }
+          },
+          "span": {
+            "start": 288,
+            "end": 345
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Getter",
+              "getter": {
+                "parameters": [],
+                "body": {
+                  "code": "page",
+                  "span": {
+                    "start": 366,
+                    "end": 370
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "page@168",
+                      "span": {
+                        "start": 366,
+                        "end": 370
+                      }
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 360,
+                  "end": 370
+                }
+              },
+              "span": {
+                "start": 360,
+                "end": 370
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "next",
+                "span": {
+                  "start": 377,
+                  "end": 381
+                }
+              },
+              {
+                "name": "previous",
+                "span": {
+                  "start": 383,
+                  "end": 391
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n      emit(\"pageChange\", next, previous);\n    }",
+              "span": {
+                "start": 396,
+                "end": 445
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@213",
+                  "event": "pageChange",
+                  "span": {
+                    "start": 404,
+                    "end": 438
+                  },
+                  "arguments": [
+                    {
+                      "start": 423,
+                      "end": 427
+                    },
+                    {
+                      "start": 429,
+                      "end": 437
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 376,
+              "end": 445
+            }
+          },
+          "span": {
+            "start": 349,
+            "end": 451
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "nav",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "page-count",
+            "span": {
+              "start": 473,
+              "end": 491
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Pages",
+            "span": {
+              "start": 492,
+              "end": 510
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 521,
+                  "end": 534
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label.value",
+                  "span": {
+                    "start": 536,
+                    "end": 547
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@294",
+                      "span": {
+                        "start": 536,
+                        "end": 547
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 535,
+                  "end": 548
+                }
+              }
+            ],
+            "span": {
+              "start": 518,
+              "end": 552
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Direct: ",
+                "span": {
+                  "start": 562,
+                  "end": 570
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "page",
+                  "span": {
+                    "start": 571,
+                    "end": 575
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "page@168",
+                      "span": {
+                        "start": 571,
+                        "end": 575
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 570,
+                  "end": 576
+                }
+              }
+            ],
+            "span": {
+              "start": 559,
+              "end": 580
+            }
+          }
+        ],
+        "span": {
+          "start": 468,
+          "end": 591
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "PageCount",
+      "span": {
+        "start": 132,
+        "end": 598
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "PageCountProps",
+      "exported": true,
+      "code": "interface PageCountProps {\n  page?: number;\n  total: number;\n}",
+      "span": {
+        "start": 68,
+        "end": 130
+      }
+    }
+  ]
+}

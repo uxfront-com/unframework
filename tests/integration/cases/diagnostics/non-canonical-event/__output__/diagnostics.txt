@@ -1,0 +1,17 @@
+error[UF3004]: `onKeyDown` is written `onKeydown`: a listener is named as Vue names it, `on` and the DOM event's name, which every target spells its own way.
+  --> diagnostics/non-canonical-event/ShortcutField.uf.tsx:16:52
+   |
+16 |       <input name="shortcut" aria-label="Shortcut" onKeyDown={handleKey} />
+   |                                                    ^^^^^^^^^
+   |
+   = fix (safe): Rename `onKeyDown` to `onKeydown`
+   = see: https://unframework.dev/diagnostics/UF3004
+
+error[UF3004]: `onDoubleClick` is written `onDblclick`: a listener is named as Vue names it, `on` and the DOM event's name, which every target spells its own way.
+  --> diagnostics/non-canonical-event/ShortcutField.uf.tsx:17:29
+   |
+17 |       <button type="button" onDoubleClick={() => (editing.value = !editing.value)}>
+   |                             ^^^^^^^^^^^^^
+   |
+   = fix (safe): Rename `onDoubleClick` to `onDblclick`
+   = see: https://unframework.dev/diagnostics/UF3004

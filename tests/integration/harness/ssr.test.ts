@@ -9,6 +9,7 @@ import {
   checkLayers,
   diffLines,
   formatConsoleArgs,
+  NOT_RENDERED_SKIP,
   settleArtefact,
   sharedArtefactContext,
   ssrScenarios,
@@ -114,8 +115,7 @@ describe(`ssr:${target}`, () => {
               if (!outcome.pass) throw new Error(outcome.message);
             },
             L13: () => {
-              if (!messages.length && !rendered)
-                return { skip: "the component did not render (L6)" };
+              if (!messages.length && !rendered) return { skip: NOT_RENDERED_SKIP };
               if (messages.length) {
                 throw new Error(
                   `${messages.length} console message(s) during the server render:\n  ${messages.join("\n  ")}`,

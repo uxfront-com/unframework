@@ -208,7 +208,7 @@ jobs:
           overwrite: true
           retention-days: 7
 
-  # L7, L8, L10, L11 and L13 in Chromium. The job runs in the Playwright image that generates the
+  # L7, L8, L9, L10, L11 and L13 in Chromium. The job runs in the Playwright image that generates the
   # Linux baselines (`pnpm test:baselines`), so fonts and rendering libraries are the same.
   # Not sharded while the corpus fits the job's ten minutes. To shard (plan §7.9), add a
   # `shard` dimension to the matrix, pass `--shard ${{ matrix.shard }}/<n>` and put the shard in
@@ -284,7 +284,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        canaries: [L1, L2, L3, L4, L5, L6, L7, L8, L10-root-hidden, L10-root-inverted, L11, L13]
+        canaries:
+          - L1
+          - L2
+          - L3
+          - L4
+          - L5
+          - L6
+          - L7
+          - L8
+          - L9-unwired-handler
+          - L9-rerender-text
+          - L10-root-hidden
+          - L10-root-inverted
+          - L11
+          - L13-console-warn
+          - L13-qwik-handler-throws
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

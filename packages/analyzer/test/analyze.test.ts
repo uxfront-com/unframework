@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { frameworkOf } from "../src/index.ts";
-import { applyAndRecheck, codes, root, run, slices } from "./helpers.ts";
+import { applyAndRecheck, codes, problems, root, run, slices } from "./helpers.ts";
 
 describe("lowering", () => {
   it("lowers elements, text and static attributes with their spans", () => {
@@ -151,7 +151,7 @@ describe("diagnostics", () => {
     expect(module).toBeUndefined();
     expect(codes(diagnostics)).toEqual(["UF1002"]);
     expect(diagnostics[0]!.message).toBe(
-      "Importing types from other modules is not supported yet: props types from other modules land in M5.",
+      "Importing types from other modules is not supported yet: types from other modules land in M5.",
     );
   });
 
@@ -171,18 +171,18 @@ describe("diagnostics", () => {
     expect(codes(run("export {};").diagnostics)).toEqual(["UF1101"]);
   });
 
-  it("reports local components, setup code and async functions as not supported yet", () => {
+  it("reports local components, statements the setup would run and async functions as not supported yet", () => {
     const source = [
       "function Local() { return <p />; }",
-      "export function Setup() { const a = 1; return <p />; }",
+      "export function Setup() { console.log(1); return <p />; }",
       "export async function Async() { return <p />; }",
-      "export function Ok() { return <p />; }",
+      "export function Ok() { const a = 1; return <p>{a}</p>; }",
     ].join("\n");
     const { module, diagnostics } = run(source);
     expect(codes(diagnostics)).toEqual(["UF1002", "UF1002", "UF1002"]);
-    expect(slices(source, diagnostics)).toEqual(["Local", "const a = 1;", "Async"]);
+    expect(slices(source, diagnostics)).toEqual(["Local", "console.log(1);", "Async"]);
     expect(diagnostics[1]!.message).toBe(
-      "Setup code in a component's body is not supported yet: it lands in M2.",
+      "Statements other than declarations are not supported in the setup: the setup runs once, and declares what the component holds.",
     );
     // An error in one component never stops its siblings.
     expect(module!.components.map((component) => component.name)).toEqual(["Ok"]);
@@ -238,11 +238,12 @@ describe("diagnostics", () => {
 
   it("checks a component written as a value as the declaration its fix writes", () => {
     const source =
-      'interface CardProps { title: string }\nexport const Card = ({ title }: CardProps) => <h2 className="t" onClick={go}>{title}</h2>;';
+      'interface CardProps { title: string }\nexport const Card = ({ title }: CardProps) => <button type="button" className="t" onClick={go}>{title}</button>;';
     const { diagnostics } = run(source);
-    expect(codes(diagnostics)).toEqual(["UF1102", "UF1002", "UF3004"]);
+    // `go` is no local function (UF3029), and `className` is written `class` (UF3004).
+    expect(codes(diagnostics)).toEqual(["UF1102", "UF3029", "UF3004"]);
     expect(applyAndRecheck(source, diagnostics)).toContain(
-      'export function Card({ title }: CardProps) { return <h2 class="t"',
+      'export function Card({ title }: CardProps) { return <button type="button" class="t"',
     );
   });
 
@@ -259,11 +260,11 @@ describe("diagnostics", () => {
     expect(lower[0]!.message).toContain("PascalCase");
   });
 
-  it("reports each JSX construct M1 does not lower, and keeps going", () => {
+  it("reports each JSX construct M2 does not lower, and keeps going", () => {
     const source = [
       "export function A() {",
       "  return (",
-      '    <div ref="r" v-model="x" v-model:open="x" onClick={go}>',
+      '    <div ref="r" v-model="x" v-model:open="x" role="presentation" onClick={go}>',
       "      <Child />",
       "      <svg:rect />",
       "      <a.b />",
@@ -274,17 +275,17 @@ describe("diagnostics", () => {
     ].join("\n");
     const { module, diagnostics } = run(source);
     expect(module!.components).toEqual([]);
-    expect(slices(source, diagnostics)).toEqual([
-      "ref",
-      "v-model",
-      "v-model:open",
-      "onClick",
-      "Child",
-      "svg:rect",
-      "a.b",
-      "{...children}",
+    // A string ref is Vue's (UF3027), and `go` is no local function (UF3029).
+    expect(problems(source, diagnostics)).toEqual([
+      'UF3027 "r"',
+      "UF1002 v-model",
+      "UF1002 v-model:open",
+      "UF3029 go",
+      "UF1002 Child",
+      "UF1002 svg:rect",
+      "UF1002 a.b",
+      "UF1002 {...children}",
     ]);
-    expect(new Set(codes(diagnostics))).toEqual(new Set(["UF1002"]));
   });
 
   it("lowers a returned fragment, and reports an empty one as rendering nothing", () => {

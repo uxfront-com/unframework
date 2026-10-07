@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "clear getByRole('textbox', { name: 'Query' })",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-results\">",
+        "  <p>",
+        "    \"Ready\"",
+        "  </p>",
+        "  <label>",
+        "    \"Query\"",
+        "    <input name=\"query\" uf:focused=\"\" uf:value=\"\">",
+        "  </label>",
+        "  <ul aria-label=\"Results\"></ul>",
+        "  <output>",
+        "    \"0\"",
+        "  </output>",
+        "  <button type=\"button\">",
+        "    \"Add one\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - paragraph: Ready",
+        "  - text: Query",
+        "  - textbox \"Query\"",
+        "  - list \"Results\"",
+        "  - status: \"0\"",
+        "  - button \"Add one\""
+      ],
+      "events": {
+        "rendered": [
+          [
+            0
+          ]
+        ]
+      }
+    }
+  ]
+}

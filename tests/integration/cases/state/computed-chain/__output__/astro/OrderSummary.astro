@@ -1,0 +1,32 @@
+---
+export interface OrderSummaryProps {
+  /** The unit price, in cents. */
+  price: number;
+  taxRate: number;
+}
+
+type Props = OrderSummaryProps;
+
+const { price, taxRate } = Astro.props;
+
+const quantity = 1 as number;
+const subtotal = quantity * price;
+const tax = Math.round(subtotal * taxRate);
+const total = subtotal + tax;
+
+function getTier() {
+  if (total >= 10000) return "bulk";
+  return "standard";
+}
+
+const tier = getTier();
+---
+
+<section class="order-summary" aria-label="Order summary" data-tier={tier}>
+  <p role="status">Quantity: {quantity}</p>
+  <button type="button" disabled={quantity === 1}>Remove one</button>
+  <button type="button">Add one</button>
+  <p>Subtotal: {(subtotal / 100).toFixed(2)}</p>
+  <p>Tax: {(tax / 100).toFixed(2)}</p>
+  <p>Total: {(total / 100).toFixed(2)}</p>
+</section>

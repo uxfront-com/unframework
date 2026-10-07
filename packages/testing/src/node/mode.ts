@@ -1,4 +1,4 @@
-// The run's mode (DESIGN §4.4, §4.7), resolved once at config time from the environment, and
+// The run's mode (ADR-0019, ADR-0029), resolved once at config time from the environment, and
 // the project ordering it needs. Every refusal throws while the config loads, before anything
 // runs or writes.
 import { existsSync, readdirSync, rmSync } from "node:fs";

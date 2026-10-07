@@ -1,0 +1,6 @@
+{
+  "description": "Arrow handlers written in the template: expression bodies that write, a block body, and the event parameter's currentTarget.",
+  "ssr": {
+    "initial": {}
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Suggestions' })",
+      "dom": [
+        "<section aria-label=\"Reply\" class=\"reply-box\">",
+        "  <label>",
+        "    \"Message\"",
+        "    <textarea name=\"message\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <p>",
+        "    \"Not started\"",
+        "  </p>",
+        "  <label>",
+        "    \"Answer\"",
+        "    <textarea name=\"answer\" uf:value=\"ok\\n\"></textarea>",
+        "  </label>",
+        "  <button aria-pressed=\"true\" type=\"button\" uf:focused=\"\">",
+        "    \"Suggestions\"",
+        "  </button>",
+        "  <p>",
+        "    \"Accepted: 0\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Reply\":",
+        "  - text: Message",
+        "  - textbox \"Message\"",
+        "  - paragraph: Not started",
+        "  - text: Answer",
+        "  - textbox \"Answer\": ok",
+        "  - button \"Suggestions\" [pressed]",
+        "  - paragraph: \"Accepted: 0\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('textbox', { name: 'Answer' })",
+      "dom": [
+        "<section aria-label=\"Reply\" class=\"reply-box\">",
+        "  <label>",
+        "    \"Message\"",
+        "    <textarea name=\"message\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <p>",
+        "    \"Not started\"",
+        "  </p>",
+        "  <label>",
+        "    \"Answer\"",
+        "    <textarea name=\"answer\" uf:focused=\"\" uf:value=\"ok\\n\"></textarea>",
+        "  </label>",
+        "  <button aria-pressed=\"true\" type=\"button\">",
+        "    \"Suggestions\"",
+        "  </button>",
+        "  <p>",
+        "    \"Accepted: 0\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Reply\":",
+        "  - text: Message",
+        "  - textbox \"Message\"",
+        "  - paragraph: Not started",
+        "  - text: Answer",
+        "  - textbox \"Answer\": ok",
+        "  - button \"Suggestions\" [pressed]",
+        "  - paragraph: \"Accepted: 0\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "keyboard \"{Enter}\"",
+      "dom": [
+        "<section aria-label=\"Reply\" class=\"reply-box\">",
+        "  <label>",
+        "    \"Message\"",
+        "    <textarea name=\"message\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <p>",
+        "    \"Not started\"",
+        "  </p>",
+        "  <label>",
+        "    \"Answer\"",
+        "    <textarea name=\"answer\" uf:focused=\"\" uf:value=\"ok\\n\"></textarea>",
+        "  </label>",
+        "  <button aria-pressed=\"false\" type=\"button\">",
+        "    \"Suggestions\"",
+        "  </button>",
+        "  <p>",
+        "    \"Accepted: 1\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Reply\":",
+        "  - text: Message",
+        "  - textbox \"Message\"",
+        "  - paragraph: Not started",
+        "  - text: Answer",
+        "  - textbox \"Answer\": ok",
+        "  - button \"Suggestions\"",
+        "  - paragraph: \"Accepted: 1\""
+      ],
+      "events": {}
+    }
+  ]
+}

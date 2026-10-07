@@ -1,0 +1,9 @@
+error[UF2020]: `page` is a prop's value, which nothing can watch: a watcher's source is a `ref` or a `computed` (`watch(count, …)`), a getter (`watch(() => page, …)`), or an array of them.
+  --> diagnostics/unwatchable-source/Pagination.uf.tsx:12:9
+   |
+12 |   watch(page, (value) => {
+   |         ^^^^
+   |
+   = help: Watch the ref itself, or a getter that reads the value: `watch(() => page, …)`.
+   = fix (safe): Watch `() => page`
+   = see: https://unframework.dev/diagnostics/UF2020

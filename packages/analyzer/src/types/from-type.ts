@@ -1,6 +1,6 @@
-// Value kinds from TypeScript types (design §1.6): a prop's kinds are its member type's,
+// Value kinds from TypeScript types (ADR-0035): a prop's kinds are its member type's,
 // followed through the module's own `interface` and `type` declarations. Only the types the
-// props check accepts (§1.1) need a faithful reading; anything else reads as `unknown`.
+// props check accepts (ADR-0034) need a faithful reading; anything else reads as `unknown`.
 
 import type { AST, TypeDeclarationStatement } from "@unframework/parser";
 

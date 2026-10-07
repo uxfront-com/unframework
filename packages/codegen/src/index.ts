@@ -1,5 +1,12 @@
-export { CAPABILITY_NAMES, defineTarget } from "./target.ts";
+export {
+  BEHAVIOURAL_CAPABILITIES,
+  CAPABILITY_NAMES,
+  CAPABILITY_PREREQUISITES,
+  defineTarget,
+} from "./target.ts";
 export { requiredCapabilities } from "./capabilities.ts";
+export { eventCalls, handedControls, handlerControls, ownControls } from "./controls.ts";
+export type { ControlTest, EventCall, HandlerControls, LiftedControl } from "./controls.ts";
 export type {
   Capabilities,
   CapabilityCell,
@@ -18,25 +25,45 @@ export type { Nullishness, TextPart } from "./js/text.ts";
 export { componentTypes, exportDeclaration, exportsOf, typeDeclarationCode } from "./exports.ts";
 export {
   bindingOf,
+  codeKind,
+  codeNames,
   expressionNames,
   needsParentheses,
   parenthesesNeeded,
-  parseExpression,
-  parseExpressionSource,
-  referencedBindings,
+  rewriteCode,
   rewriteExpression,
+  writtenValue,
 } from "./rewrite.ts";
 export type {
-  ExpressionComment,
+  EmitParts,
   ParenthesesSlot,
-  ParsedExpression,
-  ReferencedOptions,
   RewriteRules,
+  RewriteSite,
+  WriteParts,
 } from "./rewrite.ts";
+export {
+  parseCodeSource,
+  parseExpression,
+  parseExpressionSource,
+  parseStatementsSource,
+} from "./parse.ts";
+export type { CodeKind, ExpressionComment, ParsedExpression, ParsedStatements } from "./parse.ts";
+export { liveBindings, liveTypes, referencedBindings } from "./references.ts";
+export type { LiveOptions, ReferencedOptions } from "./references.ts";
+export {
+  functionBodyText,
+  functionSource,
+  functionText,
+  handlerText,
+  parametersText,
+  parameterText,
+} from "./functions.ts";
+export type { FunctionTextOptions } from "./functions.ts";
 export {
   boundJsxAttribute,
   classArrayItems,
   classJsxAttribute,
+  eventJsxAttribute,
   expressionCode,
   jsxAttributeName,
   jsxAttributes,
@@ -47,10 +74,12 @@ export {
   jsxContext,
   jsxElement,
   jsxExpression,
+  jsxHandler,
   jsxNode,
   jsxText,
   listParameters,
   mapCall,
+  refJsxAttribute,
   spreadClassReads,
   spreadJsxAttributes,
   spreadRead,
@@ -63,17 +92,29 @@ export {
 export type { JsxContext, JsxContextOptions, JsxDialect } from "./jsx.ts";
 export type { TextPosition } from "./markup.ts";
 export {
+  angularCode,
   angularDialect,
   astroDialect,
+  codeTokens,
+  conjoin,
   htmlDialect,
+  mapCode,
+  member,
+  negate,
+  operand,
   printMarkup,
   svelteDialect,
+  test,
+  vueAttributeCode,
   vueDialect,
 } from "./markup.ts";
 export type {
+  AngularContext,
   AttributeContext,
   BlockSegment,
   ClassPart,
+  CodeMap,
+  CodeToken,
   ConditionalBranch,
   Container,
   ListParts,
@@ -82,6 +123,8 @@ export type {
   MarkupOptions,
   MarkupPiece,
   PrintedAttribute,
+  PrintedEvent,
+  PrintedRef,
   StylePart,
 } from "./markup.ts";
 export {
@@ -117,6 +160,7 @@ export type { Namespace } from "./html.ts";
 export { formatOutput, isFormatted, OUTPUT_FORMAT } from "./format.ts";
 export type { FormatOutcome } from "./format.ts";
 export { ImportSet } from "./imports.ts";
-export { kebabCase, NameScope, pascalCase, sourceNames } from "./names.ts";
+export { isPrimitiveState } from "./kinds.ts";
+export { kebabCase, NameScope, pascalCase, sourceNames, typeNames } from "./names.ts";
 export type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";
 export type * from "./toolchain.ts";

@@ -1,0 +1,9 @@
+- region "Contacts":
+  - list:
+    - listitem:
+      - button "Grace Hopper" [pressed]
+      - button "Remove Grace Hopper": Remove
+    - listitem:
+      - button "Alan Turing"
+      - button "Remove Alan Turing": Remove
+  - status: "Chosen: grace"

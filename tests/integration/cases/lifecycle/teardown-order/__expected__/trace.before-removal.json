@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "fill getByRole('textbox', { name: 'Query' }) \"vue\"",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-session\">",
+        "  <label>",
+        "    \"Query\"",
+        "    <input name=\"query\" uf:focused=\"\" uf:value=\"vue\">",
+        "  </label>",
+        "  <ul aria-label=\"Results\">",
+        "    <li>",
+        "      \"vue\"",
+        "    </li>",
+        "    <li>",
+        "      \"vue docs\"",
+        "    </li>",
+        "  </ul>",
+        "  <button type=\"button\">",
+        "    \"Clear results\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - text: Query",
+        "  - textbox \"Query\": vue",
+        "  - list \"Results\":",
+        "    - listitem: vue",
+        "    - listitem: vue docs",
+        "  - button \"Clear results\""
+      ],
+      "events": {
+        "effectCleaned": [
+          [
+            ""
+          ]
+        ],
+        "searched": [
+          [
+            "vue",
+            2
+          ]
+        ],
+        "summary": [
+          [
+            "0 results for \"\""
+          ],
+          [
+            "2 results for \"vue\""
+          ]
+        ],
+        "watchCleaned": [
+          [
+            ""
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+- region "Reply":
+  - text: Message
+  - textbox "Message": hi
+  - paragraph: Started
+  - text: Answer
+  - textbox "Answer"
+  - button "Suggestions"
+  - paragraph: "Accepted: 0"

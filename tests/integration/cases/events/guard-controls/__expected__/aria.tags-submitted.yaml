@@ -1,0 +1,24 @@
+- region "Composer":
+  - text: Comment
+  - textbox "Comment"
+  - form "Tags":
+    - text: Tag
+    - textbox "Tag"
+    - button "Save tags"
+  - list "Tag list":
+    - listitem: vue
+  - text: Code
+  - textbox "Code"
+  - text: Search
+  - textbox "Search"
+  - paragraph: "Searching for:"
+  - text: Click here to hide this tip.
+  - button "More tips"
+  - dialog "Discard draft":
+    - paragraph: Discard this draft?
+    - button "Keep"
+  - button "Save"
+  - button "Upload"
+  - button "Finish upload"
+  - list "Log":
+    - listitem: tags submitted

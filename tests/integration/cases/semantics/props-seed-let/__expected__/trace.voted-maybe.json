@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'maybe' })",
+      "dom": [
+        "<section aria-label=\"Lunch\" class=\"ballot\">",
+        "  <p role=\"status\">",
+        "    \"1 votes left\"",
+        "  </p>",
+        "  <p>",
+        "    \"Picked: other\"",
+        "  </p>",
+        "  <ul aria-label=\"Choices\">",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"yes\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"no\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\" uf:focused=\"\">",
+        "        \"maybe\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "  <button type=\"button\">",
+        "    \"Count the answers\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Lunch\":",
+        "  - status: 1 votes left",
+        "  - paragraph: \"Picked: other\"",
+        "  - list \"Choices\":",
+        "    - listitem:",
+        "      - button \"yes\"",
+        "    - listitem:",
+        "      - button \"no\"",
+        "    - listitem:",
+        "      - button \"maybe\"",
+        "  - button \"Count the answers\""
+      ],
+      "events": {
+        "moved": [
+          [
+            "yes:2>other:1"
+          ]
+        ],
+        "report": [
+          [
+            "other with 1 left"
+          ]
+        ],
+        "voted": [
+          [
+            1,
+            "Lunch (3)!! 2"
+          ]
+        ]
+      }
+    }
+  ]
+}

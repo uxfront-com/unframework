@@ -1,0 +1,6 @@
+{
+  "description": "Nested branches: a conditional whose branch root is a conditional of its own, a branch narrowed by !== null on a state reading a member, and a handler in a branch narrowed on an optional prop.",
+  "ssr": {
+    "with-owner": { "props": { "owner": { "name": "Grace" } } }
+  }
+}

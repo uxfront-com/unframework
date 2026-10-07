@@ -1,0 +1,8 @@
+- group "docs/readme.md":
+  - text: docs/readme.md (2048 bytes)
+  - button "Refresh"
+  - button "Open"
+  - button "Archive"
+  - button "Select"
+  - button "Share"
+  - button "Share with a note"

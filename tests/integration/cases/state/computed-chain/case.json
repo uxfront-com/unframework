@@ -1,0 +1,6 @@
+{
+  "description": "A chain of computed values (subtotal, tax, total) over a quantity changed by buttons, and a literal-union computed bound to an attribute.",
+  "ssr": {
+    "single": { "props": { "price": 2500, "taxRate": 0.2 } }
+  }
+}

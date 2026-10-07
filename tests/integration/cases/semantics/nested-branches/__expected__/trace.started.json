@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Start' })",
+      "dom": [
+        "<section aria-label=\"Account\" class=\"account-menu\">",
+        "  <button type=\"button\">",
+        "    \"Sign in\"",
+        "  </button>",
+        "  <p>",
+        "    \"Nobody signed in\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Greet Grace\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Account\":",
+        "  - button \"Sign in\"",
+        "  - paragraph: Nobody signed in",
+        "  - button \"Greet Grace\""
+      ],
+      "events": {}
+    }
+  ]
+}

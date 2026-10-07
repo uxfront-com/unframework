@@ -2,6 +2,8 @@
 // the browser commands and the Node drivers agree on the cases, the mode and the write policy.
 // Types only, plus pure helpers: the values are computed once per run in Node
 // (`createHarnessRun` in `@unframework/testing/node`).
+import type { Capabilities } from "@unframework/codegen";
+
 import type { QuarantineEntry } from "./layers.ts";
 
 /** An SSR scenario of a case: the props it renders with. */
@@ -9,13 +11,21 @@ export interface SsrScenario {
   props?: Record<string, unknown>;
 }
 
-/** A case's optional `case.json` (DESIGN §4.4). */
+/** A case's optional `case.json` (plan §7.1). */
 export interface CaseConfig {
   description?: string;
   /** L6 scenarios by name; a case without any renders `default` with no props. */
   ssr?: Record<string, SsrScenario>;
   /** The axe rule ids L11 expects to fail on this case, exactly; none by default. */
   axe?: string[];
+  /**
+   * Why every test of the case requires a capability (ADR-0050): its client code changes the
+   * mounted DOM (an `onMounted` that writes state, say), so no test of it can pass on a target
+   * without the capability, and the server render (L6) is what checks that target. The harness
+   * refuses the note on a case with a test that requires nothing, and requires it on a case
+   * whose every test requires something.
+   */
+  requires?: string;
 }
 
 /**
@@ -58,6 +68,20 @@ declare module "vitest" {
     /** The target this project verifies, such as `"vue"`. */
     target: string;
     ufHarness: HarnessContext;
+    /**
+     * Browser projects: the target's capability matrix, as plain data. The browser reads it to
+     * skip a test that requires an unsupported capability (`it(name, { requires }, fn)`) and to
+     * refuse interactions where nothing runs; it never imports a target, whose compiler code
+     * does not run in a browser.
+     */
+    ufCapabilities: Capabilities;
+    /**
+     * Browser projects: the cases the target has no output for (their expected diagnostics hold
+     * an error for it, the one it declares for a capability it lacks), by case id, each with
+     * those errors. Their specs load against a stand-in for the component, and each test is
+     * skipped with `no output: <the errors>`. Absent outside the harness.
+     */
+    ufNoOutput: Record<string, string>;
   }
 }
 

@@ -1,7 +1,8 @@
-// Vue templates (design §5.2): `{{ }}` interpolations, `:attr` bindings, `v-if` and `v-for` on the
-// element they control (or on a `<template>` around content that is not one element), and
-// attributes in `vue/attributes-order`. Vue is the reference target (ADR-0014): whatever it
-// renders becomes every target's expectation.
+// Vue templates (plan §6): `{{ }}` interpolations, `:attr` bindings, `v-if` and `v-for` on the
+// element they control (or on a `<template>` around content that is not one element), `@event`
+// listeners with their modifiers, `ref` attributes, and attributes in `vue/attributes-order`.
+// Vue is the reference target (ADR-0014): whatever it renders becomes every target's expectation.
+import type { CodeKind } from "../parse.ts";
 import {
   camelCaseProperty,
   escapeHtmlAttribute,
@@ -26,6 +27,7 @@ import type {
   MarkupDialect,
   MarkupPiece,
   PrintedAttribute,
+  PrintedEvent,
   StylePart,
   TextPosition,
 } from "./printer.ts";
@@ -49,13 +51,14 @@ export function vueInterpolationCode(code: string): string {
 }
 
 /**
- * Code for a double-quoted attribute value (`:title="…"`, `v-if="…"`): string literals in
- * double quotes are written in single quotes, as Vue templates do, and what is left of `"` and
- * of character references is escaped, since Vue decodes them before parsing.
+ * Code for a double-quoted attribute value (`:title="…"`, `v-if="…"`, `@click="…"`): string
+ * literals in double quotes are written in single quotes, as Vue templates do, and what is left
+ * of `"` and of character references is escaped, since Vue decodes them before parsing. An
+ * expression by default; a listener's value may be statements (`@click="a(); b()"`).
  */
-export function vueAttributeCode(code: string): string {
+export function vueAttributeCode(code: string, kind: CodeKind = "expression"): string {
   const requoted = code.includes('"')
-    ? mapCode(code, { string: (raw) => (raw.startsWith('"') ? singleQuoted(raw) : raw) })
+    ? mapCode(code, { string: (raw) => (raw.startsWith('"') ? singleQuoted(raw) : raw) }, kind)
     : code;
   return escapeReferences(requoted).replace(/"/g, "&quot;");
 }
@@ -114,14 +117,28 @@ function styleObject(parts: readonly StylePart[]): string {
 
 /**
  * The order `vue/attributes-order` (in `plugin:vue/recommended`) wants: `v-for`, then the
- * conditionals, then `id`, then `key`, then everything else, which it leaves in any order.
+ * conditionals, then `id`, then `key` and `ref` (its unique attributes, in any order between
+ * them), then the other attributes, then the listeners (`@click`), each group in any order.
  */
 function vueRank({ name }: PrintedAttribute): number {
   if (name === "v-for") return 0;
   if (name === "v-if" || name === "v-else-if" || name === "v-else") return 1;
   if (name === "id") return 2;
-  if (name === "key") return 3;
+  if (name === "key" || name === "ref") return 3;
+  if (name.startsWith("@") || name.startsWith("v-on:")) return 5;
   return 4;
+}
+
+/**
+ * A listener's modifiers (`.capture`, `.once`, `.passive`), which Vue's `withModifiers` and its
+ * event options apply as the DOM's `addEventListener` options.
+ */
+function modifiers({ attribute }: PrintedEvent): string {
+  return [
+    attribute.capture ? ".capture" : "",
+    attribute.once ? ".once" : "",
+    attribute.passive ? ".passive" : "",
+  ].join("");
 }
 
 /**
@@ -221,6 +238,19 @@ export const vueDialect: MarkupDialect = {
       ],
     },
   ],
+  // A handler's code is a function Vue calls with the event (a setup function's name, an
+  // arrow), or the statements a target supplies, which Vue runs with `$event` in scope.
+  eventAttribute: (event) => {
+    const name = `@${event.attribute.event}`;
+    const code =
+      event.statement === undefined
+        ? vueAttributeCode(event.handler)
+        : vueAttributeCode(event.statement, "statements");
+    return [{ name, text: `${name}${modifiers(event)}="${code}"` }];
+  },
+  // The name `useTemplateRef("…")` reads the element by, which the Vue target keys by the
+  // binding's name.
+  refAttribute: ({ name }) => [{ name: "ref", text: quotedAttribute("ref", name) }],
   orderAttributes: (attributes) =>
     attributes
       .map((attribute, index) => ({ attribute, index }))

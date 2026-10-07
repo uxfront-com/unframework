@@ -1,0 +1,53 @@
+---
+const tags = [] as string[];
+const query = "" as string;
+const panelOpen = true as boolean;
+const confirming = true as boolean;
+const tipShown = true as boolean;
+const log = [] as string[];
+---
+
+<section class="comment-composer" aria-label="Composer">
+  <label>Comment<textarea name="comment"></textarea></label>
+  <form aria-label="Tags">
+    <label>Tag<input name="tag" /></label>
+    <button type="submit">Save tags</button>
+  </form>
+  <ul aria-label="Tag list">
+    {tags.map((tag) => (
+      <li>{tag}</li>
+    ))}
+  </ul>
+  <label>Code<input name="code" /></label>
+  <div class="panel" role="presentation">
+    <label>Search<input name="search" /></label>
+    <p>{panelOpen ? `Searching for: ${query}` : "Panel closed"}</p>
+  </div>
+  <div class="page" role="presentation">
+    {tipShown ? (
+      <div
+        class="tip"
+        role="presentation"
+        style="padding: 12px"
+      >Click here to hide this tip.<button type="button">More tips</button></div>
+    ) : null}
+    {confirming ? (
+      <div class="backdrop" role="presentation" data-testid="backdrop" style="padding: 24px">
+        <div role="dialog" aria-label="Discard draft">
+          <p>Discard this draft?</p>
+          <button type="button">Keep</button>
+        </div>
+      </div>
+    ) : (
+      <p>Draft dismissed</p>
+    )}
+  </div>
+  <button type="button">Save</button>
+  <button type="button">Upload</button>
+  <button type="button">Finish upload</button>
+  <ol aria-label="Log">
+    {log.map((line) => (
+      <li>{line}</li>
+    ))}
+  </ol>
+</section>

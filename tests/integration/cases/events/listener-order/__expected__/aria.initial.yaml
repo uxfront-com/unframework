@@ -1,0 +1,12 @@
+- region "Listener order":
+  - button "Save"
+  - button "Send"
+  - button "Reset"
+  - button "Inside"
+  - button "Outside"
+  - button "Stop"
+  - button "Pass"
+  - group "Outer zone":
+    - group "Inner zone": Scroll here
+  - paragraph: "Resets: 0"
+  - list "Log"

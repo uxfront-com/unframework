@@ -1,0 +1,5 @@
+- region "Search":
+  - text: Query
+  - textbox "Query"
+  - list "Results"
+  - button "Clear results"

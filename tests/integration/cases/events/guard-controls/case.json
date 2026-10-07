@@ -1,0 +1,6 @@
+{
+  "description": "Controls after a guard that returns early: Enter in a textarea and, through a helper, in a form field; tests that cast the event's target (a four-character code, an Escape that clears a search before it closes the panel); clicks on a tip and a backdrop themselves (event.target === event.currentTarget); a listener that returns early and an async listener, each beside a once listener.",
+  "ssr": {
+    "initial": {}
+  }
+}

@@ -1,5 +1,5 @@
 // The attributes Solid 1.9's JSX types do not let an element take, although the analyser and
-// the authoring types do (design §5.4, the way the Qwik target writes its own gaps). Solid
+// the authoring types do (ADR-0037, the way the Qwik target writes its own gaps). Solid
 // renders them as written, so the output writes each as an object spread, whose keys
 // TypeScript leaves unchecked: `<stop offset="0" {...{ fill: props.colour }} />`. Pinned by
 // test/attributes.test.ts, which type-checks every binding the analyser accepts.

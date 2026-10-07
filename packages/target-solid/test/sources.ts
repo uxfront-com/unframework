@@ -1,5 +1,5 @@
-// Sources that between them reach every shape the Solid emitter prints (design §5.4): props
-// with and without defaults, the object form, control flow, every attribute kind, SVG, a root
+// Sources that between them reach every shape the Solid emitter prints: props with and without
+// defaults, the object form, control flow, every attribute kind, SVG, a root
 // fragment, and the Solid-specific rewrites (`<Show>` for an interpolated name, the `<pre>`
 // line feed). test/output.test.ts runs Solid's compiler, its types and its lint over their
 // output.
@@ -429,6 +429,998 @@ export default function NarrowingForms({ box, items, maybe, on, rows, count, not
       {box.name && <p>{box.name}{box.inner && <b>{box.inner.title}{box.name}</b>}</p>}
       {maybe?.other && <p>{maybe.other}{maybe.title && <b>{maybe.title}{maybe.other}</b>}</p>}
       {box[\`name\`] && <p>{box[\`name\`].trim()}</p>}
+    </div>
+  );
+}
+`,
+  // M2 (ADR-0045 to ADR-0049): every watcher the helper takes (one source and an array, lazy
+  // and immediate, the array's values annotated as a mutable tuple), `watchEffect` with a cleanup
+  // parameter named otherwise, writes the scheduler coalesces, and emits.
+  Watchers: `import { defineEmits, ref, watch, watchEffect } from "unframework";
+
+export interface WatchersProps {
+  label: string;
+}
+
+export default function Watchers({ label }: WatchersProps) {
+  const emit = defineEmits<{
+    queryRun: [value: string, previous: string];
+    pageRun: [value: number, previous: number];
+    left: [name: string];
+    span: [values: number[], previous: number[]];
+    labelled: [value: string, previous?: string];
+    effect: [title: string];
+    released: [title: string];
+  }>();
+
+  const query = ref("");
+  const page = ref(1);
+  const low = ref(10);
+  const high = ref(50);
+
+  watch(query, (value, previous, onCleanup) => {
+    emit("queryRun", value, previous);
+    onCleanup(() => {
+      emit("left", value);
+    });
+  });
+
+  watch(
+    () => page.value * 2,
+    (value, previous) => {
+      emit("pageRun", value, previous);
+    },
+  );
+
+  watch([low, high], ([minimum, maximum]: [number, number], [lastMinimum, lastMaximum]) => {
+    emit("span", [minimum, maximum], [lastMinimum, lastMaximum]);
+  });
+
+  watch(
+    () => label,
+    (value, previous) => {
+      emit("labelled", value, previous);
+    },
+    { immediate: true },
+  );
+
+  watchEffect((cleanup) => {
+    const title = \`\${query.value} \${label}\`;
+    emit("effect", title);
+    cleanup(() => {
+      emit("released", title);
+    });
+  });
+
+  function search(term: string) {
+    query.value = term;
+    query.value = query.value.toLowerCase();
+  }
+
+  function turnTwice() {
+    page.value += 1;
+    page.value += 1;
+  }
+
+  function shift() {
+    low.value += 10;
+    high.value += 10;
+  }
+
+  function wobble() {
+    low.value += 1;
+    low.value -= 1;
+  }
+
+  return (
+    <section aria-label="Watchers">
+      <p role="status">
+        {query.value} {page.value} {low.value}-{high.value}
+      </p>
+      <button type="button" onClick={() => search("Boots")}>
+        Boots
+      </button>
+      <button type="button" onClick={turnTwice}>
+        Turn
+      </button>
+      <button type="button" onClick={shift}>
+        Shift
+      </button>
+      <button type="button" onClick={wobble}>
+        Wobble
+      </button>
+    </section>
+  );
+}
+`,
+  // Listeners: Solid's event props, options as native listeners, the plain listeners of an event
+  // the component also listens to once made native, two listeners of one event on one element
+  // (the second added from its `ref` callback, with a template ref), a plain and a once listener
+  // of one phase in both orders (both added from the `ref` callback), and `focus`/`change`.
+  Listeners: `import { defineEmits, ref, useTemplateRef } from "unframework";
+
+export default function Listeners() {
+  const emit = defineEmits<{ logged: [entries: string[]] }>();
+
+  const log = ref<string[]>([]);
+  const volume = ref(0);
+  const field = useTemplateRef<HTMLInputElement>();
+
+  function record(line: string) {
+    log.value = [...log.value, line];
+  }
+
+  function scroll(event: WheelEvent) {
+    volume.value += event.deltaY < 0 ? 1 : -1;
+  }
+
+  function report() {
+    record("report");
+    emit("logged", log.value);
+  }
+
+  return (
+    <section aria-label="Listeners">
+      <div
+        role="presentation"
+        onClickCapture={() => record("capture")}
+        onClick={() => record("bubble")}
+      >
+        <button type="button" onClick={() => record("inside")}>
+          Inside
+        </button>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            record("stopped");
+          }}
+        >
+          Stop
+        </button>
+        <button type="button" onClickOnce={() => record("once")}>
+          Once
+        </button>
+      </div>
+      <button type="button" onClickCapture={() => record("own capture")} onClick={report}>
+        Report
+      </button>
+      <button type="button" onClick={() => record("plain")} onClickOnce={() => record("first")}>
+        Pair
+      </button>
+      <button type="button" onClickOnce={() => record("first swap")} onClick={() => record("swap")}>
+        Swap
+      </button>
+      <div role="group" aria-label="Volume" onWheelPassive={scroll}>
+        <output>{volume.value}</output>
+      </div>
+      <label>
+        Name
+        <input
+          name="name"
+          ref={field}
+          onFocus={() => record("focus")}
+          onBlur={() => record("blur")}
+          onChange={() => record(\`change \${field.value?.value ?? ""}\`)}
+          onKeydown={(event) => event.key === "Enter" && record("enter")}
+          onKeydownCapture={() => record("key capture")}
+        />
+      </label>
+      <p>{log.value.join(", ")}</p>
+    </section>
+  );
+}
+`,
+  // Lifecycle, refs and the rest of the setup: hoisted constants and functions, a setup \`let\`,
+  // state no code writes, an id, \`onMounted\`/\`onUnmounted\`, a template ref in a branch and
+  // one kept in a setup \`let\` typed \`T | null\` for the teardown, an async handler, and
+  // \`nextTick\`.
+  Lifecycle: `import { defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef } from "unframework";
+
+export interface LifecycleProps {
+  title: string;
+}
+
+export default function Lifecycle({ title }: LifecycleProps) {
+  const emit = defineEmits<{
+    ready: [length: number];
+    ticked: [count: number];
+    toggled: [items: number];
+    saved: [attempt: number, status: string];
+  }>();
+
+  const units = ["s", "ms"];
+
+  function format(value: number): string {
+    return \`\${value}\${units[0]}\`;
+  }
+
+  const id = useId();
+  const heading = useTemplateRef<HTMLHeadingElement>();
+  const details = useTemplateRef<HTMLUListElement>();
+  const fixed = ref(format(1));
+  const open = ref(false);
+  const status = ref("idle");
+  const attempts = ref(0);
+  let timer: ReturnType<typeof setInterval> | undefined;
+  let ticks = 0;
+  let headingElement: HTMLHeadingElement | null = null;
+
+  function tick() {
+    ticks += 1;
+    emit("ticked", ticks);
+  }
+
+  async function toggle() {
+    open.value = !open.value;
+    await nextTick();
+    emit("toggled", details.value?.childElementCount ?? 0);
+  }
+
+  async function save() {
+    status.value = "saving";
+    attempts.value += 1;
+    await Promise.resolve();
+    status.value = "checking";
+    attempts.value += 1;
+    await nextTick();
+    status.value = \`saved \${attempts.value}\`;
+    emit("saved", attempts.value, status.value);
+  }
+
+  onMounted(() => {
+    emit("ready", heading.value?.textContent?.length ?? 0);
+    timer = setInterval(tick, 20);
+    headingElement = heading.value;
+    headingElement?.addEventListener("click", tick);
+  });
+
+  onUnmounted(() => {
+    clearInterval(timer);
+    headingElement?.removeEventListener("click", tick);
+  });
+
+  return (
+    <section aria-labelledby={id}>
+      <h2 id={id} ref={heading}>
+        {title}
+      </h2>
+      <p>
+        {fixed.value} {status.value}
+      </p>
+      <button type="button" onClick={toggle}>
+        Details
+      </button>
+      <button type="button" onClick={save}>
+        Save
+      </button>
+      {open.value && (
+        <ul ref={details}>
+          <li>One</li>
+          <li>Two</li>
+        </ul>
+      )}
+    </section>
+  );
+}
+`,
+  // Listeners whose event Solid's props type otherwise than the DOM: \`click\` taken as a
+  // \`PointerEvent\`, \`encrypted\` off a media element. Each goes through its element's \`ref\`.
+  DomTypes: `import { ref } from "unframework";
+
+export default function DomTypes() {
+  const last = ref("none");
+
+  function hit(event: PointerEvent) {
+    last.value = String(event.button);
+  }
+
+  return (
+    <div role="presentation" onClick={() => (last.value = "outer")} onEncrypted={() => (last.value = "keys")}>
+      <button type="button" onClick={hit}>
+        {last.value}
+      </button>
+      <video onEncrypted={() => (last.value = "video")} />
+    </div>
+  );
+}
+`,
+  // Where client code's synchronous runs run, each coalesced by the watchers' scheduler: a
+  // timer's callback, a promise continuation (untracked, \`solid/reactivity\`), an async
+  // function's continuation and its run that declares between two changes; an async
+  // \`watchEffect\`; a pre watcher deriving what a post watcher measures in the DOM; and an arrow
+  // a setup function hands to another (untracked, \`solid/reactivity\`).
+  Runs: `import { defineEmits, onMounted, ref, useTemplateRef, watch, watchEffect } from "unframework";
+
+export interface RunsProps {
+  label: string;
+}
+
+export default function Runs({ label }: RunsProps) {
+  const emit = defineEmits<{
+    moved: [low: number, high: number];
+    rendered: [count: number];
+    saved: [text: string];
+  }>();
+
+  const low = ref(0);
+  const high = ref(10);
+  const query = ref("");
+  const results = ref<string[]>([]);
+  const notes = ref<string[]>([]);
+  const list = useTemplateRef<HTMLUListElement>();
+
+  watch([low, high], ([a, b]) => {
+    emit("moved", a, b);
+  });
+
+  watch(query, (value) => {
+    results.value = value === "" ? [] : [value, \`\${value}!\`];
+  });
+
+  watch(
+    query,
+    () => {
+      emit("rendered", list.value?.childElementCount ?? -1);
+    },
+    { flush: "post" },
+  );
+
+  watchEffect(async () => {
+    const text = \`\${label} \${query.value}\`;
+    await Promise.resolve();
+    emit("saved", text);
+  });
+
+  onMounted(() => {
+    void start();
+  });
+
+  async function start() {
+    await Promise.resolve();
+    low.value = 1;
+    high.value = 11;
+  }
+
+  function later() {
+    setTimeout(() => {
+      low.value += 1;
+      high.value += 1;
+    }, 0);
+  }
+
+  function chained() {
+    void Promise.resolve(5).then((step) => {
+      low.value += step;
+      high.value += step;
+      emit("saved", \`\${label} \${low.value}\`);
+    });
+  }
+
+  function update(change: (entries: string[]) => string[]) {
+    notes.value = change(notes.value);
+  }
+
+  function note() {
+    update((entries) => [...entries, \`\${label} \${query.value}\`]);
+  }
+
+  async function save() {
+    const before = low.value;
+    low.value = before + 1;
+    const next = high.value + 1;
+    high.value = next;
+    await Promise.resolve();
+    low.value = next;
+    high.value = next + before;
+  }
+
+  return (
+    <section aria-label="Runs">
+      <p role="status">
+        {low.value}-{high.value}
+      </p>
+      <ul ref={list}>
+        {results.value.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+      <button type="button" onClick={() => (query.value = "a")}>
+        Search
+      </button>
+      <button type="button" onClick={later}>
+        Later
+      </button>
+      <button type="button" onClick={chained}>
+        Chained
+      </button>
+      <button type="button" onClick={save}>
+        Save
+      </button>
+      <button type="button" onClick={note}>
+        Note {notes.value.length}
+      </button>
+    </section>
+  );
+}
+`,
+  // Runs that cross blocks (an \`await\` assigned, a \`try\` and its \`catch\`, a guard, a local
+  // arrow called twice), which the scheduler coalesces as any other; callbacks
+  // \`solid/reactivity\` reads as tracked (a continuation reading in \`filter\`'s callback, an
+  // arrow kept in a variable); and \`onUnmounted\` hooks that run after every cleanup, in order.
+  AsyncRuns: `import { defineEmits, onUnmounted, ref, watch, watchEffect } from "unframework";
+
+export default function AsyncRuns() {
+  const emit = defineEmits<{
+    pair: [low: number, high: number];
+    gone: [what: string];
+    stopped: [low: number];
+  }>();
+
+  const low = ref(0);
+  const high = ref(0);
+  const limit = ref(3);
+  const items = ref<number[]>([]);
+  let stop: (() => void) | undefined = undefined;
+
+  onUnmounted(() => {
+    emit("gone", "first");
+  });
+
+  watch([low, high], ([a, b]) => {
+    emit("pair", a, b);
+  });
+
+  watch(
+    limit,
+    (value, previous, onCleanup) => {
+      onCleanup(() => emit("gone", \`watch \${value}\`));
+    },
+    { immediate: true },
+  );
+
+  watchEffect((onCleanup) => {
+    const value = limit.value;
+    onCleanup(() => emit("gone", \`effect \${value}\`));
+  });
+
+  async function fetched() {
+    low.value = 1;
+    high.value = await Promise.resolve(10);
+    low.value = 2;
+  }
+
+  async function tried(fail: boolean) {
+    low.value = 3;
+    try {
+      const value = await (fail ? Promise.reject(new Error("no")) : Promise.resolve(30));
+      high.value = value;
+    } catch {
+      high.value = -1;
+    }
+    low.value = 4;
+  }
+
+  async function guarded(skip: boolean) {
+    low.value = 5;
+    if (skip) {
+      high.value = 50;
+      return;
+    }
+    high.value = 51;
+    await Promise.resolve();
+    low.value = 6;
+  }
+
+  async function twice() {
+    const bump = () => {
+      low.value += 1;
+    };
+    bump();
+    bump();
+    await Promise.resolve();
+    bump();
+    high.value += 1;
+  }
+
+  function filtered() {
+    void Promise.resolve([1, 2, 3, 4, 5]).then((list) => {
+      items.value = list.filter((value) => value < limit.value);
+      high.value = items.value.length;
+    });
+  }
+
+  function arm() {
+    stop = () => {
+      emit("stopped", low.value);
+    };
+  }
+
+  function halt() {
+    stop?.();
+    stop = undefined;
+  }
+
+  onUnmounted(() => {
+    emit("gone", "last");
+  });
+
+  return (
+    <section aria-label="Async runs">
+      <p role="status">
+        {low.value}/{high.value}
+      </p>
+      <button type="button" onClick={fetched}>
+        Fetched
+      </button>
+      <button type="button" onClick={() => tried(false)}>
+        Tried
+      </button>
+      <button type="button" onClick={() => tried(true)}>
+        Failed
+      </button>
+      <button type="button" onClick={() => guarded(true)}>
+        Skipped
+      </button>
+      <button type="button" onClick={() => guarded(false)}>
+        Guarded
+      </button>
+      <button type="button" onClick={twice}>
+        Twice
+      </button>
+      <button type="button" onClick={filtered}>
+        Filtered
+      </button>
+      <button type="button" onClick={arm}>
+        Arm
+      </button>
+      <button type="button" onClick={halt}>
+        Halt
+      </button>
+    </section>
+  );
+}
+`,
+  // The run shapes a lexical \`batch\` could not hold, which the watchers' scheduler coalesces as
+  // Vue's does (ADR-0048): two awaited writes in one function, a guard before an awaited call of
+  // a function that writes first, an \`await\` that may not run (\`??\`), a throw after a write in
+  // a \`try\`, a callback parameter and an object's arrows called after an \`await\`, a \`catch\`
+  // that returns, a validate-then-save guard, and a statement with two \`await\`s.
+  Coalesced: `import { defineEmits, ref, watch } from "unframework";
+
+export default function Coalesced() {
+  const emit = defineEmits<{
+    state: [step: string, count: number, busy: boolean];
+    saved: [name: string];
+  }>();
+
+  const step = ref("idle");
+  const count = ref(0);
+  const busy = ref(false);
+  const name = ref("");
+  const input = ref("x");
+  const cached = ref<number[] | null>(null);
+
+  watch([step, count, busy], ([nextStep, nextCount, nextBusy]) => {
+    emit("state", nextStep, nextCount, nextBusy);
+  });
+
+  function parse(text: string): number {
+    const value = Number(text);
+    if (Number.isNaN(value)) throw new Error("Not a number");
+    return value;
+  }
+
+  async function persist(value: string) {
+    busy.value = true;
+    await Promise.resolve(value);
+    busy.value = false;
+  }
+
+  async function withBusy(task: () => void) {
+    busy.value = true;
+    await Promise.resolve();
+    task();
+    busy.value = false;
+  }
+
+  async function load() {
+    step.value = "user";
+    count.value = await Promise.resolve(1);
+    step.value = "posts";
+    count.value = await Promise.resolve(2);
+    step.value = "done";
+  }
+
+  async function save() {
+    step.value = "";
+    if (!name.value) return;
+    await persist(name.value);
+    emit("saved", name.value);
+  }
+
+  async function submit() {
+    step.value = "";
+    const payload = name.value.trim();
+    await persist(payload);
+    emit("saved", payload);
+  }
+
+  async function cachedLoad() {
+    busy.value = true;
+    const data = cached.value ?? (await Promise.resolve([1, 2, 3]));
+    cached.value = data;
+    count.value = data.length;
+    busy.value = false;
+  }
+
+  async function checked() {
+    try {
+      step.value = "checking";
+      count.value = parse(input.value);
+      await Promise.resolve();
+      step.value = "checked";
+    } catch {
+      step.value = "invalid";
+    }
+  }
+
+  function busyLoad() {
+    void withBusy(() => {
+      count.value = 7;
+    });
+  }
+
+  async function notify(loud: boolean) {
+    const handlers = {
+      loud: (text: string) => {
+        step.value = text.toUpperCase();
+      },
+      quiet: (text: string) => {
+        step.value = text;
+      },
+    };
+    await Promise.resolve();
+    (loud ? handlers.loud : handlers.quiet)("done");
+    count.value += 1;
+  }
+
+  async function report(fail: boolean): Promise<boolean> {
+    busy.value = true;
+    try {
+      count.value = await (fail ? Promise.reject(new Error("no")) : Promise.resolve(3));
+    } catch (caught) {
+      step.value = String(caught);
+      busy.value = false;
+      return false;
+    }
+    busy.value = false;
+    emit("saved", String(count.value));
+    return true;
+  }
+
+  async function validate() {
+    step.value = "";
+    if (!name.value) {
+      step.value = "Name is required";
+      return;
+    }
+    const payload = name.value;
+    busy.value = true;
+    await Promise.resolve(payload);
+    busy.value = false;
+    emit("saved", payload);
+  }
+
+  async function sum() {
+    step.value = "summing";
+    count.value = (await Promise.resolve(1)) + (await Promise.resolve(2));
+    step.value = "summed";
+  }
+
+  return (
+    <section aria-label="Coalesced">
+      <p role="status">
+        {step.value} {count.value} {busy.value ? "busy" : "idle"}
+      </p>
+      <button type="button" onClick={load}>
+        Load
+      </button>
+      <button type="button" onClick={save}>
+        Save
+      </button>
+      <button type="button" onClick={submit}>
+        Submit
+      </button>
+      <button type="button" onClick={() => (name.value = "Ada")}>
+        Name
+      </button>
+      <button type="button" onClick={cachedLoad}>
+        Cached
+      </button>
+      <button type="button" onClick={() => (count.value = 0)}>
+        Clear
+      </button>
+      <button type="button" onClick={checked}>
+        Check
+      </button>
+      <button type="button" onClick={() => (input.value = "5")}>
+        Fix
+      </button>
+      <button type="button" onClick={busyLoad}>
+        Busy
+      </button>
+      <button type="button" onClick={() => notify(true)}>
+        Loud
+      </button>
+      <button type="button" onClick={() => notify(false)}>
+        Quiet
+      </button>
+      <button type="button" onClick={() => report(false)}>
+        Report
+      </button>
+      <button type="button" onClick={() => report(true)}>
+        Fail
+      </button>
+      <button type="button" onClick={validate}>
+        Validate
+      </button>
+      <button type="button" onClick={sum}>
+        Sum
+      </button>
+    </section>
+  );
+}
+`,
+  // Reads a condition narrows (\`BindingReference.narrowed\`, src/asserted.ts), which Solid's
+  // calls and a prop's property in a closure would lose: a state read whole and through a member
+  // path, after a test and a guard clause, in a derived value, a watcher, a template expression
+  // and a \`when\` (whose arrow's parameter TypeScript narrows itself), and a destructured prop
+  // read in a timer's callback after a guard. L4 checks every assertion it needs.
+  // A compound write's target a condition narrows (ADR-0046): its operator reads it, through a
+  // call TypeScript never narrows, so the read is asserted; a plain write, \`??=\`, and a target
+  // that cannot be absent are not.
+  NarrowedWrites: `import { ref } from "unframework";
+
+export default function NarrowedWrites() {
+  const count = ref<number | null>(null);
+  const label = ref<string | undefined>(undefined);
+  const total = ref(0);
+
+  function bump(step: number) {
+    if (count.value !== null) count.value += step;
+    if (count.value) count.value++;
+    if (label.value !== undefined) label.value += "!";
+    total.value += step;
+  }
+
+  function restart() {
+    count.value = 0;
+    count.value -= 1;
+  }
+
+  function reset() {
+    count.value ??= 0;
+    count.value = null;
+  }
+
+  return (
+    <div>
+      <p>
+        {count.value ?? "none"} {label.value ?? ""} {total.value}
+      </p>
+      <button type="button" onClick={() => bump(2)}>
+        Bump
+      </button>
+      <button type="button" onClick={restart}>
+        Restart
+      </button>
+      <button type="button" onClick={reset}>
+        Reset
+      </button>
+    </div>
+  );
+}
+`,
+  NarrowedReads: `import { computed, defineEmits, ref, watch } from "unframework";
+
+interface Member {
+  id: number;
+  name: string;
+}
+
+interface Draft {
+  email?: string;
+  tags: string[] | null;
+}
+
+export interface NarrowedReadsProps {
+  owner?: Member;
+  members: Member[];
+}
+
+export default function NarrowedReads({ owner, members }: NarrowedReadsProps) {
+  const emit = defineEmits<{
+    select: [member: Member];
+    removed: [name: string];
+    submitted: [email: string];
+    tagged: [count: number];
+    owned: [name: string];
+  }>();
+  const selected = ref<Member | null>(null);
+  const draft = ref<Draft>({ tags: null });
+  const greeting = computed(() => (owner ? \`Hello \${owner.name}\` : "Hello"));
+  const chosen = computed(() => (selected.value ? selected.value.name : "none"));
+
+  function pick(member: Member) {
+    selected.value = { ...member };
+  }
+
+  function invite() {
+    if (selected.value) emit("select", selected.value);
+  }
+
+  function remove() {
+    if (!selected.value) return;
+    const member = selected.value;
+    selected.value = null;
+    emit("removed", member.name);
+  }
+
+  function submit() {
+    if (!draft.value.email) return;
+    emit("submitted", draft.value.email);
+  }
+
+  function tag() {
+    if (draft.value.tags) {
+      draft.value = { ...draft.value, tags: [...draft.value.tags, "team"] };
+    } else {
+      draft.value = { ...draft.value, tags: ["team"] };
+    }
+    if (draft.value.tags) emit("tagged", draft.value.tags.length);
+  }
+
+  function later() {
+    if (!owner) return;
+    setTimeout(() => {
+      emit("owned", owner.name);
+    }, 0);
+  }
+
+  watch(selected, () => {
+    if (selected.value !== null) emit("select", selected.value);
+  });
+
+  return (
+    <div>
+      <p>
+        {greeting.value} {chosen.value}
+      </p>
+      {selected.value !== null ? <p title={selected.value.name}>{selected.value.name}</p> : null}
+      <p>{draft.value.email ? draft.value.email.trim() : "no email"}</p>
+      {members.map((member) => (
+        <button
+          key={member.id}
+          type="button"
+          aria-pressed={selected.value !== null && selected.value.id === member.id}
+          onClick={() => pick(member)}
+        >
+          {member.name}
+        </button>
+      ))}
+      {owner && (
+        <button type="button" onClick={() => emit("owned", owner.name)}>
+          {owner.name}
+        </button>
+      )}
+      <button type="button" onClick={invite}>
+        Invite
+      </button>
+      <button type="button" onClick={remove}>
+        Remove
+      </button>
+      <button type="button" onClick={() => (draft.value = { ...draft.value, email: " ada@example.com " })}>
+        Email
+      </button>
+      <button type="button" onClick={submit}>
+        Send
+      </button>
+      <button type="button" onClick={tag}>
+        Tag
+      </button>
+      <button type="button" onClick={later}>
+        Later
+      </button>
+    </div>
+  );
+}
+`,
+  // Branches whose tests narrow nothing, read as everywhere else (a comparison, a value whose
+  // type has no union), beside one a literal union narrows: L4 checks the plain reads.
+  PlainBranches: `import { computed, ref } from "unframework";
+
+type Tone = "info" | "warning";
+
+interface Member {
+  name: string;
+}
+
+export interface PlainBranchesProps {
+  count: number;
+  tags: string[];
+  tone: Tone;
+  member: Member;
+}
+
+export default function PlainBranches({ count, tags, tone, member }: PlainBranchesProps) {
+  const results = ref<string[]>([]);
+  const total = computed(() => results.value.length + count);
+  return (
+    <div>
+      {count > 2 ? <p>{count.toFixed(1)} items</p> : null}
+      {tags.length === 0 ? (
+        <p>No tags</p>
+      ) : (
+        <ul>
+          {tags.map((tag) => (
+            <li key={tag}>{tag.toUpperCase()}</li>
+          ))}
+        </ul>
+      )}
+      {member.name === "Ada" ? <p>{member.name.trim()}</p> : null}
+      {tone === "info" ? <p>{tone.toUpperCase()}</p> : null}
+      {results.value.length > 0 ? <p>{results.value.join(", ")}</p> : <p>None</p>}
+      {total.value > 2 ? <p>{total.value.toFixed(0)}</p> : null}
+    </div>
+  );
+}
+`,
+  // Branches narrowed on state, whose \`when\` reads each signal once, and a handler inside a
+  // narrowed branch, which reads the branch's accessor.
+  NarrowedState: `import { defineEmits, ref } from "unframework";
+
+interface User {
+  name: string;
+}
+
+export interface NarrowedStateProps {
+  member?: User;
+}
+
+export default function NarrowedState({ member }: NarrowedStateProps) {
+  const emit = defineEmits<{ picked: [name: string] }>();
+  const user = ref<User | null>(null);
+  const draft = ref<string | null>(null);
+
+  function pick(name: string) {
+    user.value = { name };
+    emit("picked", name);
+  }
+
+  return (
+    <div>
+      {user.value !== null ? <p>{user.value.name}</p> : <p>Nobody</p>}
+      {draft.value !== null && <p>{draft.value.toUpperCase()}</p>}
+      {member && (
+        <button type="button" onClick={() => pick(member.name)}>
+          {member.name}
+        </button>
+      )}
+      <button type="button" onClick={() => (draft.value = "x")}>
+        Draft
+      </button>
+    </div>
+  );
+}
+`,
+  // A keyed branch (its expressions narrow its value further) gives plain names, which an
+  // interpolated conditional prints as \`<Show>\` (\`solid/prefer-show\`).
+  KeyedNames: `export default function KeyedNames({ nick, user }: { nick?: string; user?: { name?: string } }) {
+  return (
+    <div>
+      {nick && <p>{nick.length > 2 ? nick : "-"}</p>}
+      {user && <p title={user.name ? user.name.trim() : "anon"}>{user.name ?? "anon"}</p>}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { expect, inject, it } from "vitest";
 
 import "../../../../../src/setup.ts";
 import { describeTargets, mount } from "../../../../../src/index.ts";
+import { NO_INTERACTION_SKIP } from "../../../../../src/layers.ts";
 import { LIVE_REFERENCE_SKIP } from "../../../../../src/visual-types.ts";
 import "../../../dom-target.ts";
 
@@ -19,6 +20,7 @@ describeTargets("stub/quarantine", () => {
       await view.expectParity("initial");
       expect(task.meta.uf?.layers).toEqual({
         L7: { status: "quarantined", issue: "#L7" },
+        L9: { status: "skip", reason: NO_INTERACTION_SKIP },
         L10: { status: "skip", reason: LIVE_REFERENCE_SKIP },
         L11: { status: "pass" },
       });

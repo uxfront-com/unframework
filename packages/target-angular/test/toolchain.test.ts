@@ -44,13 +44,14 @@ describe("the toolchain", () => {
 describe("frameworkCompile (L3)", () => {
   const goldens = goldenFiles();
 
+  // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output with no errors and no warnings", async () => {
     expect(goldens.length).toBeGreaterThan(0);
     const results = await toolchain.frameworkCompile(goldens.map(read), context);
     expect([...results.keys()].toSorted()).toEqual(goldens.toSorted());
     for (const [path, result] of results)
       expect(result, path).toEqual({ errors: [], warnings: [] });
-  });
+  }, 60_000);
 
   it("reports a mismatched closing tag as NG5002 on its file only", async () => {
     const [golden, ...others] = goldens.map(read);

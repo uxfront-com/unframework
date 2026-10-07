@@ -1,4 +1,4 @@
-// The emitter's output for M1's constructs (design §5.5), judged by Angular itself: sources
+// The emitter's output for M1's constructs (plan §6), judged by Angular itself: sources
 // lowered by the analyser and emitted as the compiler writes them pass ngtsc with strict
 // templates and its extended diagnostics (L3), the toolchain's type check (L4) and its linters
 // (L5) with no message, for these sources and for every case of the corpus (whose committed
@@ -34,12 +34,13 @@ import {
   removeScratch,
   scratchDir,
 } from "./helpers.ts";
+import { M2_SOURCES } from "./lint-probes.ts";
 
 afterAll(removeScratch);
 
 /** Sources by component name, each showing what Angular needs of the emitter. */
 const SOURCES: Readonly<Record<string, string>> = {
-  // Defaults: absent and `undefined` take them, `null` stays a value (design §1.1).
+  // Defaults: absent and `undefined` take them, `null` stays a value (ADR-0034).
   Notice: `
 type Tone = "info" | "warn" | undefined;
 
@@ -283,6 +284,18 @@ describe("angular output", () => {
     const messages = await toolchainMessages([...outputs.values()]);
     expect(Object.values(messages).length).toBe(outputs.size);
     expect(Object.values(messages).flat()).toEqual([]);
+  });
+
+  it("passes them for the shapes M2 emits", { timeout: 120_000 }, async () => {
+    const files = await Promise.all(
+      Object.entries(M2_SOURCES).map(async ([file, source]) => {
+        const [output, ...more] = await emitFormatted(lower(source, file, true));
+        expect(more).toEqual([]);
+        return output!;
+      }),
+    );
+    const messages = await toolchainMessages(files);
+    expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
   });
 
   // The corpus's committed goldens are this emitter's output as of the last `pnpm test:update`;

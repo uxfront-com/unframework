@@ -5,9 +5,11 @@ import {
   buildCells,
   buildPartialMatrix,
   buildScenarios,
+  buildTests,
   cellHeadline,
   cellOf,
   mergeMatrices,
+  mergeTests,
   narrowing,
   outcomeOfCell,
   settleQuarantine,
@@ -109,6 +111,40 @@ describe("buildScenarios", () => {
       "a/first": { react: ["defaults"] },
       "basics/hello": { vue: ["after-rerender", "defaults", "with-label"] },
     });
+  });
+});
+
+describe("buildTests", () => {
+  it("keeps each named test's sorted scenarios and capability skip, and nothing else", () => {
+    const skipped = "requires interactivity: inert";
+    expect(
+      buildTests([
+        { ...checked("vue", ["b", "a", "b"]), test: "basics/hello > clicks" },
+        { ...record("astro", {}), test: "basics/hello > clicks", skipped },
+        // A file's own record, and a test that checked nothing: nothing to compare.
+        checked("vue", ["c"]),
+        { ...record("vue", { L1: { status: "pass" } }), test: "compile > hello" },
+      ]),
+    ).toEqual({
+      "basics/hello": {
+        astro: { "basics/hello > clicks": { scenarios: [], skipped } },
+        vue: { "basics/hello > clicks": { scenarios: ["a", "b"] } },
+      },
+    });
+  });
+
+  it("lets a later set's record of a test replace an earlier one's, and sorts everything", () => {
+    const older = buildTests([{ ...checked("vue", ["a"]), test: "t" }]);
+    const newer = buildTests([
+      { ...checked("vue", ["b"]), test: "t" },
+      { ...checked("react", ["a"], "basics/aaa"), test: "u" },
+    ]);
+    const merged = mergeTests([older, newer]);
+    expect(merged).toEqual({
+      "basics/aaa": { react: { u: { scenarios: ["a"] } } },
+      "basics/hello": { vue: { t: { scenarios: ["b"] } } },
+    });
+    expect(Object.keys(merged)).toEqual(["basics/aaa", "basics/hello"]);
   });
 });
 
@@ -229,6 +265,19 @@ describe("mergeMatrices", () => {
     });
   });
 
+  it("keeps each test's record from the newest run of its project", () => {
+    const first = partial("browser-vue", "2026-10-01T10:00:00.000Z", [
+      { project: "browser:vue", record: { ...checked("vue", ["initial"]), test: "t" } },
+      { project: "browser:vue", record: { ...checked("vue", ["other"]), test: "u" } },
+    ]);
+    const second = partial("browser-vue", "2026-10-01T11:00:00.000Z", [
+      { project: "browser:vue", record: { ...checked("vue", ["renamed"]), test: "t" } },
+    ]);
+    expect(mergeMatrices([second, first]).matrix.tests).toEqual({
+      "basics/hello": { vue: { t: { scenarios: ["renamed"] }, u: { scenarios: ["other"] } } },
+    });
+  });
+
   it("takes the reference of the newest run that has one", () => {
     const outside = partial("compile", "2026-10-01T12:00:00.000Z", [], ["compile"], [], null);
     const harness = partial("all", "2026-10-01T11:00:00.000Z", [], ["compile"], [], "vue");
@@ -262,6 +311,8 @@ describe("withoutProjects", () => {
     expect(kept?.cases).toEqual({ "basics/hello": { vue: { L2: "pass" } } });
     expect(kept?.scenariosByProject).toEqual({ compile: {} });
     expect(kept?.scenarios).toEqual({});
+    expect(kept?.testsByProject).toEqual({ compile: {} });
+    expect(kept?.tests).toEqual({});
     expect(withoutProjects(matrix, new Set(["ssr:vue"]))).toBe(matrix);
     expect(withoutProjects(matrix, new Set(["compile", "browser:vue"]))).toBeUndefined();
   });

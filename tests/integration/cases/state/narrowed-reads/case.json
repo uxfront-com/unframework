@@ -1,0 +1,20 @@
+{
+  "description": "Reads that a nullish or truthiness test narrows, in client code and in the render: a ref's value passed whole and copied after a guard, a prop's member in a computed, a member of a ref's value, a timer handle cleared with no test at all; a handler under a condition that writes and emits the state the condition reads; branches that render an input of another type at the same place.",
+  "ssr": {
+    "initial": {
+      "props": {
+        "inviter": { "name": "Ada" },
+        "members": [
+          { "id": 1, "name": "Grace" },
+          { "id": 2, "name": "Alan" },
+          { "id": 3, "name": "Barbara" }
+        ]
+      }
+    },
+    "guest": {
+      "props": {
+        "members": [{ "id": 1, "name": "Grace" }]
+      }
+    }
+  }
+}

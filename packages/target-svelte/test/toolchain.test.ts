@@ -34,13 +34,14 @@ describe("svelte toolchain", () => {
   it("pre-bundles the runtime the compiled output imports, in the browser only", async () => {
     expect((await toolchain.vite("browser", context)).optimizeDeps?.include).toEqual([
       "svelte",
+      "svelte/events",
       "svelte/internal/client",
       "svelte/internal/disclose-version",
     ]);
     expect((await toolchain.vite("ssr", context)).optimizeDeps).toBeUndefined();
   });
 
-  // Design §5: what the target emits passes Svelte's compiler, svelte-check and the linters with
+  // G2: what the target emits passes Svelte's compiler, svelte-check and the linters with
   // no message. The corpus's own run is the integration `toolchain:svelte` project's.
   it(
     "passes L3, L4 and L5 on what the target emits for each shape",

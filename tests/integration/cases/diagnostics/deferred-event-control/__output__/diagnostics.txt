@@ -1,0 +1,8 @@
+error[UF3033]: `preventDefault()` must run while the event is dispatched, and it runs after an `await`, once the event has been dispatched: the browser has acted on the event by then, on every target (ADR-0047).
+  --> diagnostics/deferred-event-control/NewsletterForm.uf.tsx:11:5
+   |
+11 |     event.preventDefault();
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Call it before the first `await`, under the same test if it is conditional (`if (event.key === "Enter") event.preventDefault();`).
+   = see: https://unframework.dev/diagnostics/UF3033

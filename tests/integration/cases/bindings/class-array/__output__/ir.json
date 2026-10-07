@@ -162,6 +162,7 @@
           }
         }
       ],
+      "setup": [],
       "render": {
         "kind": "Element",
         "tag": "button",

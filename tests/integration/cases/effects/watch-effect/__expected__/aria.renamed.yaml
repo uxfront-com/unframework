@@ -1,0 +1,4 @@
+- region "Inbox":
+  - status: 0 unread
+  - button "Receive a message"
+  - button "Mark all read"

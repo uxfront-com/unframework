@@ -22,6 +22,10 @@ export function Stepper(props: StepperProps) {
 
   watch(count, (next, previous) => console.log(next - previous));
   watch(open, (next, previous) => console.log(next, previous ?? false), { immediate: true });
+  // An array source's values are a mutable tuple, as Vue passes them: a callback may annotate it.
+  watch([count, open], ([next, shown]: [number, boolean], [last]) =>
+    console.log(next - last, shown),
+  );
 
   function increment() {
     count.value++;

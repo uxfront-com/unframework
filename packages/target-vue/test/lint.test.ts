@@ -10,7 +10,7 @@ import type { ToolchainContext } from "@unframework/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
-import { M1_SHAPES } from "./lint-probes.ts";
+import { M1_SHAPES, M2_SHAPES } from "./lint-probes.ts";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const repo = join(packageDir, "../..");
@@ -55,6 +55,7 @@ const SCRIPT =
   "const { items, label = undefined } = defineProps<{ items: string[]; label?: string }>();\n";
 
 describe("vue lint (L5)", { timeout: 60_000 }, () => {
+  // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output, with no message", async () => {
     expect(goldens.map((file) => file.split("/").at(-1))).toEqual(
       expect.arrayContaining(["Hello.vue", "ProfileCard.vue"]),
@@ -63,14 +64,55 @@ describe("vue lint (L5)", { timeout: 60_000 }, () => {
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(goldens.map((file) => [file, []])),
     );
-  });
+  }, 60_000);
 
-  it("accepts the shapes M1 emits (design §5.2)", async () => {
+  it("accepts the shapes M1 emits", async () => {
     const files = write(M1_SHAPES);
     const results = await toolchain.lint(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file, []])),
     );
+  });
+
+  it("accepts the shapes M2 emits (ADR-0045 to ADR-0049)", async () => {
+    const files = write(M2_SHAPES);
+    const results = await toolchain.lint(files, context);
+    expect(Object.fromEntries(results)).toEqual(
+      Object.fromEntries(files.map((file) => [file, []])),
+    );
+  });
+
+  // Each rule fixes how the emitter writes M2's constructs: listeners last and `ref` with `key`
+  // (`vueRank`), the events declared without a binding when nothing calls `emit`, the script's
+  // refs read through `.value` as the source writes them, and every emitted event declared.
+  it.each([
+    {
+      what: "a listener before another attribute",
+      contents: `<script setup lang="ts">\nfunction save() {}\n</script>\n\n<template>\n  <button @click="save" type="button">Save</button>\n</template>\n`,
+      rule: "vue/attributes-order",
+    },
+    {
+      what: "a template ref after another attribute",
+      contents: `<script setup lang="ts">\nimport { useTemplateRef } from "vue";\n\nconst field = useTemplateRef<HTMLInputElement>("field");\n\nfunction focus() {\n  field.value?.focus();\n}\n</script>\n\n<template>\n  <input name="a" ref="field" @focus="focus" />\n</template>\n`,
+      rule: "vue/attributes-order",
+    },
+    {
+      what: "an `emit` nothing calls",
+      contents: `<script setup lang="ts">\nconst emit = defineEmits<{ ready: [] }>();\n</script>\n\n<template>\n  <p>Silent</p>\n</template>\n`,
+      rule: "@typescript-eslint/no-unused-vars",
+    },
+    {
+      what: "a ref used as an operand in the script",
+      contents: `<script setup lang="ts">\nimport { ref } from "vue";\n\nconst count = ref(0);\n\nfunction add() {\n  count.value = count + 1;\n}\n</script>\n\n<template>\n  <button type="button" @click="add">{{ count }}</button>\n</template>\n`,
+      rule: "vue/no-ref-as-operand",
+    },
+    {
+      what: "an event the component does not declare",
+      contents: `<script setup lang="ts">\nconst emit = defineEmits<{ change: [] }>();\n</script>\n\n<template>\n  <button type="button" @click="emit('change')">Save</button>\n  <button type="button" @click="$emit('closed')">Close</button>\n</template>\n`,
+      rule: "vue/require-explicit-emits",
+    },
+  ])("rejects $what ($rule)", async ({ contents, rule }) => {
+    expect(await lintCodes(contents)).toEqual([rule]);
   });
 
   it.each([

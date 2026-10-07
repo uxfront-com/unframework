@@ -2,9 +2,12 @@ import type { HarnessContext } from "@unframework/testing/node";
 import { describe, expect, inject, it } from "vitest";
 import type { UserWorkspaceConfig } from "vitest/config";
 
+import { listCases } from "./cases.ts";
+import { noOutputCases } from "./no-output.ts";
 import {
   harnessProjects,
   isSelected,
+  noErrorBroadcast,
   projectNames,
   projectPatterns,
   projectTest,
@@ -115,7 +118,7 @@ describe("project factories", () => {
     const [, , , ssr, browser] = harnessProjects({ harness, mode, targets: ["missing"] });
     for (const [factory, layers] of [
       [ssr, ["L6", "L13"]],
-      [browser, ["L7", "L8", "L10", "L11", "L13"]],
+      [browser, ["L7", "L8", "L9", "L10", "L11", "L13"]],
     ] as const) {
       const project = await (factory as () => Promise<UserWorkspaceConfig>)();
       expect(project.test?.include).toEqual(["harness/unavailable.test.ts"]);
@@ -140,5 +143,35 @@ describe("project factories", () => {
     });
     const project = await (ssr as () => Promise<UserWorkspaceConfig>)();
     expect(project.test).toMatchObject({ name: "ssr:missing", include: [] });
+  });
+});
+
+describe("browser projects", () => {
+  it("serve stand-ins for the cases their target has no output for, before the unplugin", async () => {
+    const [, , , , browser] = harnessProjects({ harness, mode, targets: ["qwik"] });
+    const project = await (browser as () => Promise<UserWorkspaceConfig>)();
+    expect(project.test?.include).toEqual(["cases/**/*.test.ts"]);
+    const provided = project.test?.provide as { ufNoOutput?: Record<string, string> } | undefined;
+    expect(provided?.ufNoOutput).toEqual(noOutputCases(listCases(harness.casesDir), "qwik"));
+    const names = (project.plugins ?? [])
+      .flat()
+      .map((plugin) => (plugin as { name?: string }).name);
+    expect(names.slice(0, 3)).toEqual([
+      "uf-harness:no-output",
+      "uf-harness:no-error-broadcast",
+      "unframework",
+    ]);
+  });
+
+  it("send no compile error to the pages, whose overlay would cover every later spec", () => {
+    const sent: unknown[][] = [];
+    const hot = { send: (...args: unknown[]) => void sent.push(args) };
+    const server = { environments: { client: { hot } } };
+    const plugin = noErrorBroadcast();
+    (plugin.configureServer as (server: unknown) => void)(server);
+    hot.send({ type: "error", err: { message: "error[UF4001]" } });
+    hot.send({ type: "full-reload", path: "*" });
+    hot.send("vitest:custom", { data: 1 });
+    expect(sent).toEqual([[{ type: "full-reload", path: "*" }], ["vitest:custom", { data: 1 }]]);
   });
 });

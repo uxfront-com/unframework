@@ -1,0 +1,18 @@
+---
+const size = "M" as string;
+const quantity = 1 as number;
+const note = "" as string;
+---
+
+<section class="shirt-order" aria-label="Shirt order">
+  <p role="status">{`${quantity} x size ${size}`}</p>
+  <div role="group" aria-label="Size">
+    <button type="button" value="S" aria-pressed={size === "S"}>Small</button>
+    <button type="button" value="M" aria-pressed={size === "M"}>Medium</button>
+    <button type="button" value="L" aria-pressed={size === "L"}>Large</button>
+  </div>
+  <button type="button">Add one</button>
+  <label>Note<input name="note" /></label>
+  <p>Note: {note}</p>
+  <button type="button">Reset</button>
+</section>

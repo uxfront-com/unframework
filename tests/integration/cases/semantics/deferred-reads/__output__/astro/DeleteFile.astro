@@ -1,0 +1,22 @@
+---
+export interface DeleteFileProps {
+  fileName: string;
+}
+
+type Props = DeleteFileProps;
+
+const { fileName } = Astro.props;
+
+const copies = 1 as number;
+const confirming = false as boolean;
+---
+
+<section class="delete-file" aria-label="File">
+  <p>{fileName}, {copies} {copies === 1 ? "copy" : "copies"}</p>
+  <button type="button">Add a copy</button>
+  {confirming ? (
+    <button type="button">Confirm the deletion</button>
+  ) : (
+    <button type="button">Delete</button>
+  )}
+</section>

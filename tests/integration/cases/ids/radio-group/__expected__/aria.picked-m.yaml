@@ -1,0 +1,10 @@
+- group "Size":
+  - text: Size
+  - paragraph: Pick one size.
+  - radio "S"
+  - text: S
+  - radio "M" [checked]
+  - text: M
+  - radio "L"
+  - text: L
+  - status: M

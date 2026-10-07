@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF2018",
+    "severity": "error",
+    "message": "A watcher's callback reads the template ref `list`, and runs before the DOM updates: Vue and Svelte would read the DOM as it was, React and Solid as it is now.",
+    "file": "diagnostics/early-dom-read/ActivityFeed.uf.tsx",
+    "start": {
+      "line": 12,
+      "column": 22,
+      "offset": 500
+    },
+    "end": {
+      "line": 12,
+      "column": 32,
+      "offset": 510
+    },
+    "help": "Run it after the DOM updates: `watch(source, callback, { flush: \"post\" })`.",
+    "fixes": [
+      {
+        "title": "Add `{ flush: \"post\" }`",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 540,
+              "end": 540
+            },
+            "text": ", { flush: \"post\" }"
+          }
+        ]
+      }
+    ]
+  }
+]

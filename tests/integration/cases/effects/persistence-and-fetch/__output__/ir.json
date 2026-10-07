@@ -1,0 +1,2142 @@
+{
+  "irVersion": 1,
+  "file": "effects/persistence-and-fetch/ReadingList.uf.tsx",
+  "components": [
+    {
+      "name": "ReadingList",
+      "span": {
+        "start": 129,
+        "end": 4107
+      },
+      "props": [
+        {
+          "name": "shelves",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 116,
+              "end": 124
+            }
+          },
+          "binding": "shelves@167",
+          "span": {
+            "start": 107,
+            "end": 125
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ReadingListProps",
+          "span": {
+            "start": 178,
+            "end": 194
+          }
+        },
+        "span": {
+          "start": 165,
+          "end": 194
+        }
+      },
+      "types": [
+        "ReadingListProps"
+      ],
+      "emits": {
+        "binding": "emit@206",
+        "type": {
+          "code": "{\n    requested: [url: string];\n    cancelled: [query: string];\n    found: [query: string, count: number];\n    started: [];\n    checked: [count: number];\n    refreshed: [total: number];\n  }",
+          "span": {
+            "start": 225,
+            "end": 414
+          }
+        },
+        "events": [
+          {
+            "name": "requested",
+            "parameters": [
+              {
+                "name": "url",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 248,
+                    "end": 254
+                  }
+                },
+                "span": {
+                  "start": 243,
+                  "end": 254
+                }
+              }
+            ],
+            "span": {
+              "start": 231,
+              "end": 255
+            }
+          },
+          {
+            "name": "cancelled",
+            "parameters": [
+              {
+                "name": "query",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 280,
+                    "end": 286
+                  }
+                },
+                "span": {
+                  "start": 273,
+                  "end": 286
+                }
+              }
+            ],
+            "span": {
+              "start": 261,
+              "end": 287
+            }
+          },
+          {
+            "name": "found",
+            "parameters": [
+              {
+                "name": "query",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 308,
+                    "end": 314
+                  }
+                },
+                "span": {
+                  "start": 301,
+                  "end": 314
+                }
+              },
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 323,
+                    "end": 329
+                  }
+                },
+                "span": {
+                  "start": 316,
+                  "end": 329
+                }
+              }
+            ],
+            "span": {
+              "start": 293,
+              "end": 330
+            }
+          },
+          {
+            "name": "started",
+            "parameters": [],
+            "span": {
+              "start": 336,
+              "end": 347
+            }
+          },
+          {
+            "name": "checked",
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 370,
+                    "end": 376
+                  }
+                },
+                "span": {
+                  "start": 363,
+                  "end": 376
+                }
+              }
+            ],
+            "span": {
+              "start": 353,
+              "end": 377
+            }
+          },
+          {
+            "name": "refreshed",
+            "parameters": [
+              {
+                "name": "total",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 402,
+                    "end": 408
+                  }
+                },
+                "span": {
+                  "start": 395,
+                  "end": 408
+                }
+              }
+            ],
+            "span": {
+              "start": 383,
+              "end": 409
+            }
+          }
+        ],
+        "span": {
+          "start": 200,
+          "end": 418
+        }
+      },
+      "bindings": [
+        {
+          "id": "shelves@167",
+          "name": "shelves",
+          "kind": "prop",
+          "span": {
+            "start": 167,
+            "end": 174
+          }
+        },
+        {
+          "id": "emit@206",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 206,
+            "end": 210
+          }
+        },
+        {
+          "id": "query@428",
+          "name": "query",
+          "kind": "state",
+          "span": {
+            "start": 428,
+            "end": 433
+          }
+        },
+        {
+          "id": "books@453",
+          "name": "books",
+          "kind": "state",
+          "span": {
+            "start": 453,
+            "end": 458
+          }
+        },
+        {
+          "id": "searching@488",
+          "name": "searching",
+          "kind": "state",
+          "span": {
+            "start": 488,
+            "end": 497
+          }
+        },
+        {
+          "id": "failure@520",
+          "name": "failure",
+          "kind": "state",
+          "span": {
+            "start": 520,
+            "end": 527
+          }
+        },
+        {
+          "id": "shelf@547",
+          "name": "shelf",
+          "kind": "state",
+          "span": {
+            "start": 547,
+            "end": 552
+          }
+        },
+        {
+          "id": "checking@575",
+          "name": "checking",
+          "kind": "state",
+          "span": {
+            "start": 575,
+            "end": 583
+          }
+        },
+        {
+          "id": "checks@606",
+          "name": "checks",
+          "kind": "state",
+          "span": {
+            "start": 606,
+            "end": 612
+          }
+        },
+        {
+          "id": "counts@631",
+          "name": "counts",
+          "kind": "state",
+          "span": {
+            "start": 631,
+            "end": 637
+          }
+        },
+        {
+          "id": "refreshing@681",
+          "name": "refreshing",
+          "kind": "state",
+          "span": {
+            "start": 681,
+            "end": 691
+          }
+        },
+        {
+          "id": "checker@712",
+          "name": "checker",
+          "kind": "localVar",
+          "span": {
+            "start": 712,
+            "end": 719
+          }
+        },
+        {
+          "id": "countShelf@2039",
+          "name": "countShelf",
+          "kind": "localFn",
+          "span": {
+            "start": 2039,
+            "end": 2049
+          }
+        },
+        {
+          "id": "refreshAll@2286",
+          "name": "refreshAll",
+          "kind": "localFn",
+          "span": {
+            "start": 2286,
+            "end": 2296
+          }
+        },
+        {
+          "id": "book@3032",
+          "name": "book",
+          "kind": "loopVar",
+          "span": {
+            "start": 3032,
+            "end": 3036
+          }
+        },
+        {
+          "id": "name@3889",
+          "name": "name",
+          "kind": "loopVar",
+          "span": {
+            "start": 3889,
+            "end": 3893
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "query@428",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 440,
+              "end": 442
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 422,
+            "end": 444
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "books@453",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 465,
+              "end": 473
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 475,
+              "end": 477
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 447,
+            "end": 479
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "searching@488",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 504,
+              "end": 509
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 482,
+            "end": 511
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "failure@520",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 534,
+              "end": 536
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 514,
+            "end": 538
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "shelf@547",
+          "initial": {
+            "code": "\"all\"",
+            "span": {
+              "start": 559,
+              "end": 564
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 541,
+            "end": 566
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "checking@575",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 590,
+              "end": 595
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 569,
+            "end": 597
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "checks@606",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 619,
+              "end": 620
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 600,
+            "end": 622
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "counts@631",
+          "type": {
+            "code": "Record<string, number>",
+            "span": {
+              "start": 644,
+              "end": 666
+            }
+          },
+          "initial": {
+            "code": "{}",
+            "span": {
+              "start": 668,
+              "end": 670
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 625,
+            "end": 672
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "refreshing@681",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 698,
+              "end": 703
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 675,
+            "end": 705
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "checker@712",
+          "type": {
+            "code": "ReturnType<typeof setInterval> | undefined",
+            "span": {
+              "start": 721,
+              "end": 763
+            }
+          },
+          "span": {
+            "start": 708,
+            "end": 764
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "shelf@547",
+              "span": {
+                "start": 774,
+                "end": 779
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 782,
+                  "end": 787
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    localStorage.setItem(\"reading-list:shelf\", value);\n  }",
+              "span": {
+                "start": 792,
+                "end": 852
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "localStorage",
+                  "span": {
+                    "start": 798,
+                    "end": 810
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 781,
+              "end": 852
+            }
+          },
+          "span": {
+            "start": 768,
+            "end": 854
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "query@428",
+              "span": {
+                "start": 864,
+                "end": 869
+              }
+            }
+          ],
+          "callback": {
+            "async": true,
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 878,
+                  "end": 883
+                }
+              },
+              {
+                "name": "previous",
+                "span": {
+                  "start": 885,
+                  "end": 893
+                }
+              },
+              {
+                "name": "onCleanup",
+                "span": {
+                  "start": 895,
+                  "end": 904
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    const controller = new AbortController();\n    onCleanup(() => controller.abort());\n    if (value === \"\") {\n      books.value = [];\n      searching.value = false;\n      return;\n    }\n    const url = `/api/books?${new URLSearchParams({ q: value, shelf: shelf.value })}`;\n    searching.value = true;\n    failure.value = \"\";\n    emit(\"requested\", url);\n    try {\n      const response = await fetch(url, { signal: controller.signal });\n      const found = (await response.json()) as string[];\n      books.value = found;\n      searching.value = false;\n      emit(\"found\", value, found.length);\n    } catch (error) {\n      if (controller.signal.aborted) {\n        emit(\"cancelled\", value);\n        return;\n      }\n      searching.value = false;\n      failure.value = error instanceof Error ? error.message : \"The search failed\";\n    }\n  }",
+              "span": {
+                "start": 909,
+                "end": 1746
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "AbortController",
+                  "span": {
+                    "start": 938,
+                    "end": 953
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "books@453",
+                  "operator": "=",
+                  "span": {
+                    "start": 1028,
+                    "end": 1044
+                  },
+                  "target": {
+                    "start": 1028,
+                    "end": 1039
+                  },
+                  "value": {
+                    "start": 1042,
+                    "end": 1044
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "searching@488",
+                  "operator": "=",
+                  "span": {
+                    "start": 1052,
+                    "end": 1075
+                  },
+                  "target": {
+                    "start": 1052,
+                    "end": 1067
+                  },
+                  "value": {
+                    "start": 1070,
+                    "end": 1075
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "URLSearchParams",
+                  "span": {
+                    "start": 1131,
+                    "end": 1146
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "shelf@547",
+                  "span": {
+                    "start": 1166,
+                    "end": 1177
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "searching@488",
+                  "operator": "=",
+                  "span": {
+                    "start": 1188,
+                    "end": 1210
+                  },
+                  "target": {
+                    "start": 1188,
+                    "end": 1203
+                  },
+                  "value": {
+                    "start": 1206,
+                    "end": 1210
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "failure@520",
+                  "operator": "=",
+                  "span": {
+                    "start": 1216,
+                    "end": 1234
+                  },
+                  "target": {
+                    "start": 1216,
+                    "end": 1229
+                  },
+                  "value": {
+                    "start": 1232,
+                    "end": 1234
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@206",
+                  "event": "requested",
+                  "span": {
+                    "start": 1240,
+                    "end": 1262
+                  },
+                  "arguments": [
+                    {
+                      "start": 1258,
+                      "end": 1261
+                    }
+                  ]
+                },
+                {
+                  "kind": "Global",
+                  "name": "fetch",
+                  "span": {
+                    "start": 1303,
+                    "end": 1308
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "books@453",
+                  "operator": "=",
+                  "span": {
+                    "start": 1409,
+                    "end": 1428
+                  },
+                  "target": {
+                    "start": 1409,
+                    "end": 1420
+                  },
+                  "value": {
+                    "start": 1423,
+                    "end": 1428
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "searching@488",
+                  "operator": "=",
+                  "span": {
+                    "start": 1436,
+                    "end": 1459
+                  },
+                  "target": {
+                    "start": 1436,
+                    "end": 1451
+                  },
+                  "value": {
+                    "start": 1454,
+                    "end": 1459
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@206",
+                  "event": "found",
+                  "span": {
+                    "start": 1467,
+                    "end": 1501
+                  },
+                  "arguments": [
+                    {
+                      "start": 1481,
+                      "end": 1486
+                    },
+                    {
+                      "start": 1488,
+                      "end": 1500
+                    }
+                  ]
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@206",
+                  "event": "cancelled",
+                  "span": {
+                    "start": 1572,
+                    "end": 1596
+                  },
+                  "arguments": [
+                    {
+                      "start": 1590,
+                      "end": 1595
+                    }
+                  ]
+                },
+                {
+                  "kind": "Write",
+                  "binding": "searching@488",
+                  "operator": "=",
+                  "span": {
+                    "start": 1628,
+                    "end": 1651
+                  },
+                  "target": {
+                    "start": 1628,
+                    "end": 1643
+                  },
+                  "value": {
+                    "start": 1646,
+                    "end": 1651
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "failure@520",
+                  "operator": "=",
+                  "span": {
+                    "start": 1659,
+                    "end": 1735
+                  },
+                  "target": {
+                    "start": 1659,
+                    "end": 1672
+                  },
+                  "value": {
+                    "start": 1675,
+                    "end": 1735
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Error",
+                  "span": {
+                    "start": 1692,
+                    "end": 1697
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 871,
+              "end": 1746
+            }
+          },
+          "span": {
+            "start": 858,
+            "end": 1748
+          }
+        },
+        {
+          "kind": "WatchEffect",
+          "effect": {
+            "parameters": [
+              {
+                "name": "onCleanup",
+                "span": {
+                  "start": 1765,
+                  "end": 1774
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (!checking.value) return;\n    const check = () => {\n      checks.value += 1;\n      emit(\"checked\", checks.value);\n    };\n    checker = setInterval(check, 1000);\n    emit(\"started\");\n    onCleanup(() => clearInterval(checker));\n  }",
+              "span": {
+                "start": 1779,
+                "end": 2018
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "checking@575",
+                  "span": {
+                    "start": 1790,
+                    "end": 1804
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "checks@606",
+                  "operator": "+=",
+                  "span": {
+                    "start": 1846,
+                    "end": 1863
+                  },
+                  "target": {
+                    "start": 1846,
+                    "end": 1858
+                  },
+                  "value": {
+                    "start": 1862,
+                    "end": 1863
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@206",
+                  "event": "checked",
+                  "span": {
+                    "start": 1871,
+                    "end": 1900
+                  },
+                  "arguments": [
+                    {
+                      "start": 1887,
+                      "end": 1899
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "checks@606",
+                  "span": {
+                    "start": 1887,
+                    "end": 1899
+                  },
+                  "later": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "checker@712",
+                  "operator": "=",
+                  "span": {
+                    "start": 1913,
+                    "end": 1947
+                  },
+                  "target": {
+                    "start": 1913,
+                    "end": 1920
+                  },
+                  "value": {
+                    "start": 1923,
+                    "end": 1947
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "setInterval",
+                  "span": {
+                    "start": 1923,
+                    "end": 1934
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@206",
+                  "event": "started",
+                  "span": {
+                    "start": 1953,
+                    "end": 1968
+                  },
+                  "arguments": []
+                },
+                {
+                  "kind": "Global",
+                  "name": "clearInterval",
+                  "span": {
+                    "start": 1990,
+                    "end": 2003
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "checker@712",
+                  "span": {
+                    "start": 2004,
+                    "end": 2011
+                  },
+                  "later": true
+                }
+              ]
+            },
+            "span": {
+              "start": 1764,
+              "end": 2018
+            }
+          },
+          "span": {
+            "start": 1752,
+            "end": 2020
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "countShelf@2039",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 2056,
+                    "end": 2062
+                  }
+                },
+                "span": {
+                  "start": 2050,
+                  "end": 2062
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    const response = await fetch(`/api/shelves?${new URLSearchParams({ name })}`);\n    const list = (await response.json()) as string[];\n    counts.value = { ...counts.value, [name]: list.length };\n  }",
+              "span": {
+                "start": 2064,
+                "end": 2267
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "fetch",
+                  "span": {
+                    "start": 2093,
+                    "end": 2098
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "URLSearchParams",
+                  "span": {
+                    "start": 2119,
+                    "end": 2134
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "counts@631",
+                  "operator": "=",
+                  "span": {
+                    "start": 2207,
+                    "end": 2262
+                  },
+                  "target": {
+                    "start": 2207,
+                    "end": 2219
+                  },
+                  "value": {
+                    "start": 2222,
+                    "end": 2262
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "counts@631",
+                  "span": {
+                    "start": 2227,
+                    "end": 2239
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 2049,
+              "end": 2267
+            }
+          },
+          "span": {
+            "start": 2024,
+            "end": 2267
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "refreshAll@2286",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    refreshing.value = true;\n    await Promise.all(shelves.map(countShelf));\n    refreshing.value = false;\n    emit(\n      \"refreshed\",\n      shelves.reduce((total, name) => total + (counts.value[name] ?? 0), 0),\n    );\n  }",
+              "span": {
+                "start": 2299,
+                "end": 2524
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "refreshing@681",
+                  "operator": "=",
+                  "span": {
+                    "start": 2305,
+                    "end": 2328
+                  },
+                  "target": {
+                    "start": 2305,
+                    "end": 2321
+                  },
+                  "value": {
+                    "start": 2324,
+                    "end": 2328
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 2340,
+                    "end": 2347
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "shelves@167",
+                  "span": {
+                    "start": 2352,
+                    "end": 2359
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "countShelf@2039",
+                  "span": {
+                    "start": 2364,
+                    "end": 2374
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "refreshing@681",
+                  "operator": "=",
+                  "span": {
+                    "start": 2382,
+                    "end": 2406
+                  },
+                  "target": {
+                    "start": 2382,
+                    "end": 2398
+                  },
+                  "value": {
+                    "start": 2401,
+                    "end": 2406
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@206",
+                  "event": "refreshed",
+                  "span": {
+                    "start": 2412,
+                    "end": 2519
+                  },
+                  "arguments": [
+                    {
+                      "start": 2443,
+                      "end": 2512
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "shelves@167",
+                  "span": {
+                    "start": 2443,
+                    "end": 2450
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "counts@631",
+                  "span": {
+                    "start": 2484,
+                    "end": 2496
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 2296,
+              "end": 2524
+            }
+          },
+          "span": {
+            "start": 2271,
+            "end": 2524
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "reading-list",
+            "span": {
+              "start": 2550,
+              "end": 2570
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Reading list",
+            "span": {
+              "start": 2571,
+              "end": 2596
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Search",
+                "span": {
+                  "start": 2611,
+                  "end": 2635
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "search",
+                    "span": {
+                      "start": 2652,
+                      "end": 2665
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "query",
+                    "span": {
+                      "start": 2676,
+                      "end": 2688
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "input",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "InputEvent",
+                            "span": {
+                              "start": 2709,
+                              "end": 2714
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "(query.value = (event.currentTarget as HTMLInputElement).value)",
+                          "span": {
+                            "start": 2719,
+                            "end": 2782
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "query@428",
+                              "operator": "=",
+                              "span": {
+                                "start": 2719,
+                                "end": 2782
+                              },
+                              "target": {
+                                "start": 2720,
+                                "end": 2731
+                              },
+                              "value": {
+                                "start": 2734,
+                                "end": 2781
+                              },
+                              "arrowBody": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 2735,
+                                "end": 2754
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 2708,
+                          "end": 2782
+                        }
+                      },
+                      "span": {
+                        "start": 2708,
+                        "end": 2782
+                      }
+                    },
+                    "span": {
+                      "start": 2699,
+                      "end": 2783
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 2635,
+                  "end": 2794
+                }
+              }
+            ],
+            "span": {
+              "start": 2604,
+              "end": 2809
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 2819,
+                  "end": 2832
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "searching.value ? \"Searching\" : `${books.value.length} found`",
+                  "span": {
+                    "start": 2843,
+                    "end": 2904
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "searching@488",
+                      "span": {
+                        "start": 2843,
+                        "end": 2858
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "books@453",
+                      "span": {
+                        "start": 2878,
+                        "end": 2889
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 2842,
+                  "end": 2905
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "failure.value === \"\" ? \"\" : `: ${failure.value}`",
+                  "span": {
+                    "start": 2915,
+                    "end": 2963
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "failure@520",
+                      "span": {
+                        "start": 2915,
+                        "end": 2928
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "failure@520",
+                      "span": {
+                        "start": 2948,
+                        "end": 2961
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 2914,
+                  "end": 2964
+                }
+              }
+            ],
+            "span": {
+              "start": 2816,
+              "end": 2975
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Books",
+                "span": {
+                  "start": 2986,
+                  "end": 3004
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "books.value",
+                  "span": {
+                    "start": 3015,
+                    "end": 3026
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "books@453",
+                      "span": {
+                        "start": 3015,
+                        "end": 3026
+                      }
+                    }
+                  ]
+                },
+                "item": "book@3032",
+                "key": {
+                  "code": "book",
+                  "span": {
+                    "start": 3062,
+                    "end": 3066
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "book@3032",
+                      "span": {
+                        "start": 3062,
+                        "end": 3066
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "book",
+                        "span": {
+                          "start": 3069,
+                          "end": 3073
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "book@3032",
+                            "span": {
+                              "start": 3069,
+                              "end": 3073
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 3068,
+                        "end": 3074
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 3053,
+                    "end": 3079
+                  }
+                },
+                "span": {
+                  "start": 3015,
+                  "end": 3090
+                }
+              }
+            ],
+            "span": {
+              "start": 2982,
+              "end": 3103
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "group",
+                "span": {
+                  "start": 3115,
+                  "end": 3127
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Shelf",
+                "span": {
+                  "start": 3128,
+                  "end": 3146
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 3174,
+                      "end": 3187
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "name": "aria-pressed",
+                    "value": {
+                      "code": "shelf.value === \"all\"",
+                      "span": {
+                        "start": 3212,
+                        "end": 3233
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "shelf@547",
+                          "span": {
+                            "start": 3212,
+                            "end": 3223
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 3198,
+                      "end": 3234
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "(shelf.value = \"all\")",
+                          "span": {
+                            "start": 3260,
+                            "end": 3281
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "shelf@547",
+                              "operator": "=",
+                              "span": {
+                                "start": 3260,
+                                "end": 3281
+                              },
+                              "target": {
+                                "start": 3261,
+                                "end": 3272
+                              },
+                              "value": {
+                                "start": 3275,
+                                "end": 3280
+                              },
+                              "arrowBody": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 3254,
+                          "end": 3281
+                        }
+                      },
+                      "span": {
+                        "start": 3254,
+                        "end": 3281
+                      }
+                    },
+                    "span": {
+                      "start": 3245,
+                      "end": 3282
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "All",
+                    "span": {
+                      "start": 3292,
+                      "end": 3315
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3156,
+                  "end": 3324
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 3351,
+                      "end": 3364
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "name": "aria-pressed",
+                    "value": {
+                      "code": "shelf.value === \"unread\"",
+                      "span": {
+                        "start": 3389,
+                        "end": 3413
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "shelf@547",
+                          "span": {
+                            "start": 3389,
+                            "end": 3400
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 3375,
+                      "end": 3414
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "(shelf.value = \"unread\")",
+                          "span": {
+                            "start": 3440,
+                            "end": 3464
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "shelf@547",
+                              "operator": "=",
+                              "span": {
+                                "start": 3440,
+                                "end": 3464
+                              },
+                              "target": {
+                                "start": 3441,
+                                "end": 3452
+                              },
+                              "value": {
+                                "start": 3455,
+                                "end": 3463
+                              },
+                              "arrowBody": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 3434,
+                          "end": 3464
+                        }
+                      },
+                      "span": {
+                        "start": 3434,
+                        "end": 3464
+                      }
+                    },
+                    "span": {
+                      "start": 3425,
+                      "end": 3465
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Unread",
+                    "span": {
+                      "start": 3475,
+                      "end": 3501
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3333,
+                  "end": 3510
+                }
+              }
+            ],
+            "span": {
+              "start": 3110,
+              "end": 3523
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 3546,
+                  "end": 3559
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-pressed",
+                "value": {
+                  "code": "checking.value",
+                  "span": {
+                    "start": 3582,
+                    "end": 3596
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "checking@575",
+                      "span": {
+                        "start": 3582,
+                        "end": 3596
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 3568,
+                  "end": 3597
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(checking.value = !checking.value)",
+                      "span": {
+                        "start": 3621,
+                        "end": 3655
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "checking@575",
+                          "operator": "=",
+                          "span": {
+                            "start": 3621,
+                            "end": 3655
+                          },
+                          "target": {
+                            "start": 3622,
+                            "end": 3636
+                          },
+                          "value": {
+                            "start": 3639,
+                            "end": 3654
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "checking@575",
+                          "span": {
+                            "start": 3640,
+                            "end": 3654
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 3615,
+                      "end": 3655
+                    }
+                  },
+                  "span": {
+                    "start": 3615,
+                    "end": 3655
+                  }
+                },
+                "span": {
+                  "start": 3606,
+                  "end": 3656
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Check for new books",
+                "span": {
+                  "start": 3664,
+                  "end": 3699
+                }
+              }
+            ],
+            "span": {
+              "start": 3530,
+              "end": 3708
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Checks: ",
+                "span": {
+                  "start": 3718,
+                  "end": 3726
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "checks.value",
+                  "span": {
+                    "start": 3727,
+                    "end": 3739
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "checks@606",
+                      "span": {
+                        "start": 3727,
+                        "end": 3739
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 3726,
+                  "end": 3740
+                }
+              }
+            ],
+            "span": {
+              "start": 3715,
+              "end": 3744
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 3759,
+                  "end": 3772
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "refreshAll@2286",
+                  "span": {
+                    "start": 3782,
+                    "end": 3792
+                  }
+                },
+                "span": {
+                  "start": 3773,
+                  "end": 3793
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Refresh shelves",
+                "span": {
+                  "start": 3794,
+                  "end": 3825
+                }
+              }
+            ],
+            "span": {
+              "start": 3751,
+              "end": 3834
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Shelves",
+                "span": {
+                  "start": 3845,
+                  "end": 3865
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "shelves",
+                  "span": {
+                    "start": 3876,
+                    "end": 3883
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "shelves@167",
+                      "span": {
+                        "start": 3876,
+                        "end": 3883
+                      }
+                    }
+                  ]
+                },
+                "item": "name@3889",
+                "key": {
+                  "code": "name",
+                  "span": {
+                    "start": 3919,
+                    "end": 3923
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@3889",
+                      "span": {
+                        "start": 3919,
+                        "end": 3923
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "name",
+                        "span": {
+                          "start": 3939,
+                          "end": 3943
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "name@3889",
+                            "span": {
+                              "start": 3939,
+                              "end": 3943
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 3938,
+                        "end": 3944
+                      }
+                    },
+                    {
+                      "kind": "Text",
+                      "value": ": ",
+                      "span": {
+                        "start": 3944,
+                        "end": 3946
+                      }
+                    },
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "counts.value[name] ?? \"not counted\"",
+                        "span": {
+                          "start": 3947,
+                          "end": 3982
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "counts@631",
+                            "span": {
+                              "start": 3947,
+                              "end": 3959
+                            }
+                          },
+                          {
+                            "kind": "Binding",
+                            "binding": "name@3889",
+                            "span": {
+                              "start": 3960,
+                              "end": 3964
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 3946,
+                        "end": 3983
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 3910,
+                    "end": 3999
+                  }
+                },
+                "span": {
+                  "start": 3876,
+                  "end": 4010
+                }
+              }
+            ],
+            "span": {
+              "start": 3841,
+              "end": 4023
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "refreshing.value ? \"Refreshing\" : \"Up to date\"",
+                  "span": {
+                    "start": 4034,
+                    "end": 4080
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "refreshing@681",
+                      "span": {
+                        "start": 4034,
+                        "end": 4050
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 4033,
+                  "end": 4081
+                }
+              }
+            ],
+            "span": {
+              "start": 4030,
+              "end": 4085
+            }
+          }
+        ],
+        "span": {
+          "start": 2541,
+          "end": 4100
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ReadingList",
+      "span": {
+        "start": 129,
+        "end": 4107
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ReadingListProps",
+      "exported": true,
+      "code": "interface ReadingListProps {\n  shelves: string[];\n}",
+      "span": {
+        "start": 76,
+        "end": 127
+      }
+    }
+  ]
+}

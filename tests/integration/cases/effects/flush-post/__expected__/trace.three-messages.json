@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add a message' })",
+      "dom": [
+        "<section aria-label=\"Messages\" class=\"message-list\">",
+        "  <ul>",
+        "    <li>",
+        "      \"Welcome to the team\"",
+        "    </li>",
+        "    <li>",
+        "      \"Message 2\"",
+        "    </li>",
+        "  </ul>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add a message\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Messages\":",
+        "  - list:",
+        "    - listitem: Welcome to the team",
+        "    - listitem: Message 2",
+        "  - button \"Add a message\""
+      ],
+      "events": {
+        "rendered": [
+          [
+            2
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Add a message' })",
+      "dom": [
+        "<section aria-label=\"Messages\" class=\"message-list\">",
+        "  <ul>",
+        "    <li>",
+        "      \"Welcome to the team\"",
+        "    </li>",
+        "    <li>",
+        "      \"Message 2\"",
+        "    </li>",
+        "    <li>",
+        "      \"Message 3\"",
+        "    </li>",
+        "  </ul>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add a message\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Messages\":",
+        "  - list:",
+        "    - listitem: Welcome to the team",
+        "    - listitem: Message 2",
+        "    - listitem: Message 3",
+        "  - button \"Add a message\""
+      ],
+      "events": {
+        "rendered": [
+          [
+            3
+          ]
+        ]
+      }
+    }
+  ]
+}

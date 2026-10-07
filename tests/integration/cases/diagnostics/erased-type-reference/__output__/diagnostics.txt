@@ -1,0 +1,9 @@
+error[UF2019]: `OnCleanup` is an authoring type, which the compiler erases with its import from "unframework": an output that copied this annotation would name a type nothing declares.
+  --> diagnostics/erased-type-reference/PresenceBadge.uf.tsx:12:44
+   |
+12 |   watch(user, (value, previous, onCleanup: OnCleanup) => {
+   |                                            ^^^^^^^^^
+   |
+   = help: Leave the annotation out where TypeScript infers the type, or write the type itself.
+   = fix (likely): Remove the annotation
+   = see: https://unframework.dev/diagnostics/UF2019

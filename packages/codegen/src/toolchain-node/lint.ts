@@ -1,13 +1,15 @@
 // L5 (plan §7.2, ADR-0042): each target's own linters over its output files. Two runners the
 // toolchains share: oxlint, which every target runs with one baseline configuration (and the
 // JSX targets with their framework's rules), and ESLint, which lints the template languages
-// oxlint cannot read (Vue, Svelte and Astro markup, Angular's inline templates). Both run as
+// oxlint cannot read (Vue, Svelte and Astro markup, Angular's inline templates) and runs the
+// type-aware rules oxlint gives a JS plugin no types for (Qwik's). Both run as
 // processes from the toolchain directory, where the linters and their plugins are installed,
 // and hold ADR-0028's bar for checkers: a linter that cannot start, cannot load its
 // configuration or a plugin, skips a file it was given, or prints output this module cannot
 // read rejects. Everything a linter reports comes back by file, as `Toolchain.typecheck`
 // returns diagnostics, in a stable order.
 import { existsSync, realpathSync } from "node:fs";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -23,6 +25,18 @@ export interface LintOptions {
    * `output.oxlintrc.json` for oxlint, `eslint.config.js` for ESLint.
    */
   config?: string;
+}
+
+/** How {@link lintWithEslint} runs. */
+export interface EslintOptions extends LintOptions {
+  /**
+   * The tsconfig whose compiler options type the files, for type-aware rules. The run writes a
+   * temporary tsconfig into `<toolchainDir>/.uf-tmp/` that extends it and lists exactly the
+   * files, as a checker's run does (L4), and gives it to the parser as
+   * `parserOptions.project`: typescript-eslint's, which the configuration names. Without it,
+   * rules get no types, and a type-aware rule fails its run.
+   */
+  tsconfig?: string;
 }
 
 /** A rule's code as oxlint prints it: `eslint(no-debugger)`, `react(jsx-key)`. */
@@ -174,13 +188,13 @@ function withHelp(message: string, help: string | undefined): string {
  * a bulk-suppressions file either, which the command line would take from its working directory.
  */
 const ESLINT_RUN = `
-const { eslint, config, cwd, files } = JSON.parse(process.argv[1]);
+const { eslint, config, overrideConfig, cwd, files } = JSON.parse(process.argv[1]);
 const api = await import(eslint);
 const { ESLint } = api.ESLint ? api : api.default;
 const linter = new ESLint({
   cwd,
   overrideConfigFile: config,
-  overrideConfig: { linterOptions: { noInlineConfig: true } },
+  overrideConfig,
   warnIgnored: true,
   cache: false,
 });
@@ -229,29 +243,48 @@ const IGNORED = /^File ignored\b/;
  * `suppressed: `. The run rejects when ESLint cannot start or load its configuration or a
  * plugin, skips a file it was given ("File ignored…": outside its base path, ignored, or matched
  * by no configuration), or prints anything but its results.
+ *
+ * With `options.tsconfig`, the files are typed for type-aware rules (see
+ * {@link EslintOptions.tsconfig}); a file the parser cannot type comes back with its parsing
+ * error.
  */
 export async function lintWithEslint(
   files: readonly string[],
   context: ToolchainContext,
-  options: LintOptions = {},
+  options: EslintOptions = {},
 ): Promise<Map<string, ToolchainMessage[]>> {
   assertFilesToCheck(files, "lint");
   const config = configFile(context, options, "eslint.config.js", "ESLint");
+  const base = options.tsconfig === undefined ? undefined : resolve(options.tsconfig);
+  if (base !== undefined && !existsSync(base)) {
+    throw new Error(`${base} does not exist: type-aware rules read the files' types through it.`);
+  }
   const eslint = resolveEslint(context.toolchainDir);
   // Real paths: ESLint lints nothing outside its base path, and a path through a symlink (macOS
   // reaches its temporary directory through one) is outside the real one.
   const paths = [...new Set(files.map((file) => realpathSync(file)))];
-  const request = {
-    eslint: pathToFileURL(eslint).href,
-    config: realpathSync(config),
-    cwd: commonDirectory(paths),
-    files: paths,
-  };
-  const run = await execute(
-    process.execPath,
-    ["--input-type=module", "--eval", ESLINT_RUN, JSON.stringify(request)],
-    realpathSync(context.toolchainDir),
-  );
+  const cwd = realpathSync(context.toolchainDir);
+  const typed = base === undefined ? undefined : await writeProject(cwd, base, paths);
+  let run: ProcessRun;
+  try {
+    const request = {
+      eslint: pathToFileURL(eslint).href,
+      config: realpathSync(config),
+      overrideConfig: {
+        linterOptions: { noInlineConfig: true },
+        ...(typed === undefined ? {} : { languageOptions: { parserOptions: typed.parserOptions } }),
+      },
+      cwd: commonDirectory(paths),
+      files: paths,
+    };
+    run = await execute(
+      process.execPath,
+      ["--input-type=module", "--eval", ESLINT_RUN, JSON.stringify(request)],
+      cwd,
+    );
+  } finally {
+    if (typed !== undefined) await rm(typed.directory, { recursive: true, force: true });
+  }
   const results = readEslintResults(run);
   const diagnostics = diagnosticsByFile(files, config);
   for (const { filePath, messages, suppressedMessages } of results) {
@@ -271,6 +304,36 @@ export async function lintWithEslint(
     throw checkerFailed("ESLint", run, `it returned no results for ${skipped.join(", ")}.`);
   }
   return sortMessages(diagnostics.results);
+}
+
+/** The temporary tsconfig a typed run reads, and the parser options that name it. */
+interface TypedProject {
+  directory: string;
+  parserOptions: { project: string; tsconfigRootDir: string };
+}
+
+/**
+ * Writes the tsconfig a typed ESLint run reads (see {@link EslintOptions.tsconfig}), in a
+ * directory of its own under `<toolchainDir>/.uf-tmp/`: the harness and the package tests may
+ * lint with one toolchain at once.
+ */
+async function writeProject(
+  toolchainDir: string,
+  base: string,
+  files: readonly string[],
+): Promise<TypedProject> {
+  await mkdir(join(toolchainDir, ".uf-tmp"), { recursive: true });
+  const directory = await mkdtemp(join(toolchainDir, ".uf-tmp", "lint-"));
+  const project = join(directory, "tsconfig.json");
+  // `include: []` drops the base's globs, so the program holds the files and what they import.
+  const tsconfig = { extends: realpathSync(base), include: [], files };
+  try {
+    await writeFile(project, `${JSON.stringify(tsconfig, null, 2)}\n`);
+  } catch (error) {
+    await rm(directory, { recursive: true, force: true });
+    throw error;
+  }
+  return { directory, parserOptions: { project, tsconfigRootDir: directory } };
 }
 
 /** The entry of ESLint 9 or later, as installed for the toolchain directory. */

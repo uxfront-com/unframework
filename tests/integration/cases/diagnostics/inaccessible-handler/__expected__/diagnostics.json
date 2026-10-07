@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF3030",
+    "severity": "error",
+    "message": "<div> has a click handler and no `keydown`, `keyup` or `keypress` handler: a keyboard user cannot activate it (Svelte's `a11y_click_events_have_key_events`).",
+    "file": "diagnostics/inaccessible-handler/ShippingCard.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 6,
+      "offset": 293
+    },
+    "end": {
+      "line": 9,
+      "column": 9,
+      "offset": 296
+    },
+    "help": "Put the handler on a `<button>` or a form control, which every user can reach and activate; or give the element a role and the key handling and focus that role takes."
+  },
+  {
+    "code": "UF3030",
+    "severity": "error",
+    "message": "<div> has a handler for `click` and no role: neither a screen reader nor a keyboard user can tell it is interactive (Svelte's `a11y_no_static_element_interactions`).",
+    "file": "diagnostics/inaccessible-handler/ShippingCard.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 6,
+      "offset": 293
+    },
+    "end": {
+      "line": 9,
+      "column": 9,
+      "offset": 296
+    },
+    "help": "Put the handler on a `<button>` or a form control, which every user can reach and activate; or give the element a role and the key handling and focus that role takes."
+  }
+]

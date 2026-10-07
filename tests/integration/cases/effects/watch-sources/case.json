@@ -1,0 +1,6 @@
+{
+  "description": "Watch sources: a getter over two refs, an array of refs with destructured values, and a getter of a prop.",
+  "ssr": {
+    "euros": { "props": { "currency": "EUR" } }
+  }
+}

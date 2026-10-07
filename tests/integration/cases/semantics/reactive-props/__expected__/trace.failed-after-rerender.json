@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"fileName\":\"report.pdf\",\"state\":\"failed\",\"percent\":45,\"steps\":[{\"id\":\"verify\",\"label\":\"Verify checksum\"},{\"id\":\"send\",\"label\":\"Send chunks\"}],\"error\":\"The network connection was lost.\"}",
+      "dom": [
+        "<section aria-label=\"Upload of report.pdf\" class=\"upload upload-failed\" style=\"--upload-percent: 45; color: rgb(138, 28, 28);\">",
+        "  <h2>",
+        "    \"report.pdf\"",
+        "  </h2>",
+        "  <div aria-label=\"Upload progress\" aria-valuemax=\"100\" aria-valuemin=\"0\" aria-valuenow=\"45\" role=\"progressbar\">",
+        "    \"45%\"",
+        "  </div>",
+        "  <p class=\"upload-error\">",
+        "    \"The network connection was lost.\"",
+        "  </p>",
+        "  <ol>",
+        "    <li>",
+        "      \"Verify checksum\"",
+        "    </li>",
+        "    <li>",
+        "      \"Send chunks\"",
+        "    </li>",
+        "  </ol>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Upload of report.pdf\":",
+        "  - heading \"report.pdf\" [level=2]",
+        "  - progressbar \"Upload progress\": 45%",
+        "  - paragraph: The network connection was lost.",
+        "  - list:",
+        "    - listitem: Verify checksum",
+        "    - listitem: Send chunks"
+      ],
+      "events": {}
+    }
+  ]
+}

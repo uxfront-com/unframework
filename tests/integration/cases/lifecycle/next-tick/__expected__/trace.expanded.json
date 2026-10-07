@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Shipping details' })",
+      "dom": [
+        "<section aria-label=\"Shipping\" class=\"shipping-details\">",
+        "  <button aria-expanded=\"true\" type=\"button\" uf:focused=\"\">",
+        "    \"Shipping details\"",
+        "  </button>",
+        "  <ul>",
+        "    <li>",
+        "      \"Ships in two days\"",
+        "    </li>",
+        "    <li>",
+        "      \"Free returns\"",
+        "    </li>",
+        "    <li>",
+        "      \"Tracked delivery\"",
+        "    </li>",
+        "  </ul>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Shipping\":",
+        "  - button \"Shipping details\" [expanded]",
+        "  - list:",
+        "    - listitem: Ships in two days",
+        "    - listitem: Free returns",
+        "    - listitem: Tracked delivery"
+      ],
+      "events": {
+        "toggled": [
+          [
+            3
+          ]
+        ]
+      }
+    }
+  ]
+}

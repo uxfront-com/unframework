@@ -1,0 +1,9 @@
+error[UF2006]: `defineEmits` returns the component's `emit`, which nothing binds: a macro's result is bound by a `const` at the top level of the component's body.
+ --> diagnostics/unbound-macro-result/CloseButton.uf.tsx:6:3
+  |
+6 |   defineEmits<{ close: [] }>();
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: Bind it: `const emit = defineEmits<{ … }>();`.
+  = fix (likely): Bind it as `const emit`
+  = see: https://unframework.dev/diagnostics/UF2006

@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"appName\":\"Mail\"}",
+      "dom": [
+        "<section aria-label=\"Inbox\" class=\"unread-badge\">",
+        "  <p role=\"status\">",
+        "    \"0 unread\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Receive a message\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Mark all read\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Inbox\":",
+        "  - status: 0 unread",
+        "  - button \"Receive a message\"",
+        "  - button \"Mark all read\""
+      ],
+      "events": {
+        "titleChange": [
+          [
+            "(0) Inbox"
+          ],
+          [
+            "(0) Mail"
+          ]
+        ],
+        "titleRelease": [
+          [
+            "(0) Inbox"
+          ]
+        ]
+      }
+    }
+  ]
+}

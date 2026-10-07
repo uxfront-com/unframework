@@ -1,0 +1,14 @@
+---
+const bold = false as boolean;
+const saves = 0 as number;
+---
+
+<form class="note-editor" aria-label="Note">
+  <label>Title<input name="title" /></label>
+  <label>Text<textarea name="text"></textarea></label>
+  <div class="format" role="group" aria-label="Format">
+    <button type="button" aria-pressed={bold}>Bold</button>
+  </div>
+  <button type="submit">Save</button>
+  <p role="status">Saves: {saves}</p>
+</form>

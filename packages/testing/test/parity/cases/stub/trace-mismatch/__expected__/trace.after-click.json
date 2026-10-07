@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add one' })",
+      "dom": [
+        "<p role=\"status\">",
+        "  \"2\"",
+        "</p>",
+        "<button type=\"button\" uf:focused=\"\">",
+        "  \"Add one\"",
+        "</button>"
+      ],
+      "aria": [
+        "- status: \"2\"",
+        "- button \"Add one\""
+      ],
+      "events": {
+        "change": [
+          [
+            2
+          ]
+        ]
+      }
+    }
+  ]
+}

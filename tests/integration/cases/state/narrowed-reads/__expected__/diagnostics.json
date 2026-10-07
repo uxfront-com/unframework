@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "warning",
+    "message": "The qwik target does not support late-prop: Qwik subscribes a `useComputed$` or a task only to the props the component holds when it reads them, so a derived value or a watcher that reads an optional prop the parent did not pass at mount, and passes later (a spread that gains the key), does not see it: the template does. Pass the prop from the start, `undefined` while it has no value.",
+    "file": "state/narrowed-reads/TeamInvite.uf.tsx",
+    "start": {
+      "line": 31,
+      "column": 36,
+      "offset": 617
+    },
+    "end": {
+      "line": 31,
+      "column": 43,
+      "offset": 624
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "state/narrowed-reads/TeamInvite.uf.tsx",
+    "start": {
+      "line": 83,
+      "column": 3,
+      "offset": 2013
+    },
+    "end": {
+      "line": 85,
+      "column": 6,
+      "offset": 2070
+    },
+    "target": "astro"
+  }
+]

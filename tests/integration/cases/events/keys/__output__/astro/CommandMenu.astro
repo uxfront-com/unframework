@@ -1,0 +1,23 @@
+---
+export interface CommandMenuProps {
+  commands: string[];
+}
+
+type Props = CommandMenuProps;
+
+const { commands } = Astro.props;
+
+const active = 0 as number;
+---
+
+<section class="command-menu" aria-label="Command menu">
+  <form role="search" aria-label="Commands">
+    <label>Command<input name="command" /></label>
+  </form>
+  <ul aria-label="Suggestions">
+    {commands.map((command, index) => (
+      <li aria-current={index === active ? "true" : undefined}>{command}</li>
+    ))}
+  </ul>
+  <label>Shortcut name<input name="shortcut" /></label>
+</section>

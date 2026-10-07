@@ -1,0 +1,6 @@
+{
+  "description": "An immediate watcher over a prop getter emits at setup with no previous value and on each change; onMounted emits once mounted.",
+  "ssr": {
+    "intro": { "props": { "title": "Introduction" } }
+  }
+}

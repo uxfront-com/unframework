@@ -21,6 +21,8 @@ declare module "vitest/browser" {
  * the server render logged; `settle` has nothing to wait for. A rerender is a new server render
  * with the new props, whose HTML replaces the old, and whose log it returns: a static component
  * has no state to update in place, so a prop the props lack takes its default as on a first render.
+ * It takes no listeners (`options.on`): no code of the component runs in the page, so it emits
+ * nothing (`interactivity` is unsupported, and a test that listens requires it).
  */
 export const mount: MountAdapter = async (component, container, options) => {
   if (!isAstroComponentRef(component)) {

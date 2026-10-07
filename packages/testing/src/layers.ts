@@ -48,7 +48,7 @@ export type LayerOutcome =
   | { status: "skip"; reason: string }
   | { status: "quarantined"; issue: string };
 
-/** The per-layer record of one harness test (DESIGN §4.5). */
+/** The per-layer record of one harness test (plan §7.2). */
 export interface UfLayerMeta {
   /** The case, relative to the cases directory: `"basics/hello"`. */
   case: string;
@@ -60,6 +60,50 @@ export interface UfLayerMeta {
    * as a cell merges every test of its case (see `summarise`).
    */
   scenarios?: string[];
+  /**
+   * The test, by its full name without the target `describeTargets` adds (`state/counter >
+   * increments`): the same on every target, so the summary compares each target's scenarios of
+   * a test with the reference's. The parity reporter sets it from the test's name.
+   */
+  test?: string;
+  /**
+   * Why the test was skipped on its target: a capability it requires is unsupported there
+   * (`requires interactivity: …`), or the target has no output for its case (`no output: …`).
+   * Every layer it would have recorded is recorded as skipped with the same reason, and the
+   * summary excuses its scenarios on that target alone.
+   */
+  skipped?: string;
+}
+
+/** The skip of the layers that need output, on a target a case has compile errors for. */
+export const NO_OUTPUT_SKIP = "compile errors: no output";
+
+/** L13's skip in the server render of a component that did not render: L6 failed instead. */
+export const NOT_RENDERED_SKIP = "the component did not render (L6)";
+
+/** L9's skip in a scenario that no interaction or rerender led to: there is no trace. */
+export const NO_INTERACTION_SKIP = "no scripted interaction";
+
+/** The prefix of a skip by capability: `requires interactivity: <the target's reason>`. */
+export const REQUIRES_SKIP: RegExp = /^requires ([a-z][a-z0-9-]*): ./s;
+
+/** The skip reason of a test that requires a capability its target does not support. */
+export function requiresSkip(capability: string, reason: string): string {
+  return `requires ${capability}: ${reason}`;
+}
+
+/**
+ * The prefix of a browser test's skip on a target its case has no output for: `no output: <the
+ * errors the case expects for the target>`.
+ */
+export const NO_OUTPUT_TEST_SKIP: RegExp = /^no output: ./s;
+
+/**
+ * The skip reason of a browser test of a case its target has no output for: the case expects
+ * an error for the target, the one it declares for a capability it lacks (ADR-0033).
+ */
+export function noOutputSkip(errors: string): string {
+  return `no output: ${errors}`;
 }
 
 /**
@@ -108,6 +152,11 @@ declare module "vitest" {
   interface TaskMeta {
     /** The per-layer outcomes of a harness test. */
     uf?: UfLayerMeta;
+    /**
+     * The capabilities the test requires (`it(name, { requires }, fn)`): the setup skips it on a
+     * target whose cell for one of them is unsupported.
+     */
+    ufRequires?: readonly string[];
   }
 }
 

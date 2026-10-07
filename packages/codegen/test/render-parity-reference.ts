@@ -1,10 +1,10 @@
-// The reference semantics of a component (design §1, §4.5): what it renders for its props, as a
-// static tree. The render-parity kit compares every target's rendered DOM with this, so this is
-// the oracle the seven targets are held to. It evaluates the IR, not an output: expressions run
-// as JavaScript (`new Function`, test code), with every name bound by the scope the source
-// declares (props, list variables), so it does not trust the references the analyser resolved,
-// which the targets' rewrites do. Everything a target may render differently is a run-time value
-// outside the contract (design §1.9), and the evaluator refuses it, so no case can hold one.
+// The reference semantics of a component (ADR-0034 to ADR-0040): what it renders for its props, as
+// a static tree. The render-parity kit compares every target's rendered DOM with this, so this is
+// the oracle the seven targets are held to. It evaluates the IR, not an output: expressions run as
+// JavaScript (`new Function`, test code), with every name bound by the scope the source declares
+// (props, list variables), so it does not trust the references the analyser resolved, which the
+// targets' rewrites do. Everything a target may render differently is a run-time value outside the
+// contract (ADR-0035), and the evaluator refuses it, so no case can hold one.
 //
 // It imports only the IR, and runs anywhere.
 import {
@@ -40,7 +40,7 @@ type Scope = ReadonlyMap<string, unknown>;
 /**
  * What a component renders for its props, as static IR: elements with static attributes, and
  * text. `props` holds the props by name; a key left out, or set to `undefined`, is an absent
- * prop, which takes its default (design §1.1). The rules, each from design §1:
+ * prop, which takes its default (ADR-0034). The rules, each from ADR-0034 to ADR-0040:
  * - an Interpolation renders a string as it is, a number as `String()` does, and nothing for
  *   `null` or `undefined`;
  * - an If renders its first branch whose condition is truthy, as `v-if` decides, or its else;
@@ -56,7 +56,7 @@ type Scope = ReadonlyMap<string, unknown>;
  * - a Spread renders exactly the keys its type declares, each as a bound attribute of that name
  *   would, its `class` merged into the element's.
  *
- * It throws on a value the contract leaves out (design §1.9), such as a boolean or a non-finite
+ * It throws on a value the contract leaves out (ADR-0035), such as a boolean or a non-finite
  * number rendered as text, a duplicate list key or a `javascript:` URL: such a case would test
  * nothing.
  */
@@ -219,13 +219,18 @@ class Evaluator {
           }
           break;
         }
+        // A listener and a template ref render nothing: they act in the browser (ADR-0047,
+        // ADR-0049), which the corpus's behaviour layers check.
+        case "Event":
+        case "Ref":
+          break;
         default:
           throw new Error(`unknown attribute ${(attribute satisfies never as Attribute).kind}`);
       }
     }
     // A token repeated at run time renders differently: Angular removes the repeat.
     if (new Set(classes).size !== classes.length) {
-      throw new Error(`<${node.tag}> repeats a class: ${classes.join(" ")} (design §1.9)`);
+      throw new Error(`<${node.tag}> repeats a class: ${classes.join(" ")} (ADR-0035)`);
     }
     if (classes.length) set("class", classes.join(" "));
     if (style?.length) set("style", style.join("; "));
@@ -269,7 +274,7 @@ function boundValue(
 /** Attributes whose booleans render as `"true"` and `"false"`, besides ARIA's (ADR-0037). */
 const STRING_BOOLEAN_ATTRIBUTES = new Set(["contenteditable", "draggable", "spellcheck"]);
 
-/** What an attribute renders for a value, or `undefined` for none (design §1.5). */
+/** What an attribute renders for a value, or `undefined` for none (ADR-0037). */
 function attributeValue(
   tag: string,
   name: string,
@@ -341,7 +346,7 @@ function styleValue(property: string, expression: Expression, scope: Scope): str
 /** A value the contract leaves out: the case is wrong, not a target. */
 function outside(expression: Expression, problem: string): Error {
   return new Error(
-    `\`${expression.code}\` gives a value outside the contract (design §1.9): ${problem}.`,
+    `\`${expression.code}\` gives a value outside the contract (ADR-0035): ${problem}.`,
   );
 }
 

@@ -1,0 +1,6 @@
+{
+  "description": "Event options: a capture listener on a container, stopPropagation in the bubble phase, once listeners alone and nested in a listening container, and a passive wheel listener.",
+  "ssr": {
+    "initial": {}
+  }
+}

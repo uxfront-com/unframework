@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"celsius\":35}",
+      "dom": [
+        "<figure class=\"temperature\" data-level=\"hot\">",
+        "  <p>",
+        "    \"35 °C\"",
+        "  </p>",
+        "  <p>",
+        "    \"95 °F\"",
+        "  </p>",
+        "  <figcaption>",
+        "    \"Feels hot\"",
+        "  </figcaption>",
+        "</figure>"
+      ],
+      "aria": [
+        "- figure \"Feels hot\":",
+        "  - paragraph: 35 °C",
+        "  - paragraph: 95 °F",
+        "  - text: Feels hot"
+      ],
+      "events": {
+        "reading": [
+          [
+            35,
+            20
+          ]
+        ]
+      }
+    },
+    {
+      "action": "rerender {\"celsius\":2}",
+      "dom": [
+        "<figure class=\"temperature\" data-level=\"cold\">",
+        "  <p>",
+        "    \"2 °C\"",
+        "  </p>",
+        "  <p>",
+        "    \"36 °F\"",
+        "  </p>",
+        "  <figcaption>",
+        "    \"Feels cold\"",
+        "  </figcaption>",
+        "</figure>"
+      ],
+      "aria": [
+        "- figure \"Feels cold\":",
+        "  - paragraph: 2 °C",
+        "  - paragraph: 36 °F",
+        "  - text: Feels cold"
+      ],
+      "events": {
+        "reading": [
+          [
+            2,
+            35
+          ]
+        ]
+      }
+    }
+  ]
+}

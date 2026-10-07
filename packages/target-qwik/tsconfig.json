@@ -4,5 +4,5 @@
     "types": ["node"]
   },
   "include": ["src", "test", "tsdown.config.ts", "vitest.config.ts"],
-  "exclude": ["test/fixtures"]
+  "exclude": ["test/fixtures", "test/behaviour"]
 }

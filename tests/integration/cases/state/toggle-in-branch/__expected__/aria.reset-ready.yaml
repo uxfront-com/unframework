@@ -1,0 +1,7 @@
+- region "Filters":
+  - button "Hide colours" [expanded]
+  - button "Red"
+  - button "Blue"
+  - button "Reset"
+  - paragraph: No colour
+  - button "Add a note"

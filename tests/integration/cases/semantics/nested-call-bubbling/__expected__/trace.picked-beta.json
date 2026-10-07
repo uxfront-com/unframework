@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Beta' })",
+      "dom": [
+        "<section aria-label=\"Picker\" class=\"picker\">",
+        "  <div class=\"choices\" role=\"presentation\">",
+        "    <button type=\"button\">",
+        "      \"Alpha\"",
+        "    </button>",
+        "    <button type=\"button\" uf:focused=\"\">",
+        "      \"Beta\"",
+        "    </button>",
+        "  </div>",
+        "  <ol aria-label=\"Log\">",
+        "    <li>",
+        "      \"picked alpha #1\"",
+        "    </li>",
+        "    <li>",
+        "      \"picked beta #2\"",
+        "    </li>",
+        "  </ol>",
+        "  <p role=\"status\">",
+        "    \"idle\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Start\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Picker\":",
+        "  - button \"Alpha\"",
+        "  - button \"Beta\"",
+        "  - list \"Log\":",
+        "    - listitem: \"picked alpha #1\"",
+        "    - listitem: \"picked beta #2\"",
+        "  - status: idle",
+        "  - button \"Start\""
+      ],
+      "events": {}
+    }
+  ]
+}

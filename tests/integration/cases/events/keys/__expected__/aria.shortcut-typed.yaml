@@ -1,0 +1,10 @@
+- region "Command menu":
+  - search "Commands":
+    - text: Command
+    - textbox "Command": logs
+  - list "Suggestions":
+    - listitem: Deploy
+    - listitem: Roll back
+    - listitem: Open the logs
+  - text: Shortcut name
+  - textbox "Shortcut name": deploy-prod

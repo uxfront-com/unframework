@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Count the answers' })",
+      "dom": [
+        "<section aria-label=\"Lunch\" class=\"ballot\">",
+        "  <p role=\"status\">",
+        "    \"3 votes left\"",
+        "  </p>",
+        "  <p>",
+        "    \"Picked: none\"",
+        "  </p>",
+        "  <ul aria-label=\"Choices\">",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"yes\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"no\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"maybe\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Count the answers\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Lunch\":",
+        "  - status: 3 votes left",
+        "  - paragraph: \"Picked: none\"",
+        "  - list \"Choices\":",
+        "    - listitem:",
+        "      - button \"yes\"",
+        "    - listitem:",
+        "      - button \"no\"",
+        "    - listitem:",
+        "      - button \"maybe\"",
+        "  - button \"Count the answers\""
+      ],
+      "events": {
+        "counted": [
+          [
+            2
+          ]
+        ],
+        "report": [
+          [
+            "none with 3 left"
+          ]
+        ]
+      }
+    }
+  ]
+}

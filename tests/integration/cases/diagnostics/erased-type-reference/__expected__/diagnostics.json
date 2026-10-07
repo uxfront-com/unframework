@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF2019",
+    "severity": "error",
+    "message": "`OnCleanup` is an authoring type, which the compiler erases with its import from \"unframework\": an output that copied this annotation would name a type nothing declares.",
+    "file": "diagnostics/erased-type-reference/PresenceBadge.uf.tsx",
+    "start": {
+      "line": 12,
+      "column": 44,
+      "offset": 541
+    },
+    "end": {
+      "line": 12,
+      "column": 53,
+      "offset": 550
+    },
+    "help": "Leave the annotation out where TypeScript infers the type, or write the type itself.",
+    "fixes": [
+      {
+        "title": "Remove the annotation",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 539,
+              "end": 550
+            },
+            "text": ""
+          }
+        ]
+      }
+    ]
+  }
+]

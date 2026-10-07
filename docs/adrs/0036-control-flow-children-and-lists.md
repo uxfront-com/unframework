@@ -1,6 +1,6 @@
 # ADR-0036: Conditionals test truthiness, lists need one keyed element, and children lower by shape
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0046
 - **Date:** 2026-10-05
 - **Plan:** §4.3, §4.5 (Keyed lists), §4.6, §5.3, §5.4, §6, §9 M1; P2, P3, P4; R4; amends
   ADR-0002 and ADR-0032

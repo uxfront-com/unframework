@@ -223,6 +223,7 @@
           }
         }
       ],
+      "setup": [],
       "render": {
         "kind": "Element",
         "tag": "article",

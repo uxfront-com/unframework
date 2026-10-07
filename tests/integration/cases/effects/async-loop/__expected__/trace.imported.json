@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Import all' })",
+      "dom": [
+        "<section aria-label=\"Import\" class=\"import-queue\">",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Import all\"",
+        "  </button>",
+        "  <p role=\"status\">",
+        "    \"done, 2 attempts\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Import\":",
+        "  - button \"Import all\"",
+        "  - status: done, 2 attempts"
+      ],
+      "events": {
+        "progress": [
+          [
+            "starting",
+            1
+          ],
+          [
+            "imported a.csv",
+            2
+          ],
+          [
+            "done",
+            2
+          ]
+        ]
+      }
+    }
+  ]
+}

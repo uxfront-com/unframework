@@ -1,8 +1,8 @@
 // The module's scopes (plan §5.4, ADR-0035): `@typescript-eslint/scope-manager`, pinned exactly
 // because it shapes the IR (P8), run over oxc's AST, whose nodes carry the `range` it reads.
 // `lib: []` registers no globals, so a name nothing declares stays unresolved, and the
-// analyser decides which globals an expression may read (`ALLOWED_GLOBALS`); `jsxPragma: null`
-// keeps JSX from reading an implicit `React`.
+// analyser decides which globals each context may read (`ALLOWED_GLOBALS`, `PURE_GLOBALS`,
+// `CLIENT_GLOBALS`); `jsxPragma: null` keeps JSX from reading an implicit `React`.
 
 import { analyze } from "@typescript-eslint/scope-manager";
 import type { AST } from "@unframework/parser";
@@ -11,11 +11,23 @@ import type { AST } from "@unframework/parser";
 export type Resolution =
   /** Nothing in the module declares it: a global, or a typo. */
   | { kind: "global" }
-  /** A parameter of a function: the component's props, a list's item, an arrow's parameter. */
+  /** A parameter of a function: the component's props, a list's item, a function's parameter. */
   | { kind: "parameter"; function: object; declaration: object }
-  /** A variable or an import: setup code, which lands in M2. */
-  | { kind: "setup"; declaration: object }
-  /** Anything else the module declares: a function, a class, a type, `arguments`. */
+  /**
+   * A `const`, `let`, `var`, `function`, `class` or `catch` name, with the node of the scope that
+   * declares it (ADR-0045): the component's function for the setup's bindings, the program for
+   * the module's, and anything else for a name local to the code that declares it.
+   */
+  | {
+      kind: "variable";
+      declaration: object;
+      scope: object;
+      /** What declares it: a function's or a class's name, or any other variable. */
+      declares: "variable" | "function" | "class";
+    }
+  /** An import: the authoring API's, recognised by binding (ADR-0006), or another module's. */
+  | { kind: "import"; declaration: object }
+  /** Anything else the module declares: a type, `arguments`. */
   | { kind: "other" };
 
 /** The scopes of a module, and what each identifier in it refers to. */
@@ -52,8 +64,22 @@ function resolutionOf(variable: Variable | null): Resolution {
     case "Parameter":
       return { kind: "parameter", function: definition.node, declaration: definition.name };
     case "Variable":
+    case "CatchClause":
+    case "FunctionName":
+    case "ClassName":
+      return {
+        kind: "variable",
+        declaration: definition.name,
+        scope: variable.scope.block,
+        declares:
+          definition.type === "FunctionName"
+            ? "function"
+            : definition.type === "ClassName"
+              ? "class"
+              : "variable",
+      };
     case "ImportBinding":
-      return { kind: "setup", declaration: definition.name };
+      return { kind: "import", declaration: definition.name };
     default:
       return { kind: "other" };
   }

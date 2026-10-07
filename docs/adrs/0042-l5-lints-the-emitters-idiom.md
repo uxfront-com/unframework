@@ -1,6 +1,6 @@
 # ADR-0042: L5 lints the emitter's idiom with oxlint on every target and each framework's own rules
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0045, ADR-0047 and ADR-0048
 - **Date:** 2026-10-05
 - **Plan:** §5.7, §7.2 (L5), §7.3, §7.7, §9 M1, Appendix C; G2, G5, P2, P4, P7; R8; ADR-0020,
   ADR-0022, ADR-0025, ADR-0026, ADR-0028

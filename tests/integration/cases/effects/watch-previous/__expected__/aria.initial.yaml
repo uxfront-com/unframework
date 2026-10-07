@@ -1,0 +1,6 @@
+- region "Zoom":
+  - status: 100%
+  - button "Zoom in"
+  - button "Zoom out"
+  - button "Reset"
+  - list "History"

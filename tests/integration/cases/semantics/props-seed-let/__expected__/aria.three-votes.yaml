@@ -1,0 +1,11 @@
+- region "Lunch":
+  - status: 3 votes left
+  - paragraph: "Picked: none"
+  - list "Choices":
+    - listitem:
+      - button "yes"
+    - listitem:
+      - button "no"
+    - listitem:
+      - button "maybe"
+  - button "Count the answers"

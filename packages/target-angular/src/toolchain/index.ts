@@ -1,4 +1,4 @@
-// The Angular toolchain (DESIGN §4.1): how tests build, check and run the Angular output.
+// The Angular toolchain (plan §5.7): how tests build, check and run the Angular output.
 // Angular's compiler stack is loaded from `context.toolchainDir` (see ./tools.ts), so this
 // package depends only on the Angular runtime its adapters import.
 import type { Toolchain } from "@unframework/codegen";

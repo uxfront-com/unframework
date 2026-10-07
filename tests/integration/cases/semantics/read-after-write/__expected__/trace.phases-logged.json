@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Log the phases' })",
+      "dom": [
+        "<section aria-label=\"Tally\" class=\"tally\">",
+        "  <p role=\"status\">",
+        "    \"Count: 0\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add two\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Add five\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Count up three\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Add ten\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Log the phases\"",
+        "  </button>",
+        "  <p>",
+        "    \"Phases: capture then bubble\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Tally\":",
+        "  - status: \"Count: 0\"",
+        "  - button \"Add two\"",
+        "  - button \"Add five\"",
+        "  - button \"Count up three\"",
+        "  - button \"Add ten\"",
+        "  - button \"Log the phases\"",
+        "  - paragraph: \"Phases: capture then bubble\""
+      ],
+      "events": {
+        "logged": [
+          [
+            [
+              "capture",
+              "bubble"
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Log the phases' })",
+      "dom": [
+        "<section aria-label=\"Tally\" class=\"tally\">",
+        "  <p role=\"status\">",
+        "    \"Count: 0\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add two\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Add five\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Count up three\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Add ten\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Log the phases\"",
+        "  </button>",
+        "  <p>",
+        "    \"Phases: capture then bubble then capture then bubble\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Tally\":",
+        "  - status: \"Count: 0\"",
+        "  - button \"Add two\"",
+        "  - button \"Add five\"",
+        "  - button \"Count up three\"",
+        "  - button \"Add ten\"",
+        "  - button \"Log the phases\"",
+        "  - paragraph: \"Phases: capture then bubble then capture then bubble\""
+      ],
+      "events": {
+        "logged": [
+          [
+            [
+              "capture",
+              "bubble",
+              "capture",
+              "bubble"
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,1822 @@
+{
+  "irVersion": 1,
+  "file": "events/list-pairs/MeetingList.uf.tsx",
+  "components": [
+    {
+      "name": "MeetingList",
+      "span": {
+        "start": 272,
+        "end": 2828
+      },
+      "props": [
+        {
+          "name": "meetings",
+          "optional": false,
+          "type": {
+            "code": "Meeting[]",
+            "span": {
+              "start": 233,
+              "end": 242
+            }
+          },
+          "binding": "meetings@310",
+          "span": {
+            "start": 223,
+            "end": 243
+          }
+        },
+        {
+          "name": "organiser",
+          "optional": true,
+          "type": {
+            "code": "Organiser",
+            "span": {
+              "start": 258,
+              "end": 267
+            }
+          },
+          "binding": "organiser@320",
+          "span": {
+            "start": 246,
+            "end": 268
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "MeetingListProps",
+          "span": {
+            "start": 333,
+            "end": 349
+          }
+        },
+        "span": {
+          "start": 308,
+          "end": 349
+        }
+      },
+      "types": [
+        "Meeting",
+        "Organiser",
+        "MeetingListProps"
+      ],
+      "emits": {
+        "binding": "emit@361",
+        "type": {
+          "code": "{\n    opened: [title: string];\n    thanked: [name: string];\n    track: [name: string, count: number];\n  }",
+          "span": {
+            "start": 380,
+            "end": 485
+          }
+        },
+        "events": [
+          {
+            "name": "opened",
+            "parameters": [
+              {
+                "name": "title",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 402,
+                    "end": 408
+                  }
+                },
+                "span": {
+                  "start": 395,
+                  "end": 408
+                }
+              }
+            ],
+            "span": {
+              "start": 386,
+              "end": 409
+            }
+          },
+          {
+            "name": "thanked",
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 431,
+                    "end": 437
+                  }
+                },
+                "span": {
+                  "start": 425,
+                  "end": 437
+                }
+              }
+            ],
+            "span": {
+              "start": 415,
+              "end": 438
+            }
+          },
+          {
+            "name": "track",
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 458,
+                    "end": 464
+                  }
+                },
+                "span": {
+                  "start": 452,
+                  "end": 464
+                }
+              },
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 473,
+                    "end": 479
+                  }
+                },
+                "span": {
+                  "start": 466,
+                  "end": 479
+                }
+              }
+            ],
+            "span": {
+              "start": 444,
+              "end": 480
+            }
+          }
+        ],
+        "span": {
+          "start": 355,
+          "end": 489
+        }
+      },
+      "bindings": [
+        {
+          "id": "meetings@310",
+          "name": "meetings",
+          "kind": "prop",
+          "span": {
+            "start": 310,
+            "end": 318
+          }
+        },
+        {
+          "id": "organiser@320",
+          "name": "organiser",
+          "kind": "prop",
+          "span": {
+            "start": 320,
+            "end": 329
+          }
+        },
+        {
+          "id": "emit@361",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 361,
+            "end": 365
+          }
+        },
+        {
+          "id": "rooms@499",
+          "name": "rooms",
+          "kind": "state",
+          "span": {
+            "start": 499,
+            "end": 504
+          }
+        },
+        {
+          "id": "log@543",
+          "name": "log",
+          "kind": "state",
+          "span": {
+            "start": 543,
+            "end": 546
+          }
+        },
+        {
+          "id": "lastKey@576",
+          "name": "lastKey",
+          "kind": "state",
+          "span": {
+            "start": 576,
+            "end": 583
+          }
+        },
+        {
+          "id": "clicks@607",
+          "name": "clicks",
+          "kind": "state",
+          "span": {
+            "start": 607,
+            "end": 613
+          }
+        },
+        {
+          "id": "upcoming@632",
+          "name": "upcoming",
+          "kind": "derived",
+          "span": {
+            "start": 632,
+            "end": 640
+          }
+        },
+        {
+          "id": "record@716",
+          "name": "record",
+          "kind": "localFn",
+          "span": {
+            "start": 716,
+            "end": 722
+          }
+        },
+        {
+          "id": "show@793",
+          "name": "show",
+          "kind": "localFn",
+          "span": {
+            "start": 793,
+            "end": 797
+          }
+        },
+        {
+          "id": "book@877",
+          "name": "book",
+          "kind": "localFn",
+          "span": {
+            "start": 877,
+            "end": 881
+          }
+        },
+        {
+          "id": "remember@973",
+          "name": "remember",
+          "kind": "localFn",
+          "span": {
+            "start": 973,
+            "end": 981
+          }
+        },
+        {
+          "id": "event@1194",
+          "name": "event",
+          "kind": "loopVar",
+          "span": {
+            "start": 1194,
+            "end": 1199
+          }
+        },
+        {
+          "id": "room@1548",
+          "name": "room",
+          "kind": "loopVar",
+          "span": {
+            "start": 1548,
+            "end": 1552
+          }
+        },
+        {
+          "id": "line@2727",
+          "name": "line",
+          "kind": "loopVar",
+          "span": {
+            "start": 2727,
+            "end": 2731
+          }
+        },
+        {
+          "id": "index@2733",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 2733,
+            "end": 2738
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "rooms@499",
+          "initial": {
+            "code": "[\"Atlas\", \"Borealis\"]",
+            "span": {
+              "start": 511,
+              "end": 532
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 493,
+            "end": 534
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "log@543",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 553,
+              "end": 561
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 563,
+              "end": 565
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 537,
+            "end": 567
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "lastKey@576",
+          "initial": {
+            "code": "\"none\"",
+            "span": {
+              "start": 590,
+              "end": 596
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 570,
+            "end": 598
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "clicks@607",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 620,
+              "end": 621
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 601,
+            "end": 623
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "upcoming@632",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "meetings.filter((meeting) => !meeting.done)",
+              "span": {
+                "start": 658,
+                "end": 701
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "meetings@310",
+                  "span": {
+                    "start": 658,
+                    "end": 666
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 652,
+              "end": 701
+            }
+          },
+          "span": {
+            "start": 626,
+            "end": 703
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "record@716",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "line",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 729,
+                    "end": 735
+                  }
+                },
+                "span": {
+                  "start": 723,
+                  "end": 735
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    log.value = [...log.value, line];\n  }",
+              "span": {
+                "start": 737,
+                "end": 780
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "log@543",
+                  "operator": "=",
+                  "span": {
+                    "start": 743,
+                    "end": 775
+                  },
+                  "target": {
+                    "start": 743,
+                    "end": 752
+                  },
+                  "value": {
+                    "start": 755,
+                    "end": 775
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "log@543",
+                  "span": {
+                    "start": 759,
+                    "end": 768
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 722,
+              "end": 780
+            }
+          },
+          "span": {
+            "start": 707,
+            "end": 780
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "show@793",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "meeting",
+                "type": {
+                  "code": "Meeting",
+                  "span": {
+                    "start": 807,
+                    "end": 814
+                  }
+                },
+                "span": {
+                  "start": 798,
+                  "end": 814
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    record(`show ${meeting.title}`);\n  }",
+              "span": {
+                "start": 816,
+                "end": 858
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "record@716",
+                  "span": {
+                    "start": 822,
+                    "end": 828
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 797,
+              "end": 858
+            }
+          },
+          "span": {
+            "start": 784,
+            "end": 858
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "book@877",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [
+              {
+                "name": "room",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 888,
+                    "end": 894
+                  }
+                },
+                "span": {
+                  "start": 882,
+                  "end": 894
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    await Promise.resolve();\n    record(`booked ${room}`);\n  }",
+              "span": {
+                "start": 896,
+                "end": 960
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 908,
+                    "end": 915
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "record@716",
+                  "span": {
+                    "start": 931,
+                    "end": 937
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 881,
+              "end": 960
+            }
+          },
+          "span": {
+            "start": 862,
+            "end": 960
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "remember@973",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "key",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 987,
+                    "end": 993
+                  }
+                },
+                "span": {
+                  "start": 982,
+                  "end": 993
+                }
+              }
+            ],
+            "returnType": {
+              "code": "boolean",
+              "span": {
+                "start": 996,
+                "end": 1003
+              }
+            },
+            "body": {
+              "code": "{\n    lastKey.value = key;\n    return key === \"Enter\";\n  }",
+              "span": {
+                "start": 1004,
+                "end": 1062
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "lastKey@576",
+                  "operator": "=",
+                  "span": {
+                    "start": 1010,
+                    "end": 1029
+                  },
+                  "target": {
+                    "start": 1010,
+                    "end": 1023
+                  },
+                  "value": {
+                    "start": 1026,
+                    "end": 1029
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 981,
+              "end": 1062
+            }
+          },
+          "span": {
+            "start": 964,
+            "end": 1062
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "meeting-list",
+            "span": {
+              "start": 1088,
+              "end": 1108
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Meetings",
+            "span": {
+              "start": 1109,
+              "end": 1130
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Upcoming",
+                "span": {
+                  "start": 1142,
+                  "end": 1163
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "upcoming.value",
+                  "span": {
+                    "start": 1174,
+                    "end": 1188
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "upcoming@632",
+                      "span": {
+                        "start": 1174,
+                        "end": 1188
+                      }
+                    }
+                  ]
+                },
+                "item": "event@1194",
+                "key": {
+                  "code": "event.id",
+                  "span": {
+                    "start": 1225,
+                    "end": 1233
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "event@1194",
+                      "span": {
+                        "start": 1225,
+                        "end": 1230
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Element",
+                      "tag": "button",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "type",
+                          "value": "button",
+                          "span": {
+                            "start": 1270,
+                            "end": 1283
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "event": "click",
+                          "handler": {
+                            "kind": "Inline",
+                            "function": {
+                              "parameters": [],
+                              "body": {
+                                "code": "show(event)",
+                                "span": {
+                                  "start": 1313,
+                                  "end": 1324
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "show@793",
+                                    "span": {
+                                      "start": 1313,
+                                      "end": 1317
+                                    },
+                                    "call": true
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "event@1194",
+                                    "span": {
+                                      "start": 1318,
+                                      "end": 1323
+                                    }
+                                  }
+                                ]
+                              },
+                              "expression": true,
+                              "span": {
+                                "start": 1307,
+                                "end": 1324
+                              }
+                            },
+                            "span": {
+                              "start": 1307,
+                              "end": 1324
+                            }
+                          },
+                          "span": {
+                            "start": 1298,
+                            "end": 1325
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "event": "click",
+                          "once": true,
+                          "handler": {
+                            "kind": "Inline",
+                            "function": {
+                              "parameters": [],
+                              "body": {
+                                "code": "emit(\"opened\", event.title)",
+                                "span": {
+                                  "start": 1359,
+                                  "end": 1386
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Emit",
+                                    "binding": "emit@361",
+                                    "event": "opened",
+                                    "span": {
+                                      "start": 1359,
+                                      "end": 1386
+                                    },
+                                    "arguments": [
+                                      {
+                                        "start": 1374,
+                                        "end": 1385
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "event@1194",
+                                    "span": {
+                                      "start": 1374,
+                                      "end": 1379
+                                    }
+                                  }
+                                ]
+                              },
+                              "expression": true,
+                              "span": {
+                                "start": 1353,
+                                "end": 1386
+                              }
+                            },
+                            "span": {
+                              "start": 1353,
+                              "end": 1386
+                            }
+                          },
+                          "span": {
+                            "start": 1340,
+                            "end": 1387
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "event.title",
+                            "span": {
+                              "start": 1417,
+                              "end": 1428
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "event@1194",
+                                "span": {
+                                  "start": 1417,
+                                  "end": 1422
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 1416,
+                            "end": 1429
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 1248,
+                        "end": 1451
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 1216,
+                    "end": 1467
+                  }
+                },
+                "span": {
+                  "start": 1174,
+                  "end": 1478
+                }
+              }
+            ],
+            "span": {
+              "start": 1138,
+              "end": 1491
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Rooms",
+                "span": {
+                  "start": 1502,
+                  "end": 1520
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "rooms.value",
+                  "span": {
+                    "start": 1531,
+                    "end": 1542
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "rooms@499",
+                      "span": {
+                        "start": 1531,
+                        "end": 1542
+                      }
+                    }
+                  ]
+                },
+                "item": "room@1548",
+                "key": {
+                  "code": "room",
+                  "span": {
+                    "start": 1578,
+                    "end": 1582
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "room@1548",
+                      "span": {
+                        "start": 1578,
+                        "end": 1582
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Element",
+                      "tag": "button",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "type",
+                          "value": "button",
+                          "span": {
+                            "start": 1619,
+                            "end": 1632
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "event": "click",
+                          "handler": {
+                            "kind": "Inline",
+                            "function": {
+                              "parameters": [],
+                              "body": {
+                                "code": "record(`pick ${room}`)",
+                                "span": {
+                                  "start": 1662,
+                                  "end": 1684
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "record@716",
+                                    "span": {
+                                      "start": 1662,
+                                      "end": 1668
+                                    },
+                                    "call": true
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "room@1548",
+                                    "span": {
+                                      "start": 1677,
+                                      "end": 1681
+                                    }
+                                  }
+                                ]
+                              },
+                              "expression": true,
+                              "span": {
+                                "start": 1656,
+                                "end": 1684
+                              }
+                            },
+                            "span": {
+                              "start": 1656,
+                              "end": 1684
+                            }
+                          },
+                          "span": {
+                            "start": 1647,
+                            "end": 1685
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "event": "click",
+                          "once": true,
+                          "handler": {
+                            "kind": "Inline",
+                            "function": {
+                              "async": true,
+                              "parameters": [],
+                              "body": {
+                                "code": "book(room)",
+                                "span": {
+                                  "start": 1725,
+                                  "end": 1735
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "book@877",
+                                    "span": {
+                                      "start": 1725,
+                                      "end": 1729
+                                    },
+                                    "call": true
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "room@1548",
+                                    "span": {
+                                      "start": 1730,
+                                      "end": 1734
+                                    }
+                                  }
+                                ]
+                              },
+                              "expression": true,
+                              "span": {
+                                "start": 1713,
+                                "end": 1735
+                              }
+                            },
+                            "span": {
+                              "start": 1713,
+                              "end": 1735
+                            }
+                          },
+                          "span": {
+                            "start": 1700,
+                            "end": 1736
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "room",
+                            "span": {
+                              "start": 1766,
+                              "end": 1770
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "room@1548",
+                                "span": {
+                                  "start": 1766,
+                                  "end": 1770
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 1765,
+                            "end": 1771
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 1597,
+                        "end": 1793
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 1569,
+                    "end": 1809
+                  }
+                },
+                "span": {
+                  "start": 1531,
+                  "end": 1820
+                }
+              }
+            ],
+            "span": {
+              "start": 1498,
+              "end": 1833
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "organiser",
+                  "span": {
+                    "start": 1841,
+                    "end": 1850
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "organiser@320",
+                      "span": {
+                        "start": 1841,
+                        "end": 1850
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "button",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "type",
+                        "value": "button",
+                        "span": {
+                          "start": 1881,
+                          "end": 1894
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "click",
+                        "handler": {
+                          "kind": "Inline",
+                          "function": {
+                            "parameters": [],
+                            "body": {
+                              "code": "record(`thank ${organiser.name}`)",
+                              "span": {
+                                "start": 1920,
+                                "end": 1953
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Binding",
+                                  "binding": "record@716",
+                                  "span": {
+                                    "start": 1920,
+                                    "end": 1926
+                                  },
+                                  "call": true
+                                },
+                                {
+                                  "kind": "Binding",
+                                  "binding": "organiser@320",
+                                  "span": {
+                                    "start": 1936,
+                                    "end": 1945
+                                  },
+                                  "narrowed": [
+                                    {
+                                      "span": {
+                                        "start": 1936,
+                                        "end": 1945
+                                      },
+                                      "scope": "template"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "expression": true,
+                            "span": {
+                              "start": 1914,
+                              "end": 1953
+                            }
+                          },
+                          "span": {
+                            "start": 1914,
+                            "end": 1953
+                          }
+                        },
+                        "span": {
+                          "start": 1905,
+                          "end": 1954
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "click",
+                        "once": true,
+                        "handler": {
+                          "kind": "Inline",
+                          "function": {
+                            "parameters": [],
+                            "body": {
+                              "code": "emit(\"thanked\", organiser.name)",
+                              "span": {
+                                "start": 1984,
+                                "end": 2015
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Emit",
+                                  "binding": "emit@361",
+                                  "event": "thanked",
+                                  "span": {
+                                    "start": 1984,
+                                    "end": 2015
+                                  },
+                                  "arguments": [
+                                    {
+                                      "start": 2000,
+                                      "end": 2014
+                                    }
+                                  ]
+                                },
+                                {
+                                  "kind": "Binding",
+                                  "binding": "organiser@320",
+                                  "span": {
+                                    "start": 2000,
+                                    "end": 2009
+                                  },
+                                  "narrowed": [
+                                    {
+                                      "span": {
+                                        "start": 2000,
+                                        "end": 2009
+                                      },
+                                      "scope": "template"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "expression": true,
+                            "span": {
+                              "start": 1978,
+                              "end": 2015
+                            }
+                          },
+                          "span": {
+                            "start": 1978,
+                            "end": 2015
+                          }
+                        },
+                        "span": {
+                          "start": 1965,
+                          "end": 2016
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "`Thank ${organiser.name}`",
+                          "span": {
+                            "start": 2038,
+                            "end": 2063
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "organiser@320",
+                              "span": {
+                                "start": 2047,
+                                "end": 2056
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 2037,
+                          "end": 2064
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1863,
+                      "end": 2082
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1841,
+                  "end": 2082
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "No organiser",
+                        "span": {
+                          "start": 2106,
+                          "end": 2118
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 2103,
+                      "end": 2122
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2103,
+                  "end": 2122
+                }
+              }
+            ],
+            "span": {
+              "start": 1841,
+              "end": 2130
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2154,
+                  "end": 2167
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(clicks.value += 1)",
+                      "span": {
+                        "start": 2191,
+                        "end": 2210
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "clicks@607",
+                          "operator": "+=",
+                          "span": {
+                            "start": 2191,
+                            "end": 2210
+                          },
+                          "target": {
+                            "start": 2192,
+                            "end": 2204
+                          },
+                          "value": {
+                            "start": 2208,
+                            "end": 2209
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 2185,
+                      "end": 2210
+                    }
+                  },
+                  "span": {
+                    "start": 2185,
+                    "end": 2210
+                  }
+                },
+                "span": {
+                  "start": 2176,
+                  "end": 2211
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "once": true,
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "{\n          const event = \"first-click\";\n          emit(\"track\", event, clicks.value);\n        }",
+                      "span": {
+                        "start": 2239,
+                        "end": 2335
+                      },
+                      "refs": [
+                        {
+                          "kind": "Emit",
+                          "binding": "emit@361",
+                          "event": "track",
+                          "span": {
+                            "start": 2290,
+                            "end": 2324
+                          },
+                          "arguments": [
+                            {
+                              "start": 2304,
+                              "end": 2309
+                            },
+                            {
+                              "start": 2311,
+                              "end": 2323
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "clicks@607",
+                          "span": {
+                            "start": 2311,
+                            "end": 2323
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 2233,
+                      "end": 2335
+                    }
+                  },
+                  "span": {
+                    "start": 2233,
+                    "end": 2335
+                  }
+                },
+                "span": {
+                  "start": 2220,
+                  "end": 2336
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Track",
+                "span": {
+                  "start": 2344,
+                  "end": 2365
+                }
+              }
+            ],
+            "span": {
+              "start": 2138,
+              "end": 2374
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Clicks: ",
+                "span": {
+                  "start": 2384,
+                  "end": 2392
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "clicks.value",
+                  "span": {
+                    "start": 2393,
+                    "end": 2405
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "clicks@607",
+                      "span": {
+                        "start": 2393,
+                        "end": 2405
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 2392,
+                  "end": 2406
+                }
+              }
+            ],
+            "span": {
+              "start": 2381,
+              "end": 2410
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Filter",
+                "span": {
+                  "start": 2424,
+                  "end": 2448
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "filter",
+                    "span": {
+                      "start": 2465,
+                      "end": 2478
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "keydown",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "KeyboardEvent",
+                            "span": {
+                              "start": 2501,
+                              "end": 2506
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "{\n            if (event.altKey) return false;\n            return remember(event.key);\n          }",
+                          "span": {
+                            "start": 2511,
+                            "end": 2608
+                          },
+                          "refs": [
+                            {
+                              "kind": "Event",
+                              "member": "altKey",
+                              "span": {
+                                "start": 2529,
+                                "end": 2541
+                              }
+                            },
+                            {
+                              "kind": "Binding",
+                              "binding": "remember@973",
+                              "span": {
+                                "start": 2576,
+                                "end": 2584
+                              },
+                              "call": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "key",
+                              "span": {
+                                "start": 2585,
+                                "end": 2594
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 2500,
+                          "end": 2608
+                        }
+                      },
+                      "span": {
+                        "start": 2500,
+                        "end": 2608
+                      }
+                    },
+                    "span": {
+                      "start": 2489,
+                      "end": 2609
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 2448,
+                  "end": 2620
+                }
+              }
+            ],
+            "span": {
+              "start": 2417,
+              "end": 2635
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Last key: ",
+                "span": {
+                  "start": 2645,
+                  "end": 2655
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "lastKey.value",
+                  "span": {
+                    "start": 2656,
+                    "end": 2669
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "lastKey@576",
+                      "span": {
+                        "start": 2656,
+                        "end": 2669
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 2655,
+                  "end": 2670
+                }
+              }
+            ],
+            "span": {
+              "start": 2642,
+              "end": 2674
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Log",
+                "span": {
+                  "start": 2685,
+                  "end": 2701
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "log.value",
+                  "span": {
+                    "start": 2712,
+                    "end": 2721
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "log@543",
+                      "span": {
+                        "start": 2712,
+                        "end": 2721
+                      }
+                    }
+                  ]
+                },
+                "item": "line@2727",
+                "index": "index@2733",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 2764,
+                    "end": 2769
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@2733",
+                      "span": {
+                        "start": 2764,
+                        "end": 2769
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "line",
+                        "span": {
+                          "start": 2772,
+                          "end": 2776
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "line@2727",
+                            "span": {
+                              "start": 2772,
+                              "end": 2776
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 2771,
+                        "end": 2777
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 2755,
+                    "end": 2782
+                  }
+                },
+                "span": {
+                  "start": 2712,
+                  "end": 2793
+                }
+              }
+            ],
+            "span": {
+              "start": 2681,
+              "end": 2806
+            }
+          }
+        ],
+        "span": {
+          "start": 1079,
+          "end": 2821
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "MeetingList",
+      "span": {
+        "start": 272,
+        "end": 2828
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Meeting",
+      "exported": true,
+      "code": "interface Meeting {\n  id: number;\n  title: string;\n  done: boolean;\n}",
+      "span": {
+        "start": 66,
+        "end": 135
+      }
+    },
+    {
+      "name": "Organiser",
+      "exported": true,
+      "code": "interface Organiser {\n  name: string;\n}",
+      "span": {
+        "start": 144,
+        "end": 183
+      }
+    },
+    {
+      "name": "MeetingListProps",
+      "exported": true,
+      "code": "interface MeetingListProps {\n  meetings: Meeting[];\n  organiser?: Organiser;\n}",
+      "span": {
+        "start": 192,
+        "end": 270
+      }
+    }
+  ]
+}

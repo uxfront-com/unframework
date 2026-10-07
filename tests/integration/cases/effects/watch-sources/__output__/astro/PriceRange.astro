@@ -1,0 +1,18 @@
+---
+export interface PriceRangeProps {
+  currency: string;
+}
+
+type Props = PriceRangeProps;
+
+const { currency } = Astro.props;
+
+const low = 10 as number;
+const high = 50 as number;
+---
+
+<section class="price-range" aria-label="Price range">
+  <p role="status">{low} to {high} {currency}</p>
+  <button type="button">Shift up</button>
+  <button type="button">Widen</button>
+</section>

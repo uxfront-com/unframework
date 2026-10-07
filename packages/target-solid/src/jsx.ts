@@ -1,8 +1,9 @@
-// How Solid writes what its JSX writes differently from the codegen defaults (design §5.4):
+// How Solid writes what its JSX writes differently from the codegen defaults (plan §6):
 // control flow through Solid's own components (`<Show>`, `<Switch>`/`<Match>`, `<For>`), which
-// update the DOM in place where a ternary or `.map` would recreate it, keyed where a branch reads
-// what its tests narrow (src/narrowing.ts); `class` as one string; kebab-case style objects; and
-// an object spread for an attribute Solid's types reject on its element (src/attributes.ts).
+// update the DOM in place where a ternary or `.map` would recreate it, with a callback's accessor
+// where a branch reads what its tests narrow (src/narrowing.ts); `class` as one string; kebab-case
+// style objects; an object spread for an attribute Solid's types reject on its element
+// (src/attributes.ts); and listeners and template refs as src/listeners.ts writes them.
 // Everything else (elements, text, bound attributes, spreads key by key) prints as the defaults
 // do, with HTML attribute names, which Solid's JSX takes.
 import {
@@ -21,6 +22,7 @@ import {
   staticJsxAttribute,
 } from "@unframework/codegen";
 import type { ImportSet, JsxContext, JsxDialect } from "@unframework/codegen";
+import { walk } from "@unframework/ir";
 import type {
   ClassAttribute,
   ElementNode,
@@ -33,15 +35,16 @@ import type {
 } from "@unframework/ir";
 
 import { isUntyped, untypedAttribute } from "./attributes.ts";
+import type { SolidListeners } from "./listeners.ts";
 import {
   carriedPaths,
   declaresFalsyLiteral,
   negatedOperand,
-  Narrowings,
+  narrowsFurther,
   pathExpression,
   wholePath,
 } from "./narrowing.ts";
-import type { ReferencePath } from "./narrowing.ts";
+import type { Frame, Narrowings, ReferencePath } from "./narrowing.ts";
 import { escapedOnServer } from "./render.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
@@ -62,23 +65,19 @@ export interface SolidJsx {
 
 /**
  * The Solid dialect for one output file. Imports (`Show`, `For`…), the class helper's name and
- * the names keyed callbacks give their values are claimed from the file's name scope when first
- * used, so they never capture a source name (`sourceNames`, which that scope reserves). `types`
+ * the names branch callbacks give their accessors (`narrowings`) are claimed from the file's name
+ * scope when first used, so they never capture a source name, which that scope reserves. `types`
  * are the texts of the props' types and the declarations they reach.
  */
 export function solidJsx(
   imports: ImportSet,
-  sourceNames: ReadonlySet<string>,
-  component: UfComponent,
+  narrowings: Narrowings,
   types: readonly string[],
+  listeners: SolidListeners,
 ): SolidJsx {
   let helper: string | undefined;
   const classHelper = () => (helper ??= imports.claim(CLASS_HELPER));
-  const flow: Flow = {
-    imports,
-    narrowings: new Narrowings(imports, sourceNames, component),
-    falsy: declaresFalsyLiteral(types),
-  };
+  const flow: Flow = { imports, narrowings, falsy: declaresFalsyLiteral(types) };
   const dialect: JsxDialect = {
     expression: (expression, context) => flow.narrowings.code(expression, context),
     conditional: (node, context) => conditional(node, context, flow),
@@ -118,11 +117,15 @@ export function solidJsx(
     classAttribute: (attribute, element, context) =>
       classAttribute(attribute, element, context, classHelper),
     styleAttribute: (attribute, element, context) => [styleAttribute(attribute, context)],
+    eventAttribute: (attribute, element, context) =>
+      listeners.eventAttribute(attribute, element, context),
+    refAttribute: (attribute, element, context) =>
+      listeners.refAttribute(attribute, element, context),
   };
   return { dialect, helpers: () => (helper ? [classHelperCode(helper)] : []) };
 }
 
-/** What a file's control flow prints with: its imports, and the keyed callbacks around it. */
+/** What a file's control flow prints with: its imports, and the branch callbacks around it. */
 interface Flow {
   imports: ImportSet;
   narrowings: Narrowings;
@@ -139,12 +142,12 @@ interface Flow {
  *   and `!c ? null : <B />` → `<Show when={c}>`);
  * - more: `<Switch fallback={…}><Match when={a}>…</Match><Match when={b}>…</Match></Switch>`,
  *   where an empty branch still stops the chain with `{null}`, as Solid's types require
- *   children (design §5.4).
+ *   children (ADR-0036).
  *
  * `<Show>`'s and `<Match>`'s children are no branch of their condition to TypeScript. A branch
- * that reads a binding its tests mention (those that hold or fail where it renders) takes the
- * values it reads from them through a keyed callback instead (see {@link keyed}). An else that
- * does is a last keyed `<Match>`, as is every such branch of a chain, whose `when` repeats the
+ * that reads a binding its tests mention (those that hold or fail where it renders) reads what
+ * it takes from them through its callback's accessor instead (see {@link narrowed}). An else
+ * that does is a last `<Match>`, as is every such branch of a chain, whose `when` repeats the
  * chain up to it; `<Match>` evaluates a condition only where those before it failed.
  */
 function conditional(node: IfNode, context: JsxContext, flow: Flow): AstExpression {
@@ -154,7 +157,13 @@ function conditional(node: IfNode, context: JsxContext, flow: Flow): AstExpressi
     branches[index]!.condition ? tests.slice(0, index + 1) : tests;
   const around = flow.narrowings.carried();
   const carried = branches.map((branch, index) =>
-    carriedPaths(branch.children, testsOf(index), Boolean(branch.condition), around),
+    carriedPaths(
+      branch.children,
+      testsOf(index),
+      Boolean(branch.condition),
+      around,
+      flow.narrowings.types,
+    ),
   );
   if (carried.every((paths) => !paths.length)) return plain(node, context, flow.imports);
   const last = branches.at(-1)!;
@@ -166,24 +175,30 @@ function conditional(node: IfNode, context: JsxContext, flow: Flow): AstExpressi
     const [first] = branches;
     const test = first!.condition!;
     if (!otherwise || !carried[1]!.length) {
-      const shown = keyed([test], true, first!.children, carried[0]!, context, flow);
-      const attributes = [js.jsxAttribute("keyed"), when(shown.when)];
+      const shown = narrowed([test], true, first!.children, carried[0]!, context, flow);
+      const attributes = branchAttributes(shown);
       if (otherwise) attributes.push(fallbackAttribute(otherwise.children, context));
       return element("Show", attributes, [shown.callback]);
     }
     // `!user ? <i>anon</i> : <p>{user.name}</p>`: the else shows where the operand holds.
     const operand = negatedOperand(test);
     if (operand && !carried[0]!.length) {
-      const paths = carriedPaths(otherwise.children, [operand], true, around);
-      const shown = keyed([operand], true, otherwise.children, paths, context, flow);
-      const attributes = [js.jsxAttribute("keyed"), when(shown.when)];
+      const paths = carriedPaths(
+        otherwise.children,
+        [operand],
+        true,
+        around,
+        flow.narrowings.types,
+      );
+      const shown = narrowed([operand], true, otherwise.children, paths, context, flow);
+      const attributes = branchAttributes(shown);
       if (first!.children.length) attributes.push(fallbackAttribute(first!.children, context));
       return element("Show", attributes, [shown.callback]);
     }
     if (!first!.children.length) {
       // `c ? null : <B />`: the else alone, under the test failing.
-      const shown = keyed([test], false, otherwise.children, carried[1]!, context, flow);
-      return element("Show", [js.jsxAttribute("keyed"), when(shown.when)], [shown.callback]);
+      const shown = narrowed([test], false, otherwise.children, carried[1]!, context, flow);
+      return element("Show", branchAttributes(shown), [shown.callback]);
     }
   }
   const matches = branches.flatMap((branch, index) => {
@@ -201,8 +216,8 @@ function conditional(node: IfNode, context: JsxContext, flow: Flow): AstExpressi
       ];
     }
     const holds = Boolean(branch.condition);
-    const shown = keyed(testsOf(index), holds, branch.children, carried[index]!, context, flow);
-    return [element("Match", [js.jsxAttribute("keyed"), when(shown.when)], [shown.callback])];
+    const shown = narrowed(testsOf(index), holds, branch.children, carried[index]!, context, flow);
+    return [element("Match", branchAttributes(shown), [shown.callback])];
   });
   const fallback =
     otherwise && !carried.at(-1)!.length ? [fallbackAttribute(otherwise.children, context)] : [];
@@ -257,27 +272,31 @@ function show(
 }
 
 /**
- * The `when` of a keyed `<Show>` or `<Match>` whose branch reads `paths` of what `tests`
- * mention, and the callback that receives them as plain values. Where the branch shows when
- * its one test, exactly one of those paths, holds, the `when` is that test, and the callback
- * receives its value: `<Show keyed when={props.user}>{(user) => …user.name…}</Show>`. Otherwise
- * the `when` is the source's chain up to the branch, failed tests leaving nothing, which builds
- * an object of the paths where TypeScript narrows them, destructured by the callback:
- * `props.count !== undefined ? { count: props.count } : undefined` and `({ count }) => …`. Its
- * truthiness is the branch's own, and keyed, the callback runs again whenever the value
- * changes, with values that never go stale (src/narrowing.ts).
+ * The `when` of a `<Show>` or `<Match>` whose branch reads `paths` of what `tests` mention, the
+ * callback that receives them, and whether the branch is keyed. Where the branch shows when its
+ * one test, exactly one of those paths, holds, the `when` is that test:
+ * `<Show when={props.user}>{(user) => …user().name…}</Show>`. Otherwise the `when` is the
+ * source's chain up to the branch, failed tests leaving nothing, which builds an object of the
+ * paths where TypeScript narrows them: `props.count !== undefined ? { count: props.count } :
+ * undefined`, read `(narrowed) => …narrowed().count…`. Its truthiness is the branch's own.
+ *
+ * A branch is not keyed (ADR-0036 as M2 amends it): Solid calls the callback once while the
+ * `when` stays truthy, with an accessor of its latest value, so the branch keeps its DOM, focus
+ * and state when the value changes. TypeScript narrows no call, though, so a branch whose
+ * expressions narrow a path it receives further (`user.nick ? user.nick.trim() : "none"`) is
+ * keyed, as M1 wrote every branch: the callback receives the values themselves, and runs again
+ * whenever they change (src/narrowing.ts).
  */
-function keyed(
+function narrowed(
   tests: readonly Expression[],
   holds: boolean,
   children: readonly RenderNode[],
   paths: readonly ReferencePath[],
   context: JsxContext,
   flow: Flow,
-): { when: AstExpression; callback: JsxChild } {
+): { when: AstExpression; callback: JsxChild; keyed: boolean } {
   const { narrowings } = flow;
-  const names = narrowings.names(paths, context);
-  const frame = { names: paths.map((path, index) => ({ path, name: names[index]! })) };
+  const keyed = narrowsFurther(children, paths);
   const [only] = tests;
   const whole = tests.length === 1 && holds ? wholePath(only!) : undefined;
   const simple =
@@ -287,6 +306,7 @@ function keyed(
     paths[0]!.keys.length === whole.keys.length &&
     paths[0]!.keys.every((key, index) => whole.keys[index] === key);
   let test: AstExpression;
+  let frame: Frame;
   let parameter: Parameters<typeof js.arrowFunction>[0][number];
   if (simple) {
     // Solid types the value `NonNullable<T>`, which keeps the falsy literals (`""`, `0`) the
@@ -298,30 +318,69 @@ function keyed(
           js.identifier("undefined"),
         )
       : jsxExpression(only!, context);
-    parameter = js.bindingIdentifier(names[0]!);
+    const name = narrowings.names(
+      paths,
+      context,
+      keyed ? "keyed" : holdsListeners(children) ? "accessor" : "accessor-only",
+    )[0]!;
+    frame = {
+      parameter: name,
+      names: [{ path: paths[0]!, name, read: keyed ? name : `${name}()` }],
+    };
+    parameter = js.bindingIdentifier(name);
   } else {
-    const object = js.objectExpression(
-      paths.map((path, index) => {
-        const value = pathExpression(path, tests, children);
-        const name = names[index]!;
-        // `{ row }` where the value is already read by its name.
-        return narrowings.code(value, context) === name
-          ? js.property(name, js.identifier(name), { shorthand: true })
-          : [name, jsxExpression(value, context)];
-      }),
-    );
-    const nothing = js.identifier("undefined");
-    // From the last test outwards: its own holds (or fails, for an else), the others fail.
-    test = holds
-      ? js.conditionalExpression(jsxExpression(tests.at(-1)!, context, "test"), object, nothing)
-      : object;
-    for (const failed of (holds ? tests.slice(0, -1) : tests).toReversed()) {
-      test = js.conditionalExpression(jsxExpression(failed, context, "test"), nothing, test);
-    }
-    parameter = js.objectPattern(names.map((name) => js.bindingProperty(name)));
+    const keys = keyed
+      ? narrowings.names(paths, context, "keyed")
+      : narrowings.keys(paths, context);
+    const accessor = keyed ? undefined : narrowings.accessor();
+    // Each read that calls is a parameter, read once, which TypeScript narrows, as it narrows no
+    // call: `((user) => (user !== null ? { user } : undefined))(user())`.
+    const built = narrowings.once(() => {
+      const object = js.objectExpression(
+        paths.map((path, index) => {
+          const value = pathExpression(path, tests, children);
+          const key = keys[index]!;
+          // `{ row }` where the value is already read by its name.
+          return narrowings.code(value, context) === key
+            ? js.property(key, js.identifier(key), { shorthand: true })
+            : [key, jsxExpression(value, context)];
+        }),
+      );
+      const nothing = js.identifier("undefined");
+      // From the last test outwards: its own holds (or fails, for an else), the others fail.
+      let built = holds
+        ? js.conditionalExpression(jsxExpression(tests.at(-1)!, context, "test"), object, nothing)
+        : object;
+      for (const failed of (holds ? tests.slice(0, -1) : tests).toReversed()) {
+        built = js.conditionalExpression(jsxExpression(failed, context, "test"), nothing, built);
+      }
+      return built;
+    });
+    test = built.parameters.length
+      ? js.callExpression(
+          js.arrowFunction(
+            built.parameters.map((parameter) => js.bindingIdentifier(parameter.name)),
+            built.value,
+          ),
+          built.parameters.map((parameter) =>
+            context.placeholders.expression(parameter.read, "argument"),
+          ),
+        )
+      : built.value;
+    frame = {
+      parameter: accessor ?? "",
+      names: paths.map((path, index) => ({
+        path,
+        name: keys[index]!,
+        read: accessor ? `${accessor}().${keys[index]!}` : keys[index]!,
+      })),
+    };
+    parameter = accessor
+      ? js.bindingIdentifier(accessor)
+      : js.objectPattern(keys.map((key) => js.bindingProperty(key)));
   }
   // Solid calls a function child untracked: a branch that is one interpolation
-  // (`user.name + props.label`) would not update when another prop it reads changes, and a
+  // (`user().name + props.label`) would not update when another prop it reads changes, and a
   // fragment, which Solid compiles to a memo, keeps its reads tracked.
   const body = narrowings.within(frame, () =>
     children.length === 1 && children[0]!.kind === "Interpolation"
@@ -331,7 +390,29 @@ function keyed(
   return {
     when: test,
     callback: js.jsxExpressionContainer(js.arrowFunction([parameter], body)),
+    keyed,
   };
+}
+
+/** A branch's `when`, keyed when its callback receives the values themselves. */
+function branchAttributes(shown: { when: AstExpression; keyed: boolean }): JsxAttribute[] {
+  return shown.keyed ? [js.jsxAttribute("keyed"), when(shown.when)] : [when(shown.when)];
+}
+
+/** Whether nodes hold a listener or a template ref: client code. */
+function holdsListeners(nodes: readonly RenderNode[]): boolean {
+  let found = false;
+  for (const node of nodes) {
+    walk(node, {
+      enter(visited) {
+        if (visited.kind !== "Element") return;
+        if (visited.attributes.some((item) => item.kind === "Event" || item.kind === "Ref")) {
+          found = true;
+        }
+      },
+    });
+  }
+  return found;
 }
 
 function when(test: AstExpression): JsxAttribute {
@@ -353,7 +434,7 @@ function fallbackAttribute(children: readonly RenderNode[], context: JsxContext)
 /**
  * A list as `<For each={source}>{(item, index) => <li>…</li>}</For>`. `<For>` keys its rows
  * by the items themselves, so the source's `key` is not printed (Solid's elements take no
- * `key`; design §1.4 guarantees content and order only), and the index is an accessor, which
+ * `key`; ADR-0036 guarantees content and order only), and the index is an accessor, which
  * the rewrite rules call (`index()`). A parameter nothing reads is left out (L5), the item too
  * when the index is not read either.
  */
@@ -406,8 +487,14 @@ function hasTypedProps(element: ElementNode): boolean {
         return !isUntyped(element.tag, attribute.name);
       case "Spread":
         return attribute.keys.some((key) => !isUntyped(element.tag, key.name));
-      default:
+      // `class`, `style`, a listener and `ref` are props every element's type declares.
+      case "Class":
+      case "Style":
+      case "Event":
+      case "Ref":
         return true;
+      default:
+        return attribute satisfies never;
     }
   });
 }

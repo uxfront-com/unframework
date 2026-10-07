@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "fill getByRole('textbox', { name: 'Query' }) \"vue\"",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-results\">",
+        "  <p>",
+        "    \"Ready\"",
+        "  </p>",
+        "  <label>",
+        "    \"Query\"",
+        "    <input name=\"query\" uf:focused=\"\" uf:value=\"vue\">",
+        "  </label>",
+        "  <ul aria-label=\"Results\">",
+        "    <li>",
+        "      \"vue\"",
+        "    </li>",
+        "    <li>",
+        "      \"vue docs\"",
+        "    </li>",
+        "  </ul>",
+        "  <output>",
+        "    \"0\"",
+        "  </output>",
+        "  <button type=\"button\">",
+        "    \"Add one\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - paragraph: Ready",
+        "  - text: Query",
+        "  - textbox \"Query\": vue",
+        "  - list \"Results\":",
+        "    - listitem: vue",
+        "    - listitem: vue docs",
+        "  - status: \"0\"",
+        "  - button \"Add one\""
+      ],
+      "events": {
+        "ready": [
+          [
+            "Ready"
+          ]
+        ],
+        "rendered": [
+          [
+            2
+          ]
+        ]
+      }
+    }
+  ]
+}

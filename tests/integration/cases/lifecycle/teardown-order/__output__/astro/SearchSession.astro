@@ -1,0 +1,13 @@
+---
+const results = [] as string[];
+---
+
+<section class="search-session" aria-label="Search">
+  <label>Query<input name="query" /></label>
+  <ul aria-label="Results">
+    {results.map((result) => (
+      <li>{result}</li>
+    ))}
+  </ul>
+  <button type="button">Clear results</button>
+</section>

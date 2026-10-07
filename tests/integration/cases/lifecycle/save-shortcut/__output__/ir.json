@@ -1,0 +1,395 @@
+{
+  "irVersion": 1,
+  "file": "lifecycle/save-shortcut/DraftEditor.uf.tsx",
+  "components": [
+    {
+      "name": "DraftEditor",
+      "span": {
+        "start": 73,
+        "end": 761
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@121",
+        "type": {
+          "code": "{ saved: [count: number] }",
+          "span": {
+            "start": 140,
+            "end": 166
+          }
+        },
+        "events": [
+          {
+            "name": "saved",
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 157,
+                    "end": 163
+                  }
+                },
+                "span": {
+                  "start": 150,
+                  "end": 163
+                }
+              }
+            ],
+            "span": {
+              "start": 142,
+              "end": 164
+            }
+          }
+        ],
+        "span": {
+          "start": 115,
+          "end": 170
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@121",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 121,
+            "end": 125
+          }
+        },
+        {
+          "id": "saves@180",
+          "name": "saves",
+          "kind": "state",
+          "span": {
+            "start": 180,
+            "end": 185
+          }
+        },
+        {
+          "id": "onShortcut@208",
+          "name": "onShortcut",
+          "kind": "localFn",
+          "span": {
+            "start": 208,
+            "end": 218
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "saves@180",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 192,
+              "end": 193
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 174,
+            "end": 195
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "onShortcut@208",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 226,
+                    "end": 239
+                  }
+                },
+                "span": {
+                  "start": 219,
+                  "end": 239
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key !== \"s\" || !event.ctrlKey) return;\n    event.preventDefault();\n    saves.value += 1;\n    emit(\"saved\", saves.value);\n  }",
+              "span": {
+                "start": 241,
+                "end": 381
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "saves@180",
+                  "operator": "+=",
+                  "span": {
+                    "start": 328,
+                    "end": 344
+                  },
+                  "target": {
+                    "start": 328,
+                    "end": 339
+                  },
+                  "value": {
+                    "start": 343,
+                    "end": 344
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@121",
+                  "event": "saved",
+                  "span": {
+                    "start": 350,
+                    "end": 376
+                  },
+                  "arguments": [
+                    {
+                      "start": 364,
+                      "end": 375
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "saves@180",
+                  "span": {
+                    "start": 364,
+                    "end": 375
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 218,
+              "end": 381
+            }
+          },
+          "span": {
+            "start": 199,
+            "end": 381
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    document.addEventListener(\"keydown\", onShortcut);\n  }",
+              "span": {
+                "start": 401,
+                "end": 460
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "document",
+                  "span": {
+                    "start": 407,
+                    "end": 415
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onShortcut@208",
+                  "span": {
+                    "start": 444,
+                    "end": 454
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 395,
+              "end": 460
+            }
+          },
+          "span": {
+            "start": 385,
+            "end": 462
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "unmounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    document.removeEventListener(\"keydown\", onShortcut);\n  }",
+              "span": {
+                "start": 484,
+                "end": 546
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "document",
+                  "span": {
+                    "start": 490,
+                    "end": 498
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onShortcut@208",
+                  "span": {
+                    "start": 530,
+                    "end": 540
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 478,
+              "end": 546
+            }
+          },
+          "span": {
+            "start": 466,
+            "end": 548
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "draft-editor",
+            "span": {
+              "start": 574,
+              "end": 594
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Draft",
+            "span": {
+              "start": 595,
+              "end": 613
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Draft",
+                "span": {
+                  "start": 628,
+                  "end": 651
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "textarea",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "draft",
+                    "span": {
+                      "start": 661,
+                      "end": 673
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 651,
+                  "end": 676
+                }
+              }
+            ],
+            "span": {
+              "start": 621,
+              "end": 691
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 701,
+                  "end": 714
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Saved: ",
+                "span": {
+                  "start": 715,
+                  "end": 722
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "saves.value",
+                  "span": {
+                    "start": 723,
+                    "end": 734
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "saves@180",
+                      "span": {
+                        "start": 723,
+                        "end": 734
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 722,
+                  "end": 735
+                }
+              }
+            ],
+            "span": {
+              "start": 698,
+              "end": 739
+            }
+          }
+        ],
+        "span": {
+          "start": 565,
+          "end": 754
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "DraftEditor",
+      "span": {
+        "start": 73,
+        "end": 761
+      }
+    }
+  ],
+  "types": []
+}

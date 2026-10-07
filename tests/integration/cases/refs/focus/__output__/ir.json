@@ -1,0 +1,323 @@
+{
+  "irVersion": 1,
+  "file": "refs/focus/SearchToggle.uf.tsx",
+  "components": [
+    {
+      "name": "SearchToggle",
+      "span": {
+        "start": 47,
+        "end": 624
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "field@96",
+          "name": "field",
+          "kind": "templateRef",
+          "span": {
+            "start": 96,
+            "end": 101
+          }
+        },
+        {
+          "id": "trigger@148",
+          "name": "trigger",
+          "kind": "templateRef",
+          "span": {
+            "start": 148,
+            "end": 155
+          }
+        },
+        {
+          "id": "focusField@207",
+          "name": "focusField",
+          "kind": "localFn",
+          "span": {
+            "start": 207,
+            "end": 217
+          }
+        },
+        {
+          "id": "returnFocus@264",
+          "name": "returnFocus",
+          "kind": "localFn",
+          "span": {
+            "start": 264,
+            "end": 275
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "TemplateRef",
+          "binding": "field@96",
+          "type": {
+            "code": "HTMLInputElement",
+            "span": {
+              "start": 119,
+              "end": 135
+            }
+          },
+          "span": {
+            "start": 90,
+            "end": 139
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "trigger@148",
+          "type": {
+            "code": "HTMLButtonElement",
+            "span": {
+              "start": 173,
+              "end": 190
+            }
+          },
+          "span": {
+            "start": 142,
+            "end": 194
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "focusField@207",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    field.value?.focus();\n  }",
+              "span": {
+                "start": 220,
+                "end": 251
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "field@96",
+                  "span": {
+                    "start": 226,
+                    "end": 237
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 217,
+              "end": 251
+            }
+          },
+          "span": {
+            "start": 198,
+            "end": 251
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "returnFocus@264",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 283,
+                    "end": 296
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 276,
+                  "end": 296
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key === \"Escape\") trigger.value?.focus();\n  }",
+              "span": {
+                "start": 298,
+                "end": 359
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 308,
+                    "end": 317
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "trigger@148",
+                  "span": {
+                    "start": 332,
+                    "end": 345
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 275,
+              "end": 359
+            }
+          },
+          "span": {
+            "start": 255,
+            "end": 359
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "search-toggle",
+            "span": {
+              "start": 381,
+              "end": 402
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "search",
+            "span": {
+              "start": 403,
+              "end": 416
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 432,
+                  "end": 445
+                }
+              },
+              {
+                "kind": "Ref",
+                "binding": "trigger@148",
+                "span": {
+                  "start": 446,
+                  "end": 459
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "focusField@207",
+                  "span": {
+                    "start": 469,
+                    "end": 479
+                  }
+                },
+                "span": {
+                  "start": 460,
+                  "end": 480
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Search",
+                "span": {
+                  "start": 481,
+                  "end": 503
+                }
+              }
+            ],
+            "span": {
+              "start": 424,
+              "end": 512
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "input",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "name",
+                "value": "query",
+                "span": {
+                  "start": 526,
+                  "end": 538
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Search the docs",
+                "span": {
+                  "start": 539,
+                  "end": 567
+                }
+              },
+              {
+                "kind": "Ref",
+                "binding": "field@96",
+                "span": {
+                  "start": 568,
+                  "end": 579
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "keydown",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "returnFocus@264",
+                  "span": {
+                    "start": 591,
+                    "end": 602
+                  }
+                },
+                "span": {
+                  "start": 580,
+                  "end": 603
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 519,
+              "end": 606
+            }
+          }
+        ],
+        "span": {
+          "start": 376,
+          "end": 617
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SearchToggle",
+      "span": {
+        "start": 47,
+        "end": 624
+      }
+    }
+  ],
+  "types": []
+}

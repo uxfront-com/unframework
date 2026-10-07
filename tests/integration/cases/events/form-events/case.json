@@ -1,0 +1,6 @@
+{
+  "description": "Form events with DOM semantics: input per key, change on a text field when committed, change on a select and a checkbox, focus and blur, and a prevented submit.",
+  "ssr": {
+    "initial": {}
+  }
+}

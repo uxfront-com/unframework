@@ -174,7 +174,7 @@ describe("parseHtml", () => {
   });
 });
 
-// Design §6.4 (ADR-0044): what frameworks write differently for the same DOM state, and only
+// ADR-0044: what frameworks write differently for the same DOM state, and only
 // that, is made the same on both sides of every comparison.
 describe("comparableValue", () => {
   it("compares a class by its tokens, sorted, and drops one with none", () => {
@@ -236,7 +236,7 @@ describe("domOf", () => {
     });
   });
 
-  it("keeps SVG's names as written, and compares class and style as §6.4 says", () => {
+  it("keeps SVG's names as written, and compares class and style as ADR-0044 says", () => {
     expect(
       domOf(
         el(
@@ -439,6 +439,14 @@ function testTarget(emit: Target["emit"], unsupported?: CapabilityName): Target 
       "static-attribute": cell("static-attribute"),
       listbox: cell("listbox"),
       interactivity: cell("interactivity"),
+      "event-capture": cell("event-capture"),
+      "event-once": cell("event-once"),
+      "event-passive": cell("event-passive"),
+      "event-semantics": cell("event-semantics"),
+      "conditional-event-control": cell("conditional-event-control"),
+      "use-id": cell("use-id"),
+      "next-tick": cell("next-tick"),
+      "late-prop": cell("late-prop"),
       props: cell("props"),
       interpolation: cell("interpolation"),
       conditional: cell("conditional"),
@@ -630,7 +638,7 @@ describe("the bound attribute sweep", () => {
     ]) {
       expect(names).toContain(name);
     }
-    // Not bindable in M1 (design §1.5): Angular refuses them, or they bypass its checks.
+    // Not bindable in M1 (ADR-0037): Angular refuses them, or they bypass its checks.
     for (const name of ['<iframe src> = "about:blank"', "<div hidden> = true"]) {
       expect(names).not.toContain(name);
     }

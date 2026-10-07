@@ -1,0 +1,1512 @@
+{
+  "irVersion": 1,
+  "file": "events/focus-and-change/ProfileFields.uf.tsx",
+  "components": [
+    {
+      "name": "ProfileFields",
+      "span": {
+        "start": 49,
+        "end": 2389
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@99",
+        "type": {
+          "code": "{ firstNickname: [nickname: string] }",
+          "span": {
+            "start": 118,
+            "end": 155
+          }
+        },
+        "events": [
+          {
+            "name": "firstNickname",
+            "parameters": [
+              {
+                "name": "nickname",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 146,
+                    "end": 152
+                  }
+                },
+                "span": {
+                  "start": 136,
+                  "end": 152
+                }
+              }
+            ],
+            "span": {
+              "start": 120,
+              "end": 153
+            }
+          }
+        ],
+        "span": {
+          "start": 93,
+          "end": 159
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@99",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 99,
+            "end": 103
+          }
+        },
+        {
+          "id": "log@169",
+          "name": "log",
+          "kind": "state",
+          "span": {
+            "start": 169,
+            "end": 172
+          }
+        },
+        {
+          "id": "nickname@202",
+          "name": "nickname",
+          "kind": "state",
+          "span": {
+            "start": 202,
+            "end": 210
+          }
+        },
+        {
+          "id": "cardFocuses@230",
+          "name": "cardFocuses",
+          "kind": "state",
+          "span": {
+            "start": 230,
+            "end": 241
+          }
+        },
+        {
+          "id": "cardBlurs@260",
+          "name": "cardBlurs",
+          "kind": "state",
+          "span": {
+            "start": 260,
+            "end": 269
+          }
+        },
+        {
+          "id": "record@292",
+          "name": "record",
+          "kind": "localFn",
+          "span": {
+            "start": 292,
+            "end": 298
+          }
+        },
+        {
+          "id": "hold@369",
+          "name": "hold",
+          "kind": "localFn",
+          "span": {
+            "start": 369,
+            "end": 373
+          }
+        },
+        {
+          "id": "entry@2286",
+          "name": "entry",
+          "kind": "loopVar",
+          "span": {
+            "start": 2286,
+            "end": 2291
+          }
+        },
+        {
+          "id": "index@2293",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 2293,
+            "end": 2298
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "log@169",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 179,
+              "end": 187
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 189,
+              "end": 191
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 163,
+            "end": 193
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "nickname@202",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 217,
+              "end": 219
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 196,
+            "end": 221
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "cardFocuses@230",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 248,
+              "end": 249
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 224,
+            "end": 251
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "cardBlurs@260",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 276,
+              "end": 277
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 254,
+            "end": 279
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "record@292",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "line",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 305,
+                    "end": 311
+                  }
+                },
+                "span": {
+                  "start": 299,
+                  "end": 311
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    log.value = [...log.value, line];\n  }",
+              "span": {
+                "start": 313,
+                "end": 356
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "log@169",
+                  "operator": "=",
+                  "span": {
+                    "start": 319,
+                    "end": 351
+                  },
+                  "target": {
+                    "start": 319,
+                    "end": 328
+                  },
+                  "value": {
+                    "start": 331,
+                    "end": 351
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "log@169",
+                  "span": {
+                    "start": 335,
+                    "end": 344
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 298,
+              "end": 356
+            }
+          },
+          "span": {
+            "start": 283,
+            "end": 356
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "hold@369",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "MouseEvent",
+                  "span": {
+                    "start": 381,
+                    "end": 391
+                  }
+                },
+                "event": "MouseEvent",
+                "span": {
+                  "start": 374,
+                  "end": 391
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    event.preventDefault();\n    record(\"locked click\");\n  }",
+              "span": {
+                "start": 393,
+                "end": 454
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 399,
+                    "end": 419
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "record@292",
+                  "span": {
+                    "start": 427,
+                    "end": 433
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "preventDefault",
+                "span": {
+                  "start": 399,
+                  "end": 422
+                }
+              }
+            ],
+            "span": {
+              "start": 373,
+              "end": 454
+            }
+          },
+          "span": {
+            "start": 360,
+            "end": 454
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "profile-fields",
+            "span": {
+              "start": 480,
+              "end": 502
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Profile",
+            "span": {
+              "start": 503,
+              "end": 523
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "name-group",
+                "span": {
+                  "start": 544,
+                  "end": 562
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "group",
+                "span": {
+                  "start": 571,
+                  "end": 583
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Name fields",
+                "span": {
+                  "start": 592,
+                  "end": 616
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "focusin",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "record(\"group focusin\")",
+                      "span": {
+                        "start": 642,
+                        "end": 665
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "record@292",
+                          "span": {
+                            "start": 642,
+                            "end": 648
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 636,
+                      "end": 665
+                    }
+                  },
+                  "span": {
+                    "start": 636,
+                    "end": 665
+                  }
+                },
+                "span": {
+                  "start": 625,
+                  "end": 666
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "focusout",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "record(\"group focusout\")",
+                      "span": {
+                        "start": 693,
+                        "end": 717
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "record@292",
+                          "span": {
+                            "start": 693,
+                            "end": 699
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 687,
+                      "end": 717
+                    }
+                  },
+                  "span": {
+                    "start": 687,
+                    "end": 717
+                  }
+                },
+                "span": {
+                  "start": 675,
+                  "end": 718
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "label",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Name",
+                    "span": {
+                      "start": 742,
+                      "end": 768
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "input",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "name",
+                        "value": "name",
+                        "span": {
+                          "start": 787,
+                          "end": 798
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "focus",
+                        "handler": {
+                          "kind": "Inline",
+                          "function": {
+                            "parameters": [],
+                            "body": {
+                              "code": "record(\"name focus\")",
+                              "span": {
+                                "start": 826,
+                                "end": 846
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Binding",
+                                  "binding": "record@292",
+                                  "span": {
+                                    "start": 826,
+                                    "end": 832
+                                  },
+                                  "call": true
+                                }
+                              ]
+                            },
+                            "expression": true,
+                            "span": {
+                              "start": 820,
+                              "end": 846
+                            }
+                          },
+                          "span": {
+                            "start": 820,
+                            "end": 846
+                          }
+                        },
+                        "span": {
+                          "start": 811,
+                          "end": 847
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "blur",
+                        "handler": {
+                          "kind": "Inline",
+                          "function": {
+                            "parameters": [],
+                            "body": {
+                              "code": "record(\"name blur\")",
+                              "span": {
+                                "start": 874,
+                                "end": 893
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Binding",
+                                  "binding": "record@292",
+                                  "span": {
+                                    "start": 874,
+                                    "end": 880
+                                  },
+                                  "call": true
+                                }
+                              ]
+                            },
+                            "expression": true,
+                            "span": {
+                              "start": 868,
+                              "end": 893
+                            }
+                          },
+                          "span": {
+                            "start": 868,
+                            "end": 893
+                          }
+                        },
+                        "span": {
+                          "start": 860,
+                          "end": 894
+                        }
+                      }
+                    ],
+                    "children": [],
+                    "span": {
+                      "start": 768,
+                      "end": 907
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 735,
+                  "end": 924
+                }
+              }
+            ],
+            "span": {
+              "start": 531,
+              "end": 937
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Nickname",
+                "span": {
+                  "start": 951,
+                  "end": 977
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "nickname",
+                    "span": {
+                      "start": 994,
+                      "end": 1009
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "change",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "Event",
+                            "span": {
+                              "start": 1031,
+                              "end": 1036
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "(nickname.value = (event.currentTarget as HTMLInputElement).value)",
+                          "span": {
+                            "start": 1041,
+                            "end": 1107
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "nickname@202",
+                              "operator": "=",
+                              "span": {
+                                "start": 1041,
+                                "end": 1107
+                              },
+                              "target": {
+                                "start": 1042,
+                                "end": 1056
+                              },
+                              "value": {
+                                "start": 1059,
+                                "end": 1106
+                              },
+                              "arrowBody": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 1060,
+                                "end": 1079
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1030,
+                          "end": 1107
+                        }
+                      },
+                      "span": {
+                        "start": 1030,
+                        "end": 1107
+                      }
+                    },
+                    "span": {
+                      "start": 1020,
+                      "end": 1108
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "change",
+                    "once": true,
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "Event",
+                            "span": {
+                              "start": 1134,
+                              "end": 1139
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "emit(\"firstNickname\", (event.currentTarget as HTMLInputElement).value)",
+                          "span": {
+                            "start": 1156,
+                            "end": 1226
+                          },
+                          "refs": [
+                            {
+                              "kind": "Emit",
+                              "binding": "emit@99",
+                              "event": "firstNickname",
+                              "span": {
+                                "start": 1156,
+                                "end": 1226
+                              },
+                              "arguments": [
+                                {
+                                  "start": 1178,
+                                  "end": 1225
+                                }
+                              ]
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 1179,
+                                "end": 1198
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1133,
+                          "end": 1226
+                        }
+                      },
+                      "span": {
+                        "start": 1133,
+                        "end": 1226
+                      }
+                    },
+                    "span": {
+                      "start": 1119,
+                      "end": 1238
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 977,
+                  "end": 1249
+                }
+              }
+            ],
+            "span": {
+              "start": 944,
+              "end": 1264
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Nickname: ",
+                "span": {
+                  "start": 1274,
+                  "end": 1284
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "nickname.value",
+                  "span": {
+                    "start": 1285,
+                    "end": 1299
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "nickname@202",
+                      "span": {
+                        "start": 1285,
+                        "end": 1299
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1284,
+                  "end": 1300
+                }
+              }
+            ],
+            "span": {
+              "start": 1271,
+              "end": 1304
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "checkbox",
+                    "span": {
+                      "start": 1344,
+                      "end": 1359
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "public",
+                    "span": {
+                      "start": 1370,
+                      "end": 1383
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "record(\"public click\")",
+                          "span": {
+                            "start": 1409,
+                            "end": 1431
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "record@292",
+                              "span": {
+                                "start": 1409,
+                                "end": 1415
+                              },
+                              "call": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1403,
+                          "end": 1431
+                        }
+                      },
+                      "span": {
+                        "start": 1403,
+                        "end": 1431
+                      }
+                    },
+                    "span": {
+                      "start": 1394,
+                      "end": 1432
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "input",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "record(\"public input\")",
+                          "span": {
+                            "start": 1458,
+                            "end": 1480
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "record@292",
+                              "span": {
+                                "start": 1458,
+                                "end": 1464
+                              },
+                              "call": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1452,
+                          "end": 1480
+                        }
+                      },
+                      "span": {
+                        "start": 1452,
+                        "end": 1480
+                      }
+                    },
+                    "span": {
+                      "start": 1443,
+                      "end": 1481
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "change",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "record(\"public change\")",
+                          "span": {
+                            "start": 1508,
+                            "end": 1531
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "record@292",
+                              "span": {
+                                "start": 1508,
+                                "end": 1514
+                              },
+                              "call": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1502,
+                          "end": 1531
+                        }
+                      },
+                      "span": {
+                        "start": 1502,
+                        "end": 1531
+                      }
+                    },
+                    "span": {
+                      "start": 1492,
+                      "end": 1532
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 1327,
+                  "end": 1543
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "Public profile",
+                "span": {
+                  "start": 1543,
+                  "end": 1573
+                }
+              }
+            ],
+            "span": {
+              "start": 1311,
+              "end": 1581
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "checkbox",
+                    "span": {
+                      "start": 1621,
+                      "end": 1636
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "locked",
+                    "span": {
+                      "start": 1647,
+                      "end": 1660
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Function",
+                      "binding": "hold@369",
+                      "span": {
+                        "start": 1680,
+                        "end": 1684
+                      }
+                    },
+                    "span": {
+                      "start": 1671,
+                      "end": 1685
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "change",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "record(\"locked change\")",
+                          "span": {
+                            "start": 1712,
+                            "end": 1735
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "record@292",
+                              "span": {
+                                "start": 1712,
+                                "end": 1718
+                              },
+                              "call": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1706,
+                          "end": 1735
+                        }
+                      },
+                      "span": {
+                        "start": 1706,
+                        "end": 1735
+                      }
+                    },
+                    "span": {
+                      "start": 1696,
+                      "end": 1736
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 1604,
+                  "end": 1747
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "Locked",
+                "span": {
+                  "start": 1747,
+                  "end": 1769
+                }
+              }
+            ],
+            "span": {
+              "start": 1588,
+              "end": 1777
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "card",
+                "span": {
+                  "start": 1797,
+                  "end": 1809
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "group",
+                "span": {
+                  "start": 1818,
+                  "end": 1830
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Card",
+                "span": {
+                  "start": 1839,
+                  "end": 1856
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "tabindex",
+                "value": "-1",
+                "span": {
+                  "start": 1865,
+                  "end": 1878
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "focus",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "cardFocuses.value++",
+                      "span": {
+                        "start": 1902,
+                        "end": 1921
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "cardFocuses@230",
+                          "operator": "++",
+                          "span": {
+                            "start": 1902,
+                            "end": 1921
+                          },
+                          "target": {
+                            "start": 1902,
+                            "end": 1919
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1896,
+                      "end": 1921
+                    }
+                  },
+                  "span": {
+                    "start": 1896,
+                    "end": 1921
+                  }
+                },
+                "span": {
+                  "start": 1887,
+                  "end": 1922
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "blur",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "cardBlurs.value++",
+                      "span": {
+                        "start": 1945,
+                        "end": 1962
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "cardBlurs@260",
+                          "operator": "++",
+                          "span": {
+                            "start": 1945,
+                            "end": 1962
+                          },
+                          "target": {
+                            "start": 1945,
+                            "end": 1960
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1939,
+                      "end": 1962
+                    }
+                  },
+                  "span": {
+                    "start": 1939,
+                    "end": 1962
+                  }
+                },
+                "span": {
+                  "start": 1931,
+                  "end": 1963
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "cardFocuses.value > cardBlurs.value ? \"Card focused\" : \"Card not focused\"",
+                      "span": {
+                        "start": 1984,
+                        "end": 2057
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "cardFocuses@230",
+                          "span": {
+                            "start": 1984,
+                            "end": 2001
+                          }
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "cardBlurs@260",
+                          "span": {
+                            "start": 2004,
+                            "end": 2019
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 1983,
+                      "end": 2058
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1980,
+                  "end": 2062
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Card blurs: ",
+                    "span": {
+                      "start": 2074,
+                      "end": 2086
+                    }
+                  },
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "cardBlurs.value",
+                      "span": {
+                        "start": 2087,
+                        "end": 2102
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "cardBlurs@260",
+                          "span": {
+                            "start": 2087,
+                            "end": 2102
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 2086,
+                      "end": 2103
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2071,
+                  "end": 2107
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 2124,
+                      "end": 2137
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "record(\"card button\")",
+                          "span": {
+                            "start": 2153,
+                            "end": 2174
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "record@292",
+                              "span": {
+                                "start": 2153,
+                                "end": 2159
+                              },
+                              "call": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 2147,
+                          "end": 2174
+                        }
+                      },
+                      "span": {
+                        "start": 2147,
+                        "end": 2174
+                      }
+                    },
+                    "span": {
+                      "start": 2138,
+                      "end": 2175
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Inside the card",
+                    "span": {
+                      "start": 2176,
+                      "end": 2211
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2116,
+                  "end": 2220
+                }
+              }
+            ],
+            "span": {
+              "start": 1784,
+              "end": 2233
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Log",
+                "span": {
+                  "start": 2244,
+                  "end": 2260
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "log.value",
+                  "span": {
+                    "start": 2271,
+                    "end": 2280
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "log@169",
+                      "span": {
+                        "start": 2271,
+                        "end": 2280
+                      }
+                    }
+                  ]
+                },
+                "item": "entry@2286",
+                "index": "index@2293",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 2324,
+                    "end": 2329
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@2293",
+                      "span": {
+                        "start": 2324,
+                        "end": 2329
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "entry",
+                        "span": {
+                          "start": 2332,
+                          "end": 2337
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "entry@2286",
+                            "span": {
+                              "start": 2332,
+                              "end": 2337
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 2331,
+                        "end": 2338
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 2315,
+                    "end": 2343
+                  }
+                },
+                "span": {
+                  "start": 2271,
+                  "end": 2354
+                }
+              }
+            ],
+            "span": {
+              "start": 2240,
+              "end": 2367
+            }
+          }
+        ],
+        "span": {
+          "start": 471,
+          "end": 2382
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ProfileFields",
+      "span": {
+        "start": 49,
+        "end": 2389
+      }
+    }
+  ],
+  "types": []
+}

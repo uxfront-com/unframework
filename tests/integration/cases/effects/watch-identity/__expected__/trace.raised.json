@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Raise the limit' })",
+      "dom": [
+        "<section aria-label=\"Books\" class=\"book-shelf\">",
+        "  <ul aria-label=\"Shelf\">",
+        "    <li>",
+        "      <span>",
+        "        \"Dune\"",
+        "      </span>",
+        "      <button type=\"button\">",
+        "        \"Focus Dune\"",
+        "      </button>",
+        "      <button type=\"button\">",
+        "        \"Peek Dune\"",
+        "      </button>",
+        "      <button type=\"button\">",
+        "        \"Read Dune\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <span>",
+        "        \"Emma\"",
+        "      </span>",
+        "      <button type=\"button\">",
+        "        \"Focus Emma\"",
+        "      </button>",
+        "      <button type=\"button\">",
+        "        \"Peek Emma\"",
+        "      </button>",
+        "      <button type=\"button\">",
+        "        \"Read Emma\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "  <p>",
+        "    \"Focused: none\"",
+        "  </p>",
+        "  <p>",
+        "    \"Books read: 0\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Count again\"",
+        "  </button>",
+        "  <button aria-expanded=\"false\" type=\"button\">",
+        "    \"Details\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Start\"",
+        "  </button>",
+        "  <p role=\"status\">",
+        "    \"Idle: idle\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Raise the limit\"",
+        "  </button>",
+        "  <p>",
+        "    \"Range: 1 to 6\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Books\":",
+        "  - list \"Shelf\":",
+        "    - listitem:",
+        "      - text: Dune",
+        "      - button \"Focus Dune\"",
+        "      - button \"Peek Dune\"",
+        "      - button \"Read Dune\"",
+        "    - listitem:",
+        "      - text: Emma",
+        "      - button \"Focus Emma\"",
+        "      - button \"Peek Emma\"",
+        "      - button \"Read Emma\"",
+        "  - paragraph: \"Focused: none\"",
+        "  - paragraph: \"Books read: 0\"",
+        "  - button \"Count again\"",
+        "  - button \"Details\"",
+        "  - button \"Start\"",
+        "  - status: \"Idle: idle\"",
+        "  - button \"Raise the limit\"",
+        "  - paragraph: \"Range: 1 to 6\""
+      ],
+      "events": {
+        "summed": [
+          [
+            7
+          ]
+        ],
+        "toggled": [
+          [
+            false
+          ]
+        ]
+      }
+    }
+  ]
+}

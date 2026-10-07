@@ -1,0 +1,16 @@
+- region "Inbox":
+  - button "Find Ann"
+  - button "Find Anna"
+  - button "Answer lookups"
+  - list "Answers":
+    - listitem: "Anna: found"
+  - button "Switch order"
+  - button "Answer order"
+  - paragraph: "Order: none"
+  - button "Load"
+  - button "Refresh"
+  - button "Reply"
+  - button "Fail"
+  - status: 0 messages
+  - button "Mark twice"
+  - paragraph: "Unread: 0"

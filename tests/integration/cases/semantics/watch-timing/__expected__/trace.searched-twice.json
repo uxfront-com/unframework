@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Search boots' })",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-pager\">",
+        "  <p role=\"status\">",
+        "    \"Results for boots, page 1\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Search boots\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Search sandals\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Next page\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Skip two pages\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - status: Results for boots, page 1",
+        "  - button \"Search boots\"",
+        "  - button \"Search sandals\"",
+        "  - button \"Next page\"",
+        "  - button \"Skip two pages\""
+      ],
+      "events": {
+        "queryRun": [
+          [
+            "boots",
+            ""
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Next page' })",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-pager\">",
+        "  <p role=\"status\">",
+        "    \"Results for boots, page 2\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Search boots\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Search sandals\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Next page\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Skip two pages\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - status: Results for boots, page 2",
+        "  - button \"Search boots\"",
+        "  - button \"Search sandals\"",
+        "  - button \"Next page\"",
+        "  - button \"Skip two pages\""
+      ],
+      "events": {
+        "pageRun": [
+          [
+            2,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Search boots' })",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-pager\">",
+        "  <p role=\"status\">",
+        "    \"Results for boots, page 1\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Search boots\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Search sandals\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Next page\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Skip two pages\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - status: Results for boots, page 1",
+        "  - button \"Search boots\"",
+        "  - button \"Search sandals\"",
+        "  - button \"Next page\"",
+        "  - button \"Skip two pages\""
+      ],
+      "events": {
+        "pageRun": [
+          [
+            1,
+            2
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Search sandals' })",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-pager\">",
+        "  <p role=\"status\">",
+        "    \"Results for sandals, page 1\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Search boots\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Search sandals\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Next page\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Skip two pages\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - status: Results for sandals, page 1",
+        "  - button \"Search boots\"",
+        "  - button \"Search sandals\"",
+        "  - button \"Next page\"",
+        "  - button \"Skip two pages\""
+      ],
+      "events": {
+        "cleanedUp": [
+          [
+            "query"
+          ]
+        ],
+        "queryRun": [
+          [
+            "sandals",
+            "boots"
+          ]
+        ]
+      }
+    }
+  ]
+}

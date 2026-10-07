@@ -1,0 +1,6 @@
+{
+  "description": "watchEffect runs after mount and after any value it reads changes, a state or a prop, with its cleanup before each new run.",
+  "ssr": {
+    "inbox": { "props": { "appName": "Inbox" } }
+  }
+}

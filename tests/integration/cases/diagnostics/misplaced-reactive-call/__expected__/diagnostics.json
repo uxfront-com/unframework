@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2005",
+    "severity": "error",
+    "message": "`watch` is called inside other code: the macros and reactive APIs are called once, at the top level of the component's body, where every target runs the setup once.",
+    "file": "diagnostics/misplaced-reactive-call/Disclosure.uf.tsx",
+    "start": {
+      "line": 11,
+      "column": 5,
+      "offset": 413
+    },
+    "end": {
+      "line": 11,
+      "column": 10,
+      "offset": 418
+    },
+    "help": "Move the call to the top level of the component's body, as a statement or a `const`'s value."
+  }
+]

@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add a copy' })",
+      "dom": [
+        "<section aria-label=\"File\" class=\"delete-file\">",
+        "  <p>",
+        "    \"report.pdf, 2 copies\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add a copy\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Confirm the deletion\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"File\":",
+        "  - paragraph: report.pdf, 2 copies",
+        "  - button \"Add a copy\"",
+        "  - button \"Confirm the deletion\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "rerender {\"fileName\":\"report-final.pdf\"}",
+      "dom": [
+        "<section aria-label=\"File\" class=\"delete-file\">",
+        "  <p>",
+        "    \"report-final.pdf, 2 copies\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add a copy\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Confirm the deletion\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"File\":",
+        "  - paragraph: report-final.pdf, 2 copies",
+        "  - button \"Add a copy\"",
+        "  - button \"Confirm the deletion\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Confirm the deletion' })",
+      "dom": [
+        "<section aria-label=\"File\" class=\"delete-file\">",
+        "  <p>",
+        "    \"report-final.pdf, 2 copies\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add a copy\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Delete\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"File\":",
+        "  - paragraph: report-final.pdf, 2 copies",
+        "  - button \"Add a copy\"",
+        "  - button \"Delete\""
+      ],
+      "events": {
+        "deleted": [
+          [
+            "report-final.pdf",
+            2
+          ]
+        ]
+      }
+    }
+  ]
+}

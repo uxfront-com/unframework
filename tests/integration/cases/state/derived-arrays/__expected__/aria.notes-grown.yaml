@@ -1,0 +1,27 @@
+- region "Tasks":
+  - list "Open":
+    - listitem:
+      - text: Write docs
+      - button "Finish Write docs"
+    - listitem:
+      - text: Fix login
+      - button "Finish Fix login"
+    - listitem:
+      - text: Plan release
+      - button "Finish Plan release"
+  - paragraph: "Alphabetical: Fix login, Plan release, Write docs"
+  - paragraph: "Newest first: Fix login, Write docs, Plan release"
+  - list "Kinds":
+    - listitem: "code: 2"
+    - listitem: "docs: 1"
+  - paragraph: "Task 2: Write docs"
+  - paragraph: "Code tasks: Plan release, Fix login"
+  - paragraph: "Finished code tasks: 0"
+  - paragraph: "Done: nothing"
+  - button "Tag urgent"
+  - button "Tag later"
+  - paragraph: "Tags:"
+  - text: Notes
+  - textbox "Notes": a b c d
+  - text: Summary
+  - textbox "Summary"

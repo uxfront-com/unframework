@@ -1,0 +1,15 @@
+---
+export interface ImportQueueProps {
+  files: string[];
+}
+
+export type Props = ImportQueueProps;
+
+const status = "idle" as string;
+const attempts = 0 as number;
+---
+
+<section class="import-queue" aria-label="Import">
+  <button type="button">Import all</button>
+  <p role="status">{status}, {attempts} attempts</p>
+</section>

@@ -1,0 +1,20 @@
+- region "Books":
+  - list "Shelf":
+    - listitem:
+      - text: Dune
+      - button "Focus Dune"
+      - button "Peek Dune"
+      - button "Read Dune"
+    - listitem:
+      - text: Emma
+      - button "Focus Emma"
+      - button "Peek Emma"
+      - button "Read Emma"
+  - paragraph: "Focused: none"
+  - paragraph: "Books read: 1"
+  - button "Count again"
+  - button "Details"
+  - button "Start"
+  - status: "Idle: idle"
+  - button "Raise the limit"
+  - paragraph: "Range: 1 to 5"

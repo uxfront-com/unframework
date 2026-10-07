@@ -1,0 +1,64 @@
+[
+  {
+    "code": "UF3004",
+    "severity": "error",
+    "message": "`onKeyDown` is written `onKeydown`: a listener is named as Vue names it, `on` and the DOM event's name, which every target spells its own way.",
+    "file": "diagnostics/non-canonical-event/ShortcutField.uf.tsx",
+    "start": {
+      "line": 16,
+      "column": 52,
+      "offset": 534
+    },
+    "end": {
+      "line": 16,
+      "column": 61,
+      "offset": 543
+    },
+    "fixes": [
+      {
+        "title": "Rename `onKeyDown` to `onKeydown`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 534,
+              "end": 543
+            },
+            "text": "onKeydown"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "code": "UF3004",
+    "severity": "error",
+    "message": "`onDoubleClick` is written `onDblclick`: a listener is named as Vue names it, `on` and the DOM event's name, which every target spells its own way.",
+    "file": "diagnostics/non-canonical-event/ShortcutField.uf.tsx",
+    "start": {
+      "line": 17,
+      "column": 29,
+      "offset": 587
+    },
+    "end": {
+      "line": 17,
+      "column": 42,
+      "offset": 600
+    },
+    "fixes": [
+      {
+        "title": "Rename `onDoubleClick` to `onDblclick`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 587,
+              "end": 600
+            },
+            "text": "onDblclick"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,6 +1,6 @@
 # ADR-0031: Normalisation removes only the target's own noise, and recognises generated ids by provenance
 
-- **Status:** Accepted, amended by ADR-0044
+- **Status:** Accepted, amended by ADR-0044 and ADR-0049
 - **Date:** 2026-10-01
 - **Plan:** §7.5 (normalisation), §7.7, P2; refines ADR-0018 and ADR-0024
 

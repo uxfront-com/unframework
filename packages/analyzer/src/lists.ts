@@ -1,4 +1,4 @@
-// Lists (ADR-0036, design §1.4): `source.map((item, index) => <element key={…}>…</element>)` as
+// Lists (ADR-0036): `source.map((item, index) => <element key={…}>…</element>)` as
 // a child lowers to a For, which each target writes as its own loop (`v-for`, `{#each}`,
 // `@for`). M1 guarantees a list's content and order; DOM identity on reorder lands later.
 
@@ -294,7 +294,7 @@ function bodyProblem(callback: AST.ArrowFunctionExpression): { message: string; 
 }
 
 /**
- * Lifts a list's key off its element (design §1.4): an expression that reads the item or the
+ * Lifts a list's key off its element (ADR-0036): an expression that reads the item or the
  * index and is a string or a number. A missing key (UF3013) and a constant one (UF3014) get a
  * fix that keys the element by its index, adding the index parameter under a free name.
  */

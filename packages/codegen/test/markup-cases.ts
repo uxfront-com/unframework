@@ -1,10 +1,10 @@
-// What every markup dialect must render (design §1, ADR-0035 to ADR-0040), as small IR trees with
+// What every markup dialect must render (ADR-0035 to ADR-0040), as small IR trees with
 // props and the HTML each must render for them. The markup targets' `markup-semantics` tests
 // print the trees with their dialect, wrap them in a hand-written component that declares the
 // props as their framework does, and compile and server-render them with the framework itself:
-// what the dialect prints, not what a target will one day emit, is under test (wave 3 lands the
-// emitters). The trees are written as code snippets whose references the builder resolves, as
-// the analyser would; the render-parity kit's source-based fuzz comes with wave 2b.
+// what the dialect prints is under test, apart from what a target's emitter chooses to print.
+// The trees are written as code snippets whose references the builder resolves, as the analyser
+// would; the render-parity kit (./render-parity.ts) lowers authored sources instead.
 import {
   ALLOWED_GLOBALS,
   createBinding,
@@ -401,7 +401,7 @@ function collectGlobals(value: unknown, found: Set<string>): Set<string> {
 
 /**
  * HTML parsed as the kit parses a server render (comments dropped, text merged), with
- * self-closing foreign elements opened and closed, and canonical as design §6.4 says frameworks
+ * self-closing foreign elements opened and closed, and canonical as ADR-0044 says frameworks
  * may differ: a `class` or `style` with nothing in it is no attribute, class tokens are sorted,
  * and style declarations without a value are dropped and the others sorted.
  */
@@ -469,7 +469,7 @@ export function passedProps(props: Suite["props"]): Record<string, unknown> {
 const item = (id: string, label: string, on = true) => ({ id, label, on });
 
 /**
- * The cases, by what they show. Each holds only values inside the contract (design §1.9): keys
+ * The cases, by what they show. Each holds only values inside the contract (ADR-0035): keys
  * are unique, arrays dense, numbers in attributes finite.
  */
 export const MARKUP_CASES: readonly MarkupCase[] = [

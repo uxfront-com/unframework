@@ -1,0 +1,17 @@
+---
+const status = "Loading" as string;
+const results = [] as string[];
+const doubled = 0 as number;
+---
+
+<section class="search-results" aria-label="Search">
+  <p>{status}</p>
+  <label>Query<input name="query" /></label>
+  <ul aria-label="Results">
+    {results.map((result) => (
+      <li>{result}</li>
+    ))}
+  </ul>
+  <output>{doubled}</output>
+  <button type="button">Add one</button>
+</section>

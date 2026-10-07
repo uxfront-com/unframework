@@ -5,6 +5,7 @@ import { expect, inject, it, onTestFinished } from "vitest";
 import "../../../../../src/setup.ts";
 import { expectLayerFailure } from "../../../../../src/browser/behaviour.ts";
 import { currentTarget, describeTargets, mount } from "../../../../../src/index.ts";
+import { NO_INTERACTION_SKIP } from "../../../../../src/layers.ts";
 import { normalizeHtml } from "../../../../../src/normalize/index.ts";
 import { LIVE_REFERENCE_SKIP } from "../../../../../src/visual-types.ts";
 import "../../../dom-target.ts";
@@ -18,7 +19,7 @@ describeTargets("stub/match", () => {
     expect(task.suite?.name).toBe("stub/match [dom]");
   });
 
-  it("passes L7 and L11, skips the live reference's L10, and records each of them", async ({
+  it("passes L7 and L11, skips L9 and the live reference's L10, and records each of them", async ({
     task,
   }) => {
     onTestFinished(() => {
@@ -33,6 +34,8 @@ describeTargets("stub/match", () => {
       target: "dom",
       layers: {
         L7: { status: "pass" },
+        // No action or rerender led to the scenario: there is no trace to compare.
+        L9: { status: "skip", reason: NO_INTERACTION_SKIP },
         // "dom" is the reference and pixels are live: its capture is what the others would be
         // compared with, so nothing was compared, and a pass would claim otherwise.
         L10: { status: "skip", reason: LIVE_REFERENCE_SKIP },
@@ -65,7 +68,8 @@ describeTargets("stub/match", () => {
     "fails the test, after its own assertions, with a layer that failed",
     async ({ task }) => {
       const view = await mount(greeting);
-      await view.expectParity("absent");
+      // A name of its own: a spec checks each scenario once.
+      await view.expectParity("missing");
       expect(task.meta.uf?.layers.L7?.status).toBe("fail");
       await expect.element(view.getByText("Hello, world!")).toBeVisible();
     },

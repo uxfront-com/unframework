@@ -7,12 +7,14 @@
 // lints a `.vue`, `.svelte` or `.astro` file's script without `no-unused-vars`, which cannot see
 // the markup's reads, so those toolchains run typescript-eslint's rule in ESLint instead. The
 // probes check that an output one target's lint rejects for a baseline rule, every target's
-// does.
+// does. Qwik's type-aware rules, which oxlint gives a JS plugin no types for, run in ESLint from
+// a lint host on TypeScript 6 beside its toolchain (the M2 amendment of ADR-0042).
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 
-import { resolveToolBin } from "@unframework/codegen/toolchain-node";
+import { resolveInstalled, resolveToolBin } from "@unframework/codegen/toolchain-node";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { ROOT, toolchainDir } from "./paths.ts";
@@ -43,6 +45,16 @@ const FRAMEWORK_LAYER: Record<string, "oxlint" | "eslint"> = {
   angular: "eslint",
 };
 
+/**
+ * The type-aware framework rules a toolchain runs in ESLint, from the lint host it installs
+ * beside it, on TypeScript 6: typescript-eslint, which gives the rules their types, cannot load
+ * the TypeScript 7 the toolchain's tsgo needs (L4). Its oxlint turns them off, and the host runs
+ * them alone.
+ */
+const TYPED_LAYER: Record<string, { host: string; rules: readonly string[] }> = {
+  qwik: { host: "qwik-eslint", rules: ["qwik/use-async-top", "qwik/valid-lexical-scope"] },
+};
+
 /** A baseline rule every probe breaks: a statement no output has a reason to hold. */
 const BASELINE_RULE = "no-debugger";
 
@@ -62,11 +74,12 @@ const UNUSED_RULE: Record<string, string> = {
 };
 
 /**
- * Each target's probe, and the framework rule it breaks besides {@link BASELINE_RULE} and
- * {@link UNUSED_RULE}. But for Angular's, whose template reads the class, its markup reads a
- * binding beside the unused one, which must not count.
+ * Each target's probe, and the framework rules it breaks besides {@link BASELINE_RULE} and
+ * {@link UNUSED_RULE}: one, and one of its {@link TYPED_LAYER} too. But for Angular's, whose
+ * template reads the class, its markup reads a binding beside the unused one, which must not
+ * count.
  */
-const PROBES: Record<string, { file: string; contents: string; rule: string }> = {
+const PROBES: Record<string, { file: string; contents: string; rules: readonly string[] }> = {
   react: {
     file: "Probe.tsx",
     contents: [
@@ -78,7 +91,7 @@ const PROBES: Record<string, { file: string; contents: string; rule: string }> =
       "}",
       "",
     ].join("\n"),
-    rule: "react/no-unknown-property",
+    rules: ["react/no-unknown-property"],
   },
   solid: {
     file: "Probe.tsx",
@@ -91,7 +104,7 @@ const PROBES: Record<string, { file: string; contents: string; rule: string }> =
       "}",
       "",
     ].join("\n"),
-    rule: "solid/no-react-specific-props",
+    rules: ["solid/no-react-specific-props"],
   },
   qwik: {
     file: "Probe.tsx",
@@ -102,11 +115,14 @@ const PROBES: Record<string, { file: string; contents: string; rule: string }> =
       "  debugger;",
       '  const label = "Hi";',
       "  const unused = 1;",
-      '  return <p className="x">{label}</p>;',
+      "  function greet() {",
+      "    return label;",
+      "  }",
+      '  return <p className="x" onClick$={() => greet()}>{label}</p>;',
       "});",
       "",
     ].join("\n"),
-    rule: "qwik/no-react-props",
+    rules: ["qwik/no-react-props", "qwik/valid-lexical-scope"],
   },
   vue: {
     file: "Probe.vue",
@@ -122,7 +138,7 @@ const PROBES: Record<string, { file: string; contents: string; rule: string }> =
       "</template>",
       "",
     ].join("\n"),
-    rule: "vue/no-v-html",
+    rules: ["vue/no-v-html"],
   },
   svelte: {
     file: "Probe.svelte",
@@ -136,7 +152,7 @@ const PROBES: Record<string, { file: string; contents: string; rule: string }> =
       "<p>{@html html}</p>",
       "",
     ].join("\n"),
-    rule: "svelte/no-at-html-tags",
+    rules: ["svelte/no-at-html-tags"],
   },
   astro: {
     file: "Probe.astro",
@@ -150,7 +166,7 @@ const PROBES: Record<string, { file: string; contents: string; rule: string }> =
       "<p set:html={html} />",
       "",
     ].join("\n"),
-    rule: "astro/no-set-html-directive",
+    rules: ["astro/no-set-html-directive"],
   },
   angular: {
     file: "probe.ts",
@@ -169,11 +185,25 @@ const PROBES: Record<string, { file: string; contents: string; rule: string }> =
       "}",
       "",
     ].join("\n"),
-    rule: "@angular-eslint/template/prefer-control-flow",
+    rules: ["@angular-eslint/template/prefer-control-flow"],
   },
 };
 
 const TARGETS = selectTargets(undefined);
+
+/**
+ * The baseline rules that judge only the author's statements (ADR-0042), which every target
+ * copies: off on every target.
+ */
+const AUTHOR_RULES = [
+  "unicorn/consistent-function-scoping",
+  "unicorn/no-array-reverse",
+  "unicorn/no-array-sort",
+  "unicorn/no-instanceof-builtins",
+  "unicorn/no-new-array",
+  "unicorn/no-single-promise-in-promise-methods",
+  "unicorn/prefer-add-event-listener",
+];
 
 /** A rule's setting as `--print-config` prints it: a severity, or a severity and its options. */
 type RuleSetting = string | [string, unknown[]];
@@ -232,6 +262,17 @@ describe("every toolchain's oxlint configuration", () => {
     }
   });
 
+  it.each(TARGETS)("%s leaves the author's own statements to the author (ADR-0042)", (target) => {
+    // Rules that judge only what the author wrote, which every target copies: where a helper is
+    // nested, and one correct spelling over another. The targets' own placement of setup
+    // functions (ADR-0045) is pinned by their emitter tests.
+    const { rules, overrides = [] } = configs.get(target)!;
+    for (const rule of AUTHOR_RULES) {
+      expect(rules[rule] ?? "allow", rule).toBe("allow");
+      for (const override of overrides) expect(override.rules[rule] ?? "allow", rule).toBe("allow");
+    }
+  });
+
   it.each(TARGETS)("%s runs its framework's rules in one layer, on every file", (target) => {
     const { overrides = [] } = configs.get(target)!;
     const eslintConfig = existsSync(join(toolchainDir(target), "eslint.config.js"));
@@ -243,7 +284,54 @@ describe("every toolchain's oxlint configuration", () => {
       expect(eslintConfig).toBe(true);
     }
   });
+
+  it.each(TARGETS.filter((target) => target in TYPED_LAYER))(
+    "%s runs its type-aware rules in ESLint alone, from a lint host on TypeScript 6",
+    (target) => {
+      const { host, rules } = TYPED_LAYER[target]!;
+      const directory = join(toolchainDir(target), "..", host);
+      const [framework] = configs.get(target)!.overrides ?? [];
+      for (const rule of rules) expect(framework?.rules[rule], rule).toBe("allow");
+      expect(eslintRules(directory)).toEqual(rules);
+      // The rules' plugin resolves TypeScript as it is installed for the host, and the
+      // toolchain's checker (tsgo) is TypeScript 7.
+      expect(pluginTypescript(directory, "eslint-plugin-qwik")).toMatch(/^6\./);
+      expect(pluginTypescript(toolchainDir(target), "eslint-plugin-qwik")).toMatch(/^7\./);
+    },
+  );
 });
+
+/** The rules an ESLint configuration in `directory` turns on for a `.tsx` output, sorted. */
+function eslintRules(directory: string): unknown {
+  const eslint = resolveInstalled(directory, "eslint");
+  expect(eslint, `eslint in ${directory}`).toBeDefined();
+  const script = [
+    `const api = await import(${JSON.stringify(pathToFileURL(eslint!).href)});`,
+    "const { ESLint } = api.ESLint ? api : api.default;",
+    'const config = await new ESLint().calculateConfigForFile("Probe.tsx");',
+    "const on = Object.entries(config.rules).filter(([, [severity]]) => severity !== 0);",
+    "process.stdout.write(JSON.stringify(on.map(([name]) => name).sort()));",
+  ].join("\n");
+  const result = spawnSync(process.execPath, ["--input-type=module", "--eval", script], {
+    cwd: realpathSync(directory),
+    encoding: "utf8",
+  });
+  expect(result.status, result.stdout + result.stderr).toBe(0);
+  return JSON.parse(result.stdout);
+}
+
+/** The version of the TypeScript a plugin installed for `directory` loads. */
+function pluginTypescript(directory: string, plugin: string): string {
+  const manifest = resolveInstalled(directory, `${plugin}/package.json`);
+  expect(manifest, `${plugin} in ${directory}`).toBeDefined();
+  const result = spawnSync(
+    process.execPath,
+    ["--print", 'require("typescript/package.json").version'],
+    { cwd: dirname(manifest!), encoding: "utf8" },
+  );
+  expect(result.status, result.stderr).toBe(0);
+  return result.stdout.trim();
+}
 
 describe("every toolchain's lint", () => {
   // Inside the integration package, so the probes sit where outputs do.
@@ -257,7 +345,7 @@ describe("every toolchain's lint", () => {
     async (target) => {
       const directory = join(scratch, target);
       mkdirSync(directory);
-      const { file, contents, rule } = PROBES[target]!;
+      const { file, contents, rules } = PROBES[target]!;
       const probe = join(directory, file);
       writeFileSync(probe, contents);
       const toolchain = await loadToolchain(target);
@@ -268,7 +356,7 @@ describe("every toolchain's lint", () => {
       expect([...results.keys()]).toEqual([probe]);
       const codes = results.get(probe)!.map((message) => message.code ?? message.message);
       expect(codes.toSorted(), JSON.stringify(results.get(probe), null, 2)).toEqual(
-        [BASELINE_RULE, UNUSED_RULE[target]!, rule].toSorted(),
+        [BASELINE_RULE, UNUSED_RULE[target]!, ...rules].toSorted(),
       );
     },
   );

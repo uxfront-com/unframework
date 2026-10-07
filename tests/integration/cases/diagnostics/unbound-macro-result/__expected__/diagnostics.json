@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF2006",
+    "severity": "error",
+    "message": "`defineEmits` returns the component's `emit`, which nothing binds: a macro's result is bound by a `const` at the top level of the component's body.",
+    "file": "diagnostics/unbound-macro-result/CloseButton.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 3,
+      "offset": 247
+    },
+    "end": {
+      "line": 6,
+      "column": 31,
+      "offset": 275
+    },
+    "help": "Bind it: `const emit = defineEmits<{ … }>();`.",
+    "fixes": [
+      {
+        "title": "Bind it as `const emit`",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 247,
+              "end": 247
+            },
+            "text": "const emit = "
+          }
+        ]
+      }
+    ]
+  }
+]

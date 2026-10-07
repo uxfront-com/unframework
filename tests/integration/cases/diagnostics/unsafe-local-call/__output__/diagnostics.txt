@@ -1,0 +1,8 @@
+error[UF2024]: `markRead` touches the component's state, and is called in a function that runs at once, whose result counts (an array method's callback, a comparator): Qwik's output calls such a local function as a QRL, which it awaits, and the callback cannot.
+  --> diagnostics/unsafe-local-call/Inbox.uf.tsx:18:39
+   |
+18 |     unread.value.forEach((subject) => markRead(subject));
+   |                                       ^^^^^^^^
+   |
+   = help: Call it directly in the body of the handler or the function, or compute the new state at once and write it.
+   = see: https://unframework.dev/diagnostics/UF2024

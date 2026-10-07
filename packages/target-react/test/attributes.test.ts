@@ -1,7 +1,7 @@
 // The React target's attribute spellings and values, checked against React's own JSX types
 // (@types/react, L4) for every attribute the IR can hold: each name the target writes must be a
 // prop React declares, and a prop React types as `number` must be written as a number
-// (`tabIndex={0}`, design §5.1). The IR's NUMBER_TYPED_ATTRIBUTES says which those are; this
+// (`tabIndex={0}`, ADR-0037). The IR's NUMBER_TYPED_ATTRIBUTES says which those are; this
 // pins it against React (the Qwik target pins it against Qwik). The names React's types lack are
 // the IR's UNDECLARED_ATTRIBUTES, which the analyser rejects for every target.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";

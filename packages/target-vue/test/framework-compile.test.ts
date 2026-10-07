@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
 import { corpus, emitFormatted, goldenFiles, toolchainDir } from "./helpers.ts";
+import { M2_SHAPES } from "./lint-probes.ts";
 
 const context = { toolchainDir, root: toolchainDir };
 
@@ -20,6 +21,7 @@ afterEach(() => {
 });
 
 describe("vue frameworkCompile", () => {
+  // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output without a warning", async () => {
     const paths = goldenFiles();
     expect(paths.length).toBeGreaterThan(0);
@@ -29,7 +31,7 @@ describe("vue frameworkCompile", () => {
     );
     expect([...results.keys()]).toEqual(paths);
     for (const path of paths) expect(results.get(path), path).toEqual({ errors: [], warnings: [] });
-  });
+  }, 60_000);
 
   it("accepts what the target emits for the corpus today", async () => {
     for (const { name, module } of corpus()) {
@@ -40,6 +42,40 @@ describe("vue frameworkCompile", () => {
         });
       }
     }
+  });
+
+  it("accepts the shapes M2 emits (lint-probes.ts), for the DOM and the server", async () => {
+    for (const [name, contents] of Object.entries(M2_SHAPES)) {
+      expect(await compileOne(contents, `/virtual/m2/${name}`), name).toEqual({
+        errors: [],
+        warnings: [],
+      });
+    }
+  });
+
+  // Vue 3.5 compiles a destructured prop into a read of `__props`, so `watch(label, …)` would
+  // watch a value: the output always watches a prop through a getter (UF2020 asks the source for
+  // one), and the compiler refuses the other form.
+  it("refuses a destructured prop passed whole to watch(), where the output writes a getter", async () => {
+    const result = await compileOne(
+      [
+        '<script setup lang="ts">',
+        'import { watch } from "vue";',
+        "",
+        "const { label } = defineProps<{ label: string }>();",
+        "",
+        "watch(label, () => {});",
+        "</script>",
+        "",
+        "<template>",
+        "  <p>{{ label }}</p>",
+        "</template>",
+        "",
+      ].join("\n"),
+    );
+    expect(result.errors).toEqual([
+      expect.objectContaining({ message: expect.stringContaining("destructured prop") }),
+    ]);
   });
 
   it("reports a mismatched closing tag as an error, where it is", async () => {

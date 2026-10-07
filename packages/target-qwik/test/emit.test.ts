@@ -65,17 +65,25 @@ describe("qwik target", () => {
       "bound-attribute",
       "class-binding",
       "conditional",
+      "conditional-event-control",
       "element",
+      "event-capture",
+      "event-once",
+      "event-passive",
+      "event-semantics",
       "fragment",
       "interactivity",
       "interpolation",
+      "late-prop",
       "list",
       "listbox",
+      "next-tick",
       "props",
       "static-attribute",
       "style-binding",
       "svg",
       "text",
+      "use-id",
     ]);
   });
 
@@ -217,7 +225,7 @@ describe("qwik target", () => {
   });
 });
 
-// M1's shapes (design §5.6), from sources the analyser lowers.
+// M1's shapes (ADR-0034 to ADR-0040), from sources the analyser lowers.
 
 /** A component in the object form that returns `body`. */
 const plain = (body: string) =>

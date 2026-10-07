@@ -156,6 +156,7 @@
           }
         }
       ],
+      "setup": [],
       "render": {
         "kind": "Element",
         "tag": "div",

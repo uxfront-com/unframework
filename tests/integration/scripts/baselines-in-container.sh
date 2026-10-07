@@ -42,9 +42,10 @@ cd /work/tests/integration
 WORKERS=(--maxWorkers=1)
 case "$MODE" in
   update)
-    # Only browser:vue writes; the other browser projects compare against its capture.
+    # Only browser:vue writes the baselines; the other browser projects compare against them
+    # in `check` mode and in CI, so running them here would only take time (ADR-0050).
     status=0
-    env -u CI UF_UPDATE=1 UF_PIXELS=baseline node scripts/run.ts --project "browser:*" \
+    env -u CI UF_UPDATE=1 UF_PIXELS=baseline node scripts/run.ts --project "browser:vue" \
       "${WORKERS[@]}" "$@" \
       || status=$?
     cd /work
@@ -57,6 +58,26 @@ case "$MODE" in
         mkdir -p -- "/out/$(dirname -- "$file")"
         cp -- "$file" "/out/$file"
       done
+    # The reference rewrote the platform-independent expectations here too: the DOM, the ARIA
+    # tree, the traces (and the server HTML) must read the same on Linux as where
+    # `pnpm test:update` wrote them, or CI would fail where no local command does (a DOM read
+    # of geometry fed into state, say).
+    platform=()
+    while IFS= read -r -d '' file; do
+      if [ ! -f "$file" ] || [ ! -f "/repo/$file" ] || ! cmp -s -- "$file" "/repo/$file"; then
+        platform+=("$file")
+      fi
+    done < <(
+      for root in . /repo; do
+        (cd "$root" && find tests/integration/cases -type f -path '*/__expected__/*' \
+          \( -name 'dom.*' -o -name 'aria.*' -o -name 'trace.*' -o -name 'ssr.*' \) -print0)
+      done | sort -zu
+    )
+    if [ "${#platform[@]}" -gt 0 ]; then
+      echo "test:baselines: these expectations read differently on Linux than in the repository; they depend on the platform (a layout read feeding state or an emit, say) and must not:" >&2
+      printf '  %s\n' "${platform[@]}" >&2
+      status=1
+    fi
     exit "$status"
     ;;
   check)

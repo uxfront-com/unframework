@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Remove Write the report' })",
+      "dom": [
+        "<section aria-label=\"Tasks\" class=\"task-list\">",
+        "  <ul>",
+        "    <li>",
+        "      <button aria-pressed=\"false\" type=\"button\">",
+        "        \"Review the pull request\"",
+        "      </button>",
+        "      <button aria-label=\"Remove Review the pull request\" type=\"button\">",
+        "        \"Remove\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button aria-pressed=\"false\" type=\"button\">",
+        "        \"Ship the release\"",
+        "      </button>",
+        "      <button aria-label=\"Remove Ship the release\" type=\"button\">",
+        "        \"Remove\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "  <button type=\"button\">",
+        "    \"Add task\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Move up\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Tasks\":",
+        "  - list:",
+        "    - listitem:",
+        "      - button \"Review the pull request\"",
+        "      - button \"Remove Review the pull request\": Remove",
+        "    - listitem:",
+        "      - button \"Ship the release\"",
+        "      - button \"Remove Ship the release\": Remove",
+        "  - button \"Add task\"",
+        "  - button \"Move up\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Remove Review the pull request' })",
+      "dom": [
+        "<section aria-label=\"Tasks\" class=\"task-list\">",
+        "  <ul>",
+        "    <li>",
+        "      <button aria-pressed=\"false\" type=\"button\">",
+        "        \"Ship the release\"",
+        "      </button>",
+        "      <button aria-label=\"Remove Ship the release\" type=\"button\">",
+        "        \"Remove\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "  <button type=\"button\">",
+        "    \"Add task\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Move up\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Tasks\":",
+        "  - list:",
+        "    - listitem:",
+        "      - button \"Ship the release\"",
+        "      - button \"Remove Ship the release\": Remove",
+        "  - button \"Add task\"",
+        "  - button \"Move up\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Remove Ship the release' })",
+      "dom": [
+        "<section aria-label=\"Tasks\" class=\"task-list\">",
+        "  <p>",
+        "    \"No tasks yet.\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add task\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Move up\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Tasks\":",
+        "  - paragraph: No tasks yet.",
+        "  - button \"Add task\"",
+        "  - button \"Move up\""
+      ],
+      "events": {}
+    }
+  ]
+}

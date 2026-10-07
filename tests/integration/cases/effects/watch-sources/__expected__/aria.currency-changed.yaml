@@ -1,0 +1,4 @@
+- region "Price range":
+  - status: 10 to 50 USD
+  - button "Shift up"
+  - button "Widen"

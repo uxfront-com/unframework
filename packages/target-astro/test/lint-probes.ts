@@ -1,5 +1,5 @@
 // What this target will emit for M1's constructs, written by hand before the emitter does, in the
-// shapes of design §5.7: frontmatter with the types, `type Props` and a destructure of
+// shapes it emits: frontmatter with the types, `type Props` and a destructure of
 // `Astro.props` (or `props`), ternaries with `null`, `.map` without keys, `class:list`, style
 // objects. The same three components on every target: a badge (props with defaults, a conditional
 // chain, class and style bindings, bound attributes, SVG), a list (nested keyed lists, conditionals
@@ -108,5 +108,122 @@ const { todos, heading } = Astro.props;
     <p>Nothing to do.</p>
   )
 }
+`,
+};
+
+/**
+ * What this target emits for M2's setup (ADR-0046), formatted as the compiler writes it:
+ * `ref`s as their initial value, cast to the `ref`'s type; `computed`s as their value, a block
+ * getter as a local function called once; the `useId` helper, a counter on `Astro.locals`. Client
+ * code is dropped, with what only it reads. `test/setup.test.ts` pins the emitter to these
+ * shapes, and lint.test.ts the L5 configuration against them (ADR-0042).
+ */
+export const M2_SHAPES: Readonly<Record<string, string>> = {
+  "Counter.astro": `---
+export interface CounterProps {
+  initial?: number;
+  step?: number;
+}
+
+type Props = CounterProps;
+
+const { initial = 0 } = Astro.props;
+
+const count = initial;
+const doubled = count * 2;
+---
+
+<div class="counter">
+  <output>{count}</output>
+  {doubled > 10 ? (
+    <span>Big</span>
+  ) : null}
+  <button type="button">Add</button>
+</div>
+`,
+  "Casts.astro": `---
+type Status = "idle" | "busy";
+
+interface Item {
+  name: string;
+}
+
+const count = 0 as number;
+const offset = -1 as number;
+const title = "Draft" as string;
+const open = false as boolean;
+const status = "idle" as Status;
+const picked = undefined as Item | undefined;
+const items = [] as Item[];
+const tags = ["a", "b"];
+---
+
+<dl>
+  <dt>{count === 5 ? "five" : count}</dt>
+  <dd>{offset + 1}</dd>
+  <dd>{title === "Final" ? "final" : title}</dd>
+  <dd>{open === true ? "open" : "closed"}</dd>
+  <dd>{status === "busy" ? "busy" : "idle"}</dd>
+  <dd>{picked?.name ?? "none"}</dd>
+  <dd>{items.length}</dd>
+  <dd>{tags.join(", ")}</dd>
+</dl>
+`,
+  "Price.astro": `---
+export type Tier = "low" | "high";
+
+export interface PriceProps {
+  price: number;
+}
+
+type Props = PriceProps;
+
+const { price } = Astro.props;
+
+const quantity = 2 as number;
+const total = quantity * price;
+const unit = "EUR" as string;
+
+function getTier(): Tier {
+  if (total > 100) return "high";
+  return "low";
+}
+
+const tier = getTier();
+
+function getLabel(): string {
+  const amount = (total / 100).toFixed(2);
+  return \`\${amount} \${unit}\`;
+}
+
+const label = getLabel();
+---
+
+<p data-tier={tier}>{label} {unit === "USD" ? "(US)" : "(EU)"}</p>
+`,
+  "Field.astro": `---
+export interface FieldProps {
+  label: string;
+}
+
+type Props = FieldProps;
+
+const { label } = Astro.props;
+
+function uniqueId(): string {
+  const locals = Astro.locals as { ufIdCount?: number };
+  locals.ufIdCount = (locals.ufIdCount ?? 0) + 1;
+  return \`uf-id-\${locals.ufIdCount}\`;
+}
+
+const inputId = uniqueId();
+const hintId = uniqueId();
+---
+
+<div>
+  <label for={inputId}>{label}</label>
+  <input id={inputId} aria-describedby={hintId} />
+  <p id={hintId}>Required</p>
+</div>
 `,
 };

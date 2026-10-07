@@ -1,0 +1,744 @@
+{
+  "irVersion": 1,
+  "file": "state/computed-chain/OrderSummary.uf.tsx",
+  "components": [
+    {
+      "name": "OrderSummary",
+      "span": {
+        "start": 157,
+        "end": 1112
+      },
+      "props": [
+        {
+          "name": "price",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 127,
+              "end": 133
+            }
+          },
+          "binding": "price@196",
+          "span": {
+            "start": 120,
+            "end": 134
+          }
+        },
+        {
+          "name": "taxRate",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 146,
+              "end": 152
+            }
+          },
+          "binding": "taxRate@203",
+          "span": {
+            "start": 137,
+            "end": 153
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "OrderSummaryProps",
+          "span": {
+            "start": 214,
+            "end": 231
+          }
+        },
+        "span": {
+          "start": 194,
+          "end": 231
+        }
+      },
+      "types": [
+        "OrderSummaryProps"
+      ],
+      "bindings": [
+        {
+          "id": "price@196",
+          "name": "price",
+          "kind": "prop",
+          "span": {
+            "start": 196,
+            "end": 201
+          }
+        },
+        {
+          "id": "taxRate@203",
+          "name": "taxRate",
+          "kind": "prop",
+          "span": {
+            "start": 203,
+            "end": 210
+          }
+        },
+        {
+          "id": "quantity@243",
+          "name": "quantity",
+          "kind": "state",
+          "span": {
+            "start": 243,
+            "end": 251
+          }
+        },
+        {
+          "id": "subtotal@270",
+          "name": "subtotal",
+          "kind": "derived",
+          "span": {
+            "start": 270,
+            "end": 278
+          }
+        },
+        {
+          "id": "tax@329",
+          "name": "tax",
+          "kind": "derived",
+          "span": {
+            "start": 329,
+            "end": 332
+          }
+        },
+        {
+          "id": "total@397",
+          "name": "total",
+          "kind": "derived",
+          "span": {
+            "start": 397,
+            "end": 402
+          }
+        },
+        {
+          "id": "tier@457",
+          "name": "tier",
+          "kind": "derived",
+          "span": {
+            "start": 457,
+            "end": 461
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "quantity@243",
+          "initial": {
+            "code": "1",
+            "span": {
+              "start": 258,
+              "end": 259
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 237,
+            "end": 261
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "subtotal@270",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "quantity.value * price",
+              "span": {
+                "start": 296,
+                "end": 318
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "quantity@243",
+                  "span": {
+                    "start": 296,
+                    "end": 310
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "price@196",
+                  "span": {
+                    "start": 313,
+                    "end": 318
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 290,
+              "end": 318
+            }
+          },
+          "span": {
+            "start": 264,
+            "end": 320
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "tax@329",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "Math.round(subtotal.value * taxRate)",
+              "span": {
+                "start": 350,
+                "end": 386
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "Math",
+                  "span": {
+                    "start": 350,
+                    "end": 354
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "subtotal@270",
+                  "span": {
+                    "start": 361,
+                    "end": 375
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "taxRate@203",
+                  "span": {
+                    "start": 378,
+                    "end": 385
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 344,
+              "end": 386
+            }
+          },
+          "span": {
+            "start": 323,
+            "end": 388
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "total@397",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "subtotal.value + tax.value",
+              "span": {
+                "start": 420,
+                "end": 446
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "subtotal@270",
+                  "span": {
+                    "start": 420,
+                    "end": 434
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tax@329",
+                  "span": {
+                    "start": 437,
+                    "end": 446
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 414,
+              "end": 446
+            }
+          },
+          "span": {
+            "start": 391,
+            "end": 448
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "tier@457",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    if (total.value >= 10000) return \"bulk\";\n    return \"standard\";\n  }",
+              "span": {
+                "start": 479,
+                "end": 552
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "total@397",
+                  "span": {
+                    "start": 489,
+                    "end": 500
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 473,
+              "end": 552
+            }
+          },
+          "span": {
+            "start": 451,
+            "end": 554
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "order-summary",
+            "span": {
+              "start": 580,
+              "end": 601
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Order summary",
+            "span": {
+              "start": 602,
+              "end": 628
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "data-tier",
+            "value": {
+              "code": "tier.value",
+              "span": {
+                "start": 640,
+                "end": 650
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tier@457",
+                  "span": {
+                    "start": 640,
+                    "end": 650
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 629,
+              "end": 651
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 662,
+                  "end": 675
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Quantity: ",
+                "span": {
+                  "start": 676,
+                  "end": 686
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "quantity.value",
+                  "span": {
+                    "start": 687,
+                    "end": 701
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "quantity@243",
+                      "span": {
+                        "start": 687,
+                        "end": 701
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 686,
+                  "end": 702
+                }
+              }
+            ],
+            "span": {
+              "start": 659,
+              "end": 706
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 721,
+                  "end": 734
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "disabled",
+                "value": {
+                  "code": "quantity.value === 1",
+                  "span": {
+                    "start": 745,
+                    "end": 765
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "quantity@243",
+                      "span": {
+                        "start": 745,
+                        "end": 759
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 735,
+                  "end": 766
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "quantity.value--",
+                      "span": {
+                        "start": 782,
+                        "end": 798
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "quantity@243",
+                          "operator": "--",
+                          "span": {
+                            "start": 782,
+                            "end": 798
+                          },
+                          "target": {
+                            "start": 782,
+                            "end": 796
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 776,
+                      "end": 798
+                    }
+                  },
+                  "span": {
+                    "start": 776,
+                    "end": 798
+                  }
+                },
+                "span": {
+                  "start": 767,
+                  "end": 799
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Remove one",
+                "span": {
+                  "start": 800,
+                  "end": 826
+                }
+              }
+            ],
+            "span": {
+              "start": 713,
+              "end": 835
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 850,
+                  "end": 863
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "quantity.value++",
+                      "span": {
+                        "start": 879,
+                        "end": 895
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "quantity@243",
+                          "operator": "++",
+                          "span": {
+                            "start": 879,
+                            "end": 895
+                          },
+                          "target": {
+                            "start": 879,
+                            "end": 893
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 873,
+                      "end": 895
+                    }
+                  },
+                  "span": {
+                    "start": 873,
+                    "end": 895
+                  }
+                },
+                "span": {
+                  "start": 864,
+                  "end": 896
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add one",
+                "span": {
+                  "start": 897,
+                  "end": 920
+                }
+              }
+            ],
+            "span": {
+              "start": 842,
+              "end": 929
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Subtotal: ",
+                "span": {
+                  "start": 939,
+                  "end": 949
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "(subtotal.value / 100).toFixed(2)",
+                  "span": {
+                    "start": 950,
+                    "end": 983
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "subtotal@270",
+                      "span": {
+                        "start": 951,
+                        "end": 965
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 949,
+                  "end": 984
+                }
+              }
+            ],
+            "span": {
+              "start": 936,
+              "end": 988
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Tax: ",
+                "span": {
+                  "start": 998,
+                  "end": 1003
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "(tax.value / 100).toFixed(2)",
+                  "span": {
+                    "start": 1004,
+                    "end": 1032
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tax@329",
+                      "span": {
+                        "start": 1005,
+                        "end": 1014
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1003,
+                  "end": 1033
+                }
+              }
+            ],
+            "span": {
+              "start": 995,
+              "end": 1037
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Total: ",
+                "span": {
+                  "start": 1047,
+                  "end": 1054
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "(total.value / 100).toFixed(2)",
+                  "span": {
+                    "start": 1055,
+                    "end": 1085
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "total@397",
+                      "span": {
+                        "start": 1056,
+                        "end": 1067
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1054,
+                  "end": 1086
+                }
+              }
+            ],
+            "span": {
+              "start": 1044,
+              "end": 1090
+            }
+          }
+        ],
+        "span": {
+          "start": 571,
+          "end": 1105
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "OrderSummary",
+      "span": {
+        "start": 157,
+        "end": 1112
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "OrderSummaryProps",
+      "exported": true,
+      "code": "interface OrderSummaryProps {\n  /** The unit price, in cents. */\n  price: number;\n  taxRate: number;\n}",
+      "span": {
+        "start": 53,
+        "end": 155
+      }
+    }
+  ]
+}

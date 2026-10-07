@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('textbox', { name: 'Message' })",
+      "dom": [
+        "<section aria-label=\"Reply\" class=\"reply-box\">",
+        "  <label>",
+        "    \"Message\"",
+        "    <textarea name=\"message\" uf:focused=\"\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <p>",
+        "    \"Not started\"",
+        "  </p>",
+        "  <label>",
+        "    \"Answer\"",
+        "    <textarea name=\"answer\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <button aria-pressed=\"false\" type=\"button\">",
+        "    \"Suggestions\"",
+        "  </button>",
+        "  <p>",
+        "    \"Accepted: 0\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Reply\":",
+        "  - text: Message",
+        "  - textbox \"Message\"",
+        "  - paragraph: Not started",
+        "  - text: Answer",
+        "  - textbox \"Answer\"",
+        "  - button \"Suggestions\"",
+        "  - paragraph: \"Accepted: 0\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "keyboard \"a{Enter}\"",
+      "dom": [
+        "<section aria-label=\"Reply\" class=\"reply-box\">",
+        "  <label>",
+        "    \"Message\"",
+        "    <textarea name=\"message\" uf:focused=\"\" uf:value=\"a\\n\"></textarea>",
+        "  </label>",
+        "  <p>",
+        "    \"Started\"",
+        "  </p>",
+        "  <label>",
+        "    \"Answer\"",
+        "    <textarea name=\"answer\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <button aria-pressed=\"false\" type=\"button\">",
+        "    \"Suggestions\"",
+        "  </button>",
+        "  <p>",
+        "    \"Accepted: 0\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Reply\":",
+        "  - text: Message",
+        "  - textbox \"Message\": a",
+        "  - paragraph: Started",
+        "  - text: Answer",
+        "  - textbox \"Answer\"",
+        "  - button \"Suggestions\"",
+        "  - paragraph: \"Accepted: 0\""
+      ],
+      "events": {}
+    }
+  ]
+}

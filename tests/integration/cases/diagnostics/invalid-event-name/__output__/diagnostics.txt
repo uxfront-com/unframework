@@ -1,0 +1,9 @@
+error[UF2008]: `level-change` is not camelCase in ASCII letters and digits, starting with a lower-case letter: every target spells an event's name in an identifier, a prop (`onChange`, Svelte's `onchange`) or an Angular output.
+ --> diagnostics/invalid-event-name/VolumeSlider.uf.tsx:7:30
+  |
+7 |   const emit = defineEmits<{ "level-change": [level: number] }>();
+  |                              ^^^^^^^^^^^^^^
+  |
+  = help: Name the event in camelCase, as its own word: `change`, `levelChange`, `select`.
+  = fix (safe): Rename the event `level-change` to `levelChange`
+  = see: https://unframework.dev/diagnostics/UF2008

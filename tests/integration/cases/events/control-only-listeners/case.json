@@ -1,0 +1,6 @@
+{
+  "description": "Listeners whose only statement is a control: a form's submit listener that only prevents, so Save and Enter in a field save without leaving the page, and a format button's mousedown listener that only prevents, so the text keeps the focus.",
+  "ssr": {
+    "initial": {}
+  }
+}

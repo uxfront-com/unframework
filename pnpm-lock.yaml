@@ -228,7 +228,7 @@ overrides:
   '@nuxtjs/partytown>@qwik.dev/partytown': 0.14.4
   '@typescript/typescript6>@typescript/old': npm:typescript@6.0.3
 
-packageExtensionsChecksum: sha256-V/G1d0sCVxrcuH9bHvIc7/PHENFexCFJJ2BlpjoqG58=
+packageExtensionsChecksum: sha256-2KvlBMTn0a/5w6ygQyjroi2Nv/XoOpDfGvYYdq2MAT0=
 
 importers:
 
@@ -546,6 +546,12 @@ importers:
       '@uxfront/typescript-config':
         specifier: 'catalog:'
         version: 0.1.0
+      '@vitest/browser-playwright':
+        specifier: 'catalog:'
+        version: 5.0.3(playwright@1.63.0)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)(yaml@2.9.1))(vitest@5.0.3)
+      playwright:
+        specifier: 'catalog:'
+        version: 1.63.0
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
@@ -1071,6 +1077,12 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.0
+      '@unframework/codegen':
+        specifier: workspace:*
+        version: link:../../packages/codegen
+      '@unframework/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
       '@unframework/diagnostics':
         specifier: workspace:*
         version: link:../../packages/diagnostics
@@ -1167,6 +1179,9 @@ importers:
 
   tests/toolchains/qwik:
     devDependencies:
+      '@unframework/toolchain-qwik-eslint':
+        specifier: workspace:*
+        version: link:../qwik-eslint
       eslint:
         specifier: 'catalog:'
         version: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -1179,6 +1194,21 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
+
+  tests/toolchains/qwik-eslint:
+    devDependencies:
+      eslint:
+        specifier: 'catalog:'
+        version: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
+      eslint-plugin-qwik:
+        specifier: 'catalog:'
+        version: 2.0.0-beta.47(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      typescript:
+        specifier: npm:@typescript/typescript6@6.0.2
+        version: '@typescript/typescript6@6.0.2'
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.71.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
 
   tests/toolchains/react:
     devDependencies:
@@ -7749,6 +7779,7 @@ packages:
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
     peerDependencies:
       eslint: ^8.57.0 || ^9.0.0 || ^10.0.0
+      typescript: '>=4.8.4 <6.1.0'
 
   eslint-plugin-solid@0.18.0:
     resolution: {integrity: sha512-Q3tSfb5EqU1nt8raRR8u7uMCLmB1779atKFxZ48TLor0rX+S0Bxt1gcTgYQTK+FK0T/iwFZJf13sSQncjFOBPg==}
@@ -18667,14 +18698,23 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  eslint-plugin-qwik@2.0.0-beta.47(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2):
+    dependencies:
+      '@typescript-eslint/utils': 8.71.0(@typescript/typescript6@6.0.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)
+      eslint: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
+      jsx-ast-utils: 3.3.5
+      typescript: '@typescript/typescript6@6.0.2'
+    transitivePeerDependencies:
+      - supports-color
+
   eslint-plugin-qwik@2.0.0-beta.47(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2):
     dependencies:
       '@typescript-eslint/utils': 8.71.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2)
       eslint: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
       jsx-ast-utils: 3.3.5
+      typescript: 7.0.2
     transitivePeerDependencies:
       - supports-color
-      - typescript
 
   eslint-plugin-solid@0.18.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2):
     dependencies:

@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add a note' })",
+      "dom": [
+        "<section aria-label=\"Filters\" class=\"filter-panel\">",
+        "  <button aria-expanded=\"false\" type=\"button\">",
+        "    \"Show colours\"",
+        "  </button>",
+        "  <p>",
+        "    \"No colour\"",
+        "  </p>",
+        "  <div class=\"note\">",
+        "    <label>",
+        "      \"Note\"",
+        "      <input uf:value=\"\">",
+        "    </label>",
+        "    <p>",
+        "      \"Draft: \\\"\\\"\"",
+        "    </p>",
+        "  </div>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Filters\":",
+        "  - button \"Show colours\"",
+        "  - paragraph: No colour",
+        "  - text: Note",
+        "  - textbox \"Note\"",
+        "  - paragraph: \"Draft: \\\"\\\"\""
+      ],
+      "events": {}
+    }
+  ]
+}

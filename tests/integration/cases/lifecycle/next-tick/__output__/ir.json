@@ -1,0 +1,430 @@
+{
+  "irVersion": 1,
+  "file": "lifecycle/next-tick/ShippingDetails.uf.tsx",
+  "components": [
+    {
+      "name": "ShippingDetails",
+      "span": {
+        "start": 75,
+        "end": 792
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@127",
+        "type": {
+          "code": "{ toggled: [items: number] }",
+          "span": {
+            "start": 146,
+            "end": 174
+          }
+        },
+        "events": [
+          {
+            "name": "toggled",
+            "parameters": [
+              {
+                "name": "items",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 165,
+                    "end": 171
+                  }
+                },
+                "span": {
+                  "start": 158,
+                  "end": 171
+                }
+              }
+            ],
+            "span": {
+              "start": 148,
+              "end": 172
+            }
+          }
+        ],
+        "span": {
+          "start": 121,
+          "end": 178
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@127",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 127,
+            "end": 131
+          }
+        },
+        {
+          "id": "open@188",
+          "name": "open",
+          "kind": "state",
+          "span": {
+            "start": 188,
+            "end": 192
+          }
+        },
+        {
+          "id": "details@215",
+          "name": "details",
+          "kind": "templateRef",
+          "span": {
+            "start": 215,
+            "end": 222
+          }
+        },
+        {
+          "id": "toggle@279",
+          "name": "toggle",
+          "kind": "localFn",
+          "span": {
+            "start": 279,
+            "end": 285
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "open@188",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 199,
+              "end": 204
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 182,
+            "end": 206
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "details@215",
+          "type": {
+            "code": "HTMLUListElement",
+            "span": {
+              "start": 240,
+              "end": 256
+            }
+          },
+          "span": {
+            "start": 209,
+            "end": 260
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "toggle@279",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    open.value = !open.value;\n    await nextTick();\n    emit(\"toggled\", details.value?.childElementCount ?? 0);\n  }",
+              "span": {
+                "start": 288,
+                "end": 405
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "open@188",
+                  "operator": "=",
+                  "span": {
+                    "start": 294,
+                    "end": 318
+                  },
+                  "target": {
+                    "start": 294,
+                    "end": 304
+                  },
+                  "value": {
+                    "start": 307,
+                    "end": 318
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "open@188",
+                  "span": {
+                    "start": 308,
+                    "end": 318
+                  }
+                },
+                {
+                  "kind": "Api",
+                  "api": "nextTick",
+                  "span": {
+                    "start": 330,
+                    "end": 338
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@127",
+                  "event": "toggled",
+                  "span": {
+                    "start": 346,
+                    "end": 400
+                  },
+                  "arguments": [
+                    {
+                      "start": 362,
+                      "end": 399
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "details@215",
+                  "span": {
+                    "start": 362,
+                    "end": 375
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 285,
+              "end": 405
+            }
+          },
+          "span": {
+            "start": 264,
+            "end": 405
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "shipping-details",
+            "span": {
+              "start": 431,
+              "end": 455
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Shipping",
+            "span": {
+              "start": 456,
+              "end": 477
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 493,
+                  "end": 506
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-expanded",
+                "value": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 522,
+                    "end": 532
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@188",
+                      "span": {
+                        "start": 522,
+                        "end": 532
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 507,
+                  "end": 533
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "toggle@279",
+                  "span": {
+                    "start": 543,
+                    "end": 549
+                  }
+                },
+                "span": {
+                  "start": 534,
+                  "end": 550
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Shipping details",
+                "span": {
+                  "start": 551,
+                  "end": 583
+                }
+              }
+            ],
+            "span": {
+              "start": 485,
+              "end": 592
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 600,
+                    "end": 610
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@188",
+                      "span": {
+                        "start": 600,
+                        "end": 610
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "ul",
+                    "attributes": [
+                      {
+                        "kind": "Ref",
+                        "binding": "details@215",
+                        "span": {
+                          "start": 628,
+                          "end": 641
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "li",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Ships in two days",
+                            "span": {
+                              "start": 657,
+                              "end": 674
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 653,
+                          "end": 679
+                        }
+                      },
+                      {
+                        "kind": "Element",
+                        "tag": "li",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Free returns",
+                            "span": {
+                              "start": 694,
+                              "end": 706
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 690,
+                          "end": 711
+                        }
+                      },
+                      {
+                        "kind": "Element",
+                        "tag": "li",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Tracked delivery",
+                            "span": {
+                              "start": 726,
+                              "end": 742
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 722,
+                          "end": 747
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 624,
+                      "end": 761
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 600,
+                  "end": 769
+                }
+              }
+            ],
+            "span": {
+              "start": 600,
+              "end": 769
+            }
+          }
+        ],
+        "span": {
+          "start": 422,
+          "end": 785
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ShippingDetails",
+      "span": {
+        "start": 75,
+        "end": 792
+      }
+    }
+  ],
+  "types": []
+}

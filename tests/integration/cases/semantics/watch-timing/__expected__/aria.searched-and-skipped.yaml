@@ -1,0 +1,6 @@
+- region "Search":
+  - status: Results for boots, page 3
+  - button "Search boots"
+  - button "Search sandals"
+  - button "Next page"
+  - button "Skip two pages"

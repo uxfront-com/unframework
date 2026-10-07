@@ -1,4 +1,4 @@
-// What the standard methods and the allowed globals return (design §1.6), by name: enough for
+// What the standard methods and the allowed globals return (ADR-0035), by name: enough for
 // the common template expressions (`label.trim()`, `price.toFixed(2)`, `tags.join(", ")`,
 // `Math.max(a, b)`) to keep a kind the checks can read. Anything not listed is `unknown`.
 

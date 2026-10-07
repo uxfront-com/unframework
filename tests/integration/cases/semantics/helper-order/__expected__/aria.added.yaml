@@ -1,0 +1,5 @@
+- region "Names":
+  - paragraph: "Names: Al, Bo, Cy"
+  - paragraph: "Added: 1"
+  - button "Add Bo"
+  - button "Report"

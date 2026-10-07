@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Receive a message' })",
+      "dom": [
+        "<section aria-label=\"Inbox\" class=\"unread-badge\">",
+        "  <p role=\"status\">",
+        "    \"1 unread\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Receive a message\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Mark all read\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Inbox\":",
+        "  - status: 1 unread",
+        "  - button \"Receive a message\"",
+        "  - button \"Mark all read\""
+      ],
+      "events": {
+        "titleChange": [
+          [
+            "(0) Inbox"
+          ],
+          [
+            "(1) Inbox"
+          ]
+        ],
+        "titleRelease": [
+          [
+            "(0) Inbox"
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Receive a message' })",
+      "dom": [
+        "<section aria-label=\"Inbox\" class=\"unread-badge\">",
+        "  <p role=\"status\">",
+        "    \"2 unread\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Receive a message\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Mark all read\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Inbox\":",
+        "  - status: 2 unread",
+        "  - button \"Receive a message\"",
+        "  - button \"Mark all read\""
+      ],
+      "events": {
+        "titleChange": [
+          [
+            "(2) Inbox"
+          ]
+        ],
+        "titleRelease": [
+          [
+            "(1) Inbox"
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Mark all read' })",
+      "dom": [
+        "<section aria-label=\"Inbox\" class=\"unread-badge\">",
+        "  <p role=\"status\">",
+        "    \"0 unread\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Receive a message\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Mark all read\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Inbox\":",
+        "  - status: 0 unread",
+        "  - button \"Receive a message\"",
+        "  - button \"Mark all read\""
+      ],
+      "events": {
+        "titleChange": [
+          [
+            "(0) Inbox"
+          ]
+        ],
+        "titleRelease": [
+          [
+            "(2) Inbox"
+          ]
+        ]
+      }
+    }
+  ]
+}

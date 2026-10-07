@@ -1,0 +1,23 @@
+- region "Quick actions":
+  - text: Search
+  - textbox "Search": abc
+  - paragraph: "Query:"
+  - text: Note
+  - textbox "Note"
+  - text: Scope
+  - combobox "Scope":
+    - option "Mine" [selected]
+    - option "Team"
+  - list "Actions":
+    - listitem:
+      - text: Shortcut for Copy
+      - textbox "Shortcut for Copy"
+      - button "Run Copy"
+    - listitem:
+      - text: Shortcut for Paste
+      - textbox "Shortcut for Paste"
+      - button "Run Paste"
+  - paragraph: "Last key: none"
+  - form "Subscribe":
+    - paragraph: "Subscriptions: 0"
+    - button "Subscribe"

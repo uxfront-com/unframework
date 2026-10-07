@@ -34,11 +34,8 @@ export default function MessageList(rawProps: MessageListProps) {
         <Match when={props.archived.length === 0}>
           <p>No archived messages.</p>
         </Match>
-        <Match
-          keyed
-          when={props.archived.length === 0 ? undefined : { length: props.archived.length }}
-        >
-          {({ length }) => <p>{length} archived</p>}
+        <Match when={props.archived.length === 0 ? undefined : { length: props.archived.length }}>
+          {(narrowed) => <p>{narrowed().length} archived</p>}
         </Match>
       </Switch>
     </section>

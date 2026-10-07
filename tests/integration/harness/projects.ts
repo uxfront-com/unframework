@@ -1,11 +1,11 @@
-// The Vitest projects of the harness (plan §7.3, DESIGN §4.4):
+// The Vitest projects of the harness (plan §7.3):
 //
 //   compile             node     L1 L2     every case to every target, against __output__
 //   harness             node               the harness's own unit tests
 //   toolchain:<target>  node     L3 L4 L5  the framework compiler, checker and linters, one run
 //                                          of each per target
 //   ssr:<target>        node     L6 L13    the target's server renderer, through the unplugin
-//   browser:<target>    chromium L7 L8 L10 L11 L13  the shared specs, through the unplugin
+//   browser:<target>    chromium L7 L8 L9 L10 L11 L13  the shared specs, through the unplugin
 //
 // Every project sets `extends: false`: inheriting the root config merges its plugins into each
 // project (the browser-projects ADR), and a project must hold its own toolchain only. Toolchains
@@ -14,7 +14,14 @@
 import { fileURLToPath } from "node:url";
 
 import type { Toolchain, ToolchainContext } from "@unframework/codegen";
-import { formatError, groupOrder, parityBrowser } from "@unframework/testing/node";
+import { builtinTargets } from "@unframework/compiler";
+import type { TargetName } from "@unframework/compiler";
+import {
+  formatError,
+  groupOrder,
+  parityBrowser,
+  recordCompiledModule,
+} from "@unframework/testing/node";
 import type {
   HarnessContext,
   HarnessMode,
@@ -28,7 +35,9 @@ import type { TestProjectConfiguration, UserWorkspaceConfig, ViteUserConfig } fr
 
 import { canaryPlugins, guardsGoldens } from "./canaries.ts";
 import "./context.ts";
+import { listCases } from "./cases.ts";
 import { goldenGuard } from "./guard.ts";
+import { noOutputCases, noOutputPlugin } from "./no-output.ts";
 import { FAILURE_SCREENSHOTS_DIR, ROOT, toolchainDir } from "./paths.ts";
 import { loadToolchain, REFERENCE } from "./targets.ts";
 
@@ -47,7 +56,7 @@ const NODE_TEST = { environment: "node", pool: "forks", testTimeout: 60_000 } as
 /** The layers each kind of project records, which an unavailable project fails. */
 const LAYERS_OF: Record<"ssr" | "browser", LayerName[]> = {
   ssr: ["L6", "L13"],
-  browser: ["L7", "L8", "L10", "L11", "L13"],
+  browser: ["L7", "L8", "L9", "L10", "L11", "L13"],
 };
 
 /** The name of every project, in order: what a run of all of them covers. */
@@ -148,12 +157,21 @@ function lazyProject(
   };
 }
 
-/** The compile options every ssr and browser project gives the unplugin. */
+/**
+ * The compile options every ssr and browser project gives the unplugin. Every compile is
+ * recorded, so a mount listens to the events the module it compiled declares (the testing API's
+ * `ufComponentEvents`), not those of a committed IR an update run has not written yet or a
+ * canary changed (ADR-0050); then the golden guard judges it, except under a canary that
+ * changes the output on purpose, unless it is the guard's own.
+ */
 function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOptions {
+  const guard = guardsGoldens(setup.mode.canary);
   return {
     target: target as UnframeworkOptions["target"],
-    // Off under a canary that changes the output on purpose, unless it is the guard's own.
-    ...(guardsGoldens(setup.mode.canary) ? { onCompile: (event) => goldenGuard(event) } : {}),
+    onCompile: (event) => {
+      recordCompiledModule(event);
+      return guard ? goldenGuard(event) : undefined;
+    },
     plugins: canaryPlugins(setup.mode.canary, target),
   };
 }
@@ -182,10 +200,18 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
   const name = `browser:${target}`;
   const context: ToolchainContext = { toolchainDir: toolchainDir(target), root: ROOT };
   const fragment = await toolchain.vite("browser", context);
+  // The cases this target has no output for: their specs load against a stand-in, so each test
+  // is skipped by the capability it requires (harness/no-output.ts).
+  const cases = listCases(setup.harness.casesDir);
+  const noOutput = noOutputCases(cases, target);
   const config = mergeConfig(
     {
       root: ROOT,
-      plugins: unframework(unpluginOptions(setup, target)),
+      plugins: [
+        noOutputPlugin(cases, noOutput),
+        noErrorBroadcast(),
+        ...unframework(unpluginOptions(setup, target)),
+      ],
       // The testing API's own browser dependencies (CommonJS axe-core, parse5): listed up front,
       // because one discovered mid-run reloads the page (the browser-projects ADR).
       optimizeDeps: {
@@ -218,7 +244,15 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
           resolveModule("@unframework/testing/setup"),
           resolveModule(`@unframework/testing/${target}`),
         ],
-        provide: { target, ufHarness: setup.harness },
+        // The target's capability matrix as plain data: the browser skips a test that requires
+        // a capability the target lacks, and imports no target (ADR-0050). A test of a case the
+        // target has no output for that is not skipped so fails, with the expected errors.
+        provide: {
+          target,
+          ufHarness: setup.harness,
+          ufCapabilities: builtinTargets[target as TargetName].capabilities,
+          ufNoOutput: noOutput,
+        },
         sequence: { groupOrder: groupOrder("browser", target, setup.mode, REFERENCE) },
         browser: {
           ...parityBrowser({ name, commands: toolchain.browserCommands?.(context) ?? {} }),
@@ -230,6 +264,31 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
     ),
   } as UserWorkspaceConfig;
 };
+
+/**
+ * Keeps a module that fails to compile from failing the specs after it. Its import fails its own
+ * spec, and Vite logs the error; Vite also sends it to every page the server serves, whose client
+ * puts an overlay over the page that every later spec of the run clicks in, so cases that compile
+ * would time out. `server.hmr.overlay: false` cannot stop it: Vitest sets `server.hmr: false`, and
+ * Vite reads `overlay` only from an object, so the overlay stays on. With the overlay off, the
+ * client would log the error in whatever test runs instead, and fail that test's L13.
+ */
+export function noErrorBroadcast(): Plugin {
+  return {
+    name: "uf-harness:no-error-broadcast",
+    configureServer(server) {
+      const hot = server.environments.client.hot;
+      const send = hot.send.bind(hot);
+      hot.send = (...args: unknown[]) => {
+        const [payload] = args;
+        if (typeof payload === "object" && payload !== null && "type" in payload) {
+          if (payload.type === "error") return;
+        }
+        Reflect.apply(send, undefined, args);
+      };
+    },
+  };
+}
 
 type ProjectTest = NonNullable<UserWorkspaceConfig["test"]>;
 

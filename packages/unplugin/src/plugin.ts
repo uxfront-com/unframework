@@ -4,7 +4,7 @@ import { basename, extname, isAbsolute, relative, sep } from "node:path";
 
 import type { OutputFile, Target } from "@unframework/codegen";
 import { compile, resolveTarget } from "@unframework/compiler";
-import type { CompileResult, CompilerPlugin, TargetName } from "@unframework/compiler";
+import type { CompileResult, CompilerPlugin, TargetName, UfModule } from "@unframework/compiler";
 import { formatDiagnostic, formatDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { createUnplugin } from "unplugin";
@@ -35,6 +35,11 @@ export interface CompileEvent {
   files: OutputFile[];
   /** Every diagnostic of the compile, sorted. */
   diagnostics: Diagnostic[];
+  /**
+   * The compile's IR, absent when the file did not parse: what the module's components declare,
+   * such as the events a test listens to (the harness's `ufComponentEvents`).
+   */
+  ir?: UfModule;
 }
 
 /** Options of the unframework plugin. */
@@ -266,6 +271,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
             target: target.name,
             files,
             diagnostics: result.diagnostics,
+            ...(result.ir ? { ir: result.ir } : {}),
           });
           const fail = (message: string) => {
             compiled.delete(id);

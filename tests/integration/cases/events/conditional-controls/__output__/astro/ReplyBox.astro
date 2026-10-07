@@ -1,0 +1,13 @@
+---
+const started = false as boolean;
+const suggesting = false as boolean;
+const accepted = 0 as number;
+---
+
+<section class="reply-box" aria-label="Reply">
+  <label>Message<textarea name="message"></textarea></label>
+  <p>{started ? "Started" : "Not started"}</p>
+  <label>Answer<textarea name="answer"></textarea></label>
+  <button type="button" aria-pressed={suggesting}>Suggestions</button>
+  <p>Accepted: {accepted}</p>
+</section>

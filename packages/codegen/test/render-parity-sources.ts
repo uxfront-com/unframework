@@ -1,10 +1,10 @@
-// The render-parity kit's M1 cases, as source (design §4.5): components an author could write,
-// with the props they render with. Hand-written ones for each rule of design §1 and each spelling
+// The render-parity kit's M1 cases, as source: components an author could write, with the props
+// they render with. Hand-written ones for each rule of ADR-0034 to ADR-0040 and each spelling
 // a printer must guard, root cases whose own root is under test, and a seeded fuzz that writes
 // random components. ./render-parity-node.ts lowers them with the analyser, which must accept
 // every one, and ./render-parity-reference.ts says what they render.
 //
-// The values keep to the contract (design §1.9): unique list keys, dense arrays, finite numbers
+// The values keep to the contract (ADR-0035): unique list keys, dense arrays, finite numbers
 // wherever one renders (`NaN` only as a condition), no class token twice on an element, CSS values
 // without `;`, no empty, `javascript:` or `data:` URL bound. Values a browser would fetch are
 // `about:blank` or fragments, so nothing renders a request.
@@ -70,7 +70,7 @@ export const TRICKY_SOURCES: readonly SourceCase[] = [
   },
   {
     // Angular's lexer reads only some escapes and decimal numbers, and no comments: its dialect
-    // prints literals again from their values (design §4.3).
+    // prints literals again from their values (ADR-0035).
     name: "literal spellings Angular's lexer reads differently, and comments in code",
     params: "{ s, on }: { s: string; on: boolean }",
     jsx: [
@@ -264,7 +264,7 @@ export const TRICKY_SOURCES: readonly SourceCase[] = [
     props: { on },
   })),
   {
-    // Solid's lane: a line feed between two interpolations in a `<pre>`, which JSX keeps.
+    // For Solid: a line feed between two interpolations in a `<pre>`, which JSX keeps.
     name: "a line feed between interpolations in a pre",
     params: "{ a, b }: { a: string; b: string }",
     jsx: '<pre>{a}{"\\n"}{b}</pre>',
@@ -277,7 +277,7 @@ export const TRICKY_SOURCES: readonly SourceCase[] = [
     props: { on: true },
   },
   // Branches that read what their condition narrows, as TypeScript narrows it in the source
-  // (`user.name` where `user` may be absent): Solid's lane, whose output reads them through
+  // (`user.name` where `user` may be absent): for Solid, whose output reads them through
   // `<Show>`'s and `<Match>`'s callbacks. An `&&`, a ternary, a negation that narrows the rest of
   // a chain, a property, the left of an `&&`, and an else-if on another reference.
   ...[
@@ -515,7 +515,7 @@ export const TRICKY_SOURCES: readonly SourceCase[] = [
     props: { on: false, s: "s", n: 1 },
   },
   {
-    // Solid's lane: a quote and an ampersand in string literals of a bound value.
+    // For Solid: a quote and an ampersand in string literals of a bound value.
     name: "a quote and an ampersand in a bound value's literals",
     params: "{ on, off }: { on: boolean; off: boolean }",
     jsx: `<div><p title={on ? '"' : "&"}>x</p><p title={off ? '"' : "&"}>y</p></div>`,
@@ -932,7 +932,7 @@ const PHRASING_PARENTS = new Set(["p", "span", "b", "i", "em", "a", "label", "bu
 
 /**
  * A random component, from a seed (P8): its props and the values it renders with, and JSX of
- * every M1 kind (design §4.5). Text, from the pieces printers must guard, is raw JSX text where
+ * every M1 kind. Text, from the pieces printers must guard, is raw JSX text where
  * JSX keeps it as written and a string literal elsewhere; interpolations of strings and numbers
  * (`0`, `-0`, `1e21`, `1e-7`) sit beside text; conditionals with falsy values
  * that are not booleans, chains, text and several nodes in a branch at an element's edges; keyed,

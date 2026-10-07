@@ -1,0 +1,6 @@
+{
+  "description": "Two ids from useId tie a label to its field and the field to its hint, stable between the server and the browser.",
+  "ssr": {
+    "work-email": { "props": { "label": "Work email", "hint": "We send the invoices here." } }
+  }
+}

@@ -13,13 +13,16 @@ import {
   createText,
 } from "@unframework/ir";
 import type { RenderNode } from "@unframework/ir";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 import { renderToString } from "../src/toolchain/server.ts";
 import {
   component,
+  corpusSources,
+  emitFormatted,
   emitModule,
   goldenFiles,
+  lower,
   ngtscPlugin,
   removeScratch,
   scratchDir,
@@ -112,5 +115,51 @@ describe("the emitted template", () => {
       element("pre", [element("b", [text("a")]), text("\n  "), element("i", [text("b")])]),
     ]);
     expect(html).toBe("<pre><b>a</b>\n  <i>b</i></pre>");
+  });
+});
+
+/** A corpus case's output as this target emits it now, compiled and loaded. */
+async function loadCase(name: string): Promise<unknown> {
+  const { file, source } = corpusSources().find((each) => each.name === name)!;
+  const [output] = await emitFormatted(lower(source, file, true));
+  return load(basename(file, ".uf.tsx"), output!.contents);
+}
+
+/** What the server renders inside the component's host element. */
+async function serverHtml(name: string, props: Record<string, unknown> = {}): Promise<string> {
+  const html = await renderToString(await loadCase(name), { props });
+  return /^<uf-[a-z-]+ style="display: contents;">([\s\S]*)<\/uf-[a-z-]+>$/.exec(html)![1]!;
+}
+
+// Effects are client-only (ADR-0048): the server renders the initial state, whatever
+// `onMounted`, a watcher, an immediate watcher, `watchEffect` or `onUnmounted` would do in the
+// browser, and destroying the server's application runs none of them.
+describe("effects on the server", () => {
+  it("renders the state before `onMounted` and the watcher it feeds", async () => {
+    expect(await serverHtml("semantics/effects-client-only")).toBe(
+      '<p role="status" class="network-badge" data-checked="no">Checking the connection</p>',
+    );
+  });
+
+  it("runs no immediate watcher, `watchEffect` or `onUnmounted` there", async () => {
+    const logged: unknown[][] = [];
+    const spies = (["log", "warn", "error"] as const).map((level) =>
+      vi.spyOn(console, level).mockImplementation((...args) => void logged.push(args)),
+    );
+    try {
+      expect(await serverHtml("effects/watch-cleanup")).toContain("Channel: #general");
+      expect(await serverHtml("effects/watch-effect", { appName: "Inbox" })).toContain("0 unread");
+      expect(await serverHtml("lifecycle/unmount-timers", { interval: 1000 })).toContain("Paused");
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+    }
+    expect(logged).toEqual([]);
+  });
+
+  it("gives every id the compiler's prefix", async () => {
+    const html = await serverHtml("ids/label-association", { label: "Email", hint: "Work" });
+    const ids = [...html.matchAll(/ (?:id|for|aria-describedby)="([^"]+)"/g)].map(([, id]) => id);
+    expect(ids).toHaveLength(4);
+    expect(ids.every((id) => id!.startsWith("uf-id-email-field-"))).toBe(true);
   });
 });

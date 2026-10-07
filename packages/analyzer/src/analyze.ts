@@ -17,14 +17,18 @@ import {
 } from "@unframework/parser";
 import type { AST, ComponentExport, ParsedModule } from "@unframework/parser";
 
+import { authoringBindings, checkAuthoringImport } from "./authoring.ts";
+import type { AuthoringApi } from "./authoring.ts";
 import { Reporter } from "./context.ts";
-import { checkTypeDeclaration, collectTypes } from "./declarations.ts";
+import { checkTypeDeclaration, collectTypes, setupTypes } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
 import { frameworkOf, isAuthoringModule } from "./frameworks.ts";
 import { containsJsx, lowerElement, lowerRootChildren, ROOT } from "./lower.ts";
 import { analyzeProps } from "./props.ts";
-import type { ComponentFunction, RenderContext } from "./render.ts";
+import type { ComponentFunction, RenderContext, SetupBinding } from "./render.ts";
+import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
+import { checkDirective, declareSetup, isDirective } from "./setup.ts";
 import { syntaxError } from "./syntax.ts";
 
 /** The result of analysing one module. */
@@ -55,6 +59,17 @@ interface Candidate {
 
 /** Analyses a parsed `.uf.tsx` module and lowers its components into IR (passes P2 and P3). */
 export function analyze(parsed: ParsedModule): AnalyzeResult {
+  return analyzeModule(parsed);
+}
+
+/**
+ * What a component's setup declares, as the analyser reads it: each binding's kinds, which never
+ * reach the IR. The tests pin them against TypeScript's inference (ADR-0046).
+ */
+export type SetupObserver = (component: string, bindings: readonly SetupBinding[]) => void;
+
+/** `analyze`, with an observer of each component's setup, for the tests. */
+export function analyzeModule(parsed: ParsedModule, observe?: SetupObserver): AnalyzeResult {
   const reporter = new Reporter(parsed.file);
   for (const error of parsed.errors) {
     const { span, message, help, fixes } = syntaxError(error, parsed);
@@ -94,6 +109,15 @@ export function analyze(parsed: ParsedModule): AnalyzeResult {
   const moduleErrors = reporter.hasErrorsSince(moduleMark);
 
   const scopes = new Scopes(parsed.program);
+  const authoring = authoringBindings(parsed.program);
+  const module: ComponentModule = {
+    parsed,
+    types,
+    scopes,
+    authoring,
+    reporter,
+    ...(observe ? { observe } : {}),
+  };
   const components: UfComponent[] = [];
   const exports: UfExport[] = [];
   const names = new Map<string, Candidate>();
@@ -102,10 +126,10 @@ export function analyze(parsed: ParsedModule): AnalyzeResult {
     if (candidate.value) {
       // Checked as the declaration its fix writes, which then reveals nothing new.
       reportValueComponent(candidate, candidate.value, parsed, reporter);
-      analyzeComponent(candidate, parsed, types, scopes, reporter);
+      analyzeComponent(candidate, module);
       continue;
     }
-    const component = analyzeComponent(candidate, parsed, types, scopes, reporter);
+    const component = analyzeComponent(candidate, module);
     if (!component) continue;
     components.push(component);
     for (const entry of candidate.exports) {
@@ -344,22 +368,6 @@ function checkTopLevelStatement(
   );
 }
 
-function isDirective(statement: AST.Directive | AST.Statement): statement is AST.Directive {
-  return statement.type === "ExpressionStatement" && "directive" in statement;
-}
-
-/**
- * A directive. `"use strict"` changes nothing in a module, which is strict; any other belongs
- * to a framework or a bundler (`"use client"`), which the compiler does not write for a target.
- */
-function checkDirective(statement: AST.Directive, reporter: Reporter): void {
-  if (statement.directive === "use strict") return;
-  reporter.unsupported(
-    statement,
-    `Directives such as ${statement.expression.raw ?? JSON.stringify(statement.directive)} are not supported yet: each target's output carries the directives its framework needs.`,
-  );
-}
-
 /**
  * A top-level function that returns JSX, as a component does, but whose name does not make it
  * a component candidate (`isComponentName`).
@@ -460,11 +468,14 @@ function checkImport(statement: AST.ImportDeclaration, reporter: Reporter): void
     );
     return;
   }
-  if (isAuthoringModule(specifier)) return;
+  if (isAuthoringModule(specifier)) {
+    checkAuthoringImport(statement, reporter);
+    return;
+  }
   if (statement.importKind === "type") {
     reporter.unsupported(
       statement,
-      "Importing types from other modules is not supported yet: props types from other modules land in M5.",
+      "Importing types from other modules is not supported yet: types from other modules land in M5.",
       { help: "Declare the props type in this module." },
     );
     return;
@@ -476,14 +487,20 @@ function checkImport(statement: AST.ImportDeclaration, reporter: Reporter): void
   reporter.unsupported(statement, "Importing modules is not supported yet.");
 }
 
+/** What analysing a component needs to know about its module. */
+interface ComponentModule {
+  parsed: ParsedModule;
+  types: ModuleTypes;
+  scopes: Scopes;
+  /** The module's authoring imports, by the identifier that declares each (ADR-0006). */
+  authoring: ReadonlyMap<object, AuthoringApi | undefined>;
+  reporter: Reporter;
+  observe?: SetupObserver;
+}
+
 /** Checks a component's shape, its props and its setup, and lowers its returned JSX. */
-function analyzeComponent(
-  candidate: Candidate,
-  parsed: ParsedModule,
-  types: ModuleTypes,
-  scopes: Scopes,
-  reporter: Reporter,
-): UfComponent | undefined {
+function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComponent | undefined {
+  const { parsed, types, scopes, authoring, reporter } = module;
   const mark = reporter.diagnostics.length;
   const fn = candidate.node;
   const name = fn.id ?? candidate.span;
@@ -507,7 +524,6 @@ function analyzeComponent(
   const block = fn.body?.type === "BlockStatement" ? fn.body : undefined;
   const body = (block?.body ?? []).filter((statement) => statement.type !== "EmptyStatement");
   const last = body.at(-1);
-  for (const statement of body.slice(0, -1)) checkSetup(statement, reporter);
   // An arrow function's expression body is what it returns.
   const returned =
     fn.type === "ArrowFunctionExpression" && fn.body.type !== "BlockStatement"
@@ -515,6 +531,19 @@ function analyzeComponent(
       : last?.type === "ReturnStatement"
         ? last.argument
         : undefined;
+  // The setup (ADR-0045): every statement before the return, declared before any code is walked.
+  const setup = declareSetup({
+    source: parsed.source,
+    reporter,
+    scopes,
+    types: types.table,
+    comments: parsed.comments,
+    authoring,
+    component: fn,
+    props,
+    statements: body.slice(0, -1),
+    returned: returned ?? undefined,
+  });
   const render: RenderContext = {
     source: parsed.source,
     reporter,
@@ -526,9 +555,13 @@ function analyzeComponent(
     propsObject: props.object,
     loopVariables: new Map(),
     enclosing: [],
-    bindings: [...props.bindings],
+    setup: setup.scope,
+    attached: new Map(),
+    bindings: [...props.bindings, ...setup.bindings],
     comments: parsed.comments,
+    facts: { nestedCalls: [], getterKinds: new Map(), tickCallbacks: [], passed: new Map() },
   };
+  setup.lower(render);
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {
     if (returned && containsJsx(returned) && returned.type !== "ArrowFunctionExpression") {
       rootExpression(candidate, returned, render);
@@ -561,15 +594,35 @@ function analyzeComponent(
   } else {
     root = lowerElement(returned, ROOT, render).element;
   }
+  setup.finish(render);
+  // The rules that need every function's summary (ADR-0045), once everything is lowered.
+  checkRules({
+    name: candidate.name,
+    span: candidate.span,
+    render,
+    setup,
+    props,
+    root,
+    program: parsed.program,
+    failed: props.failed || reporter.hasErrorsSince(mark),
+  });
+  module.observe?.(candidate.name, [...setup.scope.bindings.values()]);
   if (!root || props.failed || reporter.hasErrorsSince(mark)) return undefined;
+  // The types its output declares: its props', its events' and its setup code's (ADR-0045).
+  const names = new Set([...props.types, ...setupTypes(fn, types.table)]);
+  const componentTypes = types.declarations
+    .filter((declaration) => names.has(declaration.name))
+    .map((declaration) => declaration.name);
   return createComponent(
     candidate.name,
     root,
     candidate.span,
     props.props,
     props.propsParameter,
-    props.types,
+    [...new Set(componentTypes)],
     render.bindings.toSorted((a, b) => a.span.start - b.span.start),
+    setup.items,
+    setup.emits,
   );
 }
 
@@ -767,31 +820,4 @@ function valueComponentFix(
   );
   if (lost) return undefined;
   return { title: `Declare \`${name}\` as a function`, confidence: "likely", edits };
-}
-
-/**
- * A statement before the component's return: setup code, which lands in M2. A variable that
- * holds JSX is JSX outside the template (UF3012), which stays so once setup code lands.
- */
-function checkSetup(statement: AST.Directive | AST.Statement, reporter: Reporter): void {
-  if (isDirective(statement)) {
-    checkDirective(statement, reporter);
-    return;
-  }
-  if (statement.type === "VariableDeclaration") {
-    const jsx = statement.declarations.filter((declarator) => containsJsx(declarator.init));
-    for (const declarator of jsx) {
-      reporter.report(
-        "UF3012",
-        declarator.init!,
-        "JSX cannot be kept in a variable: Vue's, Svelte's and Angular's templates have no counterpart for it.",
-        { help: "Write the JSX where it renders, in the returned tree, or extract a component." },
-      );
-    }
-    if (jsx.length) return;
-  }
-  reporter.unsupported(
-    statement,
-    "Setup code in a component's body is not supported yet: it lands in M2.",
-  );
 }

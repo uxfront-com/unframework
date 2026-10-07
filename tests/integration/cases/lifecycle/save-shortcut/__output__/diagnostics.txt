@@ -1,0 +1,18 @@
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> lifecycle/save-shortcut/DraftEditor.uf.tsx:15:3
+   |
+15 |   onMounted(() => {
+   |   ^^^^^^^^^^^^^^^^^
+   | ...
+17 |   });
+   | ^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF4001] (qwik): The qwik target does not support conditional-event-control: Qwik runs a handler once its code has loaded, after the event is dispatched, so it runs `preventDefault()` and `stopPropagation()` apart, as the event is dispatched: a control at the top of a template listener on every event (`preventdefault:click`), or under an `if` there that tests only the event, in a `sync$` handler, which captures nothing. A control after another statement, in a block beside other statements, in an `else` or a `switch`, after a test of state or of what a control changes (`event.defaultPrevented`), or in a function the listener calls anywhere but at its top, cannot run there; nor can a `once` listener's control that runs under a condition or on an element listening to the event in both phases (a `sync$` handler cannot tell whether the listener already ran), nor a capture listener's control where an element of the component listens to the event in both phases (Qwik runs those capture listeners from the window); nor a control in a local function that reads the component's state and that client code hands to `addEventListener` or calls outside a template listener, which is a QRL. Make the control the first statement of the listener, or the only statement under an `if` that tests only the event (`if (event.key === "Enter") event.preventDefault();`), and keep a `once` listener's control unconditional; in a listener client code adds, make the control in the listener itself, before it calls a local function.
+  --> lifecycle/save-shortcut/DraftEditor.uf.tsx:16:42
+   |
+16 |     document.addEventListener("keydown", onShortcut);
+   |                                          ^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

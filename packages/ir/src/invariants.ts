@@ -7,6 +7,17 @@ import {
   isKnownCssProperty,
 } from "./css.ts";
 import {
+  DOM_EVENTS,
+  EVENT_INTERFACES,
+  EVENT_METHODS,
+  extendsEventInterface,
+  PASSIVE_EVENTS,
+  PORTABLE_EVENT_INTERFACES,
+  PORTABLE_EVENT_MEMBERS,
+  UNSUPPORTED_EVENTS,
+  WINDOW_EVENTS,
+} from "./events.ts";
+import {
   BINDABLE_BOOLEAN_ATTRIBUTES,
   canonicalNumber,
   DOCUMENT_ATTRIBUTES,
@@ -23,13 +34,20 @@ import {
 } from "./html.ts";
 import {
   ALLOWED_GLOBALS,
+  BROWSER_GLOBALS,
+  CLIENT_GLOBALS,
   isComponentName,
   isExportName,
   isIdentifier,
+  PURE_GLOBALS,
+  readsDom,
   RESERVED_TYPE_NAMES,
+  reservedEventName,
   reservedParameterName,
   reservedPropName,
   reservedPropsParameterName,
+  reservedSetupName,
+  SCHEDULING_GLOBALS,
 } from "./names.ts";
 import {
   CHILDLESS_ATTRIBUTES,
@@ -46,6 +64,8 @@ import {
   UNRENDERED_ATTRIBUTES,
   WHITESPACE_DROPPING_ELEMENTS,
 } from "./portability.ts";
+import { impurity, summarize, summarizeCode, summarizeTracked } from "./summary.ts";
+import type { CodeSummary, FunctionSummary } from "./summary.ts";
 import {
   elementNamespace,
   isSvgAttribute,
@@ -59,17 +79,29 @@ import type { Namespace } from "./svg.ts";
 import type {
   Binding,
   BindingId,
+  BindingKind,
+  BindingReference,
   ClassAttribute,
+  Code,
   ElementNode,
+  Emits,
+  EventAttribute,
   Expression,
+  FunctionCode,
+  FunctionItem,
   IfNode,
+  Parameter,
+  RefAttribute,
   RenderNode,
+  SetupItem,
   Span,
   StyleAttribute,
   UfComponent,
   UfModule,
+  WriteReference,
 } from "./types.ts";
 import type { IrValidationError } from "./validate.ts";
+import type { FunctionRole } from "./visit.ts";
 
 /**
  * A `class` in canonical form: one or more names, separated by single spaces, and no other
@@ -86,8 +118,9 @@ const CANONICAL_CLASS = /^\S+(?: \S+)*$/u;
  *   once;
  * - each element is an HTML element every target can render as itself, or inside an `<svg>` an
  *   SVG element (ADR-0040), and a void one has no children;
- * - each attribute is an attribute of its element (so no event handler), set once across every
- *   kind and spread key (a spread's `class` merges with the element's), and none that a target
+ * - each rendered attribute is an attribute of its element (so no `on*` handler, `key` or `ref`:
+ *   listeners and template refs are attributes of their own kinds), set once across every kind
+ *   and spread key (a spread's `class` merges with the element's), and none that a target
  *   renders differently (`portability.ts`): template syntax, attributes a framework acts on or
  *   sets as state, `contenteditable` with children, an empty URL React drops, a number in a
  *   form renderers rewrite, a boolean or an attribute a target cannot bind (ADR-0037);
@@ -103,10 +136,37 @@ const CANONICAL_CLASS = /^\S+(?: \S+)*$/u;
  *   `<pre>`, after what may render nothing included, never two texts side by side;
  * - props have names every target can declare, static defaults, and one binding each, and the
  *   object form's parameter a name no framework declares; a local `Props` is the props type of
- *   every component whose props reach it; every binding's id is its name and offset; every
- *   expression is its source text, and refers only to bindings in scope there and to the
- *   allowed globals, a prop by name or, in the object form, as the parameter's member
- *   (ADR-0034, ADR-0035);
+ *   every component whose props reach it; every binding's id is its name and offset, and no two
+ *   of a component's own bindings (props, the setup's and `emit`) share a name;
+ * - the setup's items come in source order, inside the component and before its render; each
+ *   declares one binding of its kind (ADR-0045), whose name no target reserves; the `emit`
+ *   binding is the one `emits` declares, whose events have names every target can spell apart
+ *   and payloads of named members (ADR-0047);
+ * - every expression and piece of code is its source text, and refers only to bindings in scope
+ *   there and to the globals its context may read: a prop by name or, in the object form, as the
+ *   parameter's member, and a `ref`'s, a `computed`'s or a template ref's value as `name.value`
+ *   (ADR-0034, ADR-0035, ADR-0045). Its references are in order and apart, but a write's value's
+ *   and an emit's arguments', which follow it; a narrowed path of a read starts at the read of a
+ *   prop or a ref's value, ends at it or at a member path off it, written with `.` and literal
+ *   keys, longer than the one before, and is narrowed in the template only where it is code's,
+ *   and across a closure only as a destructured prop's own read (ADR-0046);
+ * - code runs where it may (ADR-0045): a template's expressions and the setup's initial values
+ *   and getters read no template ref, setup `let` or `emit`, write nothing, emit nothing and call
+ *   only local functions whose summary is pure, and a getter only those that read static values;
+ *   only client code writes a `state` or `localVar`, emits a declared event with as many
+ *   arguments as it takes, calls `nextTick` and reads a local function as a value; what the setup
+ *   evaluates reads only what is declared before it; an immediate watcher's callback is safe on
+ *   the server, a watcher that is not `post` reads no DOM before `await nextTick()`, and
+ *   `watchEffect` reads nothing that is not reactive (ADR-0048);
+ * - functions have the parameters their role takes, named apart from the component's names, with
+ *   static defaults, and a block or an expression body as their flag says; a handler's event
+ *   parameter has an interface of its event, and the code uses only its portable members, and
+ *   lists its leading `preventDefault()` and `stopPropagation()` calls, each holding its call, with
+ *   a condition that reads only the event (ADR-0047);
+ * - each listener takes an event of the vocabulary (`events.ts`), at most one option, `passive`
+ *   only where it counts, a local function or a function in place, once per event and options
+ *   on its element; each template ref is attached by one element outside any list (ADR-0049);
+ *   neither sits in Angular's literal region, which binds nothing (ADR-0037);
  * - conditionals, lists and fragments have the shapes the targets print; a loop variable takes
  *   no name a target's rewrite or an output would capture, and a key reads its list's item or
  *   index and no loop variable of a list around it (ADR-0035, ADR-0036).
@@ -116,9 +176,11 @@ const CANONICAL_CLASS = /^\S+(?: \S+)*$/u;
  * as it owns what its `output` hook writes: how JSX reads text, the names the compiler and the
  * frameworks reserve (`data-uf-*`, `uf-id-`, `data-hk`, `nonce`), nesting the parser repairs,
  * and attributes that are valid but mean nothing where they are written. An expression's code
- * is JavaScript the IR cannot parse: the compiler compares a plugin's with the analyser's. Nor
- * does the IR know a value's type, so a spread's `nullish` is the analyser's to set: a plugin
- * that moves a spread keeps it true wherever the object may be nullish (ADR-0039).
+ * is JavaScript the IR cannot parse: the compiler compares a plugin's with the analyser's, and
+ * what only the syntax shows (a write that is not a statement, a mutation, a conditional read in
+ * an effect, nondeterminism) is the analyser's. Nor does the IR know a value's type, so a
+ * spread's `nullish` is the analyser's to set: a plugin that moves a spread keeps it true
+ * wherever the object may be nullish (ADR-0039).
  */
 export function checkInvariants(module: UfModule): IrValidationError[] {
   const errors: IrValidationError[] = [];
@@ -229,16 +291,34 @@ function takesProps(component: UfComponent): boolean {
   return component.propsParameter?.type.code === "Props";
 }
 
+/**
+ * Where code runs (ADR-0045): a template's expressions; what the setup evaluates, its initial
+ * values and its getters (a getter calls only functions Qwik can hoist); and client code.
+ */
+type Context = "render" | "initial" | "getter" | "client";
+
 /** What a component's walk shares: the component's bindings and what the walk finds. */
 interface Walk {
   readonly errors: IrValidationError[];
+  readonly component: UfComponent;
   readonly bindings: ReadonlyMap<BindingId, Binding>;
   /** The object form's parameter name, which a reference to a prop starts with. */
   readonly propsName: string | undefined;
-  /** The props' names, which no loop variable may take. */
-  readonly propNames: ReadonlySet<string>;
+  /**
+   * The component's own names (props, setup bindings, `emit`), each with what declares it:
+   * no loop variable or parameter may take one.
+   */
+  readonly names: ReadonlyMap<string, string>;
   /** How many lists declare each loop variable. */
   readonly loopVariables: Map<BindingId, number>;
+  /** How many elements attach each template ref. */
+  readonly attachments: Map<BindingId, number>;
+  /** The summary of each local function. */
+  readonly summaries: ReadonlyMap<BindingId, FunctionSummary>;
+  /** The item that declares each local function. */
+  readonly functions: ReadonlyMap<BindingId, FunctionItem>;
+  /** The `const`s whose value reads no binding: all a getter's functions may read. */
+  readonly staticConsts: ReadonlySet<BindingId>;
 }
 
 /** Where a node sits: what the walk carries down the tree. */
@@ -253,9 +333,35 @@ interface Place {
   readonly inSvgText: boolean;
   /** Whether a conditional or a list lies between the node and the nearest element. */
   readonly controlled: boolean;
-  /** The bindings in scope: the props, and the loop variables of the lists around the node. */
+  /** Whether the node is inside a list's body. */
+  readonly inList: boolean;
+  /**
+   * Whether the node is in Angular's literal region: in or inside an element with a static
+   * attribute holding `{{`, which Angular prints in `ngNonBindable`, where nothing binds.
+   */
+  readonly literal: boolean;
+  /** The bindings in scope: the component's, and the loop variables of the lists around the node. */
   readonly scope: ReadonlySet<BindingId>;
 }
+
+/** The binding kind each setup item declares. */
+const ITEM_BINDINGS: Readonly<Record<SetupItem["kind"], BindingKind | undefined>> = {
+  State: "state",
+  Derived: "derived",
+  TemplateRef: "templateRef",
+  Id: "localConst",
+  Const: "localConst",
+  Variable: "localVar",
+  Function: "localFn",
+  Watch: undefined,
+  WatchEffect: undefined,
+  Lifecycle: undefined,
+};
+
+/** The binding kinds a setup item declares. */
+const SETUP_KINDS: ReadonlySet<BindingKind> = new Set(
+  Object.values(ITEM_BINDINGS).filter((kind) => kind !== undefined),
+);
 
 function checkComponent(
   component: UfComponent,
@@ -266,23 +372,43 @@ function checkComponent(
   const bindings = checkBindings(component, path, errors);
   const walk: Walk = {
     errors,
+    component,
     bindings,
     propsName:
       component.propsParameter?.form === "object" ? component.propsParameter.name : undefined,
-    propNames: new Set(component.props.map(({ name }) => name)),
+    names: checkNames(component, path, bindings, errors),
     loopVariables: new Map(),
+    attachments: new Map(),
+    summaries: summarize(component),
+    functions: new Map(
+      component.setup.flatMap((item) =>
+        item.kind === "Function" ? [[item.binding, item] as const] : [],
+      ),
+    ),
+    staticConsts: new Set(
+      component.setup.flatMap((item) =>
+        item.kind === "Const" && !item.value.refs.some((ref) => ref.kind === "Binding")
+          ? [item.binding]
+          : [],
+      ),
+    ),
   };
   checkComponentTypes(component, path, types, errors);
   checkProps(component, path, walk);
+  // Setup bindings are in scope everywhere in the component; loop variables only in their list.
   const scope = new Set(
-    component.bindings.filter(({ kind }) => kind === "prop").map(({ id }) => id),
+    component.bindings.filter(({ kind }) => kind !== "loopVar").map(({ id }) => id),
   );
+  checkSetup(component, path, scope, walk);
+  checkEmits(component, path, walk);
   const root: Place = {
     path: `${path}/render`,
     element: undefined,
     namespace: "html",
     inSvgText: false,
     controlled: false,
+    inList: false,
+    literal: false,
     scope,
   };
   const { render } = component;
@@ -295,18 +421,63 @@ function checkComponent(
     checkChildren(render.children, { ...root, path: `${path}/render/children` }, walk);
   }
   for (const [index, binding] of component.bindings.entries()) {
-    if (binding.kind !== "loopVar") continue;
-    const lists = walk.loopVariables.get(binding.id) ?? 0;
-    if (lists !== 1) {
-      errors.push({
-        path: `${path}/bindings/${index}`,
-        message:
-          lists === 0
-            ? `must be the item or index of a list, and "${binding.id}" is not`
-            : `must be the item or index of one list, and "${binding.id}" is of ${lists}`,
-      });
+    if (binding.kind === "loopVar") {
+      const lists = walk.loopVariables.get(binding.id) ?? 0;
+      if (lists !== 1) {
+        errors.push({
+          path: `${path}/bindings/${index}`,
+          message:
+            lists === 0
+              ? `must be the item or index of a list, and "${binding.id}" is not`
+              : `must be the item or index of one list, and "${binding.id}" is of ${lists}`,
+        });
+      }
+    } else if (binding.kind === "templateRef") {
+      const elements = walk.attachments.get(binding.id) ?? 0;
+      if (elements !== 1) {
+        errors.push({
+          path: `${path}/bindings/${index}`,
+          message: `must be attached by the \`ref\` of one element, and "${binding.id}" is by ${elements} (ADR-0049)`,
+        });
+      }
     }
   }
+}
+
+/**
+ * Checks the names of a component's own bindings (props, setup bindings and `emit`), which every
+ * target declares in one scope: none twice, none the object form's parameter's, and a setup
+ * binding's none a target reserves (ADR-0045, UF2003). Returns what declares each name.
+ */
+function checkNames(
+  component: UfComponent,
+  path: string,
+  bindings: ReadonlyMap<BindingId, Binding>,
+  errors: IrValidationError[],
+): ReadonlyMap<string, string> {
+  const names = new Map<string, string>();
+  for (const prop of component.props) names.set(prop.name, `the prop "${prop.name}"`);
+  const parameter =
+    component.propsParameter?.form === "object" ? component.propsParameter.name : undefined;
+  for (const [index, binding] of component.bindings.entries()) {
+    if (binding.kind === "prop" || binding.kind === "loopVar") continue;
+    if (bindings.get(binding.id) !== binding) continue;
+    const at = `${path}/bindings/${index}/name`;
+    const reserved = reservedSetupName(binding.name);
+    const taken = names.get(binding.name);
+    if (reserved) {
+      errors.push({ path: at, message: `must be a name every target can take: ${reserved}` });
+    } else if (taken) {
+      errors.push({
+        path: at,
+        message: `must differ from ${taken}'s: every target declares them in one scope`,
+      });
+    } else if (binding.name === parameter) {
+      errors.push({ path: at, message: "must differ from the props parameter's name" });
+    }
+    if (!taken) names.set(binding.name, `the setup binding "${binding.name}"`);
+  }
+  return names;
 }
 
 /**
@@ -530,7 +701,7 @@ function checkNode(node: RenderNode, place: Place, walk: Walk): void {
       checkKey(node.key, declared, `${place.path}/key`, walk);
       checkElement(
         node.body,
-        { ...place, path: `${place.path}/body`, scope, controlled: true },
+        { ...place, path: `${place.path}/body`, scope, controlled: true, inList: true },
         walk,
       );
       return;
@@ -541,13 +712,15 @@ function checkNode(node: RenderNode, place: Place, walk: Walk): void {
 }
 
 /**
- * Why a loop variable cannot take a name where its list is (ADR-0035, UF3024), or `undefined`:
- * the targets that rewrite names (Solid's `props.label`, Angular's `@let` and `track`) would
- * read it in place of a prop, the object form's parameter or a loop variable around it of that
- * name, and the outputs reserve some names whatever the component declares.
+ * Why a loop variable or a function's parameter cannot take a name where it is (ADR-0035,
+ * ADR-0045, UF3024), or `undefined`: the targets that rewrite names (Solid's `props.label`,
+ * Angular's `@let`, `track` and members) would read it in place of a prop, a setup binding, the
+ * object form's parameter or a loop variable around it of that name, and the outputs reserve
+ * some names whatever the component declares.
  */
 function takenName(name: string, scope: ReadonlySet<BindingId>, walk: Walk): string | undefined {
-  if (walk.propNames.has(name)) return `it would shadow the prop "${name}"`;
+  const owner = walk.names.get(name);
+  if (owner) return `it would shadow ${owner}`;
   if (name === walk.propsName) return "it would shadow the props parameter";
   for (const id of scope) {
     const other = walk.bindings.get(id);
@@ -686,7 +859,15 @@ function checkElement(element: ElementNode, place: Place, walk: Walk): void {
       ? "must not start a conditional's branch or a list's body in SVG: dom-expressions leaves `title` out of its SVG tags, so Solid creates it in HTML's namespace"
       : undefined);
   if (tagProblem) errors.push({ path: `${path}/tag`, message: tagProblem });
-  checkAttributes(element, namespace, place, walk);
+  // Angular prints an element with `{{` in a static attribute, and what it holds, in a region
+  // where nothing binds (ADR-0037).
+  const literal =
+    place.literal ||
+    element.attributes.some(
+      (attribute) =>
+        attribute.kind === "Static" && attribute.value !== true && attribute.value.includes("{{"),
+    );
+  checkAttributes(element, namespace, { ...place, literal }, walk);
   if (namespace === "html" && isVoidElement(tag) && children.length) {
     errors.push({ path: `${path}/children`, message: `must be empty: <${tag}> is a void element` });
   }
@@ -708,6 +889,8 @@ function checkElement(element: ElementNode, place: Place, walk: Walk): void {
       namespace,
       inSvgText: place.inSvgText || (namespace === "svg" && tag === SVG_WHITESPACE_KEEPING_ELEMENT),
       controlled: false,
+      inList: place.inList,
+      literal,
       scope: place.scope,
     },
     walk,
@@ -812,8 +995,10 @@ function checkAttributes(
   const staticType =
     type?.kind === "Static" && typeof type.value === "string" ? type.value : undefined;
   const seen = new Set<string>();
+  const listeners = new Set<string>();
   let ownClass = false;
   let spreadClass = false;
+  let ref = false;
   /** Claims a name for one attribute, or reports it set twice. */
   const claim = (name: string, path: string, fromSpread: boolean) => {
     if (name === "class") {
@@ -913,9 +1098,145 @@ function checkAttributes(
         }
         checkExpression(attribute.value, `${at}/value`, place.scope, walk);
         break;
+      case "Event": {
+        const option = attribute.capture ? "capture" : attribute.once ? "once" : "passive";
+        const key = `${attribute.event} ${attribute.capture || attribute.once || attribute.passive ? option : ""}`;
+        if (listeners.has(key)) {
+          errors.push({
+            path: at,
+            message: `must listen to "${attribute.event}" once with its options on an element`,
+          });
+        }
+        listeners.add(key);
+        checkListener(attribute, at, place, walk);
+        break;
+      }
+      case "Ref":
+        if (ref) errors.push({ path: at, message: "must attach the element to one template ref" });
+        ref = true;
+        checkRef(attribute, at, place, walk);
+        break;
       default:
         unreachable(attribute);
     }
+  }
+}
+
+/**
+ * Checks an event listener (ADR-0047): an event of the vocabulary, at most one option, `passive`
+ * only where it counts, outside Angular's literal region, and a handler that takes the event as
+ * an interface it has and uses only what every target's event object carries.
+ */
+function checkListener(attribute: EventAttribute, path: string, place: Place, walk: Walk): void {
+  const { errors, bindings } = walk;
+  const { event, handler } = attribute;
+  if (!DOM_EVENTS.has(event)) {
+    const unsupported = UNSUPPORTED_EVENTS.get(event);
+    errors.push({
+      path: `${path}/event`,
+      message: WINDOW_EVENTS.has(event)
+        ? `must be an event an element receives, and "${event}" only the window does`
+        : unsupported
+          ? `must be an event every target listens to alike, and "${event}" is not: ${unsupported}`
+          : `must be an event of the vocabulary (\`DOM_EVENTS\`), and "${event}" is not one`,
+    });
+  }
+  const options = [attribute.capture, attribute.once, attribute.passive].filter(Boolean).length;
+  if (options > 1) {
+    errors.push({
+      path,
+      message: "must set at most one option: a listener's name takes one suffix (ADR-0017)",
+    });
+  }
+  if (attribute.passive && !PASSIVE_EVENTS.has(event)) {
+    errors.push({
+      path: `${path}/passive`,
+      message: `must be absent on "${event}": a listener is passive only on ${[...PASSIVE_EVENTS].join(", ")}, where it lets scrolling go on`,
+    });
+  }
+  if (place.literal) {
+    errors.push({
+      path,
+      message:
+        "must not be in Angular's literal region: an element with `{{` in a static attribute, or inside one, binds nothing there (ADR-0037)",
+    });
+  }
+  const at = `${path}/handler`;
+  if (handler.kind === "Function") {
+    const binding = bindings.get(handler.binding);
+    if (binding?.kind !== "localFn" || !place.scope.has(handler.binding)) {
+      errors.push({
+        path: `${at}/binding`,
+        message: `must name a local function, and "${handler.binding}" is not one`,
+      });
+      return;
+    }
+    const item = walk.functions.get(handler.binding);
+    if (item) checkHandledEvent(item.function, event, at, walk);
+  } else {
+    const fn = handler.function;
+    checkFunction(fn, `${at}/function`, place.scope, "handler", walk);
+    checkHandledEvent(fn, event, at, walk);
+  }
+}
+
+/**
+ * Checks a function that handles an event: its first parameter, which the event is passed to, is
+ * its event parameter, of the event's interface or one it extends, and its code uses only the
+ * members every target's event object carries for that event (ADR-0047, UF3032).
+ */
+function checkHandledEvent(fn: FunctionCode, event: string, path: string, walk: Walk): void {
+  const dom = DOM_EVENTS.get(event);
+  if (dom === undefined) return;
+  const [first] = fn.parameters;
+  if (first && first.event === undefined) {
+    walk.errors.push({
+      path,
+      message: `must handle "${event}" with a function whose first parameter is its event parameter`,
+    });
+  } else if (first?.event !== undefined && !extendsEventInterface(dom, first.event)) {
+    walk.errors.push({
+      path,
+      message: `must take "${event}" as ${dom} or an interface it extends, and ${first.event} is not one`,
+    });
+  }
+  const portable = PORTABLE_EVENT_MEMBERS.get(PORTABLE_EVENT_INTERFACES.get(event)!)!;
+  for (const ref of fn.body.refs) {
+    if (ref.kind === "Event" && !portable.has(ref.member)) {
+      walk.errors.push({
+        path,
+        message: `must use only the members every target's "${event}" event has, and \`${ref.member}\` is not one (\`PORTABLE_EVENT_INTERFACES\`)`,
+      });
+    }
+  }
+}
+
+/**
+ * Checks a template ref's attachment (ADR-0049): a `templateRef` binding, outside any list, where
+ * Vue would give an array of elements, and outside Angular's literal region.
+ */
+function checkRef(attribute: RefAttribute, path: string, place: Place, walk: Walk): void {
+  const binding = walk.bindings.get(attribute.binding);
+  if (binding?.kind !== "templateRef") {
+    walk.errors.push({
+      path: `${path}/binding`,
+      message: `must name a template ref, and "${attribute.binding}" is not one`,
+    });
+  } else {
+    walk.attachments.set(binding.id, (walk.attachments.get(binding.id) ?? 0) + 1);
+  }
+  if (place.inList) {
+    walk.errors.push({
+      path,
+      message: "must not be in a list: Vue fills a template ref there with an array of elements",
+    });
+  }
+  if (place.literal) {
+    walk.errors.push({
+      path,
+      message:
+        "must not be in Angular's literal region: an element with `{{` in a static attribute, or inside one, binds nothing there (ADR-0037)",
+    });
   }
 }
 
@@ -1050,10 +1371,10 @@ function checkStyle(attribute: StyleAttribute, path: string, place: Place, walk:
 }
 
 /**
- * Checks an expression's structure (ADR-0035): it is the source at its span, and its
+ * Checks a template expression's structure (ADR-0035): it is the source at its span, and its
  * references lie in it, in order and apart, each spanning the binding it names (in scope here)
- * or an allowed global. The IR cannot parse the code: the compiler checks a plugin's code
- * against the analyser's.
+ * or an allowed global, as render code may (ADR-0045). The IR cannot parse the code: the
+ * compiler checks a plugin's code against the analyser's.
  */
 function checkExpression(
   expression: Expression,
@@ -1061,7 +1382,7 @@ function checkExpression(
   scope: ReadonlySet<BindingId>,
   walk: Walk,
 ): void {
-  const { errors, bindings, propsName } = walk;
+  const { errors } = walk;
   const { code, span, refs } = expression;
   if (!checkSourceText(expression, path, errors)) return;
   let end = span.start;
@@ -1077,40 +1398,1177 @@ function checkExpression(
     end = ref.span.end;
     const text = code.slice(ref.span.start - span.start, ref.span.end - span.start);
     if (ref.kind === "Global") {
-      if (!ALLOWED_GLOBALS.has(ref.name)) {
-        errors.push({
-          path: `${at}/name`,
-          message: `must be a global expressions may read, and "${ref.name}" is not one`,
-        });
-      } else if (text !== ref.name) {
-        errors.push({ path: `${at}/span`, message: `must span "${ref.name}"` });
-      }
+      checkGlobal(ref.name, text, at, "render", walk);
+    } else {
+      checkBindingReference(ref, text, at, scope, "render", walk);
+      if (ref.narrowed) checkNarrowed(ref, expression, at, "render", walk);
+    }
+  }
+}
+
+/** The globals each context may read (ADR-0035, ADR-0045). */
+const GLOBALS: Readonly<Record<Context, ReadonlySet<string>>> = {
+  render: ALLOWED_GLOBALS,
+  initial: PURE_GLOBALS,
+  getter: PURE_GLOBALS,
+  client: CLIENT_GLOBALS,
+};
+
+/** What each context is, for messages. */
+const CONTEXT_NAMES: Readonly<Record<Context, string>> = {
+  render: "a template",
+  initial: "an initial value",
+  getter: "a getter",
+  client: "client code",
+};
+
+/** Checks a global reference: one its context may read, spanning its name. */
+function checkGlobal(name: string, text: string, path: string, context: Context, walk: Walk): void {
+  if (!GLOBALS[context].has(name)) {
+    walk.errors.push({
+      path: `${path}/name`,
+      message:
+        context === "render"
+          ? `must be a global expressions may read, and "${name}" is not one`
+          : `must be a global ${CONTEXT_NAMES[context]} may read, and "${name}" is not one`,
+    });
+  } else if (text !== name) {
+    walk.errors.push({ path: `${path}/span`, message: `must span "${name}"` });
+  }
+}
+
+/**
+ * Checks a reference to a binding: one of the component's, in scope, spanning what the targets
+ * replace, and a use its context allows.
+ */
+function checkBindingReference(
+  ref: { binding: BindingId; shorthand?: true; call?: true; later?: true },
+  text: string,
+  path: string,
+  scope: ReadonlySet<BindingId>,
+  context: Context,
+  walk: Walk,
+): void {
+  const { errors } = walk;
+  const binding = walk.bindings.get(ref.binding);
+  if (!binding) {
+    errors.push({
+      path: `${path}/binding`,
+      message: `must name a binding of the component, and "${ref.binding}" is not one`,
+    });
+    return;
+  }
+  if (!scope.has(ref.binding)) {
+    errors.push({
+      path: `${path}/binding`,
+      message: `must name a binding in scope here, and "${ref.binding}" is a loop variable of another list`,
+    });
+    return;
+  }
+  // The targets splice at the span: a prop in the object form is read only as a member of the
+  // parameter, the whole `props.label` (ADR-0035), a ref's value as the whole `count.value`
+  // (ADR-0045), and every other binding by name.
+  const expected = referenceText(binding, walk);
+  const spans =
+    expected.member === undefined
+      ? text === binding.name
+      : isMemberOf(text, expected.object, expected.member);
+  if (!spans) {
+    errors.push({ path: `${path}/span`, message: `must span "${expected.text}"` });
+    return;
+  }
+  if (ref.shorthand && expected.member !== undefined) {
+    errors.push({
+      path: `${path}/shorthand`,
+      message: `must be absent on a reference that spans "${expected.text}"`,
+    });
+  }
+  const problem = useProblem(binding, ref.call === true, context, walk);
+  if (problem) errors.push({ path: `${path}/${problem.field}`, message: problem.message });
+  // Only client code hands a function to a call that runs it later (ADR-0048).
+  if (ref.later && context !== "client") {
+    errors.push({
+      path: `${path}/later`,
+      message: `must be absent in ${CONTEXT_NAMES[context]}, which runs nothing later`,
+    });
+  }
+}
+
+/**
+ * A member path off a read (ADR-0046): `.name` and literal keys (`[0]`, `["key"]`), with only
+ * whitespace between, and no `?.`.
+ */
+const MEMBER_PATH =
+  /^(?:\s*\.\s*[A-Za-z_$][A-Za-z0-9_$]*|\s*\[\s*(?:0|[1-9][0-9]*|"[^"\\\n]*"|'[^'\\\n]*')\s*\])+$/u;
+
+/**
+ * Whether text is a member path a narrowed read may extend over (`.email`, `[0].name`): the
+ * analyser marks no other, which the targets assert a path after.
+ */
+export function isMemberPath(text: string): boolean {
+  return MEMBER_PATH.test(text);
+}
+
+/**
+ * Checks the narrowed paths of a read (ADR-0046): on a prop's or a ref's value's read, which is no
+ * call; each from the read's start to its end or a member path off it, in the code, longer than
+ * the one before; `template` only in client code, and `closure` only on a destructured prop's own read.
+ */
+function checkNarrowed(
+  ref: BindingReference,
+  container: Expression | Code,
+  path: string,
+  context: Context,
+  walk: Walk,
+): void {
+  const { errors } = walk;
+  const at = `${path}/narrowed`;
+  const binding = walk.bindings.get(ref.binding);
+  const kind = binding?.kind;
+  if (kind !== "prop" && kind !== "state" && kind !== "derived" && kind !== "templateRef") {
+    errors.push({
+      path: at,
+      message: "must be absent: only a prop's or a ref's value's read narrows",
+    });
+    return;
+  }
+  if (ref.call) errors.push({ path: at, message: "must be absent on a call" });
+  if (!ref.narrowed!.length) {
+    errors.push({ path: at, message: "must hold a path, or be absent" });
+    return;
+  }
+  let end = -1;
+  for (const [index, narrowing] of ref.narrowed!.entries()) {
+    const where = `${at}/${index}`;
+    const { span } = narrowing;
+    if (
+      span.start !== ref.span.start ||
+      span.end < ref.span.end ||
+      span.end <= end ||
+      !inside(span, container.span)
+    ) {
+      errors.push({
+        path: `${where}/span`,
+        message:
+          "must start at the read, end at it or after it in the code, and be longer than the path before it",
+      });
       continue;
     }
-    const binding = bindings.get(ref.binding);
-    if (!binding) {
+    end = span.end;
+    const tail = container.code.slice(
+      ref.span.end - container.span.start,
+      span.end - container.span.start,
+    );
+    if (tail && !isMemberPath(tail)) {
       errors.push({
-        path: `${at}/binding`,
-        message: `must name a binding of the component, and "${ref.binding}" is not one`,
+        path: `${where}/span`,
+        message:
+          "must end at the read or at a member path off it, written with `.` and literal keys",
       });
-    } else if (!scope.has(ref.binding)) {
+    }
+    if (narrowing.scope === "template" && context !== "client") {
       errors.push({
-        path: `${at}/binding`,
-        message: `must name a binding in scope here, and "${ref.binding}" is a loop variable of another list`,
+        path: `${where}/scope`,
+        message:
+          "must not be `template` outside client code: only a handler's code is narrowed by the template around it",
       });
-    } else if (
-      binding.kind === "prop" && propsName !== undefined
-        ? !isMemberOf(text, propsName, binding.name)
-        : text !== binding.name
+    }
+    if (
+      narrowing.scope === "closure" &&
+      (kind !== "prop" || walk.propsName !== undefined || span.end !== ref.span.end)
     ) {
-      // The targets splice at the span: a prop in the object form is read only as a member of
-      // the parameter, the whole `props.label` (ADR-0035), and in the destructured form by name.
       errors.push({
-        path: `${at}/span`,
-        message: `must span "${binding.kind === "prop" && propsName !== undefined ? `${propsName}.${binding.name}` : binding.name}"`,
+        path: `${where}/scope`,
+        message:
+          "must not be `closure` but on a destructured prop's own read: TypeScript forgets a property's narrowing in a closure",
       });
     }
   }
+}
+
+/** The operators of a write that read its target first (`count.value += 1`). */
+const READING_OPERATORS: ReadonlySet<string> = new Set([
+  "+=",
+  "-=",
+  "*=",
+  "/=",
+  "%=",
+  "**=",
+  "++",
+  "--",
+]);
+
+/**
+ * Checks a write's narrowed target (ADR-0046): a state's, whose operator reads it, as one `local`
+ * path spanning the target.
+ */
+function checkWriteNarrowed(
+  ref: WriteReference,
+  binding: Binding | undefined,
+  path: string,
+  walk: Walk,
+): void {
+  const at = `${path}/narrowed`;
+  if (binding?.kind !== "state" || !READING_OPERATORS.has(ref.operator)) {
+    walk.errors.push({
+      path: at,
+      message: "must be absent but on a write of a state whose operator reads it (`+=`, `++`, …)",
+    });
+    return;
+  }
+  const [only, ...rest] = ref.narrowed!;
+  if (
+    !only ||
+    rest.length ||
+    only.span.start !== ref.target.start ||
+    only.span.end !== ref.target.end ||
+    only.scope !== "local"
+  ) {
+    walk.errors.push({ path: at, message: "must hold one `local` path spanning the target" });
+  }
+}
+
+/** What a reference to a binding spans: its name, or a member of an object. */
+function referenceText(
+  binding: Binding,
+  walk: Walk,
+): { text: string; object: string; member?: string } {
+  if (binding.kind === "prop" && walk.propsName !== undefined) {
+    return {
+      text: `${walk.propsName}.${binding.name}`,
+      object: walk.propsName,
+      member: binding.name,
+    };
+  }
+  if (binding.kind === "state" || binding.kind === "derived" || binding.kind === "templateRef") {
+    return { text: `${binding.name}.value`, object: binding.name, member: "value" };
+  }
+  return { text: binding.name, object: binding.name };
+}
+
+/**
+ * Why code in a context may not use a binding so, or `undefined` (ADR-0045): only a local
+ * function is called; `emit` only emits; and outside client code no template ref, setup `let`
+ * or function value is read, and only pure local functions are called, a getter's reading
+ * static values alone, which Qwik hoists out of the component.
+ */
+function useProblem(
+  binding: Binding,
+  call: boolean,
+  context: Context,
+  walk: Walk,
+): { field: string; message: string } | undefined {
+  const { id, kind } = binding;
+  if (call && kind !== "localFn") {
+    return {
+      field: "call",
+      message: `must be absent: only a local function is called, and "${id}" is a ${kind} binding`,
+    };
+  }
+  const where = CONTEXT_NAMES[context];
+  switch (kind) {
+    case "emit":
+      return {
+        field: "binding",
+        message: `must not name "${id}": code calls \`emit\` only as an emit of a declared event (ADR-0047)`,
+      };
+    case "templateRef":
+      return context === "client"
+        ? undefined
+        : {
+            field: "binding",
+            message: `must not read the template ref "${id}" in ${where}: only client code may, once the element is mounted (ADR-0049)`,
+          };
+    case "localVar":
+      return context === "client"
+        ? undefined
+        : {
+            field: "binding",
+            message: `must not read the setup \`let\` "${id}" in ${where}: it is not reactive, so only client code may (ADR-0045)`,
+          };
+    case "localFn": {
+      if (context === "client") return undefined;
+      if (!call) {
+        return {
+          field: "binding",
+          message: `must call the local function "${id}": only client code passes one as a value (ADR-0045)`,
+        };
+      }
+      const summary = walk.summaries.get(id);
+      const impure = summary && impurity(summary);
+      if (impure) {
+        return {
+          field: "binding",
+          message: `must call only a pure local function in ${where}, and "${id}" is not: ${impure}`,
+        };
+      }
+      const free =
+        context === "getter"
+          ? [...(summary?.reads ?? [])].find((read) => !walk.staticConsts.has(read))
+          : undefined;
+      return free === undefined
+        ? undefined
+        : {
+            field: "binding",
+            message: `must call only a local function that reads static values in a getter, which Qwik hoists out of the component, and "${id}" reads "${free}"`,
+          };
+    }
+    case "prop":
+    case "loopVar":
+    case "state":
+    case "derived":
+    case "localConst":
+      return undefined;
+    default:
+      return unreachable(kind);
+  }
+}
+
+/** The event parameter of the function whose body code is: what its `Event` references read. */
+interface EventScope {
+  readonly parameter: Parameter;
+}
+
+/**
+ * Checks a piece of setup code (ADR-0045): it is the source at its span; its references lie in
+ * it in order, apart but for those inside a write's value or an emit's argument, which follow it;
+ * and each is one its context allows: writes, emits and `nextTick` only in client code, and a
+ * handler's event only in a function with an event parameter.
+ */
+function checkCode(
+  code: Code,
+  path: string,
+  scope: ReadonlySet<BindingId>,
+  context: Context,
+  walk: Walk,
+  event?: EventScope,
+): void {
+  const { errors, bindings } = walk;
+  if (!checkSourceText(code, path, errors)) return;
+  /** The writes and emits around the current reference, with where theirs may lie. */
+  const open: { end: number; slots: readonly Span[] }[] = [];
+  let cursor = code.span.start;
+  for (const [index, ref] of code.refs.entries()) {
+    const at = `${path}/refs/${index}`;
+    if (!inside(ref.span, code.span) || ref.span.start >= ref.span.end) {
+      errors.push({ path: `${at}/span`, message: "must lie in the code" });
+      continue;
+    }
+    while (open.length && ref.span.start >= open.at(-1)!.end) {
+      cursor = Math.max(cursor, open.pop()!.end);
+    }
+    const around = open.at(-1);
+    if (ref.span.start < cursor) {
+      errors.push({ path: `${at}/span`, message: "must follow the reference before it" });
+      continue;
+    }
+    if (around && !around.slots.some((slot) => inside(ref.span, slot))) {
+      errors.push({
+        path: `${at}/span`,
+        message: "must lie in the value of the write or an argument of the emit it is in",
+      });
+      continue;
+    }
+    const text = code.code.slice(ref.span.start - code.span.start, ref.span.end - code.span.start);
+    cursor = ref.span.end;
+    switch (ref.kind) {
+      case "Binding":
+        checkBindingReference(ref, text, at, scope, context, walk);
+        if (ref.narrowed) checkNarrowed(ref, code, at, context, walk);
+        break;
+      case "Global":
+        checkGlobal(ref.name, text, at, context, walk);
+        break;
+      case "Write": {
+        if (context !== "client") {
+          errors.push({
+            path: at,
+            message: `must not write in ${CONTEXT_NAMES[context]}: only client code writes (ADR-0045)`,
+          });
+        }
+        const binding = bindings.get(ref.binding);
+        if (
+          (binding?.kind !== "state" && binding?.kind !== "localVar") ||
+          !scope.has(ref.binding)
+        ) {
+          errors.push({
+            path: `${at}/binding`,
+            message: `must name a state or a setup \`let\`, and "${ref.binding}" is not one`,
+          });
+        } else {
+          const target = `${binding.name}${binding.kind === "state" ? ".value" : ""}`;
+          const written = slice(code, ref.target);
+          if (
+            !inside(ref.target, ref.span) ||
+            (binding.kind === "state"
+              ? !isMemberOf(written, binding.name, "value")
+              : written !== binding.name)
+          ) {
+            errors.push({ path: `${at}/target`, message: `must span "${target}" in the write` });
+          }
+        }
+        const update = ref.operator === "++" || ref.operator === "--";
+        if (update === (ref.value !== undefined)) {
+          errors.push({
+            path: `${at}/value`,
+            message: update
+              ? `must be absent for "${ref.operator}"`
+              : `must be present for "${ref.operator}"`,
+          });
+        } else if (
+          ref.value &&
+          (!inside(ref.value, ref.span) || ref.value.start < ref.target.end)
+        ) {
+          errors.push({ path: `${at}/value`, message: "must lie in the write, after its target" });
+        }
+        if (ref.narrowed) checkWriteNarrowed(ref, binding, at, walk);
+        open.push({ end: ref.span.end, slots: ref.value ? [ref.value] : [] });
+        cursor = ref.span.start;
+        break;
+      }
+      case "Emit":
+        checkEmit(ref, text, at, context, walk);
+        open.push({ end: ref.span.end, slots: ref.arguments });
+        cursor = ref.span.start;
+        break;
+      case "Api":
+        if (context !== "client") {
+          errors.push({
+            path: at,
+            message: `must not call \`nextTick\` in ${CONTEXT_NAMES[context]}: only client code may (ADR-0048)`,
+          });
+        } else if (!isIdentifier(text)) {
+          errors.push({ path: `${at}/span`, message: "must span the API's identifier" });
+        } else if (!CALLED_BARE.test(code.code.slice(ref.span.end - code.span.start))) {
+          errors.push({
+            path: at,
+            message:
+              "must be called without arguments: `await nextTick()` is its one form, and some targets' `nextTick` takes no callback (UF2025)",
+          });
+        }
+        break;
+      case "Event": {
+        const parameter = event?.parameter;
+        if (!parameter?.name || parameter.event === undefined) {
+          errors.push({
+            path: at,
+            message: "must be in the body of a function with an event parameter (ADR-0047)",
+          });
+          break;
+        }
+        if (!isMemberOf(text, parameter.name, ref.member)) {
+          errors.push({
+            path: `${at}/span`,
+            message: `must span "${parameter.name}.${ref.member}"`,
+          });
+        } else if (!PORTABLE_EVENT_MEMBERS.get(parameter.event)?.has(ref.member)) {
+          errors.push({
+            path: `${at}/member`,
+            message: `must be a member every target's ${parameter.event} has (\`PORTABLE_EVENT_MEMBERS\`), and "${ref.member}" is not one`,
+          });
+        } else if (EVENT_METHODS.has(ref.member) !== (ref.call === true)) {
+          errors.push({
+            path: `${at}/call`,
+            message: EVENT_METHODS.has(ref.member)
+              ? `must be set: "${ref.member}" is a method, which code only calls`
+              : `must be absent: "${ref.member}" is not a method`,
+          });
+        }
+        break;
+      }
+      default:
+        unreachable(ref);
+    }
+  }
+}
+
+/** Checks an emit (ADR-0047): of the component's `emit`, a declared event, its arguments' count. */
+function checkEmit(
+  ref: Extract<Code["refs"][number], { kind: "Emit" }>,
+  text: string,
+  path: string,
+  context: Context,
+  walk: Walk,
+): void {
+  const { errors } = walk;
+  if (context !== "client") {
+    errors.push({
+      path,
+      message: `must not emit in ${CONTEXT_NAMES[context]}: only client code emits (ADR-0047)`,
+    });
+  }
+  const { emits } = walk.component;
+  const binding = walk.bindings.get(ref.binding);
+  if (!emits || ref.binding !== emits.binding || binding?.kind !== "emit") {
+    errors.push({
+      path: `${path}/binding`,
+      message: `must name the \`emit\` that \`emits\` declares, and "${ref.binding}" is not it`,
+    });
+  } else if (!text.startsWith(binding.name)) {
+    errors.push({ path: `${path}/span`, message: `must span the call of "${binding.name}"` });
+  }
+  const declared = emits?.events.find(({ name }) => name === ref.event);
+  if (!declared) {
+    errors.push({
+      path: `${path}/event`,
+      message: `must name an event the component declares, and "${ref.event}" is not one`,
+    });
+  } else {
+    const required = declared.parameters.filter((parameter) => !parameter.optional).length;
+    const count = ref.arguments.length;
+    if (count < required || count > declared.parameters.length) {
+      errors.push({
+        path: `${path}/arguments`,
+        message: `must pass ${required === declared.parameters.length ? required : `${required} to ${declared.parameters.length}`} arguments to "${ref.event}", and passes ${count}`,
+      });
+    }
+  }
+  let end = ref.span.start;
+  for (const [index, argument] of ref.arguments.entries()) {
+    if (!inside(argument, ref.span) || argument.start < end || argument.start >= argument.end) {
+      errors.push({
+        path: `${path}/arguments/${index}`,
+        message: "must lie in the emit, after the argument before it",
+      });
+    }
+    end = Math.max(end, argument.end);
+  }
+}
+
+/** How many parameters each role takes, and whether they may be rest parameters or default. */
+const PARAMETERS: Readonly<Record<FunctionRole, { max: number; plain: boolean; what: string }>> = {
+  getter: { max: 0, plain: true, what: "a getter takes none" },
+  lifecycle: { max: 0, plain: true, what: "a lifecycle hook takes none" },
+  watchEffect: { max: 1, plain: true, what: "`watchEffect` passes `onCleanup` alone" },
+  watch: {
+    max: 3,
+    plain: true,
+    what: "a watcher passes the value, the previous value and `onCleanup`",
+  },
+  handler: { max: 1, plain: true, what: "a handler is passed the event alone" },
+  function: { max: Number.POSITIVE_INFINITY, plain: false, what: "" },
+};
+
+/**
+ * Checks a function the source writes (ADR-0045, ADR-0047): its parts lie in it in order; its
+ * parameters are what its role takes, named apart from the component's names, with static
+ * defaults and one event parameter at most, a handler's or a setup function's; `expression`
+ * says whether the body is an expression; its event controls are its body's calls; and its body
+ * is code of its context.
+ */
+function checkFunction(
+  fn: FunctionCode,
+  path: string,
+  scope: ReadonlySet<BindingId>,
+  role: FunctionRole,
+  walk: Walk,
+): void {
+  const { errors } = walk;
+  const context: Context = role === "getter" ? "getter" : "client";
+  const { body } = fn;
+  if (!inside(body.span, fn.span)) {
+    errors.push({ path: `${path}/body/span`, message: "must lie in the function" });
+  }
+  if ((fn.expression === true) === body.code.startsWith("{")) {
+    errors.push({
+      path: `${path}/expression`,
+      message: fn.expression
+        ? "must be absent: the body is a block (an object literal body is parenthesised)"
+        : "must be set: the body is an expression, not a block",
+    });
+  }
+  if (fn.async && role === "getter") {
+    errors.push({ path: `${path}/async`, message: "must be absent: a getter is pure" });
+  }
+  if (fn.returnType) {
+    checkSourceText(fn.returnType, `${path}/returnType`, errors);
+    if (!inside(fn.returnType.span, fn.span) || fn.returnType.span.end > body.span.start) {
+      errors.push({
+        path: `${path}/returnType/span`,
+        message: "must lie in the function, before its body",
+      });
+    }
+  }
+  const limits = PARAMETERS[role];
+  if (fn.parameters.length > limits.max) {
+    errors.push({
+      path: `${path}/parameters`,
+      message: `must hold at most ${limits.max}: ${limits.what}`,
+    });
+  }
+  const names = new Set<string>();
+  let event: Parameter | undefined;
+  let end = fn.span.start;
+  for (const [index, parameter] of fn.parameters.entries()) {
+    const at = `${path}/parameters/${index}`;
+    if (parameter.span.start < end || parameter.span.end > body.span.start) {
+      errors.push({
+        path: `${at}/span`,
+        message: "must lie in the function, after the parameter before it and before the body",
+      });
+    }
+    end = Math.max(end, parameter.span.end);
+    checkParameter(parameter, at, index === fn.parameters.length - 1, names, scope, walk);
+    if (limits.plain && (parameter.rest || parameter.default)) {
+      errors.push({ path: at, message: `must be a plain parameter: ${limits.what}` });
+    }
+    if (parameter.event !== undefined) {
+      if (role !== "handler" && role !== "function") {
+        errors.push({
+          path: `${at}/event`,
+          message: "must be absent: only a handler's or a setup function's parameter is an event",
+        });
+      } else if (event) {
+        errors.push({ path: `${at}/event`, message: "must be absent: a function takes one event" });
+      } else if (parameter.name === undefined || parameter.rest) {
+        errors.push({
+          path: `${at}/event`,
+          message: "must be absent: an event parameter is an identifier, read as `event.member`",
+        });
+      } else if (!EVENT_INTERFACES.has(parameter.event)) {
+        errors.push({
+          path: `${at}/event`,
+          message: `must be an event interface of the vocabulary (\`EVENT_INTERFACES\`), and "${parameter.event}" is not one`,
+        });
+      } else {
+        event = parameter;
+      }
+    } else if (role === "handler") {
+      errors.push({
+        path: `${at}/event`,
+        message: "must be set: a handler's parameter is its event's",
+      });
+    }
+  }
+  checkCode(body, `${path}/body`, scope, context, walk, event ? { parameter: event } : undefined);
+  checkEventControls(fn, path, event, walk);
+  // A write that is an arrow's whole expression body says so, for the targets that rewrite it
+  // into a statement (ADR-0045).
+  if (fn.expression) {
+    const whole = body.refs.find(
+      (ref) => ref.span.start === body.span.start && ref.span.end === body.span.end,
+    );
+    if (whole?.kind === "Write" && !whole.arrowBody) {
+      errors.push({
+        path: `${path}/body/refs/${body.refs.indexOf(whole)}/arrowBody`,
+        message: "must be set: the write is the arrow's whole body",
+      });
+    }
+  }
+}
+
+/**
+ * Checks a parameter: an identifier or a pattern, whose names are identifiers no other parameter,
+ * component name, loop variable around it or output takes (UF3024); a static default; and the
+ * flags TypeScript allows together.
+ */
+function checkParameter(
+  parameter: Parameter,
+  path: string,
+  last: boolean,
+  names: Set<string>,
+  scope: ReadonlySet<BindingId>,
+  walk: Walk,
+): void {
+  const { errors } = walk;
+  const { pattern } = parameter;
+  if ((parameter.name === undefined) === (pattern === undefined)) {
+    errors.push({ path, message: "must have a name or a pattern, and not both" });
+    return;
+  }
+  if (pattern) {
+    checkSourceText(pattern, `${path}/pattern`, errors);
+    if (!inside(pattern.span, parameter.span)) {
+      errors.push({ path: `${path}/pattern/span`, message: "must lie in the parameter" });
+    }
+  }
+  const declared = parameter.name === undefined ? pattern!.names : [parameter.name];
+  for (const [index, name] of declared.entries()) {
+    const at = parameter.name === undefined ? `${path}/pattern/names/${index}` : `${path}/name`;
+    const taken = isIdentifier(name)
+      ? names.has(name)
+        ? "another parameter of the function takes it"
+        : takenName(name, scope, walk)
+      : "it is not an ASCII identifier";
+    if (taken) errors.push({ path: at, message: `must not be named "${name}": ${taken}` });
+    names.add(name);
+  }
+  if (parameter.type) checkSourceText(parameter.type, `${path}/type`, errors);
+  if (parameter.default) {
+    checkSourceText(parameter.default, `${path}/default`, errors);
+    if (parameter.default.refs.length) {
+      errors.push({ path: `${path}/default/refs`, message: "must be empty: a default is static" });
+    }
+    if (parameter.optional || parameter.rest) {
+      errors.push({
+        path: `${path}/default`,
+        message: "must be absent on an optional or a rest parameter",
+      });
+    }
+  }
+  if (parameter.rest && (!last || parameter.optional)) {
+    errors.push({
+      path: `${path}/rest`,
+      message: "must be absent but on the last parameter, which is not optional",
+    });
+  }
+}
+
+/**
+ * Checks a function's event controls (ADR-0047, UF3033): only with an event parameter, in order,
+ * in its body, each spanning a call of its method, a condition that is the body's code there and
+ * reads only the event; and every such call of the body among them.
+ */
+function checkEventControls(
+  fn: FunctionCode,
+  path: string,
+  event: Parameter | undefined,
+  walk: Walk,
+): void {
+  const { errors } = walk;
+  const { body } = fn;
+  const controls = fn.eventControls ?? [];
+  if (controls.length && !event) {
+    errors.push({
+      path: `${path}/eventControls`,
+      message: "must be absent on a function without an event parameter",
+    });
+    return;
+  }
+  let end = body.span.start;
+  for (const [index, control] of controls.entries()) {
+    const at = `${path}/eventControls/${index}`;
+    if (!inside(control.span, body.span) || control.span.start < end) {
+      errors.push({
+        path: `${at}/span`,
+        message: "must lie in the body, after the control before it",
+      });
+    }
+    end = Math.max(end, control.span.end);
+    const calls = body.refs.some(
+      (ref) =>
+        ref.kind === "Event" &&
+        ref.call &&
+        ref.member === control.method &&
+        inside(ref.span, control.span),
+    );
+    if (!calls) {
+      errors.push({ path: `${at}/span`, message: `must hold the call of \`${control.method}\`` });
+    }
+    const { condition } = control;
+    if (!condition) continue;
+    const refs = body.refs.filter((ref) => inside(ref.span, condition.span));
+    if (
+      !inside(condition.span, control.span) ||
+      slice(body, condition.span) !== condition.code ||
+      JSON.stringify(refs) !== JSON.stringify(condition.refs)
+    ) {
+      errors.push({
+        path: `${at}/condition`,
+        message: "must be the body's code at its span, with the body's references there",
+      });
+    } else if (condition.refs.some((ref) => ref.kind !== "Event")) {
+      errors.push({
+        path: `${at}/condition/refs`,
+        message:
+          "must read only the event: Qwik runs the condition apart from the handler, synchronously",
+      });
+    }
+  }
+}
+
+/**
+ * Checks a component's setup (ADR-0045): its items in source order, inside the component and
+ * before its render; each declares one binding of its kind, which no other item declares; and
+ * each item's code is what its context allows, reading only what is declared before it where it
+ * runs during the setup, safe on the server where Vue runs it there, and reading no DOM where it
+ * runs before the DOM updates (ADR-0048).
+ */
+function checkSetup(
+  component: UfComponent,
+  path: string,
+  scope: ReadonlySet<BindingId>,
+  walk: Walk,
+): void {
+  const { errors, bindings } = walk;
+  const owners = new Map<BindingId, number>();
+  let end = component.span.start;
+  for (const [index, item] of component.setup.entries()) {
+    const at = `${path}/setup/${index}`;
+    if (item.span.start < end) {
+      errors.push({ path: `${at}/span`, message: "must follow the item before it" });
+    } else if (!inside(item.span, component.span) || item.span.end > component.render.span.start) {
+      errors.push({ path: `${at}/span`, message: "must lie in the component, before its render" });
+    }
+    end = Math.max(end, item.span.end);
+    const kind = ITEM_BINDINGS[item.kind];
+    if (kind !== undefined && "binding" in item) {
+      const binding = bindings.get(item.binding);
+      if (binding?.kind !== kind) {
+        errors.push({
+          path: `${at}/binding`,
+          message: `must name a ${kind} binding, and "${item.binding}" is not one`,
+        });
+      } else if (!inside(binding.span, item.span)) {
+        errors.push({ path: `${at}/binding`, message: "must name a binding the item declares" });
+      }
+      owners.set(item.binding, (owners.get(item.binding) ?? 0) + 1);
+    }
+    if ("type" in item && item.type) checkSourceText(item.type, `${at}/type`, errors);
+    checkItem(item, at, scope, walk);
+  }
+  for (const [index, binding] of component.bindings.entries()) {
+    if (SETUP_KINDS.has(binding.kind) && owners.get(binding.id) !== 1) {
+      errors.push({
+        path: `${path}/bindings/${index}`,
+        message: `must be declared by one setup item, and "${binding.id}" is by ${owners.get(binding.id) ?? 0}`,
+      });
+    }
+  }
+}
+
+/** Checks a setup item's code and the rules of its kind. */
+function checkItem(item: SetupItem, path: string, scope: ReadonlySet<BindingId>, walk: Walk): void {
+  const { errors, component } = walk;
+  switch (item.kind) {
+    case "State":
+    case "Variable":
+      if (item.initial) {
+        checkCode(item.initial, `${path}/initial`, scope, "initial", walk);
+        declaredBefore(summarizeCode(item.initial, component), item, `${path}/initial`, walk);
+      }
+      return;
+    case "Const":
+      checkCode(item.value, `${path}/value`, scope, "initial", walk);
+      declaredBefore(summarizeCode(item.value, component), item, `${path}/value`, walk);
+      return;
+    case "TemplateRef":
+    case "Id":
+      return;
+    case "Derived":
+      checkFunction(item.getter, `${path}/getter`, scope, "getter", walk);
+      declaredBefore(summarizeCode(item.getter.body, component), item, `${path}/getter`, walk);
+      return;
+    case "Function": {
+      const fn = item.function;
+      checkFunction(fn, `${path}/function`, scope, "function", walk);
+      if (item.form === "declaration" && fn.expression) {
+        errors.push({
+          path: `${path}/form`,
+          message: 'must be "arrow": a function declaration has a block body',
+        });
+      }
+      // Its value would be what a write or an emit returns, which the targets do not agree on.
+      const whole = fn.expression
+        ? fn.body.refs.find(
+            (ref) => ref.span.start === fn.body.span.start && ref.span.end === fn.body.span.end,
+          )
+        : undefined;
+      if (whole?.kind === "Write" || whole?.kind === "Emit") {
+        errors.push({
+          path: `${path}/function/body`,
+          message: `must be a block: a setup function returns no ${whole.kind === "Write" ? "write" : "emit"} (ADR-0045)`,
+        });
+      }
+      if (walk.summaries.get(item.binding)?.reaches.has(item.binding)) {
+        errors.push({
+          path: `${path}/binding`,
+          message: `must not call itself, directly or through other local functions: Qwik's QRLs cannot (ADR-0045)`,
+        });
+      }
+      return;
+    }
+    case "Watch":
+      checkWatch(item, path, scope, walk);
+      return;
+    case "WatchEffect": {
+      checkFunction(item.effect, `${path}/effect`, scope, "watchEffect", walk);
+      // What runs later (a timer's callback, `onCleanup`'s) is tracked by no target.
+      const summary = summarizeTracked(item.effect.body, component);
+      if (summary.readsLocalVar || summary.readsTemplateRef) {
+        errors.push({
+          path: `${path}/effect`,
+          message: `must read no ${summary.readsLocalVar ? "setup `let`" : "template ref"} while it runs, itself or through its functions: neither is reactive on every target (ADR-0048)`,
+        });
+      }
+      return;
+    }
+    case "Lifecycle":
+      checkFunction(item.callback, `${path}/callback`, scope, "lifecycle", walk);
+      return;
+    default:
+      unreachable(item);
+  }
+}
+
+/** Checks a watcher (ADR-0048): its sources, its callback, and when the callback runs. */
+function checkWatch(
+  item: Extract<SetupItem, { kind: "Watch" }>,
+  path: string,
+  scope: ReadonlySet<BindingId>,
+  walk: Walk,
+): void {
+  const { errors, bindings, component } = walk;
+  if (item.array ? !item.sources.length : item.sources.length !== 1) {
+    errors.push({
+      path: `${path}/sources`,
+      message: item.array
+        ? "must hold a source: an array of sources is not empty"
+        : "must hold one source, or `array` be set",
+    });
+  }
+  for (const [index, source] of item.sources.entries()) {
+    const at = `${path}/sources/${index}`;
+    if (source.kind === "Ref") {
+      const binding = bindings.get(source.binding);
+      if (
+        (binding?.kind !== "state" && binding?.kind !== "derived") ||
+        !scope.has(source.binding)
+      ) {
+        errors.push({
+          path: `${at}/binding`,
+          message: `must name a state or a derived value, and "${source.binding}" is not one`,
+        });
+      } else if (binding.span.start >= item.span.start) {
+        errors.push({
+          path: `${at}/binding`,
+          message: `must watch what is declared before the watcher, and "${binding.id}" is not: the setup reads it at once (ADR-0045)`,
+        });
+      }
+    } else {
+      checkFunction(source.getter, `${at}/getter`, scope, "getter", walk);
+      declaredBefore(summarizeCode(source.getter.body, component), item, `${at}/getter`, walk);
+    }
+  }
+  checkFunction(item.callback, `${path}/callback`, scope, "watch", walk);
+  const summary = summarizeCode(item.callback.body, component);
+  if (item.immediate && item.post) {
+    errors.push({
+      path: `${path}/post`,
+      message:
+        "must be absent on an immediate watcher: its first callback runs during the setup, before any DOM (ADR-0048)",
+    });
+  } else if (item.immediate) {
+    const problem = serverProblem(summary, item.callback.async === true, walk);
+    if (problem) {
+      errors.push({
+        path: `${path}/callback`,
+        message: `must be safe on the server, as Vue runs an immediate watcher's first callback there, and ${problem} (ADR-0048)`,
+      });
+    }
+    declaredBefore(summary, item, `${path}/callback`, walk);
+  } else if (!item.post) {
+    const early = beforeTick(item.callback.body);
+    const summary = summarizeCode(early, component);
+    const dom = domGlobal(early, summary, component);
+    if (summary.readsTemplateRef || dom !== undefined) {
+      errors.push({
+        path: `${path}/post`,
+        message: `must be set: the callback reads the DOM (${dom === undefined ? "a template ref" : `\`${dom}\``}) before \`await nextTick()\`, which a watcher sees updated only after it (ADR-0048)`,
+      });
+    }
+  }
+}
+
+/**
+ * The first global code reads, itself or through the local functions it reaches, that sees the
+ * DOM a render changes (`readsDom`: `document`, `window`'s layout, `getComputedStyle`), or
+ * `undefined`.
+ */
+function domGlobal(code: Code, summary: CodeSummary, component: UfComponent): string | undefined {
+  const reached = component.setup.flatMap((item) =>
+    item.kind === "Function" && summary.reaches.has(item.binding) ? [item.function.body] : [],
+  );
+  for (const each of [code, ...reached]) {
+    for (const ref of each.refs) {
+      const following = each.code.slice(ref.span.end - each.span.start);
+      if (ref.kind === "Global" && readsDom(ref.name, following)) return ref.name;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * A callback's code up to its first `await nextTick()`, after which the DOM has updated on every
+ * target (ADR-0007). The analyser counts only an `await` every path to the read passes (UF2018);
+ * the IR, which holds no statements, takes the first one in the text.
+ */
+function beforeTick(code: Code): Code {
+  const tick = code.refs.find(
+    (ref) =>
+      ref.kind === "Api" &&
+      /(?<![\w$])await\s*$/.test(code.code.slice(0, ref.span.start - code.span.start)),
+  );
+  return tick
+    ? { ...code, refs: code.refs.filter((ref) => ref.span.start < tick.span.start) }
+    : code;
+}
+
+/**
+ * Why code Vue may run during the server's setup is not safe there, or `undefined`: it writes
+ * state, reads a template ref, reads a browser or a scheduling global, awaits or calls
+ * `nextTick` (ADR-0048).
+ */
+function serverProblem(summary: CodeSummary, async: boolean, walk: Walk): string | undefined {
+  const state = [...summary.writes].find((id) => walk.bindings.get(id)?.kind === "state");
+  if (state !== undefined) return `it writes "${state}"`;
+  if (summary.readsTemplateRef) return "it reads a template ref";
+  const global = [...summary.clientGlobals].find(
+    (name) => BROWSER_GLOBALS.has(name) || SCHEDULING_GLOBALS.has(name),
+  );
+  if (global !== undefined) return `it reads \`${global}\``;
+  if (async || summary.async) return "it is asynchronous";
+  if (summary.api) return "it calls `nextTick`";
+  return undefined;
+}
+
+/**
+ * Checks that code the setup runs reads only what is declared before its item (ADR-0045): the
+ * bindings it reads and calls, itself or through its functions, and `emit` if it emits. React's
+ * and Solid's outputs evaluate it where the item is, before a later declaration. A `function`
+ * declaration is hoisted: only what it reads and reaches counts, which the summary holds.
+ */
+function declaredBefore(summary: CodeSummary, item: SetupItem, path: string, walk: Walk): void {
+  const { emits, setup } = walk.component;
+  const hoisted = new Set(
+    setup.flatMap((each) =>
+      each.kind === "Function" && each.form === "declaration" ? [each.binding] : [],
+    ),
+  );
+  const used = [...summary.reads, ...summary.reaches].filter((id) => !hoisted.has(id));
+  if (summary.emits.size && emits) used.push(emits.binding);
+  for (const id of used) {
+    const binding = walk.bindings.get(id);
+    if (binding && binding.kind !== "prop" && binding.span.start >= item.span.start) {
+      walk.errors.push({
+        path,
+        message: `must read only what is declared before it, and "${id}" is not: the setup runs it where it is (ADR-0045)`,
+      });
+      return;
+    }
+  }
+}
+
+/**
+ * Checks the events a component declares (ADR-0047, ADR-0012): the one `emit` binding, declared
+ * by `emits`, inside the component before its render; events whose names Svelte's lower case
+ * keeps apart, which do not start as an event prop does (angular-eslint's
+ * `no-output-on-prefix`), and which no prop or setup binding takes, nor a prop takes as Svelte
+ * spells the event's prop (`onchange`); payloads of named members, the optional ones last.
+ */
+function checkEmits(component: UfComponent, path: string, walk: Walk): void {
+  const { errors, bindings } = walk;
+  const { emits } = component;
+  for (const [index, binding] of component.bindings.entries()) {
+    if (binding.kind === "emit" && binding.id !== emits?.binding) {
+      errors.push({
+        path: `${path}/bindings/${index}`,
+        message: `must be the binding \`emits\` declares, and "${binding.id}" is not`,
+      });
+    }
+  }
+  if (!emits) return;
+  const at = `${path}/emits`;
+  checkDeclaredEmits(emits, at, walk);
+  const binding = bindings.get(emits.binding);
+  if (binding?.kind !== "emit") {
+    errors.push({
+      path: `${at}/binding`,
+      message: `must name an emit binding, and "${emits.binding}" is not one`,
+    });
+  } else if (!inside(binding.span, emits.span)) {
+    errors.push({
+      path: `${at}/binding`,
+      message: "must name the binding the declaration declares",
+    });
+  }
+  if (!inside(emits.span, component.span) || emits.span.end > component.render.span.start) {
+    errors.push({ path: `${at}/span`, message: "must lie in the component, before its render" });
+  } else if (component.setup.some(({ span }) => overlaps(span, emits.span))) {
+    errors.push({ path: `${at}/span`, message: "must lie apart from the setup's items" });
+  }
+  checkSourceText(emits.type, `${at}/type`, errors);
+}
+
+/**
+ * What follows `nextTick` where it is called as its one form (ADR-0048, UF2025): `()` or `?.()`,
+ * with only whitespace and comments around and inside the parentheses.
+ */
+const CALLED_BARE =
+  /^(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*)*(?:\?\.(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*)*)?\((?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*)*\)/;
+
+/** Checks the declared events' names and payloads. */
+function checkDeclaredEmits(emits: Emits, path: string, walk: Walk): void {
+  const { errors, component } = walk;
+  const lower = new Map<string, string>();
+  let end = -1;
+  for (const [index, event] of emits.events.entries()) {
+    const at = `${path}/events/${index}`;
+    const { name } = event;
+    const other = lower.get(name.toLowerCase());
+    // A setup binding may share an event's name: Angular's output, which declares a member of
+    // each, aliases its output (ADR-0047). A prop, public on every target, may not.
+    const owner = component.props.some((prop) => prop.name === name)
+      ? `the prop "${name}"`
+      : undefined;
+    const svelte = component.props.find((prop) => prop.name === `on${name.toLowerCase()}`);
+    const reserved = reservedEventName(name);
+    const problem =
+      other !== undefined
+        ? other === name
+          ? `must declare "${name}" once`
+          : `must differ from "${other}" by more than case: Svelte lower-cases event names`
+        : /^on([^a-z]|$)/.test(name)
+          ? `must not be named as an event prop, and "${name}" is: angular-eslint's \`no-output-on-prefix\` rejects it`
+          : reserved
+            ? `must not be "${name}", which Angular's output declares as a member its templates read: ${reserved}`
+            : owner
+              ? `must differ from ${owner}'s name: Angular's output declares a member of each`
+              : svelte
+                ? `must not be "${name}": Svelte names its prop "${svelte.name}", which a prop takes`
+                : undefined;
+    if (problem) errors.push({ path: `${at}/name`, message: problem });
+    lower.set(name.toLowerCase(), name);
+    if (event.span.start < end) {
+      errors.push({ path: `${at}/span`, message: "must follow the event before it" });
+    }
+    end = event.span.end;
+    const members = new Set<string>();
+    let optional = false;
+    for (const [position, parameter] of event.parameters.entries()) {
+      const member = `${at}/parameters/${position}`;
+      if (!isIdentifier(parameter.name) || members.has(parameter.name)) {
+        errors.push({
+          path: `${member}/name`,
+          message: `must be an identifier no other member takes, and "${parameter.name}" is not`,
+        });
+      }
+      members.add(parameter.name);
+      if (optional && !parameter.optional) {
+        errors.push({
+          path: `${member}/optional`,
+          message: "must be set: a required member cannot follow an optional one",
+        });
+      }
+      optional ||= parameter.optional === true;
+      checkSourceText(parameter.type, `${member}/type`, errors);
+    }
+  }
+}
+
+/** Whether `span` lies in `outer`. */
+function inside(span: Span, outer: Span): boolean {
+  return span.start >= outer.start && span.end <= outer.end;
+}
+
+/** Whether two spans share a character. */
+function overlaps(a: Span, b: Span): boolean {
+  return a.start < b.end && b.start < a.end;
+}
+
+/** The text of code at a span inside it. */
+function slice(code: Code, span: Span): string {
+  return code.code.slice(span.start - code.span.start, span.end - code.span.start);
 }
 
 /**

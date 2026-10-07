@@ -1,4 +1,4 @@
-import { globSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -6,15 +6,14 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { QWIK_ATTRIBUTE_NAMES } from "../src/attributes.ts";
 import { toolchain } from "../src/toolchain/index.ts";
+import { goldens as qwikGoldens } from "./goldens.ts";
 import { emitSource } from "./lower.ts";
 import { TITLES } from "./titles.ts";
 
 const repo = fileURLToPath(new URL("../../..", import.meta.url));
 const toolchainDir = join(repo, "tests/toolchains/qwik");
 const context = { toolchainDir, root: join(repo, "tests/integration") };
-const goldens = globSync("tests/integration/cases/**/__output__/qwik/*", { cwd: repo }).map(
-  (path) => join(repo, path),
-);
+const goldens = qwikGoldens("tests/integration/cases/**/__output__/qwik/*");
 // Qwik components shaped like the target's output. This package's tsconfig excludes them: the
 // Qwik checker types them here, under the same tsconfig as the golden files.
 const fixtures = ["Attributes.tsx", "Counter.tsx", "Greeting.tsx", "NullProps.tsx"].map((name) =>

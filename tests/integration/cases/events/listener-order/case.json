@@ -1,0 +1,6 @@
+{
+  "description": "Listener order: plain and once listeners of one element in both attribute orders before the container's, an expression-bodied once write, capture and bubble on one element with stopPropagation beside a sibling, a container's once listener under a stopping descendant, and passive inner and non-passive outer wheel listeners.",
+  "ssr": {
+    "initial": {}
+  }
+}

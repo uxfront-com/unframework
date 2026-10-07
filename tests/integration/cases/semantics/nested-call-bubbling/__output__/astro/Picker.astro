@@ -1,0 +1,18 @@
+---
+const log = [] as string[];
+const status = "idle" as string;
+---
+
+<section class="picker" aria-label="Picker">
+  <div class="choices" role="presentation">
+    <button type="button">Alpha</button>
+    <button type="button">Beta</button>
+  </div>
+  <ol aria-label="Log">
+    {log.map((entry) => (
+      <li>{entry}</li>
+    ))}
+  </ol>
+  <p role="status">{status}</p>
+  <button type="button">Start</button>
+</section>

@@ -1,4 +1,4 @@
-// The value-kind model (ADR-0035, design §1.6): what kinds of value an expression can have, read
+// The value-kind model (ADR-0035): what kinds of value an expression can have, read
 // syntactically from the props' types and the expression itself. It exists for the checks that
 // depend on a value's kind (UF3016, UF3018, UF3023, spreads), never reaches the IR, and stays
 // approximate until M5's type oracle: what it cannot type is `unknown`, which every check
@@ -137,6 +137,17 @@ export function without(value: Kinds, ...removed: Primitive[]): Kinds {
     ...(primitives.has("object") && value.objects ? { objects: value.objects } : {}),
     ...(primitives.has("array") && value.elements ? { elements: value.elements } : {}),
   };
+}
+
+/**
+ * What `a && b` gives where `a` is falsy: `a` without objects, arrays, functions and symbols,
+ * which never are, and a boolean as `false`, as TypeScript narrows it (`flag && "a"` is
+ * `false | "a"`).
+ */
+export function falsyPart(left: Kinds): Kinds {
+  const kept = without(left, "object", "array", "function", "symbol", "boolean");
+  if (!has(left, "boolean") || (left.booleans && !left.booleans.has(false))) return kept;
+  return union(kept, { primitives: new Set(["boolean"]), booleans: new Set([false]) });
 }
 
 /** Whether the value may have the kind. */

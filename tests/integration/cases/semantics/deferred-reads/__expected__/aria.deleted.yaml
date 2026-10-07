@@ -1,0 +1,4 @@
+- region "File":
+  - paragraph: report-final.pdf, 2 copies
+  - button "Add a copy"
+  - button "Delete"

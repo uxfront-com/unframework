@@ -1,0 +1,984 @@
+{
+  "irVersion": 1,
+  "file": "events/inline-handlers/ShirtOrder.uf.tsx",
+  "components": [
+    {
+      "name": "ShirtOrder",
+      "span": {
+        "start": 52,
+        "end": 1782
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "size@99",
+          "name": "size",
+          "kind": "state",
+          "span": {
+            "start": 99,
+            "end": 103
+          }
+        },
+        {
+          "id": "quantity@124",
+          "name": "quantity",
+          "kind": "state",
+          "span": {
+            "start": 124,
+            "end": 132
+          }
+        },
+        {
+          "id": "note@151",
+          "name": "note",
+          "kind": "state",
+          "span": {
+            "start": 151,
+            "end": 155
+          }
+        },
+        {
+          "id": "noteField@175",
+          "name": "noteField",
+          "kind": "templateRef",
+          "span": {
+            "start": 175,
+            "end": 184
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "size@99",
+          "initial": {
+            "code": "\"M\"",
+            "span": {
+              "start": 110,
+              "end": 113
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 93,
+            "end": 115
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "quantity@124",
+          "initial": {
+            "code": "1",
+            "span": {
+              "start": 139,
+              "end": 140
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 118,
+            "end": 142
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "note@151",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 162,
+              "end": 164
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 145,
+            "end": 166
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "noteField@175",
+          "type": {
+            "code": "HTMLInputElement",
+            "span": {
+              "start": 202,
+              "end": 218
+            }
+          },
+          "span": {
+            "start": 169,
+            "end": 222
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "shirt-order",
+            "span": {
+              "start": 248,
+              "end": 267
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Shirt order",
+            "span": {
+              "start": 268,
+              "end": 292
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 303,
+                  "end": 316
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "`${quantity.value} x size ${size.value}`",
+                  "span": {
+                    "start": 318,
+                    "end": 358
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "quantity@124",
+                      "span": {
+                        "start": 321,
+                        "end": 335
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "size@99",
+                      "span": {
+                        "start": 346,
+                        "end": 356
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 317,
+                  "end": 359
+                }
+              }
+            ],
+            "span": {
+              "start": 300,
+              "end": 363
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "group",
+                "span": {
+                  "start": 375,
+                  "end": 387
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Size",
+                "span": {
+                  "start": 388,
+                  "end": 405
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 433,
+                      "end": 446
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "value",
+                    "value": "S",
+                    "span": {
+                      "start": 457,
+                      "end": 466
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "name": "aria-pressed",
+                    "value": {
+                      "code": "size.value === \"S\"",
+                      "span": {
+                        "start": 491,
+                        "end": 509
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "size@99",
+                          "span": {
+                            "start": 491,
+                            "end": 501
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 477,
+                      "end": 510
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "PointerEvent",
+                            "span": {
+                              "start": 531,
+                              "end": 536
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "(size.value = (event.currentTarget as HTMLButtonElement).value)",
+                          "span": {
+                            "start": 541,
+                            "end": 604
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "size@99",
+                              "operator": "=",
+                              "span": {
+                                "start": 541,
+                                "end": 604
+                              },
+                              "target": {
+                                "start": 542,
+                                "end": 552
+                              },
+                              "value": {
+                                "start": 555,
+                                "end": 603
+                              },
+                              "arrowBody": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 556,
+                                "end": 575
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 530,
+                          "end": 604
+                        }
+                      },
+                      "span": {
+                        "start": 530,
+                        "end": 604
+                      }
+                    },
+                    "span": {
+                      "start": 521,
+                      "end": 605
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Small",
+                    "span": {
+                      "start": 615,
+                      "end": 640
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 415,
+                  "end": 649
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 676,
+                      "end": 689
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "value",
+                    "value": "M",
+                    "span": {
+                      "start": 700,
+                      "end": 709
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "name": "aria-pressed",
+                    "value": {
+                      "code": "size.value === \"M\"",
+                      "span": {
+                        "start": 734,
+                        "end": 752
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "size@99",
+                          "span": {
+                            "start": 734,
+                            "end": 744
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 720,
+                      "end": 753
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "PointerEvent",
+                            "span": {
+                              "start": 774,
+                              "end": 779
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "(size.value = (event.currentTarget as HTMLButtonElement).value)",
+                          "span": {
+                            "start": 784,
+                            "end": 847
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "size@99",
+                              "operator": "=",
+                              "span": {
+                                "start": 784,
+                                "end": 847
+                              },
+                              "target": {
+                                "start": 785,
+                                "end": 795
+                              },
+                              "value": {
+                                "start": 798,
+                                "end": 846
+                              },
+                              "arrowBody": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 799,
+                                "end": 818
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 773,
+                          "end": 847
+                        }
+                      },
+                      "span": {
+                        "start": 773,
+                        "end": 847
+                      }
+                    },
+                    "span": {
+                      "start": 764,
+                      "end": 848
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Medium",
+                    "span": {
+                      "start": 858,
+                      "end": 884
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 658,
+                  "end": 893
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 920,
+                      "end": 933
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "value",
+                    "value": "L",
+                    "span": {
+                      "start": 944,
+                      "end": 953
+                    }
+                  },
+                  {
+                    "kind": "Bound",
+                    "name": "aria-pressed",
+                    "value": {
+                      "code": "size.value === \"L\"",
+                      "span": {
+                        "start": 978,
+                        "end": 996
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "size@99",
+                          "span": {
+                            "start": 978,
+                            "end": 988
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 964,
+                      "end": 997
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "PointerEvent",
+                            "span": {
+                              "start": 1018,
+                              "end": 1023
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "(size.value = (event.currentTarget as HTMLButtonElement).value)",
+                          "span": {
+                            "start": 1028,
+                            "end": 1091
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "size@99",
+                              "operator": "=",
+                              "span": {
+                                "start": 1028,
+                                "end": 1091
+                              },
+                              "target": {
+                                "start": 1029,
+                                "end": 1039
+                              },
+                              "value": {
+                                "start": 1042,
+                                "end": 1090
+                              },
+                              "arrowBody": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 1043,
+                                "end": 1062
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1017,
+                          "end": 1091
+                        }
+                      },
+                      "span": {
+                        "start": 1017,
+                        "end": 1091
+                      }
+                    },
+                    "span": {
+                      "start": 1008,
+                      "end": 1092
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Large",
+                    "span": {
+                      "start": 1102,
+                      "end": 1127
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 902,
+                  "end": 1136
+                }
+              }
+            ],
+            "span": {
+              "start": 370,
+              "end": 1149
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1164,
+                  "end": 1177
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "quantity.value++",
+                      "span": {
+                        "start": 1193,
+                        "end": 1209
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "quantity@124",
+                          "operator": "++",
+                          "span": {
+                            "start": 1193,
+                            "end": 1209
+                          },
+                          "target": {
+                            "start": 1193,
+                            "end": 1207
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1187,
+                      "end": 1209
+                    }
+                  },
+                  "span": {
+                    "start": 1187,
+                    "end": 1209
+                  }
+                },
+                "span": {
+                  "start": 1178,
+                  "end": 1210
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add one",
+                "span": {
+                  "start": 1211,
+                  "end": 1234
+                }
+              }
+            ],
+            "span": {
+              "start": 1156,
+              "end": 1243
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Note",
+                "span": {
+                  "start": 1257,
+                  "end": 1279
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "note",
+                    "span": {
+                      "start": 1296,
+                      "end": 1307
+                    }
+                  },
+                  {
+                    "kind": "Ref",
+                    "binding": "noteField@175",
+                    "span": {
+                      "start": 1318,
+                      "end": 1333
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "input",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "InputEvent",
+                            "span": {
+                              "start": 1354,
+                              "end": 1359
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "(note.value = (event.currentTarget as HTMLInputElement).value)",
+                          "span": {
+                            "start": 1364,
+                            "end": 1426
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "note@151",
+                              "operator": "=",
+                              "span": {
+                                "start": 1364,
+                                "end": 1426
+                              },
+                              "target": {
+                                "start": 1365,
+                                "end": 1375
+                              },
+                              "value": {
+                                "start": 1378,
+                                "end": 1425
+                              },
+                              "arrowBody": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 1379,
+                                "end": 1398
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1353,
+                          "end": 1426
+                        }
+                      },
+                      "span": {
+                        "start": 1353,
+                        "end": 1426
+                      }
+                    },
+                    "span": {
+                      "start": 1344,
+                      "end": 1427
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 1279,
+                  "end": 1438
+                }
+              }
+            ],
+            "span": {
+              "start": 1250,
+              "end": 1453
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Note: ",
+                "span": {
+                  "start": 1463,
+                  "end": 1469
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "note.value",
+                  "span": {
+                    "start": 1470,
+                    "end": 1480
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "note@151",
+                      "span": {
+                        "start": 1470,
+                        "end": 1480
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1469,
+                  "end": 1481
+                }
+              }
+            ],
+            "span": {
+              "start": 1460,
+              "end": 1485
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1508,
+                  "end": 1521
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "{\n          quantity.value = 1;\n          size.value = \"M\";\n          note.value = \"\";\n          const input = noteField.value;\n          if (input) input.value = \"\";\n        }",
+                      "span": {
+                        "start": 1545,
+                        "end": 1721
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "quantity@124",
+                          "operator": "=",
+                          "span": {
+                            "start": 1557,
+                            "end": 1575
+                          },
+                          "target": {
+                            "start": 1557,
+                            "end": 1571
+                          },
+                          "value": {
+                            "start": 1574,
+                            "end": 1575
+                          }
+                        },
+                        {
+                          "kind": "Write",
+                          "binding": "size@99",
+                          "operator": "=",
+                          "span": {
+                            "start": 1587,
+                            "end": 1603
+                          },
+                          "target": {
+                            "start": 1587,
+                            "end": 1597
+                          },
+                          "value": {
+                            "start": 1600,
+                            "end": 1603
+                          }
+                        },
+                        {
+                          "kind": "Write",
+                          "binding": "note@151",
+                          "operator": "=",
+                          "span": {
+                            "start": 1615,
+                            "end": 1630
+                          },
+                          "target": {
+                            "start": 1615,
+                            "end": 1625
+                          },
+                          "value": {
+                            "start": 1628,
+                            "end": 1630
+                          }
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "noteField@175",
+                          "span": {
+                            "start": 1656,
+                            "end": 1671
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 1539,
+                      "end": 1721
+                    }
+                  },
+                  "span": {
+                    "start": 1539,
+                    "end": 1721
+                  }
+                },
+                "span": {
+                  "start": 1530,
+                  "end": 1722
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Reset",
+                "span": {
+                  "start": 1730,
+                  "end": 1751
+                }
+              }
+            ],
+            "span": {
+              "start": 1492,
+              "end": 1760
+            }
+          }
+        ],
+        "span": {
+          "start": 239,
+          "end": 1775
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ShirtOrder",
+      "span": {
+        "start": 52,
+        "end": 1782
+      }
+    }
+  ],
+  "types": []
+}

@@ -1,0 +1,19 @@
+---
+export interface ArticlePreviewProps {
+  title: string;
+  text: string;
+}
+
+type Props = ArticlePreviewProps;
+
+const { title, text } = Astro.props;
+
+const characters = 0 as number;
+const counted = false as boolean;
+---
+
+<article class="article-preview" aria-label={title}>
+  <h2>{title}</h2>
+  <p>{text}</p>
+  <p role="status">{counted ? `${characters} characters` : "Counting the characters"}</p>
+</article>

@@ -1,0 +1,25 @@
+---
+export interface Profile {
+  name: string;
+  title: string;
+  available: boolean;
+}
+
+export interface ProfileCardProps {
+  initial: Profile;
+}
+
+type Props = ProfileCardProps;
+
+const { initial } = Astro.props;
+
+const profile = initial;
+---
+
+<article class="profile-card" aria-label="Profile">
+  <h2>{profile.name}</h2>
+  <p>{profile.title}</p>
+  <p role="status">{profile.available ? "Available" : "Away"}</p>
+  <button type="button">Use married name</button>
+  <button type="button" aria-pressed={profile.available}>Available</button>
+</article>

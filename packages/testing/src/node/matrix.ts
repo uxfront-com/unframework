@@ -1,5 +1,5 @@
 import type { PixelMode } from "../harness.ts";
-// The parity matrix (DESIGN §4.6): for every case, target and layer, one cell of `pass`,
+// The parity matrix (plan §7.4): for every case, target and layer, one cell of `pass`,
 // `fail: …`, `skip(reason)` or `quarantined(issue)`. Each run writes a partial matrix that keeps
 // its records per project, with when and how it ran; partial matrices are merged project by
 // project (the newest record of a cell wins), then across projects (fail beats pass), and
@@ -13,8 +13,26 @@ export type MatrixCells = Record<string, Record<string, Partial<Record<LayerName
 /** Case → target → the parity scenarios its tests checked (`expectParity` names), sorted. */
 export type MatrixScenarios = Record<string, Record<string, string[]>>;
 
+/** What the matrix keeps of one test: the scenarios it checked, or why it was skipped. */
+export interface MatrixTest {
+  /** The parity scenarios the test checked, sorted. */
+  scenarios: string[];
+  /**
+   * Why the test was skipped on this target: a capability it requires is unsupported, or the
+   * target has no output for the case.
+   */
+  skipped?: string;
+}
+
+/**
+ * Case → target → test (its name without the target, `UfLayerMeta.test`) → what it checked. The
+ * summary compares each target's tests of a case with the reference's, test by test, and
+ * excuses a test that a target skipped, alone.
+ */
+export type MatrixTests = Record<string, Record<string, Record<string, MatrixTest>>>;
+
 /** The version of the matrix files; a file of another version is never merged. */
-export const MATRIX_VERSION = 4;
+export const MATRIX_VERSION = 5;
 
 /** One run's (or a merged) parity matrix. */
 export interface ParityMatrix {
@@ -30,6 +48,12 @@ export interface ParityMatrix {
    * same spec, so each must check the reference's scenarios (see `summarise`).
    */
   scenarios: MatrixScenarios;
+  /**
+   * Case → target → test → the scenarios it checked, or why it was skipped by capability: the
+   * skips the cells cannot show (a skipped test's cells merge with its case's other tests'), and
+   * what the summary compares test by test.
+   */
+  tests: MatrixTests;
 }
 
 /** How a run treated artefacts (the harness mode), for the reader of a matrix. */
@@ -98,6 +122,8 @@ export interface PartialMatrix extends ParityMatrix, RunInfo {
   byProject: Record<string, MatrixCells>;
   /** Project → its own scenarios, kept and replaced with its cells. */
   scenariosByProject: Record<string, MatrixScenarios>;
+  /** Project → its own tests, kept and replaced with its cells. */
+  testsByProject: Record<string, MatrixTests>;
 }
 
 /** A merge of partial matrices (`parity-matrix.json`), with what it was merged from. */
@@ -206,6 +232,62 @@ export function mergeScenarios(sets: readonly MatrixScenarios[]): MatrixScenario
   return merged;
 }
 
+/**
+ * The tests of test records: each named test's sorted scenarios and capability skip. Records
+ * without a test name (a file's own) and tests that checked nothing and were not skipped are
+ * left out: they have nothing to compare.
+ */
+export function buildTests(records: readonly UfLayerMeta[]): MatrixTests {
+  return mergeTests(
+    records.flatMap((record) => {
+      if (record.test === undefined || (!record.scenarios?.length && record.skipped === undefined))
+        return [];
+      const test: MatrixTest = {
+        scenarios: [...new Set(record.scenarios ?? [])].sort(),
+        ...(record.skipped === undefined ? {} : { skipped: record.skipped }),
+      };
+      return [{ [record.case]: { [record.target]: { [record.test]: test } } }];
+    }),
+  );
+}
+
+/**
+ * Merges sets of tests, a later set's record of a test replacing an earlier one's (a newer run
+ * of the test). Within one set a test is recorded once: two tests of a case never share a name.
+ */
+export function mergeTests(sets: readonly MatrixTests[]): MatrixTests {
+  const merged: MatrixTests = {};
+  for (const tests of sets) {
+    for (const [caseId, targets] of Object.entries(tests)) {
+      for (const [target, byName] of Object.entries(targets)) {
+        Object.assign(((merged[caseId] ??= {})[target] ??= {}), byName);
+      }
+    }
+  }
+  return Object.fromEntries(
+    Object.keys(merged)
+      .sort()
+      .map((caseId) => [
+        caseId,
+        Object.fromEntries(
+          Object.keys(merged[caseId]!)
+            .sort()
+            .map((target) => {
+              const byName = merged[caseId]![target]!;
+              return [
+                target,
+                Object.fromEntries(
+                  Object.keys(byName)
+                    .sort()
+                    .map((name) => [name, byName[name]!]),
+                ),
+              ];
+            }),
+        ),
+      ]),
+  );
+}
+
 /** Merges several projects' cells into one set, cell by cell (fail beats pass). */
 export function mergeCells(sets: readonly MatrixCells[]): MatrixCells {
   return buildCells(
@@ -242,12 +324,14 @@ export function buildPartialMatrix(input: {
   const projects = [...new Set(input.projects)].sort();
   const byProject: Record<string, MatrixCells> = {};
   const scenariosByProject: Record<string, MatrixScenarios> = {};
+  const testsByProject: Record<string, MatrixTests> = {};
   for (const project of projects) {
     const records = input.records
       .filter((entry) => entry.project === project)
       .map((entry) => entry.record);
     byProject[project] = buildCells(records);
     scenariosByProject[project] = buildScenarios(records);
+    testsByProject[project] = buildTests(records);
   }
   return {
     version: MATRIX_VERSION,
@@ -262,8 +346,10 @@ export function buildPartialMatrix(input: {
     reference: input.reference ?? null,
     cases: mergeCells(Object.values(byProject)),
     scenarios: mergeScenarios(Object.values(scenariosByProject)),
+    tests: mergeTests(Object.values(testsByProject)),
     byProject,
     scenariosByProject,
+    testsByProject,
   };
 }
 
@@ -281,14 +367,19 @@ export function withoutProjects(
   const scenariosByProject = Object.fromEntries(
     kept.map((project) => [project, matrix.scenariosByProject[project] ?? {}]),
   );
+  const testsByProject = Object.fromEntries(
+    kept.map((project) => [project, matrix.testsByProject[project] ?? {}]),
+  );
   return {
     ...matrix,
     projects: kept,
     empty: matrix.empty.filter((project) => !projects.has(project)),
     byProject,
     scenariosByProject,
+    testsByProject,
     cases: mergeCells(Object.values(byProject)),
     scenarios: mergeScenarios(Object.values(scenariosByProject)),
+    tests: mergeTests(Object.values(testsByProject)),
   };
 }
 
@@ -317,8 +408,11 @@ export function mergeMatrices(partials: readonly PartialMatrix[]): {
   );
   const latest = new Map<string, MatrixCells>();
   const scenarios: MatrixScenarios[] = [];
+  // Oldest first: a newer run's record of a test replaces an older one's.
+  const tests: MatrixTests[] = [];
   for (const partial of ordered) {
     scenarios.push(...Object.values(partial.scenariosByProject));
+    tests.push(...Object.values(partial.testsByProject));
     for (const [project, cells] of Object.entries(partial.byProject)) {
       const merged = latest.get(project) ?? {};
       for (const [caseId, targets] of Object.entries(cells)) {
@@ -336,6 +430,7 @@ export function mergeMatrices(partials: readonly PartialMatrix[]): {
       projects: [...new Set(ordered.flatMap((partial) => partial.projects))].sort(),
       cases: mergeCells([...latest.values()]),
       scenarios: mergeScenarios(scenarios),
+      tests: mergeTests(tests),
       runs: ordered.map(({ run, finishedAt, mode, filtered, shard, projects, empty }) => ({
         run,
         finishedAt,

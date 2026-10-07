@@ -1,0 +1,828 @@
+{
+  "irVersion": 1,
+  "file": "events/list-handlers/ContactList.uf.tsx",
+  "components": [
+    {
+      "name": "ContactList",
+      "span": {
+        "start": 170,
+        "end": 1387
+      },
+      "props": [
+        {
+          "name": "initial",
+          "optional": false,
+          "type": {
+            "code": "Contact[]",
+            "span": {
+              "start": 156,
+              "end": 165
+            }
+          },
+          "binding": "initial@208",
+          "span": {
+            "start": 147,
+            "end": 166
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ContactListProps",
+          "span": {
+            "start": 219,
+            "end": 235
+          }
+        },
+        "span": {
+          "start": 206,
+          "end": 235
+        }
+      },
+      "types": [
+        "Contact",
+        "ContactListProps"
+      ],
+      "emits": {
+        "binding": "emit@247",
+        "type": {
+          "code": "{ choose: [id: string, position: number]; removed: [name: string] }",
+          "span": {
+            "start": 266,
+            "end": 333
+          }
+        },
+        "events": [
+          {
+            "name": "choose",
+            "parameters": [
+              {
+                "name": "id",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 281,
+                    "end": 287
+                  }
+                },
+                "span": {
+                  "start": 277,
+                  "end": 287
+                }
+              },
+              {
+                "name": "position",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 299,
+                    "end": 305
+                  }
+                },
+                "span": {
+                  "start": 289,
+                  "end": 305
+                }
+              }
+            ],
+            "span": {
+              "start": 268,
+              "end": 306
+            }
+          },
+          {
+            "name": "removed",
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 324,
+                    "end": 330
+                  }
+                },
+                "span": {
+                  "start": 318,
+                  "end": 330
+                }
+              }
+            ],
+            "span": {
+              "start": 308,
+              "end": 331
+            }
+          }
+        ],
+        "span": {
+          "start": 241,
+          "end": 337
+        }
+      },
+      "bindings": [
+        {
+          "id": "initial@208",
+          "name": "initial",
+          "kind": "prop",
+          "span": {
+            "start": 208,
+            "end": 215
+          }
+        },
+        {
+          "id": "emit@247",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 247,
+            "end": 251
+          }
+        },
+        {
+          "id": "contacts@347",
+          "name": "contacts",
+          "kind": "state",
+          "span": {
+            "start": 347,
+            "end": 355
+          }
+        },
+        {
+          "id": "chosen@380",
+          "name": "chosen",
+          "kind": "state",
+          "span": {
+            "start": 380,
+            "end": 386
+          }
+        },
+        {
+          "id": "pick@416",
+          "name": "pick",
+          "kind": "localFn",
+          "span": {
+            "start": 416,
+            "end": 420
+          }
+        },
+        {
+          "id": "drop@542",
+          "name": "drop",
+          "kind": "localFn",
+          "span": {
+            "start": 542,
+            "end": 546
+          }
+        },
+        {
+          "id": "contact@789",
+          "name": "contact",
+          "kind": "loopVar",
+          "span": {
+            "start": 789,
+            "end": 796
+          }
+        },
+        {
+          "id": "index@798",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 798,
+            "end": 803
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "contacts@347",
+          "initial": {
+            "code": "initial",
+            "span": {
+              "start": 362,
+              "end": 369
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "initial@208",
+                "span": {
+                  "start": 362,
+                  "end": 369
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 341,
+            "end": 371
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "chosen@380",
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 393,
+              "end": 399
+            }
+          },
+          "span": {
+            "start": 374,
+            "end": 403
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "pick@416",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "entry",
+                "type": {
+                  "code": "Contact",
+                  "span": {
+                    "start": 428,
+                    "end": 435
+                  }
+                },
+                "span": {
+                  "start": 421,
+                  "end": 435
+                }
+              },
+              {
+                "name": "position",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 447,
+                    "end": 453
+                  }
+                },
+                "span": {
+                  "start": 437,
+                  "end": 453
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    chosen.value = entry.id;\n    emit(\"choose\", entry.id, position);\n  }",
+              "span": {
+                "start": 455,
+                "end": 529
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "chosen@380",
+                  "operator": "=",
+                  "span": {
+                    "start": 461,
+                    "end": 484
+                  },
+                  "target": {
+                    "start": 461,
+                    "end": 473
+                  },
+                  "value": {
+                    "start": 476,
+                    "end": 484
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@247",
+                  "event": "choose",
+                  "span": {
+                    "start": 490,
+                    "end": 524
+                  },
+                  "arguments": [
+                    {
+                      "start": 505,
+                      "end": 513
+                    },
+                    {
+                      "start": 515,
+                      "end": 523
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 420,
+              "end": 529
+            }
+          },
+          "span": {
+            "start": 407,
+            "end": 529
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "drop@542",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "entry",
+                "type": {
+                  "code": "Contact",
+                  "span": {
+                    "start": 554,
+                    "end": 561
+                  }
+                },
+                "span": {
+                  "start": 547,
+                  "end": 561
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    contacts.value = contacts.value.filter((other) => other.id !== entry.id);\n    emit(\"removed\", entry.name);\n  }",
+              "span": {
+                "start": 563,
+                "end": 679
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "contacts@347",
+                  "operator": "=",
+                  "span": {
+                    "start": 569,
+                    "end": 641
+                  },
+                  "target": {
+                    "start": 569,
+                    "end": 583
+                  },
+                  "value": {
+                    "start": 586,
+                    "end": 641
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "contacts@347",
+                  "span": {
+                    "start": 586,
+                    "end": 600
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@247",
+                  "event": "removed",
+                  "span": {
+                    "start": 647,
+                    "end": 674
+                  },
+                  "arguments": [
+                    {
+                      "start": 663,
+                      "end": 673
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 546,
+              "end": 679
+            }
+          },
+          "span": {
+            "start": 533,
+            "end": 679
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "contact-list",
+            "span": {
+              "start": 705,
+              "end": 725
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Contacts",
+            "span": {
+              "start": 726,
+              "end": 747
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "contacts.value",
+                  "span": {
+                    "start": 769,
+                    "end": 783
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "contacts@347",
+                      "span": {
+                        "start": 769,
+                        "end": 783
+                      }
+                    }
+                  ]
+                },
+                "item": "contact@789",
+                "index": "index@798",
+                "key": {
+                  "code": "contact.id",
+                  "span": {
+                    "start": 829,
+                    "end": 839
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "contact@789",
+                      "span": {
+                        "start": 829,
+                        "end": 836
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Element",
+                      "tag": "button",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "type",
+                          "value": "button",
+                          "span": {
+                            "start": 876,
+                            "end": 889
+                          }
+                        },
+                        {
+                          "kind": "Bound",
+                          "name": "aria-pressed",
+                          "value": {
+                            "code": "chosen.value === contact.id",
+                            "span": {
+                              "start": 918,
+                              "end": 945
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "chosen@380",
+                                "span": {
+                                  "start": 918,
+                                  "end": 930
+                                }
+                              },
+                              {
+                                "kind": "Binding",
+                                "binding": "contact@789",
+                                "span": {
+                                  "start": 935,
+                                  "end": 942
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 904,
+                            "end": 946
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "event": "click",
+                          "handler": {
+                            "kind": "Inline",
+                            "function": {
+                              "parameters": [],
+                              "body": {
+                                "code": "pick(contact, index)",
+                                "span": {
+                                  "start": 976,
+                                  "end": 996
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "pick@416",
+                                    "span": {
+                                      "start": 976,
+                                      "end": 980
+                                    },
+                                    "call": true
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "contact@789",
+                                    "span": {
+                                      "start": 981,
+                                      "end": 988
+                                    }
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "index@798",
+                                    "span": {
+                                      "start": 990,
+                                      "end": 995
+                                    }
+                                  }
+                                ]
+                              },
+                              "expression": true,
+                              "span": {
+                                "start": 970,
+                                "end": 996
+                              }
+                            },
+                            "span": {
+                              "start": 970,
+                              "end": 996
+                            }
+                          },
+                          "span": {
+                            "start": 961,
+                            "end": 997
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "contact.name",
+                            "span": {
+                              "start": 1027,
+                              "end": 1039
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "contact@789",
+                                "span": {
+                                  "start": 1027,
+                                  "end": 1034
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 1026,
+                            "end": 1040
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 854,
+                        "end": 1062
+                      }
+                    },
+                    {
+                      "kind": "Element",
+                      "tag": "button",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "type",
+                          "value": "button",
+                          "span": {
+                            "start": 1097,
+                            "end": 1110
+                          }
+                        },
+                        {
+                          "kind": "Bound",
+                          "name": "aria-label",
+                          "value": {
+                            "code": "`Remove ${contact.name}`",
+                            "span": {
+                              "start": 1137,
+                              "end": 1161
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "contact@789",
+                                "span": {
+                                  "start": 1147,
+                                  "end": 1154
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 1125,
+                            "end": 1162
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "event": "click",
+                          "handler": {
+                            "kind": "Inline",
+                            "function": {
+                              "parameters": [],
+                              "body": {
+                                "code": "drop(contact)",
+                                "span": {
+                                  "start": 1192,
+                                  "end": 1205
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "drop@542",
+                                    "span": {
+                                      "start": 1192,
+                                      "end": 1196
+                                    },
+                                    "call": true
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "contact@789",
+                                    "span": {
+                                      "start": 1197,
+                                      "end": 1204
+                                    }
+                                  }
+                                ]
+                              },
+                              "expression": true,
+                              "span": {
+                                "start": 1186,
+                                "end": 1205
+                              }
+                            },
+                            "span": {
+                              "start": 1186,
+                              "end": 1205
+                            }
+                          },
+                          "span": {
+                            "start": 1177,
+                            "end": 1206
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "Text",
+                          "value": "Remove",
+                          "span": {
+                            "start": 1220,
+                            "end": 1254
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 1075,
+                        "end": 1263
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 820,
+                    "end": 1279
+                  }
+                },
+                "span": {
+                  "start": 769,
+                  "end": 1290
+                }
+              }
+            ],
+            "span": {
+              "start": 755,
+              "end": 1303
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 1313,
+                  "end": 1326
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Chosen: ",
+                "span": {
+                  "start": 1327,
+                  "end": 1335
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "chosen.value ?? \"nobody\"",
+                  "span": {
+                    "start": 1336,
+                    "end": 1360
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "chosen@380",
+                      "span": {
+                        "start": 1336,
+                        "end": 1348
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1335,
+                  "end": 1361
+                }
+              }
+            ],
+            "span": {
+              "start": 1310,
+              "end": 1365
+            }
+          }
+        ],
+        "span": {
+          "start": 696,
+          "end": 1380
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ContactList",
+      "span": {
+        "start": 170,
+        "end": 1387
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Contact",
+      "exported": true,
+      "code": "interface Contact {\n  id: string;\n  name: string;\n}",
+      "span": {
+        "start": 56,
+        "end": 107
+      }
+    },
+    {
+      "name": "ContactListProps",
+      "exported": true,
+      "code": "interface ContactListProps {\n  initial: Contact[];\n}",
+      "span": {
+        "start": 116,
+        "end": 168
+      }
+    }
+  ]
+}

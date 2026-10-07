@@ -23,6 +23,20 @@ import {
   createText,
   createTypeText,
 } from "@unframework/ir";
+import {
+  createApiReference,
+  createCode,
+  createDerivedItem,
+  createEventAttribute,
+  createFunctionCode,
+  createFunctionHandler,
+  createGetterSource,
+  createIdItem,
+  createInlineHandler,
+  createLifecycleItem,
+  createWatchEffectItem,
+  createWatchItem,
+} from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
 import { CAPABILITY_NAMES, requiredCapabilities } from "../src/index.ts";
@@ -170,6 +184,122 @@ describe("requiredCapabilities", () => {
       createPropsParameter("destructured", createTypeText("P", at(30)), at(9)),
     );
     expect(requiredCapabilities(createModule("A.uf.tsx", [component])).has("props")).toBe(false);
+  });
+
+  // M2's capabilities (ADR-0047): `interactivity` at the first effect, hook, listener or template
+  // ref, each listener option at the first listener with it, `use-id` and `next-tick` at their
+  // first use, the setup's before the template's.
+  it("derives M2's capabilities, each where it is first used", () => {
+    const fn = (start: number, refs: Parameters<typeof createCode>[2] = []) =>
+      createFunctionCode([], createCode("x", at(start), refs), at(start), { expression: true });
+    const listener = (start: number, options: Parameters<typeof createEventAttribute>[3]) =>
+      createEventAttribute(
+        "click",
+        createFunctionHandler("save@10", at(start)),
+        at(start),
+        options,
+      );
+    const button = createElement(
+      "button",
+      [
+        listener(300, { once: true }),
+        createEventAttribute(
+          "click",
+          createInlineHandler(fn(310, [createApiReference("nextTick", at(311))]), at(310)),
+          at(309),
+        ),
+        listener(320, { passive: true }),
+        listener(330, { capture: true }),
+        listener(340, { once: true }),
+      ],
+      [],
+      at(299),
+    );
+    const effects = createComponent(
+      "Effects",
+      createElement("p", [], [], at(200)),
+      at(100),
+      [],
+      undefined,
+      [],
+      [],
+      [
+        createWatchEffectItem(fn(110), at(109)),
+        createIdItem("id@120", at(120)),
+        createLifecycleItem("mounted", fn(131, [createApiReference("nextTick", at(132))]), at(130)),
+      ],
+    );
+    const handlers = createComponent("Handlers", button, at(290));
+    expect([...requiredCapabilities(createModule("A.uf.tsx", [effects, handlers]))]).toEqual([
+      ["interactivity", at(109)],
+      ["use-id", at(120)],
+      ["next-tick", at(132)],
+      ["element", at(200)],
+      ["event-semantics", at(300)],
+      ["event-once", at(300)],
+      ["event-passive", at(320)],
+      ["event-capture", at(330)],
+    ]);
+    // Alone, the handlers' component derives `interactivity` at its first listener, and
+    // `next-tick` in an inline handler.
+    expect([...requiredCapabilities(createModule("B.uf.tsx", [handlers]))].slice(0, 5)).toEqual([
+      ["element", at(299)],
+      ["interactivity", at(300)],
+      ["event-semantics", at(300)],
+      ["event-once", at(300)],
+      ["next-tick", at(311)],
+    ]);
+  });
+
+  // An optional prop that a derived value, a watch source or a `watchEffect` reads (ADR-0046):
+  // a parent's spread may pass it only after the component mounted.
+  it("derives late-prop where a derived value or a watcher reads an optional prop", () => {
+    const read = (prop: string, start: number) =>
+      createFunctionCode(
+        [],
+        createCode(prop, at(start), [createBindingReference(`${prop}@10`, at(start))]),
+        at(start),
+        { expression: true },
+      );
+    const component = (setup: Parameters<typeof createComponent>[7]) =>
+      createComponent(
+        "Pages",
+        createElement("p", [], [], at(200)),
+        at(1),
+        [
+          createProp("page", true, createTypeText("number", at(5)), at(4), "page@10"),
+          createProp("total", false, createTypeText("number", at(7)), at(6), "total@10"),
+        ],
+        createPropsParameter("destructured", createTypeText("P", at(9)), at(3)),
+        [],
+        [],
+        setup,
+      );
+    const derives = (setup: Parameters<typeof createComponent>[7]) =>
+      requiredCapabilities(createModule("A.uf.tsx", [component(setup)])).get("late-prop");
+    expect(derives([createDerivedItem("label@100", read("page", 110), at(100))])).toEqual(at(110));
+    expect(
+      derives([
+        createWatchItem(
+          [createGetterSource(read("page", 120), at(120))],
+          read("total", 130),
+          at(119),
+        ),
+      ]),
+    ).toEqual(at(120));
+    expect(derives([createWatchEffectItem(read("page", 140), at(139))])).toEqual(at(140));
+    // A required prop, and an optional one read only where nothing subscribes (a watch
+    // callback), need nothing.
+    expect(derives([createDerivedItem("label@100", read("total", 110), at(100))])).toBeUndefined();
+    expect(
+      derives([
+        createWatchItem(
+          [createGetterSource(read("total", 120), at(120))],
+          read("page", 130),
+          at(119),
+        ),
+      ]),
+    ).toBeUndefined();
   });
 
   it("names each capability once", () => {

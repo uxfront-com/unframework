@@ -1,0 +1,511 @@
+{
+  "irVersion": 1,
+  "file": "semantics/derived-from-props/Temperature.uf.tsx",
+  "components": [
+    {
+      "name": "Temperature",
+      "span": {
+        "start": 119,
+        "end": 742
+      },
+      "props": [
+        {
+          "name": "celsius",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 108,
+              "end": 114
+            }
+          },
+          "binding": "celsius@157",
+          "span": {
+            "start": 99,
+            "end": 115
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TemperatureProps",
+          "span": {
+            "start": 168,
+            "end": 184
+          }
+        },
+        "span": {
+          "start": 155,
+          "end": 184
+        }
+      },
+      "types": [
+        "TemperatureProps"
+      ],
+      "emits": {
+        "binding": "emit@196",
+        "type": {
+          "code": "{ reading: [celsius: number, previous: number] }",
+          "span": {
+            "start": 215,
+            "end": 263
+          }
+        },
+        "events": [
+          {
+            "name": "reading",
+            "parameters": [
+              {
+                "name": "celsius",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 236,
+                    "end": 242
+                  }
+                },
+                "span": {
+                  "start": 227,
+                  "end": 242
+                }
+              },
+              {
+                "name": "previous",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 254,
+                    "end": 260
+                  }
+                },
+                "span": {
+                  "start": 244,
+                  "end": 260
+                }
+              }
+            ],
+            "span": {
+              "start": 217,
+              "end": 261
+            }
+          }
+        ],
+        "span": {
+          "start": 190,
+          "end": 267
+        }
+      },
+      "bindings": [
+        {
+          "id": "celsius@157",
+          "name": "celsius",
+          "kind": "prop",
+          "span": {
+            "start": 157,
+            "end": 164
+          }
+        },
+        {
+          "id": "emit@196",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 196,
+            "end": 200
+          }
+        },
+        {
+          "id": "fahrenheit@277",
+          "name": "fahrenheit",
+          "kind": "derived",
+          "span": {
+            "start": 277,
+            "end": 287
+          }
+        },
+        {
+          "id": "level@350",
+          "name": "level",
+          "kind": "derived",
+          "span": {
+            "start": 350,
+            "end": 355
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Derived",
+          "binding": "fahrenheit@277",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "Math.round((celsius * 9) / 5 + 32)",
+              "span": {
+                "start": 305,
+                "end": 339
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "Math",
+                  "span": {
+                    "start": 305,
+                    "end": 309
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "celsius@157",
+                  "span": {
+                    "start": 317,
+                    "end": 324
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 299,
+              "end": 339
+            }
+          },
+          "span": {
+            "start": 271,
+            "end": 341
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "level@350",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "(celsius >= 30 ? \"hot\" : celsius <= 5 ? \"cold\" : \"mild\")",
+              "span": {
+                "start": 373,
+                "end": 429
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "celsius@157",
+                  "span": {
+                    "start": 374,
+                    "end": 381
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "celsius@157",
+                  "span": {
+                    "start": 398,
+                    "end": 405
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 367,
+              "end": 429
+            }
+          },
+          "span": {
+            "start": 344,
+            "end": 431
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Getter",
+              "getter": {
+                "parameters": [],
+                "body": {
+                  "code": "celsius",
+                  "span": {
+                    "start": 452,
+                    "end": 459
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "celsius@157",
+                      "span": {
+                        "start": 452,
+                        "end": 459
+                      }
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 446,
+                  "end": 459
+                }
+              },
+              "span": {
+                "start": 446,
+                "end": 459
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 466,
+                  "end": 471
+                }
+              },
+              {
+                "name": "previous",
+                "span": {
+                  "start": 473,
+                  "end": 481
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n      emit(\"reading\", value, previous);\n    }",
+              "span": {
+                "start": 486,
+                "end": 533
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@196",
+                  "event": "reading",
+                  "span": {
+                    "start": 494,
+                    "end": 526
+                  },
+                  "arguments": [
+                    {
+                      "start": 510,
+                      "end": 515
+                    },
+                    {
+                      "start": 517,
+                      "end": 525
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 465,
+              "end": 533
+            }
+          },
+          "span": {
+            "start": 435,
+            "end": 539
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "figure",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "temperature",
+            "span": {
+              "start": 564,
+              "end": 583
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "data-level",
+            "value": {
+              "code": "level.value",
+              "span": {
+                "start": 596,
+                "end": 607
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "level@350",
+                  "span": {
+                    "start": 596,
+                    "end": 607
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 584,
+              "end": 608
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "celsius",
+                  "span": {
+                    "start": 620,
+                    "end": 627
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "celsius@157",
+                      "span": {
+                        "start": 620,
+                        "end": 627
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 619,
+                  "end": 628
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " °C",
+                "span": {
+                  "start": 628,
+                  "end": 631
+                }
+              }
+            ],
+            "span": {
+              "start": 616,
+              "end": 635
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "fahrenheit.value",
+                  "span": {
+                    "start": 646,
+                    "end": 662
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "fahrenheit@277",
+                      "span": {
+                        "start": 646,
+                        "end": 662
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 645,
+                  "end": 663
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " °F",
+                "span": {
+                  "start": 663,
+                  "end": 666
+                }
+              }
+            ],
+            "span": {
+              "start": 642,
+              "end": 670
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "figcaption",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Feels ",
+                "span": {
+                  "start": 689,
+                  "end": 695
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "level.value",
+                  "span": {
+                    "start": 696,
+                    "end": 707
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "level@350",
+                      "span": {
+                        "start": 696,
+                        "end": 707
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 695,
+                  "end": 708
+                }
+              }
+            ],
+            "span": {
+              "start": 677,
+              "end": 721
+            }
+          }
+        ],
+        "span": {
+          "start": 556,
+          "end": 735
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Temperature",
+      "span": {
+        "start": 119,
+        "end": 742
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "TemperatureProps",
+      "exported": true,
+      "code": "interface TemperatureProps {\n  celsius: number;\n}",
+      "span": {
+        "start": 68,
+        "end": 117
+      }
+    }
+  ]
+}

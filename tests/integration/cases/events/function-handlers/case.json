@@ -1,0 +1,6 @@
+{
+  "description": "Handlers named by a setup function: one function on two buttons, a keyboard handler with an annotated event parameter on two fields, and a function whose event parameter is a union, a button's click listener that a field's keydown handler also calls with its event.",
+  "ssr": {
+    "initial": {}
+  }
+}

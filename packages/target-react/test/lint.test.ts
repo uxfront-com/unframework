@@ -19,7 +19,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { REACT_PROP_NAMES } from "../src/props.ts";
 import { toolchain } from "../src/toolchain/index.ts";
-import { M1_SHAPES } from "./lint-probes.ts";
+import { M1_SHAPES, M2_SHAPES } from "./lint-probes.ts";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const repo = join(packageDir, "../..");
@@ -71,6 +71,7 @@ const component = (jsx: string, params = "", head = "") =>
   `${head}export default function Probe(${params}) {\n  return ${jsx};\n}\n`;
 
 describe("react lint (L5)", { timeout: 60_000 }, () => {
+  // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output, with no message", async () => {
     expect(goldens.map((file) => file.split("/").at(-1))).toEqual(
       expect.arrayContaining(["Hello.tsx", "ProfileCard.tsx"]),
@@ -79,14 +80,76 @@ describe("react lint (L5)", { timeout: 60_000 }, () => {
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(goldens.map((file) => [file, []])),
     );
-  });
+  }, 60_000);
 
-  it("accepts the shapes M1 emits (design §5.1)", async () => {
+  it("accepts the shapes M1 emits", async () => {
     const files = write(M1_SHAPES);
     const results = await toolchain.lint(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file, []])),
     );
+  });
+
+  it("accepts the shapes M2 emits", async () => {
+    const files = write(M2_SHAPES);
+    const results = await toolchain.lint(files, context);
+    expect(Object.fromEntries(results)).toEqual(
+      Object.fromEntries(files.map((file) => [file, []])),
+    );
+  });
+
+  // Why the M2 shapes are what they are (ADR-0046, ADR-0048): each rejected variant is the shape a
+  // React developer might write instead, which a rule of the L5 configuration rejects.
+  it.each([
+    {
+      what: "a state write in an effect, with a value no ref holds",
+      contents: `import { useEffect, useEffectEvent, useState } from "react";
+
+export default function Probe() {
+  const [mounted, setMounted] = useState(false);
+  const onMount = useEffectEvent(() => {
+    setMounted(true);
+  });
+  useEffect(() => {
+    onMount();
+  }, []);
+  return <p>{String(mounted)}</p>;
+}
+`,
+      rule: "react/set-state-in-effect",
+    },
+    {
+      what: "a mirror synced in render",
+      contents: `import { useRef, useState } from "react";
+
+export default function Probe() {
+  const [count] = useState(0);
+  const countRef = useRef(count);
+  countRef.current = count;
+  return <p>{count}</p>;
+}
+`,
+      rule: "react/refs",
+    },
+    {
+      what: "an effect that lists values it does not read",
+      contents: `import { useEffect, useEffectEvent, useState } from "react";
+
+export default function Probe({ name }: { name: string }) {
+  const [count] = useState(0);
+  const onChange = useEffectEvent(() => {
+    console.log(count, name);
+  });
+  useEffect(() => {
+    onChange();
+  }, [count, name]);
+  return <p>{count}</p>;
+}
+`,
+      rule: "react/exhaustive-effect-dependencies",
+    },
+  ])("rejects $what ($rule)", async ({ contents, rule }) => {
+    expect(await lintCodes(contents)).toEqual([rule]);
   });
 
   it("accepts every attribute the IR accepts, spelt as React spells it", async () => {

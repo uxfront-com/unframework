@@ -3,10 +3,25 @@
 // shrink as cases arrive.
 import type { CapabilityName } from "@unframework/codegen";
 
+/** The families of IR kinds the gate requires a case for (`KIND_RECORDS` in `coverage.ts`). */
+export type KindFamily =
+  | "node"
+  | "attribute"
+  | "binding"
+  | "setup item"
+  | "handler"
+  | "watch source"
+  | "code reference";
+
+/**
+ * IR kinds that no case has yet, by family, and why none can: a kind a milestone adds before
+ * its corpus case. Empty while the corpus has every kind.
+ */
+export const EXEMPT_KINDS: Readonly<Partial<Record<KindFamily, Readonly<Record<string, string>>>>> =
+  {};
+
 /** Catalogued diagnostic codes that no case triggers, and why none can. */
 export const EXEMPT_CODES: Readonly<Record<string, string>> = {
-  UF4001:
-    "Only two cells are unsupported: Astro's interactivity, which no case uses before M2's event cases trigger it, and Vue's listbox, which no case can use while Vue, the reference target, writes the shared expectations (ADR-0033); the compiler's tests cover it.",
   UF8001:
     "Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
   UF9001:
@@ -15,7 +30,6 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
 
 /** Capabilities that no case uses yet, on any target that supports them. */
 export const EXEMPT_CAPABILITIES: Readonly<Partial<Record<CapabilityName, string>>> = {
-  interactivity: "M0 and M1 cases are static; M2 adds the first interactive cases (events, state).",
   listbox:
     "Vue, the reference target, cannot render a single-selection list box on its client (ADR-0033), so no case can hold one while Vue writes the shared expectations. M3's form cases add one, with `requires` to skip Vue and another reviewed source of expectations.",
 };

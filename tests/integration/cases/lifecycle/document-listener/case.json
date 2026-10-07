@@ -1,0 +1,6 @@
+{
+  "description": "Document listeners: one added in onMounted and removed in onUnmounted, and one added and removed by a watcher on a toggle, each the same local function for the component's life.",
+  "ssr": {
+    "initial": {}
+  }
+}

@@ -1,0 +1,40 @@
+---
+interface User {
+  name: string;
+}
+
+export interface AccountMenuProps {
+  owner?: User;
+}
+
+type Props = AccountMenuProps;
+
+const { owner } = Astro.props;
+
+const step = "intro" as string;
+const user = null as User | null;
+---
+
+<section class="account-menu" aria-label="Account">
+  {step === "intro" ? (
+    <button type="button">Start</button>
+  ) : (
+    <>
+      {user === null ? (
+        <button type="button">Sign in</button>
+      ) : (
+        <button type="button">Sign out</button>
+      )}
+    </>
+  )}
+  {user !== null ? (
+    <p>Signed in as {user.name}</p>
+  ) : (
+    <p>Nobody signed in</p>
+  )}
+  {owner ? (
+    <button type="button">{`Greet ${owner.name}`}</button>
+  ) : (
+    <p>No owner</p>
+  )}
+</section>

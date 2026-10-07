@@ -1,0 +1,9 @@
+- region "Event options":
+  - button "Inside"
+  - button "Stop here"
+  - button "Only once"
+  - button "Claim the reward"
+  - group "Volume":
+    - status: "5"
+  - list "Log":
+    - listitem: once

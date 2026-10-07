@@ -1,0 +1,6 @@
+{
+  "description": "emit is a statement: the emits of one synchronous run arrive in order, before and after a write, in a loop, and with no payload.",
+  "ssr": {
+    "initial": {}
+  }
+}

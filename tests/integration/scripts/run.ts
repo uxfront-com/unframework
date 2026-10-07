@@ -3,7 +3,7 @@ import { runSummary } from "./summary.ts";
 // whatever the run's result, so a red run still leaves its matrix. Arguments after the script
 // name go to Vitest (`pnpm test -- --project compile`).
 //
-// `--update` sets UF_UPDATE=1 (DESIGN §4.4): the compile project writes the goldens and the
+// `--update` sets UF_UPDATE=1 (ADR-0029): the compile project writes the goldens and the
 // reference target the shared expectations. It is refused in CI, which never writes.
 import { isCI, runVitest } from "./vitest.ts";
 

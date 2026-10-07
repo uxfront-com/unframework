@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Price two' })",
+      "dom": [
+        "<section aria-label=\"Price\" class=\"price-tag\">",
+        "  <p>",
+        "    \"Unit: EUR 5.00\"",
+        "  </p>",
+        "  <p role=\"status\">",
+        "    \"1 at EUR 2.50\"",
+        "  </p>",
+        "  <p>",
+        "    \"Total: EUR 2.50\"",
+        "  </p>",
+        "  <p>",
+        "    \"Last change: none\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add one\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Price two\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Price\":",
+        "  - paragraph: \"Unit: EUR 5.00\"",
+        "  - status: 1 at EUR 2.50",
+        "  - paragraph: \"Total: EUR 2.50\"",
+        "  - paragraph: \"Last change: none\"",
+        "  - button \"Add one\"",
+        "  - button \"Price two\""
+      ],
+      "events": {}
+    }
+  ]
+}

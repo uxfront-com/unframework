@@ -241,7 +241,10 @@ describe("props", () => {
       "Math",
       "`Math` is a global expressions may read, which the Angular target declares as a member.",
     ],
-    ["onClick", "`onClick` is an event's name: events land in M2."],
+    [
+      "onClick",
+      "`onClick` is an event's name: a component declares its events with `defineEmits`, and the targets name their props by them (ADR-0012).",
+    ],
     ["ngModel", "`ngModel` is a name Angular reserves for its directives."],
     [
       "Fragment",
@@ -368,7 +371,7 @@ describe("props types", () => {
     [
       "interface Unused { a: string }\nexport function A() { return <p />; }",
       "UF1002 Unused",
-      "`Unused` is not used by any component's props: types that components share, or that a module exports on their own, land in M5.",
+      "`Unused` is not used by any component: types that a module exports on their own land in M5.",
     ],
     [
       "interface CSSProperties { a: string }\nexport function A(props: CSSProperties) { return <p />; }",

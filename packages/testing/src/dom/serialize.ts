@@ -74,9 +74,15 @@ const escapeAttribute = (value: string) => value.replace(/&/g, "&amp;").replace(
  * - `uf:checked="true|false"` on checkboxes and radios, from `checked`;
  * - `uf:indeterminate="true|false"` on checkboxes, from `indeterminate`;
  * - `uf:selected="true|false"` on every `<option>`, from `selected`, which also covers a
- *   `<select>`'s value.
+ *   `<select>`'s value;
+ * - `uf:focused=""` on the element that has the focus (see `focusState`).
  */
 function formState(element: Element): [string, string][] {
+  return [...controlState(element), ...focusState(element)];
+}
+
+/** The form-control state of `formState`, without the focus. */
+function controlState(element: Element): [string, string][] {
   if (isHtml(element, "input")) {
     if (element.type === "checkbox") {
       return [
@@ -90,6 +96,20 @@ function formState(element: Element): [string, string][] {
   if (isHtml(element, "textarea")) return [["uf:value", element.value]];
   if (isHtml(element, "option")) return [["uf:selected", String(element.selected)]];
   return [];
+}
+
+/**
+ * `uf:focused=""` on the element that has the focus (`document.activeElement`), whatever its
+ * namespace: an interaction that moves the focus, or loses it, shows in the DOM L7 and L9
+ * compare. Playwright's ARIA snapshot marks it only in its AI mode, whose output differs by
+ * target (ADR-0050). It is read whether the page has the focus or not (`hasFocus()` depends on
+ * the frame's), and never on the body, which holds the focus when nothing else does.
+ */
+function focusState(element: Element): [string, string][] {
+  const document = element.ownerDocument;
+  return element === document.activeElement && element !== document.body
+    ? [["uf:focused", ""]]
+    : [];
 }
 
 /**
@@ -126,7 +146,10 @@ function serializeChildren(element: Element): string {
 function serializeElement(element: Element): string {
   const html = element.namespaceURI === HTML_NAMESPACE;
   const tag = element.localName;
-  const attributes = [...attributesOf(element), ...(html ? formState(element) : [])]
+  const attributes = [
+    ...attributesOf(element),
+    ...(html ? formState(element) : focusState(element)),
+  ]
     .map(([name, value]) => ` ${name}="${escapeAttribute(value)}"`)
     .join("");
   const start = `<${tag}${attributes}>`;
@@ -143,7 +166,8 @@ function serializeElement(element: Element): string {
  * differences that make the live state comparable:
  *
  * - form-control state is added as `uf:value`, `uf:checked`, `uf:indeterminate` and
- *   `uf:selected` pseudo-attributes, read from properties (see `formState`);
+ *   `uf:selected` pseudo-attributes, read from properties (see `formState`), and the element
+ *   that has the focus is marked `uf:focused` (see `focusState`);
  * - `style` attributes are written as the CSSOM serialises them (see `attributesOf`).
  *
  * The result parses back into the same tree: a `<pre>`, `<textarea>` or `<listing>` whose text
@@ -166,6 +190,17 @@ export function serializeDom(root: Element): string {
  * (in a `<pre>`, one line becomes two).
  */
 export function normalizeDom(root: Element, options: NormalizeOptions = {}): string {
+  return normalizeDomWithIds(root, options).html;
+}
+
+/**
+ * {@link normalizeDom}, with the renaming of the generated ids it found, from each original id
+ * to its `uf-id-N`: a trace renames the ids a step's emitted payloads carry with it.
+ */
+export function normalizeDomWithIds(
+  root: Element,
+  options: NormalizeOptions = {},
+): { html: string; ids: Map<string, string> } {
   checkOptions(options);
   const parsed = parseHtml(serializeDom(root));
   const mismatch = compareTrees(holderOf(root), parsed, "");
@@ -174,7 +209,8 @@ export function normalizeDom(root: Element, options: NormalizeOptions = {}): str
       `normalizeDom: the live DOM has a structure HTML cannot express, so the HTML parser would rebuild it differently: ${mismatch}`,
     );
   }
-  return normalizeTree(parsed, options);
+  const ids = new Map<string, string>();
+  return { html: normalizeTree(parsed, options, ids), ids };
 }
 
 /** A child of a live or parsed node, as `compareTrees` walks it: adjacent text is one run. */
@@ -243,7 +279,9 @@ function compareElements(element: Element, rebuilt: TreeElement, here: string): 
     return `the live ${describe(element.namespaceURI, element.localName)} at ${here} parses as ${describe(rebuilt.namespaceURI, rebuilt.tagName)}.`;
   }
   const pseudo = new Set(
-    element.namespaceURI === HTML_NAMESPACE ? formState(element).map(([name]) => name) : [],
+    (element.namespaceURI === HTML_NAMESPACE ? formState(element) : focusState(element)).map(
+      ([name]) => name,
+    ),
   );
   const liveValues = new Map(
     Array.from(element.attributes, (attribute): [string, string] => [

@@ -1,0 +1,24 @@
+- region "Composer":
+  - text: Comment
+  - textbox "Comment"
+  - form "Tags":
+    - text: Tag
+    - textbox "Tag"
+    - button "Save tags"
+  - list "Tag list"
+  - text: Code
+  - textbox "Code"
+  - text: Search
+  - textbox "Search"
+  - paragraph: "Searching for:"
+  - text: Click here to hide this tip.
+  - button "More tips"
+  - dialog "Discard draft":
+    - paragraph: Discard this draft?
+    - button "Keep"
+  - button "Save"
+  - button "Upload"
+  - button "Finish upload"
+  - list "Log":
+    - listitem: upload started
+    - listitem: first upload

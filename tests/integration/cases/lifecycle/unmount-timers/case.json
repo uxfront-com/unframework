@@ -1,0 +1,6 @@
+{
+  "description": "A handler starts an interval held in a setup let; onUnmounted clears it, so no refresh comes after the unmount.",
+  "ssr": {
+    "paused": { "props": { "interval": 60000 } }
+  }
+}

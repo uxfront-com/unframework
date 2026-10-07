@@ -1,0 +1,6 @@
+{
+  "description": "A read after a write in client code sees the new value: after ++ and +=, in a loop, after a called function's write, and in the bubble listener after the capture listener's write.",
+  "ssr": {
+    "initial": {}
+  }
+}

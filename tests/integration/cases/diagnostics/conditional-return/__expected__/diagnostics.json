@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2012",
+    "severity": "error",
+    "message": "The component's body returns before its last statement: the setup runs once, and the template its last statement returns decides what renders.",
+    "file": "diagnostics/conditional-return/Toast.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 17,
+      "offset": 300
+    },
+    "end": {
+      "line": 8,
+      "column": 29,
+      "offset": 312
+    },
+    "help": "Move the condition into the JSX: `{message && <p>{message}</p>}`, or `c ? <A /> : <B />`."
+  }
+]

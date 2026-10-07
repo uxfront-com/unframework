@@ -1,0 +1,25 @@
+---
+export interface Settings {
+  theme: string;
+  size: number;
+}
+
+const settings = { theme: "light", size: 14 } as Settings;
+const saving = false as boolean;
+const label = "Never saved" as string;
+const failure = "" as string;
+---
+
+<section class="display-settings" aria-label="Display">
+  <p role="status">Theme {settings.theme}, size {settings.size}</p>
+  <button type="button">Dark</button>
+  <button type="button">Larger</button>
+  <button type="button">Allow up to 30</button>
+  <button type="button">Save</button>
+  <p>{saving ? "Saving" : failure === "" ? label : `Failed: ${failure}`}</p>
+  <div role="group" aria-label="Server">
+    <button type="button">Reply with an id</button>
+    <button type="button">Reply as a draft</button>
+    <button type="button">Reply with an error</button>
+  </div>
+</section>

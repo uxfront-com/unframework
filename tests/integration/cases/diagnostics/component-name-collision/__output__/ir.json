@@ -11,6 +11,7 @@
       "props": [],
       "types": [],
       "bindings": [],
+      "setup": [],
       "render": {
         "kind": "Element",
         "tag": "p",

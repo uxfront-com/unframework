@@ -1,5 +1,6 @@
 import { join, resolve } from "node:path";
 
+import { CAPABILITY_NAMES } from "@unframework/codegen";
 import {
   createComponent,
   createElement,
@@ -82,22 +83,19 @@ const greeting = createElement(
 
 describe("angular target", () => {
   it("declares every capability", () => {
-    expect(Object.keys(target.capabilities).toSorted()).toEqual([
-      "attribute-spread",
-      "bound-attribute",
-      "class-binding",
-      "conditional",
-      "element",
-      "fragment",
-      "interactivity",
-      "interpolation",
-      "list",
-      "listbox",
-      "props",
-      "static-attribute",
-      "style-binding",
-      "svg",
-      "text",
+    expect(Object.keys(target.capabilities).toSorted()).toEqual(CAPABILITY_NAMES.toSorted());
+  });
+
+  it("emulates the listener options, ids and nextTick, and supports the rest natively", () => {
+    const emulated = Object.entries(target.capabilities)
+      .filter(([, cell]) => cell.support !== "native")
+      .map(([name, cell]) => [name, cell.support, "helper" in cell ? cell.helper : undefined]);
+    expect(emulated).toEqual([
+      ["event-capture", "emulated", "uf<Event>Capture"],
+      ["event-once", "emulated", "uf<Event>Once"],
+      ["event-passive", "emulated", "uf<Event>Passive"],
+      ["use-id", "emulated", "nextId"],
+      ["next-tick", "emulated", "nextTick"],
     ]);
   });
 
@@ -248,7 +246,7 @@ function templateLines(contents: string): string[] {
     .filter(Boolean);
 }
 
-describe("props (design §5.5)", () => {
+describe("props (ADR-0034)", () => {
   it("emits a component whose props are signal inputs, read through `@let`", async () => {
     const file = await formatted(`
 export interface BadgeProps {
@@ -446,7 +444,7 @@ export default function Field({ value }: input) {
   });
 });
 
-describe("template (design §5.5)", () => {
+describe("template (ADR-0035)", () => {
   // Angular narrows a template variable as TypeScript narrows a local, never a signal call
   // (TS2532 on \`owner() && owner().name\`): output.test.ts proves this source type-checks.
   it("writes the source's expressions as written, against the variables", async () => {

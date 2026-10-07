@@ -1,0 +1,8 @@
+error[UF2005]: `watch` is called inside other code: the macros and reactive APIs are called once, at the top level of the component's body, where every target runs the setup once.
+  --> diagnostics/misplaced-reactive-call/Disclosure.uf.tsx:11:5
+   |
+11 |     watch(open, (value) => {
+   |     ^^^^^
+   |
+   = help: Move the call to the top level of the component's body, as a statement or a `const`'s value.
+   = see: https://unframework.dev/diagnostics/UF2005

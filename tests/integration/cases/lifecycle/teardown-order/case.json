@@ -1,0 +1,6 @@
+{
+  "description": "Teardown order: onUnmounted declared before a watchEffect and an immediate watcher with cleanups; a post watcher with a cleanup beside a pre watcher that writes state, a write of only that state, and a watchEffect reading both.",
+  "ssr": {
+    "initial": {}
+  }
+}

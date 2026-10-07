@@ -1,0 +1,13 @@
+{
+  "description": "Watcher identity: an object state and a Map state written away and back in one handler, an immediate watcher of a boolean, an array source holding a boolean, and an unannotated array source whose values a function taking an array receives.",
+  "ssr": {
+    "initial": {
+      "props": {
+        "books": [
+          { "id": 1, "title": "Dune" },
+          { "id": 2, "title": "Emma" }
+        ]
+      }
+    }
+  }
+}

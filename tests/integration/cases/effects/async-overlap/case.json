@@ -1,0 +1,6 @@
+{
+  "description": "Async client code overtaken while it waits: an async watcher and an async watchEffect whose next run starts at once and drops the earlier result; writes after a try or a catch around an await, and after an assigned await, with watchers over both states; a local arrow called twice on each side of nextTick.",
+  "ssr": {
+    "initial": {}
+  }
+}

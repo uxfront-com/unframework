@@ -1,6 +1,7 @@
 import type * as AST from "@oxc-project/types";
 
-import { parenthesesNeeded, parseExpressionSource } from "../rewrite.ts";
+import { parseExpressionSource, parseStatementsSource } from "../parse.ts";
+import { parenthesesNeeded } from "../rewrite.ts";
 import type { ParenthesesSlot } from "../rewrite.ts";
 
 const at = { start: 0, end: 0 } as const;
@@ -10,15 +11,19 @@ interface Slot {
   node: { name: string };
   /** The code it stands for, parenthesised where needed. */
   code: string;
+  /** Whether it stands for statements, whose placeholder oxc-codegen ends with a `;`. */
+  statements: boolean;
+  /** Whether its code ends with a line comment, which must not swallow what follows. */
+  lineComment: boolean;
 }
 
 /**
- * Source text in printed code (design §4.1, §4.2). oxc-codegen re-prints what it is given: it
+ * Source text in printed code (plan §5.4, ADR-0035). oxc-codegen re-prints what it is given: it
  * writes numbers from their value (`1000` → `1e3`), drops comments and adds no parentheses
- * around text it is told is an identifier. So expressions and types copied from the source
- * enter an AST as placeholder identifiers, and {@link Placeholders.print} replaces each with
- * its code once the module is printed: the code stays as the author wrote it, parenthesised
- * where its slot needs it.
+ * around text it is told is an identifier. So expressions, types, parameters and statements
+ * copied from the source enter an AST as placeholder identifiers, and {@link Placeholders.print}
+ * replaces each with its code once the module is printed: the code stays as the author wrote
+ * it, parenthesised where its slot needs it.
  *
  * Use each placeholder node once. A placeholder's name is chosen when printing, so that no
  * text of the output (a string, a copied declaration) can be mistaken for one.
@@ -55,9 +60,52 @@ export class Placeholders {
     } as AST.TSTypeReference;
   }
 
-  #add(code: string): AST.IdentifierReference {
+  /**
+   * A parameter slot holding one parameter as the source writes it (`event: MouseEvent`,
+   * `[unit]: string[] = ["x"]`, `...rest: string[]`, from `parameterText`), for a function a
+   * target builds (a method). It must be exactly one parameter: anything else throws.
+   */
+  parameter(code: string): AST.BindingIdentifier {
+    const { statements } = parseStatementsSource(`(${code}) => {};`);
+    const [statement] = statements;
+    const arrow =
+      statement?.type === "ExpressionStatement" &&
+      statement.expression.type === "ArrowFunctionExpression"
+        ? statement.expression
+        : undefined;
+    if (statements.length !== 1 || arrow?.params.length !== 1) {
+      throw new Error(`Cannot parse \`${code}\` as one parameter.`);
+    }
+    return this.#add(code) as AST.BindingIdentifier;
+  }
+
+  /**
+   * A statement slot holding a list of statements as the source writes them (a function's
+   * body without its braces, `functionBodyText`), for a body a target builds (a method, a
+   * hook's callback). It is parsed to check it, as an expression is. The last statement gets the
+   * semicolon it may lack, so a statement printed after it cannot continue it (`f()` before
+   * `(a)` would be one call), and a trailing line comment gets a line break unless one follows.
+   */
+  statements(code: string): AST.ExpressionStatement {
+    const { statements, comments } = parseStatementsSource(code);
+    let text = code;
+    const last = statements.at(-1);
+    if (last && UNTERMINATED.has(last.type) && code[last.end - 1] !== ";") {
+      text = `${code.slice(0, last.end)};${code.slice(last.end)}`;
+    }
+    const lineComment = comments.some(
+      (comment) => comment.type === "Line" && comment.end === code.length,
+    );
+    const node = this.#add(text, { statements: true, lineComment });
+    return { type: "ExpressionStatement", expression: node, ...at } as AST.ExpressionStatement;
+  }
+
+  #add(
+    code: string,
+    kind: { statements: boolean; lineComment: boolean } = { statements: false, lineComment: false },
+  ): AST.IdentifierReference {
     const node = { type: "Identifier", name: "", ...at } as AST.IdentifierReference;
-    this.#slots.push({ node, code });
+    this.#slots.push({ node, code, ...kind });
     return node;
   }
 
@@ -70,8 +118,9 @@ export class Placeholders {
    * Runs `print`, which prints an AST holding these placeholders, and returns its output with
    * each placeholder replaced by its code. A placeholder is named `$uf<n>$<index>$`; when the
    * output holds the prefix `$uf<n>$` anywhere else (a string that happens to spell one), the
-   * next `n` is tried, so the result is deterministic. Throws when a placeholder is missing
-   * from the output or printed twice: a target bug.
+   * next `n` is tried, so the result is deterministic. A statement slot takes the `;` printed
+   * after it. Throws when a placeholder is missing from the output or printed twice: a target
+   * bug.
    */
   print(print: () => string): string {
     const count = this.#slots.length;
@@ -101,13 +150,30 @@ export class Placeholders {
       let result = "";
       let last = 0;
       for (const { index, start, end } of found) {
-        result += output.slice(last, start) + this.#slots[index]!.code;
-        last = end;
+        const slot = this.#slots[index]!;
+        const after = slot.statements && output[end] === ";" ? end + 1 : end;
+        const broken = slot.lineComment && output[after] !== "\n";
+        result += `${output.slice(last, start)}${slot.code}${broken ? "\n" : ""}`;
+        last = after;
       }
       return result + output.slice(last);
     }
   }
 }
+
+/**
+ * The statements that end with an expression or a keyword, which the next statement could
+ * continue without a semicolon: blocks, `if`, loops and `try` end with a statement of their own.
+ */
+const UNTERMINATED: ReadonlySet<string> = new Set([
+  "ExpressionStatement",
+  "VariableDeclaration",
+  "ReturnStatement",
+  "ThrowStatement",
+  "BreakStatement",
+  "ContinueStatement",
+  "DoWhileStatement",
+]);
 
 interface Occurrence {
   index: number;

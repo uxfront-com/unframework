@@ -1,0 +1,6 @@
+{
+  "description": "A handler writes, awaits nextTick, reads the DOM through a template ref in a conditional, and emits what it read.",
+  "ssr": {
+    "initial": {}
+  }
+}

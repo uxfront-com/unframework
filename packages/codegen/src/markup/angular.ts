@@ -1,10 +1,12 @@
-// Angular templates (design §5.5): `{{ }}` interpolations, `[attr.x]` bindings, `@if` and `@for`
+// Angular templates (plan §6): `{{ }}` interpolations, `[attr.x]` bindings, `@if` and `@for`
 // blocks, a static `class` beside one `[class]` binding, a static `style` beside `[style.x]`
-// bindings. Angular's expression language is not JavaScript: its lexer reads fewer escapes and
-// no comments, so literals are re-printed from their values and comments dropped, token by token.
+// bindings, `(event)` listeners running a statement the target writes, and `#name` template
+// refs. Angular's expression language is not JavaScript: its lexer reads fewer escapes and no
+// comments, so literals are re-printed from their values and comments dropped, token by token.
 import { angularLowercases, angularMisreads, BINDABLE_BOOLEAN_ATTRIBUTES } from "@unframework/ir";
 
-import { parseExpression, parseExpressionSource } from "../rewrite.ts";
+import { parseCodeSource, parseExpression } from "../parse.ts";
+import type { CodeKind } from "../parse.ts";
 import {
   escapeBraces,
   escapeHtmlAttribute,
@@ -60,9 +62,11 @@ const DECIMAL = /^(?=\.?\d)(?:\d(?:_?\d)*)?(?:\.(?:\d(?:_?\d)*)?)?(?:[eE][+-]?\d
 /**
  * Where Angular reads an expression: an interpolation (`{{ }}` in text, where entities are
  * decoded, a template scanner looks for `}}` and `<` may open a tag), an attribute value
- * (`[attr.x]="…"`, decoded), or a block's parameters (`@if (…)`, read as written).
+ * (`[attr.x]="…"`, decoded), a block's parameters (`@if (…)`, read as written), or a listener's
+ * value (`(click)="…"`, decoded as an attribute's), which holds a template statement: one or
+ * more expressions separated by `;`.
  */
-export type AngularContext = "interpolation" | "attribute" | "block";
+export type AngularContext = "interpolation" | "attribute" | "block" | "event";
 
 /**
  * A character of a re-printed literal that Angular, or the template around the expression,
@@ -84,8 +88,8 @@ const escapeSpaceRuns = (text: string) => text.replace(/ {2,}/g, unicodeEscape);
 const TAG_START = /<(?=[A-Za-z!/?])/g;
 
 /**
- * Expression code as Angular reads it where `context` says, re-spelled token by token (design
- * §4.3): string literals from their values, with only the escapes Angular's lexer reads (it
+ * Expression code as Angular reads it where `context` says, re-spelled token by token
+ * (ADR-0035): string literals from their values, with only the escapes Angular's lexer reads (it
  * reads `"\x41"` as `"x41"`) and none of its delimiters; template literals as concatenations of
  * such strings ({@link withoutTemplateLiterals}); number literals in decimal, kept apart from a
  * `.` or `?` beside them ({@link angularNumber}); regular
@@ -100,28 +104,34 @@ const TAG_START = /<(?=[A-Za-z!/?])/g;
  */
 export function angularCode(code: string, context: AngularContext): string {
   const interpolation = context === "interpolation";
-  const source = withoutTemplateLiterals(code);
-  const respelled = mapCode(source, {
-    string: (_, { value }) => angularString(value, context === "attribute" ? "'" : '"'),
-    number: (raw, { value, end }, before) => angularNumber(raw, value, before, source[end]),
-    regex: (raw, before) => {
-      const regex = angularRegex(raw, interpolation);
-      if (!interpolation) return regex;
-      // `a</b/` would open a tag; `\}` means `}` in a regular expression either way.
-      return `${before.endsWith("<") ? " " : ""}${regex.replace(/(?<=\})\}/g, "\\}")}`;
+  const kind: CodeKind = context === "event" ? "statements" : "expression";
+  const quoted = context === "attribute" || context === "event";
+  const source = withoutTemplateLiterals(code, kind);
+  const respelled = mapCode(
+    source,
+    {
+      string: (_, { value }) => angularString(value, quoted ? "'" : '"'),
+      number: (raw, { value, end }, before) => angularNumber(raw, value, before, source[end]),
+      regex: (raw, before) => {
+        const regex = angularRegex(raw, interpolation);
+        if (!interpolation) return regex;
+        // `a</b/` would open a tag; `\}` means `}` in a regular expression either way.
+        return `${before.endsWith("<") ? " " : ""}${regex.replace(/(?<=\})\}/g, "\\}")}`;
+      },
+      comment: () => " ",
+      other: (text, before) => {
+        const spaced = `${before.endsWith("/") && text.startsWith("/") ? " " : ""}${text.replace(
+          NON_ASCII_SPACE,
+          " ",
+        )}`;
+        return interpolation ? spaced.replace(/\}(?=\})/g, "} ").replace(TAG_START, "< ") : spaced;
+      },
     },
-    comment: () => " ",
-    other: (text, before) => {
-      const spaced = `${before.endsWith("/") && text.startsWith("/") ? " " : ""}${text.replace(
-        NON_ASCII_SPACE,
-        " ",
-      )}`;
-      return interpolation ? spaced.replace(/\}(?=\})/g, "} ").replace(TAG_START, "< ") : spaced;
-    },
-  }).trim();
+    kind,
+  ).trim();
   if (context === "block") return respelled;
   // An attribute value's lexer decodes each reference on its own.
-  if (context === "attribute") return escapeReferences(respelled).replace(/"/g, "&quot;");
+  if (quoted) return escapeReferences(respelled).replace(/"/g, "&quot;");
   // Angular decodes an interpolation's references only once it has found its end, with
   // `/&([^;]+);/`: a bare `&` (`a && b`) would take the `;` of a reference after it, which then
   // reaches the expression as written. So where a reference is needed, every `&` is one: an `&`
@@ -319,9 +329,9 @@ function concatenationFits(parent: TemplateNode, key: string): boolean {
  * never adds numbers; one with a string among its first two parts is a string from its first
  * `+` (`` `${n}px` `` → `n + "px"`). It is parenthesised only where `+` would bind wrongly.
  */
-export function withoutTemplateLiterals(code: string): string {
+export function withoutTemplateLiterals(code: string, kind: CodeKind = "expression"): string {
   if (!code.includes("`")) return code;
-  const { expression } = parseExpressionSource(code);
+  const { root } = parseCodeSource(code, kind);
   const outermost: { template: TemplateNode; fits: boolean }[] = [];
   const visit = (value: unknown, parent: TemplateNode | undefined, key: string): void => {
     if (Array.isArray(value)) {
@@ -340,7 +350,7 @@ export function withoutTemplateLiterals(code: string): string {
       if (childKey !== "type" && typeof child === "object") visit(child, value, childKey);
     }
   };
-  visit(expression, undefined, "");
+  visit(root, undefined, "");
   let output = "";
   let position = 0;
   for (const { template, fits } of outermost) {
@@ -394,6 +404,12 @@ export function withoutTemplateLiterals(code: string): string {
  * (not its own, hence the container), and `ngPreserveWhitespaces` keeps their whitespace as
  * written, since interpolated literals no longer protect it there. Nothing in it binds, so it
  * holds only static content (ADR-0037).
+ *
+ * A listener is `(event)="statement"`. Angular's template statements are not JavaScript functions
+ * (no block bodies, no `++`, and a signal is written through `.set`), so the Angular target
+ * supplies the statement (`MarkupOptions.handler`), a call of a method it hoists the handler to,
+ * and listens with an option through a directive of its own (ADR-0047). A template ref is
+ * `#name`, which the class's `viewChild("name")` queries (ADR-0049).
  *
  * Angular's parser puts `<svg>` and everything inside it in the SVG namespace (`:svg:`), which
  * every IR tree has around its SVG elements: a component rooted in an SVG child, which would need
@@ -513,6 +529,30 @@ export const angularDialect: MarkupDialect = {
       close: "}",
     },
   ],
+  // `event.handler` is read only for the error: it is rewritten when read (`PrintedEvent`).
+  eventAttribute: (event) => {
+    const { attribute, statement } = event;
+    const option = attribute.capture
+      ? "capture"
+      : attribute.once
+        ? "once"
+        : attribute.passive
+          ? "passive"
+          : undefined;
+    if (option) {
+      throw new Error(
+        `An Angular template has no syntax for a ${option} \`${attribute.event}\` listener: the Angular target writes it (a directive, ADR-0047).`,
+      );
+    }
+    if (statement === undefined) {
+      throw new Error(
+        `An Angular template cannot run \`${event.handler}\` as a listener: the Angular target supplies a template statement (MarkupOptions.handler).`,
+      );
+    }
+    const name = `(${attribute.event})`;
+    return [{ name, text: `${name}="${angularCode(statement, "event")}"` }];
+  },
+  refAttribute: ({ name }) => [{ name: `#${name}`, text: `#${name}` }],
 };
 
 /**
@@ -582,6 +622,8 @@ const angularLiteralDialect: MarkupDialect = {
   },
   conditional: () => staticOnly("a conditional"),
   list: () => staticOnly("a list"),
+  eventAttribute: ({ attribute }) => staticOnly(`a \`${attribute.event}\` listener`),
+  refAttribute: () => staticOnly("a template ref"),
 };
 
 /**

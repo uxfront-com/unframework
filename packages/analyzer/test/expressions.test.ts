@@ -64,7 +64,7 @@ describe("references", () => {
       const { problems: found, diagnostics } = check(name);
       expect(found).toEqual([`UF3020 ${name}`]);
       expect(diagnostics[0]!.message).toBe(
-        `\`${name}\` is not a prop, a list's item or index, or a global a template expression can read.`,
+        `\`${name}\` is not a prop, a setup binding, a list's item or index, or a global a template expression can read.`,
       );
     },
   );
@@ -94,17 +94,18 @@ describe("references", () => {
     expect(found).toEqual([`UF3019 ${at}`]);
   });
 
-  it("reports setup declarations and authoring imports as landing in M2", () => {
+  it("reads the setup's constants, and reports the authoring API used as a value (UF2005)", () => {
     const { source, diagnostics } = component("<p>{double}{ref}</p>", {
       before: 'import { ref } from "unframework";\n',
       setup: "const double = 2; ",
     });
-    expect(problems(source, diagnostics)).toEqual([
-      "UF1002 const double = 2;",
-      "UF1002 double",
-      "UF1002 ref",
-    ]);
-    expect(diagnostics[1]!.message).toContain("reading it lands in M2");
+    expect(problems(source, diagnostics)).toEqual(["UF2005 ref"]);
+  });
+
+  it("reports module-level declarations and imports of other modules as landing in M5", () => {
+    const { source, diagnostics } = component("<p>{max}</p>", { before: "const max = 3;\n" });
+    expect(problems(source, diagnostics)).toEqual(["UF1002 const max = 3;", "UF1002 max"]);
+    expect(diagnostics[1]!.message).toContain("module-level declarations land in M5");
   });
 });
 

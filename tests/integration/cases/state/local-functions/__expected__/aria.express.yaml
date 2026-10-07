@@ -1,0 +1,6 @@
+- region "Order total":
+  - paragraph: "Subtotal: EUR 49.99"
+  - paragraph: "Shipping: EUR 12.00"
+  - status: "Total: EUR 61.99"
+  - button "Standard shipping"
+  - button "Express shipping" [pressed]

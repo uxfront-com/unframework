@@ -1,0 +1,6 @@
+{
+  "description": "preventDefault runs during the dispatch on every target: for one key under a condition on the event, for a form's submission and for a link's navigation.",
+  "ssr": {
+    "initial": {}
+  }
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2009",
+    "severity": "error",
+    "message": "The call-signature form of `defineEmits` is Vue's: unframework declares each event as a property whose type is a named tuple.",
+    "file": "diagnostics/invalid-emits/Rating.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 30,
+      "offset": 274
+    },
+    "end": {
+      "line": 6,
+      "column": 66,
+      "offset": 310
+    },
+    "help": "Declare each event as a named tuple: `defineEmits<{ change: [value: number] }>()`."
+  }
+]

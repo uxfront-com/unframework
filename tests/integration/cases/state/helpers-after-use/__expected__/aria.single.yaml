@@ -1,0 +1,7 @@
+- region "Price":
+  - paragraph: "Unit: EUR 2.50"
+  - status: 1 at EUR 2.50
+  - paragraph: "Total: EUR 2.50"
+  - paragraph: "Last change: none"
+  - button "Add one"
+  - button "Price two"

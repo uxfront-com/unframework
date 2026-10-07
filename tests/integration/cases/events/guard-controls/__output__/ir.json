@@ -1,0 +1,2751 @@
+{
+  "irVersion": 1,
+  "file": "events/guard-controls/CommentComposer.uf.tsx",
+  "components": [
+    {
+      "name": "CommentComposer",
+      "span": {
+        "start": 49,
+        "end": 5030
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@101",
+        "type": {
+          "code": "{\n    sent: [text: string];\n    saved: [count: number];\n    firstSave: [];\n  }",
+          "span": {
+            "start": 120,
+            "end": 198
+          }
+        },
+        "events": [
+          {
+            "name": "sent",
+            "parameters": [
+              {
+                "name": "text",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 139,
+                    "end": 145
+                  }
+                },
+                "span": {
+                  "start": 133,
+                  "end": 145
+                }
+              }
+            ],
+            "span": {
+              "start": 126,
+              "end": 146
+            }
+          },
+          {
+            "name": "saved",
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 167,
+                    "end": 173
+                  }
+                },
+                "span": {
+                  "start": 160,
+                  "end": 173
+                }
+              }
+            ],
+            "span": {
+              "start": 152,
+              "end": 174
+            }
+          },
+          {
+            "name": "firstSave",
+            "parameters": [],
+            "span": {
+              "start": 180,
+              "end": 193
+            }
+          }
+        ],
+        "span": {
+          "start": 95,
+          "end": 202
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@101",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 101,
+            "end": 105
+          }
+        },
+        {
+          "id": "tags@212",
+          "name": "tags",
+          "kind": "state",
+          "span": {
+            "start": 212,
+            "end": 216
+          }
+        },
+        {
+          "id": "query@246",
+          "name": "query",
+          "kind": "state",
+          "span": {
+            "start": 246,
+            "end": 251
+          }
+        },
+        {
+          "id": "panelOpen@271",
+          "name": "panelOpen",
+          "kind": "state",
+          "span": {
+            "start": 271,
+            "end": 280
+          }
+        },
+        {
+          "id": "confirming@302",
+          "name": "confirming",
+          "kind": "state",
+          "span": {
+            "start": 302,
+            "end": 312
+          }
+        },
+        {
+          "id": "tipShown@334",
+          "name": "tipShown",
+          "kind": "state",
+          "span": {
+            "start": 334,
+            "end": 342
+          }
+        },
+        {
+          "id": "saves@364",
+          "name": "saves",
+          "kind": "state",
+          "span": {
+            "start": 364,
+            "end": 369
+          }
+        },
+        {
+          "id": "log@388",
+          "name": "log",
+          "kind": "state",
+          "span": {
+            "start": 388,
+            "end": 391
+          }
+        },
+        {
+          "id": "finishUpload@419",
+          "name": "finishUpload",
+          "kind": "localVar",
+          "span": {
+            "start": 419,
+            "end": 431
+          }
+        },
+        {
+          "id": "record@471",
+          "name": "record",
+          "kind": "localFn",
+          "span": {
+            "start": 471,
+            "end": 477
+          }
+        },
+        {
+          "id": "send@548",
+          "name": "send",
+          "kind": "localFn",
+          "span": {
+            "start": 548,
+            "end": 552
+          }
+        },
+        {
+          "id": "addTag@723",
+          "name": "addTag",
+          "kind": "localFn",
+          "span": {
+            "start": 723,
+            "end": 729
+          }
+        },
+        {
+          "id": "clearSearch@991",
+          "name": "clearSearch",
+          "kind": "localFn",
+          "span": {
+            "start": 991,
+            "end": 1002
+          }
+        },
+        {
+          "id": "dismiss@1145",
+          "name": "dismiss",
+          "kind": "localFn",
+          "span": {
+            "start": 1145,
+            "end": 1152
+          }
+        },
+        {
+          "id": "tag@1941",
+          "name": "tag",
+          "kind": "loopVar",
+          "span": {
+            "start": 1941,
+            "end": 1944
+          }
+        },
+        {
+          "id": "line@4929",
+          "name": "line",
+          "kind": "loopVar",
+          "span": {
+            "start": 4929,
+            "end": 4933
+          }
+        },
+        {
+          "id": "index@4935",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 4935,
+            "end": 4940
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "tags@212",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 223,
+              "end": 231
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 233,
+              "end": 235
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 206,
+            "end": 237
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "query@246",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 258,
+              "end": 260
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 240,
+            "end": 262
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "panelOpen@271",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 287,
+              "end": 291
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 265,
+            "end": 293
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "confirming@302",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 319,
+              "end": 323
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 296,
+            "end": 325
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "tipShown@334",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 349,
+              "end": 353
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 328,
+            "end": 355
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "saves@364",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 376,
+              "end": 377
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 358,
+            "end": 379
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "log@388",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 398,
+              "end": 406
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 408,
+              "end": 410
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 382,
+            "end": 412
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "finishUpload@419",
+          "type": {
+            "code": "(() => void) | undefined",
+            "span": {
+              "start": 433,
+              "end": 457
+            }
+          },
+          "span": {
+            "start": 415,
+            "end": 458
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "record@471",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "line",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 484,
+                    "end": 490
+                  }
+                },
+                "span": {
+                  "start": 478,
+                  "end": 490
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    log.value = [...log.value, line];\n  }",
+              "span": {
+                "start": 492,
+                "end": 535
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "log@388",
+                  "operator": "=",
+                  "span": {
+                    "start": 498,
+                    "end": 530
+                  },
+                  "target": {
+                    "start": 498,
+                    "end": 507
+                  },
+                  "value": {
+                    "start": 510,
+                    "end": 530
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "log@388",
+                  "span": {
+                    "start": 514,
+                    "end": 523
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 477,
+              "end": 535
+            }
+          },
+          "span": {
+            "start": 462,
+            "end": 535
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "send@548",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 560,
+                    "end": 573
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 553,
+                  "end": 573
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key !== \"Enter\") return;\n    event.preventDefault();\n    emit(\"sent\", (event.target as HTMLTextAreaElement).value);\n  }",
+              "span": {
+                "start": 575,
+                "end": 710
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 585,
+                    "end": 594
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 620,
+                    "end": 640
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@101",
+                  "event": "sent",
+                  "span": {
+                    "start": 648,
+                    "end": 705
+                  },
+                  "arguments": [
+                    {
+                      "start": 661,
+                      "end": 704
+                    }
+                  ]
+                },
+                {
+                  "kind": "Event",
+                  "member": "target",
+                  "span": {
+                    "start": 662,
+                    "end": 674
+                  }
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "preventDefault",
+                "span": {
+                  "start": 620,
+                  "end": 643
+                }
+              }
+            ],
+            "span": {
+              "start": 552,
+              "end": 710
+            }
+          },
+          "span": {
+            "start": 539,
+            "end": 710
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "addTag@723",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 737,
+                    "end": 750
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 730,
+                  "end": 750
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    event.preventDefault();\n    const field = event.target as HTMLInputElement;\n    if (field.value === \"\" || tags.value.includes(field.value)) return;\n    tags.value = [...tags.value, field.value];\n    field.value = \"\";\n  }",
+              "span": {
+                "start": 752,
+                "end": 978
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 758,
+                    "end": 778
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Event",
+                  "member": "target",
+                  "span": {
+                    "start": 800,
+                    "end": 812
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tags@212",
+                  "span": {
+                    "start": 864,
+                    "end": 874
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "tags@212",
+                  "operator": "=",
+                  "span": {
+                    "start": 910,
+                    "end": 951
+                  },
+                  "target": {
+                    "start": 910,
+                    "end": 920
+                  },
+                  "value": {
+                    "start": 923,
+                    "end": 951
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tags@212",
+                  "span": {
+                    "start": 927,
+                    "end": 937
+                  }
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "preventDefault",
+                "span": {
+                  "start": 758,
+                  "end": 781
+                }
+              }
+            ],
+            "span": {
+              "start": 729,
+              "end": 978
+            }
+          },
+          "span": {
+            "start": 714,
+            "end": 978
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "clearSearch@991",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 1010,
+                    "end": 1023
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 1003,
+                  "end": 1023
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    event.stopPropagation();\n    query.value = \"\";\n    (event.target as HTMLInputElement).value = \"\";\n  }",
+              "span": {
+                "start": 1025,
+                "end": 1132
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "stopPropagation",
+                  "span": {
+                    "start": 1031,
+                    "end": 1052
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "query@246",
+                  "operator": "=",
+                  "span": {
+                    "start": 1060,
+                    "end": 1076
+                  },
+                  "target": {
+                    "start": 1060,
+                    "end": 1071
+                  },
+                  "value": {
+                    "start": 1074,
+                    "end": 1076
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "target",
+                  "span": {
+                    "start": 1083,
+                    "end": 1095
+                  }
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "stopPropagation",
+                "span": {
+                  "start": 1031,
+                  "end": 1055
+                }
+              }
+            ],
+            "span": {
+              "start": 1002,
+              "end": 1132
+            }
+          },
+          "span": {
+            "start": 982,
+            "end": 1132
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "dismiss@1145",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "MouseEvent",
+                  "span": {
+                    "start": 1160,
+                    "end": 1170
+                  }
+                },
+                "event": "MouseEvent",
+                "span": {
+                  "start": 1153,
+                  "end": 1170
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    event.stopPropagation();\n    confirming.value = false;\n    record(\"dismissed\");\n  }",
+              "span": {
+                "start": 1172,
+                "end": 1261
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "stopPropagation",
+                  "span": {
+                    "start": 1178,
+                    "end": 1199
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "confirming@302",
+                  "operator": "=",
+                  "span": {
+                    "start": 1207,
+                    "end": 1231
+                  },
+                  "target": {
+                    "start": 1207,
+                    "end": 1223
+                  },
+                  "value": {
+                    "start": 1226,
+                    "end": 1231
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "record@471",
+                  "span": {
+                    "start": 1237,
+                    "end": 1243
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "stopPropagation",
+                "span": {
+                  "start": 1178,
+                  "end": 1202
+                }
+              }
+            ],
+            "span": {
+              "start": 1152,
+              "end": 1261
+            }
+          },
+          "span": {
+            "start": 1136,
+            "end": 1261
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "comment-composer",
+            "span": {
+              "start": 1287,
+              "end": 1311
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Composer",
+            "span": {
+              "start": 1312,
+              "end": 1333
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Comment",
+                "span": {
+                  "start": 1348,
+                  "end": 1373
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "textarea",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "comment",
+                    "span": {
+                      "start": 1383,
+                      "end": 1397
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "keydown",
+                    "handler": {
+                      "kind": "Function",
+                      "binding": "send@548",
+                      "span": {
+                        "start": 1409,
+                        "end": 1413
+                      }
+                    },
+                    "span": {
+                      "start": 1398,
+                      "end": 1414
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 1373,
+                  "end": 1417
+                }
+              }
+            ],
+            "span": {
+              "start": 1341,
+              "end": 1432
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "form",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Tags",
+                "span": {
+                  "start": 1453,
+                  "end": 1470
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "submit",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [
+                      {
+                        "name": "event",
+                        "event": "SubmitEvent",
+                        "span": {
+                          "start": 1490,
+                          "end": 1495
+                        }
+                      }
+                    ],
+                    "body": {
+                      "code": "{\n          event.preventDefault();\n          record(\"tags submitted\");\n        }",
+                      "span": {
+                        "start": 1500,
+                        "end": 1581
+                      },
+                      "refs": [
+                        {
+                          "kind": "Event",
+                          "member": "preventDefault",
+                          "span": {
+                            "start": 1512,
+                            "end": 1532
+                          },
+                          "call": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "record@471",
+                          "span": {
+                            "start": 1546,
+                            "end": 1552
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "eventControls": [
+                      {
+                        "method": "preventDefault",
+                        "span": {
+                          "start": 1512,
+                          "end": 1535
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1489,
+                      "end": 1581
+                    }
+                  },
+                  "span": {
+                    "start": 1489,
+                    "end": 1581
+                  }
+                },
+                "span": {
+                  "start": 1479,
+                  "end": 1582
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "label",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Tag",
+                    "span": {
+                      "start": 1606,
+                      "end": 1631
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "input",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "name",
+                        "value": "tag",
+                        "span": {
+                          "start": 1650,
+                          "end": 1660
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "keydown",
+                        "handler": {
+                          "kind": "Inline",
+                          "function": {
+                            "parameters": [
+                              {
+                                "name": "event",
+                                "event": "KeyboardEvent",
+                                "span": {
+                                  "start": 1685,
+                                  "end": 1690
+                                }
+                              }
+                            ],
+                            "body": {
+                              "code": "{\n              if (event.key !== \"Enter\") return;\n              addTag(event);\n            }",
+                              "span": {
+                                "start": 1695,
+                                "end": 1788
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Event",
+                                  "member": "key",
+                                  "span": {
+                                    "start": 1715,
+                                    "end": 1724
+                                  }
+                                },
+                                {
+                                  "kind": "Binding",
+                                  "binding": "addTag@723",
+                                  "span": {
+                                    "start": 1760,
+                                    "end": 1766
+                                  },
+                                  "call": true
+                                }
+                              ]
+                            },
+                            "span": {
+                              "start": 1684,
+                              "end": 1788
+                            }
+                          },
+                          "span": {
+                            "start": 1684,
+                            "end": 1788
+                          }
+                        },
+                        "span": {
+                          "start": 1673,
+                          "end": 1789
+                        }
+                      }
+                    ],
+                    "children": [],
+                    "span": {
+                      "start": 1631,
+                      "end": 1802
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1599,
+                  "end": 1819
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "submit",
+                    "span": {
+                      "start": 1836,
+                      "end": 1849
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Save tags",
+                    "span": {
+                      "start": 1850,
+                      "end": 1859
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1828,
+                  "end": 1868
+                }
+              }
+            ],
+            "span": {
+              "start": 1439,
+              "end": 1882
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Tag list",
+                "span": {
+                  "start": 1893,
+                  "end": 1914
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "tags.value",
+                  "span": {
+                    "start": 1925,
+                    "end": 1935
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tags@212",
+                      "span": {
+                        "start": 1925,
+                        "end": 1935
+                      }
+                    }
+                  ]
+                },
+                "item": "tag@1941",
+                "key": {
+                  "code": "tag",
+                  "span": {
+                    "start": 1970,
+                    "end": 1973
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tag@1941",
+                      "span": {
+                        "start": 1970,
+                        "end": 1973
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "tag",
+                        "span": {
+                          "start": 1976,
+                          "end": 1979
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "tag@1941",
+                            "span": {
+                              "start": 1976,
+                              "end": 1979
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 1975,
+                        "end": 1980
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 1961,
+                    "end": 1985
+                  }
+                },
+                "span": {
+                  "start": 1925,
+                  "end": 1996
+                }
+              }
+            ],
+            "span": {
+              "start": 1889,
+              "end": 2009
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Code",
+                "span": {
+                  "start": 2023,
+                  "end": 2045
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "code",
+                    "span": {
+                      "start": 2062,
+                      "end": 2073
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "keydown",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "KeyboardEvent",
+                            "span": {
+                              "start": 2096,
+                              "end": 2101
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "{\n            if (event.key.length === 1 && (event.target as HTMLInputElement).value.length >= 4)\n              event.preventDefault();\n          }",
+                          "span": {
+                            "start": 2106,
+                            "end": 2253
+                          },
+                          "refs": [
+                            {
+                              "kind": "Event",
+                              "member": "key",
+                              "span": {
+                                "start": 2124,
+                                "end": 2133
+                              }
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "target",
+                              "span": {
+                                "start": 2151,
+                                "end": 2163
+                              }
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "preventDefault",
+                              "span": {
+                                "start": 2218,
+                                "end": 2238
+                              },
+                              "call": true
+                            }
+                          ]
+                        },
+                        "eventControls": [
+                          {
+                            "method": "preventDefault",
+                            "condition": {
+                              "code": "event.key.length === 1 && (event.target as HTMLInputElement).value.length >= 4",
+                              "span": {
+                                "start": 2124,
+                                "end": 2202
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Event",
+                                  "member": "key",
+                                  "span": {
+                                    "start": 2124,
+                                    "end": 2133
+                                  }
+                                },
+                                {
+                                  "kind": "Event",
+                                  "member": "target",
+                                  "span": {
+                                    "start": 2151,
+                                    "end": 2163
+                                  }
+                                }
+                              ]
+                            },
+                            "span": {
+                              "start": 2120,
+                              "end": 2241
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 2095,
+                          "end": 2253
+                        }
+                      },
+                      "span": {
+                        "start": 2095,
+                        "end": 2253
+                      }
+                    },
+                    "span": {
+                      "start": 2084,
+                      "end": 2254
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 2045,
+                  "end": 2265
+                }
+              }
+            ],
+            "span": {
+              "start": 2016,
+              "end": 2280
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "panel",
+                "span": {
+                  "start": 2300,
+                  "end": 2313
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "presentation",
+                "span": {
+                  "start": 2322,
+                  "end": 2341
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "keydown",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [
+                      {
+                        "name": "event",
+                        "event": "KeyboardEvent",
+                        "span": {
+                          "start": 2362,
+                          "end": 2367
+                        }
+                      }
+                    ],
+                    "body": {
+                      "code": "{\n          if (event.key === \"Escape\") panelOpen.value = false;\n        }",
+                      "span": {
+                        "start": 2372,
+                        "end": 2446
+                      },
+                      "refs": [
+                        {
+                          "kind": "Event",
+                          "member": "key",
+                          "span": {
+                            "start": 2388,
+                            "end": 2397
+                          }
+                        },
+                        {
+                          "kind": "Write",
+                          "binding": "panelOpen@271",
+                          "operator": "=",
+                          "span": {
+                            "start": 2412,
+                            "end": 2435
+                          },
+                          "target": {
+                            "start": 2412,
+                            "end": 2427
+                          },
+                          "value": {
+                            "start": 2430,
+                            "end": 2435
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 2361,
+                      "end": 2446
+                    }
+                  },
+                  "span": {
+                    "start": 2361,
+                    "end": 2446
+                  }
+                },
+                "span": {
+                  "start": 2350,
+                  "end": 2447
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "label",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Search",
+                    "span": {
+                      "start": 2471,
+                      "end": 2499
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "input",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "name",
+                        "value": "search",
+                        "span": {
+                          "start": 2518,
+                          "end": 2531
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "input",
+                        "handler": {
+                          "kind": "Inline",
+                          "function": {
+                            "parameters": [
+                              {
+                                "name": "event",
+                                "event": "InputEvent",
+                                "span": {
+                                  "start": 2554,
+                                  "end": 2559
+                                }
+                              }
+                            ],
+                            "body": {
+                              "code": "(query.value = (event.currentTarget as HTMLInputElement).value)",
+                              "span": {
+                                "start": 2564,
+                                "end": 2627
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Write",
+                                  "binding": "query@246",
+                                  "operator": "=",
+                                  "span": {
+                                    "start": 2564,
+                                    "end": 2627
+                                  },
+                                  "target": {
+                                    "start": 2565,
+                                    "end": 2576
+                                  },
+                                  "value": {
+                                    "start": 2579,
+                                    "end": 2626
+                                  },
+                                  "arrowBody": true
+                                },
+                                {
+                                  "kind": "Event",
+                                  "member": "currentTarget",
+                                  "span": {
+                                    "start": 2580,
+                                    "end": 2599
+                                  }
+                                }
+                              ]
+                            },
+                            "expression": true,
+                            "span": {
+                              "start": 2553,
+                              "end": 2627
+                            }
+                          },
+                          "span": {
+                            "start": 2553,
+                            "end": 2627
+                          }
+                        },
+                        "span": {
+                          "start": 2544,
+                          "end": 2628
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "keydown",
+                        "handler": {
+                          "kind": "Inline",
+                          "function": {
+                            "parameters": [
+                              {
+                                "name": "event",
+                                "event": "KeyboardEvent",
+                                "span": {
+                                  "start": 2653,
+                                  "end": 2658
+                                }
+                              }
+                            ],
+                            "body": {
+                              "code": "{\n              if (event.key === \"Escape\" && (event.target as HTMLInputElement).value !== \"\")\n                clearSearch(event);\n            }",
+                              "span": {
+                                "start": 2663,
+                                "end": 2807
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Event",
+                                  "member": "key",
+                                  "span": {
+                                    "start": 2683,
+                                    "end": 2692
+                                  }
+                                },
+                                {
+                                  "kind": "Event",
+                                  "member": "target",
+                                  "span": {
+                                    "start": 2710,
+                                    "end": 2722
+                                  }
+                                },
+                                {
+                                  "kind": "Binding",
+                                  "binding": "clearSearch@991",
+                                  "span": {
+                                    "start": 2774,
+                                    "end": 2785
+                                  },
+                                  "call": true
+                                }
+                              ]
+                            },
+                            "span": {
+                              "start": 2652,
+                              "end": 2807
+                            }
+                          },
+                          "span": {
+                            "start": 2652,
+                            "end": 2807
+                          }
+                        },
+                        "span": {
+                          "start": 2641,
+                          "end": 2808
+                        }
+                      }
+                    ],
+                    "children": [],
+                    "span": {
+                      "start": 2499,
+                      "end": 2821
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2464,
+                  "end": 2838
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "panelOpen.value ? `Searching for: ${query.value}` : \"Panel closed\"",
+                      "span": {
+                        "start": 2851,
+                        "end": 2917
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "panelOpen@271",
+                          "span": {
+                            "start": 2851,
+                            "end": 2866
+                          }
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "query@246",
+                          "span": {
+                            "start": 2887,
+                            "end": 2898
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 2850,
+                      "end": 2918
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2847,
+                  "end": 2922
+                }
+              }
+            ],
+            "span": {
+              "start": 2287,
+              "end": 2935
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "page",
+                "span": {
+                  "start": 2947,
+                  "end": 2959
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "presentation",
+                "span": {
+                  "start": 2960,
+                  "end": 2979
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "record(\"page\")",
+                      "span": {
+                        "start": 2995,
+                        "end": 3009
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "record@471",
+                          "span": {
+                            "start": 2995,
+                            "end": 3001
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 2989,
+                      "end": 3009
+                    }
+                  },
+                  "span": {
+                    "start": 2989,
+                    "end": 3009
+                  }
+                },
+                "span": {
+                  "start": 2980,
+                  "end": 3010
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "tipShown.value",
+                      "span": {
+                        "start": 3021,
+                        "end": 3035
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "tipShown@334",
+                          "span": {
+                            "start": 3021,
+                            "end": 3035
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "div",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "tip",
+                            "span": {
+                              "start": 3067,
+                              "end": 3078
+                            }
+                          },
+                          {
+                            "kind": "Static",
+                            "name": "role",
+                            "value": "presentation",
+                            "span": {
+                              "start": 3091,
+                              "end": 3110
+                            }
+                          },
+                          {
+                            "kind": "Style",
+                            "declarations": [
+                              {
+                                "kind": "Static",
+                                "property": "padding",
+                                "value": "12px",
+                                "span": {
+                                  "start": 3130,
+                                  "end": 3143
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 3123,
+                              "end": 3144
+                            }
+                          },
+                          {
+                            "kind": "Event",
+                            "event": "click",
+                            "handler": {
+                              "kind": "Inline",
+                              "function": {
+                                "parameters": [
+                                  {
+                                    "name": "event",
+                                    "event": "PointerEvent",
+                                    "span": {
+                                      "start": 3167,
+                                      "end": 3172
+                                    }
+                                  }
+                                ],
+                                "body": {
+                                  "code": "{\n              if (event.target !== event.currentTarget) return;\n              event.stopPropagation();\n              tipShown.value = false;\n            }",
+                                  "span": {
+                                    "start": 3177,
+                                    "end": 3333
+                                  },
+                                  "refs": [
+                                    {
+                                      "kind": "Event",
+                                      "member": "target",
+                                      "span": {
+                                        "start": 3197,
+                                        "end": 3209
+                                      }
+                                    },
+                                    {
+                                      "kind": "Event",
+                                      "member": "currentTarget",
+                                      "span": {
+                                        "start": 3214,
+                                        "end": 3233
+                                      }
+                                    },
+                                    {
+                                      "kind": "Event",
+                                      "member": "stopPropagation",
+                                      "span": {
+                                        "start": 3257,
+                                        "end": 3278
+                                      },
+                                      "call": true
+                                    },
+                                    {
+                                      "kind": "Write",
+                                      "binding": "tipShown@334",
+                                      "operator": "=",
+                                      "span": {
+                                        "start": 3296,
+                                        "end": 3318
+                                      },
+                                      "target": {
+                                        "start": 3296,
+                                        "end": 3310
+                                      },
+                                      "value": {
+                                        "start": 3313,
+                                        "end": 3318
+                                      }
+                                    }
+                                  ]
+                                },
+                                "eventControls": [
+                                  {
+                                    "method": "stopPropagation",
+                                    "span": {
+                                      "start": 3257,
+                                      "end": 3281
+                                    }
+                                  }
+                                ],
+                                "span": {
+                                  "start": 3166,
+                                  "end": 3333
+                                }
+                              },
+                              "span": {
+                                "start": 3166,
+                                "end": 3333
+                              }
+                            },
+                            "span": {
+                              "start": 3157,
+                              "end": 3334
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Click here to hide this tip.",
+                            "span": {
+                              "start": 3346,
+                              "end": 3400
+                            }
+                          },
+                          {
+                            "kind": "Element",
+                            "tag": "button",
+                            "attributes": [
+                              {
+                                "kind": "Static",
+                                "name": "type",
+                                "value": "button",
+                                "span": {
+                                  "start": 3408,
+                                  "end": 3421
+                                }
+                              },
+                              {
+                                "kind": "Event",
+                                "event": "click",
+                                "handler": {
+                                  "kind": "Inline",
+                                  "function": {
+                                    "parameters": [],
+                                    "body": {
+                                      "code": "record(\"tip button\")",
+                                      "span": {
+                                        "start": 3437,
+                                        "end": 3457
+                                      },
+                                      "refs": [
+                                        {
+                                          "kind": "Binding",
+                                          "binding": "record@471",
+                                          "span": {
+                                            "start": 3437,
+                                            "end": 3443
+                                          },
+                                          "call": true
+                                        }
+                                      ]
+                                    },
+                                    "expression": true,
+                                    "span": {
+                                      "start": 3431,
+                                      "end": 3457
+                                    }
+                                  },
+                                  "span": {
+                                    "start": 3431,
+                                    "end": 3457
+                                  }
+                                },
+                                "span": {
+                                  "start": 3422,
+                                  "end": 3458
+                                }
+                              }
+                            ],
+                            "children": [
+                              {
+                                "kind": "Text",
+                                "value": "More tips",
+                                "span": {
+                                  "start": 3459,
+                                  "end": 3496
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 3400,
+                              "end": 3505
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 3050,
+                          "end": 3522
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 3021,
+                      "end": 3522
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3021,
+                  "end": 3539
+                }
+              },
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "confirming.value",
+                      "span": {
+                        "start": 3550,
+                        "end": 3566
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "confirming@302",
+                          "span": {
+                            "start": 3550,
+                            "end": 3566
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "div",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "class",
+                            "value": "backdrop",
+                            "span": {
+                              "start": 3598,
+                              "end": 3614
+                            }
+                          },
+                          {
+                            "kind": "Static",
+                            "name": "role",
+                            "value": "presentation",
+                            "span": {
+                              "start": 3627,
+                              "end": 3646
+                            }
+                          },
+                          {
+                            "kind": "Static",
+                            "name": "data-testid",
+                            "value": "backdrop",
+                            "span": {
+                              "start": 3659,
+                              "end": 3681
+                            }
+                          },
+                          {
+                            "kind": "Style",
+                            "declarations": [
+                              {
+                                "kind": "Static",
+                                "property": "padding",
+                                "value": "24px",
+                                "span": {
+                                  "start": 3701,
+                                  "end": 3714
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 3694,
+                              "end": 3715
+                            }
+                          },
+                          {
+                            "kind": "Event",
+                            "event": "click",
+                            "handler": {
+                              "kind": "Inline",
+                              "function": {
+                                "parameters": [
+                                  {
+                                    "name": "event",
+                                    "event": "PointerEvent",
+                                    "span": {
+                                      "start": 3738,
+                                      "end": 3743
+                                    }
+                                  }
+                                ],
+                                "body": {
+                                  "code": "{\n              if (event.target === event.currentTarget) dismiss(event);\n            }",
+                                  "span": {
+                                    "start": 3748,
+                                    "end": 3835
+                                  },
+                                  "refs": [
+                                    {
+                                      "kind": "Event",
+                                      "member": "target",
+                                      "span": {
+                                        "start": 3768,
+                                        "end": 3780
+                                      }
+                                    },
+                                    {
+                                      "kind": "Event",
+                                      "member": "currentTarget",
+                                      "span": {
+                                        "start": 3785,
+                                        "end": 3804
+                                      }
+                                    },
+                                    {
+                                      "kind": "Binding",
+                                      "binding": "dismiss@1145",
+                                      "span": {
+                                        "start": 3806,
+                                        "end": 3813
+                                      },
+                                      "call": true
+                                    }
+                                  ]
+                                },
+                                "span": {
+                                  "start": 3737,
+                                  "end": 3835
+                                }
+                              },
+                              "span": {
+                                "start": 3737,
+                                "end": 3835
+                              }
+                            },
+                            "span": {
+                              "start": 3728,
+                              "end": 3836
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Element",
+                            "tag": "div",
+                            "attributes": [
+                              {
+                                "kind": "Static",
+                                "name": "role",
+                                "value": "dialog",
+                                "span": {
+                                  "start": 3866,
+                                  "end": 3879
+                                }
+                              },
+                              {
+                                "kind": "Static",
+                                "name": "aria-label",
+                                "value": "Discard draft",
+                                "span": {
+                                  "start": 3880,
+                                  "end": 3906
+                                }
+                              }
+                            ],
+                            "children": [
+                              {
+                                "kind": "Element",
+                                "tag": "p",
+                                "attributes": [],
+                                "children": [
+                                  {
+                                    "kind": "Text",
+                                    "value": "Discard this draft?",
+                                    "span": {
+                                      "start": 3925,
+                                      "end": 3944
+                                    }
+                                  }
+                                ],
+                                "span": {
+                                  "start": 3922,
+                                  "end": 3948
+                                }
+                              },
+                              {
+                                "kind": "Element",
+                                "tag": "button",
+                                "attributes": [
+                                  {
+                                    "kind": "Static",
+                                    "name": "type",
+                                    "value": "button",
+                                    "span": {
+                                      "start": 3971,
+                                      "end": 3984
+                                    }
+                                  },
+                                  {
+                                    "kind": "Event",
+                                    "event": "click",
+                                    "handler": {
+                                      "kind": "Inline",
+                                      "function": {
+                                        "parameters": [],
+                                        "body": {
+                                          "code": "record(\"kept\")",
+                                          "span": {
+                                            "start": 4000,
+                                            "end": 4014
+                                          },
+                                          "refs": [
+                                            {
+                                              "kind": "Binding",
+                                              "binding": "record@471",
+                                              "span": {
+                                                "start": 4000,
+                                                "end": 4006
+                                              },
+                                              "call": true
+                                            }
+                                          ]
+                                        },
+                                        "expression": true,
+                                        "span": {
+                                          "start": 3994,
+                                          "end": 4014
+                                        }
+                                      },
+                                      "span": {
+                                        "start": 3994,
+                                        "end": 4014
+                                      }
+                                    },
+                                    "span": {
+                                      "start": 3985,
+                                      "end": 4015
+                                    }
+                                  }
+                                ],
+                                "children": [
+                                  {
+                                    "kind": "Text",
+                                    "value": "Keep",
+                                    "span": {
+                                      "start": 4016,
+                                      "end": 4052
+                                    }
+                                  }
+                                ],
+                                "span": {
+                                  "start": 3963,
+                                  "end": 4061
+                                }
+                              }
+                            ],
+                            "span": {
+                              "start": 3861,
+                              "end": 4080
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 3581,
+                          "end": 4097
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 3550,
+                      "end": 4097
+                    }
+                  },
+                  {
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "p",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Draft dismissed",
+                            "span": {
+                              "start": 4125,
+                              "end": 4140
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 4122,
+                          "end": 4144
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 4122,
+                      "end": 4144
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3550,
+                  "end": 4154
+                }
+              }
+            ],
+            "span": {
+              "start": 2942,
+              "end": 4168
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 4191,
+                  "end": 4204
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "{\n          if (tags.value.length === 0) return;\n          saves.value += 1;\n          emit(\"saved\", saves.value);\n        }",
+                      "span": {
+                        "start": 4228,
+                        "end": 4352
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "tags@212",
+                          "span": {
+                            "start": 4244,
+                            "end": 4254
+                          }
+                        },
+                        {
+                          "kind": "Write",
+                          "binding": "saves@364",
+                          "operator": "+=",
+                          "span": {
+                            "start": 4287,
+                            "end": 4303
+                          },
+                          "target": {
+                            "start": 4287,
+                            "end": 4298
+                          },
+                          "value": {
+                            "start": 4302,
+                            "end": 4303
+                          }
+                        },
+                        {
+                          "kind": "Emit",
+                          "binding": "emit@101",
+                          "event": "saved",
+                          "span": {
+                            "start": 4315,
+                            "end": 4341
+                          },
+                          "arguments": [
+                            {
+                              "start": 4329,
+                              "end": 4340
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "saves@364",
+                          "span": {
+                            "start": 4329,
+                            "end": 4340
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 4222,
+                      "end": 4352
+                    }
+                  },
+                  "span": {
+                    "start": 4222,
+                    "end": 4352
+                  }
+                },
+                "span": {
+                  "start": 4213,
+                  "end": 4353
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "once": true,
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "emit(\"firstSave\")",
+                      "span": {
+                        "start": 4381,
+                        "end": 4398
+                      },
+                      "refs": [
+                        {
+                          "kind": "Emit",
+                          "binding": "emit@101",
+                          "event": "firstSave",
+                          "span": {
+                            "start": 4381,
+                            "end": 4398
+                          },
+                          "arguments": []
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 4375,
+                      "end": 4398
+                    }
+                  },
+                  "span": {
+                    "start": 4375,
+                    "end": 4398
+                  }
+                },
+                "span": {
+                  "start": 4362,
+                  "end": 4399
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Save",
+                "span": {
+                  "start": 4407,
+                  "end": 4427
+                }
+              }
+            ],
+            "span": {
+              "start": 4175,
+              "end": 4436
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 4459,
+                  "end": 4472
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "async": true,
+                    "parameters": [],
+                    "body": {
+                      "code": "{\n          record(\"upload started\");\n          await new Promise<void>((resolve) => {\n            finishUpload = resolve;\n          });\n          record(\"upload finished\");\n        }",
+                      "span": {
+                        "start": 4502,
+                        "end": 4685
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "record@471",
+                          "span": {
+                            "start": 4514,
+                            "end": 4520
+                          },
+                          "call": true
+                        },
+                        {
+                          "kind": "Global",
+                          "name": "Promise",
+                          "span": {
+                            "start": 4560,
+                            "end": 4567
+                          }
+                        },
+                        {
+                          "kind": "Write",
+                          "binding": "finishUpload@419",
+                          "operator": "=",
+                          "span": {
+                            "start": 4601,
+                            "end": 4623
+                          },
+                          "target": {
+                            "start": 4601,
+                            "end": 4613
+                          },
+                          "value": {
+                            "start": 4616,
+                            "end": 4623
+                          }
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "record@471",
+                          "span": {
+                            "start": 4649,
+                            "end": 4655
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 4490,
+                      "end": 4685
+                    }
+                  },
+                  "span": {
+                    "start": 4490,
+                    "end": 4685
+                  }
+                },
+                "span": {
+                  "start": 4481,
+                  "end": 4686
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "once": true,
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "record(\"first upload\")",
+                      "span": {
+                        "start": 4714,
+                        "end": 4736
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "record@471",
+                          "span": {
+                            "start": 4714,
+                            "end": 4720
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 4708,
+                      "end": 4736
+                    }
+                  },
+                  "span": {
+                    "start": 4708,
+                    "end": 4736
+                  }
+                },
+                "span": {
+                  "start": 4695,
+                  "end": 4737
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Upload",
+                "span": {
+                  "start": 4745,
+                  "end": 4767
+                }
+              }
+            ],
+            "span": {
+              "start": 4443,
+              "end": 4776
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 4791,
+                  "end": 4804
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "finishUpload?.()",
+                      "span": {
+                        "start": 4820,
+                        "end": 4836
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "finishUpload@419",
+                          "span": {
+                            "start": 4820,
+                            "end": 4832
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 4814,
+                      "end": 4836
+                    }
+                  },
+                  "span": {
+                    "start": 4814,
+                    "end": 4836
+                  }
+                },
+                "span": {
+                  "start": 4805,
+                  "end": 4837
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Finish upload",
+                "span": {
+                  "start": 4838,
+                  "end": 4867
+                }
+              }
+            ],
+            "span": {
+              "start": 4783,
+              "end": 4876
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Log",
+                "span": {
+                  "start": 4887,
+                  "end": 4903
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "log.value",
+                  "span": {
+                    "start": 4914,
+                    "end": 4923
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "log@388",
+                      "span": {
+                        "start": 4914,
+                        "end": 4923
+                      }
+                    }
+                  ]
+                },
+                "item": "line@4929",
+                "index": "index@4935",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 4966,
+                    "end": 4971
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@4935",
+                      "span": {
+                        "start": 4966,
+                        "end": 4971
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "line",
+                        "span": {
+                          "start": 4974,
+                          "end": 4978
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "line@4929",
+                            "span": {
+                              "start": 4974,
+                              "end": 4978
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 4973,
+                        "end": 4979
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 4957,
+                    "end": 4984
+                  }
+                },
+                "span": {
+                  "start": 4914,
+                  "end": 4995
+                }
+              }
+            ],
+            "span": {
+              "start": 4883,
+              "end": 5008
+            }
+          }
+        ],
+        "span": {
+          "start": 1278,
+          "end": 5023
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "CommentComposer",
+      "span": {
+        "start": 49,
+        "end": 5030
+      }
+    }
+  ],
+  "types": []
+}

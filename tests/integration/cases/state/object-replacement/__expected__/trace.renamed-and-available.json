@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Use married name' })",
+      "dom": [
+        "<article aria-label=\"Profile\" class=\"profile-card\">",
+        "  <h2>",
+        "    \"Ada King\"",
+        "  </h2>",
+        "  <p>",
+        "    \"Analyst\"",
+        "  </p>",
+        "  <p role=\"status\">",
+        "    \"Away\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Use married name\"",
+        "  </button>",
+        "  <button aria-pressed=\"false\" type=\"button\">",
+        "    \"Available\"",
+        "  </button>",
+        "</article>"
+      ],
+      "aria": [
+        "- article \"Profile\":",
+        "  - heading \"Ada King\" [level=2]",
+        "  - paragraph: Analyst",
+        "  - status: Away",
+        "  - button \"Use married name\"",
+        "  - button \"Available\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Available' })",
+      "dom": [
+        "<article aria-label=\"Profile\" class=\"profile-card\">",
+        "  <h2>",
+        "    \"Ada King\"",
+        "  </h2>",
+        "  <p>",
+        "    \"Analyst\"",
+        "  </p>",
+        "  <p role=\"status\">",
+        "    \"Available\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Use married name\"",
+        "  </button>",
+        "  <button aria-pressed=\"true\" type=\"button\" uf:focused=\"\">",
+        "    \"Available\"",
+        "  </button>",
+        "</article>"
+      ],
+      "aria": [
+        "- article \"Profile\":",
+        "  - heading \"Ada King\" [level=2]",
+        "  - paragraph: Analyst",
+        "  - status: Available",
+        "  - button \"Use married name\"",
+        "  - button \"Available\" [pressed]"
+      ],
+      "events": {}
+    }
+  ]
+}

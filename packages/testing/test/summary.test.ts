@@ -9,6 +9,7 @@ import { buildPartialMatrix, MATRIX_VERSION, stringifyMatrix } from "../src/node
 import type { PartialMatrix, RunMode, Shard } from "../src/node/matrix.ts";
 import { summarise, writeSummary } from "../src/node/summary.ts";
 import type { SummaryExpectations } from "../src/node/summary.ts";
+import { LIVE_REFERENCE_SKIP } from "../src/visual-types.ts";
 
 const expected: SummaryExpectations = {
   projects: ["compile", "browser:vue"],
@@ -603,9 +604,15 @@ describe("summarise: parity scenarios", () => {
     notLiveReason: "not live in M1",
   };
 
-  /** A run of every project in which each target's browser test checked these scenarios. */
+  /** What one target's test checked: its scenarios, or the reason it was skipped. */
+  type Checked = string[] | { skipped: string };
+
+  /**
+   * A run of every project in which each target's browser tests checked these scenarios, by
+   * test name (`basics/hello > <name>`).
+   */
   function scenarios(
-    byTarget: Record<string, string[]>,
+    byTarget: Record<string, Record<string, Checked>>,
     options: { filtered?: string; reference?: string | null } = {},
   ): PartialMatrix {
     return buildPartialMatrix({
@@ -614,12 +621,22 @@ describe("summarise: parity scenarios", () => {
       records: [
         ...twoTargets.targets.map((target) => ({
           project: "compile",
-          record: hello({ L1: { status: "pass" } }, target),
+          record: { ...hello({ L1: { status: "pass" } }, target), test: "compile > hello" },
         })),
-        ...Object.entries(byTarget).map(([target, names]) => ({
-          project: `browser:${target}`,
-          record: { ...hello({ L7: { status: "pass" } }, target), scenarios: names },
-        })),
+        ...Object.entries(byTarget).flatMap(([target, tests]) =>
+          Object.entries(tests).map(([name, checked]) => ({
+            project: `browser:${target}`,
+            record: {
+              ...(Array.isArray(checked)
+                ? { ...hello({ L7: { status: "pass" } }, target), scenarios: checked }
+                : {
+                    ...hello({ L7: { status: "skip", reason: checked.skipped } }, target),
+                    skipped: checked.skipped,
+                  }),
+              test: `basics/hello > ${name}`,
+            },
+          })),
+        ),
       ],
       finishedAt: "2026-10-01T10:00:00.000Z",
       mode: check,
@@ -631,43 +648,175 @@ describe("summarise: parity scenarios", () => {
     });
   }
 
-  it("passes when every target checks the reference's scenarios, in any order", () => {
+  const SKIPPED = { skipped: "requires interactivity: react runs nothing (fixture)" };
+  const SUFFIX =
+    "Every target runs the same spec, so every target checks the same scenarios, unless it skips a test by capability or has no output for the case.";
+
+  it("passes when every target's tests check the reference's scenarios, in any order", () => {
     const result = summarise(
-      [scenarios({ vue: ["initial", "rerendered"], react: ["rerendered", "initial"] })],
+      [
+        scenarios({
+          vue: { renders: ["initial"], updates: ["after-click", "rerendered"] },
+          react: { renders: ["initial"], updates: ["rerendered", "after-click"] },
+        }),
+      ],
       twoTargets,
     );
     expect(result.complete).toBe(true);
     expect(result.problems).toEqual([]);
-    expect(result.matrix.scenarios).toEqual({
-      "basics/hello": { react: ["initial", "rerendered"], vue: ["initial", "rerendered"] },
+    expect(result.matrix.tests["basics/hello"]).toEqual({
+      react: {
+        "basics/hello > renders": { scenarios: ["initial"] },
+        "basics/hello > updates": { scenarios: ["after-click", "rerendered"] },
+      },
+      vue: {
+        "basics/hello > renders": { scenarios: ["initial"] },
+        "basics/hello > updates": { scenarios: ["after-click", "rerendered"] },
+      },
     });
   });
 
-  it("fails a target that leaves out a scenario, or checks one the reference never does", () => {
+  it("fails a target whose test leaves out a scenario, or checks one the reference never does", () => {
     expect(
-      summarise([scenarios({ vue: ["initial", "rerendered"], react: ["initial"] })], twoTargets)
-        .problems,
+      summarise(
+        [
+          scenarios({
+            vue: { renders: ["initial", "rerendered"] },
+            react: { renders: ["initial"] },
+          }),
+        ],
+        twoTargets,
+      ).problems,
     ).toEqual([
-      "basics/hello › react: its parity scenarios differ from vue's: it never checks rerendered. Every target runs the same spec, so every target checks the same scenarios.",
+      `basics/hello › react: its parity scenarios differ from vue's: "basics/hello > renders" never checks rerendered. ${SUFFIX}`,
     ]);
     expect(
-      summarise([scenarios({ vue: ["initial"], react: ["initial", "react-only"] })], twoTargets)
-        .problems,
+      summarise(
+        [
+          scenarios({
+            vue: { renders: ["initial"] },
+            react: { renders: ["initial", "react-only"] },
+          }),
+        ],
+        twoTargets,
+      ).problems,
     ).toEqual([
-      "basics/hello › react: its parity scenarios differ from vue's: it checks react-only, which vue never checks. Every target runs the same spec, so every target checks the same scenarios.",
+      `basics/hello › react: its parity scenarios differ from vue's: "basics/hello > renders" checks react-only, which vue never checks. ${SUFFIX}`,
     ]);
   });
 
-  it("fails a target that checks no scenario of a case the reference checks", () => {
-    const result = summarise([scenarios({ vue: ["initial"], react: [] })], twoTargets);
+  it("compares test by test: a scenario checked by another test of the target counts not", () => {
+    const result = summarise(
+      [
+        scenarios({
+          vue: { first: ["initial"], second: ["after-click"] },
+          react: { first: ["initial", "after-click"], second: [] },
+        }),
+      ],
+      twoTargets,
+    );
     expect(result.problems).toEqual([
-      expect.stringMatching(/^basics\/hello › react: .*it never checks initial\./),
+      `basics/hello › react: its parity scenarios differ from vue's: "basics/hello > first" checks after-click, which vue never checks; "basics/hello > second" never checks after-click. ${SUFFIX}`,
     ]);
+  });
+
+  it("fails a target that never ran a test the reference ran, or ran one it did not", () => {
+    // React recorded nothing at all: its cell is missing too.
+    expect(
+      summarise([scenarios({ vue: { renders: ["initial"] }, react: {} })], twoTargets).problems,
+    ).toEqual([
+      "basics/hello › react › L7: missing (no test recorded it).",
+      `basics/hello › react: its parity scenarios differ from vue's: "basics/hello > renders" never checks initial. ${SUFFIX}`,
+    ]);
+    expect(
+      summarise([scenarios({ vue: {}, react: { extra: ["initial"] } })], twoTargets).problems,
+    ).toEqual([
+      "basics/hello › vue › L7: missing (no test recorded it).",
+      `basics/hello › react: its parity scenarios differ from vue's: "basics/hello > extra" checks initial, which vue never checks. ${SUFFIX}`,
+    ]);
+  });
+
+  it("excuses a test a target skipped by capability, and only that test", () => {
+    expect(
+      summarise(
+        [
+          scenarios({
+            vue: { renders: ["initial"], updates: ["after-click"] },
+            react: { renders: ["initial"], updates: SKIPPED },
+          }),
+        ],
+        twoTargets,
+      ).problems,
+    ).toEqual([]);
+    expect(
+      summarise(
+        [
+          scenarios({
+            vue: { renders: ["initial"], updates: ["after-click"] },
+            react: { renders: [], updates: SKIPPED },
+          }),
+        ],
+        twoTargets,
+      ).problems,
+    ).toEqual([
+      `basics/hello › react: its parity scenarios differ from vue's: "basics/hello > renders" never checks initial. ${SUFFIX}`,
+    ]);
+    // A test the reference skipped has no expectations for another target to check.
+    expect(
+      summarise(
+        [scenarios({ vue: { updates: SKIPPED }, react: { updates: ["after-click"] } })],
+        twoTargets,
+      ).problems,
+    ).toEqual([
+      `basics/hello › react: its parity scenarios differ from vue's: "basics/hello > updates" checks after-click, which vue never checks (it skipped the test: ${SKIPPED.skipped}). ${SUFFIX}`,
+    ]);
+  });
+
+  it("excuses every test of a case a target has no output for, on that target alone", () => {
+    const NO_OUTPUT = { skipped: "no output: UF4001 (The react target does not support x: y.)" };
+    expect(
+      summarise(
+        [
+          scenarios({
+            vue: { renders: ["initial"], updates: ["after-click"] },
+            react: { renders: NO_OUTPUT, updates: NO_OUTPUT },
+          }),
+        ],
+        twoTargets,
+      ).problems,
+    ).toEqual([]);
+  });
+
+  it("lists the tests a target skipped by capability under the case's table", () => {
+    const { markdown } = summarise(
+      [
+        scenarios({
+          vue: { renders: ["initial"], updates: ["after-click"] },
+          react: { renders: ["initial"], updates: SKIPPED },
+        }),
+      ],
+      twoTargets,
+    );
+    expect(markdown).toContain(
+      `- skipped on react by capability: "basics/hello > updates" (${SKIPPED.skipped}).`,
+    );
+    const noOutput = summarise(
+      [
+        scenarios({
+          vue: { renders: ["initial"] },
+          react: { renders: { skipped: "no output: UF4001 (…)" } },
+        }),
+      ],
+      twoTargets,
+    ).markdown;
+    expect(noOutput).toContain(
+      `- skipped on react for want of output: "basics/hello > renders" (no output: UF4001 (…)).`,
+    );
   });
 
   it("compares only once every project ran all its tests, as it does the missing cells", () => {
     const filtered = scenarios(
-      { vue: ["initial", "rerendered"], react: ["initial"] },
+      { vue: { renders: ["initial", "rerendered"] }, react: { renders: ["initial"] } },
       { filtered: "tests named /initial/" },
     );
     expect(summarise([filtered], twoTargets).problems).toEqual([]);
@@ -679,10 +828,65 @@ describe("summarise: parity scenarios", () => {
   });
 
   it("has nothing to compare without a reference, or when the reference is not selected", () => {
-    const differing = { vue: ["initial", "rerendered"], react: ["initial"] };
+    const differing = {
+      vue: { renders: ["initial", "rerendered"] },
+      react: { renders: ["initial"] },
+    };
     expect(summarise([scenarios(differing, { reference: null })], twoTargets).problems).toEqual([]);
     expect(
       summarise([scenarios(differing)], { ...twoTargets, targets: ["react"] }).problems,
+    ).toEqual([]);
+  });
+});
+
+describe("summarise: skips on live layers", () => {
+  const skipped = (reason: string, capabilities?: readonly string[]) =>
+    summarise(
+      [
+        everyProject([
+          { project: "compile", record: hello({ L1: { status: "pass" } }) },
+          { project: "browser:vue", record: hello({ L7: { status: "skip", reason } }) },
+        ]),
+      ],
+      { ...expected, ...(capabilities ? { capabilities } : {}) },
+    ).problems;
+
+  it("accepts a capability the target lacks, and every mechanical cause", () => {
+    for (const reason of [
+      "requires interactivity: Astro components render on the server only",
+      "compile errors: no output",
+      LIVE_REFERENCE_SKIP,
+      "the component did not render (L6)",
+      "no scripted interaction",
+      "no output: UF4001 (The qwik target does not support conditional-event-control: …)",
+    ]) {
+      expect(skipped(reason, ["interactivity"]), reason).toEqual([]);
+    }
+  });
+
+  it("fails a skip that names no capability or mechanical cause, or an unknown capability", () => {
+    expect(skipped("flaky on CI")).toEqual([
+      expect.stringMatching(
+        /^basics\/hello › vue › L7: skipped \(flaky on CI\), which names no capability its target lacks/,
+      ),
+    ]);
+    expect(skipped("requires teleport: no portal", ["interactivity"])).toEqual([
+      'basics/hello › vue › L7: skipped for "teleport", which is not a capability.',
+    ]);
+    // A layer that is not live is the summary's own skip.
+    expect(
+      summarise(
+        [
+          everyProject([
+            { project: "compile", record: hello({ L1: { status: "pass" } }) },
+            {
+              project: "browser:vue",
+              record: hello({ L7: { status: "pass" }, L8: { status: "skip", reason: "later" } }),
+            },
+          ]),
+        ],
+        expected,
+      ).problems,
     ).toEqual([]);
   });
 });

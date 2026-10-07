@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "type getByRole('searchbox', { name: 'Search' }) \"d\"",
+      "dom": [
+        "<section aria-label=\"Reading list\" class=\"reading-list\">",
+        "  <label>",
+        "    \"Search\"",
+        "    <input name=\"query\" type=\"search\" uf:focused=\"\" uf:value=\"d\">",
+        "  </label>",
+        "  <p role=\"status\">",
+        "    \"Searching\"",
+        "  </p>",
+        "  <ul aria-label=\"Books\"></ul>",
+        "  <div aria-label=\"Shelf\" role=\"group\">",
+        "    <button aria-pressed=\"true\" type=\"button\">",
+        "      \"All\"",
+        "    </button>",
+        "    <button aria-pressed=\"false\" type=\"button\">",
+        "      \"Unread\"",
+        "    </button>",
+        "  </div>",
+        "  <button aria-pressed=\"false\" type=\"button\">",
+        "    \"Check for new books\"",
+        "  </button>",
+        "  <p>",
+        "    \"Checks: 0\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Refresh shelves\"",
+        "  </button>",
+        "  <ul aria-label=\"Shelves\">",
+        "    <li>",
+        "      \"Fiction: not counted\"",
+        "    </li>",
+        "    <li>",
+        "      \"History: not counted\"",
+        "    </li>",
+        "  </ul>",
+        "  <p>",
+        "    \"Up to date\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Reading list\":",
+        "  - text: Search",
+        "  - searchbox \"Search\": d",
+        "  - status: Searching",
+        "  - list \"Books\"",
+        "  - group \"Shelf\":",
+        "    - button \"All\" [pressed]",
+        "    - button \"Unread\"",
+        "  - button \"Check for new books\"",
+        "  - paragraph: \"Checks: 0\"",
+        "  - button \"Refresh shelves\"",
+        "  - list \"Shelves\":",
+        "    - listitem: \"Fiction: not counted\"",
+        "    - listitem: \"History: not counted\"",
+        "  - paragraph: Up to date"
+      ],
+      "events": {
+        "requested": [
+          [
+            "/api/books?q=d&shelf=all"
+          ]
+        ]
+      }
+    },
+    {
+      "action": "keyboard \"u\"",
+      "dom": [
+        "<section aria-label=\"Reading list\" class=\"reading-list\">",
+        "  <label>",
+        "    \"Search\"",
+        "    <input name=\"query\" type=\"search\" uf:focused=\"\" uf:value=\"du\">",
+        "  </label>",
+        "  <p role=\"status\">",
+        "    \"Searching\"",
+        "  </p>",
+        "  <ul aria-label=\"Books\"></ul>",
+        "  <div aria-label=\"Shelf\" role=\"group\">",
+        "    <button aria-pressed=\"true\" type=\"button\">",
+        "      \"All\"",
+        "    </button>",
+        "    <button aria-pressed=\"false\" type=\"button\">",
+        "      \"Unread\"",
+        "    </button>",
+        "  </div>",
+        "  <button aria-pressed=\"false\" type=\"button\">",
+        "    \"Check for new books\"",
+        "  </button>",
+        "  <p>",
+        "    \"Checks: 0\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Refresh shelves\"",
+        "  </button>",
+        "  <ul aria-label=\"Shelves\">",
+        "    <li>",
+        "      \"Fiction: not counted\"",
+        "    </li>",
+        "    <li>",
+        "      \"History: not counted\"",
+        "    </li>",
+        "  </ul>",
+        "  <p>",
+        "    \"Up to date\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Reading list\":",
+        "  - text: Search",
+        "  - searchbox \"Search\": du",
+        "  - status: Searching",
+        "  - list \"Books\"",
+        "  - group \"Shelf\":",
+        "    - button \"All\" [pressed]",
+        "    - button \"Unread\"",
+        "  - button \"Check for new books\"",
+        "  - paragraph: \"Checks: 0\"",
+        "  - button \"Refresh shelves\"",
+        "  - list \"Shelves\":",
+        "    - listitem: \"Fiction: not counted\"",
+        "    - listitem: \"History: not counted\"",
+        "  - paragraph: Up to date"
+      ],
+      "events": {
+        "cancelled": [
+          [
+            "d"
+          ]
+        ],
+        "requested": [
+          [
+            "/api/books?q=du&shelf=all"
+          ]
+        ]
+      }
+    }
+  ]
+}

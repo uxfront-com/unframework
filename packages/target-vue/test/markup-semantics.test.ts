@@ -1,9 +1,9 @@
-// The Vue dialect against design §1: the shared markup cases (codegen/test/markup-cases.ts),
-// printed with `vueDialect`, wrapped in a `<script setup>` that declares their props as design
-// §5.2 does, compiled by @vue/compiler-sfc as @vitejs/plugin-vue compiles it and rendered by Vue's
-// server renderer, then linted with the target's L5 rules. Vue is the reference target (D10), so
-// what it renders here is what every target must. The emitter's own output is tested once the Vue
-// lane lands it (wave 3).
+// The Vue dialect against ADR-0035 to ADR-0040: the shared markup cases
+// (codegen/test/markup-cases.ts), printed with `vueDialect`, wrapped in a `<script setup>` that
+// declares their props as the target does (ADR-0034), compiled by @vue/compiler-sfc as
+// @vitejs/plugin-vue compiles it and rendered by Vue's server renderer, then linted with the
+// target's L5 rules. Vue is the reference target (D10), so what it renders here is what every
+// target must. The emitter's own output is tested by emit.test.ts and the corpus.
 import { join } from "node:path";
 
 import { printMarkup, vueDialect } from "@unframework/codegen";
@@ -28,7 +28,7 @@ import { importScratch, removeScratch, repoRoot, writeScratch } from "./helpers.
 
 afterAll(removeScratch);
 
-/** A component around the markup: every prop optional, with `= undefined` (design §5.2). */
+/** A component around the markup: every prop optional, with `= undefined` (ADR-0034). */
 function sfc(markup: string, { props }: Suite): string {
   return [
     `<script setup lang="ts">`,
@@ -98,7 +98,7 @@ async function render(source: string, props: Record<string, unknown>): Promise<s
 describe.each<MarkupOptions>([{}, { printWidth: 30 }])(
   "vue markup (print width $printWidth)",
   (layout) => {
-    it("renders every case as design §1 says", async () => {
+    it("renders every case as the markup cases say", async () => {
       const { cases, source } = components(layout)[0]!;
       const html = await render(source, passedProps(cases.props));
       for (const { name, expected, actual } of compareSuite(canonical(html), cases.cases)) {

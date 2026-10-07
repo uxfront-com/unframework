@@ -1,30 +1,41 @@
-// The props of a Solid component (design §5.4, ADR-0034). Solid's props object is reactive:
+// The props of a Solid component (ADR-0034). Solid's props object is reactive:
 // reading `props.label` inside JSX tracks it, while destructuring reads each prop once, when the
 // component runs, and never again (`solid/no-destructure`). So the output never destructures.
 // A destructured source reads every prop as `props.label`, and its defaults go through
 // `mergeProps`, which keeps the merged object reactive and applies a default when a prop is
 // absent or `undefined`, as JavaScript's destructuring does (`null` stays a value).
 import { js, parseExpression, referencedBindings } from "@unframework/codegen";
-import type { ImportSet, Placeholders, RewriteRules } from "@unframework/codegen";
-import { walk } from "@unframework/ir";
-import type { BindingId, Prop, UfComponent } from "@unframework/ir";
+import type { ImportSet, Placeholders } from "@unframework/codegen";
+import { codeOf, walk } from "@unframework/ir";
+import type { Binding, BindingId, Prop, TypeDeclaration, UfComponent } from "@unframework/ir";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type Parameter = Parameters<typeof js.functionDeclaration>[1][number];
 type Statement = Parameters<typeof js.program>[0][number];
 
-/** How the component takes its props, and how its expressions read them. */
+/** How the component takes its props, and how its code reads them and calls its listeners. */
 export interface SolidProps {
   /** The component's parameters: none, or the props object. */
   parameters: Parameter[];
-  /** What the component runs before it returns: `const props = mergeProps(…)`. */
+  /** What the component runs before its setup: `const props = mergeProps(…)`. */
   statements: Statement[];
-  /** How printed expressions spell references to props and loop variables. */
-  rules: RewriteRules;
+  /**
+   * The props object's name, which reads a prop and calls an event's listener
+   * (`props.onChange?.(…)`): absent when the output reads nothing through it.
+   */
+  object?: string;
+  /** How code spells a read of a prop: `props.label`, or as written in the object form. */
+  read(binding: Binding, written: string): string;
+  /**
+   * The interface of the component's events, `export interface CounterEvents { onChange?: …}`,
+   * which the props parameter's type takes beside the props type (ADR-0047): absent for a
+   * component that declares no events.
+   */
+  events?: TypeDeclaration;
 }
 
 /**
- * The props parameter and the rewrite rules of a component (design §5.4):
+ * The props parameter of a component and how its code reads it (ADR-0034):
  *
  * - no props: `function Badge()`;
  * - the object form: `function Badge(props: BadgeProps)`, with `props.label` as written;
@@ -34,51 +45,58 @@ export interface SolidProps {
  *   Partial<BadgeProps>, rawProps); … }`; with a default that holds an object literal, the
  *   defaults are a `const defaults: Required<Pick<BadgeProps, "attrs">> = { … };` of their own.
  *
- * Props the output never reads take no default (design §5: their defaults are dead code), and
+ * A component that declares events takes their listeners as props too (ADR-0047), typed by a
+ * generated interface beside its props type (`props: CounterProps & CounterEvents`, or
+ * `props: CounterEvents` alone), and calls them through the props object, never destructured:
+ * `props.onChange?.(value)`.
+ *
+ * Props the output never reads take no default (ADR-0034: their defaults are dead code), and
  * a props object the output never reads is `_props`, the name oxlint's `no-unused-vars` leaves
- * alone, so the component keeps its props type for its consumers. A list's index is an accessor
- * on Solid (`index()`); its `key` is not printed, so a read there does not count.
+ * alone, so the component keeps its props type for its consumers. A prop a handler alone reads is
+ * read too (`referencedBindings` counts client code).
  */
 export function solidProps(
   component: UfComponent,
   imports: ImportSet,
   placeholders: Placeholders,
 ): SolidProps {
-  const indexes = listIndexes(component);
-  const loopVariable = (id: BindingId, written: string) =>
-    indexes.has(id) ? `${written}()` : written;
   const parameter = component.propsParameter;
-  if (!parameter) {
-    return {
-      parameters: [],
-      statements: [],
-      rules: { binding: (reference, binding, written) => loopVariable(binding.id, written) },
-    };
+  const events = eventsInterface(component, imports);
+  const emitted = component.emits !== undefined && emitsAny(component);
+  const typeCode = [parameter?.type.code, events?.name].filter(Boolean).join(" & ");
+  const type = () => placeholders.type(typeCode);
+  if (!parameter && !events) {
+    return { parameters: [], statements: [], read: asWritten };
   }
-  const type = () => placeholders.type(parameter.type.code);
   const referenced = referencedBindings(component, { includeKeys: false });
   const read = component.props.filter(
     (prop) => prop.binding !== undefined && referenced.has(prop.binding),
   );
-  if (read.length === 0) {
+  const unread = (): SolidProps => {
     // An object form's name `_` and more says it is unused already: it stays the source's
     // (oxlint still reports a bare `_`).
     const name =
-      parameter.form === "object" && /^_./.test(parameter.name!)
+      parameter?.form === "object" && /^_./.test(parameter.name!)
         ? parameter.name!
         : imports.claim("_props");
     return {
       parameters: [js.bindingIdentifier(name, type())],
       statements: [],
-      rules: { binding: (reference, binding, written) => loopVariable(binding.id, written) },
+      read: asWritten,
+      ...(events ? { events } : {}),
     };
-  }
-  if (parameter.form === "object") {
-    // The source's own name, which every reference already spells (`props.label`).
+  };
+  if (read.length === 0 && !emitted) return unread();
+  if (!parameter || parameter.form === "object") {
+    // The source's own name, which every reference already spells (`props.label`), or `props`
+    // for a component that takes only its events' listeners.
+    const name = parameter?.name ?? imports.claim("props");
     return {
-      parameters: [js.bindingIdentifier(parameter.name!, type())],
+      parameters: [js.bindingIdentifier(name, type())],
       statements: [],
-      rules: { binding: (reference, binding, written) => loopVariable(binding.id, written) },
+      object: name,
+      read: asWritten,
+      ...(events ? { events } : {}),
     };
   }
   // In the order the source's pattern lists them, where the author wrote them: bindings are in
@@ -91,11 +109,12 @@ export function solidProps(
     .toSorted((a, b) => order.get(a.binding!)! - order.get(b.binding!)!);
   const raw = defaults.length ? imports.claim("rawProps") : undefined;
   const props = imports.claim("props");
-  const rules: RewriteRules = {
-    binding: (reference, binding, written) =>
-      binding.kind === "prop" ? `${props}.${binding.name}` : loopVariable(binding.id, written),
+  const shared = {
+    object: props,
+    read: (binding: Binding) => `${props}.${binding.name}`,
+    ...(events ? { events } : {}),
   };
-  if (!raw) return { parameters: [js.bindingIdentifier(props, type())], statements: [], rules };
+  if (!raw) return { parameters: [js.bindingIdentifier(props, type())], statements: [], ...shared };
   const values = js.objectExpression(
     defaults.map((prop) => [prop.name, placeholders.expression(prop.default.code)]),
   );
@@ -104,6 +123,7 @@ export function solidProps(
       first,
       js.identifier(raw),
     ]);
+  const propsType = () => placeholders.type(parameter.type.code);
   if (!defaults.some((prop) => holdsContainer(parseExpression(prop.default.code)))) {
     return {
       parameters: [js.bindingIdentifier(raw, type())],
@@ -111,10 +131,10 @@ export function solidProps(
         js.variableDeclaration(
           "const",
           props,
-          mergeProps(js.satisfiesExpression(values, js.typeReference("Partial", [type()]))),
+          mergeProps(js.satisfiesExpression(values, js.typeReference("Partial", [propsType()]))),
         ),
       ],
-      rules,
+      ...shared,
     };
   }
   // `satisfies` keeps an object or array literal's own type, which lacks the optional members
@@ -131,8 +151,47 @@ export function solidProps(
       js.variableDeclaration("const", named, values, annotation),
       js.variableDeclaration("const", props, mergeProps(js.identifier(named))),
     ],
-    rules,
+    ...shared,
   };
+}
+
+/** A prop's read as the source writes it: the object form's own `props.label`. */
+function asWritten(_binding: Binding, written: string): string {
+  return written;
+}
+
+/** A component's event as Solid's props name its listener: `onChange` for `change`. */
+export function eventProp(event: string): string {
+  return `on${event.charAt(0).toUpperCase()}${event.slice(1)}`;
+}
+
+/**
+ * The interface of a component's events (ADR-0047): each event's listener an optional prop
+ * named by {@link eventProp}, taking the event's payload as its parameters, by their labels:
+ * `export interface CounterEvents { onChange?: (value: number) => void; }`. Its name is claimed
+ * from the file's scope (`CounterEvents`, or `CounterEvents_1` beside a source name).
+ */
+function eventsInterface(component: UfComponent, imports: ImportSet): TypeDeclaration | undefined {
+  const { emits } = component;
+  if (!emits) return undefined;
+  const name = imports.claim(`${component.name}Events`);
+  const members = emits.events.map((event) => {
+    const parameters = event.parameters
+      .map((member) => `${member.name}${member.optional ? "?" : ""}: ${member.type.code}`)
+      .join(", ");
+    return `  ${eventProp(event.name)}?: (${parameters}) => void;`;
+  });
+  return {
+    name,
+    exported: true,
+    code: `interface ${name} {\n${members.join("\n")}\n}`,
+    span: emits.span,
+  };
+}
+
+/** Whether any code of a component emits one of its events. */
+function emitsAny(component: UfComponent): boolean {
+  return codeOf(component).some(({ code }) => code.refs.some((ref) => ref.kind === "Emit"));
 }
 
 /** Whether a default is or holds an object or array literal (`{ title: "t" }`, `["info"]`). */
@@ -145,7 +204,7 @@ function holdsContainer(node: unknown): boolean {
 }
 
 /** The ids of the lists' index parameters, which Solid's `<For>` passes as accessors. */
-function listIndexes(component: UfComponent): Set<BindingId> {
+export function listIndexes(component: UfComponent): Set<BindingId> {
   const indexes = new Set<BindingId>();
   walk(component.render, {
     enter(node) {

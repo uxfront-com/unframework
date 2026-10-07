@@ -193,7 +193,7 @@ export function qwikAttributeName(name: string, namespace: Namespace): string {
 }
 
 /**
- * A static value as Qwik's types take it (design §5.6): `true` to write the attribute bare, a
+ * A static value as Qwik's types take it (ADR-0037): `true` to write the attribute bare, a
  * string to write it quoted, or `{ code }` to write that expression.
  *
  * - A boolean attribute is bare whatever its value, except `hidden="until-found"`, a state of

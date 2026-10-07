@@ -1,0 +1,332 @@
+{
+  "irVersion": 1,
+  "file": "semantics/props-seed-state/QuantityStepper.uf.tsx",
+  "components": [
+    {
+      "name": "QuantityStepper",
+      "span": {
+        "start": 115,
+        "end": 489
+      },
+      "props": [
+        {
+          "name": "initial",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 87,
+              "end": 93
+            }
+          },
+          "binding": "initial@157",
+          "span": {
+            "start": 78,
+            "end": 94
+          }
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 104,
+              "end": 110
+            }
+          },
+          "binding": "label@166",
+          "span": {
+            "start": 97,
+            "end": 111
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "QuantityStepperProps",
+          "span": {
+            "start": 175,
+            "end": 195
+          }
+        },
+        "span": {
+          "start": 155,
+          "end": 195
+        }
+      },
+      "types": [
+        "QuantityStepperProps"
+      ],
+      "bindings": [
+        {
+          "id": "initial@157",
+          "name": "initial",
+          "kind": "prop",
+          "span": {
+            "start": 157,
+            "end": 164
+          }
+        },
+        {
+          "id": "label@166",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 166,
+            "end": 171
+          }
+        },
+        {
+          "id": "quantity@207",
+          "name": "quantity",
+          "kind": "state",
+          "span": {
+            "start": 207,
+            "end": 215
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "quantity@207",
+          "initial": {
+            "code": "initial",
+            "span": {
+              "start": 222,
+              "end": 229
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "initial@157",
+                "span": {
+                  "start": 222,
+                  "end": 229
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 201,
+            "end": 231
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "quantity-stepper",
+            "span": {
+              "start": 253,
+              "end": 277
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "group",
+            "span": {
+              "start": 278,
+              "end": 290
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 303,
+                "end": 308
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@166",
+                  "span": {
+                    "start": 303,
+                    "end": 308
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 291,
+              "end": 309
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "quantity.value",
+                  "span": {
+                    "start": 326,
+                    "end": 340
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "quantity@207",
+                      "span": {
+                        "start": 326,
+                        "end": 340
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 325,
+                  "end": 341
+                }
+              }
+            ],
+            "span": {
+              "start": 317,
+              "end": 350
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 365,
+                  "end": 378
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-label",
+                "value": {
+                  "code": "`Increase ${label}`",
+                  "span": {
+                    "start": 391,
+                    "end": 410
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@166",
+                      "span": {
+                        "start": 403,
+                        "end": 408
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 379,
+                  "end": 411
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "quantity.value++",
+                      "span": {
+                        "start": 427,
+                        "end": 443
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "quantity@207",
+                          "operator": "++",
+                          "span": {
+                            "start": 427,
+                            "end": 443
+                          },
+                          "target": {
+                            "start": 427,
+                            "end": 441
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 421,
+                      "end": 443
+                    }
+                  },
+                  "span": {
+                    "start": 421,
+                    "end": 443
+                  }
+                },
+                "span": {
+                  "start": 412,
+                  "end": 444
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "+",
+                "span": {
+                  "start": 445,
+                  "end": 462
+                }
+              }
+            ],
+            "span": {
+              "start": 357,
+              "end": 471
+            }
+          }
+        ],
+        "span": {
+          "start": 248,
+          "end": 482
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "QuantityStepper",
+      "span": {
+        "start": 115,
+        "end": 489
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "QuantityStepperProps",
+      "exported": true,
+      "code": "interface QuantityStepperProps {\n  initial: number;\n  label: string;\n}",
+      "span": {
+        "start": 43,
+        "end": 113
+      }
+    }
+  ]
+}

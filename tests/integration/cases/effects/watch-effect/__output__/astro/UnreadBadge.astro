@@ -1,0 +1,15 @@
+---
+export interface UnreadBadgeProps {
+  appName: string;
+}
+
+export type Props = UnreadBadgeProps;
+
+const unread = 0 as number;
+---
+
+<section class="unread-badge" aria-label="Inbox">
+  <p role="status">{unread} unread</p>
+  <button type="button">Receive a message</button>
+  <button type="button">Mark all read</button>
+</section>

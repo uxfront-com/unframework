@@ -1,9 +1,10 @@
-// `pnpm --filter @unframework/integration summary` (DESIGN §4.6): merges every partial parity
+// `pnpm --filter @unframework/integration summary` (plan §7.4): merges every partial parity
 // matrix into `.reports/parity-matrix.json` and `.md`, appends the Markdown to
 // $GITHUB_STEP_SUMMARY in CI, and fails on any failed cell and, when every project ran (or, in
 // CI's parity job, must have), on any missing project and (case, target, live layer) cell.
 import { join } from "node:path";
 
+import { CAPABILITY_NAMES } from "@unframework/codegen";
 import { writeSummary } from "@unframework/testing/node";
 
 import { listCases } from "../harness/cases.ts";
@@ -42,7 +43,9 @@ export function runSummary(env: NodeJS.ProcessEnv, run: SummaryRun): number {
         cases: listCases().map((info) => info.id),
         targets,
         liveLayers: LIVE_LAYERS,
-        notLiveReason: "not live in M1",
+        notLiveReason: "not live in M2",
+        // A skip by capability names one of these (ADR-0050).
+        capabilities: CAPABILITY_NAMES,
       },
       stepSummary: env.GITHUB_STEP_SUMMARY,
       since: run.since,

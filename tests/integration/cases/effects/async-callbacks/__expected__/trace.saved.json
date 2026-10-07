@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Save' })",
+      "dom": [
+        "<section aria-label=\"Mailbox\" class=\"mailbox\">",
+        "  <h2>",
+        "    \"Inbox\"",
+        "  </h2>",
+        "  <p role=\"status\">",
+        "    \"3 unread\"",
+        "  </p>",
+        "  <p>",
+        "    \"Status: saved\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Refresh every second\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Mark all read\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Note\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Mailbox\":",
+        "  - heading \"Inbox\" [level=2]",
+        "  - status: 3 unread",
+        "  - paragraph: \"Status: saved\"",
+        "  - button \"Save\"",
+        "  - button \"Refresh every second\"",
+        "  - button \"Mark all read\"",
+        "  - button \"Note\""
+      ],
+      "events": {
+        "loaded": [
+          [
+            "Inbox",
+            3
+          ]
+        ],
+        "progress": [
+          [
+            "saving Inbox",
+            1
+          ],
+          [
+            "saved",
+            1
+          ]
+        ],
+        "seen": [
+          [
+            "idle after 0"
+          ],
+          [
+            "saving Inbox after 1"
+          ],
+          [
+            "saved after 1"
+          ]
+        ]
+      }
+    }
+  ]
+}

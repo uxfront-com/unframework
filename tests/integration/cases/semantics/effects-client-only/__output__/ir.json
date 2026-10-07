@@ -1,0 +1,274 @@
+{
+  "irVersion": 1,
+  "file": "semantics/effects-client-only/NetworkBadge.uf.tsx",
+  "components": [
+    {
+      "name": "NetworkBadge",
+      "span": {
+        "start": 54,
+        "end": 472
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "online@103",
+          "name": "online",
+          "kind": "state",
+          "span": {
+            "start": 103,
+            "end": 109
+          }
+        },
+        {
+          "id": "label@136",
+          "name": "label",
+          "kind": "state",
+          "span": {
+            "start": 136,
+            "end": 141
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "online@103",
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 116,
+              "end": 123
+            }
+          },
+          "span": {
+            "start": 97,
+            "end": 127
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "label@136",
+          "initial": {
+            "code": "\"Checking the connection\"",
+            "span": {
+              "start": 148,
+              "end": 173
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 130,
+            "end": 175
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "online@103",
+              "span": {
+                "start": 185,
+                "end": 191
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 194,
+                  "end": 199
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    label.value = value ? \"Online\" : \"Offline\";\n  }",
+              "span": {
+                "start": 204,
+                "end": 257
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "label@136",
+                  "operator": "=",
+                  "span": {
+                    "start": 210,
+                    "end": 252
+                  },
+                  "target": {
+                    "start": 210,
+                    "end": 221
+                  },
+                  "value": {
+                    "start": 224,
+                    "end": 252
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 193,
+              "end": 257
+            }
+          },
+          "span": {
+            "start": 179,
+            "end": 259
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    online.value = navigator.onLine;\n  }",
+              "span": {
+                "start": 279,
+                "end": 321
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "online@103",
+                  "operator": "=",
+                  "span": {
+                    "start": 285,
+                    "end": 316
+                  },
+                  "target": {
+                    "start": 285,
+                    "end": 297
+                  },
+                  "value": {
+                    "start": 300,
+                    "end": 316
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "navigator",
+                  "span": {
+                    "start": 300,
+                    "end": 309
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 273,
+              "end": 321
+            }
+          },
+          "span": {
+            "start": 263,
+            "end": 323
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "network-badge",
+            "span": {
+              "start": 343,
+              "end": 364
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "status",
+            "span": {
+              "start": 365,
+              "end": 378
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "data-checked",
+            "value": {
+              "code": "online.value === undefined ? \"no\" : \"yes\"",
+              "span": {
+                "start": 393,
+                "end": 434
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "online@103",
+                  "span": {
+                    "start": 393,
+                    "end": 405
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "undefined",
+                  "span": {
+                    "start": 410,
+                    "end": 419
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 379,
+              "end": 435
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label.value",
+              "span": {
+                "start": 444,
+                "end": 455
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@136",
+                  "span": {
+                    "start": 444,
+                    "end": 455
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 443,
+              "end": 456
+            }
+          }
+        ],
+        "span": {
+          "start": 340,
+          "end": 465
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "NetworkBadge",
+      "span": {
+        "start": 54,
+        "end": 472
+      }
+    }
+  ],
+  "types": []
+}

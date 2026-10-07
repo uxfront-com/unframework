@@ -1,8 +1,10 @@
-// L5 for Qwik (ADR-0042): oxlint with the shared baseline and eslint-plugin-qwik as a JS plugin,
-// without its type-aware rules (tests/toolchains/qwik/output.oxlintrc.json). It accepts every
-// committed golden and the shapes M1 emits, rejects what its rules exist for, accepts the markup
-// the author decides, and refuses a run it cannot trust.
-import { globSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+// L5 for Qwik (ADR-0042 and its M2 amendment): oxlint with the shared baseline and
+// eslint-plugin-qwik as a JS plugin (tests/toolchains/qwik/output.oxlintrc.json), and the
+// plugin's type-aware rules in ESLint, through typescript-eslint on TypeScript 6
+// (tests/toolchains/qwik-eslint). It accepts every committed golden and the shapes M1 and M2
+// emit, rejects what its rules exist for, accepts the markup the author decides, and refuses a
+// run it cannot trust.
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,7 +12,9 @@ import type { ToolchainContext } from "@unframework/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
-import { M1_SHAPES } from "./lint-probes.ts";
+import { lintTypes } from "../src/toolchain/lint.ts";
+import { goldens as qwikGoldens } from "./goldens.ts";
+import { M1_SHAPES, M2_SHAPES } from "./lint-probes.ts";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const repo = join(packageDir, "../..");
@@ -19,10 +23,8 @@ const context: ToolchainContext = {
   root: packageDir,
 };
 
-/** Every committed Qwik golden output of the corpus. */
-const goldens = globSync("tests/integration/cases/**/__output__/qwik/**/*.tsx", { cwd: repo })
-  .toSorted()
-  .map((file) => join(repo, file));
+/** Every committed Qwik golden output of the corpus, but those of cases with no Qwik output. */
+const goldens = qwikGoldens("tests/integration/cases/**/__output__/qwik/**/*.tsx");
 
 mkdirSync(join(packageDir, ".uf-tmp"), { recursive: true });
 const scratch = mkdtempSync(join(packageDir, ".uf-tmp", "lint-"));
@@ -59,6 +61,7 @@ const component = (jsx: string, body = "") =>
   ].join("\n");
 
 describe("qwik lint (L5)", { timeout: 60_000 }, () => {
+  // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output, with no message", async () => {
     expect(goldens.map((file) => file.split("/").at(-1))).toEqual(
       expect.arrayContaining(["Hello.tsx", "ProfileCard.tsx"]),
@@ -67,10 +70,18 @@ describe("qwik lint (L5)", { timeout: 60_000 }, () => {
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(goldens.map((file) => [file, []])),
     );
+  }, 60_000);
+
+  it("accepts the shapes M1 emits (ADR-0034 to ADR-0040)", async () => {
+    const files = write(M1_SHAPES);
+    const results = await toolchain.lint(files, context);
+    expect(Object.fromEntries(results)).toEqual(
+      Object.fromEntries(files.map((file) => [file, []])),
+    );
   });
 
-  it("accepts the shapes M1 emits (design §5.6)", async () => {
-    const files = write(M1_SHAPES);
+  it("accepts the shapes M2 emits (ADR-0045 to ADR-0049)", async () => {
+    const files = write(M2_SHAPES);
     const results = await toolchain.lint(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file, []])),
@@ -98,6 +109,60 @@ describe("qwik lint (L5)", { timeout: 60_000 }, () => {
       contents: component("<p>{label}{items.length}</p>", "  debugger;\n"),
       rule: "no-debugger",
     },
+    {
+      // Why an id is `"uf-id-" + useId()`: the rule refuses a hook in a template literal.
+      what: "a hook called inside a template literal",
+      contents: component(
+        "<p id={id}>{label}{items.length}</p>",
+        "  const id = `uf-id-${useId()}`;\n",
+      ).replace("import { component$ }", "import { component$, useId }"),
+      rule: "qwik/use-method-usage",
+    },
+    {
+      // Why a handler's unconditional `preventDefault()` is `preventdefault:<event>`: in a `$`
+      // scope it runs once the event has been dispatched.
+      what: "preventDefault() in a $() handler",
+      contents: component(
+        "<form onSubmit$={submit}>{label}{items.length}</form>",
+        "  const submit = $((event: SubmitEvent) => {\n    event.preventDefault();\n  });\n",
+      ).replace("import { component$ }", "import { $, component$ }"),
+      rule: "qwik/no-async-prevent-default",
+    },
+    {
+      // Why a function client code calls is a `$()` QRL or at module scope: a `$` scope
+      // captures only what Qwik can serialise, and a plain function is not.
+      what: "a $ scope that captures a local function",
+      contents: component(
+        '<button type="button" onClick$={() => show()}>{label}</button>',
+        "  function show() {\n    console.info(items.length);\n  }\n",
+      ),
+      rule: "qwik/valid-lexical-scope",
+    },
+    {
+      // Why a setup `let` is a signal: each `$` scope gets a copy of what it captures, so an
+      // assignment in one reaches no other.
+      what: "a $ scope that assigns a captured let",
+      contents: component(
+        '<button type="button" onClick$={() => (clicks = items.length)}>{label}{clicks}</button>',
+        "  let clicks = 0;\n",
+      ),
+      rule: "qwik/valid-lexical-scope",
+    },
+    {
+      what: "an async computed read after another statement in a QRL",
+      contents: component(
+        '<button type="button" onClick$={show}>{label}</button>',
+        [
+          "  const total = useComputed$(async () => items.length);",
+          "  const show = $(async () => {",
+          "    console.info(label);",
+          "    return total.value;",
+          "  });",
+          "",
+        ].join("\n"),
+      ).replace("import { component$ }", "import { $, component$, useComputed$ }"),
+      rule: "qwik/use-async-top",
+    },
   ])("rejects $what ($rule)", async ({ contents, rule }) => {
     expect(await lintCodes(contents)).toEqual([rule]);
   });
@@ -119,6 +184,14 @@ describe("qwik lint (L5)", { timeout: 60_000 }, () => {
     ).rejects.toThrow(/output\.oxlintrc\.json does not exist/);
     await expect(toolchain.lint([probe!, notes!], context)).rejects.toThrow(
       /it linted 1 of the 2 files it was given, so it skipped some/,
+    );
+    // The type-aware layer refuses on its own: a toolchain directory without its ESLint host,
+    // and a file no configuration of the host matches.
+    await expect(lintTypes([probe!], { toolchainDir: scratch, root: packageDir })).rejects.toThrow(
+      /@unframework\/toolchain-qwik-eslint is not installed in/,
+    );
+    await expect(lintTypes([probe!, notes!], context)).rejects.toThrow(
+      /it skipped \S*notes\.txt: File ignored/,
     );
   });
 });

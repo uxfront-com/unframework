@@ -1,0 +1,6 @@
+{
+  "description": "A watcher with flush: post reads the updated DOM through a template ref and emits what it read.",
+  "ssr": {
+    "initial": {}
+  }
+}

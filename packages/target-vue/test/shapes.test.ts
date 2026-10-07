@@ -1,4 +1,4 @@
-// The shapes this target chooses for props (design §5.2, ADR-0034), emitted from sources and run
+// The shapes this target chooses for props (ADR-0034), emitted from sources and run
 // through the toolchain's L3 (@vue/compiler-sfc), L4 (vue-tsc with strict templates) and L5
 // (oxlint and eslint-plugin-vue): each choice the emitter makes for a lint rule or a type check is
 // pinned here, beside the goldens the other toolchain tests check.

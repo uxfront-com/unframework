@@ -1,8 +1,9 @@
-// The module's type declarations (ADR-0034): the `interface` and `type` declarations that the
-// components' props use, which the outputs copy as written. Each is checked where it is
-// declared, once, as a top-level statement: what it holds must be a type every target's props
-// can declare (design §1.1), and it must be one some component's props reach, since shared types
-// land in M5.
+// The module's type declarations (ADR-0034, ADR-0045): the `interface` and `type` declarations
+// that the components' props, events and setup code use, which the outputs copy as written. Each
+// is checked where it is declared, once, as a top-level statement: one some component's props
+// reach must be a type every target's props can declare (ADR-0034); one only the setup
+// reaches is copied, so it must only copy safely (ADR-0045); and one no component reaches lands in
+// M5.
 
 import type { DiagnosticCode } from "@unframework/diagnostics";
 import { isIdentifier, RESERVED_TYPE_NAMES } from "@unframework/ir";
@@ -14,12 +15,17 @@ import { checkDirectives } from "./expressions.ts";
 import type { ComponentFunction } from "./render.ts";
 import { memberName, TypeTable } from "./types/from-type.ts";
 
-/** The module's type declarations, and which the components' props reach. */
+/** The module's type declarations, and which the components' props and setup code reach. */
 export interface ModuleTypes {
   readonly table: TypeTable;
   readonly declarations: readonly TypeDeclarationStatement[];
   /** The names some component's props type reaches, through local references. */
   readonly reached: ReadonlySet<string>;
+  /**
+   * The names some component's setup code reaches and no props type does: the type arguments
+   * of `ref` and `defineEmits`, annotations, `as` (ADR-0045). The outputs copy them.
+   */
+  readonly setupReached: ReadonlySet<string>;
   /** Whether some component writes `Props` as its props annotation itself (`(props: Props)`). */
   readonly ownProps: boolean;
   /**
@@ -35,16 +41,21 @@ export interface ModuleTypes {
   readonly reported: Set<string>;
 }
 
-/** Reads the module's type declarations, and what the candidates' props annotations reach. */
+/**
+ * Reads the module's type declarations, and what the candidates' props annotations and setup
+ * code reach.
+ */
 export function collectTypes(
   declarations: readonly TypeDeclarationStatement[],
   candidates: readonly { node: ComponentFunction }[],
 ): ModuleTypes {
   const table = new TypeTable(declarations);
   const reached = new Set<string>();
+  const setupReached = new Set<string>();
   let ownProps = false;
   const foreignProps: AST.TSType[] = [];
   for (const candidate of candidates) {
+    for (const name of setupTypes(candidate.node, table)) setupReached.add(name);
     const parameter = candidate.node.params[0];
     const annotation =
       parameter && "typeAnnotation" in parameter ? parameter.typeAnnotation : undefined;
@@ -59,14 +70,31 @@ export function collectTypes(
     else if (names.includes("Props")) foreignProps.push(type);
     for (const name of names) reached.add(name);
   }
-  return { table, declarations, reached, ownProps, foreignProps, reported: new Set() };
+  for (const name of reached) setupReached.delete(name);
+  return {
+    table,
+    declarations,
+    reached,
+    setupReached,
+    ownProps,
+    foreignProps,
+    reported: new Set(),
+  };
 }
 
 /**
- * The names of the module's type declarations a type reaches, through every reference in it
- * and in the declarations it reaches, in source order.
+ * The names of the module's type declarations a component's code reaches besides its props'
+ * annotation (ADR-0045): every type its body writes, in source order.
  */
-export function closure(type: AST.TSType, table: TypeTable): string[] {
+export function setupTypes(fn: ComponentFunction, table: TypeTable): string[] {
+  return closure([fn.params.slice(1), fn.body], table);
+}
+
+/**
+ * The names of the module's type declarations a type, or the types in a node, reach through
+ * every reference in it and in the declarations it reaches, in source order.
+ */
+export function closure(type: unknown, table: TypeTable): string[] {
   const found = new Set<string>();
   const visit = (node: unknown): void => {
     if (!node || typeof node !== "object") return;
@@ -141,16 +169,26 @@ export function checkTypeDeclaration(
       ...(related.length ? { related } : {}),
     });
   }
-  if (!types.reached.has(name)) {
+  const setup = types.setupReached.has(name);
+  if (!types.reached.has(name) && !setup) {
     reporter.unsupported(
       id,
-      `\`${name}\` is not used by any component's props: types that components share, or that a module exports on their own, land in M5.`,
-      { help: "Use the type in a component's props, or move it to a `.ts` module once M5 lands." },
+      `\`${name}\` is not used by any component: types that a module exports on their own land in M5.`,
+      {
+        help: "Use the type in a component's props or code, or move it to a `.ts` module once M5 lands.",
+      },
     );
     return;
   }
   if (node.declare) {
     reporter.unsupported(node, "Ambient type declarations (`declare`) are not supported.");
+  }
+  if (setup) {
+    // Only the setup's code reaches it: the outputs copy it as written, so it only needs to copy
+    // safely (ADR-0045); the types its events' payloads reach are the rules' to check (UF2009).
+    checkCopiedText({ start: node.start, end: node.end }, source, reporter, "A type declaration");
+    checkDirectives({ start: node.start, end: node.end }, comments, reporter);
+    return;
   }
   if (node.typeParameters) {
     reporter.unsupported(
@@ -205,7 +243,7 @@ interface Span {
   end: number;
 }
 
-/** Checks the members of an interface or an object type literal (design §1.1). */
+/** Checks the members of an interface or an object type literal (ADR-0034). */
 export function checkMembers(
   members: readonly AST.TSSignature[],
   types: ModuleTypes,
@@ -266,9 +304,9 @@ export function checkMembers(
 }
 
 const FUNCTIONS =
-  "Function types are not supported in props: callbacks are events (M2), and render functions are slots (M3).";
+  "Function types are not supported in props: a callback is an event, which a component declares with `defineEmits` (ADR-0047), and a render function is a slot (M3).";
 
-/** Checks a member's type: the types every target's props can declare (design §1.1). */
+/** Checks a member's type: the types every target's props can declare (ADR-0034). */
 export function checkType(type: AST.TSType, types: ModuleTypes, reporter: Reporter): void {
   const later = (what: string) =>
     report(

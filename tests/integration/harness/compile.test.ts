@@ -5,29 +5,32 @@
 import { readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
-import { CAPABILITY_NAMES } from "@unframework/codegen";
-import type { CapabilityName } from "@unframework/codegen";
-import { builtinTargets, compile, requiredCapabilities, TARGET_NAMES } from "@unframework/compiler";
+import { compile, TARGET_NAMES } from "@unframework/compiler";
 import type { CompileResult, CompilerPlugin } from "@unframework/compiler";
-import { catalogue, formatDiagnostics, toJsonDiagnostics } from "@unframework/diagnostics";
+import { formatDiagnostics, toJsonDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic, JsonDiagnostic } from "@unframework/diagnostics";
+import { irSchema } from "@unframework/ir";
 import {
-  ATTRIBUTE_KINDS,
-  BINDING_KINDS,
-  collectFeatures,
-  irSchema,
-  RENDER_NODE_KINDS,
-} from "@unframework/ir";
-import { checkLayers, settleArtefact, settleArtefactDirectory } from "@unframework/testing/node";
+  checkLayers,
+  NO_OUTPUT_SKIP,
+  settleArtefact,
+  settleArtefactDirectory,
+} from "@unframework/testing/node";
 import type { ArtefactContext, LayerCheck, LayerName } from "@unframework/testing/node";
 import { Ajv } from "ajv";
 import { describe, expect, inject, it } from "vitest";
 
 import { canaryCase, canaryFixes, canaryFormats, canaryPlugins, canarySource } from "./canaries.ts";
-import { listCases, removeStaleArtefacts, staleArtefacts } from "./cases.ts";
+import { listCases, removeStaleArtefacts, specProblems, staleArtefacts } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
-import { checkFixes, formattingProblems, forTarget, nondeterminism } from "./compile-checks.ts";
-import { EXEMPT_CAPABILITIES, EXEMPT_CODES } from "./coverage-exemptions.ts";
+import {
+  checkFixes,
+  expectationProblems,
+  formattingProblems,
+  forTarget,
+  nondeterminism,
+} from "./compile-checks.ts";
+import { coverageProblems } from "./coverage.ts";
 import { ROOT } from "./paths.ts";
 import { selectTargets } from "./targets.ts";
 
@@ -44,6 +47,7 @@ const NO_OUTPUT_LAYERS: readonly LayerName[] = [
   "L6",
   "L7",
   "L8",
+  "L9",
   "L10",
   "L11",
   "L13",
@@ -97,8 +101,7 @@ describe("compile", () => {
             L2: () => checkOutputs(info, source, first, second, target),
           };
           if (hasErrors(first.diagnostics, target)) {
-            for (const layer of NO_OUTPUT_LAYERS)
-              checks[layer] = () => ({ skip: "compile errors: no output" });
+            for (const layer of NO_OUTPUT_LAYERS) checks[layer] = () => ({ skip: NO_OUTPUT_SKIP });
           }
           await checkLayers(
             task,
@@ -111,7 +114,16 @@ describe("compile", () => {
   }
 
   it("covers every IR kind, capability cell and diagnostic code with a case", async () => {
-    const problems = await coverageProblems();
+    // Without the canary, so the gate measures the corpus.
+    const results = await Promise.all(
+      cases.map(async (info) => compileCase(info, readFileSync(info.source, "utf8"), [])),
+    );
+    const problems = coverageProblems(results);
+    expect(problems, problems.join("\n")).toEqual([]);
+  });
+
+  it("holds specs that follow the spec rules the harness can read", () => {
+    const problems = cases.flatMap(specProblems);
     expect(problems, problems.join("\n")).toEqual([]);
   });
 
@@ -148,6 +160,10 @@ async function checkDiagnostics(
       throw new Error(outcome.message);
     }
   }
+
+  // P2: no internal error is an expectation, and a feature case expects only declared errors.
+  const problems = expectationProblems(actual, target, info.spec !== undefined);
+  if (problems.length) throw new Error(problems.join("\n"));
 
   // The L1-fix-no-op canary corrupts the fixes here, on the cases whose diagnostics have one.
   await checkFixes(
@@ -219,79 +235,4 @@ async function checkOutputs(
   problems.push(...(await formattingProblems(target, files)));
 
   if (problems.length) throw new Error(problems.join("\n\n"));
-}
-
-/**
- * The coverage gate (plan §7.7), derived from the corpus: every render node, attribute and
- * binding kind, every native or emulated capability cell of every target, and every catalogued
- * diagnostic code has a case, or (cells and codes only) an exemption with a reason. An
- * exemption the corpus covers is a problem, so the exemption lists only shrink. Compiles
- * without the canary, so it measures the corpus. A root fragment is no render node: the
- * `fragment` capability covers it.
- */
-async function coverageProblems(): Promise<string[]> {
-  const results = await Promise.all(
-    cases.map(async (info) => compileCase(info, readFileSync(info.source, "utf8"), [])),
-  );
-  const problems: string[] = [];
-  const nodeKinds = new Set<string>();
-  const attributeKinds = new Set<string>();
-  const bindingKinds = new Set<string>();
-  const codes = new Set<string>();
-  const cells = new Set<string>();
-  for (const result of results) {
-    for (const diagnostic of result.diagnostics) codes.add(diagnostic.code);
-    if (!result.ir) continue;
-    const features = collectFeatures(result.ir);
-    for (const kind of features.nodeKinds) nodeKinds.add(kind);
-    for (const kind of features.attributeKinds) attributeKinds.add(kind);
-    for (const kind of features.bindingKinds) bindingKinds.add(kind);
-    const capabilities = [...requiredCapabilities(result.ir).keys()];
-    for (const target of TARGET_NAMES) {
-      if (hasErrors(result.diagnostics, target) || !result.outputs[target]?.length) continue;
-      for (const capability of capabilities) cells.add(`${target}:${capability}`);
-    }
-  }
-
-  for (const kind of RENDER_NODE_KINDS) {
-    if (!nodeKinds.has(kind)) problems.push(`No case has a ${kind} node.`);
-  }
-  for (const kind of ATTRIBUTE_KINDS) {
-    if (!attributeKinds.has(kind)) problems.push(`No case has a ${kind} attribute.`);
-  }
-  for (const kind of BINDING_KINDS) {
-    if (!bindingKinds.has(kind)) problems.push(`No case has a ${kind} binding.`);
-  }
-
-  for (const [capability, reason] of Object.entries(EXEMPT_CAPABILITIES)) {
-    if (!CAPABILITY_NAMES.includes(capability as CapabilityName)) {
-      problems.push(`The exemption for "${capability}" names no capability (${reason}).`);
-    }
-  }
-  for (const target of TARGET_NAMES) {
-    for (const capability of CAPABILITY_NAMES) {
-      const cell = builtinTargets[target].capabilities[capability];
-      if (cell.support === "unsupported") continue;
-      const covered = cells.has(`${target}:${capability}`);
-      const exempt = EXEMPT_CAPABILITIES[capability];
-      if (covered && exempt) {
-        problems.push(`${target} › ${capability} has a case now: remove its coverage exemption.`);
-      } else if (!covered && !exempt) {
-        problems.push(`No case covers ${target} › ${capability} (${cell.support}).`);
-      }
-    }
-  }
-
-  for (const code of Object.keys(EXEMPT_CODES)) {
-    if (!catalogue.has(code as Diagnostic["code"]))
-      problems.push(`The exemption for ${code} names no catalogued code.`);
-  }
-  for (const code of catalogue.keys()) {
-    const covered = codes.has(code);
-    const exempt = EXEMPT_CODES[code];
-    if (covered && exempt)
-      problems.push(`A case triggers ${code} now: remove its coverage exemption.`);
-    else if (!covered && !exempt) problems.push(`No case triggers ${code}.`);
-  }
-  return problems;
 }

@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "effects/async-watchers/SyncDesk.uf.tsx",
+    "start": {
+      "line": 58,
+      "column": 3,
+      "offset": 1587
+    },
+    "end": {
+      "line": 63,
+      "column": 6,
+      "offset": 1739
+    },
+    "target": "astro"
+  }
+]

@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "type getByRole('textbox', { name: 'Title' }) \"Plan\"",
+      "dom": [
+        "<form aria-label=\"Note\" class=\"note-editor\">",
+        "  <label>",
+        "    \"Title\"",
+        "    <input name=\"title\" uf:focused=\"\" uf:value=\"Plan\">",
+        "  </label>",
+        "  <label>",
+        "    \"Text\"",
+        "    <textarea name=\"text\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <div aria-label=\"Format\" class=\"format\" role=\"group\">",
+        "    <button aria-pressed=\"false\" type=\"button\">",
+        "      \"Bold\"",
+        "    </button>",
+        "  </div>",
+        "  <button type=\"submit\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <p role=\"status\">",
+        "    \"Saves: 0\"",
+        "  </p>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Note\":",
+        "  - text: Title",
+        "  - textbox \"Title\": Plan",
+        "  - text: Text",
+        "  - textbox \"Text\"",
+        "  - group \"Format\":",
+        "    - button \"Bold\"",
+        "  - button \"Save\"",
+        "  - status: \"Saves: 0\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Save' })",
+      "dom": [
+        "<form aria-label=\"Note\" class=\"note-editor\">",
+        "  <label>",
+        "    \"Title\"",
+        "    <input name=\"title\" uf:value=\"Plan\">",
+        "  </label>",
+        "  <label>",
+        "    \"Text\"",
+        "    <textarea name=\"text\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <div aria-label=\"Format\" class=\"format\" role=\"group\">",
+        "    <button aria-pressed=\"false\" type=\"button\">",
+        "      \"Bold\"",
+        "    </button>",
+        "  </div>",
+        "  <button type=\"submit\" uf:focused=\"\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <p role=\"status\">",
+        "    \"Saves: 1\"",
+        "  </p>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Note\":",
+        "  - text: Title",
+        "  - textbox \"Title\": Plan",
+        "  - text: Text",
+        "  - textbox \"Text\"",
+        "  - group \"Format\":",
+        "    - button \"Bold\"",
+        "  - button \"Save\"",
+        "  - status: \"Saves: 1\""
+      ],
+      "events": {
+        "saved": [
+          [
+            "Plan",
+            false
+          ]
+        ]
+      }
+    }
+  ]
+}

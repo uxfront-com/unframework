@@ -1,0 +1,16 @@
+---
+const zoom = 100 as number;
+const history = [] as string[];
+---
+
+<section class="zoom-control" aria-label="Zoom">
+  <output>{zoom}%</output>
+  <button type="button">Zoom in</button>
+  <button type="button">Zoom out</button>
+  <button type="button">Reset</button>
+  <ol aria-label="History">
+    {history.map((entry) => (
+      <li>{entry}</li>
+    ))}
+  </ol>
+</section>

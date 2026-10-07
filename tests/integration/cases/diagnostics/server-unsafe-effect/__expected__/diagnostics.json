@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2013",
+    "severity": "error",
+    "message": "An immediate watcher's callback writes `heading.value`: Vue runs its first callback during the setup, on the server too, where the server render must not depend on it, and must not fail.",
+    "file": "diagnostics/server-unsafe-effect/SearchSummary.uf.tsx",
+    "start": {
+      "line": 16,
+      "column": 7,
+      "offset": 500
+    },
+    "end": {
+      "line": 16,
+      "column": 45,
+      "offset": 538
+    },
+    "help": "Derive the value with `computed`, or write it from `onMounted` and a watcher without `immediate`."
+  }
+]

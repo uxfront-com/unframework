@@ -94,20 +94,70 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
       "String('say \"hi\"')",
       '{props.active ? "On" : "Off"}',
       // The `Narrowing` source's union holds a `false`, so its values are written `|| undefined`.
+      "<Show when={props.user || undefined}>",
+      "<Show when={props.maybe}>",
+      "{(user) => <p>{user().name}</p>}",
+      "<Show when={props.label && props.user ? { user: props.user } : undefined}>",
+      '<Match when={typeof props.value === "string" ? { value: props.value } : undefined}>',
+      "<Match when={props.count === undefined ? undefined : { count: props.count }}>",
+      "<Match when={props.shape.kind === `circle` ? undefined : { shape: props.shape }}>",
+      "{(city) => <p>{city()}</p>}",
+      '<Show when={index() > 0 && row ? { row } : undefined} fallback="-">',
+      "{(narrowed) => <s>{Math.round(narrowed().age)}</s>}",
+      // A branch whose expressions narrow its value further is keyed: TypeScript narrows no call.
       "<Show keyed when={props.user || undefined}>",
-      "<Show keyed when={props.maybe}>",
-      "{(user) => <p>{user.name}</p>}",
-      "<Show keyed when={props.label && props.user ? { user: props.user } : undefined}>",
-      '<Match keyed when={typeof props.value === "string" ? { value: props.value } : undefined}>',
-      "<Match keyed when={props.count === undefined ? undefined : { count: props.count }}>",
-      "<Match keyed when={props.shape.kind === `circle` ? undefined : { shape: props.shape }}>",
-      "{(city) => <p>{city}</p>}",
-      '<Show keyed when={index() > 0 && row ? { row } : undefined} fallback="-">',
-      "{({ age }) => <s>{Math.round(age)}</s>}",
       'title={user.nick ? user.nick.trim() : "none"}',
       'const defaults: Required<Pick<NarrowingProps, "attrs">> = { attrs: { title: "t" } };',
       "const props = mergeProps(defaults, rawProps);",
       "<p title={props.attrs.title} id={props.attrs.id}>",
+      // M2: the setup (src/setup.ts), listeners and template refs (src/listeners.ts), and the
+      // helpers (src/helpers.ts).
+      "export interface WatchersEvents {",
+      "onLabelled?: (value: string, previous?: string) => void;",
+      "(props: WatchersProps & WatchersEvents)",
+      'const [query, setQuery] = createSignal("");',
+      "const [fixed] = createSignal(format(1));",
+      "createWatcher(query, (value, previous, onCleanup) => {",
+      "createWatcher([low, high], ([minimum, maximum]: [number, number], [lastMinimum, lastMaximum]) => {",
+      "{ immediate: true },",
+      "props.onQueryRun?.(value, previous);",
+      "type WatchedValues<S>",
+      'on:click={{ handleEvent: () => record("once"), once: true }}',
+      "on:wheel={{ handleEvent: scroll, passive: true }}",
+      'element.addEventListener("click", () => record("capture"), { capture: true })',
+      'element.addEventListener("keydown", () => record("key capture"), { capture: true });',
+      'on:click={() => record("inside")}',
+      'onFocus={() => record("focus")}',
+      "onKeyDown={(event) =>",
+      "field = element;",
+      "onCleanup(() => {\n              field = null;",
+      "let headingElement: HTMLHeadingElement | null = null;",
+      "headingElement = heading;",
+      "const id = `uf-id-${createUniqueId()}`;",
+      "let timer: ReturnType<typeof setInterval> | undefined;",
+      'const units = ["s", "ms"];\n\nfunction format(value: number): string {',
+      "onMount(() =>\n    onCleanup(() => {",
+      "await nextTick();\n    props.onToggled?.(details?.childElementCount ?? 0);",
+      "function nextTick(): Promise<void> {",
+      // The watchers' scheduler, pre watchers before post ones; `watchEffect` over what it reads,
+      // async included; client code with no `batch`; a continuation's and a handed arrow's reads
+      // untracked; listeners of one event and phase in attribute order; branches narrowed on
+      // state; a handler reading its branch's accessor.
+      "const queuedWatchers = { pre: new Set<() => void>(), post: new Set<() => void>() };",
+      "queueMicrotask(() => {",
+      "const track = createReaction(() => queueWatcher(queue, run));",
+      '{ flush: "post" },',
+      "createWatchEffect([() => props.label, query], async () => {",
+      "    void Promise.resolve(5).then((step) =>\n      untrack(() => {",
+      "  async function start() {\n    await Promise.resolve();\n    setLow(1);\n    setHigh(11);\n  }",
+      "    update((entries) => untrack(() => [...entries, `${props.label} ${query()}`]));",
+      "    const data = cached() ?? (await Promise.resolve([1, 2, 3]));",
+      'element.addEventListener("click", () => record("plain"));\n          element.addEventListener("click", () => record("first"), { once: true });',
+      "when={((user) => (user !== null ? { user } : undefined))(user())}",
+      "onClick={() => pick(member().name)}",
+      'ref={(element) => element.addEventListener("click", hit)}',
+      'element.addEventListener("encrypted", () => setLast("keys"))',
+      '<video on:encrypted={() => setLast("video")} />',
     ]) {
       expect(all, shape).toContain(shape);
     }
@@ -141,14 +191,22 @@ async function narrowingHtml(props: Record<string, unknown>): Promise<string> {
 // test/rewrites.browser.test.ts mounts these fixtures in Chromium; here, they are the
 // emitter's output, and the server renders them as the client does.
 describe("solid output where Solid needs a rewrite (src/render.ts, src/attributes.ts, src/narrowing.ts)", () => {
-  it.each(["Address", "Swatch", "Narrowing"])(
-    "is test/fixtures/%s.tsx, which the browser test mounts",
-    async (name) => {
-      expect(await emitSource(SOURCES[name]!)).toBe(
-        readFileSync(new URL(`./fixtures/${name}.tsx`, import.meta.url), "utf8"),
-      );
-    },
-  );
+  it.each([
+    "Address",
+    "Swatch",
+    "Narrowing",
+    "Watchers",
+    "Listeners",
+    "Lifecycle",
+    "Runs",
+    "AsyncRuns",
+    "NarrowedState",
+    "Coalesced",
+  ])("is test/fixtures/%s.tsx, which the browser test mounts", async (name) => {
+    expect(await emitSource(SOURCES[name]!)).toBe(
+      readFileSync(new URL(`./fixtures/${name}.tsx`, import.meta.url), "utf8"),
+    );
+  });
 
   it("renders every line feed of a <pre> whose text follows expressions on the server", async () => {
     const html = await serverRender("Address", { name: "Ada", street: "12 St James's Square" });

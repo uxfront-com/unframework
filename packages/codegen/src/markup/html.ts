@@ -29,4 +29,6 @@ export const htmlDialect: MarkupDialect = {
       : noExpressions("a style binding"),
   conditional: () => noExpressions("a conditional"),
   list: () => noExpressions("a list"),
+  eventAttribute: ({ attribute }) => noExpressions(`a \`${attribute.event}\` listener`),
+  refAttribute: () => noExpressions("a template ref"),
 };

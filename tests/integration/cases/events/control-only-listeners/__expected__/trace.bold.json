@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "type getByRole('textbox', { name: 'Text' }) \"Hi\"",
+      "dom": [
+        "<form aria-label=\"Note\" class=\"note-editor\">",
+        "  <label>",
+        "    \"Title\"",
+        "    <input name=\"title\" uf:value=\"\">",
+        "  </label>",
+        "  <label>",
+        "    \"Text\"",
+        "    <textarea name=\"text\" uf:focused=\"\" uf:value=\"Hi\"></textarea>",
+        "  </label>",
+        "  <div aria-label=\"Format\" class=\"format\" role=\"group\">",
+        "    <button aria-pressed=\"false\" type=\"button\">",
+        "      \"Bold\"",
+        "    </button>",
+        "  </div>",
+        "  <button type=\"submit\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <p role=\"status\">",
+        "    \"Saves: 0\"",
+        "  </p>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Note\":",
+        "  - text: Title",
+        "  - textbox \"Title\"",
+        "  - text: Text",
+        "  - textbox \"Text\": Hi",
+        "  - group \"Format\":",
+        "    - button \"Bold\"",
+        "  - button \"Save\"",
+        "  - status: \"Saves: 0\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Bold' })",
+      "dom": [
+        "<form aria-label=\"Note\" class=\"note-editor\">",
+        "  <label>",
+        "    \"Title\"",
+        "    <input name=\"title\" uf:value=\"\">",
+        "  </label>",
+        "  <label>",
+        "    \"Text\"",
+        "    <textarea name=\"text\" uf:focused=\"\" uf:value=\"Hi\"></textarea>",
+        "  </label>",
+        "  <div aria-label=\"Format\" class=\"format\" role=\"group\">",
+        "    <button aria-pressed=\"true\" type=\"button\">",
+        "      \"Bold\"",
+        "    </button>",
+        "  </div>",
+        "  <button type=\"submit\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <p role=\"status\">",
+        "    \"Saves: 0\"",
+        "  </p>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Note\":",
+        "  - text: Title",
+        "  - textbox \"Title\"",
+        "  - text: Text",
+        "  - textbox \"Text\": Hi",
+        "  - group \"Format\":",
+        "    - button \"Bold\" [pressed]",
+        "  - button \"Save\"",
+        "  - status: \"Saves: 0\""
+      ],
+      "events": {}
+    }
+  ]
+}

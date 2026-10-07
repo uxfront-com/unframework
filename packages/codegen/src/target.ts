@@ -23,8 +23,47 @@ export type CapabilityName =
    * taken to be one.
    */
   | "listbox"
-  /** Running event handlers and updating the DOM in the browser. */
+  /**
+   * Running code in the browser (ADR-0047, ADR-0048): event listeners (`EventAttribute`),
+   * template refs (`RefAttribute`), watchers, `watchEffect` and lifecycle hooks, and the state
+   * they change.
+   */
   | "interactivity"
+  /** A listener in the capture phase: `onClickCapture` (`EventAttribute.capture`). */
+  | "event-capture"
+  /** A listener that runs once, then is removed: `onClickOnce` (`EventAttribute.once`). */
+  | "event-once"
+  /** A passive listener: `onWheelPassive` (`EventAttribute.passive`). */
+  | "event-passive"
+  /**
+   * A listener that runs when the DOM event of its name fires, with the DOM's own semantics:
+   * `change` on a text field when it commits, not per keystroke; `focus` and `blur` that do not
+   * bubble (ADR-0047). React's synthetic events differ, so it listens natively where they do.
+   */
+  | "event-semantics"
+  /**
+   * An event control (`preventDefault()`, `stopPropagation()`) that runs or not on more than the
+   * event as it is dispatched (ADR-0047): one a handler reaches through a call of a local
+   * function that is not a statement at the top of the handler before any `await`, nor alone
+   * under an `if` there that tests only the event (`if (open.value) close(event)`), or that
+   * follows a statement that may leave the handler on more than the event (`if (!open.value)
+   * return;`); one in a `once` listener that runs under a condition or after a guard clause; and
+   * any in a `once` listener of an element that listens to that event in both phases. A target
+   * that runs controls apart from the handler, while the event is dispatched, cannot tell
+   * (`handlerControls`).
+   */
+  | "conditional-event-control"
+  /** `useId()`: an id unique to the component's instance, `uf-id-` and the framework's id. */
+  | "use-id"
+  /** `nextTick()`: a promise that resolves once the DOM has updated (`ApiReference`). */
+  | "next-tick"
+  /**
+   * A prop the parent passes only after the component mounted, which the derived values and
+   * watchers that read it follow (ADR-0046): an optional prop, whose key a parent's spread may
+   * add later, read by a derived value's getter, a watch source or a `watchEffect`, itself or
+   * through the functions it calls.
+   */
+  | "late-prop"
   /** Props: a component whose props type has members (ADR-0034). */
   | "props"
   /** Expressions rendered as text (`InterpolationNode`). */
@@ -53,6 +92,14 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "static-attribute",
   "listbox",
   "interactivity",
+  "event-capture",
+  "event-once",
+  "event-passive",
+  "event-semantics",
+  "conditional-event-control",
+  "use-id",
+  "next-tick",
+  "late-prop",
   "props",
   "interpolation",
   "conditional",
@@ -64,6 +111,37 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "attribute-spread",
   "svg",
 ];
+
+/**
+ * The capabilities that change what code does in the browser, not what renders: a static render
+ * is the same without them (ADR-0033, as amended by ADR-0047). The render-parity tests, which
+ * compare static renders, do not require a case that uses one its target leaves unsupported to
+ * render differently: Astro renders the same DOM with its handlers inert.
+ */
+export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
+  "interactivity",
+  "event-capture",
+  "event-once",
+  "event-passive",
+  "event-semantics",
+  "conditional-event-control",
+  "next-tick",
+  "late-prop",
+]);
+
+/**
+ * The capability each refining one needs: a listener's options and semantics and `nextTick` mean
+ * nothing on a target without `interactivity`. The capability
+ * check reports only the one they refine there, once, rather than each at the same listener.
+ */
+export const CAPABILITY_PREREQUISITES: Readonly<Partial<Record<CapabilityName, CapabilityName>>> = {
+  "event-capture": "interactivity",
+  "event-once": "interactivity",
+  "event-passive": "interactivity",
+  "event-semantics": "interactivity",
+  "conditional-event-control": "interactivity",
+  "next-tick": "interactivity",
+};
 
 /** How a target supports a capability (plan §5.7). */
 export type CapabilityCell =

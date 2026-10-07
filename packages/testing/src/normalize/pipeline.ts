@@ -28,8 +28,15 @@ export function checkOptions(options: NormalizeOptions): void {
   }
 }
 
-/** Runs the rules over a parsed fragment, in place, and prints it (see `normalizeHtml`). */
-export function normalizeTree(root: TreeFragment, options: NormalizeOptions): string {
+/**
+ * Runs the rules over a parsed fragment, in place, and prints it (see `normalizeHtml`). `ids`,
+ * when given, receives the generated ids' renaming (see `canonicalizeGeneratedIds`).
+ */
+export function normalizeTree(
+  root: TreeFragment,
+  options: NormalizeOptions,
+  ids?: Map<string, string>,
+): string {
   checkOptions(options);
   const { target } = options;
   removeComments(root);
@@ -40,6 +47,6 @@ export function normalizeTree(root: TreeFragment, options: NormalizeOptions): st
   canonicalizeClasses(root);
   sortAttributes(root);
   collapseWhitespace(root);
-  canonicalizeGeneratedIds(root);
+  canonicalizeGeneratedIds(root, ids);
   return printTree(root);
 }

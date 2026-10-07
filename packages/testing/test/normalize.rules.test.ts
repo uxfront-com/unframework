@@ -100,7 +100,17 @@ describe("rule 2: removeFrameworkAttributes", () => {
     ],
     ["Qwik 2 element data", "qwik", '<p q:key="a" q:p="0" q:container="resumed" :="ii_0">a</p>'],
     ["Qwik 2 events", "qwik", '<p q-e:click="mock-chunk#_run#1" q-d:q-hmr="" q-w:resize="x">a</p>'],
+    [
+      "Qwik 2 passive listeners",
+      "qwik",
+      '<p q-ep:wheel="mock-chunk#_run#8" q-dp:touchmove="x" q-wp:scroll="y">a</p>',
+    ],
     ["Qwik 1 listeners", "qwik", '<p on:click="x" on-document:load="y" on-window:resize="z">a</p>'],
+    [
+      "Qwik 2 listener options its loader reads at dispatch",
+      "qwik",
+      '<p preventdefault:submit="" stoppropagation:click="" capture:click="">a</p>',
+    ],
     ["Solid hydration keys", "solid", '<p data-hk="00">a</p>'],
     [
       "Astro scope hashes, bare or empty",
@@ -552,6 +562,18 @@ describe("rule 7: canonicalizeGeneratedIds", () => {
     );
   });
 
+  it("returns its renaming, filling in a map it is given", () => {
+    const ids = new Map<string, string>();
+    const root = parseHtml(
+      '<label for="uf-id-b">B</label><input id="uf-id-b"><p id="uf-id-a"></p>',
+    );
+    expect(canonicalizeGeneratedIds(root, ids)).toBe(ids);
+    expect([...ids]).toEqual([
+      ["uf-id-b", "uf-id-1"],
+      ["uf-id-a", "uf-id-2"],
+    ]);
+  });
+
   it("renames ids in every idref attribute", () => {
     const html =
       '<table><tbody><tr><td headers="uf-id-a uf-id-b"></td></tr></tbody></table><input list="uf-id-c" form="uf-id-d"><button popovertarget="uf-id-e" commandfor="uf-id-f" interestfor="uf-id-p"></button>' +
@@ -571,10 +593,10 @@ describe("rule 7: canonicalizeGeneratedIds", () => {
   });
 
   it("recognises a generated id by its prefix alone, whatever the framework's id looks like", () => {
-    // React's useId is `«r1»` in 19.1 and `:r1:` before it; M2 prefixes it like any other.
-    expect(apply('<p id="uf-id-«r1»"></p><p aria-labelledby="uf-id-:r1:"></p>', canonicalize)).toBe(
-      '<p id="uf-id-1"></p>\n<p aria-labelledby="uf-id-2"></p>\n',
-    );
+    // React 19.2 and later write `_R_1_` on the server and `_r_1_` on the client.
+    expect(
+      apply('<p id="uf-id-_R_1_"></p><p aria-labelledby="uf-id-_r_a_"></p>', canonicalize),
+    ).toBe('<p id="uf-id-1"></p>\n<p aria-labelledby="uf-id-2"></p>\n');
   });
 
   it("renames a #fragment URL and url(#…) the same way, so a skip link or paint reference stays consistent", () => {
@@ -630,10 +652,97 @@ describe("rule 7: canonicalizeGeneratedIds", () => {
     );
   });
 
-  it("leaves values that are not references alone", () => {
+  it("renames a generated id in every attribute value and text node, in document order", () => {
+    // A radio group's name, a data-* value, a title, text, and a URL to another page: wherever a
+    // generated id appears, it is the framework's noise (ADR-0049).
     const html =
-      '<a href="/page#uf-id-0" data-id="uf-id-0" title="see #uf-id-0">uf-id-0</a><p style="background: url(/a.png#uf-id-0)"></p>';
-    expect(apply(html, canonicalize)).toBe(apply(html));
+      '<fieldset data-group="uf-id-v-7"><legend title="see #uf-id-v-3">Size uf-id-v-3.</legend>' +
+      '<input type="radio" name="uf-id-v-7" value="s"><a href="/page#uf-id-v-3">More</a>' +
+      '<p style="background: url(/a.png#uf-id-v-3)">(uf-id-v-9)</p></fieldset>';
+    expect(apply(html, canonicalize)).toBe(
+      [
+        '<fieldset data-group="uf-id-1">',
+        '  <legend title="see #uf-id-2">',
+        '    "Size uf-id-2."',
+        "  </legend>",
+        '  <input type="radio" name="uf-id-1" value="s">',
+        '  <a href="/page#uf-id-2">',
+        '    "More"',
+        "  </a>",
+        '  <p style="background: url(/a.png#uf-id-2)">',
+        '    "(uf-id-3)"',
+        "  </p>",
+        "</fieldset>",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("ends an id where an id character stops, and reads a suffixed id as another id", () => {
+    // `${base}-${index}` beside a second id: three ids, each numbered on its own.
+    expect(
+      apply(
+        '<p id="uf-id-v-1">uf-id-v-1, uf-id-v-0-0;uf-id-v-0-1</p><b>xuf-id-v-1 a-uf-id-v-1</b>',
+        canonicalize,
+      ),
+    ).toBe(
+      [
+        '<p id="uf-id-1">',
+        '  "uf-id-1, uf-id-2;uf-id-3"',
+        "</p>",
+        "<b>",
+        '  "xuf-id-v-1 a-uf-id-v-1"',
+        "</b>",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("sorts a class's tokens again once its ids are renamed", () => {
+    // The tokens were sorted by their raw ids; the ids were numbered in the document's order.
+    expect(
+      apply('<i id="uf-id-z"></i><p class="a uf-id-b uf-id-z" id="uf-id-b"></p>', canonicalize),
+    ).toBe('<i id="uf-id-1"></i>\n<p class="a uf-id-1 uf-id-2" id="uf-id-2"></p>\n');
+  });
+
+  describe("on every target's ids", () => {
+    /**
+     * A radio group (its `name` from one id) whose rows are `${base}-${index}`, beside a second
+     * id that labels the group: each target's own ids, as it renders them (ADR-0049). Svelte
+     * derives every id from one `$props.id()` with a suffix (`-0`, `-1`, …).
+     */
+    const group = (base: string, status: string, name: string) =>
+      `<div role="radiogroup" aria-labelledby="${status}"><p id="${status}">Size</p>` +
+      `<label><input type="radio" name="${name}" id="${base}-0" aria-describedby="${status}">S</label>` +
+      `<label><input type="radio" name="${name}" id="${base}-1" aria-describedby="${status}">M</label>` +
+      `<p>${base}-0 and ${base}-1</p></div>`;
+    const formats: Record<string, [base: string, status: string, name: string]> = {
+      vue: ["uf-id-v-0", "uf-id-v-1", "uf-id-v-2"],
+      react: ["uf-id-_R_1_", "uf-id-_R_2_", "uf-id-_R_3_"],
+      svelte: ["uf-id-s1-0", "uf-id-s1-1", "uf-id-s1-2"],
+      solid: ["uf-id-cl-0", "uf-id-cl-1", "uf-id-cl-2"],
+      angular: ["uf-id-sizes-0", "uf-id-sizes-1", "uf-id-sizes-2"],
+      qwik: ["uf-id-B2t0", "uf-id-B2t1", "uf-id-B2t2"],
+      astro: ["uf-id-1", "uf-id-2", "uf-id-3"],
+    };
+
+    it("normalises Vue's and each follower's ids to one text", () => {
+      const reference = normalizeHtml(group(...formats.vue!));
+      expect(reference).not.toContain("uf-id-v-");
+      for (const [target, ids] of Object.entries(formats)) {
+        expect(normalizeHtml(group(...ids)), target).toBe(reference);
+      }
+      // The status paragraph's id comes first: the group names it first.
+      expect(reference).toContain('<p id="uf-id-1">');
+      expect(reference).toContain('name="uf-id-3"');
+    });
+
+    it("still tells two ids that collide on a follower and not on the reference", () => {
+      // Svelte's ids before every one carried a suffix: the status id `uf-id-s1-1` is also the
+      // second row's `${base}-1` of the base `uf-id-s1`.
+      const collided = normalizeHtml(group("uf-id-s1", "uf-id-s1-1", "uf-id-s1-2"));
+      expect(collided).not.toBe(normalizeHtml(group(...formats.vue!)));
+    });
   });
 
   it("does not erase a broken association", () => {

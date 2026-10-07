@@ -1,0 +1,6 @@
+{
+  "description": "A document key listener added in onMounted and removed in onUnmounted that prevents Ctrl+S and saves, in a field too.",
+  "ssr": {
+    "initial": {}
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add one' })",
+      "dom": [
+        "<section aria-label=\"Order summary\" class=\"order-summary\" data-tier=\"standard\">",
+        "  <p role=\"status\">",
+        "    \"Quantity: 2\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Remove one\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add one\"",
+        "  </button>",
+        "  <p>",
+        "    \"Subtotal: 50.00\"",
+        "  </p>",
+        "  <p>",
+        "    \"Tax: 10.00\"",
+        "  </p>",
+        "  <p>",
+        "    \"Total: 60.00\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Order summary\":",
+        "  - status: \"Quantity: 2\"",
+        "  - button \"Remove one\"",
+        "  - button \"Add one\"",
+        "  - paragraph: \"Subtotal: 50.00\"",
+        "  - paragraph: \"Tax: 10.00\"",
+        "  - paragraph: \"Total: 60.00\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Add one' })",
+      "dom": [
+        "<section aria-label=\"Order summary\" class=\"order-summary\" data-tier=\"standard\">",
+        "  <p role=\"status\">",
+        "    \"Quantity: 3\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Remove one\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add one\"",
+        "  </button>",
+        "  <p>",
+        "    \"Subtotal: 75.00\"",
+        "  </p>",
+        "  <p>",
+        "    \"Tax: 15.00\"",
+        "  </p>",
+        "  <p>",
+        "    \"Total: 90.00\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Order summary\":",
+        "  - status: \"Quantity: 3\"",
+        "  - button \"Remove one\"",
+        "  - button \"Add one\"",
+        "  - paragraph: \"Subtotal: 75.00\"",
+        "  - paragraph: \"Tax: 15.00\"",
+        "  - paragraph: \"Total: 90.00\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Remove one' })",
+      "dom": [
+        "<section aria-label=\"Order summary\" class=\"order-summary\" data-tier=\"standard\">",
+        "  <p role=\"status\">",
+        "    \"Quantity: 2\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Remove one\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Add one\"",
+        "  </button>",
+        "  <p>",
+        "    \"Subtotal: 50.00\"",
+        "  </p>",
+        "  <p>",
+        "    \"Tax: 10.00\"",
+        "  </p>",
+        "  <p>",
+        "    \"Total: 60.00\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Order summary\":",
+        "  - status: \"Quantity: 2\"",
+        "  - button \"Remove one\"",
+        "  - button \"Add one\"",
+        "  - paragraph: \"Subtotal: 50.00\"",
+        "  - paragraph: \"Tax: 10.00\"",
+        "  - paragraph: \"Total: 60.00\""
+      ],
+      "events": {}
+    }
+  ]
+}

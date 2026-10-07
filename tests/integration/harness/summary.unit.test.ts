@@ -26,7 +26,7 @@ const LAYERS_OF: Record<string, LayerName[]> = {
   harness: [],
   toolchain: ["L3", "L4", "L5"],
   ssr: ["L6", "L13"],
-  browser: ["L7", "L8", "L10", "L11", "L13"],
+  browser: ["L7", "L8", "L9", "L10", "L11", "L13"],
 };
 
 /**

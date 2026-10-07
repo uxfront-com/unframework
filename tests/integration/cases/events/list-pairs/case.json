@@ -1,0 +1,15 @@
+{
+  "description": "Two listeners of one event on one element: on the rows of a list over a computed (whose item is named event) and over an unannotated ref array (with an async once listener), and on a button in a branch that narrows an optional prop; a once listener declaring a local named event; a block-bodied key handler that returns false.",
+  "ssr": {
+    "initial": {
+      "props": {
+        "meetings": [
+          { "id": 1, "title": "Standup", "done": false },
+          { "id": 2, "title": "Retro", "done": true },
+          { "id": 3, "title": "Review", "done": false }
+        ],
+        "organiser": { "name": "Ada" }
+      }
+    }
+  }
+}

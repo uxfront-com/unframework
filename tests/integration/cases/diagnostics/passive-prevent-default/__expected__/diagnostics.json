@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF3034",
+    "severity": "error",
+    "message": "`event.preventDefault()` runs in a passive `wheel` listener, which the browser never lets prevent anything; Angular, which runs an element's listeners of one event together, would run it in a listener that is not passive.",
+    "file": "diagnostics/passive-prevent-default/ZoomPanel.uf.tsx",
+    "start": {
+      "line": 16,
+      "column": 11,
+      "offset": 604
+    },
+    "end": {
+      "line": 16,
+      "column": 33,
+      "offset": 626
+    },
+    "help": "Remove the call, or make the listener not passive (`onWheel`) where it must prevent the default.",
+    "fixes": [
+      {
+        "title": "Remove `preventDefault()`, which prevents nothing here",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 593,
+              "end": 627
+            },
+            "text": ""
+          }
+        ]
+      }
+    ]
+  }
+]

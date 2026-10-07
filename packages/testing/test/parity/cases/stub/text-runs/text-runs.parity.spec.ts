@@ -259,6 +259,12 @@ describeTargets("stub/text-runs", () => {
       // The stub writes into the nodes it created, as a framework does.
       await view.rerender({ price: 13 });
       await expect.element(view.getByText("Price: 13 EUR")).toBeVisible();
+      // The rerender is a step of the view's trace, which has no committed artefact either.
+      await view.expectParity("split-rerendered");
+      expectLayerFailure(
+        "L9",
+        /Missing artefact cases\/stub\/text-runs\/__expected__\/trace\.split-rerendered\.json/,
+      );
     },
   );
 });

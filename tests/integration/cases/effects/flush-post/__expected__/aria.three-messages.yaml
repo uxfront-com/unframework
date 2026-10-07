@@ -1,0 +1,6 @@
+- region "Messages":
+  - list:
+    - listitem: Welcome to the team
+    - listitem: Message 2
+    - listitem: Message 3
+  - button "Add a message"

@@ -1,0 +1,8 @@
+error[UF2017]: "closed" is not an event the component declares: it declares "close".
+ --> diagnostics/invalid-emit/SettingsDialog.uf.tsx:9:10
+  |
+9 |     emit("closed");
+  |          ^^^^^^^^
+  |
+  = help: Declare the event in `defineEmits`, or emit one it declares.
+  = see: https://unframework.dev/diagnostics/UF2017

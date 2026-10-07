@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2014",
+    "severity": "error",
+    "message": "A template expression calls `greet`, and it writes `renders.value`: rendering must not change or read what only client code may, and a framework runs it when it decides to.",
+    "file": "diagnostics/impure-function-call/Greeting.uf.tsx",
+    "start": {
+      "line": 17,
+      "column": 32,
+      "offset": 448
+    },
+    "end": {
+      "line": 17,
+      "column": 37,
+      "offset": 453
+    },
+    "help": "Call it from client code (a handler, a watcher's callback, a lifecycle hook), or compute the value without it."
+  }
+]

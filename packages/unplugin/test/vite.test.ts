@@ -479,6 +479,8 @@ describe("the golden guard (onCompile)", () => {
           target: "vue",
           files: expected.outputs.vue,
           diagnostics: [],
+          // What the module declares, for the harness's ufComponentEvents.
+          ir: expected.ir,
         },
       ]);
     });
@@ -675,6 +677,14 @@ function htmlTarget() {
     "style-binding": { support: "native" },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
+    "event-capture": { support: "native" },
+    "event-once": { support: "native" },
+    "event-passive": { support: "native" },
+    "event-semantics": { support: "native" },
+    "conditional-event-control": { support: "native" },
+    "use-id": { support: "native" },
+    "next-tick": { support: "native" },
+    "late-prop": { support: "native" },
   };
   return defineTarget({
     name: "html",

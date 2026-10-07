@@ -130,6 +130,7 @@
           }
         }
       ],
+      "setup": [],
       "render": {
         "kind": "Element",
         "tag": "p",

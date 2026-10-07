@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Delete' })",
+      "dom": [
+        "<section aria-label=\"File\" class=\"delete-file\">",
+        "  <p>",
+        "    \"report.pdf, 1 copy\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add a copy\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Confirm the deletion\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"File\":",
+        "  - paragraph: report.pdf, 1 copy",
+        "  - button \"Add a copy\"",
+        "  - button \"Confirm the deletion\""
+      ],
+      "events": {}
+    }
+  ]
+}

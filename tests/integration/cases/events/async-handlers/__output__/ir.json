@@ -1,0 +1,425 @@
+{
+  "irVersion": 1,
+  "file": "events/async-handlers/SaveDraft.uf.tsx",
+  "components": [
+    {
+      "name": "SaveDraft",
+      "span": {
+        "start": 59,
+        "end": 717
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@105",
+        "type": {
+          "code": "{ saved: [attempt: number, status: string] }",
+          "span": {
+            "start": 124,
+            "end": 168
+          }
+        },
+        "events": [
+          {
+            "name": "saved",
+            "parameters": [
+              {
+                "name": "attempt",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 143,
+                    "end": 149
+                  }
+                },
+                "span": {
+                  "start": 134,
+                  "end": 149
+                }
+              },
+              {
+                "name": "status",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 159,
+                    "end": 165
+                  }
+                },
+                "span": {
+                  "start": 151,
+                  "end": 165
+                }
+              }
+            ],
+            "span": {
+              "start": 126,
+              "end": 166
+            }
+          }
+        ],
+        "span": {
+          "start": 99,
+          "end": 172
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@105",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 105,
+            "end": 109
+          }
+        },
+        {
+          "id": "status@182",
+          "name": "status",
+          "kind": "state",
+          "span": {
+            "start": 182,
+            "end": 188
+          }
+        },
+        {
+          "id": "attempts@217",
+          "name": "attempts",
+          "kind": "state",
+          "span": {
+            "start": 217,
+            "end": 225
+          }
+        },
+        {
+          "id": "save@254",
+          "name": "save",
+          "kind": "localFn",
+          "span": {
+            "start": 254,
+            "end": 258
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "status@182",
+          "initial": {
+            "code": "\"Not saved\"",
+            "span": {
+              "start": 195,
+              "end": 206
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 176,
+            "end": 208
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "attempts@217",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 232,
+              "end": 233
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 211,
+            "end": 235
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "save@254",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    status.value = \"Saving\";\n    attempts.value += 1;\n    await Promise.resolve();\n    status.value = \"Checking\";\n    await nextTick();\n    status.value = `Saved, attempt ${attempts.value}`;\n    emit(\"saved\", attempts.value, status.value);\n  }",
+              "span": {
+                "start": 261,
+                "end": 506
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "status@182",
+                  "operator": "=",
+                  "span": {
+                    "start": 267,
+                    "end": 290
+                  },
+                  "target": {
+                    "start": 267,
+                    "end": 279
+                  },
+                  "value": {
+                    "start": 282,
+                    "end": 290
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "attempts@217",
+                  "operator": "+=",
+                  "span": {
+                    "start": 296,
+                    "end": 315
+                  },
+                  "target": {
+                    "start": 296,
+                    "end": 310
+                  },
+                  "value": {
+                    "start": 314,
+                    "end": 315
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 327,
+                    "end": 334
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "status@182",
+                  "operator": "=",
+                  "span": {
+                    "start": 350,
+                    "end": 375
+                  },
+                  "target": {
+                    "start": 350,
+                    "end": 362
+                  },
+                  "value": {
+                    "start": 365,
+                    "end": 375
+                  }
+                },
+                {
+                  "kind": "Api",
+                  "api": "nextTick",
+                  "span": {
+                    "start": 387,
+                    "end": 395
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "status@182",
+                  "operator": "=",
+                  "span": {
+                    "start": 403,
+                    "end": 452
+                  },
+                  "target": {
+                    "start": 403,
+                    "end": 415
+                  },
+                  "value": {
+                    "start": 418,
+                    "end": 452
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "attempts@217",
+                  "span": {
+                    "start": 436,
+                    "end": 450
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@105",
+                  "event": "saved",
+                  "span": {
+                    "start": 458,
+                    "end": 501
+                  },
+                  "arguments": [
+                    {
+                      "start": 472,
+                      "end": 486
+                    },
+                    {
+                      "start": 488,
+                      "end": 500
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "attempts@217",
+                  "span": {
+                    "start": 472,
+                    "end": 486
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "status@182",
+                  "span": {
+                    "start": 488,
+                    "end": 500
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 258,
+              "end": 506
+            }
+          },
+          "span": {
+            "start": 239,
+            "end": 506
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "save-draft",
+            "span": {
+              "start": 532,
+              "end": 550
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Draft",
+            "span": {
+              "start": 551,
+              "end": 569
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 580,
+                  "end": 593
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "status.value",
+                  "span": {
+                    "start": 595,
+                    "end": 607
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "status@182",
+                      "span": {
+                        "start": 595,
+                        "end": 607
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 594,
+                  "end": 608
+                }
+              }
+            ],
+            "span": {
+              "start": 577,
+              "end": 612
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 627,
+                  "end": 640
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "save@254",
+                  "span": {
+                    "start": 650,
+                    "end": 654
+                  }
+                },
+                "span": {
+                  "start": 641,
+                  "end": 655
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Save the draft",
+                "span": {
+                  "start": 656,
+                  "end": 686
+                }
+              }
+            ],
+            "span": {
+              "start": 619,
+              "end": 695
+            }
+          }
+        ],
+        "span": {
+          "start": 523,
+          "end": 710
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SaveDraft",
+      "span": {
+        "start": 59,
+        "end": 717
+      }
+    }
+  ],
+  "types": []
+}

@@ -520,6 +520,139 @@ describe("builders", () => {
     ).toBe("let props: P = p;\n");
   });
 
+  // What M2's targets synthesise around copied setup code: state tuples, setup `let`s, writes,
+  // `await`, conditions, async functions and classes with methods, a constructor and interfaces.
+  it("builds the statements, functions and classes setup code needs", () => {
+    const placeholders = new Placeholders();
+    const counter = js.classDeclaration(
+      "Counter",
+      [],
+      [
+        js.propertyDefinition(
+          "count",
+          js.callExpression(js.identifier("signal"), [js.numberLiteral(0)]),
+          {
+            readonly: true,
+            accessibility: "protected",
+          },
+        ),
+        js.methodDefinition(
+          "constructor",
+          [],
+          [
+            js.expressionStatement(
+              js.callExpression(js.identifier("effect"), [
+                js.arrowFunction([], [placeholders.statements("track();\nlet x = 1")], {
+                  async: true,
+                }),
+              ]),
+            ),
+          ],
+          { kind: "constructor" },
+        ),
+        js.methodDefinition("ngOnInit", [], [], { returnType: js.keywordType("void") }),
+        js.methodDefinition(
+          "increment",
+          [
+            placeholders.parameter("event: MouseEvent"),
+            placeholders.parameter("...rest: string[]"),
+          ],
+          [
+            js.ifStatement(
+              js.identifier("a"),
+              [
+                js.expressionStatement(
+                  js.assignmentExpression(
+                    "+=",
+                    js.memberExpression(js.thisExpression(), "x"),
+                    js.numberLiteral(1),
+                  ),
+                ),
+              ],
+              js.ifStatement(
+                js.identifier("b"),
+                js.expressionStatement(js.updateExpression("++", js.identifier("y"))),
+                [js.expressionStatement(js.updateExpression("--", js.identifier("z"), true))],
+              ),
+            ),
+            js.expressionStatement(
+              js.awaitExpression(
+                js.newExpression(
+                  js.identifier("Map"),
+                  [],
+                  [js.keywordType("string"), js.typeReference("Item")],
+                ),
+              ),
+            ),
+          ],
+          {
+            accessibility: "protected",
+            async: true,
+            returnType: js.typeReference("Promise", [js.keywordType("void")]),
+          },
+        ),
+      ],
+      { implements: ["OnInit", "OnDestroy"] },
+    );
+    const state = js.variableDeclaration(
+      "const",
+      js.arrayPattern(["count", "setCount", null]),
+      js.callExpression(js.identifier("useState"), [js.numberLiteral(0)]),
+    );
+    const timer = js.variableDeclaration(
+      "let",
+      "timer",
+      null,
+      js.unionType([js.keywordType("number"), js.keywordType("undefined")]),
+    );
+    const load = js.functionDeclaration(
+      "load",
+      [],
+      [js.expressionStatement(js.awaitExpression(js.identifier("x")))],
+      { async: true },
+    );
+    const arrow = js.variableDeclaration(
+      "const",
+      "f",
+      js.arrowFunction([js.bindingIdentifier("a")], js.identifier("a"), {
+        async: true,
+        returnType: js.keywordType("number"),
+      }),
+    );
+    expect(
+      placeholders.print(() => printProgram(js.program([counter, state, timer, load, arrow]))),
+    ).toBe(
+      [
+        "class Counter implements OnInit, OnDestroy {",
+        "  protected readonly count = signal(0);",
+        "  constructor() {",
+        "    effect(async () => {",
+        "      track();",
+        "let x = 1;",
+        "    });",
+        "  }",
+        "  ngOnInit(): void {}",
+        "  protected async increment(event: MouseEvent, ...rest: string[]): Promise<void> {",
+        "    if (a) {",
+        "      this.x += 1;",
+        "    } else if (b) y++;",
+        "    else {",
+        "      --z;",
+        "    }",
+        "    await new Map<string, Item>();",
+        "  }",
+        "}",
+        "const [count, setCount, ,] = useState(0);",
+        "let timer: number | undefined;",
+        "async function load() {",
+        "  await x;",
+        "}",
+        "const f = async (a): number => a;",
+        "",
+      ].join("\n"),
+    );
+  });
+
   it("builds JSX elements, fragments, spreads and namespaced names", () => {
     const element = js.jsxElement(
       "Show",
@@ -559,6 +692,38 @@ describe("Placeholders", () => {
     expect(placeholders.print(() => printExpression(js.arrayExpression([spelled, value])))).toBe(
       '["$uf0$0$ and $uf1$", label]',
     );
+  });
+
+  it("splices statements as written, ending the last and taking the printed semicolon", () => {
+    const placeholders = new Placeholders();
+    const body = [
+      placeholders.statements("count += 1; // one more"),
+      placeholders.statements("if (a) b()\nf()"),
+      placeholders.statements(""),
+      placeholders.statements("{ nested(); }"),
+    ];
+    expect(placeholders.print(() => printProgram(js.program(body)))).toBe(
+      ["count += 1; // one more", "if (a) b()\nf();", "", "{ nested(); }", ""].join("\n"),
+    );
+    expect(() => new Placeholders().statements("} f() {")).toThrow("Cannot parse");
+    expect(() => new Placeholders().statements("a +")).toThrow("Cannot parse");
+  });
+
+  it("splices one parameter as written", () => {
+    const placeholders = new Placeholders();
+    const fn = js.functionDeclaration(
+      "label",
+      [
+        placeholders.parameter('[unit]: string[] = ["x"]'),
+        placeholders.parameter("suffix?: string"),
+      ],
+      [],
+    );
+    expect(placeholders.print(() => printProgram(js.program([fn])))).toBe(
+      'function label([unit]: string[] = ["x"], suffix?: string) {}\n',
+    );
+    expect(() => new Placeholders().parameter("a, b")).toThrow("as one parameter");
+    expect(() => new Placeholders().parameter("a +")).toThrow("Cannot parse");
   });
 
   it("rejects a placeholder printed twice, left out or made while printing", () => {

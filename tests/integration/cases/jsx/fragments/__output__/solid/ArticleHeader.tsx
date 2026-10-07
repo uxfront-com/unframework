@@ -11,8 +11,8 @@ export default function ArticleHeader(props: ArticleHeaderProps) {
   return (
     <>
       <h2>{props.title}</h2>
-      <Show keyed when={props.subtitle}>
-        {(subtitle) => <p class="article-subtitle">{subtitle}</p>}
+      <Show when={props.subtitle}>
+        {(subtitle) => <p class="article-subtitle">{subtitle()}</p>}
       </Show>
       <Show
         when={props.draft}

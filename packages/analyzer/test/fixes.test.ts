@@ -1,9 +1,9 @@
 // Every fix applies with every other that can meet it, and leaves exactly the diagnostics that
-// had none (design §2, the harness's L1): fixes never overlap, never change what renders, and
+// had none (plan §5.9, the harness's L1): fixes never overlap, never change what renders, and
 // never reveal or reword another diagnostic.
 import { describe, expect, it } from "vitest";
 
-import { applyAndRecheck, codes, component } from "./helpers.ts";
+import { API, applyAndRecheck, codes, component } from "./helpers.ts";
 import { random } from "./random.ts";
 
 const PROPS = [
@@ -239,6 +239,60 @@ describe("random mixes of fixable pieces", () => {
         checked++;
       }
       expect(checked).toBeGreaterThan(1500);
+    },
+    60_000,
+  );
+});
+
+/** A setup whose bindings the pieces below read (ADR-0045). */
+const SETUP =
+  "const total = ref(1); const field = useTemplateRef<HTMLElement>(); const flip = () => (total.value = 2); function log() {} ";
+
+/** Pieces of M2: listeners, template refs and refs' values, with and without fixes. */
+const SETUP_ATTRIBUTES = [
+  "onClick={log}",
+  "onKeyDown={log}",
+  "onclick={() => (total.value = 3)}",
+  "onDoubleClick={flip}",
+  "onFocus={() => console.log(total)}",
+  "onBlur={(event) => log()}",
+  "Ref={field}",
+  "ref={field}",
+  "title={String(total)}",
+  "title={String((total).value)}",
+];
+
+const SETUP_CHILDREN = [
+  "{total}",
+  "{total.value}",
+  "{total?.value}",
+  "{(total).value}",
+  "{JSON.stringify({ total })}",
+  "{items.map((item) => <i key={item} onClick={() => console.log(item, total)}>{item}</i>)}",
+];
+
+describe("random mixes of fixable pieces in a setup's component", () => {
+  it.each([13, 14])(
+    "recompile to exactly the diagnostics that have no fix (seed %i)",
+    (seed) => {
+      const next = random(seed);
+      const pick = <T>(items: readonly T[]) => items[Math.floor(next() * items.length)]!;
+      let checked = 0;
+      for (let sample = 0; sample < 1000; sample++) {
+        const attributes = Array.from({ length: Math.floor(next() * 4) }, () =>
+          pick(next() < 0.6 ? SETUP_ATTRIBUTES : ATTRIBUTES),
+        );
+        const children = Array.from({ length: Math.floor(next() * 4) }, () =>
+          pick(next() < 0.6 ? SETUP_CHILDREN : CHILDREN),
+        );
+        const tag = pick(["p", "div", "button", "ul"]);
+        const jsx = `<${tag} ${attributes.join(" ")}>${children.join("")}</${tag}>`;
+        const { source, diagnostics } = component(jsx, { props: PROPS, before: API, setup: SETUP });
+        if (!diagnostics.some((diagnostic) => diagnostic.fixes?.length)) continue;
+        applyAndRecheck(source, diagnostics);
+        checked++;
+      }
+      expect(checked).toBeGreaterThan(700);
     },
     60_000,
   );
