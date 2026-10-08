@@ -3,9 +3,11 @@
 import { printTree } from "./print.ts";
 import { unwrapAngularHosts } from "./rules/angular-hosts.ts";
 import { removeComments } from "./rules/comments.ts";
+import { removeSettledValues } from "./rules/control-values.ts";
 import { removeFrameworkAttributes } from "./rules/framework-attributes.ts";
 import { canonicalizeGeneratedIds } from "./rules/generated-ids.ts";
 import { canonicalizeClasses, sortAttributes } from "./rules/ordering.ts";
+import { removeQwikTemplates } from "./rules/qwik-templates.ts";
 import { canonicalizeBooleanAttributes, canonicalizeStyles } from "./rules/values.ts";
 import { collapseWhitespace } from "./rules/whitespace.ts";
 import { isNormalizeTarget } from "./targets.ts";
@@ -41,10 +43,12 @@ export function normalizeTree(
   const { target } = options;
   removeComments(root);
   removeFrameworkAttributes(root, target);
+  removeQwikTemplates(root, target);
   unwrapAngularHosts(root, target);
   canonicalizeStyles(root);
   canonicalizeBooleanAttributes(root, target);
   canonicalizeClasses(root);
+  removeSettledValues(root);
   sortAttributes(root);
   collapseWhitespace(root);
   canonicalizeGeneratedIds(root, ids);

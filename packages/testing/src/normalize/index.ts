@@ -23,12 +23,14 @@ export type { NormalizeTarget } from "./targets.ts";
  * in the order their numbers give:
  *
  * 1. comments are removed (`removeComments`);
- * 2. attributes the target's framework adds are removed (`removeFrameworkAttributes`);
+ * 2. attributes the target's framework adds are removed (`removeFrameworkAttributes`), and so
+ *    are Qwik's `q:template` elements (2b, `removeQwikTemplates`);
  * 3. Angular's `uf-*` host elements with `display: contents` are unwrapped
  *    (`unwrapAngularHosts`);
  * 4. style declarations (4a, `canonicalizeStyles`), boolean attributes (4b,
  *    `canonicalizeBooleanAttributes`) and class tokens (4c, `canonicalizeClasses`) get one
- *    canonical form, and a `class` or `style` that holds nothing goes;
+ *    canonical form, and a `class` or `style` that holds nothing goes; an `<input>`'s `value`
+ *    attribute that equals its `uf:value` goes too (4d, `removeSettledValues`);
  * 5. attributes are sorted by name (`sortAttributes`), before ids are numbered, so the
  *    numbering never depends on a framework's attribute order;
  * 6. whitespace collapses as the browser renders it (`collapseWhitespace`);
