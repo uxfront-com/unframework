@@ -50,6 +50,7 @@ import type { LayerName, ProjectKind } from "@unframework/testing/node";
 
 import { errorState, expectedDiagnostics, specTests } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
+import { consumerFixtures } from "./consumers.ts";
 import { ROOT } from "./paths.ts";
 import { REFERENCE } from "./targets.ts";
 
@@ -359,6 +360,26 @@ export const CANARIES: readonly Canary[] = [
             "module",
           ),
         })),
+    }),
+  },
+  {
+    id: "L4-consumer",
+    layer: "L4",
+    description:
+      "Types every output's props and events `any`, where its consumers' checker reads them: each consumer fixture's expected error goes unmet (ADR-0059).",
+    evidence: {
+      // A directive the checker no longer meets, named with the declaration's `.uf.tsx` line.
+      toolchain: {
+        "consumer check": /consumers\/\S+:\d+: expected \S+ for \S+ \(\S+\.uf\.tsx:\d+\), got none/,
+      },
+    },
+    appliesTo: (info, target) => consumerFixtures(target, info.id).length > 0,
+    // An output hook: the compiler rejects an `ir` hook's type that the analyser did not
+    // produce (P2), and props cannot be `any` in the source until M5 (UF1002).
+    plugin: () => ({
+      name: "uf-canary-L4-consumer",
+      output: (files, { target }) =>
+        files.map((file) => ({ ...file, contents: widenPublicTypes(file, target) })),
     }),
   },
   {
@@ -956,6 +977,75 @@ export function mismatchClosingTag(file: OutputFile): string {
   if (!last) throw new Error(`${MARKER} L3: ${path} has no closing tag to mismatch.`);
   const replacement = last[1] === "span" ? "div" : "span";
   return `${contents.slice(0, last.index)}</${replacement}>${contents.slice(last.index + last[0].length)}`;
+}
+
+/**
+ * An output whose props and events a consumer sees as `any`: the type each target's checker
+ * reads them from, the component's props parameter (React, Solid), its `$props()` (Svelte), its
+ * `Props` (Astro), or the type arguments of `component$` (Qwik), `defineProps` and `defineEmits`
+ * (Vue), and `input`, `output` and `model` (Angular). An output with none, a component without
+ * props or events, is left as it is.
+ */
+function widenPublicTypes(file: OutputFile, target: string): string {
+  const { contents } = file;
+  switch (target) {
+    case "react":
+    case "solid": {
+      const component = /\bfunction\s+[A-Z][\w$]*\s*\(/.exec(contents);
+      if (!component) return contents;
+      const open = component.index + component[0].length - 1;
+      const close = matchingBracket(contents, open, "(", ")");
+      if (close === undefined) return contents;
+      // The parameter: a destructuring pattern or a name, then its annotation.
+      const pattern =
+        contents[open + 1] === "{" ? matchingBracket(contents, open + 1, "{", "}") : open;
+      const colon = pattern === undefined ? -1 : contents.indexOf(":", pattern + 1);
+      if (colon === -1 || colon > close) return contents;
+      return `${contents.slice(0, colon)}: any${contents.slice(close)}`;
+    }
+    case "qwik":
+      return anyTypeArguments(contents, /\bcomponent\$</g);
+    case "vue":
+      // `defineProps<any>()` declares no props to vue-tsc: each key takes anything instead.
+      return anyTypeArguments(
+        anyTypeArguments(contents, /\bdefineProps</g, "Record<string, any>"),
+        /\bdefineEmits</g,
+        "Record<string, any[]>",
+      );
+    case "angular":
+      return anyTypeArguments(contents, /\b(?:input|output|model)(?:\.required)?</g);
+    case "svelte":
+      return contents.replace(/(\})\s*:[^=;]+=\s*\$props\(\)/, "$1: any = $props()");
+    case "astro":
+      return /\b(?:type|interface)\s+Props\b/.test(contents)
+        ? injectScript(
+            {
+              ...file,
+              contents: contents.replace(/\b(type|interface)\s+Props\b/, "$1 UfCanaryProps"),
+            },
+            target,
+            "type Props = any;",
+            "module",
+          )
+        : contents;
+    default:
+      throw new Error(`${MARKER} L4: no public types to widen for the target ${target}.`);
+  }
+}
+
+/** `contents` with the type arguments after each match of `opening` (which ends at `<`) `any`. */
+function anyTypeArguments(contents: string, opening: RegExp, type = "any"): string {
+  let result = "";
+  let from = 0;
+  for (const match of contents.matchAll(opening)) {
+    const open = match.index + match[0].length - 1;
+    if (open < from) continue;
+    const close = matchingBracket(contents, open, "<", ">");
+    if (close === undefined) continue;
+    result += `${contents.slice(from, open + 1)}${type}`;
+    from = close;
+  }
+  return result + contents.slice(from);
 }
 
 /**

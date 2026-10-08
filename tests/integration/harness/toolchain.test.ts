@@ -6,7 +6,9 @@
 // outputs (its configuration, a file an output imports): every case was checked with it. Each
 // tool settles on its own, so a linter that cannot read a canary's corrupted file fails L5 and
 // leaves L3's and L4's evidence alone. With UF_CANARY, the cases are compiled afresh with the
-// canary under `.canary/<id>/<target>/` and those files are checked instead of the goldens.
+// canary under `.canary/<id>/<target>/` and those files are checked instead of the goldens. L4's
+// checker run also reads each case's consumer fixtures (ADR-0059, `consumers.ts`), copied beside
+// a canary's compile so they import it.
 import { existsSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 
@@ -19,6 +21,8 @@ import { beforeAll, describe, inject, it } from "vitest";
 import { canaryPlugins } from "./canaries.ts";
 import { errorState, listCases } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
+import { consumerFixtures, consumerProblems, copyFixtures } from "./consumers.ts";
+import type { Fixture } from "./consumers.ts";
 import { CANARY_DIR, ROOT, toolchainDir } from "./paths.ts";
 import { loadToolchain } from "./targets.ts";
 import {
@@ -37,6 +41,10 @@ interface Checked {
   files: Map<string, string[]>;
   /** Every output file of the run: a message on any other path fails every case. */
   outputs: Set<string>;
+  /** Each case's consumer fixtures, which only the checker reads (L4). */
+  fixtures: Map<string, Fixture[]>;
+  /** Every file the checker read: the outputs and the fixtures. */
+  typechecked: Set<string>;
   /** What each tool returned, or why it did not run, by the layer it decides. */
   L3: PromiseSettledResult<Map<string, FrameworkCompileResult>>;
   L4: PromiseSettledResult<Map<string, ToolchainMessage[]>>;
@@ -55,6 +63,11 @@ beforeAll(async () => {
     const toolchain = await loadToolchain(target);
     const files = await outputFiles();
     const all = [...files.values()].flat();
+    const fixtures = caseFixtures(files);
+    const typechecked = new Set([
+      ...all,
+      ...[...fixtures.values()].flat().map(({ checked }) => checked),
+    ]);
     const context = { toolchainDir: toolchainDir(target), root: ROOT };
     const contents: ToolchainFile[] = all.map((path) => ({
       path,
@@ -62,10 +75,10 @@ beforeAll(async () => {
     }));
     const [L3, L4, L5] = await Promise.allSettled([
       toolchain.frameworkCompile(contents, context),
-      toolchain.typecheck(all, context),
+      toolchain.typecheck([...typechecked], context),
       toolchain.lint(all, context),
     ]);
-    checked = { files, outputs: new Set(all), L3, L4, L5 };
+    checked = { files, outputs: new Set(all), fixtures, typechecked, L3, L4, L5 };
   } catch (error) {
     failure = `The ${target} toolchain did not run: ${describeError(error)}`;
   }
@@ -90,8 +103,12 @@ describe(`toolchain:${target}`, () => {
           if (problems.length) throw new Error(problems.join("\n"));
         },
         L4: () => {
-          const { files, outputs, L4 } = ran();
-          const problems = typecheckProblems(results("L4", L4), casesFiles(files, info), outputs);
+          const { files, fixtures, typechecked, L4 } = ran();
+          const messages = results("L4", L4);
+          const problems = [
+            ...typecheckProblems(messages, casesFiles(files, info), typechecked),
+            ...consumerProblems(target, info, fixtures.get(info.id) ?? [], messages),
+          ];
           if (problems.length) throw new Error(problems.join("\n"));
         },
         L5: () => {
@@ -167,6 +184,25 @@ async function outputFiles(): Promise<Map<string, string[]>> {
     files.set(info.id, paths);
   }
   return files;
+}
+
+/**
+ * Each case's consumer fixtures, for the cases with output: the committed files, or, with a
+ * canary, copies beside its compile under `.canary/<id>/<target>/consumers/`.
+ */
+function caseFixtures(files: Map<string, string[]>): Map<string, Fixture[]> {
+  const fixtures = new Map<string, Fixture[]>();
+  for (const id of files.keys()) {
+    const paths = consumerFixtures(target, id);
+    if (!paths.length) continue;
+    fixtures.set(
+      id,
+      harness.canary
+        ? copyFixtures(paths, join(CANARY_DIR, harness.canary, target), id)
+        : paths.map((path) => ({ path, checked: path })),
+    );
+  }
+  return fixtures;
 }
 
 function listFiles(directory: string): string[] {

@@ -36,5 +36,5 @@
     "typeCheckHostBindings": true,
     "extendedDiagnostics": { "defaultCategory": "error" }
   },
-  "include": ["../../integration/cases/**/__output__/angular/**/*.ts"]
+  "include": ["../../integration/cases/**/__output__/angular/**/*.ts", "consumers/**/*.ts"]
 }

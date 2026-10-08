@@ -14,6 +14,6 @@
     // Only Astro's own types: nothing from @types/* hoisted elsewhere in the workspace.
     "types": []
   },
-  "include": ["../../integration/cases/**/__output__/astro/**/*.astro"],
+  "include": ["../../integration/cases/**/__output__/astro/**/*.astro", "consumers/**/*.astro"],
   "exclude": []
 }
