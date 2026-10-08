@@ -193,8 +193,10 @@ export async function ufResetInput(context: InputCommandContext): Promise<void> 
 
 /**
  * `ufComponentEvents`: the events the component of a case declares, from the project's own
- * compile of the case's `.uf.tsx` (`recordCompiledModule`), so a mount listens to exactly those
- * (an undeclared `onX` would fall through to Vue's root as a native listener).
+ * compile of the case's main `.uf.tsx` (`recordCompiledModule`), so a mount listens to exactly
+ * those (an undeclared `onX` would fall through to Vue's root as a native listener). The main
+ * source is the case's only one, or the one its `case.json` names (ADR-0057): the spec mounts
+ * it, and its children's events reach only it.
  */
 export function ufComponentEvents(
   context: CommandProject,
@@ -202,13 +204,16 @@ export function ufComponentEvents(
 ): ComponentEventsResult {
   const { target, harness } = projectHarness(context);
   const directory = caseDirectory(harness, request.case);
+  const main = harness.cases[request.case]?.main;
   const sources = readdirSync(directory).filter((file) => file.endsWith(".uf.tsx"));
-  if (sources.length !== 1) {
+  if (main === undefined ? sources.length !== 1 : !sources.includes(main)) {
     throw new Error(
-      `[uf] Case ${request.case} must hold exactly one .uf.tsx input to mount, found ${sources.length}.`,
+      main === undefined
+        ? `[uf] Case ${request.case} must hold one .uf.tsx input, or name its main one in case.json, to mount; found ${sources.length}.`
+        : `[uf] Case ${request.case} names ${main} as its main input, which it does not hold.`,
     );
   }
-  return { events: compiledEvents(join(directory, sources[0]!), target) };
+  return { events: compiledEvents(join(directory, main ?? sources[0]!), target) };
 }
 
 /** Every command the testing API needs, keyed by the name the browser calls. */

@@ -335,6 +335,37 @@ describe("ufComponentEvents", () => {
     expect(() => compiledEvents(source, "react")).toThrow(/produced no IR/);
   });
 
+  it("answers with the events of the main source of a case of several (ADR-0057)", () => {
+    const directory = join(harness.casesDir, "forms", "form");
+    mkdirSync(directory, { recursive: true });
+    const form = join(directory, "Form.uf.tsx");
+    const field = join(directory, "Field.uf.tsx");
+    writeFileSync(form, "");
+    writeFileSync(field, "");
+    recordCompiledModule({
+      file: form,
+      target: "vue",
+      ir: module("forms/form/Form.uf.tsx", [{ name: "submit", optional: [] }]),
+    });
+    recordCompiledModule({
+      file: field,
+      target: "vue",
+      ir: module("forms/form/Field.uf.tsx", [{ name: "clear", optional: [] }]),
+    });
+    const cases = (config: HarnessContext["cases"][string]) => ({
+      cases: { ...harness.cases, "forms/form": config },
+    });
+    expect(
+      ufComponentEvents(project("vue", cases({ main: "Form.uf.tsx" })), { case: "forms/form" }),
+    ).toEqual({ events: [{ name: "submit", optional: [] }] });
+    expect(() => ufComponentEvents(project("vue", cases({})), { case: "forms/form" })).toThrow(
+      "[uf] Case forms/form must hold one .uf.tsx input, or name its main one in case.json, to mount; found 2.",
+    );
+    expect(() =>
+      ufComponentEvents(project("vue", cases({ main: "Missing.uf.tsx" })), { case: "forms/form" }),
+    ).toThrow("[uf] Case forms/form names Missing.uf.tsx as its main input, which it does not hold.");
+  });
+
   it("refuses a module whose components declare different events", () => {
     expect(eventsOfModule(module("a.uf.tsx", [], []))).toEqual([]);
     expect(() =>

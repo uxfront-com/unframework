@@ -8,22 +8,37 @@ import type { CaseConfig } from "@unframework/testing/node";
 
 import { CASES_DIR } from "./paths.ts";
 
+/** One `.uf.tsx` input of a case. */
+export interface CaseSource {
+  /** The `.uf.tsx` file (absolute). */
+  source: string;
+  /** Its file name relative to the cases directory, as the compiler sees it. */
+  filename: string;
+  /** Its IR snapshot, relative to `__output__/`: `ir.json` for the main source (ADR-0057). */
+  ir: string;
+}
+
 /** One case of the corpus. */
 export interface CaseInfo {
   /** `area/name`, relative to the cases directory. */
   id: string;
   /** The case directory (absolute). */
   dir: string;
-  /** The `.uf.tsx` input (absolute). */
+  /** The main `.uf.tsx` input (absolute): what the spec and the SSR scenarios render. */
   source: string;
-  /** The input's file name relative to the cases directory, as the compiler sees it. */
+  /** The main input's file name relative to the cases directory, as the compiler sees it. */
   filename: string;
+  /**
+   * Every `.uf.tsx` input, sorted by file name: the main one, and its children or harness
+   * parents (ADR-0057). Each compiles to every target.
+   */
+  sources: CaseSource[];
   /** The browser spec, absent for diagnostics cases. */
   spec: string | undefined;
   config: CaseConfig;
 }
 
-const CASE_KEYS = new Set(["description", "ssr", "axe", "requires"]);
+const CASE_KEYS = new Set(["description", "main", "ssr", "axe", "requires"]);
 
 /** Every case, sorted by id. Throws on a malformed case, so a broken corpus is loud. */
 export function listCases(casesDir: string = CASES_DIR): CaseInfo[] {
@@ -51,24 +66,46 @@ export function caseConfigs(cases: readonly CaseInfo[]): Record<string, CaseConf
 function readCase(casesDir: string, id: string): CaseInfo {
   const dir = join(casesDir, id);
   const files = readdirSync(dir);
-  const inputs = files.filter((file) => file.endsWith(".uf.tsx"));
-  if (inputs.length !== 1) {
-    // Harness components (slot content, plan §7.1) arrive with slots, in M3.
-    throw new Error(
-      `Case ${id} must hold exactly one .uf.tsx input, found ${inputs.length ? inputs.join(", ") : "none"}.`,
-    );
-  }
+  const inputs = files.filter((file) => file.endsWith(".uf.tsx")).toSorted();
+  if (!inputs.length) throw new Error(`Case ${id} must hold a .uf.tsx input, found none.`);
   const specs = files.filter((file) => file.endsWith(".test.ts"));
   if (specs.length > 1) throw new Error(`Case ${id} has more than one spec: ${specs.join(", ")}.`);
-  const source = join(dir, inputs[0]!);
+  const config = readConfig(id, join(dir, "case.json"));
+  const main = mainSource(id, inputs, config.main);
+  const sources = inputs.map((input) => ({
+    source: join(dir, input),
+    filename: `${id}/${input}`,
+    ir: input === main ? "ir.json" : `ir.${input.slice(0, -".uf.tsx".length)}.json`,
+  }));
   return {
     id,
     dir,
-    source,
-    filename: `${id}/${basename(source)}`,
+    source: join(dir, main),
+    filename: `${id}/${main}`,
+    sources,
     spec: specs[0] && join(dir, specs[0]),
-    config: readConfig(id, join(dir, "case.json")),
+    config,
   };
+}
+
+/**
+ * The main input of a case (ADR-0057): its only one, or the one `case.json`'s `main` names
+ * when it holds several. No rule of names can pick it: a parent and its children sit side by
+ * side, and the corpus already holds cases named unlike their component.
+ */
+function mainSource(id: string, inputs: readonly string[], main: string | undefined): string {
+  if (main === undefined) {
+    if (inputs.length === 1) return inputs[0]!;
+    throw new Error(
+      `Case ${id} holds ${inputs.join(", ")}: name the one the spec mounts in case.json, "main": "${inputs[0]}".`,
+    );
+  }
+  if (!inputs.includes(main)) {
+    throw new Error(
+      `Case ${id}: case.json's "main" names ${JSON.stringify(main)}, which is not one of its inputs (${inputs.join(", ")}).`,
+    );
+  }
+  return main;
 }
 
 function readConfig(id: string, file: string): CaseConfig {
@@ -80,6 +117,9 @@ function readConfig(id: string, file: string): CaseConfig {
   }
   if (config.description !== undefined && typeof config.description !== "string") {
     problems.push(`"description" must be a string`);
+  }
+  if (config.main !== undefined && typeof config.main !== "string") {
+    problems.push(`"main" must be the file name of one of the case's .uf.tsx inputs`);
   }
   // Why every test of the case requires a capability (`CaseConfig.requires`, ADR-0050).
   if (
