@@ -214,8 +214,15 @@ function captured(plan: SetupPlan, item: SetupItem): Set<BindingId> {
     case "Lifecycle":
       add(item.callback.body);
       break;
+    case "Provide":
+      add(item.value);
+      break;
+    case "Inject":
+      add(item.fallback);
+      break;
     case "TemplateRef":
     case "Id":
+    case "Model":
       break;
     default:
       unreachable(item);
@@ -296,6 +303,11 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
       return [block(watchEffectCode(plan, item))];
     case "Lifecycle":
       return [block(lifecycleCode(plan, item))];
+    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+    case "Model":
+    case "Provide":
+    case "Inject":
+      return [];
     default:
       return unreachable(item);
   }
@@ -598,6 +610,12 @@ function tracked(plan: SetupPlan, id: BindingId, track: string): { tracked: stri
     case "emit":
       // The analyser lets a watcher or `watchEffect` read none of them (UF2010, UF2020).
       throw new Error(`A ${binding.kind} is no reactive value a task can track.`);
+    case "model":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
+      throw new Error(`A ${binding.kind} is not tracked yet.`);
     default:
       return unreachable(binding.kind);
   }

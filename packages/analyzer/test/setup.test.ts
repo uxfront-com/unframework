@@ -51,6 +51,12 @@ function itemOf(source: string, item: SetupItem): string {
       return `WatchEffect ${functionOf(source, item.effect)}`;
     case "Lifecycle":
       return `Lifecycle ${item.hook} ${functionOf(source, item.callback)}`;
+    case "Model":
+      return `Model ${name} "${item.name}"${item.required ? " required" : ""}`;
+    case "Provide":
+      return `Provide ${item.key} = ${codeOf(source, item.value)}`;
+    case "Inject":
+      return `Inject ${name} ${item.key}${item.fallback ? ` ?? ${codeOf(source, item.fallback)}` : ""}`;
   }
 }
 

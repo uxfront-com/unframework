@@ -22,6 +22,7 @@ import { builtinTargets } from "@unframework/compiler";
 import type { CompilerPlugin, TargetName } from "@unframework/compiler";
 import type { Diagnostic } from "@unframework/diagnostics";
 import {
+  childrenOf,
   createElement,
   createStaticAttribute,
   createStaticStyle,
@@ -743,6 +744,11 @@ function elementsOf(nodes: readonly (RenderNode | FragmentNode)[]): ElementNode[
         return node.branches.flatMap((branch) => elementsOf(branch.children));
       case "For":
         return elementsOf([node.body]);
+      // Composition (ADR-0055): the elements of fills, fallbacks and a `Dynamic` node's children.
+      case "Component":
+      case "SlotOutlet":
+      case "Dynamic":
+        return elementsOf(childrenOf(node));
       case "Text":
       case "Interpolation":
         return [];
@@ -880,9 +886,12 @@ function topElements(nodes: readonly RenderNode[]): ElementNode[] {
       case "If":
         return node.branches.flatMap((branch) => topElements(branch.children));
       case "For":
-        return [node.body];
+        return node.body.kind === "Element" ? [node.body] : [];
       case "Text":
       case "Interpolation":
+      case "Component":
+      case "SlotOutlet":
+      case "Dynamic":
         return [];
       default:
         return unreachable(node);

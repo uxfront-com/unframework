@@ -4,7 +4,7 @@ export {
   CAPABILITY_PREREQUISITES,
   defineTarget,
 } from "./target.ts";
-export { requiredCapabilities } from "./capabilities.ts";
+export { compositionUse, requiredCapabilities } from "./capabilities.ts";
 export { eventCalls, handedControls, handlerControls, ownControls } from "./controls.ts";
 export type { ControlTest, EventCall, HandlerControls, LiftedControl } from "./controls.ts";
 export type {

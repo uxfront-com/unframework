@@ -46,6 +46,11 @@ export function assertedPaths(
     case "localFn":
     case "localVar":
     case "emit":
+    case "model":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
       return [];
     default:
       return binding.kind satisfies never;
@@ -111,6 +116,7 @@ function spansOf(reference: CodeReference): Span[] {
     case "Global":
     case "Event":
     case "Api":
+    case "Slot":
       return [reference.span];
     default:
       return reference satisfies never;
@@ -144,6 +150,7 @@ function movedReference(reference: CodeReference, moved: (span: Span) => Span): 
     case "Global":
     case "Event":
     case "Api":
+    case "Slot":
       return { ...reference, span: moved(reference.span) };
     default:
       return reference satisfies never;

@@ -246,6 +246,11 @@ function isProp(kind: BindingKind): boolean {
     case "localFn":
     case "localVar":
     case "emit":
+    case "model":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
       return false;
     default:
       return kind satisfies never;

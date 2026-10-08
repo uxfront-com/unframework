@@ -246,6 +246,7 @@ export function removeSpans(code: Code, spans: readonly Span[]): Code {
         case "Global":
         case "Api":
         case "Event":
+        case "Slot":
           return { ...reference, span: moved(reference.span) };
         case "Write":
           return {
@@ -343,8 +344,15 @@ export function usedFunctions(component: UfComponent, removed: ReadonlySet<numbe
       case "Lifecycle":
         visit(item.callback.body.refs);
         break;
+      case "Provide":
+        visit(item.value.refs);
+        break;
+      case "Inject":
+        if (item.fallback) visit(item.fallback.refs);
+        break;
       case "TemplateRef":
       case "Id":
+      case "Model":
         break;
       default:
         unreachable(item);

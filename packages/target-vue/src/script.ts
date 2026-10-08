@@ -151,10 +151,13 @@ function declares(item: SetupItem): boolean {
     case "Const":
     case "Variable":
     case "Function":
+    case "Model":
+    case "Inject":
       return true;
     case "Watch":
     case "WatchEffect":
     case "Lifecycle":
+    case "Provide":
       return false;
     default:
       return unreachable(item);
@@ -247,6 +250,11 @@ function itemCode(
       const hook = imports.add("vue", lifecycleHook(item.hook));
       return `${hook}(${fn(item.callback, "client")});`;
     }
+    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+    case "Model":
+    case "Provide":
+    case "Inject":
+      return "";
     default:
       return unreachable(item);
   }

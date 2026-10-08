@@ -43,6 +43,132 @@ export interface UfModule {
    * components that use them.
    */
   types: TypeDeclaration[];
+  /**
+   * The module's imports of other `.uf.tsx` modules, in source order, each with the API the
+   * resolver gave for it (ADR-0053). Absent when it imports none.
+   */
+  imports?: ModuleImport[];
+  /** The injection keys the module declares and exports, in source order (ADR-0054). */
+  keys?: InjectionKeyDeclaration[];
+}
+
+/**
+ * An import of another `.uf.tsx` module: `import Field from "./Field.uf.tsx"` (ADR-0053). The
+ * analyser records the API it resolved, so every target emits from the IR alone (P5, P6).
+ */
+export interface ModuleImport {
+  /** The specifier as written, which ends in `.uf.tsx`. */
+  specifier: string;
+  /** The resolved `.uf.tsx`, relative to the importer, with forward slashes. */
+  file: string;
+  /** What the resolver returned for the module. */
+  api: ModuleApi;
+  /** The names the import binds, in source order. */
+  names: ImportedName[];
+  /** The import declaration. */
+  span: Span;
+}
+
+/** A name an import binds: a component, or an injection key. */
+export interface ImportedName {
+  kind: "Component" | "Key";
+  /** The imported name: `default` for a default import. */
+  imported: string;
+  /** The local name the module uses. */
+  local: string;
+  span: Span;
+}
+
+/**
+ * `export const ThemeKey: InjectionKey<Theme> = Symbol("theme")` (ADR-0054): a key `provide` and
+ * `inject` name, declared in the providing `.uf.tsx`.
+ */
+export interface InjectionKeyDeclaration {
+  /** The exported `const`'s name. */
+  name: string;
+  /** The `Symbol`'s description: a string literal's value. */
+  description: string;
+  /** The value's type, `Theme` in `InjectionKey<Theme>`, as written. */
+  type: TypeText;
+  span: Span;
+}
+
+/**
+ * The public API of a `.uf.tsx` module, as the resolver returns it (ADR-0053): what a parent
+ * reads of its children. It points into another file, so it holds types as text and no spans.
+ */
+export interface ModuleApi {
+  /** The module's file, relative to the importer, with forward slashes. */
+  file: string;
+  /** The module's components, in source order, its non-exported ones included. */
+  components: ComponentApi[];
+  /** The injection keys the module exports, in source order. */
+  keys: KeyApi[];
+}
+
+/** What a parent reads of a child component (ADR-0053, ADR-0055). */
+export interface ComponentApi {
+  name: string;
+  /** How the module exports it: as the default, by name, or not at all (a sibling file). */
+  export: "default" | "named" | "local";
+  /** The props, in member order. */
+  props: ApiMember[];
+  /** The events `defineEmits` declares, in member order. */
+  events: ApiEvent[];
+  /** The models `defineModel` declares, in source order. */
+  models: ApiMember[];
+  /** The slots `defineSlots` declares, in member order. */
+  slots: ApiSlot[];
+  /** The names `defineExpose` exposes, in source order. */
+  exposes: string[];
+  /** `false` where `defineOptions({ inheritAttrs: false })` turns fallthrough off. */
+  inheritAttrs: boolean;
+  /**
+   * What the component's render root is: one element, one component, or anything else (a
+   * fragment, a conditional, a slot outlet). Fallthrough and Angular's host need it (ADR-0056).
+   */
+  root: "element" | "component" | "other";
+  /** The root element's tag, when the root is an element. */
+  rootTag?: string;
+}
+
+/** A prop or a model of a child's API: its name, its optionality and its type as written. */
+export interface ApiMember {
+  name: string;
+  optional: boolean;
+  type: string;
+}
+
+/**
+ * An event of a child's API: its name and its payload's members, which a target's listener
+ * spreads (Angular's tuple payload rule, ADR-0047).
+ */
+export interface ApiEvent {
+  /** @pattern ^[a-z][A-Za-z0-9]*$ */
+  name: string;
+  parameters: ApiEventParameter[];
+}
+
+/** A member of an event's payload in a child's API. */
+export interface ApiEventParameter {
+  name: string;
+  optional?: true;
+  type: string;
+}
+
+/** A slot of a child's API: its name, its optionality and its props' type as written. */
+export interface ApiSlot {
+  name: string;
+  optional: boolean;
+  /** The slot's props' type, for a scoped slot. */
+  props?: string;
+}
+
+/** An injection key of a child module's API. */
+export interface KeyApi {
+  name: string;
+  description: string;
+  type: string;
 }
 
 /** An export of a module. */
@@ -92,6 +218,12 @@ export interface UfComponent {
    * Absent when it declares none.
    */
   emits?: Emits;
+  /** The slots the component declares with `const slots = defineSlots<{ … }>()` (ADR-0054). */
+  slots?: Slots;
+  /** The local functions the component exposes with `defineExpose({ … })` (ADR-0054). */
+  exposes?: Exposes;
+  /** Set by `defineOptions({ inheritAttrs: false })`: no `class` or `style` falls through. */
+  inheritAttrs?: false;
   /**
    * Every binding the component declares, by the start of its span: the props (each
    * destructured prop, or every prop in the object form), the setup's declarations, the `emit`
@@ -178,7 +310,13 @@ export interface Binding {
  * - `localConst`: a setup `const` holding a value, `useId()`'s included;
  * - `localFn`: a setup function, `function save() {…}` or `const save = () => …`;
  * - `localVar`: a setup `let`, which holds what no template reads (a timer's id);
- * - `emit`: the function `defineEmits` returns.
+ * - `emit`: the function `defineEmits` returns;
+ * - `model`: `const open = defineModel<boolean>("open")`, read and written as `open.value`, as
+ *   state is (ADR-0054);
+ * - `slots`: the object `defineSlots` returns;
+ * - `slotScope`: a scoped fill's parameter, or a name its pattern binds;
+ * - `context`: `const theme = inject(ThemeKey)`, an injected value, read-only;
+ * - `component`: a component named in `<component is>`'s set.
  */
 export type BindingKind =
   | "prop"
@@ -189,7 +327,12 @@ export type BindingKind =
   | "localConst"
   | "localFn"
   | "localVar"
-  | "emit";
+  | "emit"
+  | "model"
+  | "slots"
+  | "slotScope"
+  | "context"
+  | "component";
 
 /**
  * An expression the analyser accepted, with every identifier in it resolved (plan §5.4).
@@ -204,7 +347,19 @@ export interface Expression {
 }
 
 /** A resolved identifier in an expression. */
-export type Reference = BindingReference | GlobalReference;
+export type Reference = BindingReference | GlobalReference | SlotReference;
+
+/**
+ * `slots.title` as a condition (ADR-0054): whether the parent filled the slot. Only a render
+ * expression holds one, never setup code; rendering a slot is a {@link SlotOutletNode}.
+ */
+export interface SlotReference {
+  kind: "Slot";
+  /** The slot's name, as `defineSlots` declares it. */
+  slot: string;
+  /** The member expression, `slots.title`. */
+  span: Span;
+}
 
 /** A read of one of the component's bindings. */
 export interface BindingReference {
@@ -310,16 +465,17 @@ export type CodeReference =
   | WriteReference
   | EmitReference
   | ApiReference
-  | EventReference;
+  | EventReference
+  | SlotReference;
 
 /**
- * A write of a `state` binding's value or of a `localVar`: `count.value = 1`, `count.value += step`,
+ * A write of a `state` or `model` binding's value or of a `localVar`: `count.value = 1`, `count.value += step`,
  * `count.value++`, `timer = setInterval(…)` (ADR-0045). A write is a statement of its own: the
  * whole expression of an expression statement, or the whole body of an arrow function.
  */
 export interface WriteReference {
   kind: "Write";
-  /** A `state` or a `localVar` binding. */
+  /** A `state`, a `model` or a `localVar` binding. */
   binding: BindingId;
   /**
    * `=`, an arithmetic or logical compound assignment operator (`+=`, `??=`, …), or `++` or `--`.
@@ -481,7 +637,10 @@ export type SetupItem =
   | FunctionItem
   | WatchItem
   | WatchEffectItem
-  | LifecycleItem;
+  | LifecycleItem
+  | ModelItem
+  | ProvideItem
+  | InjectItem;
 
 /** `const count = ref(initial)`: a `state` binding (ADR-0046). */
 export interface StateItem {
@@ -613,6 +772,76 @@ export interface LifecycleItem {
   span: Span;
 }
 
+/**
+ * `const open = defineModel<boolean>("open", { default: false })`: a `model` binding (ADR-0054),
+ * a prop the parent may bind two ways.
+ */
+export interface ModelItem {
+  kind: "Model";
+  binding: BindingId;
+  /** The model's name, the string literal `defineModel` takes. */
+  name: string;
+  /** The type argument as written. */
+  type?: TypeText;
+  /** The `default` option: a static value, as a prop's default is. */
+  default?: Expression;
+  /** `required: true`. */
+  required?: true;
+  span: Span;
+}
+
+/** `provide(ThemeKey, theme)` (ADR-0054): a value the component's descendants inject. */
+export interface ProvideItem {
+  kind: "Provide";
+  /** The local name of the module's key or of an imported one. */
+  key: string;
+  /** The provided value. */
+  value: Code;
+  span: Span;
+}
+
+/** `const theme = inject(ThemeKey, fallback)`: a `context` binding (ADR-0054). */
+export interface InjectItem {
+  kind: "Inject";
+  binding: BindingId;
+  /** The local name of the module's key or of an imported one. */
+  key: string;
+  /** What `inject` gives where no ancestor provides the key. */
+  fallback?: Code;
+  span: Span;
+}
+
+/** The slots a component declares: `const slots = defineSlots<{ title?: () => any }>()`. */
+export interface Slots {
+  /** The `slots` binding. */
+  binding: BindingId;
+  /** The type argument as written. */
+  type: TypeText;
+  /** The slots, in member order, each name once. */
+  slots: SlotDeclaration[];
+  /** The declaration, from `const` to its end. */
+  span: Span;
+}
+
+/** A slot a component declares (ADR-0054). */
+export interface SlotDeclaration {
+  /** `default`, or the name of a named slot. */
+  name: string;
+  /** Whether the member is optional: every slot is (UF2029), so a parent may leave it empty. */
+  optional: boolean;
+  /** The props a scoped slot passes, as written: the type of the member's parameter. */
+  props?: TypeText;
+  span: Span;
+}
+
+/** What a component exposes with `defineExpose({ focus, clear })` (ADR-0054). */
+export interface Exposes {
+  /** The exposed `localFn` bindings, in source order. */
+  functions: BindingId[];
+  /** The call. */
+  span: Span;
+}
+
 /** The events a component declares: `const emit = defineEmits<{ change: [value: number] }>()`. */
 export interface Emits {
   /** The `emit` binding. */
@@ -651,7 +880,98 @@ export interface EventParameter {
 }
 
 /** A node of the render tree. */
-export type RenderNode = ElementNode | TextNode | InterpolationNode | IfNode | ForNode;
+export type RenderNode =
+  | ElementNode
+  | TextNode
+  | InterpolationNode
+  | IfNode
+  | ForNode
+  | ComponentNode
+  | SlotOutletNode
+  | DynamicNode;
+
+/**
+ * A component element, `<Field label="Name" onClear={reset} />` (ADR-0053): an imported
+ * component, one of the module's own, or the component itself.
+ */
+export interface ComponentNode {
+  kind: "Component";
+  /** The local name of an imported component, or the name of one of the module's own. */
+  component: string;
+  /** Each attribute, each name set once. */
+  attributes: ComponentAttribute[];
+  /** What fills the child's slots: the children as the default slot's, then the named ones. */
+  fills: SlotFill[];
+  span: Span;
+}
+
+/**
+ * Where a component renders a slot, `{slots.title?.()}` or `{slots.item?.({ item })}`, with the
+ * fallback after `??` (ADR-0054).
+ */
+export interface SlotOutletNode {
+  kind: "SlotOutlet";
+  /** The slot's name, as `defineSlots` declares it. */
+  slot: string;
+  /** The object a scoped slot is called with. */
+  props?: Expression;
+  /** What renders when the parent leaves the slot empty: nothing when empty. */
+  fallback: RenderNode[];
+  span: Span;
+}
+
+/**
+ * `<component is={…} />` over a statically known set (ADR-0054): all tags, or all components.
+ * Tag candidates take element attributes and children; component candidates take component
+ * attributes and fills, each declared by every candidate.
+ */
+export interface DynamicNode {
+  kind: "Dynamic";
+  /** What chooses the candidate: an expression whose value is one of `candidates`. */
+  is: Expression;
+  /** The set it chooses from, in source order. */
+  candidates: DynamicCandidate[];
+  attributes: (Attribute | ComponentAttribute)[];
+  /** The children of a tag candidate: none for components, whose content is `fills`. */
+  children: RenderNode[];
+  /** The fills of component candidates. */
+  fills?: SlotFill[];
+  span: Span;
+}
+
+/** A candidate of `<component is>`: a tag, or a component by its local name. */
+export type DynamicCandidate = TagCandidate | ComponentCandidate;
+
+/** A tag `<component is>` may render: an HTML element's name. */
+export interface TagCandidate {
+  kind: "Tag";
+  /** @pattern ^[a-z][a-z0-9]*$ */
+  tag: string;
+}
+
+/** A component `<component is>` may render: a `component` binding's component. */
+export interface ComponentCandidate {
+  kind: "Component";
+  /** The local name of an imported component, or the name of one of the module's own. */
+  component: string;
+}
+
+/**
+ * What fills a child's slot (ADR-0054): the children for the default slot, an arrow function in
+ * the slot object for a named one, with its parameter for a scoped one, or the parent's own slot
+ * passed on.
+ */
+export interface SlotFill {
+  /** The child's slot: `default`, or a named slot. */
+  slot: string;
+  /** A scoped fill's parameter, whose names are `slotScope` bindings. */
+  parameter?: Parameter;
+  /** What fills the slot: none for a forwarded one. */
+  children: RenderNode[];
+  /** The parent's own slot this fill passes on, `{{ title: slots.title }}`, with no children. */
+  forward?: string;
+  span: Span;
+}
 
 /** An element: an HTML element such as `<p>`, or an SVG element inside an `<svg>`. */
 export interface ElementNode {
@@ -727,8 +1047,8 @@ export interface ForNode {
   index?: BindingId;
   /** The `key` of the callback's root, lifted off the element: `key` is no attribute. */
   key: Expression;
-  /** The callback's root element, without its `key`. */
-  body: ElementNode;
+  /** The callback's root element or component, without its `key` (ADR-0053). */
+  body: ElementNode | ComponentNode;
   span: Span;
 }
 
@@ -748,7 +1068,78 @@ export type Attribute =
   | StyleAttribute
   | SpreadAttribute
   | EventAttribute
+  | RefAttribute
+  | ModelAttribute;
+
+/**
+ * An attribute on a component (ADR-0053, ADR-0054): a prop, a listener of an event the child
+ * declares, a model's binding, or a `class`, a `style` (fallthrough) or a `ref` (what it exposes).
+ */
+export type ComponentAttribute =
+  | PropAttribute
+  | ListenerAttribute
+  | ModelBindingAttribute
+  | ClassAttribute
+  | StyleAttribute
   | RefAttribute;
+
+/** A prop passed to a component, `label="Name"` or `label={name}`: a static value is a literal. */
+export interface PropAttribute {
+  kind: "Prop";
+  /** A prop the child declares. */
+  name: string;
+  value: Expression;
+  span: Span;
+}
+
+/**
+ * A listener of an event a child declares, `onClear={reset}` (ADR-0053): its handler's
+ * parameters are the event's payload, never a DOM event.
+ */
+export interface ListenerAttribute {
+  kind: "Listener";
+  /** The event's name, as the child's `defineEmits` declares it. */
+  event: string;
+  handler: Handler;
+  span: Span;
+}
+
+/** `v-model:open={open.value}` on a component: binds a model the child declares (ADR-0054). */
+export interface ModelBindingAttribute {
+  kind: "ModelBinding";
+  /** The child's model. */
+  model: string;
+  /** A `state` or `model` binding's `.value`. */
+  value: Expression;
+  span: Span;
+}
+
+/**
+ * `v-model={text.value}` on a form control (ADR-0054): binds the control's value, or its
+ * checked state, two ways.
+ */
+export interface ModelAttribute {
+  kind: "Model";
+  /** A `state` or `model` binding's `.value`. */
+  value: Expression;
+  /** The control, from its tag and its `type`. */
+  control:
+    | "text"
+    | "number"
+    | "textarea"
+    | "select"
+    | "select-multiple"
+    | "checkbox"
+    | "checkbox-group"
+    | "radio";
+  /** `v-model_trim`: the value is trimmed. */
+  trim?: true;
+  /** `v-model_lazy`: the value is written on `change`, not on `input`. */
+  lazy?: true;
+  /** `v-model_number`: the value is parsed as a number. */
+  number?: true;
+  span: Span;
+}
 
 /**
  * An event listener, `onClick={save}` or `onKeydownCapture={(event) => …}` (ADR-0047): it renders

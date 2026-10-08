@@ -555,6 +555,12 @@ export function printMarkup(
               );
         case "For":
           return piecesItems(at.dialect.list(listParts(node)), at);
+        // Composition (ADR-0055) is not printed yet: each target's `emit` reports UF1002 for it
+        // before printing (`compositionUse`), until M3's lanes print it.
+        case "Component":
+        case "SlotOutlet":
+        case "Dynamic":
+          return [];
         default:
           return unreachable(node);
       }
@@ -790,6 +796,9 @@ export function printMarkup(
           printed.push(
             ...of.refAttribute({ attribute, name: bindingName(attribute.binding) }, context),
           );
+          break;
+        // Not printed yet, as composition's nodes.
+        case "Model":
           break;
         default:
           unreachable(attribute);
@@ -1111,6 +1120,9 @@ function attributeName(attribute: Attribute): string {
       return `@${attribute.event}`;
     case "Ref":
       return "ref";
+    // Not printed yet, as composition's nodes.
+    case "Model":
+      return "v-model";
     default:
       return unreachable(attribute);
   }

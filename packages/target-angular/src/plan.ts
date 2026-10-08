@@ -207,6 +207,11 @@ function outputSafeName(name: string, kind: BindingKind): string {
     case "prop":
     case "loopVar":
     case "emit":
+    case "model":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
       return `current${pascal}`;
     default:
       return unreachable(kind);
@@ -252,6 +257,13 @@ function formsOf(component: UfComponent): {
       case "localFn":
       case "localVar":
         break;
+      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+      case "model":
+      case "slots":
+      case "slotScope":
+      case "context":
+      case "component":
+        break;
       default:
         unreachable(binding.kind);
     }
@@ -295,6 +307,9 @@ function formsOf(component: UfComponent): {
       case "Watch":
       case "WatchEffect":
       case "Lifecycle":
+      case "Model":
+      case "Provide":
+      case "Inject":
         break;
       default:
         unreachable(item);
@@ -341,8 +356,15 @@ function escapingFunctions(component: UfComponent): Set<BindingId> {
       case "Lifecycle":
         visit(item.callback.body);
         break;
+      case "Provide":
+        visit(item.value);
+        break;
+      case "Inject":
+        if (item.fallback) visit(item.fallback);
+        break;
       case "TemplateRef":
       case "Id":
+      case "Model":
         break;
       default:
         unreachable(item);
@@ -364,6 +386,11 @@ export function isLoopVariable(kind: BindingKind): boolean {
     case "localFn":
     case "localVar":
     case "emit":
+    case "model":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
       return false;
     default:
       return unreachable(kind);
@@ -383,6 +410,11 @@ function isFunction(kind: BindingKind): boolean {
     case "localConst":
     case "localVar":
     case "emit":
+    case "model":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
       return false;
     default:
       return unreachable(kind);
@@ -397,6 +429,7 @@ function isFunction(kind: BindingKind): boolean {
 function readLazily(kind: BindingKind): boolean {
   switch (kind) {
     case "prop":
+    case "model":
     case "derived":
       return true;
     case "loopVar":
@@ -406,6 +439,10 @@ function readLazily(kind: BindingKind): boolean {
     case "localFn":
     case "localVar":
     case "emit":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
       return false;
     default:
       return unreachable(kind);

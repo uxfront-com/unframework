@@ -2,6 +2,7 @@ import {
   bindingOf,
   boundJsxAttribute,
   componentTypes,
+  compositionUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
@@ -99,8 +100,64 @@ export const qwik: Target = defineTarget({
     "style-binding": { support: "native" },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
+    component: { support: "native" },
+    "component-event": { support: "native" },
+    "default-slot": { support: "native" },
+    "named-slot": {
+      support: "emulated",
+      helper: "<slot>$",
+      note: "A named slot is a QRL render prop, `<slot>$`: Qwik's `<Slot>` takes no props and has no presence API, and a plain function prop does not serialise (ADR-0054).",
+    },
+    "scoped-slot": {
+      support: "emulated",
+      helper: "<slot>$",
+      note: "A named slot is a QRL render prop, `<slot>$`: Qwik's `<Slot>` takes no props and has no presence API, and a plain function prop does not serialise (ADR-0054).",
+    },
+    "slot-fallback": { support: "native" },
+    "default-slot-presence": {
+      support: "unsupported",
+      code: "UF4001",
+      severity: "error",
+      reason:
+        "Qwik's `<Slot />` has no presence API, and forwarding the default slot needs its presence (ADR-0054).",
+    },
+    "slot-forwarding": { support: "native" },
+    model: { support: "native" },
+    "two-way-binding": { support: "native" },
+    "model-array": {
+      support: "emulated",
+      helper: "toggle",
+      note: "A checkbox group's array goes through an inline helper, `toggle`, and a multiple select's through `selectedValues`, as Vue's `vModelCheckbox` and `vModelSelect` do (ADR-0054).",
+    },
+    "model-modifiers": {
+      support: "emulated",
+      helper: "modelText",
+      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
+    },
+    fallthrough: { support: "native" },
+    "contextual-root": { support: "native" },
+    expose: {
+      support: "emulated",
+      helper: "exposeRef",
+      note: "Qwik has no component instance, so a component ref is a signal the child fills with what it exposes, through an inline helper, `exposeRef` (ADR-0054).",
+    },
+    context: { support: "native" },
+    "reactive-context": { support: "native" },
+    "dynamic-component": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    // Composition's cells are declared before this target emits it (ADR-0055): until M3's lane
+    // for Qwik lands, a component that uses it is reported, never emitted without it (P2).
+    const composition = compositionUse(context.module, component);
+    if (composition) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message: `The qwik target does not emit ${composition.what} yet: composition lands in M3.`,
+        span: composition.span,
+      });
+      return [];
+    }
     const { module } = context;
     // Every name the source declares or reads is taken before the output names its own, but for
     // the authoring APIs code calls (`nextTick`), which the output replaces with its own.

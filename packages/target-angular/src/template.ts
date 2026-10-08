@@ -101,6 +101,9 @@ export function templateReads(plan: Plan, listeners: Listeners): TemplateReads {
           // `undefined` is a keyword of Angular's expression language and needs no member.
           if (reference.name !== "undefined") globals.add(reference.name);
           break;
+        // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+        case "Slot":
+          break;
         default:
           unreachable(reference);
       }

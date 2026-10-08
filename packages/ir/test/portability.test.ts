@@ -4,6 +4,7 @@ import {
   angularRespellsRegex,
   ARIA_ATTRIBUTES,
   CHILDLESS_ATTRIBUTES,
+  CONTEXTUAL_ROOT_ELEMENTS,
   DRAFT_ARIA_ATTRIBUTES,
   FIXED_VALUE_INPUT_TYPES,
   GLOBAL_ATTRIBUTES,
@@ -254,4 +255,11 @@ describe("angularRespellsRegex", () => {
       expect(angularRespellsRegex(raw)).toBe(false);
     },
   );
+});
+
+describe("CONTEXTUAL_ROOT_ELEMENTS", () => {
+  it("names HTML elements, each tied to its parent by HTML or ARIA (ADR-0056)", () => {
+    for (const tag of CONTEXTUAL_ROOT_ELEMENTS) expect(HTML_ELEMENTS.has(tag), tag).toBe(true);
+    expect(CONTEXTUAL_ROOT_ELEMENTS.size).toBe(16);
+  });
 });

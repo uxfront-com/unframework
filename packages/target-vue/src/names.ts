@@ -114,6 +114,11 @@ export class VueNames {
       case "localFn":
       case "localVar":
       case "emit":
+      case "model":
+      case "slots":
+      case "slotScope":
+      case "context":
+      case "component":
         break;
       default:
         return unreachable(binding.kind);
@@ -131,6 +136,7 @@ export class VueNames {
       case "state":
       case "derived":
       case "templateRef":
+      case "model":
         return this.local(binding);
       case "prop":
       case "loopVar":
@@ -138,6 +144,10 @@ export class VueNames {
       case "localFn":
       case "localVar":
       case "emit":
+      case "slots":
+      case "slotScope":
+      case "context":
+      case "component":
         return this.script(binding, written);
       default:
         return unreachable(binding.kind);
@@ -179,6 +189,8 @@ function declaredBySetup(kind: BindingKind): boolean {
   switch (kind) {
     case "prop":
     case "loopVar":
+    case "slotScope":
+    case "component":
       return false;
     case "state":
     case "derived":
@@ -187,6 +199,9 @@ function declaredBySetup(kind: BindingKind): boolean {
     case "localFn":
     case "localVar":
     case "emit":
+    case "model":
+    case "slots":
+    case "context":
       return true;
     default:
       return unreachable(kind);

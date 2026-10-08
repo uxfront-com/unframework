@@ -39,6 +39,13 @@ export function assertsIn(kind: Binding["kind"], scope: NarrowedPath["scope"]): 
     case "localVar":
     case "emit":
       return false;
+    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+    case "model":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
+      return false;
     default:
       return unreachable(kind);
   }
@@ -141,6 +148,7 @@ function movedReference(reference: CodeReference, moved: (span: Span) => Span): 
     case "Global":
     case "Event":
     case "Api":
+    case "Slot":
       return { ...reference, span: moved(reference.span) };
     default:
       return unreachable(reference);

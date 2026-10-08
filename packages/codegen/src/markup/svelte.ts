@@ -107,6 +107,8 @@ const hasSpread = (element: ElementNode) =>
       case "Style":
       case "Event":
       case "Ref":
+      // Not printed yet (ADR-0055): each target's `emit` reports UF1002 for it.
+      case "Model":
         return false;
       default:
         return unreachable(attribute);

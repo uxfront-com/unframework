@@ -151,19 +151,24 @@ export const astroDialect: MarkupDialect = {
     }
     return [{ kind: "block", segments, close: tail === "" ? "}" : `${tail}null}` }];
   },
-  list: ({ node, source, item, index }) => [
-    {
-      kind: "block",
-      segments: [
-        {
-          open: `{${operand(source)}.map((${listParameters(node, item, index)}) => `,
-          content: { kind: "element", element: node.body, directives: [] },
-          parentheses: true,
-        },
-      ],
-      close: ")}",
-    },
-  ],
+  // A component as the body is not printed yet (ADR-0055): each target's `emit` reports UF1002
+  // for it.
+  list: ({ node, source, item, index }) =>
+    node.body.kind !== "Element"
+      ? []
+      : [
+          {
+            kind: "block",
+            segments: [
+              {
+                open: `{${operand(source)}.map((${listParameters(node, item, index)}) => `,
+                content: { kind: "element", element: node.body, directives: [] },
+                parentheses: true,
+              },
+            ],
+            close: ")}",
+          },
+        ],
   eventAttribute: () => [],
   refAttribute: () => [],
   inert: true,

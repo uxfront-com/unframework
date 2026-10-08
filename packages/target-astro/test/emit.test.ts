@@ -87,6 +87,11 @@ describe("astro target", () => {
       "event-semantics",
       "conditional-event-control",
       "next-tick",
+      "component-event",
+      "two-way-binding",
+      "model-array",
+      "model-modifiers",
+      "expose",
     ] as const) {
       expect(target.capabilities[name], name).toMatchObject({
         support: "unsupported",
@@ -103,10 +108,16 @@ describe("astro target", () => {
       support: "emulated",
       helper: "uniqueId",
     });
+    // Context is the one difference a static render shows: `inject` gives its fallback
+    // (ADR-0055), a warning.
     const unsupported = CAPABILITY_NAMES.filter(
-      (name) => target.capabilities[name].support === "unsupported",
+      (name) =>
+        target.capabilities[name].support === "unsupported" && !BEHAVIOURAL_CAPABILITIES.has(name),
     );
-    expect(unsupported.every((name) => BEHAVIOURAL_CAPABILITIES.has(name))).toBe(true);
+    expect(unsupported).toEqual(["context", "reactive-context"]);
+    for (const name of unsupported) {
+      expect(target.capabilities[name], name).toMatchObject({ severity: "warning" });
+    }
   });
 
   it("emits one file per component, named after it whatever the export", () => {

@@ -34,12 +34,16 @@ import {
   createIdItem,
   createInlineHandler,
   createLifecycleItem,
+  createExposes,
   createWatchEffectItem,
   createWatchItem,
 } from "@unframework/ir";
+import type { ElementNode, ModelAttribute, ProvideItem } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
-import { CAPABILITY_NAMES, requiredCapabilities } from "../src/index.ts";
+import { composition, find } from "../../ir/test/composition-fixture.ts";
+import { everyKind } from "../../ir/test/fixtures.ts";
+import { CAPABILITY_NAMES, compositionUse, requiredCapabilities } from "../src/index.ts";
 
 const at = (start: number) => ({ start, end: start + 1 });
 
@@ -304,5 +308,84 @@ describe("requiredCapabilities", () => {
 
   it("names each capability once", () => {
     expect(new Set(CAPABILITY_NAMES).size).toBe(CAPABILITY_NAMES.length);
+  });
+});
+
+// Composition (ADR-0055): each kind's capability where it is first used, and `interactivity`
+// beside a component's model, listener and ref and an element's `v-model`.
+describe("requiredCapabilities over composition", () => {
+  it("derives composition's capabilities, each where it is first used", () => {
+    const field = find("<Field").start;
+    expect([...requiredCapabilities(composition())]).toEqual([
+      ["props", find("{ label }: { label: string }")],
+      ["model", find('const open = defineModel<boolean>("open");')],
+      ["context", find("const theme = inject(ThemeKey);")],
+      ["named-slot", find("slots.title")],
+      ["element", { start: find("<div>").start, end: find("</div>").end }],
+      ["conditional", find("{slots.title && <h2>{theme}</h2>}")],
+      ["interpolation", find("{theme}")],
+      ["component", { start: field, end: find("</Field>").end }],
+      ["interactivity", find("v-model:value={text.value}")],
+      ["component-event", find("onClear={() => (open.value = false)}")],
+      ["default-slot", find("{label}", 0, find(">{label}").start)],
+      ["two-way-binding", find("v-model={text.value}", 0, find("<input").start)],
+      ["slot-fallback", find("{slots.default?.() ?? label}")],
+    ]);
+  });
+
+  it("derives reactive context, a contextual root, exposes and a v-model's array and modifiers", () => {
+    const module = composition();
+    const form = module.components[0]!;
+    const provide = form.setup[3] as ProvideItem;
+    const value = find("text.value");
+    provide.value = createCode("text.value", value, [
+      createBindingReference(form.bindings[2]!.id, value),
+    ]);
+    form.exposes = createExposes([], find("const slots"));
+    const input = (form.render as ElementNode).children[2] as ElementNode;
+    const model = input.attributes[0] as ModelAttribute;
+    model.control = "checkbox-group";
+    model.trim = true;
+    const required = requiredCapabilities(module);
+    expect(required.get("reactive-context")).toEqual(provide.span);
+    expect(required.get("expose")).toEqual(find("const slots"));
+    expect(required.get("model-array")).toEqual(model.span);
+    expect(required.get("model-modifiers")).toEqual(model.span);
+    form.render = createElement("li", [], [], find("<div>"));
+    expect(requiredCapabilities(module).get("contextual-root")).toEqual(find("<div>"));
+  });
+});
+
+describe("compositionUse", () => {
+  it("finds where a component first uses composition", () => {
+    const module = composition();
+    expect(compositionUse(module, module.components[0]!)).toEqual({
+      what: "model",
+      span: find('const open = defineModel<boolean>("open");'),
+    });
+  });
+
+  it("finds a declaration that no capability covers: slots, options and keys", () => {
+    const module = composition();
+    const form = module.components[0]!;
+    form.setup = [];
+    form.bindings = form.bindings.filter(({ kind }) => kind === "prop" || kind === "slots");
+    form.render = createElement("div", [], [], find("<div>"));
+    expect(compositionUse(module, form)?.what).toBe("`defineSlots`");
+    delete form.slots;
+    form.inheritAttrs = false;
+    expect(compositionUse(module, form)?.what).toBe("`defineOptions`");
+    delete form.inheritAttrs;
+    expect(compositionUse(module, form)).toEqual({
+      what: "an injection key",
+      span: module.keys![0]!.span,
+    });
+    delete module.keys;
+    expect(compositionUse(module, form)).toBeUndefined();
+  });
+
+  it("finds nothing in a component without composition", () => {
+    const module = everyKind();
+    for (const each of module.components) expect(compositionUse(module, each)).toBeUndefined();
   });
 });

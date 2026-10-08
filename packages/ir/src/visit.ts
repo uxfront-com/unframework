@@ -3,17 +3,25 @@ import type {
   BindingKind,
   Code,
   CodeReference,
+  ComponentAttribute,
+  EventAttribute,
   Expression,
   FragmentNode,
   FunctionCode,
   Handler,
+  ListenerAttribute,
+  Parameter,
   RenderNode,
   SetupItem,
+  SlotFill,
   Span,
   UfComponent,
   UfModule,
   WatchSource,
 } from "./types.ts";
+
+/** An attribute of an element or of a component: what a `Dynamic` node may hold. */
+type AnyAttribute = Attribute | ComponentAttribute;
 
 // Records rather than arrays: `satisfies` rejects a missing or an unknown kind, so a kind added
 // to the unions cannot be left out of the lists the coverage gate iterates.
@@ -23,6 +31,9 @@ const renderNodeKinds = {
   Interpolation: true,
   If: true,
   For: true,
+  Component: true,
+  SlotOutlet: true,
+  Dynamic: true,
 } satisfies Record<RenderNode["kind"], true>;
 const attributeKinds = {
   Static: true,
@@ -32,7 +43,11 @@ const attributeKinds = {
   Spread: true,
   Event: true,
   Ref: true,
-} satisfies Record<Attribute["kind"], true>;
+  Model: true,
+  Prop: true,
+  Listener: true,
+  ModelBinding: true,
+} satisfies Record<AnyAttribute["kind"], true>;
 const bindingKinds = {
   prop: true,
   loopVar: true,
@@ -43,6 +58,11 @@ const bindingKinds = {
   localFn: true,
   localVar: true,
   emit: true,
+  model: true,
+  slots: true,
+  slotScope: true,
+  context: true,
+  component: true,
 } satisfies Record<BindingKind, true>;
 const setupItemKinds = {
   State: true,
@@ -55,6 +75,9 @@ const setupItemKinds = {
   Watch: true,
   WatchEffect: true,
   Lifecycle: true,
+  Model: true,
+  Provide: true,
+  Inject: true,
 } satisfies Record<SetupItem["kind"], true>;
 const handlerKinds = { Function: true, Inline: true } satisfies Record<Handler["kind"], true>;
 const watchSourceKinds = { Ref: true, Getter: true } satisfies Record<WatchSource["kind"], true>;
@@ -65,6 +88,7 @@ const codeReferenceKinds = {
   Emit: true,
   Api: true,
   Event: true,
+  Slot: true,
 } satisfies Record<CodeReference["kind"], true>;
 
 /**
@@ -75,10 +99,13 @@ export const RENDER_NODE_KINDS: readonly RenderNode["kind"][] = Object.keys(
   renderNodeKinds,
 ) as RenderNode["kind"][];
 
-/** Every kind of attribute. The coverage gate requires a corpus case for each. */
-export const ATTRIBUTE_KINDS: readonly Attribute["kind"][] = Object.keys(
+/**
+ * Every kind of attribute, an element's or a component's. The coverage gate requires a corpus case
+ * for each.
+ */
+export const ATTRIBUTE_KINDS: readonly AnyAttribute["kind"][] = Object.keys(
   attributeKinds,
-) as Attribute["kind"][];
+) as AnyAttribute["kind"][];
 
 /** Every kind of binding. The coverage gate requires a corpus case for each. */
 export const BINDING_KINDS: readonly BindingKind[] = Object.keys(bindingKinds) as BindingKind[];
@@ -98,7 +125,10 @@ export const WATCH_SOURCE_KINDS: readonly WatchSource["kind"][] = Object.keys(
   watchSourceKinds,
 ) as WatchSource["kind"][];
 
-/** Every kind of reference in setup code. The coverage gate requires a corpus case for each. */
+/**
+ * Every kind of reference in setup code, and in render expressions, whose kinds are among them.
+ * The coverage gate requires a corpus case for each.
+ */
 export const CODE_REFERENCE_KINDS: readonly CodeReference["kind"][] = Object.keys(
   codeReferenceKinds,
 ) as CodeReference["kind"][];
@@ -109,7 +139,8 @@ export type VisitedNode = RenderNode | FragmentNode;
 /**
  * Callbacks for {@link walk}. Returning `false` from `enter` skips the node's children. The
  * parent is the node whose children hold this one: an element, the root fragment, the `If`
- * whose branch holds it or the `For` whose body it is.
+ * whose branch holds it, the `For` whose body it is, the component or `Dynamic` whose fill holds
+ * it, or the slot outlet whose fallback it is.
  */
 export interface Visitor {
   enter?(node: VisitedNode, parent: VisitedNode | undefined): void | false;
@@ -118,7 +149,9 @@ export interface Visitor {
 
 /**
  * The child nodes of a node, in document order: an element's or a fragment's children, every
- * branch's children of an `If` in order, a `For`'s body, and nothing for text.
+ * branch's children of an `If` in order, a `For`'s body, every fill's children of a component in
+ * order, a slot outlet's fallback, a `Dynamic` node's children then its fills', and nothing for
+ * text.
  */
 export function childrenOf(node: VisitedNode): readonly RenderNode[] {
   switch (node.kind) {
@@ -129,6 +162,12 @@ export function childrenOf(node: VisitedNode): readonly RenderNode[] {
       return node.branches.flatMap((branch) => branch.children);
     case "For":
       return [node.body];
+    case "Component":
+      return node.fills.flatMap((fill) => fill.children);
+    case "SlotOutlet":
+      return node.fallback;
+    case "Dynamic":
+      return [...node.children, ...(node.fills ?? []).flatMap((fill) => fill.children)];
     case "Text":
     case "Interpolation":
       return [];
@@ -147,7 +186,7 @@ export function walk(node: VisitedNode, visitor: Visitor, parent?: VisitedNode):
 /** What a module uses, by kind: the input of capability checks and of the coverage gate. */
 export interface ModuleFeatures {
   nodeKinds: Set<RenderNode["kind"]>;
-  attributeKinds: Set<Attribute["kind"]>;
+  attributeKinds: Set<AnyAttribute["kind"]>;
   bindingKinds: Set<BindingKind>;
   setupItemKinds: Set<SetupItem["kind"]>;
   handlerKinds: Set<Handler["kind"]>;
@@ -182,10 +221,11 @@ export function collectFeatures(module: UfModule): ModuleFeatures {
       enter(node) {
         if (node.kind === "Fragment") return;
         features.nodeKinds.add(node.kind);
-        if (node.kind !== "Element") return;
-        for (const attribute of node.attributes) {
+        for (const attribute of attributesOf(node)) {
           features.attributeKinds.add(attribute.kind);
-          if (attribute.kind === "Event") features.handlerKinds.add(attribute.handler.kind);
+          if (attribute.kind === "Event" || attribute.kind === "Listener") {
+            features.handlerKinds.add(attribute.handler.kind);
+          }
         }
       },
     });
@@ -199,6 +239,25 @@ export function collectFeatures(module: UfModule): ModuleFeatures {
   return features;
 }
 
+/** The attributes of a node: an element's, a component's or a `Dynamic` node's, or none. */
+function attributesOf(node: VisitedNode): readonly AnyAttribute[] {
+  switch (node.kind) {
+    case "Element":
+    case "Component":
+    case "Dynamic":
+      return node.attributes;
+    case "Fragment":
+    case "Text":
+    case "Interpolation":
+    case "If":
+    case "For":
+    case "SlotOutlet":
+      return [];
+    default:
+      return unreachable(node);
+  }
+}
+
 /** An expression of a component, with where it is. */
 export interface LocatedExpression {
   expression: Expression;
@@ -207,11 +266,12 @@ export interface LocatedExpression {
 }
 
 /**
- * Every render expression of a component, in document order: the props' defaults, then the
- * render tree's interpolations, conditions, list sources and keys, and attribute values (bound
- * attributes, class parts, style declarations and spreads). `base` prefixes each path, such as
- * `/components/0`. Setup code and handlers are {@link codeOf}'s: a template reads only these
- * (ADR-0045).
+ * Every render expression of a component, in document order: the props' defaults and the
+ * models', then the render tree's interpolations, conditions, list sources and keys, attribute
+ * values (bound attributes, class parts, style declarations, spreads, props and models), slot
+ * outlets' props, `Dynamic` nodes' choices and scoped fills' parameter defaults. `base` prefixes
+ * each path, such as `/components/0`. Setup code and handlers are {@link codeOf}'s: a template
+ * reads only these (ADR-0045).
  */
 export function expressionsOf(component: UfComponent, base = ""): LocatedExpression[] {
   const found: LocatedExpression[] = [];
@@ -219,15 +279,48 @@ export function expressionsOf(component: UfComponent, base = ""): LocatedExpress
   for (const [index, prop] of component.props.entries()) {
     if (prop.default) add(prop.default, `${base}/props/${index}/default`);
   }
+  for (const [index, item] of component.setup.entries()) {
+    if (item.kind === "Model" && item.default) add(item.default, `${base}/setup/${index}/default`);
+  }
+  const attributes = (node: { attributes: readonly AnyAttribute[] }, path: string) => {
+    for (const [index, attribute] of node.attributes.entries()) {
+      attributeExpressions(attribute, `${path}/attributes/${index}`, add);
+    }
+  };
+  const fills = (list: readonly SlotFill[], path: string) => {
+    for (const [index, fill] of list.entries()) {
+      const at = `${path}/${index}`;
+      if (fill.parameter?.default) add(fill.parameter.default, `${at}/parameter/default`);
+      for (const [child, nested] of fill.children.entries()) {
+        visit(nested, `${at}/children/${child}`);
+      }
+    }
+  };
   const visit = (node: VisitedNode, path: string): void => {
     switch (node.kind) {
       case "Element":
-        for (const [index, attribute] of node.attributes.entries()) {
-          attributeExpressions(attribute, `${path}/attributes/${index}`, add);
-        }
+        attributes(node, path);
         for (const [index, child] of node.children.entries()) {
           visit(child, `${path}/children/${index}`);
         }
+        return;
+      case "Component":
+        attributes(node, path);
+        fills(node.fills, `${path}/fills`);
+        return;
+      case "SlotOutlet":
+        if (node.props) add(node.props, `${path}/props`);
+        for (const [index, child] of node.fallback.entries()) {
+          visit(child, `${path}/fallback/${index}`);
+        }
+        return;
+      case "Dynamic":
+        add(node.is, `${path}/is`);
+        attributes(node, path);
+        for (const [index, child] of node.children.entries()) {
+          visit(child, `${path}/children/${index}`);
+        }
+        fills(node.fills ?? [], `${path}/fills`);
         return;
       case "Fragment":
         for (const [index, child] of node.children.entries()) {
@@ -262,7 +355,7 @@ export function expressionsOf(component: UfComponent, base = ""): LocatedExpress
 }
 
 function attributeExpressions(
-  attribute: Attribute,
+  attribute: AnyAttribute,
   path: string,
   add: (expression: Expression, path: string) => void,
 ): void {
@@ -271,6 +364,9 @@ function attributeExpressions(
       return;
     case "Bound":
     case "Spread":
+    case "Model":
+    case "Prop":
+    case "ModelBinding":
       add(attribute.value, `${path}/value`);
       return;
     case "Class":
@@ -289,6 +385,7 @@ function attributeExpressions(
       return;
     case "Event":
     case "Ref":
+    case "Listener":
       return;
     default:
       unreachable(attribute);
@@ -297,9 +394,9 @@ function attributeExpressions(
 
 /**
  * Where code runs (ADR-0045): `render` for the template's expressions, `pure` for what the setup
- * evaluates (the initial values of `ref`, `const` and `let`, and the getters of `computed` and of
- * watch sources), and `client` for what runs in the browser (handlers, watch callbacks,
- * `watchEffect`, lifecycle hooks and the setup's functions).
+ * evaluates (the initial values of `ref`, `const` and `let`, the getters of `computed` and of
+ * watch sources, a provided value and an `inject`'s fallback), and `client` for what runs in the
+ * browser (handlers, watch callbacks, `watchEffect`, lifecycle hooks and the setup's functions).
  */
 export type CodeContext = "render" | "pure" | "client";
 
@@ -334,7 +431,10 @@ export function functionsOf(component: UfComponent, base = ""): LocatedFunction[
   return partsOf(component, base).flatMap((part) => ("function" in part ? [part] : []));
 }
 
-/** A setup item's value: the code of a `ref`'s, a `const`'s or a `let`'s initial value. */
+/**
+ * A setup item's value: the code of a `ref`'s, a `const`'s or a `let`'s initial value, a provided
+ * value or an `inject`'s fallback.
+ */
 interface LocatedValue {
   value: Code;
   path: string;
@@ -379,8 +479,15 @@ function partsOf(component: UfComponent, base: string): (LocatedValue | LocatedF
       case "Lifecycle":
         add(item.callback, `${path}/callback`, "client", "lifecycle");
         break;
+      case "Provide":
+        parts.push({ value: item.value, path: `${path}/value` });
+        break;
+      case "Inject":
+        if (item.fallback) parts.push({ value: item.fallback, path: `${path}/fallback` });
+        break;
       case "TemplateRef":
       case "Id":
+      case "Model":
         break;
       default:
         unreachable(item);
@@ -394,20 +501,51 @@ function partsOf(component: UfComponent, base: string): (LocatedValue | LocatedF
   return parts;
 }
 
-/** Calls `visit` for each event listener of a render tree, in document order, with its path. */
+/**
+ * Calls `visit` for each listener of a render tree, an element's or a component's, in document
+ * order, with its path.
+ */
 function walkHandlers(
   node: VisitedNode,
   path: string,
-  visit: (attribute: Extract<Attribute, { kind: "Event" }>, path: string) => void,
+  visit: (attribute: EventAttribute | ListenerAttribute, path: string) => void,
 ): void {
+  const attributes = (list: readonly AnyAttribute[]) => {
+    for (const [index, attribute] of list.entries()) {
+      if (attribute.kind === "Event" || attribute.kind === "Listener") {
+        visit(attribute, `${path}/attributes/${index}`);
+      }
+    }
+  };
+  const fills = (list: readonly SlotFill[]) => {
+    for (const [index, fill] of list.entries()) {
+      for (const [child, nested] of fill.children.entries()) {
+        walkHandlers(nested, `${path}/fills/${index}/children/${child}`, visit);
+      }
+    }
+  };
   switch (node.kind) {
     case "Element":
-      for (const [index, attribute] of node.attributes.entries()) {
-        if (attribute.kind === "Event") visit(attribute, `${path}/attributes/${index}`);
-      }
+      attributes(node.attributes);
       for (const [index, child] of node.children.entries()) {
         walkHandlers(child, `${path}/children/${index}`, visit);
       }
+      return;
+    case "Component":
+      attributes(node.attributes);
+      fills(node.fills);
+      return;
+    case "SlotOutlet":
+      for (const [index, child] of node.fallback.entries()) {
+        walkHandlers(child, `${path}/fallback/${index}`, visit);
+      }
+      return;
+    case "Dynamic":
+      attributes(node.attributes);
+      for (const [index, child] of node.children.entries()) {
+        walkHandlers(child, `${path}/children/${index}`, visit);
+      }
+      fills(node.fills ?? []);
       return;
     case "Fragment":
       for (const [index, child] of node.children.entries()) {
@@ -473,11 +611,12 @@ type AddSpan = (span: Span, path: string) => void;
 
 /**
  * Every span of a module, each with a JSON Pointer to it: components, exports, type
- * declarations, props, events and their types, bindings, setup items, functions, parameters,
- * every node, branch, attribute, handler, class part, style declaration and spread key, and every
- * expression, piece of code and reference, with a write's target and value and an emit's
- * arguments. What points into the source (diagnostics, a plugin's module) is checked span by
- * span with it.
+ * declarations, imports and their names, injection keys, props, events, slots and their types,
+ * what a component exposes, bindings, setup items, functions, parameters, every node, branch,
+ * attribute, handler, fill, class part, style declaration and spread key, and every expression,
+ * piece of code and reference, with a write's target and value and an emit's arguments. A child's
+ * API points into another file, so it has none. What points into the source (diagnostics, a
+ * plugin's module) is checked span by span with it.
  */
 export function spansOf(module: UfModule): LocatedSpan[] {
   const found: LocatedSpan[] = [];
@@ -507,6 +646,17 @@ export function spansOf(module: UfModule): LocatedSpan[] {
       }
       add(emits.span, `${base}/emits`);
     }
+    if (component.slots) {
+      const { slots } = component;
+      add(slots.type.span, `${base}/slots/type`);
+      for (const [slot, declaration] of slots.slots.entries()) {
+        const path = `${base}/slots/slots/${slot}`;
+        if (declaration.props) add(declaration.props.span, `${path}/props`);
+        add(declaration.span, path);
+      }
+      add(slots.span, `${base}/slots`);
+    }
+    if (component.exposes) add(component.exposes.span, `${base}/exposes`);
     for (const [binding, { span }] of component.bindings.entries()) {
       add(span, `${base}/bindings/${binding}`);
     }
@@ -532,6 +682,16 @@ export function spansOf(module: UfModule): LocatedSpan[] {
   for (const [index, entry] of module.exports.entries()) add(entry.span, `/exports/${index}`);
   for (const [index, declaration] of module.types.entries()) {
     add(declaration.span, `/types/${index}`);
+  }
+  for (const [index, entry] of (module.imports ?? []).entries()) {
+    for (const [name, { span }] of entry.names.entries()) {
+      add(span, `/imports/${index}/names/${name}`);
+    }
+    add(entry.span, `/imports/${index}`);
+  }
+  for (const [index, key] of (module.keys ?? []).entries()) {
+    add(key.type.span, `/keys/${index}/type`);
+    add(key.span, `/keys/${index}`);
   }
   return found;
 }
@@ -565,11 +725,7 @@ function codeSpans(code: Code, path: string, at: AddSpan): void {
  */
 function functionSpans(fn: FunctionCode, path: string, add: AddSpan): void {
   for (const [index, parameter] of fn.parameters.entries()) {
-    const at = `${path}/parameters/${index}`;
-    if (parameter.pattern) add(parameter.pattern.span, `${at}/pattern`);
-    if (parameter.type) add(parameter.type.span, `${at}/type`);
-    if (parameter.default) expressionSpans(parameter.default, `${at}/default`, add);
-    add(parameter.span, at);
+    parameterSpans(parameter, `${path}/parameters/${index}`, add);
   }
   if (fn.returnType) add(fn.returnType.span, `${path}/returnType`);
   for (const [index, control] of (fn.eventControls ?? []).entries()) {
@@ -578,43 +734,101 @@ function functionSpans(fn: FunctionCode, path: string, add: AddSpan): void {
   add(fn.span, path);
 }
 
-/** The spans of nodes, branches, attributes, handlers and their parts (code aside). */
+/**
+ * The spans of a parameter: its pattern, its type, its static default and its expression's
+ * references, and itself.
+ */
+function parameterSpans(parameter: Parameter, at: string, add: AddSpan): void {
+  if (parameter.pattern) add(parameter.pattern.span, `${at}/pattern`);
+  if (parameter.type) add(parameter.type.span, `${at}/type`);
+  if (parameter.default) expressionSpans(parameter.default, `${at}/default`, add);
+  add(parameter.span, at);
+}
+
+/** The spans of an attribute and of its parts: class parts, style declarations, keys, handler. */
+function attributeSpans(attribute: AnyAttribute, at: string, add: AddSpan): void {
+  add(attribute.span, at);
+  switch (attribute.kind) {
+    case "Static":
+    case "Bound":
+    case "Ref":
+    case "Model":
+    case "Prop":
+    case "ModelBinding":
+      return;
+    case "Class":
+      for (const [item, { span }] of attribute.items.entries()) {
+        add(span, `${at}/items/${item}`);
+      }
+      return;
+    case "Style":
+      for (const [item, { span }] of attribute.declarations.entries()) {
+        add(span, `${at}/declarations/${item}`);
+      }
+      return;
+    case "Spread":
+      for (const [item, { span }] of attribute.keys.entries()) add(span, `${at}/keys/${item}`);
+      return;
+    case "Event":
+    case "Listener":
+      add(attribute.handler.span, `${at}/handler`);
+      return;
+    default:
+      unreachable(attribute);
+  }
+}
+
+/**
+ * The spans of fills: each fill, its parameter (a default's expression is
+ * {@link expressionsOf}'s) and its children.
+ */
+function fillSpans(fills: readonly SlotFill[], path: string, add: AddSpan): void {
+  for (const [index, fill] of fills.entries()) {
+    const at = `${path}/${index}`;
+    add(fill.span, at);
+    if (fill.parameter) {
+      const { parameter } = fill;
+      if (parameter.pattern) add(parameter.pattern.span, `${at}/parameter/pattern`);
+      if (parameter.type) add(parameter.type.span, `${at}/parameter/type`);
+      add(parameter.span, `${at}/parameter`);
+    }
+    for (const [child, nested] of fill.children.entries()) {
+      walkSpans(nested, `${at}/children/${child}`, add);
+    }
+  }
+}
+
+/** The spans of nodes, branches, attributes, handlers, fills and their parts (code aside). */
 function walkSpans(node: VisitedNode, path: string, add: AddSpan) {
   add(node.span, path);
   switch (node.kind) {
     case "Element":
       for (const [index, attribute] of node.attributes.entries()) {
-        const at = `${path}/attributes/${index}`;
-        add(attribute.span, at);
-        switch (attribute.kind) {
-          case "Static":
-          case "Bound":
-          case "Ref":
-            break;
-          case "Class":
-            for (const [item, { span }] of attribute.items.entries()) {
-              add(span, `${at}/items/${item}`);
-            }
-            break;
-          case "Style":
-            for (const [item, { span }] of attribute.declarations.entries()) {
-              add(span, `${at}/declarations/${item}`);
-            }
-            break;
-          case "Spread":
-            for (const [item, { span }] of attribute.keys.entries())
-              add(span, `${at}/keys/${item}`);
-            break;
-          case "Event":
-            add(attribute.handler.span, `${at}/handler`);
-            break;
-          default:
-            unreachable(attribute);
-        }
+        attributeSpans(attribute, `${path}/attributes/${index}`, add);
       }
       for (const [index, child] of node.children.entries()) {
         walkSpans(child, `${path}/children/${index}`, add);
       }
+      return;
+    case "Component":
+      for (const [index, attribute] of node.attributes.entries()) {
+        attributeSpans(attribute, `${path}/attributes/${index}`, add);
+      }
+      fillSpans(node.fills, `${path}/fills`, add);
+      return;
+    case "SlotOutlet":
+      for (const [index, child] of node.fallback.entries()) {
+        walkSpans(child, `${path}/fallback/${index}`, add);
+      }
+      return;
+    case "Dynamic":
+      for (const [index, attribute] of node.attributes.entries()) {
+        attributeSpans(attribute, `${path}/attributes/${index}`, add);
+      }
+      for (const [index, child] of node.children.entries()) {
+        walkSpans(child, `${path}/children/${index}`, add);
+      }
+      fillSpans(node.fills ?? [], `${path}/fills`, add);
       return;
     case "Fragment":
       for (const [index, child] of node.children.entries()) {

@@ -225,19 +225,24 @@ export const vueDialect: MarkupDialect = {
             content: { kind: "nodes", nodes: branch.children, container: branch },
           };
     }),
-  list: ({ node, source, item, index, key }) => [
-    {
-      kind: "element",
-      element: node.body,
-      directives: [
-        {
-          name: "v-for",
-          text: `v-for="${index === undefined ? item : `(${item}, ${index})`} in ${vueAttributeCode(source)}"`,
-        },
-        { name: "key", text: `:key="${vueAttributeCode(key)}"` },
-      ],
-    },
-  ],
+  // A component as the body is not printed yet (ADR-0055): each target's `emit` reports UF1002
+  // for it.
+  list: ({ node, source, item, index, key }) =>
+    node.body.kind !== "Element"
+      ? []
+      : [
+          {
+            kind: "element",
+            element: node.body,
+            directives: [
+              {
+                name: "v-for",
+                text: `v-for="${index === undefined ? item : `(${item}, ${index})`} in ${vueAttributeCode(source)}"`,
+              },
+              { name: "key", text: `:key="${vueAttributeCode(key)}"` },
+            ],
+          },
+        ],
   // A handler's code is a function Vue calls with the event (a setup function's name, an
   // arrow), or the statements a target supplies, which Vue runs with `$event` in scope.
   eventAttribute: (event) => {

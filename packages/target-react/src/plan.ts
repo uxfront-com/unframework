@@ -272,6 +272,11 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
               case "localConst":
               case "localVar":
               case "emit":
+              case "model":
+              case "slots":
+              case "slotScope":
+              case "context":
+              case "component":
                 break;
               default:
                 kind satisfies never;
@@ -289,6 +294,7 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
           case "Write":
           case "Api":
           case "Event":
+          case "Slot":
             break;
           default:
             reference satisfies never;
@@ -427,6 +433,11 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
         case "localFn":
         case "localVar":
         case "emit":
+        case "model":
+        case "slots":
+        case "slotScope":
+        case "context":
+        case "component":
           break;
         default:
           kind satisfies never;
@@ -514,6 +525,9 @@ export function reactive(kind: BindingKind): boolean {
     case "prop":
     case "state":
     case "derived":
+    case "model":
+    case "slots":
+    case "context":
       return true;
     case "loopVar":
     case "templateRef":
@@ -521,6 +535,8 @@ export function reactive(kind: BindingKind): boolean {
     case "localFn":
     case "localVar":
     case "emit":
+    case "slotScope":
+    case "component":
       return false;
     default:
       return kind satisfies never;
@@ -878,6 +894,11 @@ function hoistable(
                 case "templateRef":
                 case "localVar":
                 case "emit":
+                case "model":
+                case "slots":
+                case "slotScope":
+                case "context":
+                case "component":
                   return false;
                 default:
                   return kind satisfies never;
@@ -886,6 +907,7 @@ function hoistable(
             case "Write":
             case "Emit":
             case "Api":
+            case "Slot":
               return false;
             default:
               return reference satisfies never;

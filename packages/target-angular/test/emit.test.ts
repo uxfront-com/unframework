@@ -86,7 +86,7 @@ describe("angular target", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual(CAPABILITY_NAMES.toSorted());
   });
 
-  it("emulates the listener options, ids and nextTick, and supports the rest natively", () => {
+  it("emulates the listener options, ids, nextTick and composition's cells, and supports the rest natively", () => {
     const emulated = Object.entries(target.capabilities)
       .filter(([, cell]) => cell.support !== "native")
       .map(([name, cell]) => [name, cell.support, "helper" in cell ? cell.helper : undefined]);
@@ -96,6 +96,16 @@ describe("angular target", () => {
       ["event-passive", "emulated", "uf<Event>Passive"],
       ["use-id", "emulated", "nextId"],
       ["next-tick", "emulated", "nextTick"],
+      ["named-slot", "emulated", "uf<Component><Slot>"],
+      ["scoped-slot", "emulated", "uf<Component><Slot>"],
+      ["default-slot-presence", "unsupported", undefined],
+      ["slot-forwarding", "emulated", "uf<Component><Slot>"],
+      ["model-array", "emulated", "toggle"],
+      ["model-modifiers", "emulated", "modelText"],
+      ["fallthrough", "emulated", "fallthrough"],
+      ["contextual-root", "unsupported", undefined],
+      ["reactive-context", "emulated", "refObject"],
+      ["dynamic-component", "emulated", "@switch"],
     ]);
   });
 

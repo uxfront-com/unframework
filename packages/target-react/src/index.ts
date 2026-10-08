@@ -1,6 +1,7 @@
 import {
   bindingOf,
   componentTypes,
+  compositionUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
@@ -88,11 +89,53 @@ export const react: Target = defineTarget({
     "style-binding": { support: "native" },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
+    component: { support: "native" },
+    "component-event": { support: "native" },
+    "default-slot": { support: "native" },
+    "named-slot": { support: "native" },
+    "scoped-slot": { support: "native" },
+    "slot-fallback": { support: "native" },
+    "default-slot-presence": { support: "native" },
+    "slot-forwarding": { support: "native" },
+    model: { support: "native" },
+    "two-way-binding": { support: "native" },
+    "model-array": {
+      support: "emulated",
+      helper: "toggle",
+      note: "A checkbox group's array goes through an inline helper, `toggle`, as Vue's `vModelCheckbox` does (ADR-0054).",
+    },
+    "model-modifiers": {
+      support: "emulated",
+      helper: "modelText",
+      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
+    },
+    fallthrough: { support: "native" },
+    "contextual-root": { support: "native" },
+    expose: { support: "native" },
+    context: { support: "native" },
+    "reactive-context": {
+      support: "emulated",
+      helper: "refObject",
+      note: "A provided ref is passed as an object with a `value` getter, `refObject`, which descendants read as it changes (ADR-0054).",
+    },
+    "dynamic-component": { support: "native" },
   },
   // A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
   // declarations and the events' props, the setup's hooks in source order, and the render tree in
   // React's JSX.
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    // Composition's cells are declared before this target emits it (ADR-0055): until M3's lane
+    // for React lands, a component that uses it is reported, never emitted without it (P2).
+    const composition = compositionUse(context.module, component);
+    if (composition) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message: `The react target does not emit ${composition.what} yet: composition lands in M3.`,
+        span: composition.span,
+      });
+      return [];
+    }
     const { module } = context;
     // Every name the source declares or reads is taken before the output claims its own
     // (`cx`, `setCount`, `CSSProperties`, `_props`), so none captures another (ADR-0035).
@@ -311,9 +354,13 @@ function childForReact(node: RenderNode, context: JsxContext): RenderNode {
         })),
       };
     case "For":
-      return { ...node, body: forReact(node.body, context) };
+      return node.body.kind === "Element" ? { ...node, body: forReact(node.body, context) } : node;
     case "Text":
     case "Interpolation":
+    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+    case "Component":
+    case "SlotOutlet":
+    case "Dynamic":
       return node;
     default:
       return node satisfies never;

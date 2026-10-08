@@ -1,4 +1,4 @@
-import { defineTarget, printMarkup, svelteDialect } from "@unframework/codegen";
+import { compositionUse, defineTarget, printMarkup, svelteDialect } from "@unframework/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
@@ -37,6 +37,32 @@ export const svelte: Target = defineTarget({
     "style-binding": { support: "native" },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
+    component: { support: "native" },
+    "component-event": { support: "native" },
+    "default-slot": { support: "native" },
+    "named-slot": { support: "native" },
+    "scoped-slot": { support: "native" },
+    "slot-fallback": { support: "native" },
+    "default-slot-presence": { support: "native" },
+    "slot-forwarding": { support: "native" },
+    model: { support: "native" },
+    "two-way-binding": { support: "native" },
+    "model-array": { support: "native" },
+    "model-modifiers": {
+      support: "emulated",
+      helper: "modelText",
+      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
+    },
+    fallthrough: { support: "native" },
+    "contextual-root": { support: "native" },
+    expose: { support: "native" },
+    context: { support: "native" },
+    "reactive-context": {
+      support: "emulated",
+      helper: "refObject",
+      note: "A provided ref is passed as an object with a `value` getter, `refObject`, which descendants read as it changes (ADR-0054).",
+    },
+    "dynamic-component": { support: "native" },
     // A capture listener is an attribute, `onclickcapture` (ADR-0047).
     "event-capture": { support: "native" },
     // `once` and `passive` listen through `on` from `svelte/events`, in an attachment (`events.ts`):
@@ -60,6 +86,18 @@ export const svelte: Target = defineTarget({
     "late-prop": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    // Composition's cells are declared before this target emits it (ADR-0055): until M3's lane
+    // for Svelte lands, a component that uses it is reported, never emitted without it (P2).
+    const composition = compositionUse(context.module, component);
+    if (composition) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message: `The svelte target does not emit ${composition.what} yet: composition lands in M3.`,
+        span: composition.span,
+      });
+      return [];
+    }
     const { block, markup: options } = instanceScript(component, context.module);
     // The component resolves the names of loop variables and setup bindings.
     const markup = printMarkup(component.render, svelteDialect, { component, ...options });

@@ -1223,7 +1223,7 @@ const loop = (module: UfModule) =>
   (list(module).branches[0]!.children[0] as ElementNode).children[0] as Extract<
     RenderNode,
     { kind: "For" }
-  >;
+  > & { body: ElementNode };
 
 /**
  * `withProps`' object form, with a `label` prop its `<p>` reads through `reference`, the text of
@@ -1916,7 +1916,7 @@ const childAt = (counter: UfComponent, index: number) =>
 
 /** The button in the counter's list. */
 const listButton = (counter: UfComponent) =>
-  (childAt(counter, 5).children[0] as Extract<RenderNode, { kind: "For" }>).body
+  ((childAt(counter, 5).children[0] as Extract<RenderNode, { kind: "For" }>).body as ElementNode)
     .children[0] as ElementNode;
 
 /** A listener of an element, and the function its handler writes in place. */
@@ -2467,7 +2467,7 @@ describe("checkInvariants on the setup, events and template refs", () => {
           Object.assign(fnAt(counter, 6).body.refs[1]!, { binding: c.doubled });
         }),
       "/components/1/setup/6/function/body/refs/1/binding",
-      'must name a state or a setup `let`, and "doubled',
+      'must name a state, a model or a setup `let`, and "doubled',
     ],
     [
       "a write whose target is not the ref's value",

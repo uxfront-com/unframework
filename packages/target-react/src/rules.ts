@@ -90,6 +90,11 @@ export function reactCode(plan: ReactPlan): ReactCode {
       case "loopVar":
       case "localConst":
       case "emit":
+      case "model":
+      case "slots":
+      case "slotScope":
+      case "context":
+      case "component":
         return written;
       default:
         return binding.kind satisfies never;

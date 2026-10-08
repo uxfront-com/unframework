@@ -422,6 +422,7 @@ export function edited(code: Code, edits: readonly Edit[]): Code {
       case "Global":
       case "Event":
       case "Api":
+      case "Slot":
         return { ...ref, span: span(ref.span) };
       default:
         return unreachable(ref);

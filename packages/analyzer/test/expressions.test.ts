@@ -22,7 +22,9 @@ function refsOf(expression: string, props = PROPS) {
   return child.value.refs.map((ref) =>
     ref.kind === "Global"
       ? `global ${ref.name}`
-      : `${ref.binding.split("@")[0]} ${source.slice(ref.span.start, ref.span.end)}${ref.shorthand ? " shorthand" : ""}`,
+      : ref.kind === "Slot"
+        ? `slot ${ref.slot}`
+        : `${ref.binding.split("@")[0]} ${source.slice(ref.span.start, ref.span.end)}${ref.shorthand ? " shorthand" : ""}`,
   );
 }
 

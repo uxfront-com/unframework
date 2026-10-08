@@ -128,6 +128,13 @@ export class SolidCode {
           case "localVar":
           case "emit":
             return text;
+          // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+          case "model":
+          case "slots":
+          case "slotScope":
+          case "context":
+          case "component":
+            return text;
           default:
             return unreachable(binding.kind);
         }
@@ -146,6 +153,12 @@ export class SolidCode {
           case "localFn":
           case "emit":
             throw new Error(`A write of the ${binding.kind} ${binding.name}: invalid IR.`);
+          case "model":
+          case "slots":
+          case "slotScope":
+          case "context":
+          case "component":
+            return undefined;
           default:
             return unreachable(binding.kind);
         }
@@ -344,6 +357,7 @@ export class SolidCode {
         case "Global":
         case "Event":
         case "Api":
+        case "Slot":
           return [];
         default:
           return unreachable(ref);
@@ -365,6 +379,12 @@ function tracked(kind: Binding["kind"]): boolean {
     case "localFn":
     case "localVar":
     case "emit":
+      return false;
+    case "model":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
       return false;
     default:
       return unreachable(kind);
@@ -502,6 +522,10 @@ function itemText(item: SetupItem, code: SolidCode, bindingOf: (id: BindingId) =
         ? `${onMount}(${callback});`
         : `${onMount}(() => ${code.solid("onCleanup")}(${callback}));`;
     }
+    case "Model":
+    case "Provide":
+    case "Inject":
+      return "";
     default:
       return unreachable(item);
   }
@@ -537,6 +561,7 @@ function hoistable(component: UfComponent): Set<BindingId> {
             case "Global":
             case "Event":
             case "Api":
+            case "Slot":
               return false;
             default:
               return unreachable(ref);
@@ -576,6 +601,12 @@ function itemCode(item: SetupItem): Code[] {
     case "TemplateRef":
     case "Id":
       return [];
+    case "Model":
+      return [];
+    case "Provide":
+      return [item.value];
+    case "Inject":
+      return item.fallback ? [item.fallback] : [];
     default:
       return unreachable(item);
   }
@@ -605,6 +636,10 @@ function inlineHandlers(component: UfComponent): FunctionCode[] {
         return;
       case "Text":
       case "Interpolation":
+        return;
+      case "Component":
+      case "SlotOutlet":
+      case "Dynamic":
         return;
       default:
         unreachable(node);

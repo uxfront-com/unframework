@@ -143,6 +143,11 @@ function holdsState(node: RenderNode): boolean {
     case "Text":
     case "Interpolation":
       return false;
+    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+    case "Component":
+    case "SlotOutlet":
+    case "Dynamic":
+      return false;
     default:
       return node satisfies never;
   }
@@ -155,6 +160,7 @@ function statefulElement(element: ElementNode): boolean {
       switch (attribute.kind) {
         case "Event":
         case "Ref":
+        case "Model":
           return true;
         case "Static":
         case "Bound":
@@ -202,10 +208,13 @@ function topTags(nodes: readonly RenderNode[]): Set<string> {
         }
         break;
       case "For":
-        tags.add(node.body.tag);
+        if (node.body.kind === "Element") tags.add(node.body.tag);
         break;
       case "Text":
       case "Interpolation":
+      case "Component":
+      case "SlotOutlet":
+      case "Dynamic":
         break;
       default:
         node satisfies never;

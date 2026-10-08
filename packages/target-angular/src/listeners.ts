@@ -588,6 +588,7 @@ function simpleRead(plan: Plan, reference: CodeReference): boolean {
     case "Event":
       return true;
     case "Global":
+    case "Slot":
     case "Write":
     case "Api":
       return false;

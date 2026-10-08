@@ -306,6 +306,16 @@ export const RAW_TEXT_ELEMENTS: ReadonlySet<string> = words("iframe");
 export const LEADING_LINE_FEED_ELEMENTS: ReadonlySet<string> = words("listing pre textarea");
 
 /**
+ * Elements HTML or ARIA ties to their parent (ADR-0056): a component whose root is one of these
+ * renders it inside Angular's host element, between it and its parent, where axe reports `list`
+ * and `listitem` violations and the HTML parser moves the host out of a table. Codegen requires
+ * the `contextual-root` capability there.
+ */
+export const CONTEXTUAL_ROOT_ELEMENTS: ReadonlySet<string> = words(
+  "li dt dd tr td th thead tbody tfoot caption colgroup col option optgroup summary legend",
+);
+
+/**
  * Whether Angular's template writes a regular expression literal (`/a;b/u`, as written) with
  * escapes: a quote, `;`, whitespace but a lone space, U+E500, a parenthesis in a class, a `{`
  * before another, a `<` before a letter, or a body that would write `//` (the Angular dialect's

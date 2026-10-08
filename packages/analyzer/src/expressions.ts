@@ -1106,6 +1106,13 @@ class Walk {
         }
         this.refs.push(createBindingReference(binding.id, span(node), shorthand));
         return FUNCTION;
+      // Composition's bindings (ADR-0055): the analyser declares none before M3 lowers them.
+      case "model":
+      case "slots":
+      case "slotScope":
+      case "context":
+      case "component":
+        return UNKNOWN;
       default:
         return unreachable(binding.kind);
     }
@@ -5252,6 +5259,11 @@ const WHAT: Readonly<Record<SetupBinding["kind"], string>> = {
   localFn: "a local function",
   localVar: "a setup `let`",
   emit: "the component's `emit`",
+  model: "a model",
+  slots: "the component's slots",
+  slotScope: "a slot's props",
+  context: "an injected value",
+  component: "a component",
 };
 
 /** Whether a setup binding is a ref, whose value is read and written as `x.value`. */

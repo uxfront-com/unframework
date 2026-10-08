@@ -200,12 +200,17 @@ class ScriptWriter {
       case "state":
       case "derived":
       case "templateRef":
+      case "model":
         return binding.name;
       case "loopVar":
       case "localConst":
       case "localFn":
       case "localVar":
       case "emit":
+      case "slots":
+      case "slotScope":
+      case "context":
+      case "component":
         return written;
       default:
         return unreachable(binding.kind);
@@ -383,6 +388,11 @@ class ScriptWriter {
         return this.#watchEffect(item);
       case "Lifecycle":
         return this.#lifecycle(item);
+      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+      case "Model":
+      case "Provide":
+      case "Inject":
+        return "";
       default:
         return unreachable(item);
     }
@@ -773,11 +783,14 @@ function isDeclaration(item: SetupItem): boolean {
     case "Id":
     case "Const":
     case "Variable":
+    case "Model":
+    case "Inject":
       return true;
     case "Function":
     case "Watch":
     case "WatchEffect":
     case "Lifecycle":
+    case "Provide":
       return false;
     default:
       return unreachable(item);
@@ -895,6 +908,7 @@ function isReactive(kind: BindingKind): boolean {
     case "prop":
     case "state":
     case "derived":
+    case "model":
       return true;
     case "loopVar":
     case "templateRef":
@@ -902,6 +916,10 @@ function isReactive(kind: BindingKind): boolean {
     case "localFn":
     case "localVar":
     case "emit":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
       return false;
     default:
       return unreachable(kind);

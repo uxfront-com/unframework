@@ -407,6 +407,13 @@ class Kinds {
         case "localFn":
         case "localVar":
         case "emit":
+        // Composition's bindings (ADR-0055) are taken to hold any value until M3's lanes read
+        // their types.
+        case "model":
+        case "slots":
+        case "slotScope":
+        case "context":
+        case "component":
           return false;
         default:
           return unreachable(binding.kind);

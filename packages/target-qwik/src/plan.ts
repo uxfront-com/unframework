@@ -718,6 +718,11 @@ function planListeners(component: UfComponent): ListenerPlan {
       case "Text":
       case "Interpolation":
         return;
+      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+      case "Component":
+      case "SlotOutlet":
+      case "Dynamic":
+        return;
       default:
         unreachable(node);
     }
@@ -839,6 +844,9 @@ function declaredQrls(
       case "Function":
       case "TemplateRef":
       case "Id":
+      case "Model":
+      case "Provide":
+      case "Inject":
         break;
       default:
         unreachable(item);
@@ -883,6 +891,11 @@ function rewriteRules(plan: SetupPlan, event: string | undefined): RewriteRules 
         case "derived":
         case "localConst":
         case "emit":
+        case "model":
+        case "slots":
+        case "slotScope":
+        case "context":
+        case "component":
           return written;
         case "templateRef":
           if (site !== "client") return written;
@@ -936,6 +949,7 @@ export function referencedIds(refs: readonly CodeReference[]): Set<BindingId> {
       case "Emit":
       case "Api":
       case "Event":
+      case "Slot":
         break;
       default:
         unreachable(reference);
@@ -972,6 +986,7 @@ function hoistable(component: UfComponent): Set<BindingId> {
             return !hoisted.has(reference.binding);
           case "Write":
           case "Emit":
+          case "Slot":
             return true;
           case "Global":
           case "Api":
@@ -1037,9 +1052,16 @@ function planFunctions(
       case "Lifecycle":
         mark(client, item.callback.body.refs);
         break;
+      case "Provide":
+        mark(render, item.value.refs);
+        break;
+      case "Inject":
+        if (item.fallback) mark(render, item.fallback.refs);
+        break;
       case "Function":
       case "TemplateRef":
       case "Id":
+      case "Model":
         break;
       default:
         unreachable(item);
@@ -1134,6 +1156,7 @@ export function isReactive(kind: BindingKind): boolean {
     case "prop":
     case "state":
     case "derived":
+    case "model":
       return true;
     case "loopVar":
     case "templateRef":
@@ -1141,6 +1164,10 @@ export function isReactive(kind: BindingKind): boolean {
     case "localFn":
     case "localVar":
     case "emit":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
       return false;
     default:
       return unreachable(kind);
@@ -1173,6 +1200,9 @@ function emittedEvents(component: UfComponent): Set<string> {
       case "Id":
       case "Const":
       case "Variable":
+      case "Model":
+      case "Provide":
+      case "Inject":
         break;
       default:
         unreachable(item);
@@ -1214,6 +1244,10 @@ function refsInConditionals(component: UfComponent): Set<BindingId> {
         return;
       case "Text":
       case "Interpolation":
+        return;
+      case "Component":
+      case "SlotOutlet":
+      case "Dynamic":
         return;
       default:
         unreachable(node);

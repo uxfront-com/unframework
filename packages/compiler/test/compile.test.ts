@@ -440,7 +440,7 @@ describe("misbehaving plugins", () => {
     expect(result.diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.message])).toEqual([
       [
         "UF8001",
-        'The "holey" plugin\'s ir hook returned invalid IR: /components/0/render/children/1 must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode',
+        'The "holey" plugin\'s ir hook returned invalid IR: /components/0/render/children/1 must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode, ComponentNode, SlotOutletNode, DynamicNode',
       ],
     ]);
     for (const name of TARGET_NAMES) expect(result.outputs[name]).toHaveLength(1);
