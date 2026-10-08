@@ -142,8 +142,11 @@ describe("react output in the browser", () => {
   it("runs onMounted with its element in the document, and onUnmounted when it goes", async () => {
     await start(await component("Ticker"), ["mounted", "tick", "unmounted"]);
     expect(events[0]).toEqual(["mounted", true]);
-    await vi.waitFor(() => expect(events.filter(([name]) => name === "tick").length).toBe(2));
+    // The interval keeps ticking while the poll waits, so a slow runner sees more than two.
+    const ticks = () => events.filter(([name]) => name === "tick").map(([, count]) => count);
+    await vi.waitFor(() => expect(ticks().length).toBeGreaterThanOrEqual(2));
     await mounted!.unmount();
+    expect(ticks()).toEqual(ticks().map((_, index) => index + 1));
     mounted = undefined;
     const count = events.length;
     expect(events.at(-1)).toEqual(["unmounted"]);
