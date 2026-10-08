@@ -23,10 +23,17 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "types": [],
-    "noEmit": true
+    "noEmit": true,
+    // Consumer fixtures (ADR-0059) sit here, outside tests/integration: map the framework's types
+    // to the copy the outputs resolve, so both sides see one declaration.
+    "paths": {
+      "solid-js": ["../../integration/node_modules/solid-js"],
+      "solid-js/*": ["../../integration/node_modules/solid-js/*"]
+    }
   },
   "include": [
     "../../integration/cases/**/__output__/solid/**/*.ts",
-    "../../integration/cases/**/__output__/solid/**/*.tsx"
+    "../../integration/cases/**/__output__/solid/**/*.tsx",
+    "consumers/**/*.tsx"
   ]
 }

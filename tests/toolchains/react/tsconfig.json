@@ -22,10 +22,17 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "types": [],
-    "noEmit": true
+    "noEmit": true,
+    // Consumer fixtures (ADR-0059) sit here, outside tests/integration: map the framework's types
+    // to the copy the outputs resolve, so both sides see one declaration.
+    "paths": {
+      "react": ["../../integration/node_modules/@types/react"],
+      "react/*": ["../../integration/node_modules/@types/react/*"]
+    }
   },
   "include": [
     "../../integration/cases/**/__output__/react/**/*.ts",
-    "../../integration/cases/**/__output__/react/**/*.tsx"
+    "../../integration/cases/**/__output__/react/**/*.tsx",
+    "consumers/**/*.tsx"
   ]
 }

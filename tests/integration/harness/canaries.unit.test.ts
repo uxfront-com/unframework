@@ -539,6 +539,43 @@ describe("canaries", () => {
     expect(root("astro")).toMatch(/^<section set:html="uf-canary" class:list=/);
   });
 
+  it("L4-consumer types each target's props `any` where its consumers' checker reads them", async () => {
+    const result = await compileWith("L4-consumer");
+    const lines = (target: string) =>
+      result.outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
+    expect(lines("react")).toEqual([
+      'export default function TaskList({ title = "Tasks (today)", tasks, done, tone = "info" }: any) {',
+    ]);
+    expect(lines("solid")).toEqual(["export default function TaskList(rawProps: any) {"]);
+    expect(lines("qwik")).toEqual([
+      'export default component$<any>(({ title = "Tasks (today)", tasks, done, tone = "info" }) => {',
+    ]);
+    expect(lines("vue")).toEqual([
+      'const { title = "Tasks (today)", tasks, done, tone = "info" } = defineProps<Record<string, any>>();',
+    ]);
+    expect(lines("svelte")).toEqual([
+      '  let { title = "Tasks (today)", tasks, done, tone = "info" }: any = $props();',
+    ]);
+    expect(lines("astro")).toEqual(["type Props = any;"]);
+    expect(lines("angular")).toEqual([
+      '  readonly title = input<any>("Tasks (today)", {',
+      "  readonly tasks = input.required<any>();",
+      "  readonly done = input.required<any>();",
+      '  readonly tone = input<any>("info", {',
+    ]);
+  });
+
+  it("L4-consumer applies to the cases with consumer fixtures, on each target that has them", () => {
+    const canary = findCanary("L4-consumer");
+    const [withFixtures, without] = ["events/emit-payloads", "basics/hello"].map((id) =>
+      canaryCase(listCases().find((info) => info.id === id)!),
+    );
+    for (const target of TARGET_NAMES) {
+      expect(canary.appliesTo!(withFixtures!, target), target).toBe(true);
+      expect(canary.appliesTo!(without!, target), target).toBe(false);
+    }
+  });
+
   it("L10-root-inverted styles the root element in each target's own syntax", async () => {
     for (const target of TARGET_NAMES.filter((name) => name !== REFERENCE)) {
       const { outputs } = await compileWith("L10-root-inverted", target);

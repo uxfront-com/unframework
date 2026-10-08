@@ -22,5 +22,5 @@
     "verbatimModuleSyntax": true,
     "types": []
   },
-  "include": ["../../integration/cases/**/__output__/svelte/**/*.svelte"]
+  "include": ["../../integration/cases/**/__output__/svelte/**/*.svelte", "consumers/**/*.svelte"]
 }
