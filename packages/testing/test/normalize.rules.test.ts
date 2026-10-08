@@ -5,12 +5,14 @@ import { normalizeHtml } from "../src/normalize/index.ts";
 import { printTree } from "../src/normalize/print.ts";
 import { isAngularHost, unwrapAngularHosts } from "../src/normalize/rules/angular-hosts.ts";
 import { removeComments } from "../src/normalize/rules/comments.ts";
+import { removeSettledValues } from "../src/normalize/rules/control-values.ts";
 import {
   isFrameworkAttribute,
   removeFrameworkAttributes,
 } from "../src/normalize/rules/framework-attributes.ts";
 import { canonicalizeGeneratedIds } from "../src/normalize/rules/generated-ids.ts";
 import { canonicalizeClasses, sortAttributes } from "../src/normalize/rules/ordering.ts";
+import { removeQwikTemplates } from "../src/normalize/rules/qwik-templates.ts";
 import {
   canonicalizeBooleanAttributes,
   canonicalizeStyles,
@@ -184,6 +186,69 @@ describe("rule 2: removeFrameworkAttributes", () => {
     expect(normalizeHtml('<p data-uf-c3a1 class="a">x</p>', { target: "angular" })).not.toBe(
       normalizeHtml('<p class="a">x</p>', { target: "angular" }),
     );
+  });
+});
+
+describe("rule 2b: removeQwikTemplates", () => {
+  // Qwik 2's server render of a slot whose fallback a consumer's content replaced (ADR-0058).
+  const html =
+    '<section><p>Ada</p><q:template aria-hidden="true" hidden=""><span>No details</span></q:template></section>';
+
+  it("removes Qwik's q:template elements and their content", () => {
+    expect(apply(html, (root) => removeQwikTemplates(root, "qwik"))).toBe(
+      '<section>\n  <p>\n    "Ada"\n  </p>\n</section>\n',
+    );
+    expect(normalizeHtml(html, { target: "qwik" })).toBe(
+      normalizeHtml("<section><p>Ada</p></section>", { target: "qwik" }),
+    );
+  });
+
+  it("keeps the element on every other target, and without a target", () => {
+    for (const target of NORMALIZE_TARGETS.filter((each) => each !== "qwik")) {
+      expect(normalizeHtml(html, { target })).toContain("<q:template");
+    }
+    expect(apply(html, (root) => removeQwikTemplates(root))).toBe(apply(html));
+  });
+
+  it("keeps a template of any other name on Qwik", () => {
+    const template = "<section><template><p>t</p></template><q:slot>s</q:slot></section>";
+    expect(apply(template, (root) => removeQwikTemplates(root, "qwik"))).toBe(apply(template));
+  });
+});
+
+describe("rule 4d: removeSettledValues", () => {
+  it("removes an input's value attribute that equals its uf:value", () => {
+    expect(apply('<input uf:value="hi" value="hi">', removeSettledValues)).toBe(
+      '<input uf:value="hi">\n',
+    );
+    expect(apply('<input uf:value="" value="">', removeSettledValues)).toBe(
+      '<input uf:value="">\n',
+    );
+    // React's controlled input against Vue's v-model, on every target (ADR-0058).
+    for (const target of NORMALIZE_TARGETS) {
+      expect(normalizeHtml('<input uf:value="hi" value="hi">', { target })).toBe(
+        normalizeHtml('<input uf:value="hi">', { target }),
+      );
+    }
+  });
+
+  it("keeps a value attribute that differs from the input's value", () => {
+    const typed = '<input uf:value="y" value="x">';
+    expect(apply(typed, removeSettledValues)).toBe(apply(typed));
+    expect(normalizeHtml(typed, { target: "react" })).not.toBe(
+      normalizeHtml('<input uf:value="y">', { target: "react" }),
+    );
+  });
+
+  it("keeps a value attribute where no uf:value holds the state", () => {
+    const html =
+      '<input value="x"><input type="checkbox" value="x" uf:checked="true"><button value="x">b</button><option value="x" uf:selected="true">o</option>';
+    expect(apply(html, removeSettledValues)).toBe(apply(html));
+  });
+
+  it("keeps the value attribute of an element that is not an input", () => {
+    const html = '<data uf:value="x" value="x">d</data>';
+    expect(apply(html, removeSettledValues)).toBe(apply(html));
   });
 });
 
