@@ -102,9 +102,9 @@ binding declared after it).
 | `onClickOnce`                                               | a module-level `WeakSet` per listener, checked first in its handler, which also takes the element's `preventdefault:`/`stoppropagation:` off after its first run, unless another listener of the element still needs it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 Capabilities: every cell is native but `event-once` (emulated: the `WeakSet` guard), composition's
-`named-slot` and `scoped-slot` (emulated: the QRL render prop `<slot>$`), `model-array`
-(`toggle`), `model-modifiers` (`modelText`) and `expose` (`exposeRef`), all emulated,
-`default-slot-presence` (unsupported, an error: `<Slot />` has no presence API),
+`named-slot` and `scoped-slot` (emulated: the QRL render prop `<slot>$`), its `model-array`
+(emulated: `toggle`), its `model-modifiers` (emulated: `modelText`), its `expose` (emulated:
+`exposeRef`), its `default-slot-presence` (unsupported, an error: `<Slot />` has no presence API),
 `next-tick` (emulated: the `nextTick` helper), `conditional-event-control` (unsupported, an
 error: a control anywhere but at the top of a template listener, after a test that reads what a
 control changes (`event.defaultPrevented`), a `once` listener's control under a condition or on

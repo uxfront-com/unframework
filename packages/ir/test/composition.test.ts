@@ -18,6 +18,7 @@ import {
   createExpression,
   createFunctionHandler,
   createImportedName,
+  createInterpolation,
   createModelAttribute,
   createParameter,
   createPropAttribute,
@@ -42,6 +43,7 @@ import type {
   ElementNode,
   Expression,
   IfNode,
+  InjectItem,
   InlineHandler,
   ListenerAttribute,
   ModelAttribute,
@@ -51,6 +53,7 @@ import type {
   ProvideItem,
   RenderNode,
   SlotFill,
+  SlotOutletNode,
   UfModule,
   WriteReference,
 } from "../src/index.ts";
@@ -535,5 +538,65 @@ describe("checkInvariants on slots, exposes, keys and models", () => {
     const input = root(module).children[2] as ElementNode;
     (input.attributes[0] as ModelAttribute).control = "select";
     reports(module, "/render/children/2/attributes/0/control", "must be a control of <input>");
+  });
+});
+
+describe("checkInvariants on what round 1 left untested", () => {
+  it("reports a function exposed twice", () => {
+    const module = composition();
+    const at = find("label", 0, find("provide(").start);
+    form(module).bindings.push(createBinding("save", "localFn", at));
+    const save = `save@${at.start}`;
+    form(module).exposes = createExposes([save, save], find("const slots"));
+    reports(module, "/exposes/functions/1", `must expose "${save}" once`);
+  });
+
+  it("reports an inject of a key the module neither declares nor imports", () => {
+    const module = composition();
+    (form(module).setup[2] as InjectItem).key = "ColourKey";
+    reports(
+      module,
+      "/setup/2/key",
+      'must name an injection key the module declares or imports, and "ColourKey"',
+    );
+  });
+
+  it("reports a `<component is>` candidate that names no component", () => {
+    reports(
+      withDynamic([{ kind: "Component", component: "Feld" }]),
+      "/render/children/4/candidates/0/component",
+      "must name exactly one imported or local component",
+    );
+  });
+
+  it("keeps a scoped fill's names in scope in the fill alone", () => {
+    // `item` is declared in the fill's parameter and read as text: inside the fill, then outside.
+    const declared = find("text", 0, find("<Field").start);
+    const read = find("open", 0, find("onClear").start);
+    const item = `item@${declared.start}`;
+    const scoped = () => {
+      const module = composition();
+      form(module).bindings.push(createBinding("item", "slotScope", declared));
+      const [fill] = fieldOf(module).fills;
+      fieldOf(module).fills = [
+        createSlotFill("default", [], fill!.span, { parameter: createParameter("item", declared) }),
+      ];
+      return module;
+    };
+    const text = () =>
+      createInterpolation(
+        createExpression("item", read, [createBindingReference(item, read)]),
+        read,
+      );
+    const inside = scoped();
+    fieldOf(inside).fills[0]!.children = [text()];
+    expect(checkInvariants(inside)).toEqual([]);
+    const outside = scoped();
+    (root(outside).children[3] as SlotOutletNode).fallback = [text()];
+    reports(
+      outside,
+      "/render/children/3/fallback/0/value/refs/0/binding",
+      "is a scoped fill's name outside its fill",
+    );
   });
 });

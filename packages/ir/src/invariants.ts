@@ -2010,7 +2010,10 @@ function checkBindingReference(
   if (!scope.has(ref.binding)) {
     errors.push({
       path: `${path}/binding`,
-      message: `must name a binding in scope here, and "${ref.binding}" is a loop variable of another list`,
+      message:
+        binding.kind === "slotScope"
+          ? `must name a binding in scope here, and "${ref.binding}" is a scoped fill's name outside its fill`
+          : `must name a binding in scope here, and "${ref.binding}" is a loop variable of another list`,
     });
     return;
   }

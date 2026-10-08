@@ -64,7 +64,7 @@ plain, versioned, schema-validated JSON (plan §5.3).
   named apart from the component's other names and from what the targets reserve; code that runs
   where it may (templates and what the setup evaluates write, emit and await nothing, read no
   template ref or setup `let`, call only pure local functions, a getter only those that read
-  static values, and read only what is declared before them); writes of a `state` or a `let`,
+  static values, and read only what is declared before them); writes of a `state`, a `model` or a `let`,
   emits of a declared event with as many arguments as it takes, in client code only; an immediate
   watcher safe on the server, and DOM reads only after the DOM updates; functions with the
   parameters their role takes; listeners of an event of the vocabulary, with one option at most,
@@ -77,7 +77,7 @@ plain, versioned, schema-validated JSON (plan §5.3).
   written; a `Dynamic` node's candidates are all tags, whose attributes and children each tag
   keeps as an element, or all components; slots, exposed functions and models are declared once,
   a model named apart from the props; `provide` and `inject` name a key the module declares or
-  imports; and a `v-model`'s control is one of its element. The compiler emits from no module
+  imports; and a `v-model`'s control is one its element has. The compiler emits from no module
   that breaks one, a plugin's included, and checks itself that a plugin's code is the analyser's.
 - **Portability facts:** what the targets render differently from the same markup
   (`portability.ts`): elements Vue does not know, template syntax, attributes a framework acts on
