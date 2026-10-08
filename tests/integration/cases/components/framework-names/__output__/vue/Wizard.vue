@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import TransitionComponent from "./Transition.vue";
+import KeepAliveComponent from "./KeepAlive.vue";
+import TransitionComponent_1 from "./Transition.vue";
+import TransitionComponent from "./TransitionComponent.vue";
 </script>
 
 <template>
   <section aria-label="Wizard">
-    <TransitionComponent step="details" />
+    <TransitionComponent_1 step="details" />
+    <TransitionComponent />
+    <KeepAliveComponent :level="2" />
   </section>
 </template>

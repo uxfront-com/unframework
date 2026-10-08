@@ -1,0 +1,204 @@
+{
+  "irVersion": 1,
+  "file": "components/framework-names/KeepAlive.uf.tsx",
+  "components": [
+    {
+      "name": "KeepAlive",
+      "span": {
+        "start": 137,
+        "end": 341
+      },
+      "props": [
+        {
+          "name": "level",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 191,
+              "end": 197
+            }
+          },
+          "binding": "level@173",
+          "span": {
+            "start": 184,
+            "end": 197
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ level: number }",
+          "span": {
+            "start": 182,
+            "end": 199
+          }
+        },
+        "span": {
+          "start": 171,
+          "end": 199
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "level@173",
+          "name": "level",
+          "kind": "prop",
+          "span": {
+            "start": 173,
+            "end": 178
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "level",
+            "span": {
+              "start": 223,
+              "end": 236
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "span",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Level ",
+                "span": {
+                  "start": 250,
+                  "end": 256
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "level",
+                  "span": {
+                    "start": 257,
+                    "end": 262
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "level@173",
+                      "span": {
+                        "start": 257,
+                        "end": 262
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 256,
+                  "end": 263
+                }
+              }
+            ],
+            "span": {
+              "start": 244,
+              "end": 270
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "level > 0",
+                  "span": {
+                    "start": 278,
+                    "end": 287
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "level@173",
+                      "span": {
+                        "start": 278,
+                        "end": 283
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Component",
+                    "component": "KeepAlive",
+                    "attributes": [
+                      {
+                        "kind": "Prop",
+                        "name": "level",
+                        "value": {
+                          "code": "level - 1",
+                          "span": {
+                            "start": 309,
+                            "end": 318
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "level@173",
+                              "span": {
+                                "start": 309,
+                                "end": 314
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 302,
+                          "end": 319
+                        }
+                      }
+                    ],
+                    "fills": [],
+                    "span": {
+                      "start": 291,
+                      "end": 322
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 278,
+                  "end": 322
+                }
+              }
+            ],
+            "span": {
+              "start": 278,
+              "end": 322
+            }
+          }
+        ],
+        "span": {
+          "start": 218,
+          "end": 334
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "KeepAlive",
+      "span": {
+        "start": 137,
+        "end": 341
+      }
+    }
+  ],
+  "types": []
+}

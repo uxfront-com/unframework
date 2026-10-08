@@ -3,16 +3,118 @@
     "code": "UF1002",
     "severity": "error",
     "message": "The angular target does not emit component yet: composition lands in M3.",
-    "file": "components/framework-names/Wizard.uf.tsx",
+    "file": "components/framework-names/KeepAlive.uf.tsx",
     "start": {
-      "line": 6,
-      "column": 7,
-      "offset": 133
+      "line": 7,
+      "column": 21,
+      "offset": 291
     },
     "end": {
-      "line": 6,
+      "line": 7,
+      "column": 52,
+      "offset": 322
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "file": "components/framework-names/KeepAlive.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 21,
+      "offset": 291
+    },
+    "end": {
+      "line": 7,
+      "column": 52,
+      "offset": 322
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
+    "file": "components/framework-names/KeepAlive.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 21,
+      "offset": 291
+    },
+    "end": {
+      "line": 7,
+      "column": 52,
+      "offset": 322
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit component yet: composition lands in M3.",
+    "file": "components/framework-names/KeepAlive.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 21,
+      "offset": 291
+    },
+    "end": {
+      "line": 7,
+      "column": 52,
+      "offset": 322
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit component yet: composition lands in M3.",
+    "file": "components/framework-names/KeepAlive.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 21,
+      "offset": 291
+    },
+    "end": {
+      "line": 7,
+      "column": 52,
+      "offset": 322
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit component yet: composition lands in M3.",
+    "file": "components/framework-names/KeepAlive.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 21,
+      "offset": 291
+    },
+    "end": {
+      "line": 7,
+      "column": 52,
+      "offset": 322
+    },
+    "target": "svelte"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit component yet: composition lands in M3.",
+    "file": "components/framework-names/Wizard.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 7,
+      "offset": 241
+    },
+    "end": {
+      "line": 8,
       "column": 36,
-      "offset": 162
+      "offset": 270
     },
     "target": "angular"
   },
@@ -22,14 +124,14 @@
     "message": "The astro target does not emit component yet: composition lands in M3.",
     "file": "components/framework-names/Wizard.uf.tsx",
     "start": {
-      "line": 6,
+      "line": 8,
       "column": 7,
-      "offset": 133
+      "offset": 241
     },
     "end": {
-      "line": 6,
+      "line": 8,
       "column": 36,
-      "offset": 162
+      "offset": 270
     },
     "target": "astro"
   },
@@ -39,14 +141,14 @@
     "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "components/framework-names/Wizard.uf.tsx",
     "start": {
-      "line": 6,
+      "line": 8,
       "column": 7,
-      "offset": 133
+      "offset": 241
     },
     "end": {
-      "line": 6,
+      "line": 8,
       "column": 36,
-      "offset": 162
+      "offset": 270
     },
     "target": "qwik"
   },
@@ -56,14 +158,14 @@
     "message": "The react target does not emit component yet: composition lands in M3.",
     "file": "components/framework-names/Wizard.uf.tsx",
     "start": {
-      "line": 6,
+      "line": 8,
       "column": 7,
-      "offset": 133
+      "offset": 241
     },
     "end": {
-      "line": 6,
+      "line": 8,
       "column": 36,
-      "offset": 162
+      "offset": 270
     },
     "target": "react"
   },
@@ -73,14 +175,14 @@
     "message": "The solid target does not emit component yet: composition lands in M3.",
     "file": "components/framework-names/Wizard.uf.tsx",
     "start": {
-      "line": 6,
+      "line": 8,
       "column": 7,
-      "offset": 133
+      "offset": 241
     },
     "end": {
-      "line": 6,
+      "line": 8,
       "column": 36,
-      "offset": 162
+      "offset": 270
     },
     "target": "solid"
   },
@@ -90,14 +192,14 @@
     "message": "The svelte target does not emit component yet: composition lands in M3.",
     "file": "components/framework-names/Wizard.uf.tsx",
     "start": {
-      "line": 6,
+      "line": 8,
       "column": 7,
-      "offset": 133
+      "offset": 241
     },
     "end": {
-      "line": 6,
+      "line": 8,
       "column": 36,
-      "offset": 162
+      "offset": 270
     },
     "target": "svelte"
   }
