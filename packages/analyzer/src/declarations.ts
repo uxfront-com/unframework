@@ -304,7 +304,7 @@ export function checkMembers(
 }
 
 const FUNCTIONS =
-  "Function types are not supported in props: a callback is an event, which a component declares with `defineEmits` (ADR-0047), and a render function is a slot (M3).";
+  "Function types are not supported in props: a callback is an event, which a component declares with `defineEmits` (ADR-0047), and a render function is a slot (`defineSlots`).";
 
 /** Checks a member's type: the types every target's props can declare (ADR-0034). */
 export function checkType(type: AST.TSType, types: ModuleTypes, reporter: Reporter): void {

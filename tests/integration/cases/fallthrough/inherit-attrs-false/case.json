@@ -1,0 +1,4 @@
+{
+  "description": "A component that turns fallthrough off with defineOptions({ inheritAttrs: false }), rendered by a parent.",
+  "main": "Form.uf.tsx"
+}

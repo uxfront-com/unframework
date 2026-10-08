@@ -309,9 +309,8 @@ describe("the root", () => {
     expect(render.kind === "Fragment" && shape(render.children)).toBe(
       '<h2>"a"</h2> if(on: <p>"b"</p>) "text"',
     );
-    expect(codes(run("export function A() { return <><tr /></>; }").diagnostics)).toEqual([
-      "UF3003",
-    ]);
+    // A root that lives in a given parent is checked where the component sits (ADR-0054).
+    expect(codes(run("export function A() { return <><tr /></>; }").diagnostics)).toEqual([]);
   });
 
   it.each([

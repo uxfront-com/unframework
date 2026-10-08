@@ -27,10 +27,12 @@ Passes P2 (analyse) and P3 (lower) of the Unframework compiler (plan §5.1):
 
 ## The subset
 
-Exported components with typed props, a setup, listeners and JSX (plan §9 M1 and M2, ADR-0034
-to ADR-0040, ADR-0045 onwards). A component is a function declaration; one written as a value
-(`export const Card = (props) => …`) is UF1102, checked as the declaration its likely fix writes
-(`analyze.ts`).
+Components with typed props, a setup, listeners and JSX (plan §9 M1 and M2, ADR-0034 to ADR-0040,
+ADR-0045 onwards), and the composition of M3's core lane (ADR-0053 to ADR-0055): components that
+render each other, slots, fallthrough and `defineExpose`. A module exports at least one component;
+one it does not export is lowered too, and each output writes it as a sibling file. A component
+is a function declaration; one written as a value (`export const Card = (props) => …`) is UF1102,
+checked as the declaration its likely fix writes (`analyze.ts`).
 
 - **Props** (`props.ts`, `declarations.ts`): the one parameter, destructured with static defaults
   or kept as one object read as `props.x`, typed by an object type literal or a local `interface`
@@ -39,7 +41,34 @@ to ADR-0040, ADR-0045 onwards). A component is a function declaration; one writt
   some component's props; the outputs copy it as written.
 - **The authoring API** (`authoring.ts`): named imports from `"unframework"`, recognised by the
   binding each declares (ADR-0006), as the package exports them (a test reads its `index.ts`).
-  Anything else is UF2016; M3's APIs are UF1002.
+  Anything else is UF2016; `defineModel`, `provide` and `inject` are UF1002 until M3's models and
+  context land.
+- **Composition** (`api.ts`, `components.ts`, ADR-0053 to ADR-0055):
+  - A component's API (`ComponentApi`: its props, events, slots, exposed functions, options and
+    the shape of its root) is read from its declarations alone, before any component is lowered:
+    the module's components render each other and themselves, and `analyze` returns the module's
+    API for the compiler's resolver, whatever its templates hold.
+  - `analyze(parsed, { imports })` takes the API of each `.uf.tsx` module the source imports,
+    by specifier (`componentImports(parsed)` lists them): an import the resolver gave nothing
+    for, or a name the module does not export, is UF1202, and the module records each one it
+    lowers (`ModuleImport`).
+  - A PascalCase tag names an imported component, one of the module's own, or the component
+    itself (UF3047 otherwise, with a likely fix to a close name). Its attributes are props, the
+    listeners of the events it declares (`onClear`, a local function or an arrow whose parameters
+    are the payload; an option suffix is UF3043, with a safe fix), `class` and `style`, which fall
+    through to its root (UF3045 where it renders neither: `inheritAttrs: false`, or a root that is
+    not one element or one component), `key` in a list, and a `ref` that holds what it exposes
+    (UF3046 where it exposes nothing). Its children fill its default slot, or one slot object
+    fills its slots with arrow functions that return JSX (UF3040), a scoped fill's parameter
+    binding `slotScope` names; `slots.title` in a slot object, or `{slots.default?.()}` as the
+    children, forwards the parent's own slot. What the child does not declare is UF3035, UF3036
+    or UF3038 (layer 2 of §5.6). Its root element is checked where it sits, as the element would
+    be (UF3003).
+  - `defineSlots` (UF2029: an optional method each, named apart from the props and the events'
+    callbacks), `defineExpose` (UF2030: the setup's local functions, in shorthand) and
+    `defineOptions` (UF2031: `{ inheritAttrs: false }` alone). A component renders a slot with
+    `{slots.title?.()}`, its props an object literal and its fallback after `??`, and tests one
+    with `slots.title` in a template (`SlotReference`); any other use is UF3041.
 - **The setup** (`setup.ts`): each statement before the return, in source order, as a setup item
   and a binding (ADR-0045): `ref`, `computed`, `useTemplateRef`, `useId`, `const`, `let`, local
   functions, `watch` (a ref, a getter or an array of them; `immediate` and `flush`),

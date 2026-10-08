@@ -1,0 +1,47 @@
+error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
+ --> components/named-import/Status.uf.tsx:6:7
+  |
+6 |       <Badge text="Build" />
+  |       ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (astro): The astro target does not emit component yet: composition lands in M3.
+ --> components/named-import/Status.uf.tsx:6:7
+  |
+6 |       <Badge text="Build" />
+  |       ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
+ --> components/named-import/Status.uf.tsx:6:7
+  |
+6 |       <Badge text="Build" />
+  |       ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
+ --> components/named-import/Status.uf.tsx:6:7
+  |
+6 |       <Badge text="Build" />
+  |       ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (solid): The solid target does not emit component yet: composition lands in M3.
+ --> components/named-import/Status.uf.tsx:6:7
+  |
+6 |       <Badge text="Build" />
+  |       ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (svelte): The svelte target does not emit component yet: composition lands in M3.
+ --> components/named-import/Status.uf.tsx:6:7
+  |
+6 |       <Badge text="Build" />
+  |       ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002

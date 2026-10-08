@@ -1,0 +1,124 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/component-listener-option/Toolbar.uf.tsx",
+  "components": [
+    {
+      "name": "SaveButton",
+      "span": {
+        "start": 200,
+        "end": 366
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@232",
+        "type": {
+          "code": "{ save: [] }",
+          "span": {
+            "start": 251,
+            "end": 263
+          }
+        },
+        "events": [
+          {
+            "name": "save",
+            "parameters": [],
+            "span": {
+              "start": 253,
+              "end": 261
+            }
+          }
+        ],
+        "span": {
+          "start": 226,
+          "end": 267
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@232",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 232,
+            "end": 236
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "button",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "type",
+            "value": "button",
+            "span": {
+              "start": 291,
+              "end": 304
+            }
+          },
+          {
+            "kind": "Event",
+            "event": "click",
+            "handler": {
+              "kind": "Inline",
+              "function": {
+                "parameters": [],
+                "body": {
+                  "code": "emit(\"save\")",
+                  "span": {
+                    "start": 320,
+                    "end": 332
+                  },
+                  "refs": [
+                    {
+                      "kind": "Emit",
+                      "binding": "emit@232",
+                      "event": "save",
+                      "span": {
+                        "start": 320,
+                        "end": 332
+                      },
+                      "arguments": []
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 314,
+                  "end": 332
+                }
+              },
+              "span": {
+                "start": 314,
+                "end": 332
+              }
+            },
+            "span": {
+              "start": 305,
+              "end": 333
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Save",
+            "span": {
+              "start": 334,
+              "end": 350
+            }
+          }
+        ],
+        "span": {
+          "start": 283,
+          "end": 359
+        }
+      }
+    }
+  ],
+  "exports": [],
+  "types": []
+}

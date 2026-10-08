@@ -1,9 +1,9 @@
-// UF1002 unsupported-syntax: a rest element in the props pattern is fallthrough, which lands in M3.
+// UF1002 unsupported-syntax: a component whose root is an SVG element takes its namespace from
+// its parent, which lands in M8.
 export interface ChipProps {
   label: string;
-  title?: string;
 }
 
-export default function Chip({ label, ...rest }: ChipProps) {
-  return <span class="chip">{label}</span>;
+export default function Chip({ label }: ChipProps) {
+  return <text class="chip">{label}</text>;
 }

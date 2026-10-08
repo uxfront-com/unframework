@@ -1,0 +1,245 @@
+{
+  "irVersion": 1,
+  "file": "slots/fallback/Notice.uf.tsx",
+  "components": [
+    {
+      "name": "Notice",
+      "span": {
+        "start": 88,
+        "end": 440
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 139,
+              "end": 145
+            }
+          },
+          "binding": "label@121",
+          "span": {
+            "start": 132,
+            "end": 145
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 130,
+            "end": 147
+          }
+        },
+        "span": {
+          "start": 119,
+          "end": 147
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@159",
+        "type": {
+          "code": "{ default?(): Element; action?(): Element }",
+          "span": {
+            "start": 179,
+            "end": 222
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 181,
+              "end": 201
+            }
+          },
+          {
+            "name": "action",
+            "optional": true,
+            "span": {
+              "start": 202,
+              "end": 220
+            }
+          }
+        ],
+        "span": {
+          "start": 153,
+          "end": 226
+        }
+      },
+      "bindings": [
+        {
+          "id": "label@121",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 121,
+            "end": 126
+          }
+        },
+        {
+          "id": "slots@159",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 159,
+            "end": 164
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "note",
+            "span": {
+              "start": 247,
+              "end": 258
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 271,
+                "end": 276
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@121",
+                  "span": {
+                    "start": 271,
+                    "end": 276
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 259,
+              "end": 277
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "notice",
+            "span": {
+              "start": 278,
+              "end": 292
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "SlotOutlet",
+                "slot": "default",
+                "fallback": [
+                  {
+                    "kind": "Element",
+                    "tag": "em",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Nothing to report.",
+                        "span": {
+                          "start": 329,
+                          "end": 347
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 325,
+                      "end": 352
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 303,
+                  "end": 353
+                }
+              }
+            ],
+            "span": {
+              "start": 300,
+              "end": 357
+            }
+          },
+          {
+            "kind": "SlotOutlet",
+            "slot": "action",
+            "fallback": [
+              {
+                "kind": "Element",
+                "tag": "span",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "muted",
+                    "span": {
+                      "start": 391,
+                      "end": 404
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "No action",
+                    "span": {
+                      "start": 405,
+                      "end": 414
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 385,
+                  "end": 421
+                }
+              }
+            ],
+            "span": {
+              "start": 364,
+              "end": 422
+            }
+          }
+        ],
+        "span": {
+          "start": 242,
+          "end": 433
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Notice",
+      "span": {
+        "start": 88,
+        "end": 440
+      }
+    }
+  ],
+  "types": []
+}

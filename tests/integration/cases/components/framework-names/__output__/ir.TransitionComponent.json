@@ -1,0 +1,58 @@
+{
+  "irVersion": 1,
+  "file": "components/framework-names/TransitionComponent.uf.tsx",
+  "components": [
+    {
+      "name": "TransitionComponent",
+      "span": {
+        "start": 83,
+        "end": 174
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "note",
+            "span": {
+              "start": 143,
+              "end": 155
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Plain child",
+            "span": {
+              "start": 156,
+              "end": 167
+            }
+          }
+        ],
+        "span": {
+          "start": 140,
+          "end": 171
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "TransitionComponent",
+      "span": {
+        "start": 83,
+        "end": 174
+      }
+    }
+  ],
+  "types": []
+}

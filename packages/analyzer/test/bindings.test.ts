@@ -812,8 +812,8 @@ describe("spreads", () => {
   it.each([
     ['<p id="a" {...attrs}>x</p>', "UF3007"],
     ["<p {...attrs} {...attrs}>x</p>", "UF3007"],
-    ["<p {...items}>x</p>", "UF1002"],
-    ["<p {...label}>x</p>", "UF1002"],
+    ["<p {...items}>x</p>", "UF3048"],
+    ["<p {...label}>x</p>", "UF3048"],
     ["<p {...user}>x</p>", "UF3006"],
     ["<input {...attrs} />", undefined],
   ])("checks the keys of the spread in %s", (jsx, code) => {
@@ -823,9 +823,10 @@ describe("spreads", () => {
   });
 
   it.each([
+    // A function type is no prop's (UF1002): a callback is an event.
     ["{ onClick: () => void }", "UF1002"],
     ["{ style: string }", "UF1002"],
-    ["{ key: string }", "UF1002"],
+    ["{ key: string }", "UF3049"],
     ["{ className: string }", "UF3004"],
     ["{ hidden: boolean }", "UF1002"],
     ["{ title: number }", "UF3018"],

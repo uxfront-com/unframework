@@ -1,0 +1,8 @@
+error[UF3041]: `slots.default` is called without `?.`: a slot is optional, and renders nothing where the parent leaves it empty.
+ --> diagnostics/invalid-slot-use/Card.uf.tsx:8:29
+  |
+8 |   return <div class="card">{slots.default()}</div>;
+  |                             ^^^^^^^^^^^^^^^
+  |
+  = help: Write `slots.default?.()`.
+  = see: https://unframework.dev/diagnostics/UF3041

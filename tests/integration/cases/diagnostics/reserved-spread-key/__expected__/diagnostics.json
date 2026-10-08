@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF3049",
+    "severity": "error",
+    "message": "A spread's `key` key is not rendered: `key` has its own channel, and a spread renders attributes.",
+    "file": "diagnostics/reserved-spread-key/Button.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 27,
+      "offset": 267
+    },
+    "end": {
+      "line": 9,
+      "column": 37,
+      "offset": 277
+    },
+    "help": "Leave the key out of the spread's type, and write it on the element itself.",
+    "related": [
+      {
+        "start": {
+          "line": 4,
+          "column": 3,
+          "offset": 146
+        },
+        "end": {
+          "line": 4,
+          "column": 6,
+          "offset": 149
+        },
+        "message": "The spread's type declares the key here"
+      }
+    ]
+  }
+]

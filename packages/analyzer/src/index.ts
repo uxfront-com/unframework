@@ -1,5 +1,5 @@
-export { analyze } from "./analyze.ts";
-export type { AnalyzeResult } from "./analyze.ts";
+export { analyze, COMPONENT_SPECIFIER, componentImports } from "./analyze.ts";
+export type { AnalyzeOptions, AnalyzeResult } from "./analyze.ts";
 // The values every typed target accepts for an enumerated attribute, for the tests that write
 // one (the render-parity attribute sweep).
 export { enumeratedValues, staticTokens } from "./enumerated.ts";

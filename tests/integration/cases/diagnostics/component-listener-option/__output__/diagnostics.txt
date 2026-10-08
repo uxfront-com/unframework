@@ -1,0 +1,17 @@
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+ --> diagnostics/component-listener-option/Toolbar.uf.tsx:8:27
+  |
+8 |     <button type="button" onClick={() => emit("save")}>
+  |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF3043]: `onSaveOnce` listens to SaveButton's `save` with the option `Once`: a component's event is no DOM event, and takes no listener option.
+  --> diagnostics/component-listener-option/Toolbar.uf.tsx:18:25
+   |
+18 |       <SaveButton onSaveOnce={() => saves.value++} />
+   |                         ^^^^
+   |
+   = help: Write `onSave`.
+   = fix (safe): Remove `Once`
+   = see: https://unframework.dev/diagnostics/UF3043

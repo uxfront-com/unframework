@@ -1,0 +1,280 @@
+{
+  "irVersion": 1,
+  "file": "slots/scoped/List.uf.tsx",
+  "components": [
+    {
+      "name": "List",
+      "span": {
+        "start": 88,
+        "end": 425
+      },
+      "props": [
+        {
+          "name": "items",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 144,
+              "end": 152
+            }
+          },
+          "binding": "items@119",
+          "span": {
+            "start": 137,
+            "end": 153
+          }
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 161,
+              "end": 167
+            }
+          },
+          "binding": "label@126",
+          "span": {
+            "start": 154,
+            "end": 167
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ items: string[]; label: string }",
+          "span": {
+            "start": 135,
+            "end": 169
+          }
+        },
+        "span": {
+          "start": 117,
+          "end": 169
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@181",
+        "type": {
+          "code": "{ item?(props: { item: string; index: number }): Element }",
+          "span": {
+            "start": 201,
+            "end": 259
+          }
+        },
+        "slots": [
+          {
+            "name": "item",
+            "optional": true,
+            "props": {
+              "code": "{ item: string; index: number }",
+              "span": {
+                "start": 216,
+                "end": 247
+              }
+            },
+            "span": {
+              "start": 203,
+              "end": 257
+            }
+          }
+        ],
+        "span": {
+          "start": 175,
+          "end": 263
+        }
+      },
+      "bindings": [
+        {
+          "id": "items@119",
+          "name": "items",
+          "kind": "prop",
+          "span": {
+            "start": 119,
+            "end": 124
+          }
+        },
+        {
+          "id": "label@126",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 126,
+            "end": 131
+          }
+        },
+        {
+          "id": "slots@181",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 181,
+            "end": 186
+          }
+        },
+        {
+          "id": "item@321",
+          "name": "item",
+          "kind": "loopVar",
+          "span": {
+            "start": 321,
+            "end": 325
+          }
+        },
+        {
+          "id": "index@327",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 327,
+            "end": 332
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "ul",
+        "attributes": [
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 295,
+                "end": 300
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@126",
+                  "span": {
+                    "start": 295,
+                    "end": 300
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 283,
+              "end": 301
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "For",
+            "source": {
+              "code": "items",
+              "span": {
+                "start": 310,
+                "end": 315
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "items@119",
+                  "span": {
+                    "start": 310,
+                    "end": 315
+                  }
+                }
+              ]
+            },
+            "item": "item@321",
+            "index": "index@327",
+            "key": {
+              "code": "item",
+              "span": {
+                "start": 356,
+                "end": 360
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "item@321",
+                  "span": {
+                    "start": 356,
+                    "end": 360
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "li",
+              "attributes": [],
+              "children": [
+                {
+                  "kind": "SlotOutlet",
+                  "slot": "item",
+                  "props": {
+                    "code": "{ item, index }",
+                    "span": {
+                      "start": 376,
+                      "end": 391
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "item@321",
+                        "span": {
+                          "start": 378,
+                          "end": 382
+                        },
+                        "shorthand": true
+                      },
+                      {
+                        "kind": "Binding",
+                        "binding": "index@327",
+                        "span": {
+                          "start": 384,
+                          "end": 389
+                        },
+                        "shorthand": true
+                      }
+                    ]
+                  },
+                  "fallback": [],
+                  "span": {
+                    "start": 362,
+                    "end": 393
+                  }
+                }
+              ],
+              "span": {
+                "start": 347,
+                "end": 398
+              }
+            },
+            "span": {
+              "start": 310,
+              "end": 407
+            }
+          }
+        ],
+        "span": {
+          "start": 279,
+          "end": 418
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "List",
+      "span": {
+        "start": 88,
+        "end": 425
+      }
+    }
+  ],
+  "types": []
+}

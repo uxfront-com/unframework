@@ -1,0 +1,95 @@
+error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
+ --> slots/in-list/Recipe.uf.tsx:6:7
+  |
+6 |       <Steps steps={steps}>{{ marker: () => <span aria-hidden="true">&gt; </span> }}</Steps>
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (astro): The astro target does not emit component yet: composition lands in M3.
+ --> slots/in-list/Recipe.uf.tsx:6:7
+  |
+6 |       <Steps steps={steps}>{{ marker: () => <span aria-hidden="true">&gt; </span> }}</Steps>
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
+ --> slots/in-list/Recipe.uf.tsx:6:7
+  |
+6 |       <Steps steps={steps}>{{ marker: () => <span aria-hidden="true">&gt; </span> }}</Steps>
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
+ --> slots/in-list/Recipe.uf.tsx:6:7
+  |
+6 |       <Steps steps={steps}>{{ marker: () => <span aria-hidden="true">&gt; </span> }}</Steps>
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (solid): The solid target does not emit component yet: composition lands in M3.
+ --> slots/in-list/Recipe.uf.tsx:6:7
+  |
+6 |       <Steps steps={steps}>{{ marker: () => <span aria-hidden="true">&gt; </span> }}</Steps>
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (svelte): The svelte target does not emit component yet: composition lands in M3.
+ --> slots/in-list/Recipe.uf.tsx:6:7
+  |
+6 |       <Steps steps={steps}>{{ marker: () => <span aria-hidden="true">&gt; </span> }}</Steps>
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (angular): The angular target does not emit `defineSlots` yet: composition lands in M3.
+ --> slots/in-list/Steps.uf.tsx:5:3
+  |
+5 |   const slots = defineSlots<{ marker?(): Element }>();
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (astro): The astro target does not emit `defineSlots` yet: composition lands in M3.
+ --> slots/in-list/Steps.uf.tsx:5:3
+  |
+5 |   const slots = defineSlots<{ marker?(): Element }>();
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (qwik): The qwik target does not emit `defineSlots` yet: composition lands in M3.
+ --> slots/in-list/Steps.uf.tsx:5:3
+  |
+5 |   const slots = defineSlots<{ marker?(): Element }>();
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (react): The react target does not emit `defineSlots` yet: composition lands in M3.
+ --> slots/in-list/Steps.uf.tsx:5:3
+  |
+5 |   const slots = defineSlots<{ marker?(): Element }>();
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (solid): The solid target does not emit `defineSlots` yet: composition lands in M3.
+ --> slots/in-list/Steps.uf.tsx:5:3
+  |
+5 |   const slots = defineSlots<{ marker?(): Element }>();
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (svelte): The svelte target does not emit `defineSlots` yet: composition lands in M3.
+ --> slots/in-list/Steps.uf.tsx:5:3
+  |
+5 |   const slots = defineSlots<{ marker?(): Element }>();
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002

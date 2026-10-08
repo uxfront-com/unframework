@@ -1,0 +1,10 @@
+{
+  "description": "A component that renders a non-exported component of its own file, which each output writes as a sibling file.",
+  "ssr": {
+    "starred": {
+      "props": {
+        "title": "Starred"
+      }
+    }
+  }
+}

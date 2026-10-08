@@ -1,0 +1,4 @@
+{
+  "description": "A component tests whether its parent filled a named slot and its default slot, and renders a wrapper only for a filled one.",
+  "main": "Cards.uf.tsx"
+}

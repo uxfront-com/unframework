@@ -1,0 +1,4 @@
+- region "Wizard":
+  - paragraph: "Step: details"
+  - paragraph: Plain child
+  - text: Level 2 Level 1 Level 0

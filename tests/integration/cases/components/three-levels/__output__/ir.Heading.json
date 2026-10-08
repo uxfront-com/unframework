@@ -1,0 +1,115 @@
+{
+  "irVersion": 1,
+  "file": "components/three-levels/Heading.uf.tsx",
+  "components": [
+    {
+      "name": "Heading",
+      "span": {
+        "start": 0,
+        "end": 105
+      },
+      "props": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 50,
+              "end": 56
+            }
+          },
+          "binding": "text@34",
+          "span": {
+            "start": 44,
+            "end": 56
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ text: string }",
+          "span": {
+            "start": 42,
+            "end": 58
+          }
+        },
+        "span": {
+          "start": 32,
+          "end": 58
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "text@34",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 34,
+            "end": 38
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "h3",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "heading",
+            "span": {
+              "start": 75,
+              "end": 90
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "text",
+              "span": {
+                "start": 92,
+                "end": 96
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "text@34",
+                  "span": {
+                    "start": 92,
+                    "end": 96
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 91,
+              "end": 97
+            }
+          }
+        ],
+        "span": {
+          "start": 71,
+          "end": 102
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Heading",
+      "span": {
+        "start": 0,
+        "end": 105
+      }
+    }
+  ],
+  "types": []
+}

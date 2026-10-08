@@ -14,6 +14,6 @@
       "column": 18,
       "offset": 147
     },
-    "help": "The authoring API is `ref`, `computed`, `watch`, `watchEffect`, `onMounted`, `onUnmounted`, `nextTick`, `defineEmits`, `useTemplateRef`, `useId`."
+    "help": "The authoring API is `ref`, `computed`, `watch`, `watchEffect`, `onMounted`, `onUnmounted`, `nextTick`, `defineEmits`, `useTemplateRef`, `useId`, `defineSlots`, `defineExpose`, `defineOptions`."
   }
 ]

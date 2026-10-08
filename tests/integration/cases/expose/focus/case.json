@@ -1,0 +1,4 @@
+{
+  "description": "A child exposes a function with defineExpose, and its parent calls it through a component ref.",
+  "main": "Header.uf.tsx"
+}

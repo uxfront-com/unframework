@@ -76,7 +76,7 @@ export interface CanaryCase {
   interacts(target: string): boolean;
   /** Whether a test that runs on a target rerenders: its traces record rerenders. */
   rerenders(target: string): boolean;
-  /** Whether the committed IR has an element listener (an `Event` attribute) to unwire. */
+  /** Whether a source's committed IR has an element listener (an `Event` attribute) to unwire. */
   listens: boolean;
 }
 
@@ -258,7 +258,8 @@ export const CANARIES: readonly Canary[] = [
       "Adds an attribute to every component's root in the IR: the IR snapshot and every golden output differ.",
     evidence: {
       compile: {
-        "IR snapshot": /__output__\/ir\.json differs/,
+        // A case of several sources has a snapshot of each (ADR-0057): the first that differs.
+        "IR snapshot": /__output__\/ir(?:\.[A-Za-z0-9]+)?\.json differs/,
         "golden output": (target) => new RegExp(`${goldenFile(target)} differs`),
       },
     },
@@ -366,7 +367,7 @@ export const CANARIES: readonly Canary[] = [
     id: "L4-consumer",
     layer: "L4",
     description:
-      "Types every output's props and events `any`, where its consumers' checker reads them: each consumer fixture's expected error goes unmet (ADR-0059).",
+      "Types every output's props, events and slots `any`, where its consumers' checker reads them: each consumer fixture's expected error goes unmet (ADR-0059).",
     evidence: {
       // A directive the checker no longer meets, named with the declaration's `.uf.tsx` line.
       toolchain: {
@@ -707,7 +708,8 @@ export function guardsGoldens(id: string | null): boolean {
 /** A case of the corpus as canaries see it: what its committed artefacts say. */
 export function canaryCase(info: CaseInfo): CanaryCase {
   const tests = info.spec ? specTests(readFileSync(info.spec, "utf8")) : [];
-  const ir = join(info.dir, "__output__", "ir.json");
+  // Every source's IR (ADR-0057): the canaries corrupt every module a case compiles.
+  const irs = info.sources.map((source) => join(info.dir, "__output__", source.ir));
   /** The tests of the spec that run on a target, as the browser project's setup decides. */
   const running = (target: string) =>
     tests.filter((test) => test.requires.every((name) => supports(target, name)));
@@ -724,7 +726,9 @@ export function canaryCase(info: CaseInfo): CanaryCase {
     runs: (target) => running(target).length > 0,
     interacts: (target) => running(target).some((test) => test.acts),
     rerenders: (target) => running(target).some((test) => test.rerenders),
-    listens: existsSync(ir) && listens(JSON.parse(readFileSync(ir, "utf8")) as UfModule),
+    listens: irs.some(
+      (ir) => existsSync(ir) && listens(JSON.parse(readFileSync(ir, "utf8")) as UfModule),
+    ),
   };
 }
 
@@ -806,7 +810,9 @@ function wrongText(): CompilerPlugin {
     ir: (module) => {
       const copy = structuredClone(module);
       for (const { name, render } of copy.components) {
-        if (!markText(render)) {
+        // A component whose roots are components renders its text in them, and their own
+        // compiles mark it (ADR-0053).
+        if (!markText(render) && !rendersComponents(render)) {
           throw new Error(`${MARKER} ${name} renders no element that can hold text.`);
         }
       }
@@ -825,7 +831,16 @@ function markText(render: ElementNode | FragmentNode): boolean {
   const always =
     render.kind === "Element"
       ? [render]
-      : render.children.filter((node): node is ElementNode => node.kind === "Element");
+      : render.children.flatMap((node): ElementNode[] =>
+          node.kind === "Element"
+            ? [node]
+            : // A root component's fills render in it (ADR-0054).
+              node.kind === "Component"
+              ? node.fills.flatMap((fill) =>
+                  fill.children.filter((child): child is ElementNode => child.kind === "Element"),
+                )
+              : [],
+        );
   for (const root of always) {
     const holder = textHolder(root, "html");
     if (holder) {
@@ -842,6 +857,15 @@ function markText(render: ElementNode | FragmentNode): boolean {
     }
   }
   return marked;
+}
+
+/** Whether a component's roots are all components, whose own compiles render its text. */
+function rendersComponents(render: ElementNode | FragmentNode): boolean {
+  return (
+    render.kind === "Fragment" &&
+    render.children.length > 0 &&
+    render.children.every((node) => node.kind === "Component")
+  );
 }
 
 /**
@@ -1008,9 +1032,13 @@ function widenPublicTypes(file: OutputFile, target: string): string {
     case "vue":
       // `defineProps<any>()` declares no props to vue-tsc: each key takes anything instead.
       return anyTypeArguments(
-        anyTypeArguments(contents, /\bdefineProps</g, "Record<string, any>"),
-        /\bdefineEmits</g,
-        "Record<string, any[]>",
+        anyTypeArguments(
+          anyTypeArguments(contents, /\bdefineProps</g, "Record<string, any>"),
+          /\bdefineEmits</g,
+          "Record<string, any[]>",
+        ),
+        /\bdefineSlots</g,
+        "Record<string, (props: any) => any>",
       );
     case "angular":
       return anyTypeArguments(contents, /\b(?:input|output|model)(?:\.required)?</g);

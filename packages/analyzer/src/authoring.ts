@@ -9,7 +9,10 @@ import type { AST } from "@unframework/parser";
 import type { Reporter } from "./context.ts";
 import { isAuthoringModule } from "./frameworks.ts";
 
-/** The APIs M2 lowers (ADR-0045): the macros, the reactive APIs and `nextTick`. */
+/**
+ * The APIs the analyser lowers: M2's macros, reactive APIs and `nextTick` (ADR-0045), and M3's
+ * `defineSlots`, `defineExpose` and `defineOptions` (ADR-0054).
+ */
 export type AuthoringApi =
   | "ref"
   | "computed"
@@ -20,9 +23,12 @@ export type AuthoringApi =
   | "nextTick"
   | "defineEmits"
   | "useTemplateRef"
-  | "useId";
+  | "useId"
+  | "defineSlots"
+  | "defineExpose"
+  | "defineOptions";
 
-/** The APIs M2 lowers. */
+/** The APIs the analyser lowers. */
 export const AUTHORING_APIS: ReadonlySet<AuthoringApi> = new Set<AuthoringApi>([
   "ref",
   "computed",
@@ -34,14 +40,14 @@ export const AUTHORING_APIS: ReadonlySet<AuthoringApi> = new Set<AuthoringApi>([
   "defineEmits",
   "useTemplateRef",
   "useId",
+  "defineSlots",
+  "defineExpose",
+  "defineOptions",
 ]);
 
 /** The APIs the package exports that a later milestone lowers, and what each brings (UF1002). */
 export const LATER_APIS: ReadonlyMap<string, string> = new Map([
   ["defineModel", "two-way bindings (`defineModel` and `v-model`) land in M3"],
-  ["defineSlots", "slots land in M3"],
-  ["defineExpose", "exposing a component's API to a parent's template ref lands in M3"],
-  ["defineOptions", "component options (`inheritAttrs`) land in M3"],
   ["provide", "`provide` and `inject` land in M3"],
   ["inject", "`provide` and `inject` land in M3"],
 ]);

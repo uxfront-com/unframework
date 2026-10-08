@@ -1,0 +1,4 @@
+- list "Menu":
+  - listitem: Home
+  - listitem: Docs
+  - listitem: Blog

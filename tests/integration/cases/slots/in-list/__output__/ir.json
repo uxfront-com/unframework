@@ -1,0 +1,206 @@
+{
+  "irVersion": 1,
+  "file": "slots/in-list/Recipe.uf.tsx",
+  "components": [
+    {
+      "name": "Recipe",
+      "span": {
+        "start": 37,
+        "end": 233
+      },
+      "props": [
+        {
+          "name": "steps",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 88,
+              "end": 96
+            }
+          },
+          "binding": "steps@70",
+          "span": {
+            "start": 81,
+            "end": 96
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ steps: string[] }",
+          "span": {
+            "start": 79,
+            "end": 98
+          }
+        },
+        "span": {
+          "start": 68,
+          "end": 98
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "steps@70",
+          "name": "steps",
+          "kind": "prop",
+          "span": {
+            "start": 70,
+            "end": 75
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Steps",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "steps",
+                "value": {
+                  "code": "steps",
+                  "span": {
+                    "start": 143,
+                    "end": 148
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "steps@70",
+                      "span": {
+                        "start": 143,
+                        "end": 148
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 136,
+                  "end": 149
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "marker",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "span",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "aria-hidden",
+                        "value": "true",
+                        "span": {
+                          "start": 173,
+                          "end": 191
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "> ",
+                        "span": {
+                          "start": 192,
+                          "end": 197
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 167,
+                      "end": 204
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 153,
+                  "end": 204
+                }
+              }
+            ],
+            "span": {
+              "start": 129,
+              "end": 215
+            }
+          }
+        ],
+        "span": {
+          "start": 117,
+          "end": 226
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Recipe",
+      "span": {
+        "start": 37,
+        "end": 233
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Steps.uf.tsx",
+      "file": "Steps.uf.tsx",
+      "api": {
+        "file": "Steps.uf.tsx",
+        "components": [
+          {
+            "name": "Steps",
+            "export": "default",
+            "props": [
+              {
+                "name": "steps",
+                "optional": false,
+                "type": "string[]"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "marker",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "ol"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Steps",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    }
+  ]
+}

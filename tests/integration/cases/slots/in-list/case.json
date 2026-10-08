@@ -1,0 +1,11 @@
+{
+  "description": "A named slot rendered once for each item of a list: one fill, rendered as many times as there are items.",
+  "main": "Recipe.uf.tsx",
+  "ssr": {
+    "tea": {
+      "props": {
+        "steps": ["Boil water", "Steep", "Pour"]
+      }
+    }
+  }
+}

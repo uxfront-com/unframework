@@ -1,0 +1,232 @@
+{
+  "irVersion": 1,
+  "file": "components/three-levels/Section.uf.tsx",
+  "components": [
+    {
+      "name": "Section",
+      "span": {
+        "start": 41,
+        "end": 238
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 99,
+              "end": 105
+            }
+          },
+          "binding": "title@75",
+          "span": {
+            "start": 92,
+            "end": 106
+          }
+        },
+        {
+          "name": "body",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 113,
+              "end": 119
+            }
+          },
+          "binding": "body@82",
+          "span": {
+            "start": 107,
+            "end": 119
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ title: string; body: string }",
+          "span": {
+            "start": 90,
+            "end": 121
+          }
+        },
+        "span": {
+          "start": 73,
+          "end": 121
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "title@75",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 75,
+            "end": 80
+          }
+        },
+        {
+          "id": "body@82",
+          "name": "body",
+          "kind": "prop",
+          "span": {
+            "start": 82,
+            "end": 86
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "section",
+            "span": {
+              "start": 149,
+              "end": 164
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Heading",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "title",
+                  "span": {
+                    "start": 187,
+                    "end": 192
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@75",
+                      "span": {
+                        "start": 187,
+                        "end": 192
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 181,
+                  "end": 193
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 172,
+              "end": 196
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "body",
+                  "span": {
+                    "start": 207,
+                    "end": 211
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "body@82",
+                      "span": {
+                        "start": 207,
+                        "end": 211
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 206,
+                  "end": 212
+                }
+              }
+            ],
+            "span": {
+              "start": 203,
+              "end": 216
+            }
+          }
+        ],
+        "span": {
+          "start": 140,
+          "end": 231
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Section",
+      "span": {
+        "start": 41,
+        "end": 238
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Heading.uf.tsx",
+      "file": "Heading.uf.tsx",
+      "api": {
+        "file": "Heading.uf.tsx",
+        "components": [
+          {
+            "name": "Heading",
+            "export": "default",
+            "props": [
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "h3"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Heading",
+          "span": {
+            "start": 7,
+            "end": 14
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 39
+      }
+    }
+  ]
+}

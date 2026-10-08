@@ -1,0 +1,123 @@
+{
+  "irVersion": 1,
+  "file": "components/framework-names/Transition.uf.tsx",
+  "components": [
+    {
+      "name": "Transition",
+      "span": {
+        "start": 94,
+        "end": 203
+      },
+      "props": [
+        {
+          "name": "step",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 147,
+              "end": 153
+            }
+          },
+          "binding": "step@131",
+          "span": {
+            "start": 141,
+            "end": 153
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ step: string }",
+          "span": {
+            "start": 139,
+            "end": 155
+          }
+        },
+        "span": {
+          "start": 129,
+          "end": 155
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "step@131",
+          "name": "step",
+          "kind": "prop",
+          "span": {
+            "start": 131,
+            "end": 135
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "step",
+            "span": {
+              "start": 171,
+              "end": 183
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Step: ",
+            "span": {
+              "start": 184,
+              "end": 190
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "step",
+              "span": {
+                "start": 191,
+                "end": 195
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "step@131",
+                  "span": {
+                    "start": 191,
+                    "end": 195
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 190,
+              "end": 196
+            }
+          }
+        ],
+        "span": {
+          "start": 168,
+          "end": 200
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Transition",
+      "span": {
+        "start": 94,
+        "end": 203
+      }
+    }
+  ],
+  "types": []
+}

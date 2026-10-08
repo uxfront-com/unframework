@@ -1,0 +1,8 @@
+error[UF3045]: Stack's root is not one element or one component, so no target knows where a `class` or a `style` passed to it goes.
+  --> diagnostics/dropped-fallthrough/Page.uf.tsx:15:14
+   |
+15 |       <Stack class="spaced" />
+   |              ^^^^^
+   |
+   = help: Give Stack one root element, or pass a prop it declares.
+   = see: https://unframework.dev/diagnostics/UF3045

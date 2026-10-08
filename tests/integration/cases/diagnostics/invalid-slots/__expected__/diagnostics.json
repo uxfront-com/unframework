@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF2029",
+    "severity": "error",
+    "message": "The slot `default` is required: every slot is optional, since a parent may leave it empty and the fallback renders.",
+    "file": "diagnostics/invalid-slots/Dialog.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 31,
+      "offset": 367
+    },
+    "end": {
+      "line": 7,
+      "column": 38,
+      "offset": 374
+    },
+    "help": "Write `default?(…)`."
+  },
+  {
+    "code": "UF2029",
+    "severity": "error",
+    "message": "The slot `title` is named like the prop `title`: React, Solid, Qwik and Astro pass a slot as a prop, so the two would collide.",
+    "file": "diagnostics/invalid-slots/Dialog.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 51,
+      "offset": 387
+    },
+    "end": {
+      "line": 7,
+      "column": 56,
+      "offset": 392
+    },
+    "help": "Rename the slot."
+  }
+]

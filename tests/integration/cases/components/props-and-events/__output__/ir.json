@@ -1,0 +1,430 @@
+{
+  "irVersion": 1,
+  "file": "components/props-and-events/Form.uf.tsx",
+  "components": [
+    {
+      "name": "Form",
+      "span": {
+        "start": 73,
+        "end": 482
+      },
+      "props": [
+        {
+          "name": "city",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 120,
+              "end": 126
+            }
+          },
+          "binding": "city@104",
+          "span": {
+            "start": 114,
+            "end": 126
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ city: string }",
+          "span": {
+            "start": 112,
+            "end": 128
+          }
+        },
+        "span": {
+          "start": 102,
+          "end": 128
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "city@104",
+          "name": "city",
+          "kind": "prop",
+          "span": {
+            "start": 104,
+            "end": 108
+          }
+        },
+        {
+          "id": "cleared@140",
+          "name": "cleared",
+          "kind": "state",
+          "span": {
+            "start": 140,
+            "end": 147
+          }
+        },
+        {
+          "id": "clear@177",
+          "name": "clear",
+          "kind": "localFn",
+          "span": {
+            "start": 177,
+            "end": 182
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "cleared@140",
+          "initial": {
+            "code": "\"nothing\"",
+            "span": {
+              "start": 154,
+              "end": 163
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 134,
+            "end": 165
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "clear@177",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "label",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 190,
+                    "end": 196
+                  }
+                },
+                "span": {
+                  "start": 183,
+                  "end": 196
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    cleared.value = label;\n  }",
+              "span": {
+                "start": 198,
+                "end": 230
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "cleared@140",
+                  "operator": "=",
+                  "span": {
+                    "start": 204,
+                    "end": 225
+                  },
+                  "target": {
+                    "start": 204,
+                    "end": 217
+                  },
+                  "value": {
+                    "start": 220,
+                    "end": 225
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 182,
+              "end": 230
+            }
+          },
+          "span": {
+            "start": 168,
+            "end": 230
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Address",
+            "span": {
+              "start": 255,
+              "end": 275
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Field",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Street\"",
+                  "span": {
+                    "start": 296,
+                    "end": 304
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 290,
+                  "end": 304
+                }
+              },
+              {
+                "kind": "Listener",
+                "event": "clear",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "clear@177",
+                  "span": {
+                    "start": 314,
+                    "end": 319
+                  }
+                },
+                "span": {
+                  "start": 305,
+                  "end": 320
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 283,
+              "end": 323
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Field",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "city",
+                  "span": {
+                    "start": 344,
+                    "end": 348
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "city@104",
+                      "span": {
+                        "start": 344,
+                        "end": 348
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 337,
+                  "end": 349
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "tone",
+                "value": {
+                  "code": "\"warn\"",
+                  "span": {
+                    "start": 355,
+                    "end": 361
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 350,
+                  "end": 361
+                }
+              },
+              {
+                "kind": "Listener",
+                "event": "clear",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [
+                      {
+                        "name": "label",
+                        "span": {
+                          "start": 372,
+                          "end": 377
+                        }
+                      }
+                    ],
+                    "body": {
+                      "code": "clear(label.toUpperCase())",
+                      "span": {
+                        "start": 382,
+                        "end": 408
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "clear@177",
+                          "span": {
+                            "start": 382,
+                            "end": 387
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 371,
+                      "end": 408
+                    }
+                  },
+                  "span": {
+                    "start": 371,
+                    "end": 408
+                  }
+                },
+                "span": {
+                  "start": 362,
+                  "end": 409
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 330,
+              "end": 412
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Cleared: ",
+                "span": {
+                  "start": 427,
+                  "end": 436
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "cleared.value",
+                  "span": {
+                    "start": 437,
+                    "end": 450
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "cleared@140",
+                      "span": {
+                        "start": 437,
+                        "end": 450
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 436,
+                  "end": 451
+                }
+              }
+            ],
+            "span": {
+              "start": 419,
+              "end": 460
+            }
+          }
+        ],
+        "span": {
+          "start": 246,
+          "end": 475
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Form",
+      "span": {
+        "start": 73,
+        "end": 482
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Field.uf.tsx",
+      "file": "Field.uf.tsx",
+      "api": {
+        "file": "Field.uf.tsx",
+        "components": [
+          {
+            "name": "Field",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "tone",
+                "optional": true,
+                "type": "\"info\" | \"warn\""
+              }
+            ],
+            "events": [
+              {
+                "name": "clear",
+                "parameters": [
+                  {
+                    "name": "label",
+                    "type": "string"
+                  }
+                ]
+              }
+            ],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Field",
+          "span": {
+            "start": 43,
+            "end": 48
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 71
+      }
+    }
+  ]
+}

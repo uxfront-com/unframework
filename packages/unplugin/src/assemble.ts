@@ -1,8 +1,9 @@
 // What a module id loads: the target's output file whose extension matches the id. A `.uf.tsx`
 // file with several components compiles to one such file per component, and one module id can
-// only load one module, so script files are joined and other kinds are refused. A script module
-// keeps the `.uf.tsx` file's exports; a markup file's module has only a default export, so a
-// component exported by name is refused there too.
+// only load one module, so script files are joined, and a markup target's main id loads its main
+// component's file while each other component loads under a component id (ADR-0053). A script
+// module keeps the `.uf.tsx` file's exports; a markup file's module has only a default export, so
+// a main component exported by name is refused there.
 import type { OutputFile } from "@unframework/codegen";
 import { parseModule } from "@unframework/parser";
 import type { AST } from "@unframework/parser";
@@ -22,6 +23,11 @@ export interface AssemblyInput {
   files: readonly OutputFile[];
   /** What the `.uf.tsx` file exports (the IR's exports): `name` is `"default"` or a name. */
   exports: readonly { name: string; local: string }[];
+  /**
+   * The paths of every file the compile emitted: an output's import of one of them is an import
+   * of a component the joined module holds already, which the join leaves out (ADR-0053).
+   */
+  siblings?: readonly string[];
 }
 
 // Script modules can be joined into one module; markup files (.vue, .svelte, .astro) hold one
@@ -49,21 +55,23 @@ export function assembleModule(input: AssemblyInput): Assembly {
     return joinModules(
       matching,
       `${filename} compiles to ${matching.length} ${target} files (${paths})`,
+      input.siblings,
     );
   }
   if (matching.length > 1) {
     const paths = matching.map((file) => file.path).join(", ");
     return {
-      error: `${filename} compiles to ${matching.length} ${target} components (${paths}), and a ${extension} file holds one, so they cannot load as one module. Several components in one .uf.tsx file are supported for markup targets from M3 (composition); until then, give each component its own .uf.tsx file.`,
+      error: `${filename} compiles to ${matching.length} ${target} files for one component (${paths}), and a ${extension} file holds one, so they cannot load as one module.`,
     };
   }
-  // M3 (composition) decides whether a markup target's module also exports its component by
-  // name, for instance through a module that re-exports the framework's default under each name.
+  // M6 decides whether a markup target's module also exports its component by name, for
+  // instance through a module that re-exports the framework's default under each name
+  // (ADR-0053's open item). Outputs never need it: they import each other's files.
   const named = exports.filter((entry) => entry.name !== "default");
   if (named.length > 0) {
     const names = named.map((entry) => `\`${entry.name}\``).join(", ");
     return {
-      error: `${filename} exports ${names} by name, and the module of a ${extension} file has only a default export, so \`import { ${named[0]!.name} }\` would find nothing on the ${target} target. Named exports of components on markup targets come with composition (M3); until then, export the component as the default only: \`export default function ${named[0]!.local}() { … }\`.`,
+      error: `${filename} exports ${names} by name, and the module of a ${extension} file has only a default export, so \`import { ${named[0]!.name} }\` would find nothing on the ${target} target. Export the file's main component as the default: \`export default function ${named[0]!.local}() { … }\`.`,
     };
   }
   return { code: matching[0]!.contents };
@@ -74,7 +82,15 @@ export function assembleModule(input: AssemblyInput): Assembly {
  * already wrote, character for character, is left out; any other name that two files declare
  * or export would make the joined module invalid, so it is an error that names the clash.
  */
-export function joinModules(files: readonly OutputFile[], context: string): Assembly {
+export function joinModules(
+  files: readonly OutputFile[],
+  context: string,
+  siblings: readonly string[] = [],
+): Assembly {
+  // `./Note` and `./Note.tsx` name a file of the join.
+  const joined = new Set(
+    siblings.flatMap((path) => [`./${path}`, `./${path.replace(/\.[^./]+$/, "")}`]),
+  );
   const seenImports = new Set<string>();
   const declaredBy = new Map<string, string[]>();
   const exportedBy = new Map<string, string[]>();
@@ -91,7 +107,7 @@ export function joinModules(files: readonly OutputFile[], context: string): Asse
     for (const statement of parsed.program.body) {
       if (statement.type === "ImportDeclaration") {
         const text = file.contents.slice(statement.start, statement.end);
-        if (seenImports.has(text)) {
+        if (joined.has(statement.source.value) || seenImports.has(text)) {
           repeated.push(statement);
           continue;
         }

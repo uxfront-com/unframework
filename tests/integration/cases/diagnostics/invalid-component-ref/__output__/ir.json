@@ -1,0 +1,105 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/invalid-component-ref/Form.uf.tsx",
+  "components": [
+    {
+      "name": "Hint",
+      "span": {
+        "start": 155,
+        "end": 245
+      },
+      "props": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 187,
+              "end": 193
+            }
+          },
+          "binding": "text@171",
+          "span": {
+            "start": 181,
+            "end": 193
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ text: string }",
+          "span": {
+            "start": 179,
+            "end": 195
+          }
+        },
+        "span": {
+          "start": 169,
+          "end": 195
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "text@171",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 171,
+            "end": 175
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "small",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "hint",
+            "span": {
+              "start": 215,
+              "end": 227
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "text",
+              "span": {
+                "start": 229,
+                "end": 233
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "text@171",
+                  "span": {
+                    "start": 229,
+                    "end": 233
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 228,
+              "end": 234
+            }
+          }
+        ],
+        "span": {
+          "start": 208,
+          "end": 242
+        }
+      }
+    }
+  ],
+  "exports": [],
+  "types": []
+}

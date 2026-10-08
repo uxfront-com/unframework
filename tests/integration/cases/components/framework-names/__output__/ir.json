@@ -1,0 +1,239 @@
+{
+  "irVersion": 1,
+  "file": "components/framework-names/Wizard.uf.tsx",
+  "components": [
+    {
+      "name": "Wizard",
+      "span": {
+        "start": 155,
+        "end": 352
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Wizard",
+            "span": {
+              "start": 214,
+              "end": 233
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Transition",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "step",
+                "value": {
+                  "code": "\"details\"",
+                  "span": {
+                    "start": 258,
+                    "end": 267
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 253,
+                  "end": 267
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 241,
+              "end": 270
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "TransitionComponent",
+            "attributes": [],
+            "fills": [],
+            "span": {
+              "start": 277,
+              "end": 300
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "KeepAlive",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "level",
+                "value": {
+                  "code": "2",
+                  "span": {
+                    "start": 325,
+                    "end": 326
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 318,
+                  "end": 327
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 307,
+              "end": 330
+            }
+          }
+        ],
+        "span": {
+          "start": 205,
+          "end": 345
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Wizard",
+      "span": {
+        "start": 155,
+        "end": 352
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./KeepAlive.uf.tsx",
+      "file": "KeepAlive.uf.tsx",
+      "api": {
+        "file": "KeepAlive.uf.tsx",
+        "components": [
+          {
+            "name": "KeepAlive",
+            "export": "default",
+            "props": [
+              {
+                "name": "level",
+                "optional": false,
+                "type": "number"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "KeepAlive",
+          "span": {
+            "start": 7,
+            "end": 16
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 43
+      }
+    },
+    {
+      "specifier": "./Transition.uf.tsx",
+      "file": "Transition.uf.tsx",
+      "api": {
+        "file": "Transition.uf.tsx",
+        "components": [
+          {
+            "name": "Transition",
+            "export": "default",
+            "props": [
+              {
+                "name": "step",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "p"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Transition",
+          "span": {
+            "start": 51,
+            "end": 61
+          }
+        }
+      ],
+      "span": {
+        "start": 44,
+        "end": 89
+      }
+    },
+    {
+      "specifier": "./TransitionComponent.uf.tsx",
+      "file": "TransitionComponent.uf.tsx",
+      "api": {
+        "file": "TransitionComponent.uf.tsx",
+        "components": [
+          {
+            "name": "TransitionComponent",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "p"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "TransitionComponent",
+          "span": {
+            "start": 97,
+            "end": 116
+          }
+        }
+      ],
+      "span": {
+        "start": 90,
+        "end": 153
+      }
+    }
+  ]
+}

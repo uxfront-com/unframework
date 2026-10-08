@@ -1,0 +1,48 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/unknown-component/Page.uf.tsx",
+  "components": [
+    {
+      "name": "Header",
+      "span": {
+        "start": 132,
+        "end": 200
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "header",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "header",
+            "span": {
+              "start": 169,
+              "end": 183
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Site",
+            "span": {
+              "start": 184,
+              "end": 188
+            }
+          }
+        ],
+        "span": {
+          "start": 161,
+          "end": 197
+        }
+      }
+    }
+  ],
+  "exports": [],
+  "types": []
+}

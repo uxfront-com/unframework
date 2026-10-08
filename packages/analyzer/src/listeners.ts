@@ -335,6 +335,52 @@ function lowerHandler(
 }
 
 /**
+ * Lowers the handler of a listener on a component (ADR-0053): a local function's name, or an
+ * arrow function, whose parameters are the event's payload, never a DOM event (UF3029 for
+ * anything else).
+ */
+export function lowerComponentHandler(
+  item: AST.JSXAttribute,
+  render: RenderContext,
+): Handler | undefined {
+  const { reporter, source } = render;
+  const invalid = (at: { start: number; end: number }, message: string) => {
+    reporter.report("UF3029", at, message, {
+      help: "Name a local function (`onClear={reset}`), or write an arrow function (`onClear={(reason) => log(reason)}`).",
+    });
+    return undefined;
+  };
+  const value = item.value;
+  if (value?.type !== "JSXExpressionContainer" || value.expression.type === "JSXEmptyExpression") {
+    return invalid(
+      value ?? item,
+      "A listener's handler is a local function's name or an arrow function.",
+    );
+  }
+  const expression = value.expression;
+  if (expression.type === "Identifier") {
+    const binding = setupBindingOf(expression, render);
+    if (binding?.kind === "localFn") return createFunctionHandler(binding.id, span(expression));
+    return invalid(
+      expression,
+      `\`${expression.name}\` is not a local function: a handler is a function the component's setup declares, or an arrow function.`,
+    );
+  }
+  if (expression.type !== "ArrowFunctionExpression") {
+    return invalid(
+      expression,
+      "A handler is a local function's name or an arrow function, written in place.",
+    );
+  }
+  checkCopiedText(span(expression), source, reporter, "A handler");
+  checkDirectives(span(expression), render.comments, reporter);
+  const lowered = lowerFunction(expression, render, { role: "handler" });
+  const fits = capturable(expression, lowered.function.body.refs, render);
+  if (!lowered.clean || !fits) return undefined;
+  return createInlineHandler(lowered.function, span(expression));
+}
+
+/**
  * A handler that names a local function (ADR-0047): the function's first parameter, when it has
  * one, is the event's, of an interface the event's extends (UF3029).
  */

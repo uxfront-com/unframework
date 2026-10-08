@@ -1,0 +1,149 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/inherit-attrs-false/Form.uf.tsx",
+  "components": [
+    {
+      "name": "Form",
+      "span": {
+        "start": 37,
+        "end": 190
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "form",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Sign up",
+            "span": {
+              "start": 91,
+              "end": 111
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Field",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Email\"",
+                  "span": {
+                    "start": 132,
+                    "end": 139
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 126,
+                  "end": 139
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 119,
+              "end": 142
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Field",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Name\"",
+                  "span": {
+                    "start": 162,
+                    "end": 168
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 156,
+                  "end": 168
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 149,
+              "end": 171
+            }
+          }
+        ],
+        "span": {
+          "start": 85,
+          "end": 183
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Form",
+      "span": {
+        "start": 37,
+        "end": 190
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Field.uf.tsx",
+      "file": "Field.uf.tsx",
+      "api": {
+        "file": "Field.uf.tsx",
+        "components": [
+          {
+            "name": "Field",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": false,
+            "root": "element",
+            "rootTag": "label"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Field",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    }
+  ]
+}

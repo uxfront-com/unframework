@@ -2,18 +2,18 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "Rest props (`...rest`) are fallthrough attributes, which land in M3.",
+    "message": "A component whose root is an SVG <text> is not supported yet: its namespace comes from its parent, which lands in M8.",
     "file": "diagnostics/unsupported-syntax/Chip.uf.tsx",
     "start": {
-      "line": 7,
-      "column": 39,
-      "offset": 206
+      "line": 8,
+      "column": 11,
+      "offset": 242
     },
     "end": {
-      "line": 7,
-      "column": 46,
-      "offset": 213
+      "line": 8,
+      "column": 15,
+      "offset": 246
     },
-    "help": "Destructure each prop by its name."
+    "help": "Make the <svg> the root."
   }
 ]

@@ -1,0 +1,150 @@
+{
+  "irVersion": 1,
+  "file": "slots/forwarding/Box.uf.tsx",
+  "components": [
+    {
+      "name": "Box",
+      "span": {
+        "start": 88,
+        "end": 339
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@128",
+        "type": {
+          "code": "{ title?(): Element; default?(): Element }",
+          "span": {
+            "start": 148,
+            "end": 190
+          }
+        },
+        "slots": [
+          {
+            "name": "title",
+            "optional": true,
+            "span": {
+              "start": 150,
+              "end": 168
+            }
+          },
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 169,
+              "end": 188
+            }
+          }
+        ],
+        "span": {
+          "start": 122,
+          "end": 194
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@128",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 128,
+            "end": 133
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "box",
+            "span": {
+              "start": 215,
+              "end": 226
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h3",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "SlotOutlet",
+                "slot": "title",
+                "fallback": [
+                  {
+                    "kind": "Text",
+                    "value": "Untitled",
+                    "span": {
+                      "start": 258,
+                      "end": 268
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 238,
+                  "end": 269
+                }
+              }
+            ],
+            "span": {
+              "start": 234,
+              "end": 274
+            }
+          },
+          {
+            "kind": "SlotOutlet",
+            "slot": "default",
+            "fallback": [
+              {
+                "kind": "Element",
+                "tag": "p",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "No content",
+                    "span": {
+                      "start": 306,
+                      "end": 316
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 303,
+                  "end": 320
+                }
+              }
+            ],
+            "span": {
+              "start": 281,
+              "end": 321
+            }
+          }
+        ],
+        "span": {
+          "start": 210,
+          "end": 332
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Box",
+      "span": {
+        "start": 88,
+        "end": 339
+      }
+    }
+  ],
+  "types": []
+}

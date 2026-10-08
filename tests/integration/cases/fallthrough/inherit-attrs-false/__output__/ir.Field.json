@@ -1,0 +1,160 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/inherit-attrs-false/Field.uf.tsx",
+  "components": [
+    {
+      "name": "Field",
+      "span": {
+        "start": 119,
+        "end": 330
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 169,
+              "end": 175
+            }
+          },
+          "binding": "label@151",
+          "span": {
+            "start": 162,
+            "end": 175
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 160,
+            "end": 177
+          }
+        },
+        "span": {
+          "start": 149,
+          "end": 177
+        }
+      },
+      "types": [],
+      "inheritAttrs": false,
+      "bindings": [
+        {
+          "id": "label@151",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 151,
+            "end": 156
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "label",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "field",
+            "span": {
+              "start": 245,
+              "end": 258
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 267,
+                "end": 272
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@151",
+                  "span": {
+                    "start": 267,
+                    "end": 272
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 266,
+              "end": 273
+            }
+          },
+          {
+            "kind": "Text",
+            "value": " ",
+            "span": {
+              "start": 273,
+              "end": 274
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "input",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "name",
+                "value": {
+                  "code": "label.toLowerCase()",
+                  "span": {
+                    "start": 287,
+                    "end": 306
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@151",
+                      "span": {
+                        "start": 287,
+                        "end": 292
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 281,
+                  "end": 307
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 274,
+              "end": 310
+            }
+          }
+        ],
+        "span": {
+          "start": 238,
+          "end": 323
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Field",
+      "span": {
+        "start": 119,
+        "end": 330
+      }
+    }
+  ],
+  "types": []
+}

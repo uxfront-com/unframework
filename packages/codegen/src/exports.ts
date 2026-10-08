@@ -32,9 +32,16 @@ function isDeclaration(
   return node.type === "FunctionDeclaration" || node.type === "ClassDeclaration";
 }
 
-/** The exports of one component, in source order. */
+/**
+ * The exports of one component, in source order. A component the module does not export is
+ * exported by its name all the same: it is a sibling file of the module's (ADR-0053), which its
+ * siblings import, and which the module's public exports leave out.
+ */
 export function exportsOf(component: string, exports: readonly UfExport[]): UfExport[] {
-  return exports.filter((entry) => entry.local === component);
+  const own = exports.filter((entry) => entry.local === component);
+  return own.length
+    ? own
+    : [{ kind: "named", name: component, local: component, span: { start: 0, end: 0 } }];
 }
 
 /**

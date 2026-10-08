@@ -1,0 +1,11 @@
+{
+  "description": "A component as each branch of a conditional: the branch that renders swaps when the condition changes.",
+  "main": "Inbox.uf.tsx",
+  "ssr": {
+    "five": {
+      "props": {
+        "unread": 5
+      }
+    }
+  }
+}

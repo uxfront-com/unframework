@@ -1,0 +1,181 @@
+{
+  "irVersion": 1,
+  "file": "components/branch-content/Notice.uf.tsx",
+  "components": [
+    {
+      "name": "Notice",
+      "span": {
+        "start": 0,
+        "end": 177
+      },
+      "props": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 55,
+              "end": 61
+            }
+          },
+          "binding": "text@33",
+          "span": {
+            "start": 49,
+            "end": 62
+          }
+        },
+        {
+          "name": "tone",
+          "optional": false,
+          "type": {
+            "code": "\"info\" | \"quiet\"",
+            "span": {
+              "start": 69,
+              "end": 85
+            }
+          },
+          "binding": "tone@39",
+          "span": {
+            "start": 63,
+            "end": 85
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ text: string; tone: \"info\" | \"quiet\" }",
+          "span": {
+            "start": 47,
+            "end": 87
+          }
+        },
+        "span": {
+          "start": 31,
+          "end": 87
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "text@33",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 33,
+            "end": 37
+          }
+        },
+        {
+          "id": "tone@39",
+          "name": "tone",
+          "kind": "prop",
+          "span": {
+            "start": 39,
+            "end": 43
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "status",
+            "span": {
+              "start": 109,
+              "end": 122
+            }
+          },
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Static",
+                "value": "notice",
+                "span": {
+                  "start": 131,
+                  "end": 139
+                }
+              },
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "tone",
+                  "span": {
+                    "start": 141,
+                    "end": 145
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tone@39",
+                      "span": {
+                        "start": 141,
+                        "end": 145
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 141,
+                  "end": 145
+                }
+              }
+            ],
+            "span": {
+              "start": 123,
+              "end": 147
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "text",
+              "span": {
+                "start": 156,
+                "end": 160
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "text@33",
+                  "span": {
+                    "start": 156,
+                    "end": 160
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 155,
+              "end": 161
+            }
+          }
+        ],
+        "span": {
+          "start": 106,
+          "end": 170
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Notice",
+      "span": {
+        "start": 0,
+        "end": 177
+      }
+    }
+  ],
+  "types": []
+}

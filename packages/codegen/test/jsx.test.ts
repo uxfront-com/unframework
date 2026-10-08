@@ -5,6 +5,7 @@ import {
   createBranch,
   createClassAttribute,
   createComponent,
+  createComponentNode,
   createDynamicClass,
   createElement,
   createEventAttribute,
@@ -15,10 +16,15 @@ import {
   createFragment,
   createIf,
   createInterpolation,
+  createListenerAttribute,
   createParameter,
+  createParameterPattern,
   createProp,
+  createPropAttribute,
   createPropsParameter,
   createRefAttribute,
+  createSlotFill,
+  createSlotOutlet,
   createSpreadAttribute,
   createSpreadKey,
   createStaticAttribute,
@@ -36,12 +42,15 @@ import { describe, expect, it } from "vitest";
 
 import {
   boundJsxAttribute,
+  fillJsxAttribute,
   formatOutput,
   js,
   jsxChildren,
   jsxContext,
+  jsxFillValue,
   jsxHandler,
   jsxNode,
+  jsxSlotProps,
   printExpression,
   styleKey,
   styleObject,
@@ -754,3 +763,78 @@ describe("listeners and template refs", () => {
     );
   });
 });
+
+describe("composition (ADR-0053, ADR-0054)", () => {
+  const child = createComponentNode(
+    "Field",
+    [
+      createPropAttribute("label", expr('"Name"'), at),
+      createPropAttribute("tone", expr("tone", ["tone", tone]), at),
+      createListenerAttribute("clear", createFunctionHandler(save.id, at), at),
+      createClassAttribute([createStaticClass("wide", at)], at),
+    ],
+    [
+      createSlotFill("default", [text("Hi")], at),
+      createSlotFill("title", [el("h2", [], text("Title"))], at),
+      createSlotFill("item", [show("item", ["item", item])], at, {
+        parameter: createParameter(createParameterPattern("{ item }", ["item"], at), at),
+      }),
+      createSlotFill("footer", [], at, { forward: "footer" }),
+    ],
+    at,
+  );
+
+  it("prints a component's attributes and fills through the defaults and the dialect", () => {
+    const dialect: JsxDialect = {
+      slotValue: (slot) => printedIdentifier(slot),
+      fillAttribute: (fill, node, context) =>
+        fill.parameter
+          ? [
+              js.jsxAttribute(
+                `render${fill.slot.charAt(0).toUpperCase()}${fill.slot.slice(1)}`,
+                js.jsxExpressionContainer(jsxFillValue(fill, context)),
+              ),
+            ]
+          : fillJsxAttribute(fill, node, context),
+    };
+    expect(print(el("div", [], child), { dialect })).toBe(
+      '<div><Field label="Name" tone={tone} onClear={save} class={["wide"]} title={<h2>Title</h2>} renderItem={({ item }) => item} footer={footer}>Hi</Field></div>',
+    );
+  });
+
+  it("prints a component as a list's body, its key first", () => {
+    const list = createFor(
+      expr("items", ["items", items]),
+      item.id,
+      expr("item", ["item", item]),
+      createComponentNode("Row", [], [], at),
+      at,
+    );
+    expect(print(el("ul", [], list))).toBe("<ul>{items.map((item) => <Row key={item} />)}</ul>");
+  });
+
+  it("renders a slot through the dialect, and throws where it has no hook", () => {
+    const outlet = createSlotOutlet(
+      "title",
+      [text("Untitled")],
+      at,
+      expr("{ item }", ["item", item]),
+    );
+    const dialect: JsxDialect = {
+      slotOutlet: (node, context) =>
+        js.callExpression(printedIdentifier(`${node.slot}?.`), [jsxSlotProps(node, context)!]),
+    };
+    expect(print(el("div", [], outlet), { dialect })).toBe("<div>{title?.({ item })}</div>");
+    expect(() => print(el("div", [], outlet))).toThrow(
+      "The JSX dialect does not print composition yet (slotOutlet).",
+    );
+    expect(() => print(el("div", [], child), {})).toThrow(
+      "The JSX dialect does not print composition yet (slotValue).",
+    );
+  });
+});
+
+/** An identifier printed as `name`, which may hold what no identifier does (`title?.`). */
+function printedIdentifier(name: string) {
+  return js.identifier(name);
+}

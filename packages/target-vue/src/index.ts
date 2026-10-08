@@ -1,6 +1,7 @@
-import { compositionUse, defineTarget, printMarkup, vueDialect } from "@unframework/codegen";
+import { defineTarget, printMarkup, vueDialect } from "@unframework/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
-import type { UfComponent } from "@unframework/ir";
+import { walk } from "@unframework/ir";
+import type { Span, UfComponent, UfModule } from "@unframework/ir";
 
 import { scriptSetup } from "./script.ts";
 
@@ -72,19 +73,19 @@ export const vue: Target = defineTarget({
     "dynamic-component": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // Composition's cells are declared before this target emits it (ADR-0055): until M3's lane
-    // for Vue lands, a component that uses it is reported, never emitted without it (P2).
-    const composition = compositionUse(context.module, component);
-    if (composition) {
+    // Models, context and `<component is>` (ADR-0055) are not emitted yet: a component that
+    // uses one is reported, never emitted without it (P2).
+    const later = laterComposition(context.module, component);
+    if (later) {
       context.report({
         code: "UF1002",
         severity: "error",
-        message: `The vue target does not emit ${composition.what} yet: composition lands in M3.`,
-        span: composition.span,
+        message: `The vue target does not emit ${later.what} yet: models, context and \`<component is>\` land later in M3.`,
+        span: later.span,
       });
       return [];
     }
-    const { block, rewrite, listeners } = scriptSetup(component, context.module);
+    const { block, rewrite, listeners, components } = scriptSetup(component, context.module);
     // The component resolves the names of loop variables.
     const template = printMarkup(component.render, vueDialect, {
       level: 1,
@@ -92,6 +93,7 @@ export const vue: Target = defineTarget({
       rewrite,
       attribute: (attribute) =>
         attribute.kind === "Event" ? listeners.attributes.get(attribute) : undefined,
+      componentTag: (name) => components.get(name),
     });
     const parts = [...(block === undefined ? [] : [block]), `<template>\n${template}\n</template>`];
     return [{ path: `${component.name}.vue`, contents: `${parts.join("\n\n")}\n` }];
@@ -99,3 +101,39 @@ export const vue: Target = defineTarget({
 });
 
 export default vue;
+
+/**
+ * Where a component first uses what this target does not emit yet, in source order: a model, a
+ * `v-model`, `provide`, `inject`, an injection key of its module (its first component's), or
+ * `<component is>`.
+ */
+function laterComposition(
+  module: UfModule,
+  component: UfComponent,
+): { what: string; span: Span } | undefined {
+  const uses: { what: string; span: Span }[] = [];
+  for (const item of component.setup) {
+    if (item.kind === "Model") uses.push({ what: "`defineModel`", span: item.span });
+    else if (item.kind === "Provide") uses.push({ what: "`provide`", span: item.span });
+    else if (item.kind === "Inject") uses.push({ what: "`inject`", span: item.span });
+  }
+  const [key] = module.keys ?? [];
+  if (key && module.components[0] === component) {
+    uses.push({ what: "an injection key", span: key.span });
+  }
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "Dynamic") uses.push({ what: "`<component is>`", span: node.span });
+      if (node.kind !== "Element" && node.kind !== "Component") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Model" || attribute.kind === "ModelBinding") {
+          uses.push({ what: "`v-model`", span: attribute.span });
+        }
+      }
+    },
+  });
+  return uses.reduce<{ what: string; span: Span } | undefined>(
+    (first, use) => (first && first.span.start <= use.span.start ? first : use),
+    undefined,
+  );
+}

@@ -1,0 +1,297 @@
+{
+  "irVersion": 1,
+  "file": "expose/several/Controls.uf.tsx",
+  "components": [
+    {
+      "name": "Controls",
+      "span": {
+        "start": 88,
+        "end": 496
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "counter@133",
+          "name": "counter",
+          "kind": "templateRef",
+          "span": {
+            "start": 133,
+            "end": 140
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "TemplateRef",
+          "binding": "counter@133",
+          "type": {
+            "code": "{ increment(): void; reset(): void }",
+            "span": {
+              "start": 158,
+              "end": 194
+            }
+          },
+          "span": {
+            "start": 127,
+            "end": 198
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "controls",
+            "span": {
+              "start": 219,
+              "end": 235
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Counter",
+            "attributes": [
+              {
+                "kind": "Ref",
+                "binding": "counter@133",
+                "span": {
+                  "start": 252,
+                  "end": 265
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "start",
+                "value": {
+                  "code": "10",
+                  "span": {
+                    "start": 273,
+                    "end": 275
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 266,
+                  "end": 276
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 243,
+              "end": 279
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 294,
+                  "end": 307
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "counter.value?.increment()",
+                      "span": {
+                        "start": 323,
+                        "end": 349
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "counter@133",
+                          "span": {
+                            "start": 323,
+                            "end": 336
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 317,
+                      "end": 349
+                    }
+                  },
+                  "span": {
+                    "start": 317,
+                    "end": 349
+                  }
+                },
+                "span": {
+                  "start": 308,
+                  "end": 350
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "More",
+                "span": {
+                  "start": 351,
+                  "end": 371
+                }
+              }
+            ],
+            "span": {
+              "start": 286,
+              "end": 380
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 395,
+                  "end": 408
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "counter.value?.reset()",
+                      "span": {
+                        "start": 424,
+                        "end": 446
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "counter@133",
+                          "span": {
+                            "start": 424,
+                            "end": 437
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 418,
+                      "end": 446
+                    }
+                  },
+                  "span": {
+                    "start": 418,
+                    "end": 446
+                  }
+                },
+                "span": {
+                  "start": 409,
+                  "end": 447
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Reset",
+                "span": {
+                  "start": 448,
+                  "end": 469
+                }
+              }
+            ],
+            "span": {
+              "start": 387,
+              "end": 478
+            }
+          }
+        ],
+        "span": {
+          "start": 214,
+          "end": 489
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Controls",
+      "span": {
+        "start": 88,
+        "end": 496
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Counter.uf.tsx",
+      "file": "Counter.uf.tsx",
+      "api": {
+        "file": "Counter.uf.tsx",
+        "components": [
+          {
+            "name": "Counter",
+            "export": "default",
+            "props": [
+              {
+                "name": "start",
+                "optional": false,
+                "type": "number"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [
+              "increment",
+              "reset"
+            ],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "output"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Counter",
+          "span": {
+            "start": 54,
+            "end": 61
+          }
+        }
+      ],
+      "span": {
+        "start": 47,
+        "end": 86
+      }
+    }
+  ]
+}

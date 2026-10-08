@@ -1,0 +1,340 @@
+{
+  "irVersion": 1,
+  "file": "slots/prop-names/Directory.uf.tsx",
+  "components": [
+    {
+      "name": "Directory",
+      "span": {
+        "start": 96,
+        "end": 378
+      },
+      "props": [
+        {
+          "name": "people",
+          "optional": false,
+          "type": {
+            "code": "Person[]",
+            "span": {
+              "start": 152,
+              "end": 160
+            }
+          },
+          "binding": "people@132",
+          "span": {
+            "start": 144,
+            "end": 160
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ people: Person[] }",
+          "span": {
+            "start": 142,
+            "end": 162
+          }
+        },
+        "span": {
+          "start": 130,
+          "end": 162
+        }
+      },
+      "types": [
+        "Person"
+      ],
+      "bindings": [
+        {
+          "id": "people@132",
+          "name": "people",
+          "kind": "prop",
+          "span": {
+            "start": 132,
+            "end": 138
+          }
+        },
+        {
+          "id": "name@230",
+          "name": "name",
+          "kind": "slotScope",
+          "span": {
+            "start": 230,
+            "end": 234
+          }
+        },
+        {
+          "id": "id@247",
+          "name": "id",
+          "kind": "slotScope",
+          "span": {
+            "start": 247,
+            "end": 249
+          }
+        },
+        {
+          "id": "index@251",
+          "name": "index",
+          "kind": "slotScope",
+          "span": {
+            "start": 251,
+            "end": 256
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Table",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "people",
+                "value": {
+                  "code": "people",
+                  "span": {
+                    "start": 196,
+                    "end": 202
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "people@132",
+                      "span": {
+                        "start": 196,
+                        "end": 202
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 188,
+                  "end": 203
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "row",
+                "parameter": {
+                  "pattern": {
+                    "code": "{ name, \"data-id\": id, index }",
+                    "names": [
+                      "name",
+                      "id",
+                      "index"
+                    ],
+                    "span": {
+                      "start": 228,
+                      "end": 258
+                    }
+                  },
+                  "span": {
+                    "start": 228,
+                    "end": 258
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "index + 1",
+                          "span": {
+                            "start": 295,
+                            "end": 304
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "index@251",
+                              "span": {
+                                "start": 295,
+                                "end": 300
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 294,
+                          "end": 305
+                        }
+                      },
+                      {
+                        "kind": "Text",
+                        "value": ": ",
+                        "span": {
+                          "start": 305,
+                          "end": 307
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "name",
+                          "span": {
+                            "start": 308,
+                            "end": 312
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "name@230",
+                              "span": {
+                                "start": 308,
+                                "end": 312
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 307,
+                          "end": 313
+                        }
+                      },
+                      {
+                        "kind": "Text",
+                        "value": " (",
+                        "span": {
+                          "start": 313,
+                          "end": 315
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "id",
+                          "span": {
+                            "start": 316,
+                            "end": 318
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "id@247",
+                              "span": {
+                                "start": 316,
+                                "end": 318
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 315,
+                          "end": 319
+                        }
+                      },
+                      {
+                        "kind": "Text",
+                        "value": ")",
+                        "span": {
+                          "start": 319,
+                          "end": 331
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 275,
+                      "end": 338
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 222,
+                  "end": 348
+                }
+              }
+            ],
+            "span": {
+              "start": 181,
+              "end": 371
+            }
+          }
+        ],
+        "span": {
+          "start": 181,
+          "end": 371
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Directory",
+      "span": {
+        "start": 96,
+        "end": 378
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Person",
+      "exported": true,
+      "code": "interface Person {\n  id: string;\n  name: string;\n}",
+      "span": {
+        "start": 44,
+        "end": 94
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./Table.uf.tsx",
+      "file": "Table.uf.tsx",
+      "api": {
+        "file": "Table.uf.tsx",
+        "components": [
+          {
+            "name": "Table",
+            "export": "default",
+            "props": [
+              {
+                "name": "people",
+                "optional": false,
+                "type": "Person[]"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "row",
+                "optional": true,
+                "props": "{ name: string; \"data-id\": string; index: number }"
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "ol"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Table",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    }
+  ]
+}

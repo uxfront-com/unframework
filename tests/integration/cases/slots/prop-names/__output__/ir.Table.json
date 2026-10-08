@@ -1,0 +1,258 @@
+{
+  "irVersion": 1,
+  "file": "slots/prop-names/Table.uf.tsx",
+  "components": [
+    {
+      "name": "Table",
+      "span": {
+        "start": 147,
+        "end": 533
+      },
+      "props": [
+        {
+          "name": "people",
+          "optional": false,
+          "type": {
+            "code": "Person[]",
+            "span": {
+              "start": 199,
+              "end": 207
+            }
+          },
+          "binding": "people@179",
+          "span": {
+            "start": 191,
+            "end": 207
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ people: Person[] }",
+          "span": {
+            "start": 189,
+            "end": 209
+          }
+        },
+        "span": {
+          "start": 177,
+          "end": 209
+        }
+      },
+      "types": [
+        "Person"
+      ],
+      "slots": {
+        "binding": "slots@221",
+        "type": {
+          "code": "{\n    row?(props: { name: string; \"data-id\": string; index: number }): Element;\n  }",
+          "span": {
+            "start": 241,
+            "end": 324
+          }
+        },
+        "slots": [
+          {
+            "name": "row",
+            "optional": true,
+            "props": {
+              "code": "{ name: string; \"data-id\": string; index: number }",
+              "span": {
+                "start": 259,
+                "end": 309
+              }
+            },
+            "span": {
+              "start": 247,
+              "end": 320
+            }
+          }
+        ],
+        "span": {
+          "start": 215,
+          "end": 328
+        }
+      },
+      "bindings": [
+        {
+          "id": "people@179",
+          "name": "people",
+          "kind": "prop",
+          "span": {
+            "start": 179,
+            "end": 185
+          }
+        },
+        {
+          "id": "slots@221",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 221,
+            "end": 226
+          }
+        },
+        {
+          "id": "person@388",
+          "name": "person",
+          "kind": "loopVar",
+          "span": {
+            "start": 388,
+            "end": 394
+          }
+        },
+        {
+          "id": "index@396",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 396,
+            "end": 401
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "ol",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "People",
+            "span": {
+              "start": 348,
+              "end": 367
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "For",
+            "source": {
+              "code": "people",
+              "span": {
+                "start": 376,
+                "end": 382
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "people@179",
+                  "span": {
+                    "start": 376,
+                    "end": 382
+                  }
+                }
+              ]
+            },
+            "item": "person@388",
+            "index": "index@396",
+            "key": {
+              "code": "person.id",
+              "span": {
+                "start": 425,
+                "end": 434
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "person@388",
+                  "span": {
+                    "start": 425,
+                    "end": 431
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "li",
+              "attributes": [],
+              "children": [
+                {
+                  "kind": "SlotOutlet",
+                  "slot": "row",
+                  "props": {
+                    "code": "{ name: person.name, \"data-id\": person.id, index }",
+                    "span": {
+                      "start": 449,
+                      "end": 499
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "person@388",
+                        "span": {
+                          "start": 457,
+                          "end": 463
+                        }
+                      },
+                      {
+                        "kind": "Binding",
+                        "binding": "person@388",
+                        "span": {
+                          "start": 481,
+                          "end": 487
+                        }
+                      },
+                      {
+                        "kind": "Binding",
+                        "binding": "index@396",
+                        "span": {
+                          "start": 492,
+                          "end": 497
+                        },
+                        "shorthand": true
+                      }
+                    ]
+                  },
+                  "fallback": [],
+                  "span": {
+                    "start": 436,
+                    "end": 501
+                  }
+                }
+              ],
+              "span": {
+                "start": 416,
+                "end": 506
+              }
+            },
+            "span": {
+              "start": 376,
+              "end": 515
+            }
+          }
+        ],
+        "span": {
+          "start": 344,
+          "end": 526
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Table",
+      "span": {
+        "start": 147,
+        "end": 533
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Person",
+      "exported": true,
+      "code": "interface Person {\n  id: string;\n  name: string;\n}",
+      "span": {
+        "start": 95,
+        "end": 145
+      }
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+- list "Tasks":
+  - listitem: Read mail (done)
+  - listitem: Plan trip (done)
+  - listitem: Water plants
+- button "Add a task"
+- button "Finish the first"

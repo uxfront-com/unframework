@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3041",
+    "severity": "error",
+    "message": "`slots.default` is called without `?.`: a slot is optional, and renders nothing where the parent leaves it empty.",
+    "file": "diagnostics/invalid-slot-use/Card.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 29,
+      "offset": 347
+    },
+    "end": {
+      "line": 8,
+      "column": 44,
+      "offset": 362
+    },
+    "help": "Write `slots.default?.()`."
+  }
+]

@@ -7,6 +7,8 @@ import { composition } from "../../ir/test/composition-fixture.ts";
 import { builtinTargets, compile, TARGET_NAMES } from "../src/index.ts";
 
 describe("composition before M3's lanes", () => {
+  // Vue emits components, slots, fallthrough and expose (M3's core lane), and reports what it
+  // does not emit yet: models, context and `<component is>`.
   it.each(TARGET_NAMES)("%s reports UF1002 where a component first uses it", (name) => {
     const module = composition();
     const reported: Omit<Diagnostic, "file" | "target">[] = [];
@@ -20,7 +22,10 @@ describe("composition before M3's lanes", () => {
       {
         code: "UF1002",
         severity: "error",
-        message: `The ${name} target does not emit an injection key yet: composition lands in M3.`,
+        message:
+          name === "vue"
+            ? "The vue target does not emit an injection key yet: models, context and `<component is>` land later in M3."
+            : `The ${name} target does not emit an injection key yet: composition lands in M3.`,
         span: module.keys![0]!.span,
       },
     ]);

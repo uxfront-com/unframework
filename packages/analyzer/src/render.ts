@@ -1,4 +1,4 @@
-import type { Binding, BindingId, BindingKind } from "@unframework/ir";
+import type { Binding, BindingId, BindingKind, ComponentApi, Slots } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
 
 import type { AuthoringApi } from "./authoring.ts";
@@ -22,7 +22,13 @@ export interface PropBinding {
   kinds: Kinds;
 }
 
-/** A list's item or index. */
+/** A component a template may render (ADR-0053): its local name, and its API. */
+export interface ComponentInfo {
+  readonly name: string;
+  readonly api: ComponentApi;
+}
+
+/** A list's item or index, or a name a scoped fill's parameter binds (ADR-0054). */
 export interface LoopVariable {
   name: string;
   id: BindingId;
@@ -154,6 +160,18 @@ export interface RenderContext {
   readonly comments: readonly AST.Comment[];
   /** What the walks note for the rules judged once everything is lowered. */
   readonly facts: CodeFacts;
+  /**
+   * The components a template may render, by the identifier that declares each: an import's
+   * local name, or a component function of the module, this one included (ADR-0053).
+   */
+  readonly components: ReadonlyMap<object, ComponentInfo | undefined>;
+  /** The slots the component declares with `defineSlots` (ADR-0054). */
+  readonly slots: Slots | undefined;
+  /**
+   * Set while a conditional's condition is checked: the one place a slot's presence,
+   * `slots.title`, is read (ADR-0054).
+   */
+  readonly presence?: true;
 }
 
 /** The setup binding an identifier reads, where the component's setup declares it. */

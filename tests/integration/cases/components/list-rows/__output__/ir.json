@@ -1,0 +1,576 @@
+{
+  "irVersion": 1,
+  "file": "components/list-rows/Tasks.uf.tsx",
+  "components": [
+    {
+      "name": "Tasks",
+      "span": {
+        "start": 143,
+        "end": 899
+      },
+      "props": [
+        {
+          "name": "initial",
+          "optional": false,
+          "type": {
+            "code": "Task[]",
+            "span": {
+              "start": 197,
+              "end": 203
+            }
+          },
+          "binding": "initial@175",
+          "span": {
+            "start": 188,
+            "end": 203
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ initial: Task[] }",
+          "span": {
+            "start": 186,
+            "end": 205
+          }
+        },
+        "span": {
+          "start": 173,
+          "end": 205
+        }
+      },
+      "types": [
+        "Task"
+      ],
+      "bindings": [
+        {
+          "id": "initial@175",
+          "name": "initial",
+          "kind": "prop",
+          "span": {
+            "start": 175,
+            "end": 182
+          }
+        },
+        {
+          "id": "tasks@217",
+          "name": "tasks",
+          "kind": "state",
+          "span": {
+            "start": 217,
+            "end": 222
+          }
+        },
+        {
+          "id": "add@250",
+          "name": "add",
+          "kind": "localFn",
+          "span": {
+            "start": 250,
+            "end": 253
+          }
+        },
+        {
+          "id": "finish@395",
+          "name": "finish",
+          "kind": "localFn",
+          "span": {
+            "start": 395,
+            "end": 401
+          }
+        },
+        {
+          "id": "task@606",
+          "name": "task",
+          "kind": "loopVar",
+          "span": {
+            "start": 606,
+            "end": 610
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "tasks@217",
+          "initial": {
+            "code": "initial",
+            "span": {
+              "start": 229,
+              "end": 236
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "initial@175",
+                "span": {
+                  "start": 229,
+                  "end": 236
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 211,
+            "end": 238
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "add@250",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    tasks.value = [\n      ...tasks.value,\n      { id: tasks.value.length + 1, name: \"Water plants\", done: false },\n    ];\n  }",
+              "span": {
+                "start": 256,
+                "end": 383
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "tasks@217",
+                  "operator": "=",
+                  "span": {
+                    "start": 262,
+                    "end": 378
+                  },
+                  "target": {
+                    "start": 262,
+                    "end": 273
+                  },
+                  "value": {
+                    "start": 276,
+                    "end": 378
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@217",
+                  "span": {
+                    "start": 287,
+                    "end": 298
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@217",
+                  "span": {
+                    "start": 312,
+                    "end": 323
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 253,
+              "end": 383
+            }
+          },
+          "span": {
+            "start": 241,
+            "end": 383
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "finish@395",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "id",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 406,
+                    "end": 412
+                  }
+                },
+                "span": {
+                  "start": 402,
+                  "end": 412
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    tasks.value = tasks.value.map((task) => (task.id === id ? { ...task, done: true } : task));\n  }",
+              "span": {
+                "start": 414,
+                "end": 515
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "tasks@217",
+                  "operator": "=",
+                  "span": {
+                    "start": 420,
+                    "end": 510
+                  },
+                  "target": {
+                    "start": 420,
+                    "end": 431
+                  },
+                  "value": {
+                    "start": 434,
+                    "end": 510
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@217",
+                  "span": {
+                    "start": 434,
+                    "end": 445
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 401,
+              "end": 515
+            }
+          },
+          "span": {
+            "start": 386,
+            "end": 515
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "list",
+                "span": {
+                  "start": 548,
+                  "end": 559
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Tasks",
+                "span": {
+                  "start": 560,
+                  "end": 578
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "tasks.value",
+                  "span": {
+                    "start": 589,
+                    "end": 600
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tasks@217",
+                      "span": {
+                        "start": 589,
+                        "end": 600
+                      }
+                    }
+                  ]
+                },
+                "item": "task@606",
+                "key": {
+                  "code": "task.id",
+                  "span": {
+                    "start": 637,
+                    "end": 644
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "task@606",
+                      "span": {
+                        "start": 637,
+                        "end": 641
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Component",
+                  "component": "Row",
+                  "attributes": [
+                    {
+                      "kind": "Prop",
+                      "name": "name",
+                      "value": {
+                        "code": "task.name",
+                        "span": {
+                          "start": 652,
+                          "end": 661
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "task@606",
+                            "span": {
+                              "start": 652,
+                              "end": 656
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 646,
+                        "end": 662
+                      }
+                    },
+                    {
+                      "kind": "Prop",
+                      "name": "done",
+                      "value": {
+                        "code": "task.done",
+                        "span": {
+                          "start": 669,
+                          "end": 678
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "task@606",
+                            "span": {
+                              "start": 669,
+                              "end": 673
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 663,
+                        "end": 679
+                      }
+                    }
+                  ],
+                  "fills": [],
+                  "span": {
+                    "start": 627,
+                    "end": 682
+                  }
+                },
+                "span": {
+                  "start": 589,
+                  "end": 693
+                }
+              }
+            ],
+            "span": {
+              "start": 543,
+              "end": 707
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 722,
+                  "end": 735
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "add@250",
+                  "span": {
+                    "start": 745,
+                    "end": 748
+                  }
+                },
+                "span": {
+                  "start": 736,
+                  "end": 749
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add a task",
+                "span": {
+                  "start": 750,
+                  "end": 776
+                }
+              }
+            ],
+            "span": {
+              "start": 714,
+              "end": 785
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 800,
+                  "end": 813
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "finish(1)",
+                      "span": {
+                        "start": 829,
+                        "end": 838
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "finish@395",
+                          "span": {
+                            "start": 829,
+                            "end": 835
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 823,
+                      "end": 838
+                    }
+                  },
+                  "span": {
+                    "start": 823,
+                    "end": 838
+                  }
+                },
+                "span": {
+                  "start": 814,
+                  "end": 839
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Finish the first",
+                "span": {
+                  "start": 840,
+                  "end": 872
+                }
+              }
+            ],
+            "span": {
+              "start": 792,
+              "end": 881
+            }
+          }
+        ],
+        "span": {
+          "start": 531,
+          "end": 892
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Tasks",
+      "span": {
+        "start": 143,
+        "end": 899
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Task",
+      "exported": true,
+      "code": "interface Task {\n  id: number;\n  name: string;\n  done: boolean;\n}",
+      "span": {
+        "start": 76,
+        "end": 141
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./Row.uf.tsx",
+      "file": "Row.uf.tsx",
+      "api": {
+        "file": "Row.uf.tsx",
+        "components": [
+          {
+            "name": "Row",
+            "export": "default",
+            "props": [
+              {
+                "name": "name",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "done",
+                "optional": false,
+                "type": "boolean"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Row",
+          "span": {
+            "start": 43,
+            "end": 46
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 67
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3048",
+    "severity": "error",
+    "message": "This spread's keys are not known: a spread renders exactly the keys its type declares, and no target can render keys only the run time knows (ADR-0054).",
+    "file": "diagnostics/open-spread/Link.uf.tsx",
+    "start": {
+      "line": 14,
+      "column": 20,
+      "offset": 411
+    },
+    "end": {
+      "line": 14,
+      "column": 30,
+      "offset": 421
+    },
+    "help": "Spread a prop or a list's item typed by an interface or an object type the module declares, or write the attributes."
+  }
+]

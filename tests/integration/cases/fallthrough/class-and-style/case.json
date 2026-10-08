@@ -1,0 +1,4 @@
+{
+  "description": "A consumer's class and style fall through onto a child's root, merged with the root's own: static, bound, and changing with state.",
+  "main": "Tags.uf.tsx"
+}

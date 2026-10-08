@@ -1,0 +1,9 @@
+error[UF3047]: <Haeder> names no component in scope: a PascalCase tag is an imported component, or a component of this module. Did you mean `Header`?
+  --> diagnostics/unknown-component/Page.uf.tsx:10:8
+   |
+10 |       <Haeder />
+   |        ^^^^^^
+   |
+   = help: Import it, as in `import Haeder from "./Haeder.uf.tsx";`, or declare it in this module.
+   = fix (likely): Write `Header`
+   = see: https://unframework.dev/diagnostics/UF3047

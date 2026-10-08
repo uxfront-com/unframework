@@ -36,15 +36,22 @@ export function goldenFiles(): string[] {
   return filesUnder(casesDir).filter((path) => /\/__output__\/vue\/[^/]+\.vue$/.test(path));
 }
 
-/** Each corpus case's IR snapshot, with the directory its golden outputs live in. */
+/**
+ * Each IR snapshot of the corpus, a case's sources each (`ir.json`, and `ir.<Stem>.json` for a
+ * case of several, ADR-0057), with the directory its golden outputs live in.
+ */
 export function corpus(): { name: string; module: UfModule; outputDir: string }[] {
   return filesUnder(casesDir)
-    .filter((path) => path.endsWith("/__output__/ir.json"))
-    .map((path) => ({
-      name: path.slice(casesDir.length + 1, -"/__output__/ir.json".length),
-      module: JSON.parse(readFileSync(path, "utf8")) as UfModule,
-      outputDir: join(path, "../vue"),
-    }));
+    .filter((path) => /\/__output__\/ir(?:\.[^./]+)?\.json$/.test(path))
+    .map((path) => {
+      const directory = path.slice(0, path.lastIndexOf("/__output__/"));
+      const stem = /ir\.([^./]+)\.json$/.exec(path)?.[1];
+      return {
+        name: `${directory.slice(casesDir.length + 1)}${stem ? ` (${stem})` : ""}`,
+        module: JSON.parse(readFileSync(path, "utf8")) as UfModule,
+        outputDir: join(directory, "__output__", "vue"),
+      };
+    });
 }
 
 /** What this target emits for a module, formatted as the compiler formats it. */

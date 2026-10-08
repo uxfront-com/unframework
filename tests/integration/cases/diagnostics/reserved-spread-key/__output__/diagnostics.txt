@@ -1,0 +1,11 @@
+error[UF3049]: A spread's `key` key is not rendered: `key` has its own channel, and a spread renders attributes.
+ --> diagnostics/reserved-spread-key/Button.uf.tsx:9:27
+  |
+9 |     <button type="button" {...attrs}>
+  |                           ^^^^^^^^^^
+  |
+4 |   key: string;
+  |   ^^^ The spread's type declares the key here
+  |
+  = help: Leave the key out of the spread's type, and write it on the element itself.
+  = see: https://unframework.dev/diagnostics/UF3049

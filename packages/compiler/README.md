@@ -20,8 +20,11 @@ invalid options (an unknown target name, two targets with one name): every other
 diagnostic, including a plugin or a target that throws, or returns or reports something malformed. Hooks and
 targets receive the IR frozen, a target's missing capability cell counts as unsupported, and two
 output files whose paths differ only in case are reported, since they collide on macOS and Windows.
-The `resolve` option will give an imported `.uf.tsx` module's public API (ADR-0053); nothing reads
-it until M3's core lane lowers imports.
+The `resolve` option gives each imported `.uf.tsx` module's public API (ADR-0053), which the
+analyser lowers a parent's components by; `createFileResolver({ root, readFile })` reads the file,
+analyses its declarations (never its children's) and caches that by its contents. An import it
+cannot resolve is UF1202, and a resolver that throws UF9001. `CompileResult.owners` names the
+component each output file is written for, by target, which the unplugin loads files by.
 A capability that refines one the target cannot support (a listener's options and semantics, and
 `nextTick`, refine `interactivity`: codegen's `CAPABILITY_PREREQUISITES`) is not reported again, so
 Astro reports one inert listener once.

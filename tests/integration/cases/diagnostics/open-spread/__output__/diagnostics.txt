@@ -1,0 +1,8 @@
+error[UF3048]: This spread's keys are not known: a spread renders exactly the keys its type declares, and no target can render keys only the run time knows (ADR-0054).
+  --> diagnostics/open-spread/Link.uf.tsx:14:20
+   |
+14 |     <a href={href} {...extra}>
+   |                    ^^^^^^^^^^
+   |
+   = help: Spread a prop or a list's item typed by an interface or an object type the module declares, or write the attributes.
+   = see: https://unframework.dev/diagnostics/UF3048

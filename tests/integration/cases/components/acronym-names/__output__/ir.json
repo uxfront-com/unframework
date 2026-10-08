@@ -1,0 +1,271 @@
+{
+  "irVersion": 1,
+  "file": "components/acronym-names/Profile.uf.tsx",
+  "components": [
+    {
+      "name": "Profile",
+      "span": {
+        "start": 75,
+        "end": 315
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "picked@119",
+          "name": "picked",
+          "kind": "state",
+          "span": {
+            "start": 119,
+            "end": 125
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "picked@119",
+          "initial": {
+            "code": "\"none\"",
+            "span": {
+              "start": 132,
+              "end": 138
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 113,
+            "end": 140
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Avatar",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "imageURL",
+                "value": {
+                  "code": "\"/a.png\"",
+                  "span": {
+                    "start": 185,
+                    "end": 193
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 176,
+                  "end": 193
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "userID",
+                "value": {
+                  "code": "7",
+                  "span": {
+                    "start": 202,
+                    "end": 203
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 194,
+                  "end": 204
+                }
+              },
+              {
+                "kind": "Listener",
+                "event": "pickedURL",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [
+                      {
+                        "name": "url",
+                        "span": {
+                          "start": 219,
+                          "end": 222
+                        }
+                      }
+                    ],
+                    "body": {
+                      "code": "(picked.value = url)",
+                      "span": {
+                        "start": 227,
+                        "end": 247
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "picked@119",
+                          "operator": "=",
+                          "span": {
+                            "start": 227,
+                            "end": 247
+                          },
+                          "target": {
+                            "start": 228,
+                            "end": 240
+                          },
+                          "value": {
+                            "start": 243,
+                            "end": 246
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 218,
+                      "end": 247
+                    }
+                  },
+                  "span": {
+                    "start": 218,
+                    "end": 247
+                  }
+                },
+                "span": {
+                  "start": 205,
+                  "end": 248
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 168,
+              "end": 251
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Picked: ",
+                "span": {
+                  "start": 266,
+                  "end": 274
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "picked.value",
+                  "span": {
+                    "start": 275,
+                    "end": 287
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "picked@119",
+                      "span": {
+                        "start": 275,
+                        "end": 287
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 274,
+                  "end": 288
+                }
+              }
+            ],
+            "span": {
+              "start": 258,
+              "end": 297
+            }
+          }
+        ],
+        "span": {
+          "start": 156,
+          "end": 308
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Profile",
+      "span": {
+        "start": 75,
+        "end": 315
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Avatar.uf.tsx",
+      "file": "Avatar.uf.tsx",
+      "api": {
+        "file": "Avatar.uf.tsx",
+        "components": [
+          {
+            "name": "Avatar",
+            "export": "default",
+            "props": [
+              {
+                "name": "imageURL",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "userID",
+                "optional": false,
+                "type": "number"
+              }
+            ],
+            "events": [
+              {
+                "name": "pickedURL",
+                "parameters": [
+                  {
+                    "name": "url",
+                    "type": "string"
+                  }
+                ]
+              }
+            ],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "button"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Avatar",
+          "span": {
+            "start": 43,
+            "end": 49
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 73
+      }
+    }
+  ]
+}

@@ -65,20 +65,26 @@ export {
   classJsxAttribute,
   eventJsxAttribute,
   expressionCode,
+  fillJsxAttribute,
   jsxAttributeName,
   jsxAttributes,
   jsxAttributeValue,
   jsxBinding,
   jsxBranch,
   jsxChildren,
+  jsxComponent,
   jsxContext,
   jsxElement,
   jsxExpression,
+  jsxFillValue,
   jsxHandler,
   jsxNode,
+  jsxSlotProps,
   jsxText,
+  listenerJsxAttribute,
   listParameters,
   mapCall,
+  propJsxAttribute,
   refJsxAttribute,
   spreadClassReads,
   spreadJsxAttributes,
@@ -159,7 +165,8 @@ export {
 export type { Namespace } from "./html.ts";
 export { formatOutput, isFormatted, OUTPUT_FORMAT } from "./format.ts";
 export type { FormatOutcome } from "./format.ts";
-export { ImportSet } from "./imports.ts";
+export { childImports, ImportSet } from "./imports.ts";
+export type { ChildImport } from "./imports.ts";
 export { isPrimitiveState } from "./kinds.ts";
 export { kebabCase, NameScope, pascalCase, sourceNames, typeNames } from "./names.ts";
 export type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";

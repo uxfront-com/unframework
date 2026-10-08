@@ -7,6 +7,7 @@
 // template's listeners call where a handler cannot stay in the template (`listeners.ts`).
 import {
   bindingOf,
+  childImports,
   componentTypes,
   functionText,
   ImportSet,
@@ -18,7 +19,7 @@ import {
   typeDeclarationCode,
 } from "@unframework/codegen";
 import type { RewriteRules } from "@unframework/codegen";
-import { codeOf } from "@unframework/ir";
+import { codeOf, expressionsOf, walk } from "@unframework/ir";
 import type {
   Binding,
   BindingId,
@@ -47,7 +48,24 @@ export interface ScriptSetup {
   rewrite: RewriteRules;
   /** Each listener's attribute, as the template writes it. */
   listeners: Listeners;
+  /** The name the script imports a child under, where it is not the child's own. */
+  components: ReadonlyMap<string, string>;
 }
+
+/**
+ * The components Vue's template compiler resolves by name before any binding (`isCoreComponent`
+ * and runtime-dom's transitions, and `Component`, its dynamic component): a child named so is
+ * imported, and written, under a name of its own.
+ */
+const VUE_BUILT_INS: ReadonlySet<string> = new Set([
+  "BaseTransition",
+  "Component",
+  "KeepAlive",
+  "Suspense",
+  "Teleport",
+  "Transition",
+  "TransitionGroup",
+]);
 
 /** A statement of the script, and how it sits beside its neighbours. */
 interface Statement {
@@ -89,6 +107,27 @@ interface Statement {
 export function scriptSetup(component: UfComponent, module: UfModule): ScriptSetup {
   const names = new VueNames(component, module);
   const imports = new ImportSet(names.scope);
+  // Each child's output, by the name the template uses (ADR-0053), a component of the same file
+  // included. A component that renders itself names itself instead: a virtual module's file name
+  // is not its name (ADR-0021), and importing its own file fails `import/no-self-import` (L5).
+  // A name Vue keeps for a built-in is claimed last, so it never takes a child's own name.
+  const children = childImports(component, module, (name) => `${name}.vue`);
+  const components = new Map<string, string>();
+  for (const child of children) {
+    if (!child.self && !VUE_BUILT_INS.has(child.local)) {
+      imports.addDefault(child.specifier, child.local, { exact: true });
+    }
+  }
+  for (const child of children) {
+    if (!VUE_BUILT_INS.has(child.local)) continue;
+    const local = `${child.local}Component`;
+    components.set(
+      child.local,
+      child.self ? names.scope.claim(local) : imports.addDefault(child.specifier, local),
+    );
+  }
+  const self = children.find((child) => child.self);
+  const recursive = self && (components.get(self.local) ?? self.local);
   const statements: Statement[] = [];
   const parameter = component.propsParameter;
   if (parameter) {
@@ -113,20 +152,84 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     const declared = emitIsCalled(component, emit) ? `const ${names.local(emit)} = ` : "";
     statements.push({ code: `${declared}defineEmits<${emits.type.code}>();`, layout: "macro" });
   }
+  if (component.slots) {
+    const binding = bindingOf(component, component.slots.binding);
+    // Bound only where the template tests or forwards a slot: `<slot>` renders one alone.
+    const declared = readsSlots(component) ? `const ${names.local(binding)} = ` : "";
+    statements.push({
+      code: `${declared}defineSlots<${slotsType(component)}>();`,
+      layout: "macro",
+    });
+  }
+  const options = [
+    ...(recursive ? [`name: ${JSON.stringify(recursive)}`] : []),
+    ...(component.inheritAttrs === false ? ["inheritAttrs: false"] : []),
+  ];
+  if (options.length) {
+    statements.push({ code: `defineOptions({ ${options.join(", ")} });`, layout: "macro" });
+  }
   for (const item of component.setup) {
     const code = itemCode(item, component, module, names, imports, script);
     statements.push({ code, layout: declares(item) && !code.includes("\n") ? "line" : "block" });
   }
   for (const code of listeners.functions) statements.push({ code, layout: "block" });
-  if (statements.length === 0) return { rewrite: template, listeners };
+  // Last, once every function it names is declared (ADR-0054).
+  if (component.exposes) {
+    const exposed = component.exposes.functions.map((id) => {
+      const binding = bindingOf(component, id);
+      const local = names.local(binding);
+      return local === binding.name ? local : `${binding.name}: ${local}`;
+    });
+    statements.push({ code: `defineExpose({ ${exposed.join(", ")} });`, layout: "block" });
+  }
+  if (statements.length === 0 && imports.size === 0) {
+    return { rewrite: template, listeners, components };
+  }
   const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
   const types = componentTypes(component, module).map(typeDeclarationCode);
-  const code = [...(head ? [head] : []), ...types, laidOut(statements)].join("\n\n");
+  const code = [
+    ...(head ? [head] : []),
+    ...types,
+    ...(statements.length ? [laidOut(statements)] : []),
+  ].join("\n\n");
   return {
     block: `<script setup lang="ts">\n${escapeScriptEnd(code)}\n</script>`,
     rewrite: template,
     listeners,
+    components,
   };
+}
+
+/**
+ * The type `defineSlots` takes (ADR-0054): each slot an optional method of its props, as the
+ * source declares them. What a slot returns is Vue's to type, so the source's `Element` is not
+ * copied.
+ */
+function slotsType(component: UfComponent): string {
+  const members = component.slots!.slots.map(
+    (slot) => `${slot.name}?(${slot.props ? `props: ${slot.props.code}` : ""}): unknown`,
+  );
+  return `{ ${members.join("; ")} }`;
+}
+
+/** Whether the template reads `slots`: a slot's presence, or a forwarded slot's. */
+function readsSlots(component: UfComponent): boolean {
+  if (
+    expressionsOf(component).some(({ expression }) =>
+      expression.refs.some((reference) => reference.kind === "Slot"),
+    )
+  ) {
+    return true;
+  }
+  let forwards = false;
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "Component" && node.fills.some((fill) => fill.forward !== undefined)) {
+        forwards = true;
+      }
+    },
+  });
+  return forwards;
 }
 
 /** The statements, a blank line between two unless both are macros, or both one-line declarations. */

@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3045",
+    "severity": "error",
+    "message": "Stack's root is not one element or one component, so no target knows where a `class` or a `style` passed to it goes.",
+    "file": "diagnostics/dropped-fallthrough/Page.uf.tsx",
+    "start": {
+      "line": 15,
+      "column": 14,
+      "offset": 282
+    },
+    "end": {
+      "line": 15,
+      "column": 19,
+      "offset": 287
+    },
+    "help": "Give Stack one root element, or pass a prop it declares."
+  }
+]

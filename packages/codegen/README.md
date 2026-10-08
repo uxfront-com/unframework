@@ -16,7 +16,9 @@ framework-specific.
   models and `v-model`, fallthrough, `expose`, context and dynamic components, and a root
   element HTML ties to its parent (`contextual-root`, which a component without composition
   may need). `compositionUse` finds where a component first uses composition, in source order:
-  until a target's M3 lane lands, its `emit` reports UF1002 there and emits nothing for it.
+  until a target's M3 lane lands, its `emit` reports UF1002 there and emits nothing for it (Vue
+  emits components, slots, fallthrough and expose, and reports models, context and dynamic
+  components its own way until they land).
   Each cell is `native`, `emulated` with the name of the inline helper the target prints (React's
   `cx` for `class-binding`), or `unsupported` with a portability diagnostic: a target declares in
   its matrix what it cannot render exactly (P4, ADR-0033). `requiredCapabilities` derives what a
@@ -104,7 +106,15 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   `onClick={handler}` with `Capture` for the capture phase (`jsxHandler` prints the handler for the
   `client` site), and a template ref as `ref={input}`), and a `JsxDialect` overrides attribute
   names, expressions, conditionals, lists and each attribute kind, listeners (whose names and
-  options are each framework's own) and template refs included. Text
+  options are each framework's own) and template refs included. A component element
+  (`jsxComponent`, ADR-0053, ADR-0054) prints its props as `label="Name"` or `tone={tone}`, its
+  listeners as `onClear={handler}`, its `class`, `style` and `ref` through the element hooks, the
+  default slot's fill as its children and any other fill as a prop named like its slot (a scoped
+  one `item={({ item }) => …}`, its parameter as written; `jsxFillValue`); the dialect overrides
+  each (`componentTag`, `propAttribute`, `componentEvent`, `fillAttribute`). Where the targets
+  differ entirely there is no default, and a dialect that meets the construct without its hook
+  throws: `slotValue` (a component's own slot as a value, which a forwarded fill passes on) and
+  `slotOutlet` (where it renders a slot; `jsxSlotProps` gives its props). Text
   goes through `jsxText`, the JSX escaping contract (ADR-0030): raw only when every JSX
   transform and formatter keeps it as written, and never where a formatter could start a line
   with `//` or `/*`.
@@ -133,6 +143,16 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   quotes, `;`, lone parentheses and `//`; Svelte and Astro read balanced JavaScript). A dialect may
   also rename an element whose content its language reads by name (`elementName`: Angular's
   `<svg:title>`). Vue's attributes follow `vue/attributes-order` (`ref` with `key`, listeners last).
+  Components and slot outlets (ADR-0053, ADR-0054) print through the printer, which writes a
+  component's props, listeners, `class`, `style` and `ref` and lays out its content, and the
+  dialect's hooks, which a dialect that meets one without it throws for: `propAttribute`,
+  `componentEvent`, `fills` (the component's content from its fills, with a scoped fill's
+  parameter as written and a forwarded slot's presence as the rules spell it,
+  `RewriteRules.slot`) and `slotOutlet` (its props key by key when they are an object literal).
+  The optional `componentTag` hook, and `MarkupOptions.componentTag` before it, let a dialect or a
+  target write a component under a name of its own. A dialect may return a `component` piece (Vue's `v-for` and `v-if` on the component itself)
+  and a `tag` piece (`<slot name="title">`, `<template #title>`), which closes itself without
+  content.
   Vue's and Angular's compilers parse a static `style` again: Vue's dialect binds a declaration its
   parser would misread (a `;` in a string), and Angular's refuses one, which the analyser rejects
   (UF3022). Text is written so its compiler builds exactly the IR's DOM: delimiters escaped,
@@ -157,7 +177,11 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   inline template) keeps the printer's whitespace-safe layout (ADR-0026). Formatting is
   idempotent and never throws: a block that does not parse comes back as an error.
 - **Exports, imports and names:** `exportDeclaration` keeps the source's export shape, for a
-  function, a class or an expression (`export const Card = component$(…)`); `componentTypes`
+  function, a class or an expression (`export const Card = component$(…)`), and `exportsOf`
+  exports a component the module does not export by its name, a sibling file its siblings
+  import (ADR-0053); `childImports` lists the components a component renders, each with the
+  specifier of its output file in the target's naming (`./Field.vue`, `../shared/field`), its
+  export kind and whether it renders itself; `componentTypes`
   and `typeDeclarationCode` copy the type declarations a component's props reach, exported as
   the source does. `ImportSet` sorts imports and renames one that clashes with a name in its
   `NameScope`: a target reserves the source's names (`sourceNames`: the component, its types,

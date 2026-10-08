@@ -1,0 +1,220 @@
+{
+  "irVersion": 1,
+  "file": "slots/scoped-default/Names.uf.tsx",
+  "components": [
+    {
+      "name": "Names",
+      "span": {
+        "start": 88,
+        "end": 381
+      },
+      "props": [
+        {
+          "name": "names",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 138,
+              "end": 146
+            }
+          },
+          "binding": "names@120",
+          "span": {
+            "start": 131,
+            "end": 146
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ names: string[] }",
+          "span": {
+            "start": 129,
+            "end": 148
+          }
+        },
+        "span": {
+          "start": 118,
+          "end": 148
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@160",
+        "type": {
+          "code": "{ default?(props: { item: string }): Element }",
+          "span": {
+            "start": 180,
+            "end": 226
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "props": {
+              "code": "{ item: string }",
+              "span": {
+                "start": 198,
+                "end": 214
+              }
+            },
+            "span": {
+              "start": 182,
+              "end": 224
+            }
+          }
+        ],
+        "span": {
+          "start": 154,
+          "end": 230
+        }
+      },
+      "bindings": [
+        {
+          "id": "names@120",
+          "name": "names",
+          "kind": "prop",
+          "span": {
+            "start": 120,
+            "end": 125
+          }
+        },
+        {
+          "id": "slots@160",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 160,
+            "end": 165
+          }
+        },
+        {
+          "id": "item@288",
+          "name": "item",
+          "kind": "loopVar",
+          "span": {
+            "start": 288,
+            "end": 292
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "ul",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Names",
+            "span": {
+              "start": 250,
+              "end": 268
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "For",
+            "source": {
+              "code": "names",
+              "span": {
+                "start": 277,
+                "end": 282
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "names@120",
+                  "span": {
+                    "start": 277,
+                    "end": 282
+                  }
+                }
+              ]
+            },
+            "item": "item@288",
+            "key": {
+              "code": "item",
+              "span": {
+                "start": 316,
+                "end": 320
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "item@288",
+                  "span": {
+                    "start": 316,
+                    "end": 320
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "li",
+              "attributes": [],
+              "children": [
+                {
+                  "kind": "SlotOutlet",
+                  "slot": "default",
+                  "props": {
+                    "code": "{ item }",
+                    "span": {
+                      "start": 339,
+                      "end": 347
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "item@288",
+                        "span": {
+                          "start": 341,
+                          "end": 345
+                        },
+                        "shorthand": true
+                      }
+                    ]
+                  },
+                  "fallback": [],
+                  "span": {
+                    "start": 322,
+                    "end": 349
+                  }
+                }
+              ],
+              "span": {
+                "start": 307,
+                "end": 354
+              }
+            },
+            "span": {
+              "start": 277,
+              "end": 363
+            }
+          }
+        ],
+        "span": {
+          "start": 246,
+          "end": 374
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Names",
+      "span": {
+        "start": 88,
+        "end": 381
+      }
+    }
+  ],
+  "types": []
+}

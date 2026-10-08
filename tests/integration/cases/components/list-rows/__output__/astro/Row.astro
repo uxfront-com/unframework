@@ -1,0 +1,10 @@
+---
+interface Props {
+  name: string;
+  done: boolean;
+}
+
+const { name, done } = Astro.props;
+---
+
+<div role="listitem" class:list={["row", { done }]}>{name}{done ? " (done)" : ""}</div>

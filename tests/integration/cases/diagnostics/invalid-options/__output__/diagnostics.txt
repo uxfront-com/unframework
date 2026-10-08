@@ -1,0 +1,8 @@
+error[UF2031]: `defineOptions` takes one option, `inheritAttrs: false`: the other options are Vue's, which the other targets have no counterpart for.
+ --> diagnostics/invalid-options/Panel.uf.tsx:6:19
+  |
+6 |   defineOptions({ name: "AppPanel" });
+  |                   ^^^^^^^^^^^^^^^^
+  |
+  = help: Write `defineOptions({ inheritAttrs: false })`, or leave it out: fallthrough is on by default.
+  = see: https://unframework.dev/diagnostics/UF2031

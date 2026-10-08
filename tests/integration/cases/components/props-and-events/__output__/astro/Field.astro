@@ -1,0 +1,15 @@
+---
+export interface FieldProps {
+  label: string;
+  tone?: "info" | "warn";
+}
+
+type Props = FieldProps;
+
+const { label, tone = "info" } = Astro.props;
+---
+
+<div class:list={["field", tone]}>
+  <span>{label}</span>
+  <button type="button">Clear {label}</button>
+</div>

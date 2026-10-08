@@ -1,0 +1,5 @@
+- article "Profile":
+  - heading "About Ada" [level=3]
+  - paragraph: Three components deep.
+  - heading "Contact" [level=3]
+  - paragraph: Write to Ada.

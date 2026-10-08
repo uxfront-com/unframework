@@ -1,0 +1,51 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "diagnostics/component-listener-option/Toolbar.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 27,
+      "offset": 305
+    },
+    "end": {
+      "line": 8,
+      "column": 55,
+      "offset": 333
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF3043",
+    "severity": "error",
+    "message": "`onSaveOnce` listens to SaveButton's `save` with the option `Once`: a component's event is no DOM event, and takes no listener option.",
+    "file": "diagnostics/component-listener-option/Toolbar.uf.tsx",
+    "start": {
+      "line": 18,
+      "column": 25,
+      "offset": 506
+    },
+    "end": {
+      "line": 18,
+      "column": 29,
+      "offset": 510
+    },
+    "help": "Write `onSave`.",
+    "fixes": [
+      {
+        "title": "Remove `Once`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 506,
+              "end": 510
+            },
+            "text": ""
+          }
+        ]
+      }
+    ]
+  }
+]

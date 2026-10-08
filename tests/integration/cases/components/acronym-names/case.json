@@ -1,0 +1,4 @@
+{
+  "description": "Props and an event whose names hold acronyms reach the child, and its emits reach the parent's listener.",
+  "main": "Profile.uf.tsx"
+}

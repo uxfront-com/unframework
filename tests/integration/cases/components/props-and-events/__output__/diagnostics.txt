@@ -1,0 +1,63 @@
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> components/props-and-events/Field.uf.tsx:13:29
+   |
+13 |       <button type="button" onClick={() => emit("clear", label)}>
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
+  --> components/props-and-events/Form.uf.tsx:12:7
+   |
+12 |       <Field label="Street" onClear={clear} />
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (astro): The astro target does not emit component yet: composition lands in M3.
+  --> components/props-and-events/Form.uf.tsx:12:7
+   |
+12 |       <Field label="Street" onClear={clear} />
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
+  --> components/props-and-events/Form.uf.tsx:12:7
+   |
+12 |       <Field label="Street" onClear={clear} />
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
+  --> components/props-and-events/Form.uf.tsx:12:7
+   |
+12 |       <Field label="Street" onClear={clear} />
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (solid): The solid target does not emit component yet: composition lands in M3.
+  --> components/props-and-events/Form.uf.tsx:12:7
+   |
+12 |       <Field label="Street" onClear={clear} />
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (svelte): The svelte target does not emit component yet: composition lands in M3.
+  --> components/props-and-events/Form.uf.tsx:12:7
+   |
+12 |       <Field label="Street" onClear={clear} />
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF1002
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+  --> components/props-and-events/Form.uf.tsx:12:29
+   |
+12 |       <Field label="Street" onClear={clear} />
+   |                             ^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001

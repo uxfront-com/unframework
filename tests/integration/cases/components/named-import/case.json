@@ -1,0 +1,11 @@
+{
+  "description": "Components imported by name from a file that exports several, one of them under another local name.",
+  "main": "Status.uf.tsx",
+  "ssr": {
+    "passing": {
+      "props": {
+        "state": "passing"
+      }
+    }
+  }
+}

@@ -28,6 +28,8 @@ import type {
   MarkupPiece,
   PrintedAttribute,
   PrintedEvent,
+  PrintedFill,
+  PrintedSlotOutlet,
   StylePart,
   TextPosition,
 } from "./printer.ts";
@@ -216,6 +218,9 @@ export const vueDialect: MarkupDialect = {
         text: condition === undefined ? name : `${name}="${vueAttributeCode(condition)}"`,
       };
       const [only, ...more] = branch.children;
+      if (only?.kind === "Component" && more.length === 0) {
+        return { kind: "component", component: only, directives: [directive] };
+      }
       return only?.kind === "Element" && more.length === 0
         ? { kind: "element", element: only, directives: [directive] }
         : {
@@ -225,24 +230,20 @@ export const vueDialect: MarkupDialect = {
             content: { kind: "nodes", nodes: branch.children, container: branch },
           };
     }),
-  // A component as the body is not printed yet (ADR-0055): each target's `emit` reports UF1002
-  // for it.
-  list: ({ node, source, item, index, key }) =>
-    node.body.kind !== "Element"
-      ? []
-      : [
-          {
-            kind: "element",
-            element: node.body,
-            directives: [
-              {
-                name: "v-for",
-                text: `v-for="${index === undefined ? item : `(${item}, ${index})`} in ${vueAttributeCode(source)}"`,
-              },
-              { name: "key", text: `:key="${vueAttributeCode(key)}"` },
-            ],
-          },
-        ],
+  list: ({ node, source, item, index, key }) => {
+    const directives: PrintedAttribute[] = [
+      {
+        name: "v-for",
+        text: `v-for="${index === undefined ? item : `(${item}, ${index})`} in ${vueAttributeCode(source)}"`,
+      },
+      { name: "key", text: `:key="${vueAttributeCode(key)}"` },
+    ];
+    return [
+      node.body.kind === "Component"
+        ? { kind: "component", component: node.body, directives }
+        : { kind: "element", element: node.body, directives },
+    ];
+  },
   // A handler's code is a function Vue calls with the event (a setup function's name, an
   // arrow), or the statements a target supplies, which Vue runs with `$event` in scope.
   eventAttribute: (event) => {
@@ -261,9 +262,125 @@ export const vueDialect: MarkupDialect = {
       .map((attribute, index) => ({ attribute, index }))
       .toSorted((a, b) => vueRank(a.attribute) - vueRank(b.attribute) || a.index - b.index)
       .map(({ attribute }) => attribute),
+  // A component's props and events are hyphenated in a template, as `vue/attribute-hyphenation`
+  // and `vue/v-on-event-hyphenation` ask, the way Vue camelises them back (ADR-0053).
+  propAttribute: ({ name, code, literal }) => {
+    const attribute = hyphenate(name);
+    return [
+      {
+        name: attribute,
+        text:
+          literal !== undefined && !literal.includes("\r")
+            ? quotedAttribute(attribute, literal)
+            : `:${attribute}="${vueAttributeCode(code)}"`,
+      },
+    ];
+  },
+  componentEvent: (listener) => {
+    const name = `@${hyphenate(listener.attribute.event)}`;
+    return [{ name, text: `${name}="${vueAttributeCode(listener.handler)}"` }];
+  },
+  fills: (fills) => {
+    const [only] = fills;
+    if (
+      fills.length === 1 &&
+      only!.fill.slot === "default" &&
+      only!.fill.forward === undefined &&
+      only!.parameter === undefined
+    ) {
+      return [{ kind: "nodes", nodes: only!.fill.children, container: only!.fill }];
+    }
+    return fills.map(slotTemplate);
+  },
+  slotOutlet: (outlet) => [slotElement(outlet)],
 };
+
+/**
+ * A fill as a `<template>` (ADR-0054): `#title`, a scoped one's parameter as written
+ * (`#item="{ item }"`), and a forwarded slot as the parent's own `<slot>` under its presence, so
+ * the child sees no fill where the parent got none.
+ */
+function slotTemplate({ fill, parameter, presence, forwardsProps }: PrintedFill): MarkupPiece {
+  const slot = `#${fill.slot}`;
+  if (fill.forward !== undefined) {
+    const props = forwardsProps ? "slotProps" : undefined;
+    return {
+      kind: "tag",
+      tag: "template",
+      attributes: [
+        { name: "v-if", text: `v-if="${vueAttributeCode(presence!)}"` },
+        { name: slot, text: props ? `${slot}="${props}"` : slot },
+      ],
+      content: [
+        {
+          kind: "tag",
+          tag: "slot",
+          attributes: [
+            ...(fill.forward === "default"
+              ? []
+              : [{ name: "name", text: quotedAttribute("name", fill.forward) }]),
+            ...(props ? [{ name: "v-bind", text: `v-bind="${props}"` }] : []),
+          ],
+        },
+      ],
+    };
+  }
+  return {
+    kind: "tag",
+    tag: "template",
+    attributes: [
+      {
+        name: slot,
+        text: parameter === undefined ? slot : `${slot}="${vueAttributeCode(parameter)}"`,
+      },
+    ],
+    content: [{ kind: "nodes", nodes: fill.children, container: fill }],
+  };
+}
+
+/**
+ * A slot outlet as Vue's `<slot>` (ADR-0054): its name, its props key by key as Vue passes them
+ * (camelCase, as the slot's fill reads them), and its fallback as its content.
+ */
+function slotElement({ node, props }: PrintedSlotOutlet): MarkupPiece {
+  const attributes: PrintedAttribute[] = [];
+  if (node.slot !== "default") {
+    attributes.push({ name: "name", text: quotedAttribute("name", node.slot) });
+  }
+  // Key by key where Vue passes each as written: `name` names the slot, and Vue camelises a
+  // hyphenated key (`data-id` reaches the fill as `dataId`). Otherwise as one object.
+  if (props?.entries?.every(({ key }) => key !== "name" && camelize(key) === key)) {
+    for (const { key, value } of props.entries) {
+      attributes.push({ name: key, text: `:${key}="${vueAttributeCode(value)}"` });
+    }
+  } else if (props) {
+    attributes.push({ name: "v-bind", text: `v-bind="${vueAttributeCode(props.code)}"` });
+  }
+  return {
+    kind: "tag",
+    tag: "slot",
+    attributes,
+    ...(node.fallback.length
+      ? { content: [{ kind: "nodes", nodes: node.fallback, container: node }] }
+      : {}),
+  };
+}
 
 /** Whether text sits at an edge of the root, where the target's own line breaks meet it. */
 function atRootEdge(position: TextPosition): boolean {
   return isRoot(position.container) && (position.first || position.last);
+}
+
+/**
+ * Vue's own hyphenation of a prop's or an event's name (`hyphenate` in `@vue/shared`): a
+ * capital after any character starts a part, so `imageURL` is `image-u-r-l`, which Vue
+ * camelises back to `imageURL`.
+ */
+function hyphenate(name: string): string {
+  return name.replace(/\B([A-Z])/g, "-$1").toLowerCase();
+}
+
+/** Vue's camelisation of a hyphenated name (`camelize` in `@vue/shared`). */
+function camelize(name: string): string {
+  return name.replace(/-(\w)/g, (_, character: string) => character.toUpperCase());
 }

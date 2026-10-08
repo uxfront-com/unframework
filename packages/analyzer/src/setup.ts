@@ -14,11 +14,14 @@ import {
   createEmits,
   createEventDeclaration,
   createEventParameter,
+  createExposes,
   createFunctionItem,
   createGetterSource,
   createIdItem,
   createLifecycleItem,
   createRefSource,
+  createSlotDeclaration,
+  createSlots,
   createStateItem,
   createTemplateRefItem,
   createTypeText,
@@ -36,13 +39,17 @@ import type {
   Binding,
   Emits,
   EventDeclaration,
+  Exposes,
   SetupItem,
+  SlotDeclaration,
+  Slots,
   TypeText,
   WatchSource,
 } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
 import { visitorKeys } from "@unframework/parser";
 
+import { inheritAttrsOption } from "./api.ts";
 import type { AuthoringApi } from "./authoring.ts";
 import { Reporter } from "./context.ts";
 import { checkCopiedText, checkMembers, checkType, closure } from "./declarations.ts";
@@ -99,6 +106,12 @@ export interface Setup {
   readonly items: SetupItem[];
   /** The events `defineEmits` declares. */
   readonly emits: Emits | undefined;
+  /** The slots `defineSlots` declares (ADR-0054). */
+  readonly slots: Slots | undefined;
+  /** The local functions `defineExpose` exposes (ADR-0054). */
+  readonly exposes: Exposes | undefined;
+  /** `false` where `defineOptions({ inheritAttrs: false })` turns fallthrough off. */
+  readonly inheritAttrs: boolean;
   /** What each lowered item is written as, for the rules judged once everything is lowered. */
   readonly sources: ReadonlyMap<SetupItem, ItemSource>;
   /** Walks each item's code, in source order, once the render context is ready. */
@@ -143,6 +156,7 @@ const BOUND_MACROS: ReadonlySet<AuthoringApi> = new Set([
   "useTemplateRef",
   "useId",
   "defineEmits",
+  "defineSlots",
 ]);
 
 /**
@@ -158,6 +172,16 @@ export function declareSetup(context: SetupContext): Setup {
   const items: SetupItem[] = [];
   let emits: Emits | undefined;
   let events: Map<string, EventPayload> | undefined;
+  let slots: Slots | undefined;
+  /** The `defineSlots` call, once seen: a second one is UF2029. */
+  let slotsCall: AST.CallExpression | undefined;
+  /** The `defineExpose` call, checked once every binding is declared. */
+  let exposeCall: AST.CallExpression | undefined;
+  let exposes: Exposes | undefined;
+  let optionsCall: AST.CallExpression | undefined;
+  let inheritAttrs = true;
+  /** The slots' names, with the key that declares each, checked against the events at the end. */
+  const slotKeys: { name: string; key: AST.PropertyKey }[] = [];
   /** The identifier the `emit` binding is declared by, once its events are read. */
   let emitBinding: AST.BindingIdentifier | undefined;
   /** The events' names, with the key that declares each (UF2008). */
@@ -231,7 +255,9 @@ export function declareSetup(context: SetupContext): Setup {
             call,
             hook: api === "onMounted" ? "mounted" : "unmounted",
           });
-        } else if (BOUND_MACROS.has(api)) unbound(call, api, "statement");
+        } else if (api === "defineExpose") defineExpose(call);
+        else if (api === "defineOptions") defineOptions(call);
+        else if (BOUND_MACROS.has(api)) unbound(call, api, "statement");
         else misplacedNextTick(call.callee as AST.IdentifierReference);
         continue;
       }
@@ -448,6 +474,20 @@ export function declareSetup(context: SetupContext): Setup {
         return;
       case "defineEmits":
         defineEmits(statement, id, call);
+        return;
+      case "defineSlots":
+        defineSlots(statement, id, call);
+        return;
+      case "defineExpose":
+      case "defineOptions":
+        reporter.report(
+          "UF2005",
+          call.callee,
+          `\`${(call.callee as AST.IdentifierReference).name}\` returns nothing: it is called as a statement of its own, at the top level of the component's body.`,
+          {
+            help: `Write \`${(call.callee as AST.IdentifierReference).name}({ … });\`.`,
+          },
+        );
         return;
       case "watch":
       case "watchEffect":
@@ -683,6 +723,265 @@ export function declareSetup(context: SetupContext): Setup {
   }
 
   /**
+   * `const slots = defineSlots<{ default?(): Element; item?(props: { item: Item }): Element }>()`
+   * (ADR-0054): one type argument, a type literal or a local type of one, whose members are the
+   * slots, each optional, with at most one parameter, its props (UF2029).
+   */
+  function defineSlots(
+    statement: AST.VariableDeclaration,
+    id: AST.BindingIdentifier,
+    call: AST.CallExpression,
+  ): void {
+    const binding = declare(id, "slots");
+    const invalid = (at: { start: number; end: number }, message: string, help?: string) => {
+      reporter.report("UF2029", at, message, {
+        help:
+          help ??
+          "Declare each slot as an optional method: `defineSlots<{ default?(): Element; item?(props: { item: Item }): Element }>()`.",
+      });
+    };
+    if (slotsCall) {
+      invalid(call, "`defineSlots` is called twice: a component declares its slots once.");
+      return;
+    }
+    slotsCall = call;
+    if (call.arguments.length) {
+      invalid(
+        call.arguments[0]!,
+        "`defineSlots` takes no arguments: its slots are its type argument's members.",
+      );
+      return;
+    }
+    const params = call.typeArguments?.params ?? [];
+    if (params.length !== 1) {
+      invalid(call, "`defineSlots` takes one type argument: the slots, each an optional method.");
+      return;
+    }
+    const type = params[0]!;
+    const members = eventMembers(type);
+    if (!members) {
+      invalid(
+        type,
+        "`defineSlots`'s type argument is an object type literal, or a local `interface` or `type` of one, whose members are the slots.",
+      );
+      return;
+    }
+    const declarations: SlotDeclaration[] = [];
+    const seen = new Set<string>();
+    for (const member of members) {
+      const shape = slotShape(member);
+      if (!shape) {
+        invalid(
+          member,
+          "A slot is an optional method, `title?(): Element`, or `item?(props: { item: Item }): Element` for one with props.",
+        );
+        continue;
+      }
+      const { name, key, optional, parameters } = shape;
+      if (!optional) {
+        invalid(
+          key,
+          `The slot \`${name}\` is required: every slot is optional, since a parent may leave it empty and the fallback renders.`,
+          `Write \`${name}?(…)\`.`,
+        );
+      }
+      if (seen.has(name)) {
+        invalid(key, `\`${name}\` is declared twice: a component declares each slot once.`);
+      }
+      seen.add(name);
+      slotKeys.push({ name, key });
+      if (name !== "default" && !/^[a-z][A-Za-z0-9]*$/.test(name)) {
+        invalid(
+          key,
+          `\`${name}\` is not camelCase in ASCII letters and digits: every target spells a slot's name in an identifier or a prop.`,
+          "Name the slot in camelCase: `title`, `itemLabel`.",
+        );
+      }
+      if (parameters.length > 1) {
+        invalid(
+          parameters[1]!,
+          `The slot \`${name}\` takes ${parameters.length} parameters: a slot takes one, the object of its props.`,
+        );
+        continue;
+      }
+      const [parameter] = parameters;
+      let props: TypeText | undefined;
+      if (parameter) {
+        const annotation =
+          parameter.type === "Identifier" ? parameter.typeAnnotation?.typeAnnotation : undefined;
+        if (!annotation || parameter.type !== "Identifier" || parameter.optional) {
+          invalid(
+            parameter,
+            `The slot \`${name}\`'s parameter is its props, a named parameter with their type: \`props: { item: Item }\`.`,
+          );
+          continue;
+        }
+        props = typeText(annotation);
+      }
+      declarations.push(
+        createSlotDeclaration(name, optional, { start: member.start, end: member.end }, props),
+      );
+    }
+    // Kept even where a slot is reported: the template still renders and tests the others, and
+    // the component, which has an error, is never emitted.
+    slots = createSlots(binding.id, typeText(type), declarations, span(statement));
+  }
+
+  /** What a slot member declares: its name, its key, whether it is optional, its parameters. */
+  function slotShape(member: AST.TSSignature):
+    | {
+        name: string;
+        key: AST.PropertyKey;
+        optional: boolean;
+        parameters: readonly AST.ParamPattern[];
+      }
+    | undefined {
+    if (
+      (member.type !== "TSMethodSignature" && member.type !== "TSPropertySignature") ||
+      member.computed
+    ) {
+      return undefined;
+    }
+    const { key } = member;
+    const name =
+      key.type === "Identifier"
+        ? key.name
+        : key.type === "Literal" && typeof key.value === "string"
+          ? key.value
+          : undefined;
+    if (name === undefined) return undefined;
+    if (member.type === "TSMethodSignature") {
+      if (member.kind !== "method" || member.typeParameters) return undefined;
+      return { name, key, optional: member.optional, parameters: member.params };
+    }
+    const fn = member.typeAnnotation?.typeAnnotation;
+    if (fn?.type !== "TSFunctionType" || fn.typeParameters) return undefined;
+    return { name, key, optional: member.optional, parameters: fn.params };
+  }
+
+  /** What else a slot's name names: a prop, or an event's callback (`onClose`). */
+  function slotNameTaken(name: string): string | undefined {
+    if (context.props.byName.has(name)) return `the prop \`${name}\``;
+    const event = /^on[A-Z]/.test(name)
+      ? `${name.charAt(2).toLowerCase()}${name.slice(3)}`
+      : undefined;
+    if (event !== undefined && events?.has(event)) return `the event \`${event}\`'s callback`;
+    return undefined;
+  }
+
+  /**
+   * `defineExpose({ focus, clear })` (ADR-0054): one object literal of the component's local
+   * functions, in shorthand (UF2030). Its names are read once every binding is declared.
+   */
+  function defineExpose(call: AST.CallExpression): void {
+    if (exposeCall) {
+      reporter.report(
+        "UF2030",
+        call,
+        "`defineExpose` is called twice: a component exposes its functions once.",
+        { help: "Expose every function in one call: `defineExpose({ focus, clear })`." },
+      );
+      return;
+    }
+    exposeCall = call;
+  }
+
+  /** Checks `defineExpose`'s object, once every binding is declared (UF2030). */
+  function checkExpose(call: AST.CallExpression): void {
+    const invalid = (at: { start: number; end: number }, message: string) => {
+      reporter.report("UF2030", at, message, {
+        help: "Expose the component's local functions by name: `defineExpose({ focus, clear })`.",
+      });
+    };
+    const [object, ...extra] = call.arguments;
+    if (extra.length || call.typeArguments) {
+      invalid(call, "`defineExpose` takes one argument, an object literal, and no type arguments.");
+      return;
+    }
+    if (object?.type !== "ObjectExpression" || !object.properties.length) {
+      invalid(
+        object ?? call,
+        "`defineExpose` takes an object literal of the component's local functions.",
+      );
+      return;
+    }
+    const functions: string[] = [];
+    let valid = true;
+    for (const property of object.properties) {
+      const value =
+        property.type === "Property" &&
+        property.shorthand &&
+        property.kind === "init" &&
+        property.value.type === "Identifier"
+          ? property.value
+          : undefined;
+      const binding = value ? setupBinding(value) : undefined;
+      if (!value || binding?.kind !== "localFn") {
+        invalid(
+          property,
+          value
+            ? `\`${value.name}\` is not a local function: a component exposes the functions its setup declares.`
+            : "A member of `defineExpose`'s object is a local function's name, in shorthand: `{ focus }`.",
+        );
+        valid = false;
+        continue;
+      }
+      if (functions.includes(binding.id)) {
+        invalid(property, `\`${binding.name}\` is exposed twice.`);
+        valid = false;
+        continue;
+      }
+      functions.push(binding.id);
+    }
+    if (valid) exposes = createExposes(functions, span(call));
+  }
+
+  /** The setup binding an identifier in the setup's own statements reads, if any. */
+  function setupBinding(identifier: AST.IdentifierReference): SetupBinding | undefined {
+    const resolution = context.scopes.resolve(identifier);
+    return resolution.kind === "variable" && resolution.scope === context.component
+      ? bindings.get(resolution.declaration)
+      : undefined;
+  }
+
+  /** `defineOptions({ inheritAttrs: false })` (ADR-0054): that one static option (UF2031). */
+  function defineOptions(call: AST.CallExpression): void {
+    const invalid = (at: { start: number; end: number }, message: string) => {
+      reporter.report("UF2031", at, message, {
+        help: "Write `defineOptions({ inheritAttrs: false })`, or leave it out: fallthrough is on by default.",
+      });
+    };
+    if (optionsCall) {
+      invalid(call, "`defineOptions` is called twice: a component sets its options once.");
+      return;
+    }
+    optionsCall = call;
+    const [object, ...extra] = call.arguments;
+    if (extra.length || call.typeArguments || object?.type !== "ObjectExpression") {
+      invalid(call, "`defineOptions` takes one object literal: `{ inheritAttrs: false }`.");
+      return;
+    }
+    const [only, ...more] = object.properties;
+    const option = inheritAttrsOption(object);
+    const inherit = option === only ? option : undefined;
+    if (!inherit || more.length) {
+      invalid(
+        more[0] ?? only ?? object,
+        "`defineOptions` takes one option, `inheritAttrs: false`: the other options are Vue's, which the other targets have no counterpart for.",
+      );
+      return;
+    }
+    if (inherit.value.type !== "Literal" || inherit.value.value !== false) {
+      invalid(
+        inherit.value,
+        "`inheritAttrs` is `false` as a literal: fallthrough is on by default, and a value the compiler cannot read cannot decide it.",
+      );
+      return;
+    }
+    inheritAttrs = false;
+  }
+
+  /**
    * Checks a payload member's type (UF2009): one of the types every target's props declare, as
    * a prop's type is (Vue declares an event's payload as it declares props), through the local
    * types it names. Returns whether it is.
@@ -906,6 +1205,25 @@ export function declareSetup(context: SetupContext): Setup {
   }
 
   checkEventNames();
+  checkSlotNames();
+  if (exposeCall) checkExpose(exposeCall);
+
+  /**
+   * Checks the slots' names against the props and the events' callbacks (UF2029), once every
+   * event is declared: React, Solid, Qwik and Astro pass a slot as a prop.
+   */
+  function checkSlotNames(): void {
+    for (const { name, key } of slotKeys) {
+      const taken = slotNameTaken(name);
+      if (!taken) continue;
+      reporter.report(
+        "UF2029",
+        key,
+        `The slot \`${name}\` is named like ${taken}: React, Solid, Qwik and Astro pass a slot as a prop, so the two would collide.`,
+        { help: "Rename the slot." },
+      );
+    }
+  }
 
   const scope: SetupScope = {
     bindings,
@@ -933,6 +1251,15 @@ export function declareSetup(context: SetupContext): Setup {
     items,
     get emits() {
       return emits;
+    },
+    get slots() {
+      return slots;
+    },
+    get exposes() {
+      return exposes;
+    },
+    get inheritAttrs() {
+      return inheritAttrs;
     },
     lower(render) {
       if (lowered) return;
@@ -1604,8 +1931,19 @@ function findEventParameters(
       }
     });
   };
+  // A component's `onX` listens to an event its child declares, whose payload is no DOM event
+  // (ADR-0053): its attributes are left out.
+  const componentAttributes = new Set<object>();
   visit(context.returned, (node) => {
+    if (
+      node.type === "JSXOpeningElement" &&
+      node.name.type === "JSXIdentifier" &&
+      /^[A-Z]/.test(node.name.name)
+    ) {
+      for (const attribute of node.attributes) componentAttributes.add(attribute);
+    }
     if (node.type !== "JSXAttribute" || node.name.type !== "JSXIdentifier") return;
+    if (componentAttributes.has(node)) return;
     const name = listenerName(node.name.name);
     if (!name || node.value?.type !== "JSXExpressionContainer") return;
     const dom = DOM_EVENTS.get(name.event) ?? "Event";

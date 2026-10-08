@@ -1,0 +1,11 @@
+{
+  "description": "A scoped slot rendered for each item of a list: one fill destructures its props, the other reads them through a name.",
+  "main": "Ranking.uf.tsx",
+  "ssr": {
+    "three": {
+      "props": {
+        "names": ["Ada", "Grace", "Linus"]
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "description": "A scoped default slot filled through a slot object: the fill takes the slot's props as the default slot's parameter.",
+  "main": "Roster.uf.tsx",
+  "ssr": {
+    "two": {
+      "props": {
+        "names": ["Ada", "Grace"]
+      }
+    }
+  }
+}

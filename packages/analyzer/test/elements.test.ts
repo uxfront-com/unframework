@@ -134,7 +134,7 @@ describe("element names", () => {
   );
 
   it("treats a capitalised tag as a component, as JSX does", () => {
-    expect(problems("<div><Div>a</Div></div>")).toEqual(["UF1002 Div"]);
+    expect(problems("<div><Div>a</Div></div>")).toEqual(["UF3047 Div"]);
   });
 });
 
@@ -338,10 +338,11 @@ describe("nesting the browser repairs", () => {
     expect(component("<div><br></br></div>").diagnostics).toEqual([]);
   });
 
+  // The parent's compile checks such a root where the component sits (ADR-0054).
   it.each(["tr", "td", "th", "tbody", "caption", "col", "dd", "summary", "rt"])(
-    "reports a component whose root is <%s>, which needs a parent it cannot know",
+    "accepts a component whose root is <%s>, which its parent places",
     (tag) => {
-      expect(problems(`<${tag}></${tag}>`)).toEqual([`UF3003 ${tag}`]);
+      expect(problems(`<${tag}></${tag}>`)).toEqual([]);
     },
   );
 

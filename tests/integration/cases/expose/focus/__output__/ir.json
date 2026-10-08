@@ -1,0 +1,227 @@
+{
+  "irVersion": 1,
+  "file": "expose/focus/Header.uf.tsx",
+  "components": [
+    {
+      "name": "Header",
+      "span": {
+        "start": 96,
+        "end": 390
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "search@139",
+          "name": "search",
+          "kind": "templateRef",
+          "span": {
+            "start": 139,
+            "end": 145
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "TemplateRef",
+          "binding": "search@139",
+          "type": {
+            "code": "{ focus(): void }",
+            "span": {
+              "start": 163,
+              "end": 180
+            }
+          },
+          "span": {
+            "start": 133,
+            "end": 184
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "header",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "header",
+            "span": {
+              "start": 208,
+              "end": 222
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "SearchField",
+            "attributes": [
+              {
+                "kind": "Ref",
+                "binding": "search@139",
+                "span": {
+                  "start": 243,
+                  "end": 255
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Find\"",
+                  "span": {
+                    "start": 262,
+                    "end": 268
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 256,
+                  "end": 268
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 230,
+              "end": 271
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 286,
+                  "end": 299
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "search.value?.focus()",
+                      "span": {
+                        "start": 315,
+                        "end": 336
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "search@139",
+                          "span": {
+                            "start": 315,
+                            "end": 327
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 309,
+                      "end": 336
+                    }
+                  },
+                  "span": {
+                    "start": 309,
+                    "end": 336
+                  }
+                },
+                "span": {
+                  "start": 300,
+                  "end": 337
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Search",
+                "span": {
+                  "start": 338,
+                  "end": 360
+                }
+              }
+            ],
+            "span": {
+              "start": 278,
+              "end": 369
+            }
+          }
+        ],
+        "span": {
+          "start": 200,
+          "end": 383
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Header",
+      "span": {
+        "start": 96,
+        "end": 390
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./SearchField.uf.tsx",
+      "file": "SearchField.uf.tsx",
+      "api": {
+        "file": "SearchField.uf.tsx",
+        "components": [
+          {
+            "name": "SearchField",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [
+              "focus"
+            ],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "label"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "SearchField",
+          "span": {
+            "start": 54,
+            "end": 65
+          }
+        }
+      ],
+      "span": {
+        "start": 47,
+        "end": 94
+      }
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "description": "A class passed to a component whose root is another component passes on to that component's root element.",
+  "main": "Toolbar.uf.tsx"
+}

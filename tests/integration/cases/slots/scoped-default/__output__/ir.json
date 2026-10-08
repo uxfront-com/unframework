@@ -1,0 +1,244 @@
+{
+  "irVersion": 1,
+  "file": "slots/scoped-default/Roster.uf.tsx",
+  "components": [
+    {
+      "name": "Roster",
+      "span": {
+        "start": 37,
+        "end": 186
+      },
+      "props": [
+        {
+          "name": "names",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 88,
+              "end": 96
+            }
+          },
+          "binding": "names@70",
+          "span": {
+            "start": 81,
+            "end": 96
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ names: string[] }",
+          "span": {
+            "start": 79,
+            "end": 98
+          }
+        },
+        "span": {
+          "start": 68,
+          "end": 98
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "names@70",
+          "name": "names",
+          "kind": "prop",
+          "span": {
+            "start": 70,
+            "end": 75
+          }
+        },
+        {
+          "id": "item@147",
+          "name": "item",
+          "kind": "slotScope",
+          "span": {
+            "start": 147,
+            "end": 151
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Names",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "names",
+                "value": {
+                  "code": "names",
+                  "span": {
+                    "start": 125,
+                    "end": 130
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "names@70",
+                      "span": {
+                        "start": 125,
+                        "end": 130
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 118,
+                  "end": 131
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "parameter": {
+                  "pattern": {
+                    "code": "{ item }",
+                    "names": [
+                      "item"
+                    ],
+                    "span": {
+                      "start": 145,
+                      "end": 153
+                    }
+                  },
+                  "span": {
+                    "start": 145,
+                    "end": 153
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "b",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "item",
+                          "span": {
+                            "start": 162,
+                            "end": 166
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "item@147",
+                              "span": {
+                                "start": 162,
+                                "end": 166
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 161,
+                          "end": 167
+                        }
+                      },
+                      {
+                        "kind": "Text",
+                        "value": "!",
+                        "span": {
+                          "start": 167,
+                          "end": 168
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 158,
+                      "end": 172
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 135,
+                  "end": 172
+                }
+              }
+            ],
+            "span": {
+              "start": 111,
+              "end": 183
+            }
+          }
+        ],
+        "span": {
+          "start": 111,
+          "end": 183
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Roster",
+      "span": {
+        "start": 37,
+        "end": 186
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Names.uf.tsx",
+      "file": "Names.uf.tsx",
+      "api": {
+        "file": "Names.uf.tsx",
+        "components": [
+          {
+            "name": "Names",
+            "export": "default",
+            "props": [
+              {
+                "name": "names",
+                "optional": false,
+                "type": "string[]"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true,
+                "props": "{ item: string }"
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "ul"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Names",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    }
+  ]
+}

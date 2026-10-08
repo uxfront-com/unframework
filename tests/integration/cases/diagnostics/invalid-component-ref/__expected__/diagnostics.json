@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3046",
+    "severity": "error",
+    "message": "`Hint` exposes nothing, so a ref on it holds nothing a parent can call.",
+    "file": "diagnostics/invalid-component-ref/Form.uf.tsx",
+    "start": {
+      "line": 13,
+      "column": 13,
+      "offset": 386
+    },
+    "end": {
+      "line": 13,
+      "column": 23,
+      "offset": 396
+    },
+    "help": "Expose the functions a parent calls from Hint with `defineExpose({ … })`, or remove the ref."
+  }
+]

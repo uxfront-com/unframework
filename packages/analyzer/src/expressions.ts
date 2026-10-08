@@ -26,6 +26,7 @@ import {
   createExpression,
   createFunctionCode,
   createGlobalReference,
+  createSlotReference,
   createNarrowedPath,
   createParameter,
   createParameterPattern,
@@ -571,6 +572,11 @@ class Walk {
    */
   #synchronous = 0;
   /**
+   * Set while a ternary's test or the left of an `&&` is walked in a template: where a slot's
+   * presence, `slots.title`, may be read (ADR-0054), as it may in a conditional's condition.
+   */
+  #presence = false;
+  /**
    * The member expressions whose object the walk is reading, outermost first: the member paths
    * off a read of a prop or a ref's value (`draft.value.email`), which narrowing judges.
    */
@@ -636,11 +642,8 @@ class Walk {
       case "LogicalExpression":
         return this.#logical(node);
       case "ConditionalExpression":
-        this.value(node.test, "value", false);
-        return union(
-          this.value(node.consequent, "value", false),
-          this.value(node.alternate, "value", false),
-        );
+        this.#test(node.test, true);
+        return union(this.#test(node.consequent, false), this.#test(node.alternate, false));
       case "ParenthesizedExpression":
         return this.value(node.expression, position, shorthand);
       case "NewExpression":
@@ -698,7 +701,7 @@ class Walk {
           node,
           "JSX cannot be a value: only a child, a branch of a conditional child or the element a list's `.map` renders.",
           {
-            help: "Write the JSX as a child, or extract a component (composition lands in M3).",
+            help: "Write the JSX as a child, pass it in a slot, or extract a component.",
           },
         );
         this.#skip(node);
@@ -1106,9 +1109,11 @@ class Walk {
         }
         this.refs.push(createBindingReference(binding.id, span(node), shorthand));
         return FUNCTION;
-      // Composition's bindings (ADR-0055): the analyser declares none before M3 lowers them.
-      case "model":
       case "slots":
+        this.#slotUse(node, `\`${name}\` is used whole`);
+        return UNKNOWN;
+      // Composition's bindings (ADR-0055) the analyser does not declare in the setup yet.
+      case "model":
       case "slotScope":
       case "context":
       case "component":
@@ -1308,6 +1313,7 @@ class Walk {
       }
       const binding = setupBindingOf(object, context);
       if (binding && isRef(binding)) return this.#refValue(node, object, binding);
+      if (binding?.kind === "slots") return this.#slotPresence(node, binding);
       if (this.#isEvent(object)) return this.#eventMember(node, false);
     }
     this.#memberChain.push(node);
@@ -1363,6 +1369,50 @@ class Walk {
     return this.#narrowed(
       node,
       node.optional && mayBeNullish(receiver) ? union(result, UNDEFINED) : result,
+    );
+  }
+
+  /**
+   * `slots.title`, whether the parent filled the slot (ADR-0054): a template reads it, as a
+   * condition, and nothing else reads `slots` but a slot's call or its forwarding (UF3041).
+   */
+  #slotPresence(node: AST.MemberExpression, binding: SetupBinding): Kinds {
+    const slot =
+      !node.computed && node.property.type === "Identifier" ? node.property.name : undefined;
+    const declared =
+      slot !== undefined && this.#context.slots?.slots.some((each) => each.name === slot);
+    const condition = this.#context.presence === true || this.#presence;
+    if (
+      this.#mode !== "render" ||
+      !condition ||
+      !declared ||
+      node.optional ||
+      node.object.start !== node.start
+    ) {
+      this.#slotUse(
+        node,
+        this.#mode !== "render"
+          ? `\`${binding.name}\` is read in setup code, which runs where no template is`
+          : !condition
+            ? `\`${this.#context.source.slice(node.start, node.end)}\` is read outside a conditional's condition`
+            : declared
+              ? `\`${this.#context.source.slice(node.start, node.end)}\` is no plain read of a slot`
+              : `\`${slot ?? "this"}\` is no slot of this component`,
+      );
+      if (node.computed) this.value(node.property, "value", false);
+      return UNKNOWN;
+    }
+    this.refs.push(createSlotReference(slot!, span(node)));
+    return union(FUNCTION, UNDEFINED);
+  }
+
+  /** A use of `slots` other than rendering, testing or forwarding a slot (UF3041). */
+  #slotUse(node: { start: number; end: number }, what: string): void {
+    this.#context.reporter.report(
+      "UF3041",
+      node,
+      `${what}: a slot is rendered (\`{slots.title?.()}\`), tested in a template (\`slots.title ? … : …\`) or forwarded (\`{{ title: slots.title }}\`), and nothing else.`,
+      { help: "Render, test or forward a slot `defineSlots` declares." },
     );
   }
 
@@ -5077,8 +5127,22 @@ class Walk {
     return left.primitives.has("unknown") || right.primitives.has("unknown") ? UNKNOWN : NUMBER;
   }
 
+  /**
+   * Walks an operand, with a slot's presence readable where `test` is set. A ternary's test and
+   * the left of an `&&` are tests, and its branches are not. The other operands are tests only
+   * inside a test: on its own, `slots.title || "none"` gives a function, which no template
+   * renders.
+   */
+  #test(node: AST.Expression, test: boolean): Kinds {
+    const outer = this.#presence;
+    this.#presence = test && this.#mode === "render";
+    const result = this.value(node, "value", false);
+    this.#presence = outer;
+    return result;
+  }
+
   #logical(node: AST.LogicalExpression): Kinds {
-    const left = this.value(node.left, "value", false);
+    const left = this.#test(node.left, node.operator === "&&" || this.#presence);
     if (node.operator === "??") {
       const { reporter, source } = this.#context;
       const mark = reporter.diagnostics.length;
@@ -5125,7 +5189,7 @@ class Walk {
       // Never nullish, the left side is the value: the right side is never read.
       return left;
     }
-    const right = this.value(node.right, "value", false);
+    const right = this.#test(node.right, this.#presence);
     if (node.operator === "||") return union(without(left, "null", "undefined"), right);
     return union(falsyPart(left), right);
   }

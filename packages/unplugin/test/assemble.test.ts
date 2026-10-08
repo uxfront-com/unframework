@@ -58,7 +58,8 @@ describe("assembleModule", () => {
     expect(assembleModule({ ...base, files, exports })).toEqual({ code: card });
   });
 
-  it("refuses several markup files until composition (M3)", () => {
+  // The plugin gives a markup id one component's files (ADR-0053): two are a target's bug.
+  it("refuses several markup files for one id", () => {
     const files = [
       { path: "Card.vue", contents: "<template><section /></template>\n" },
       { path: "Badge.vue", contents: "<template><span /></template>\n" },
@@ -76,18 +77,18 @@ describe("assembleModule", () => {
       }),
     ).toEqual({
       error:
-        "src/Card.uf.tsx compiles to 2 vue components (Card.vue, Badge.vue), and a .vue file holds one, so they cannot load as one module. Several components in one .uf.tsx file are supported for markup targets from M3 (composition); until then, give each component its own .uf.tsx file.",
+        "src/Card.uf.tsx compiles to 2 vue files for one component (Card.vue, Badge.vue), and a .vue file holds one, so they cannot load as one module.",
     });
   });
 
-  it("refuses a markup component exported by name until composition (M3)", () => {
+  it("refuses a markup main component exported by name", () => {
     const vue = { target: "vue", filename: "src/Card.uf.tsx", extension: ".vue" };
     const files = [{ path: "Card.vue", contents: "<template><section /></template>\n" }];
     expect(assembleModule({ ...vue, files, exports: exportsOf("default") })).toEqual({
       code: files[0]!.contents,
     });
     const refusal =
-      "src/Card.uf.tsx exports `Card` by name, and the module of a .vue file has only a default export, so `import { Card }` would find nothing on the vue target. Named exports of components on markup targets come with composition (M3); until then, export the component as the default only: `export default function Card() { … }`.";
+      "src/Card.uf.tsx exports `Card` by name, and the module of a .vue file has only a default export, so `import { Card }` would find nothing on the vue target. Export the file's main component as the default: `export default function Card() { … }`.";
     // Named only, or as well as the default: either way `import { Card }` would not link.
     expect(assembleModule({ ...vue, files, exports: exportsOf("Card") })).toEqual({
       error: refusal,
@@ -98,13 +99,27 @@ describe("assembleModule", () => {
     // An alias names the export, and the fix names the function.
     expect(assembleModule({ ...vue, files, exports: exportsOf("Panel") })).toMatchObject({
       error: expect.stringContaining(
-        "exports `Panel` by name, and the module of a .vue file has only a default export, so `import { Panel }` would find nothing on the vue target. Named exports of components on markup targets come with composition (M3); until then, export the component as the default only: `export default function Card() { … }`.",
+        "exports `Panel` by name, and the module of a .vue file has only a default export, so `import { Panel }` would find nothing on the vue target. Export the file's main component as the default: `export default function Card() { … }`.",
       ),
     });
   });
 });
 
 describe("joinModules", () => {
+  it("leaves out an import of a file of the join (ADR-0053)", () => {
+    const files = [
+      { path: "Note.tsx", contents: "export function Note() {\n  return <p />;\n}\n" },
+      {
+        path: "Form.tsx",
+        contents:
+          'import { Note } from "./Note";\n\nexport default function Form() {\n  return <Note />;\n}\n',
+      },
+    ];
+    expect(joinModules(files, "Form.uf.tsx", ["Note.tsx", "Form.tsx"])).toEqual({
+      code: "export function Note() {\n  return <p />;\n}\n\n\nexport default function Form() {\n  return <Note />;\n}\n",
+    });
+  });
+
   it("writes an import that an earlier file already made once", () => {
     const result = joinModules(
       [

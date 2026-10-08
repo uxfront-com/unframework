@@ -1,0 +1,194 @@
+{
+  "irVersion": 1,
+  "file": "slots/forwarding/Gallery.uf.tsx",
+  "components": [
+    {
+      "name": "Gallery",
+      "span": {
+        "start": 37,
+        "end": 262
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Frame",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Filled\"",
+                  "span": {
+                    "start": 113,
+                    "end": 121
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 107,
+                  "end": 121
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Taken at dusk.",
+                        "span": {
+                          "start": 178,
+                          "end": 192
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 175,
+                      "end": 196
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 160,
+                  "end": 196
+                }
+              },
+              {
+                "slot": "title",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Sunset",
+                    "span": {
+                      "start": 149,
+                      "end": 155
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 134,
+                  "end": 158
+                }
+              }
+            ],
+            "span": {
+              "start": 100,
+              "end": 214
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Frame",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Empty\"",
+                  "span": {
+                    "start": 234,
+                    "end": 241
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 228,
+                  "end": 241
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 221,
+              "end": 244
+            }
+          }
+        ],
+        "span": {
+          "start": 88,
+          "end": 255
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Gallery",
+      "span": {
+        "start": 37,
+        "end": 262
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Frame.uf.tsx",
+      "file": "Frame.uf.tsx",
+      "api": {
+        "file": "Frame.uf.tsx",
+        "components": [
+          {
+            "name": "Frame",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "title",
+                "optional": true
+              },
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "section"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Frame",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    }
+  ]
+}

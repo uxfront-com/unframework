@@ -1,0 +1,240 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/presence/Card.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 3,
+      "offset": 151
+    },
+    "end": {
+      "line": 5,
+      "column": 75,
+      "offset": 223
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/presence/Card.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 3,
+      "offset": 151
+    },
+    "end": {
+      "line": 5,
+      "column": 75,
+      "offset": 223
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/presence/Card.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 3,
+      "offset": 151
+    },
+    "end": {
+      "line": 5,
+      "column": 75,
+      "offset": 223
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/presence/Card.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 3,
+      "offset": 151
+    },
+    "end": {
+      "line": 5,
+      "column": 75,
+      "offset": 223
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/presence/Card.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 3,
+      "offset": 151
+    },
+    "end": {
+      "line": 5,
+      "column": 75,
+      "offset": 223
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/presence/Card.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 3,
+      "offset": 151
+    },
+    "end": {
+      "line": 5,
+      "column": 75,
+      "offset": 223
+    },
+    "target": "svelte"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The angular target does not support default-slot-presence: Angular has no API for whether `<ng-content>` received content, and forwarding the default slot would re-project `<ng-content />`, which always counts as content (ADR-0056).",
+    "file": "slots/presence/Card.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 8,
+      "offset": 366
+    },
+    "end": {
+      "line": 9,
+      "column": 21,
+      "offset": 379
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF4001",
+    "severity": "error",
+    "message": "The qwik target does not support default-slot-presence: Qwik's `<Slot />` has no presence API, and forwarding the default slot needs its presence (ADR-0054).",
+    "file": "slots/presence/Card.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 8,
+      "offset": 366
+    },
+    "end": {
+      "line": 9,
+      "column": 21,
+      "offset": 379
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit component yet: composition lands in M3.",
+    "file": "slots/presence/Cards.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 110
+    },
+    "end": {
+      "line": 8,
+      "column": 14,
+      "offset": 221
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "file": "slots/presence/Cards.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 110
+    },
+    "end": {
+      "line": 8,
+      "column": 14,
+      "offset": 221
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
+    "file": "slots/presence/Cards.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 110
+    },
+    "end": {
+      "line": 8,
+      "column": 14,
+      "offset": 221
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit component yet: composition lands in M3.",
+    "file": "slots/presence/Cards.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 110
+    },
+    "end": {
+      "line": 8,
+      "column": 14,
+      "offset": 221
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit component yet: composition lands in M3.",
+    "file": "slots/presence/Cards.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 110
+    },
+    "end": {
+      "line": 8,
+      "column": 14,
+      "offset": 221
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit component yet: composition lands in M3.",
+    "file": "slots/presence/Cards.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 110
+    },
+    "end": {
+      "line": 8,
+      "column": 14,
+      "offset": 221
+    },
+    "target": "svelte"
+  }
+]

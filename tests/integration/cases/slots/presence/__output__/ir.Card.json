@@ -1,0 +1,312 @@
+{
+  "irVersion": 1,
+  "file": "slots/presence/Card.uf.tsx",
+  "components": [
+    {
+      "name": "Card",
+      "span": {
+        "start": 88,
+        "end": 468
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 137,
+              "end": 143
+            }
+          },
+          "binding": "label@119",
+          "span": {
+            "start": 130,
+            "end": 143
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 128,
+            "end": 145
+          }
+        },
+        "span": {
+          "start": 117,
+          "end": 145
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@157",
+        "type": {
+          "code": "{ title?(): Element; default?(): Element }",
+          "span": {
+            "start": 177,
+            "end": 219
+          }
+        },
+        "slots": [
+          {
+            "name": "title",
+            "optional": true,
+            "span": {
+              "start": 179,
+              "end": 197
+            }
+          },
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 198,
+              "end": 217
+            }
+          }
+        ],
+        "span": {
+          "start": 151,
+          "end": 223
+        }
+      },
+      "bindings": [
+        {
+          "id": "label@119",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 119,
+            "end": 124
+          }
+        },
+        {
+          "id": "slots@157",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 157,
+            "end": 162
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "card",
+            "span": {
+              "start": 248,
+              "end": 260
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 273,
+                "end": 278
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@119",
+                  "span": {
+                    "start": 273,
+                    "end": 278
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 261,
+              "end": 279
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "slots.title",
+                  "span": {
+                    "start": 288,
+                    "end": 299
+                  },
+                  "refs": [
+                    {
+                      "kind": "Slot",
+                      "slot": "title",
+                      "span": {
+                        "start": 288,
+                        "end": 299
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "header",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "title",
+                        "span": {
+                          "start": 310,
+                          "end": 323
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "SlotOutlet",
+                        "slot": "title",
+                        "fallback": [],
+                        "span": {
+                          "start": 324,
+                          "end": 341
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 302,
+                      "end": 350
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 288,
+                  "end": 350
+                }
+              }
+            ],
+            "span": {
+              "start": 288,
+              "end": 357
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "slots.default",
+                  "span": {
+                    "start": 366,
+                    "end": 379
+                  },
+                  "refs": [
+                    {
+                      "kind": "Slot",
+                      "slot": "default",
+                      "span": {
+                        "start": 366,
+                        "end": 379
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "div",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "body",
+                        "span": {
+                          "start": 387,
+                          "end": 399
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "SlotOutlet",
+                        "slot": "default",
+                        "fallback": [],
+                        "span": {
+                          "start": 400,
+                          "end": 419
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 382,
+                      "end": 425
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 366,
+                  "end": 425
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Empty card",
+                        "span": {
+                          "start": 431,
+                          "end": 441
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 428,
+                      "end": 445
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 428,
+                  "end": 445
+                }
+              }
+            ],
+            "span": {
+              "start": 366,
+              "end": 445
+            }
+          }
+        ],
+        "span": {
+          "start": 239,
+          "end": 461
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Card",
+      "span": {
+        "start": 88,
+        "end": 468
+      }
+    }
+  ],
+  "types": []
+}

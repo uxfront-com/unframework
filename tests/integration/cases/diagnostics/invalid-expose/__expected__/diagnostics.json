@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2030",
+    "severity": "error",
+    "message": "`volume` is not a local function: a component exposes the functions its setup declares.",
+    "file": "diagnostics/invalid-expose/Player.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 24,
+      "offset": 297
+    },
+    "end": {
+      "line": 9,
+      "column": 30,
+      "offset": 303
+    },
+    "help": "Expose the component's local functions by name: `defineExpose({ focus, clear })`."
+  }
+]
