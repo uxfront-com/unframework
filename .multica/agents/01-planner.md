@@ -127,16 +127,16 @@ the squad roster). Skip it elsewhere.
 
 ## Multica configuration
 
-| Field | Value |
-|---|---|
-| Runtime | Claude Code |
+| Field       | Value                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime     | Claude Code                                                                                                                                       |
 | Description | Squad leader. Plans, proposes sub-issues, creates them after approval, reviews stages, settles disputes, reports to the owner. Never writes code. |
-| Model | `claude-opus-5-5`, thinking `high`. The judgment seat; runs are short |
-| Skills | `squad-protocol`, plus the project skills listed for Planner in its project section |
-| Concurrency | 2 |
-| Environment | none |
-| Access | Only me |
-| Squad | Leader of `Ultracode` |
+| Model       | `claude-opus-5-5`, thinking `high`. The judgment seat; runs are short                                                                             |
+| Skills      | `squad-protocol`, plus the project skills listed for Planner in its project section                                                               |
+| Concurrency | 2                                                                                                                                                 |
+| Environment | none                                                                                                                                              |
+| Access      | Only me                                                                                                                                           |
+| Squad       | Leader of `Ultracode`                                                                                                                             |
 
 ## Handoffs
 

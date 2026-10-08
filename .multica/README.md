@@ -13,11 +13,11 @@ Contents:
 
 ## The three seats
 
-| Agent | Seat | Writes product code | Creates issues |
-|---|---|---|---|
-| **Planner** | Architecture, planning, triage, direction. Squad leader | Never | Only the list the owner approved |
-| **Engineer** | Implementation. Owns one sub-issue end to end | Yes, inside the sub-issue scope | Never. Requests them in its reports |
-| **QA** | Review, manual testing, proof | Never | Never. Requests them in its verdicts |
+| Agent        | Seat                                                    | Writes product code             | Creates issues                       |
+| ------------ | ------------------------------------------------------- | ------------------------------- | ------------------------------------ |
+| **Planner**  | Architecture, planning, triage, direction. Squad leader | Never                           | Only the list the owner approved     |
+| **Engineer** | Implementation. Owns one sub-issue end to end           | Yes, inside the sub-issue scope | Never. Requests them in its reports  |
+| **QA**       | Review, manual testing, proof                           | Never                           | Never. Requests them in its verdicts |
 
 Five rules shape the roster:
 
@@ -33,23 +33,23 @@ Five rules shape the roster:
 
 In Claude Code, Ultracode is a standing opt-in: every substantive task becomes a workflow. The orchestrator fans work out to subagents in phases (understand, design, implement, review), verifies findings adversarially, and stays in the loop between phases. Token cost is explicitly not a constraint there. The squad keeps the structure and makes cost a first-class constraint.
 
-| Ultracode construct | Squad mechanism | What it costs |
-|---|---|---|
-| Workflow script, `phase()` | The Planner's **PLAN** comment on the parent issue plus **staged sub-issues** (`--parent`, `--stage`), created after approval | One Planner run per phase boundary, plus one for the approval |
-| `pipeline()` (no barrier) | Each sub-issue runs its own Engineer → QA chain independently | No run waits on a sibling |
-| `parallel()` barrier | A **stage**. Multica wakes the parent's assignee when every sub-issue in the earliest open stage is `done` or `cancelled` | Zero tokens while waiting |
-| `agent(..., {schema})` | **Comment contracts**: fixed headings for PLAN, DELIVERY, VERDICT, FIX, BLOCKED, STAGE REVIEW, SYNTHESIS | The Planner reads headings and thread tails, not whole threads |
-| `isolation: 'worktree'` | Every run gets its own checkout from the daemon's bare-clone cache | One install and build per checkout. The dominant cost. See the cost model |
-| Model and effort per stage | Model and thinking level per agent | Chosen once per seat |
-| Multi-modal sweep | The Planner's recon: up to four parallel read-only subagents with different lenses, inside one run | One run, not four |
-| Judge panel | The Planner's design panel: two or three in-run planning subagents with different angles, only for design-heavy issues | Zero extra runs |
-| Adversarial verify (N refuters vote) | QA spawns finder subagents per lens, then a refuter subagent per finding, inside one run, on its own model. Only CONFIRMED findings block | One run per delivery |
-| Loop-until-dry | Engineer ↔ QA rounds until PASS, **capped at two FAIL rounds**, then ESCALATE. The Planner settles the dispute inside its own run. Audit mode runs finder rounds inside one QA run until a round confirms nothing | Bounded by construction |
-| Completeness critic | QA's VERDICT states what it did not verify. The Planner's stage review checks every criterion before the next stage | Part of existing runs |
-| No silent caps | Every DELIVERY and VERDICT lists skipped checks | Free |
-| Resume (cached prefix) | Multica resumes the agent's session and reuses the working directory per issue and agent | Free within the daemon's cleanup window |
-| `log()` | `multica squad activity` on every leader run | One CLI call |
-| `budget` | Fan-out and round caps in the PLAN; `multica issue usage` for the actual spend | Visible per issue |
+| Ultracode construct                  | Squad mechanism                                                                                                                                                                                                   | What it costs                                                             |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Workflow script, `phase()`           | The Planner's **PLAN** comment on the parent issue plus **staged sub-issues** (`--parent`, `--stage`), created after approval                                                                                     | One Planner run per phase boundary, plus one for the approval             |
+| `pipeline()` (no barrier)            | Each sub-issue runs its own Engineer → QA chain independently                                                                                                                                                     | No run waits on a sibling                                                 |
+| `parallel()` barrier                 | A **stage**. Multica wakes the parent's assignee when every sub-issue in the earliest open stage is `done` or `cancelled`                                                                                         | Zero tokens while waiting                                                 |
+| `agent(..., {schema})`               | **Comment contracts**: fixed headings for PLAN, DELIVERY, VERDICT, FIX, BLOCKED, STAGE REVIEW, SYNTHESIS                                                                                                          | The Planner reads headings and thread tails, not whole threads            |
+| `isolation: 'worktree'`              | Every run gets its own checkout from the daemon's bare-clone cache                                                                                                                                                | One install and build per checkout. The dominant cost. See the cost model |
+| Model and effort per stage           | Model and thinking level per agent                                                                                                                                                                                | Chosen once per seat                                                      |
+| Multi-modal sweep                    | The Planner's recon: up to four parallel read-only subagents with different lenses, inside one run                                                                                                                | One run, not four                                                         |
+| Judge panel                          | The Planner's design panel: two or three in-run planning subagents with different angles, only for design-heavy issues                                                                                            | Zero extra runs                                                           |
+| Adversarial verify (N refuters vote) | QA spawns finder subagents per lens, then a refuter subagent per finding, inside one run, on its own model. Only CONFIRMED findings block                                                                         | One run per delivery                                                      |
+| Loop-until-dry                       | Engineer ↔ QA rounds until PASS, **capped at two FAIL rounds**, then ESCALATE. The Planner settles the dispute inside its own run. Audit mode runs finder rounds inside one QA run until a round confirms nothing | Bounded by construction                                                   |
+| Completeness critic                  | QA's VERDICT states what it did not verify. The Planner's stage review checks every criterion before the next stage                                                                                               | Part of existing runs                                                     |
+| No silent caps                       | Every DELIVERY and VERDICT lists skipped checks                                                                                                                                                                   | Free                                                                      |
+| Resume (cached prefix)               | Multica resumes the agent's session and reuses the working directory per issue and agent                                                                                                                          | Free within the daemon's cleanup window                                   |
+| `log()`                              | `multica squad activity` on every leader run                                                                                                                                                                      | One CLI call                                                              |
+| `budget`                             | Fan-out and round caps in the PLAN; `multica issue usage` for the actual spend                                                                                                                                    | Visible per issue                                                         |
 
 ---
 
@@ -94,11 +94,11 @@ flowchart TD
 
 ### Modes the Planner picks at planning time
 
-| Mode | When | Shape |
-|---|---|---|
-| **Single** | One package, one agent-day, no independent slices | One stage, one sub-issue. The pipeline with no fan-out. Default |
-| **Fan-out** | Two or more slices that touch disjoint paths, or a contract-first dependency | Stages: contract before consumers; independent slices share a stage |
-| **Audit** | "Find the bugs in X", "review this area" | Stage 1: one QA-owned sub-issue; finder and refuter subagents run inside it, round after round, until a round confirms nothing. QA posts the AUDIT REPORT and marks it done. Stage 2: Engineer fix sub-issues for CONFIRMED findings, proposed in the stage review and created after approval |
+| Mode        | When                                                                         | Shape                                                                                                                                                                                                                                                                                         |
+| ----------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Single**  | One package, one agent-day, no independent slices                            | One stage, one sub-issue. The pipeline with no fan-out. Default                                                                                                                                                                                                                               |
+| **Fan-out** | Two or more slices that touch disjoint paths, or a contract-first dependency | Stages: contract before consumers; independent slices share a stage                                                                                                                                                                                                                           |
+| **Audit**   | "Find the bugs in X", "review this area"                                     | Stage 1: one QA-owned sub-issue; finder and refuter subagents run inside it, round after round, until a round confirms nothing. QA posts the AUDIT REPORT and marks it done. Stage 2: Engineer fix sub-issues for CONFIRMED findings, proposed in the stage review and created after approval |
 
 ### Rules that keep it cheap
 
@@ -126,14 +126,14 @@ flowchart TD
 
 ## Cost model
 
-| Cost centre | Driver | Knob |
-|---|---|---|
-| Checkout setup | One install and build per fresh checkout. QA pays its own for every sub-issue | Shared `TURBO_CACHE_DIR`; offline installs; build only the touched packages; prefer Single mode |
-| Engineer runs | One per sub-issue plus one per fix round | Smaller sub-issues; tests first so the first round is right; round cap; `high` effort so a round is not wasted on a sloppy delivery |
-| QA runs | One per delivery plus one per CI wakeup | Refuters instead of re-review; mutation testing only as a tiebreak; CI wakeup instead of polling |
-| Planner runs | One per phase boundary, one per approval, observe-only wakes | Sub-issues assigned to Engineer or QA directly; observe-only turns post nothing and stop |
-| Context size | Comment history | Bounded reads; comment contracts; metadata for durable facts |
-| Parallelism | Concurrent checkouts on one machine | Agent concurrency caps; fan-out rule |
+| Cost centre    | Driver                                                                        | Knob                                                                                                                                |
+| -------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Checkout setup | One install and build per fresh checkout. QA pays its own for every sub-issue | Shared `TURBO_CACHE_DIR`; offline installs; build only the touched packages; prefer Single mode                                     |
+| Engineer runs  | One per sub-issue plus one per fix round                                      | Smaller sub-issues; tests first so the first round is right; round cap; `high` effort so a round is not wasted on a sloppy delivery |
+| QA runs        | One per delivery plus one per CI wakeup                                       | Refuters instead of re-review; mutation testing only as a tiebreak; CI wakeup instead of polling                                    |
+| Planner runs   | One per phase boundary, one per approval, observe-only wakes                  | Sub-issues assigned to Engineer or QA directly; observe-only turns post nothing and stop                                            |
+| Context size   | Comment history                                                               | Bounded reads; comment contracts; metadata for durable facts                                                                        |
+| Parallelism    | Concurrent checkouts on one machine                                           | Agent concurrency caps; fan-out rule                                                                                                |
 
 Read the actual spend with `multica issue usage <parent>` and on each child. The Planner includes the totals in the SYNTHESIS.
 
@@ -155,6 +155,7 @@ What the squad deliberately does **not** copy from Ultracode: N-way voting by se
    ```text
    The owner is Alex. Propose sub-issues in the PLAN and create them only after Alex approves, assigned to Engineer (or QA for audits), never by @-mentioning members on the parent. Engineer mentions QA on delivery. QA marks a verified sub-issue done. You wake on stage barriers, Alex's comments, squad mentions, failed child runs, and your one stall timer. Follow your instructions and the squad-protocol skill.
    ```
+
 9. **Smoke test.** Assign one small, real issue to the squad in Single mode and read every comment the team posts. Fix the instructions before the second issue.
 10. **Skill amendments.** Agents cannot edit skills; they propose amendments in their reports and the Planner lists them in the SYNTHESIS. Apply them by editing the skill directory here and re-importing with `--on-conflict overwrite`.
 

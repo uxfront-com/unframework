@@ -106,16 +106,16 @@ owner.
 
 ## Multica configuration
 
-| Field | Value |
-|---|---|
-| Runtime | Claude Code |
-| Description | Implements one sub-issue end to end: branch, tests, draft PR, delivery evidence. Requests issues; never creates them. |
-| Model | `claude-opus-5-5`, thinking `high`. A sloppy first delivery costs a QA run and a CI cycle, which is more than the extra effort |
-| Skills | `squad-protocol`, `local-verification`, plus the project skills listed for Engineer in the project section |
-| Concurrency | 3. Each run on a new sub-issue is a fresh checkout with its own install and build |
-| Environment | `TURBO_CACHE_DIR=/Users/alexgrozav/.cache/turbo` so checkouts share build artifacts |
-| Access | Only me |
-| Squad | Member of `Ultracode`. Role description: "Implements one sub-issue end to end: branch, tests, draft PR, delivery evidence. Requests issues; never creates them." |
+| Field       | Value                                                                                                                                                            |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime     | Claude Code                                                                                                                                                      |
+| Description | Implements one sub-issue end to end: branch, tests, draft PR, delivery evidence. Requests issues; never creates them.                                            |
+| Model       | `claude-opus-5-5`, thinking `high`. A sloppy first delivery costs a QA run and a CI cycle, which is more than the extra effort                                   |
+| Skills      | `squad-protocol`, `local-verification`, plus the project skills listed for Engineer in the project section                                                       |
+| Concurrency | 3. Each run on a new sub-issue is a fresh checkout with its own install and build                                                                                |
+| Environment | `TURBO_CACHE_DIR=/Users/alexgrozav/.cache/turbo` so checkouts share build artifacts                                                                              |
+| Access      | Only me                                                                                                                                                          |
+| Squad       | Member of `Ultracode`. Role description: "Implements one sub-issue end to end: branch, tests, draft PR, delivery evidence. Requests issues; never creates them." |
 
 ## Handoffs
 

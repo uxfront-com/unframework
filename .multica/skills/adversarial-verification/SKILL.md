@@ -81,14 +81,14 @@ Replace this section when the squad moves to another project.
 
 **Review-rule groups.** The repository has no path-scoped review rules; `AGENTS.md` is the rule book. Run one finder per group whose paths match the diff, with that group's sources as its checklist, plus correctness, scope, security, and test quality.
 
-| Group | Paths | Checklist |
-|---|---|---|
-| `compiler-core` | `packages/{ir,diagnostics,parser,analyzer,codegen,compiler,unplugin}` | `AGENTS.md`: Loud, never silent; Deterministic; Layering and TypeScript; Targets and the IR. The package's README contract |
-| `targets` | `packages/target-*` | `AGENTS.md`: Targets and the IR, and the Target notes table. Plan §6 |
-| `corpus-and-harness` | `tests/integration`, `tests/toolchains`, `packages/testing` | `tests/integration/README.md` (the spec rules of ADR-0043, the rules that keep it honest). `AGENTS.md`: Never weaken a check |
-| `language-and-types` | `packages/unframework` | Plan §4. `AGENTS.md`: The source language is fixed by the plan |
-| `docs-and-decisions` | `apps/web/content/docs`, `docs/` | `AGENTS.md`: Done means green on seven targets (verbatim examples), Record a decision, Code and prose |
-| `repo-and-build` | Root configuration, `pnpm-workspace.yaml`, `turbo.json`, `.github/`, `tests/repo`, `scripts/` | `AGENTS.md`: Versions, Add a package. `.github/CONTRIBUTING.md` |
+| Group                | Paths                                                                                         | Checklist                                                                                                                    |
+| -------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `compiler-core`      | `packages/{ir,diagnostics,parser,analyzer,codegen,compiler,unplugin}`                         | `AGENTS.md`: Loud, never silent; Deterministic; Layering and TypeScript; Targets and the IR. The package's README contract   |
+| `targets`            | `packages/target-*`                                                                           | `AGENTS.md`: Targets and the IR, and the Target notes table. Plan §6                                                         |
+| `corpus-and-harness` | `tests/integration`, `tests/toolchains`, `packages/testing`                                   | `tests/integration/README.md` (the spec rules of ADR-0043, the rules that keep it honest). `AGENTS.md`: Never weaken a check |
+| `language-and-types` | `packages/unframework`                                                                        | Plan §4. `AGENTS.md`: The source language is fixed by the plan                                                               |
+| `docs-and-decisions` | `apps/web/content/docs`, `docs/`                                                              | `AGENTS.md`: Done means green on seven targets (verbatim examples), Record a decision, Code and prose                        |
+| `repo-and-build`     | Root configuration, `pnpm-workspace.yaml`, `turbo.json`, `.github/`, `tests/repo`, `scripts/` | `AGENTS.md`: Versions, Add a package. `.github/CONTRIBUTING.md`                                                              |
 
 **Automated reviewer.** None is configured. Read any other comments with `gh pr view <url> --comments` before a PASS.
 

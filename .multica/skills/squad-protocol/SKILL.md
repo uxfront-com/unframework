@@ -9,11 +9,11 @@ Three agents share one repository and one human owner. This protocol keeps paral
 
 ## The squad
 
-| Agent | Seat | Fence | Issues |
-|---|---|---|---|
-| Planner | Architecture, planning, triage, direction. Squad leader | No product code | Creates only the list the owner approved |
-| Engineer | Implementation | Inside the sub-issue scope | Requests only |
-| QA | Review, manual testing, proof. Owns audit sub-issues | No product code. Never commits or pushes | Requests only |
+| Agent    | Seat                                                    | Fence                                    | Issues                                   |
+| -------- | ------------------------------------------------------- | ---------------------------------------- | ---------------------------------------- |
+| Planner  | Architecture, planning, triage, direction. Squad leader | No product code                          | Creates only the list the owner approved |
+| Engineer | Implementation                                          | Inside the sub-issue scope               | Requests only                            |
+| QA       | Review, manual testing, proof. Owns audit sub-issues    | No product code. Never commits or pushes | Requests only                            |
 
 ## The owner's boundary
 
@@ -35,15 +35,15 @@ Three agents share one repository and one human owner. This protocol keeps paral
 - **Sub-issues** are assigned to Engineer (or to QA for audits) and carry a `--stage`. Each holds one slice: criteria, DELIVERY, VERDICT threads, FIX replies. Traffic on a sub-issue never wakes the Planner, because the sub-issue is assigned to an agent, not to the squad.
 - **Stages** are barriers. Multica wakes the parent's assignee when every sub-issue in the earliest unfinished stage is `done` or `cancelled`. `in_review` does not close a stage. Stage 1 starts in `todo`. Later stages wait in `backlog`; the Planner moves them to `todo` at the stage review.
 
-| Status | Meaning in the squad | Who sets it |
-|---|---|---|
-| `backlog` | Parked. No run starts | Planner |
-| `todo` | Starts the assignee's run | Planner |
-| `in_progress` | Being worked. The parent sits here from the PLAN to the SYNTHESIS | Engineer on start; Planner for the parent |
-| `in_review` | Sub-issue: DELIVERY posted, awaiting QA. Parent: SYNTHESIS posted, awaiting the owner | Engineer; Planner for the parent |
-| `blocked` | Needs an answer. The BLOCKED comment names who from | Engineer |
-| `done` | Sub-issue: verified by QA, draft PR ready, not merged. Audit: report posted. Parent: the owner's call, or the merged PRs | QA; the owner |
-| `cancelled` | Dropped by the Planner or the owner, with a reason | Planner |
+| Status        | Meaning in the squad                                                                                                     | Who sets it                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| `backlog`     | Parked. No run starts                                                                                                    | Planner                                   |
+| `todo`        | Starts the assignee's run                                                                                                | Planner                                   |
+| `in_progress` | Being worked. The parent sits here from the PLAN to the SYNTHESIS                                                        | Engineer on start; Planner for the parent |
+| `in_review`   | Sub-issue: DELIVERY posted, awaiting QA. Parent: SYNTHESIS posted, awaiting the owner                                    | Engineer; Planner for the parent          |
+| `blocked`     | Needs an answer. The BLOCKED comment names who from                                                                      | Engineer                                  |
+| `done`        | Sub-issue: verified by QA, draft PR ready, not merged. Audit: report posted. Parent: the owner's call, or the merged PRs | QA; the owner                             |
+| `cancelled`   | Dropped by the Planner or the owner, with a reason                                                                       | Planner                                   |
 
 Record a status for work that is already under way with `--no-start`. Omit `--no-start` only when the change should start a run.
 
@@ -56,11 +56,11 @@ Record a status for work that is already under way with `--no-start`. Omit `--no
 
 ## Modes and decomposition
 
-| Mode | When | Shape |
-|---|---|---|
-| Single | One package, at most one agent-day, no independent slices | One stage, one sub-issue. Default |
-| Fan-out | Two or more slices on disjoint paths, or a contract-first dependency | Independent slices share a stage. Contracts land one stage before their consumers |
-| Audit | "Find the bugs in X", "review this area" | Stage 1: one QA-owned sub-issue with a finding budget. Stage 2: Engineer fix sub-issues for CONFIRMED findings, proposed in the stage review |
+| Mode    | When                                                                 | Shape                                                                                                                                        |
+| ------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Single  | One package, at most one agent-day, no independent slices            | One stage, one sub-issue. Default                                                                                                            |
+| Fan-out | Two or more slices on disjoint paths, or a contract-first dependency | Independent slices share a stage. Contracts land one stage before their consumers                                                            |
+| Audit   | "Find the bugs in X", "review this area"                             | Stage 1: one QA-owned sub-issue with a finding budget. Stage 2: Engineer fix sub-issues for CONFIRMED findings, proposed in the stage review |
 
 Decomposition rules:
 
@@ -97,15 +97,19 @@ Every comment uses one of these shapes. Headings are fixed so the next reader ca
 
 ```markdown
 ## PLAN — proposal
+
 **Mode:** Single | Fan-out | Audit
 **Assumptions:** …
 **Acceptance criteria:**
+
 - [ ] `<command>` → expected outcome
 - [ ] observable
-**Stages:**
-| Stage | Sub-issue | Owner | Paths | Depends on |
-**Sub-issue specifications:** (one block each; this text becomes the sub-issue description)
+      **Stages:**
+      | Stage | Sub-issue | Owner | Paths | Depends on |
+      **Sub-issue specifications:** (one block each; this text becomes the sub-issue description)
+
 ### <title>
+
 Stage n · Engineer | QA
 Goal: …
 Criteria: …
@@ -121,50 +125,57 @@ Approve this list to start, or reply with changes.
 
 ```markdown
 ## DELIVERY
+
 **Change:** two or three sentences. Deviations from the PLAN, if any.
 **Branch / PR:** `<branch>` · <draft PR url>
 **Verified:**
+
 - `<command>` → output summary
-**Not verified / skipped:** …
-**Risks and notes:** … (unrelated dead code noticed, follow-ups)
-**Issue requests:** title — reason — scope, or "none"
-**Skill amendments:** skill — proposed text, or "none"
-[@QA](mention://agent/<uuid>)
+  **Not verified / skipped:** …
+  **Risks and notes:** … (unrelated dead code noticed, follow-ups)
+  **Issue requests:** title — reason — scope, or "none"
+  **Skill amendments:** skill — proposed text, or "none"
+  [@QA](mention://agent/<uuid>)
 ```
 
 **VERDICT** (QA, reply under the DELIVERY or FIX that woke it)
 
 ```markdown
 ## VERDICT: PASS | FAIL | ESCALATE | PENDING CI — round n
+
 **Re-run:**
+
 - `<command>` → result
-**CONFIRMED (blocking):**
+  **CONFIRMED (blocking):**
+
 1. `file:line` — what fails, how to reproduce
-**PLAUSIBLE / nits (non-blocking):** …
-**Manual test:** what was exercised; screenshots attached
-**CI:** green | pending (wakeup registered) | red: <check>
-**Not verified:** …
-**Systemic:** finding classes seen before, or "none"
-**Issue requests:** …, or "none"
-**Skill amendments:** …, or "none"
-[@Engineer](mention://agent/<uuid>)    ← only on FAIL
-[@Ultracode](mention://squad/<uuid>)   ← only on ESCALATE
+   **PLAUSIBLE / nits (non-blocking):** …
+   **Manual test:** what was exercised; screenshots attached
+   **CI:** green | pending (wakeup registered) | red: <check>
+   **Not verified:** …
+   **Systemic:** finding classes seen before, or "none"
+   **Issue requests:** …, or "none"
+   **Skill amendments:** …, or "none"
+   [@Engineer](mention://agent/<uuid>) ← only on FAIL
+   [@Ultracode](mention://squad/<uuid>) ← only on ESCALATE
 ```
 
 **FIX** (Engineer, reply under the VERDICT)
 
 ```markdown
 ## FIX — round n
+
 1. finding → what changed (`file:line`), or why it is not a defect
-**Re-run:** …
-**Issue requests:** …, or "none"
-[@QA](mention://agent/<uuid>)
+   **Re-run:** …
+   **Issue requests:** …, or "none"
+   [@QA](mention://agent/<uuid>)
 ```
 
 **BLOCKED** (Engineer, on the sub-issue)
 
 ```markdown
 ## BLOCKED
+
 **Tried:** …
 **Need:** …
 **From:** Planner | the owner
@@ -175,6 +186,7 @@ Approve this list to start, or reply with changes.
 
 ```markdown
 ## AUDIT REPORT
+
 **Rounds:** n · **Lenses:** …
 **CONFIRMED:** numbered, each with `file:line` and a reproduction
 **PLAUSIBLE:** …
@@ -187,19 +199,21 @@ Approve this list to start, or reply with changes.
 
 ```markdown
 ## STAGE REVIEW — stage n
+
 | Sub-issue | Outcome | Evidence |
 **Criteria status:** …
 **Decisions:** re-scope, cancellations, with reasons
 **Next:** stage n+1 started | finished
 **Proposed sub-issues (need approval):** full specifications, or "none"
 **Skill amendments collected:** …, or "none"
-[@Owner](mention://member/<uuid>)      ← only when something needs approval
+[@Owner](mention://member/<uuid>) ← only when something needs approval
 ```
 
 **SYNTHESIS** (Planner, root comment on the parent; the parent moves to `in_review`)
 
 ```markdown
 ## SYNTHESIS
+
 **Shipped:** PRs in merge order, each with its sub-issue and evidence link
 **Open questions for the owner:** …
 **Skipped or not verified:** …
@@ -335,16 +349,16 @@ The rules that bite most often:
 
 **Collision map.** Two sub-issues that touch one of these never share a stage:
 
-| Surface | Rule |
-|---|---|
-| `packages/ir/src/types.ts`, the builders, `walk`, the invariants and `packages/ir/schema/` | The IR is the contract: an IR change lands one stage before the analyser and target slices that consume it |
-| `packages/codegen/src/capabilities.ts`, `CapabilityName` and `CAPABILITY_NAMES` | A new capability needs a cell in all seven targets: one capability per stage |
-| `packages/diagnostics/src/catalogue.ts` and `apps/web/content/docs/3.reference/2.diagnostics.md` | Codes are allocated in order and never reused: the Planner assigns the codes in the PLAN, or orders the slices |
-| Shared expectations under `cases/**/__expected__/` | Vue writes them for all seven targets: a change to Vue's rendering goes first, and two slices never regenerate the same cases in one stage |
-| `harness/quarantine.ts` and `harness/coverage-exemptions.ts` | Lists that most slices edit: order them, or name the entries each slice owns |
-| `LAYERS`, the `catalog:` in `pnpm-workspace.yaml`, and `pnpm-lock.yaml` | New packages and version bumps: one per stage |
-| `docs/adrs/` and its index | The Planner assigns ADR numbers in the PLAN |
-| `.github/workflows/ci.yml` | The harness's own tests read it: order the changes |
-| One `packages/target-<name>/src` | Two slices on one target: order them |
+| Surface                                                                                          | Rule                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `packages/ir/src/types.ts`, the builders, `walk`, the invariants and `packages/ir/schema/`       | The IR is the contract: an IR change lands one stage before the analyser and target slices that consume it                                 |
+| `packages/codegen/src/capabilities.ts`, `CapabilityName` and `CAPABILITY_NAMES`                  | A new capability needs a cell in all seven targets: one capability per stage                                                               |
+| `packages/diagnostics/src/catalogue.ts` and `apps/web/content/docs/3.reference/2.diagnostics.md` | Codes are allocated in order and never reused: the Planner assigns the codes in the PLAN, or orders the slices                             |
+| Shared expectations under `cases/**/__expected__/`                                               | Vue writes them for all seven targets: a change to Vue's rendering goes first, and two slices never regenerate the same cases in one stage |
+| `harness/quarantine.ts` and `harness/coverage-exemptions.ts`                                     | Lists that most slices edit: order them, or name the entries each slice owns                                                               |
+| `LAYERS`, the `catalog:` in `pnpm-workspace.yaml`, and `pnpm-lock.yaml`                          | New packages and version bumps: one per stage                                                                                              |
+| `docs/adrs/` and its index                                                                       | The Planner assigns ADR numbers in the PLAN                                                                                                |
+| `.github/workflows/ci.yml`                                                                       | The harness's own tests read it: order the changes                                                                                         |
+| One `packages/target-<name>/src`                                                                 | Two slices on one target: order them                                                                                                       |
 
 **Project skills to attach.** None. The repository ships no agent skills; its contract is `AGENTS.md`, the plan, the ADRs and the package READMEs. Every agent reads `AGENTS.md` at the start of a run.
