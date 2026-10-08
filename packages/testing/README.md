@@ -112,8 +112,8 @@ errors>` on every layer, and the summary excuses it on that target alone.
   teardown clears its interval on the clock that set it.
 - **`view.emitted(name)`** gives the arguments of each emit of a declared event, in order
   (`[[5]]`); **`view.events()`** every emit as `[name, ...args]`. The adapter listens to exactly
-  the events the component declares, which the project's own compile of the case reports
-  (`ufComponentEvents`; a stub registers its own). Each emit's arguments are copied as plain
+  the events the component declares, which the project's own compile of the case's main source
+  reports (`ufComponentEvents`; a stub registers its own). Each emit's arguments are copied as plain
   data when they arrive, after trailing `undefined` arguments are dropped (a listener cannot
   tell them from absent ones): a function, any other `undefined`, a non-finite number, a `Map`
   or `Set`, a DOM event or node, or a class instance fails the test at the next settle, naming
@@ -261,7 +261,8 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
   `ufVisualCapture`, `ufFocus`, `ufInput` (one input of a `view.user` action: a hover, a mouse
   button's press or release, a wheel step, a key's press or release), `ufResetInput`, and
   `ufComponentEvents`, which answers from the
-  compiles a project's unplugin reported to `recordCompiledModule`), and
+  compiles a project's unplugin reported to `recordCompiledModule`, for the case's only source or
+  the one its `case.json` names as `main`, ADR-0057), and
   `parityBrowser({ name, commands })`, the deterministic Chromium every parity project runs
   (800×600 at DPR 1, `--font-render-hinting=none`, `--disable-partial-raster`, light scheme,
   reduced motion, a 5 s action timeout). A target's command may not take one of the testing
@@ -308,8 +309,12 @@ even with themselves (ADR-0044). Class tokens keep their duplicates: a doubled c
 broken merge. A boolean attribute's `="true"` is written empty on Qwik only, whose client writes
 an attribute that is on that way.
 Only the named target's framework noise is removed (Angular's hosts only from Angular's
-output, Qwik's `preventdefault:`, `stoppropagation:` and `capture:` dispatch attributes only from
-Qwik's); without a target nothing is noise. Generated ids are the compiler's `uf-id-…` ids, by
+output, Qwik's `preventdefault:`, `stoppropagation:` and `capture:` dispatch attributes and its
+`q:template` elements, where its server render keeps a slot's unclaimed fallback, only from
+Qwik's); without a target nothing is noise. On every target, an `<input>`'s `value` attribute
+that equals its `uf:value` is left out, since it repeats the state (react-dom keeps a controlled
+input's attribute in step with its value, Vue's `v-model` does not); one that differs stays
+(ADR-0058). Generated ids are the compiler's `uf-id-…` ids, by
 provenance (the analyzer rejects an authored id or reference with the prefix): each one, a
 `uf-id-` and the characters the frameworks' ids use, is renamed `uf-id-1`, `uf-id-2`… by first
 appearance wherever it appears, in every attribute value (a radio group's `name`, a `data-*`

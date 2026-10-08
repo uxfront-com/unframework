@@ -1,8 +1,8 @@
 # The integration corpus
 
-This is the verification machine of plan §7. Every case is one `.uf.tsx` input, compiled to all
-seven targets, and every output is checked by the same expectations: one expectation, verified
-seven times. A feature is done when its cases are green on every target, not when it emits code.
+This is the verification machine of plan §7. Every case is a `.uf.tsx` input, or a main input
+with its children and harness parents, compiled to all seven targets, and every output is checked
+by the same expectations: one expectation, verified seven times. A feature is done when its cases are green on every target, not when it emits code.
 
 ```sh
 pnpm test                 # everything, from the repo root (turbo); or, in this package:
@@ -19,9 +19,9 @@ pnpm test:canaries L8 --shard 1/2   # a part of the cases, as CI runs a browser 
 
 ```
 cases/basics/hello/
-├── Hello.uf.tsx                       the one input
+├── Hello.uf.tsx                       the input
 ├── hello.test.ts                      the browser spec, written once and run on every target
-├── case.json                          optional: { description, ssr: { <scenario>: { props } }, axe: [rule ids], requires: why }
+├── case.json                          optional: { description, main, ssr: { <scenario>: { props } }, axe: [rule ids], requires: why }
 ├── __output__/
 │   ├── ir.json                        the IR snapshot, validated against @unframework/ir's schema
 │   └── <target>/<files>               the golden outputs: formatted, reviewed, checked in place
@@ -38,12 +38,51 @@ cases/basics/hello/
 A diagnostics case (`cases/diagnostics/*`) has no spec: its `__expected__/diagnostics.json` lists
 the diagnostics, and `__output__/diagnostics.txt` is the code frame people and agents read.
 
+### A case of several sources
+
+A case may hold several `.uf.tsx` inputs (ADR-0057): a component and its children, or a harness
+parent that composes the component under test. `case.json` then names the main one, the one the
+spec mounts and the SSR scenarios render: `"main": "Form.uf.tsx"`. A case of one input needs no
+`main`.
+
+```
+cases/components/form/
+├── Form.uf.tsx                        the main input ("main": "Form.uf.tsx")
+├── Field.uf.tsx                       a child (or a harness parent)
+├── form.test.ts
+├── case.json
+└── __output__/
+    ├── ir.json                        the main input's IR snapshot
+    ├── ir.Field.json                  each other input's, named by its file
+    └── <target>/<files>               every input's outputs, each file named by its component
+```
+
+- Every input compiles to every target. Their outputs share `__output__/<target>/`, so two
+  components of a case may not have one name on any target, and the compile project fails a
+  golden file that no input produces.
+- `__expected__/diagnostics.json` holds every input's diagnostics, each with its `file`, sorted by
+  file, then by span; `__output__/diagnostics.txt` frames them by file.
+- The golden guard judges each module the browser and SSR projects compile on the files that
+  compile produced, so a child is judged against its own files.
+- The spec imports the main input only, and a mount listens to the main component's events. A
+  test that needs slots, children or a model does not pass them as mount options: it mounts a
+  harness parent, written in `.uf.tsx` as an input of the case, which passes the slot content,
+  binds the models, listens to the child's events and renders what it holds
+  (`<output>{text.value}</output>`). The spec asserts on what the parent renders, and on
+  `view.emitted` of the parent's own events. The parent exercises each target's consumer
+  output, which a mount option would bypass.
+- The browser and SSR projects load a child by the import its parent's output writes
+  (`./Field.vue`, ADR-0053), which the unplugin resolves. Angular's ngtsc step resolves and
+  loads each child before it compiles the parent, and Astro's render server asks the browser
+  project to resolve and compile it, since the browser imports only the main component.
+
 The `.html` expectations use the canonical format of `@unframework/testing/normalize`: one node
 per line, JSON-quoted text and attribute values, and form-control state as `uf:*`
 pseudo-attributes. The normaliser removes framework noise, and only the target's own (ADR-0031):
 every comment, which frameworks use as anchors; the attributes its framework adds, such as
-`_ngcontent-*`, `q:*`, `data-hk` and `data-astro-cid-*`; and Angular's `uf-*` host elements with
-`display: contents`. For every target, the reference included, it also writes one form of what
+`_ngcontent-*`, `q:*`, `data-hk` and `data-astro-cid-*`; Angular's `uf-*` host elements with
+`display: contents`; and Qwik's `q:template` elements, where its server render keeps a slot's
+unclaimed fallback (ADR-0058). For every target, the reference included, it also writes one form of what
 renders alike however it is written:
 
 - attributes sorted by name, and a `class`'s tokens sorted, one space apart;
@@ -53,6 +92,8 @@ renders alike however it is written:
   value (ADR-0044);
 - a boolean attribute's value written empty (`disabled="disabled"` is `disabled=""`), and on
   Qwik, whose client writes a boolean that is on as `="true"`, that value too (ADR-0044);
+- no `value` attribute on an `<input>` whose `uf:value` it equals: react-dom keeps a controlled
+  input's attribute in step with its value, and the state compares in `uf:value` (ADR-0058);
 - the compiler's generated ids renumbered `uf-id-1`, `uf-id-2`… by first appearance wherever they
   appear: every attribute value and text node, and the ARIA tree and payloads with them;
 - whitespace collapsed as Chromium renders it, and kept as written where the model cannot tell
@@ -206,8 +247,8 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   expectations; the others must match what it wrote in the same run (`sequence.groupOrder` runs it
   first).
 - **The browser runs the reviewed code.** A guard fails any module whose compiled output differs
-  from its committed golden file. A mount listens to the events the module the project compiled
-  declares (the unplugin reports every compile; `ufComponentEvents`), never to a committed IR an
+  from its committed golden file. A mount listens to the events the main module the project
+  compiled declares (the unplugin reports every compile; `ufComponentEvents`), never to a committed IR an
   update run has not written yet. A module that fails to compile fails its own spec's import
   only: the browser projects send Vite's error to no page, whose overlay would cover the page
   every later spec clicks in.
@@ -272,9 +313,11 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   `stopPropagation()` or `stopImmediatePropagation()` that the body of a `$` function calls on
   its event while the event is dispatched is logged on the console (L13), since on a first run
   it would come too late; Qwik runs controls at dispatch (`sync$`, `preventdefault:click`).
-- **The quarantine only shrinks.** `harness/quarantine.ts` lists known failures with a reason and
-  an issue. A quarantined cell still runs and must still fail; once it passes, the entry is stale
-  and fails the run until it is removed.
+- **The quarantine only shrinks.** `harness/quarantine/<target>.ts` lists a target's known
+  failures, each with a reason and an issue, so each target's work edits its own file
+  (ADR-0057); `harness/quarantine.ts` joins them, refuses an entry filed under another target,
+  and holds `LIVE_LAYERS` and the entries' validation. A quarantined cell still runs and must
+  still fail; once it passes, the entry is stale and fails the run until it is removed.
 - **The coverage gate.** Every kind of the IR's coverage records (render nodes, attributes,
   bindings, setup items, handlers, watch sources and the references of setup code), every
   capability a target supports and every catalogued diagnostic code needs a case
@@ -285,6 +328,8 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
 
 - `harness/projects.ts`: the Vitest projects (`compile`, `harness`, and `toolchain:`, `ssr:` and
   `browser:` per target). `UF_TARGETS=vue,react` restricts the targets.
+- `harness/cases.ts`: the corpus, each case's inputs, its main one and its `case.json`;
+  `sources.ts`: how a case's inputs join their diagnostics and golden files.
 - `harness/compile.test.ts`, `toolchain.test.ts`, `ssr.test.ts`: the node-side layers;
   `compile-checks.ts`: L1's fix check and L2's determinism and formatting checks;
   `toolchain-results.ts`: what L3, L4 and L5 make of each tool's report.
