@@ -2,9 +2,10 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   // L4 for Solid: tsgo over every case's Solid output, as a strict Solid 1.9 project would check
   // it, with the type strictness every target's checker shares (the strictest of the seven
-  // frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). Types resolve from tests/integration, which holds solid-js: the
-  // outputs' by their own location, the consumer fixtures' through `paths`. `@unframework/target-solid/toolchain` extends this file with a
-  // temporary config that lists the files to check.
+  // frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). Types resolve
+  // from tests/integration, which holds solid-js: the outputs' by their own location, the
+  // consumer fixtures' through `paths`. `@unframework/target-solid/toolchain` extends this file
+  // with a temporary config that lists the files to check.
   "compilerOptions": {
     "target": "es2024",
     "lib": ["es2024", "dom", "dom.iterable"],
