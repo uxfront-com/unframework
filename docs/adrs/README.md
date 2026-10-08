@@ -105,6 +105,13 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0050](./0050-l8-interactions-and-l9-traces.md)                    | L8 runs a person's input, and L9 compares every step                 | Accepted                                            | §7.2 L8, L9, §9 M2      |
 | [0051](./0051-copied-setup-code-never-ends-its-block.md)           | Copied setup code never ends a script block or a frontmatter         | Accepted                                            | §5.8, R14               |
 | [0052](./0052-browser-canaries-run-in-shards.md)                   | A canary whose browser specs run is sharded by case in CI            | Accepted                                            | §7.7, §7.9              |
+| [0053](./0053-child-components-across-files.md)                    | A child's API reaches `compile()` through a resolver                 | Proposed                                            | §4.3, §5.10, §9 M3      |
+| [0054](./0054-composition-on-every-target.md)                      | Composition constructs on every target                               | Proposed                                            | §4.2, §4.3, §6, §9 M3   |
+| [0055](./0055-composition-ir-capabilities-and-codes.md)            | The composition contract: IR kinds, capabilities and codes           | Proposed                                            | §5.3, §5.6, §5.9, §9 M3 |
+| [0056](./0056-angular-hosts-in-composition.md)                     | Angular composition: roots, fallthrough, slots, event names          | Proposed                                            | §6, §7.5, §9 M3         |
+| [0057](./0057-multi-source-cases-and-composed-mounts.md)           | Cases hold several sources and compose through harness parents       | Proposed                                            | §7.1, §7.3, §9 M3       |
+| [0058](./0058-normalising-slot-templates-and-bound-values.md)      | Normalising Qwik's slot templates and bound `value` attributes       | Proposed                                            | §4.5, §7.5, §9 M3       |
+| [0059](./0059-l4-consumer-type-tests.md)                           | L4 consumer type tests: misuse fixtures with inline expectations     | Proposed                                            | §5.6, §7.2, §9 M3       |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 
@@ -135,3 +142,10 @@ framework's tools ruled that shape out, the record says what was built and why. 
 reviews followed M2's first build, and the records were amended in place, before M2 closed, to
 state what the fixes built: each record's alternatives name the first build's shape where a fix
 replaced it.
+
+**0053 onwards** record M3's design, composition (§9), proposed before it is built. Spikes in a
+scratch project back each record: hand-written outputs for all seven targets, run through every
+framework's Vite plugin, checker and linter and the SSR and browser projects. The `## Evidence`
+sections give the commands, messages and versions, as the M0 spike records do. M3's last stage
+accepts them as built, amended where the build differed, and then sets the status of the records
+they amend.
