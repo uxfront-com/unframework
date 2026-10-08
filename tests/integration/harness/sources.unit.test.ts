@@ -79,19 +79,40 @@ describe("a case of two sources", () => {
   });
 
   it("joins every source's diagnostics, sorted by file, then by span, each with its text", async () => {
+    // Two sources with diagnostics, given out of file order: Stamps before Cards.
+    const stamps = SHOUTING.replaceAll("Card", "Stamp").replaceAll("CARD", "STAMP");
     const compiles = await compileCase([
       [source("Form", "ir.json"), FORM],
+      [source("Stamps"), stamps],
       [source("Cards"), SHOUTING],
       [source("Field"), FIELD],
     ]);
     const diagnostics = caseDiagnostics(compiles);
-    expect(diagnostics.map((diagnostic) => [diagnostic.file, diagnostic.code])).toEqual([
-      ["forms/form/Cards.uf.tsx", "UF1104"],
+    expect(
+      diagnostics.map((diagnostic) => [diagnostic.file, diagnostic.code, diagnostic.span.start]),
+    ).toEqual([
+      ["forms/form/Cards.uf.tsx", "UF1104", expect.any(Number)],
+      ["forms/form/Stamps.uf.tsx", "UF1104", expect.any(Number)],
     ]);
     expect([...sourceTexts(compiles).keys()]).toEqual([
       "forms/form/Form.uf.tsx",
+      "forms/form/Stamps.uf.tsx",
       "forms/form/Cards.uf.tsx",
       "forms/form/Field.uf.tsx",
+    ]);
+  });
+
+  it("refuses two sources whose files differ only in case", async () => {
+    const compiles = await compileCase([
+      [source("Upper", "ir.json"), "export default function FooBar() {\n  return <p>a</p>;\n}\n"],
+      [source("Shout"), "export default function FOOBAR() {\n  return <p>b</p>;\n}\n"],
+    ]);
+    // Angular names its files in kebab-case: `foo-bar.ts` and `foobar.ts` differ.
+    for (const target of TARGET_NAMES) {
+      expect(caseOutputs(compiles, target).problems).toHaveLength(target === "angular" ? 0 : 1);
+    }
+    expect(caseOutputs(compiles, "vue").problems).toEqual([
+      "forms/form/Upper.uf.tsx and forms/form/Shout.uf.tsx both produce vue/FOOBAR.vue: the components of a case need names of their own on every target.",
     ]);
   });
 

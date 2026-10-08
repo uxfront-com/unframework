@@ -19,7 +19,12 @@ import type { experimental_AstroContainer as AstroContainer } from "astro/contai
 import type { DevEnvironment, Plugin, RunnableDevEnvironment, ViteDevServer } from "vite";
 
 import { astroViteConfig } from "./config.ts";
-import { ASTRO_VIRTUAL_ID, isAstroComponentFactory, splitQuery } from "./protocol.ts";
+import {
+  ASTRO_VIRTUAL_ID,
+  astroComponentRef,
+  isAstroComponentFactory,
+  splitQuery,
+} from "./protocol.ts";
 import type { AstroRenderRequest, AstroRenderResult } from "./protocol.ts";
 import { compiledAstroSource } from "./sources.ts";
 
@@ -61,7 +66,10 @@ export function createAstroRenderCommand(context: ToolchainContext): ToolchainCo
  * The child modules of the browser project a command runs in (Vitest's command context,
  * `project.browser.vite`): its client environment resolves an import as a browser import would,
  * and loads and transforms a child as Vite's `this.load` does, through the unframework plugin
- * (with its golden guard and any canary) and the ref plugin that records the source.
+ * (with any canary) and the ref plugin that records the source. Like `this.load`, it enters the
+ * child in the module graph first: Vite's import analysis refuses a module that has no entry
+ * there. A child the golden guard failed is transformed into a module that throws, not into
+ * its reference, and the render fails with the guard's message.
  */
 function browserChildModules(browser: unknown): ChildModules | undefined {
   const vite = (browser as { project?: { browser?: { vite?: ViteDevServer } } } | undefined)
@@ -73,9 +81,15 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
       return (await client.pluginContainer.resolveId(specifier, importer))?.id;
     },
     async load(id) {
+      await client.moduleGraph.ensureEntryFromUrl(id);
       const loaded = await client.pluginContainer.load(id);
       const code = typeof loaded === "object" ? loaded?.code : loaded;
-      if (code != null) await client.pluginContainer.transform(code, id);
+      if (code == null) return;
+      const transformed = (await client.pluginContainer.transform(code, id)).code;
+      if (transformed !== `export default ${JSON.stringify(astroComponentRef(id))};\n`) {
+        const thrown = /^throw new Error\((".*")\);$/m.exec(transformed)?.[1];
+        throw new Error(thrown ? (JSON.parse(thrown) as string) : transformed);
+      }
     },
   };
 }

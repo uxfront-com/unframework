@@ -48,8 +48,9 @@ export function recordCompiledModule(module: CompiledModule): void {
 /**
  * The events the component of a compiled module declares, in declaration order, each with the
  * optional members of its payload. A module of several components must declare the same events
- * in each: a case mounts one component, and M2 cannot tell which (M3's slots bring harness
- * components that can). Throws when the module was never compiled for the target, or failed to.
+ * in each: a case mounts one component, and cannot tell which of a module's it is. A test that
+ * composes components mounts a harness parent from a source of its own (ADR-0057). Throws
+ * when the module was never compiled for the target, or failed to.
  */
 export function compiledEvents(file: string, target: string): MountEvent[] {
   const key = keyOf(file, target);

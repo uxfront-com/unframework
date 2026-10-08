@@ -247,7 +247,8 @@ describe("rule 4d: removeSettledValues", () => {
   });
 
   it("keeps the value attribute of an element that is not an input", () => {
-    const html = '<data uf:value="x" value="x">d</data>';
+    const html =
+      '<data uf:value="x" value="x">d</data><textarea uf:value="x" value="x"></textarea>';
     expect(apply(html, removeSettledValues)).toBe(apply(html));
   });
 });

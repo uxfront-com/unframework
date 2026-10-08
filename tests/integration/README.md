@@ -72,9 +72,10 @@ cases/components/form/
   `view.emitted` of the parent's own events. The parent exercises each target's consumer
   output, which a mount option would bypass.
 - The browser and SSR projects load a child by the import its parent's output writes
-  (`./Field.vue`, ADR-0053), which the unplugin resolves. Angular's ngtsc step resolves and
-  loads each child before it compiles the parent, and Astro's render server asks the browser
-  project to resolve and compile it, since the browser imports only the main component.
+  (`./Field.vue`, ADR-0053). The unplugin's resolution of that import comes with the compiler's
+  composition work; the harness is ready for it: Angular's ngtsc step resolves and loads each
+  child before it compiles the parent, and Astro's render server asks the browser project to
+  resolve and compile it, since the browser imports only the main component.
 
 The `.html` expectations use the canonical format of `@unframework/testing/normalize`: one node
 per line, JSON-quoted text and attribute values, and form-control state as `uf:*`

@@ -1,10 +1,13 @@
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
+import { createServer } from "vite";
+import type { Plugin, ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { astroBrowserRef } from "../src/toolchain/browser.ts";
 import { toolchain } from "../src/toolchain/index.ts";
+import { ASTRO_VIRTUAL_ID } from "../src/toolchain/protocol.ts";
 import { closeAstroRenderServers, renderAstroComponent } from "../src/toolchain/render.ts";
 import { compiledAstroSource } from "../src/toolchain/sources.ts";
 
@@ -160,42 +163,67 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
       expect(html).toBe('<form aria-label="Again"><p class="changed">Name</p></form>');
     });
 
-    it("asks the browser project the command runs in (its client environment)", async () => {
-      compileInBrowserProject("Survey", parent("Survey", "Answer"));
-      const calls: string[] = [];
-      const pluginContainer = {
-        resolveId: (specifier: string, importer: string) => {
-          calls.push(`resolveId ${specifier}`);
-          return Promise.resolve(
-            specifier === "./Answer.astro" && importer === idOf("Survey")
-              ? { id: idOf("Answer") }
-              : null,
-          );
-        },
-        load: (id: string) => {
-          calls.push(`load ${id}`);
-          return Promise.resolve({ code: "compiled by the unframework plugin" });
-        },
-        transform: (code: string, id: string) => {
-          calls.push(`transform ${id}: ${code}`);
-          compileInBrowserProject("Answer", field.replace("field", "answer"));
-          return Promise.resolve({ code });
-        },
-      };
-      const browser = {
-        project: { browser: { vite: { environments: { client: { pluginContainer } } } } },
-      };
-      const render = toolchain.browserCommands!({ toolchainDir: root, root }).ufAstroRender as (
-        context: unknown,
-        request: { id: string; props: Record<string, unknown> },
-      ) => Promise<{ html: string }>;
-      const { html } = await render(browser, { id: idOf("Survey"), props: {} });
-      expect(html).toBe('<form aria-label="Survey"><p class="answer">Name</p></form>');
-      expect(calls).toEqual([
-        "resolveId ./Answer.astro",
-        `load ${idOf("Answer")}`,
-        `transform ${idOf("Answer")}: compiled by the unframework plugin`,
-      ]);
+    // A real Vite client environment, as Vitest's browser project has: a stubbed plugin
+    // container would skip Vite's own checks, such as import analysis's module-graph entry.
+    describe("through a browser project's real Vite server", () => {
+      /** The guard's failing module, as the unplugin's post plugin writes it. */
+      const failing = 'throw new Error("[uf guard] Answer differs");\nexport default undefined;\n';
+      let vite: ViteDevServer | undefined;
+      const sources = new Map<string, string>();
+      const guarded = new Set<string>();
+
+      beforeAll(async () => {
+        // A stand-in for the unframework plugin: it serves each virtual id's Astro source,
+        // resolves a parent's import of `./<Name>.astro`, and fails what the guard fails.
+        const unframework: Plugin = {
+          name: "unframework",
+          resolveId: (id, importer) => {
+            if (ASTRO_VIRTUAL_ID.test(id)) return id;
+            const name = /^\.\/(\w+)\.astro$/.exec(id)?.[1];
+            return name && importer && ASTRO_VIRTUAL_ID.test(importer) ? idOf(name) : null;
+          },
+          load: (id) => sources.get(id) ?? null,
+        };
+        const guard: Plugin = {
+          name: "unframework:guard",
+          enforce: "post",
+          transform: (_code, id) => (guarded.has(id) ? { code: failing, map: null } : null),
+        };
+        vite = await createServer({
+          root,
+          configFile: false,
+          logLevel: "silent",
+          cacheDir: join(root, "node_modules", ".vite", "browser"),
+          plugins: [unframework, astroBrowserRef(), guard],
+          optimizeDeps: { noDiscovery: true },
+          server: { middlewareMode: true, hmr: false, ws: false, watch: null },
+        });
+      });
+      afterAll(() => vite?.close());
+
+      const render = (id: string) =>
+        (
+          toolchain.browserCommands!({ toolchainDir: root, root }).ufAstroRender as (
+            context: unknown,
+            request: { id: string; props: Record<string, unknown> },
+          ) => Promise<{ html: string }>
+        )({ project: { browser: { vite } } }, { id, props: {} });
+
+      it("resolves and compiles the child there", async () => {
+        compileInBrowserProject("Survey", parent("Survey", "Answer"));
+        sources.set(idOf("Answer"), field.replace("field", "answer"));
+        expect((await render(idOf("Survey"))).html).toBe(
+          '<form aria-label="Survey"><p class="answer">Name</p></form>',
+        );
+        expect(compiledAstroSource(idOf("Answer"))).toBe(sources.get(idOf("Answer")));
+      });
+
+      it("fails with the golden guard's message when the guard fails the child", async () => {
+        compileInBrowserProject("Quiz", parent("Quiz", "Guarded"));
+        sources.set(idOf("Guarded"), field);
+        guarded.add(idOf("Guarded"));
+        await expect(render(idOf("Quiz"))).rejects.toThrow("[uf guard] Answer differs");
+      });
     });
 
     it("fails when nothing resolves the child", async () => {
