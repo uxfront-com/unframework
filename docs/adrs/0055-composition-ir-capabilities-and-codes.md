@@ -55,7 +55,7 @@ BindingId[], span }` and `UfComponent.inheritAttrs?: false`.
   - `Dynamic { is: Expression, candidates: ({ kind: "Tag", tag } | { kind: "Component", component
 })[], attributes: (Attribute | ComponentAttribute)[], children: RenderNode[], fills?: SlotFill[],
 span }`. Tag candidates take element attributes and children; component candidates take
-    component attributes and fills, each declared by every candidate (UF3044 otherwise).
+    component attributes and fills, each declared by every candidate (UF3035 and UF3038 otherwise).
 
   `ForNode.body` becomes `ElementNode | ComponentNode`.
 
@@ -71,7 +71,10 @@ number?: true, span }`, an `Attribute`.
 - **Invariants** (ADR-0032) check that a `Component` names exactly one imported or local component,
   that each prop, listener, model and fill names a declaration of its `api`, that a `ModelBinding`
   or `Model` value is a `state` or `model` binding's `.value`, that a `context` binding is never
-  written, and that a `Dynamic` node's candidates are all tags or all components.
+  written, and that a `Dynamic` node's candidates are all tags or all components, with element
+  attributes and children for tags, and component attributes and fills for components. An
+  attribute or fill a component candidate does not declare is UF3035 or UF3038, as on a
+  `Component`.
 
 **Capabilities.** `CapabilityName` adds these, in this order. A cell is `native`, `emulated` with
 its inline helper, or `unsupported` with UF4001 and the severity shown. No new UF4xxx code is
@@ -87,7 +90,7 @@ needed: each unsupported cell reports UF4001 with its reason, as every cell does
 | `slot-fallback`         | an outlet with fallback content                                                  | native                | native | native                | native                               | native                               | native                               | native                                        |
 | `default-slot-presence` | `slots.default` as a condition, or the default slot forwarded                    | native                | native | native                | native                               | UF4001 (error)                       | UF4001 (error)                       | native                                        |
 | `slot-forwarding`       | a fill with `forward`                                                            | native                | native | native                | native                               | emulated: `uf<Component><Slot>`      | native                               | native                                        |
-| `model`                 | `defineModel` (a `Model` item), and a `ModelBinding`                             | native                | native | native                | native                               | native                               | native                               | UF4001 (info): inert                          |
+| `model`                 | `defineModel` (a `Model` item), and a `ModelBinding`                             | native                | native | native                | native                               | native                               | native                               | native: the prop's value                      |
 | `two-way-binding`       | an element's `Model`                                                             | native                | native | native                | native                               | native                               | native                               | UF4001 (info): inert                          |
 | `model-array`           | a `Model` of a `checkbox-group` or a `select-multiple`                           | emulated: `toggle`    | native | native                | emulated: `toggle`, `selectedValues` | emulated: `toggle`, `selectedValues` | emulated: `toggle`, `selectedValues` | UF4001 (info): inert                          |
 | `model-modifiers`       | a `Model` that is `trim`, `lazy` or `number`, or of a `number` control           | emulated: `modelText` | native | emulated: `modelText` | emulated: `modelText`                | emulated: `modelText`                | emulated: `modelText`                | UF4001 (info): inert                          |
@@ -98,11 +101,19 @@ needed: each unsupported cell reports UF4001 with its reason, as every cell does
 | `reactive-context`      | a provided `state`, `derived` or `model` binding; refines `context`              | emulated: `refObject` | native | emulated: `refObject` | emulated: `refObject`                | emulated: `refObject`                | native                               | UF4001 (warning)                              |
 | `dynamic-component`     | a `Dynamic` node                                                                 | native                | native | native                | native                               | emulated: `@switch`                  | native                               | native                                        |
 
-- `CAPABILITY_PREREQUISITES` gains `component-event`, `expose`, `model`, `two-way-binding`,
-  `model-array` and `model-modifiers` under `interactivity`, and `reactive-context` under
-  `context`: an Astro module that binds a model reports `interactivity` once, as one with a
-  listener does. `BEHAVIOURAL_CAPABILITIES` gains those six: a static render is the same without
+- `requiredCapabilities` also requires `interactivity` at each element `Model`, `ModelBinding`
+  and component `Listener`, as `Event` and `Ref` do: the record maps each attribute kind to one
+  capability, so it adds the second at the same span, as it adds `event-semantics` at an `Event`.
+  The `Model` setup item requires `model` only: a child that declares a model renders its value.
+- `CAPABILITY_PREREQUISITES` gains `component-event`, `expose`, `two-way-binding`, `model-array`
+  and `model-modifiers` under `interactivity`, and `reactive-context` under `context`. With the
+  rule above, an Astro module with `<input v-model_trim={t.value} />` reports one UF4001, for
+  `interactivity`, and so does one with `<Field v-model:value={…} />` or `onClear` on a
+  component. `BEHAVIOURAL_CAPABILITIES` gains those five: a static render is the same without
   them.
+- Two existing tests change with this: `packages/codegen/test/setup.test.ts` expects every
+  prerequisite to be `interactivity`, and `packages/target-astro/test/emit.test.ts` lists what
+  Astro reports.
 - `capabilities.ts` maps `Component`, `SlotOutlet` and `Dynamic` in `NODE_CAPABILITIES`, the new
   attribute kinds in `ATTRIBUTE_CAPABILITIES`, and `Model`, `Provide` and `Inject` in
   `SETUP_ITEM_CAPABILITIES`; `requiredCapabilities` derives the rest at the span named above.
@@ -134,6 +145,8 @@ span; the fixes are applied and recompiled by L1.
 | UF3045 | `dropped-fallthrough`       | UF3  | The component renders no `class` or `style` passed to it                      | none                                         |
 | UF3046 | `invalid-component-ref`     | UF3  | A component ref holds what the component exposes                              | none                                         |
 | UF3047 | `unknown-component`         | UF3  | The tag names no component in scope                                           | likely: the component it meant               |
+| UF3048 | `open-spread`               | UF3  | A spread's keys are the ones its type declares                                | none                                         |
+| UF3049 | `reserved-spread-key`       | UF3  | A spread renders attributes: no listener, `key`, `ref` or `children`          | none                                         |
 
 - UF3035 to UF3039 are layer 2 of §5.6. Each says "did you mean `…`?" when a declared name is close.
   UF3038 covers a slot-object key the child does not declare and children given to a child with no

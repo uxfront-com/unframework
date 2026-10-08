@@ -78,7 +78,9 @@ tree, at the same relative path as the sources, by the file name its target give
   cycles. Angular lists every imported component through `forwardRef` (`imports: [forwardRef(() =>
 Field)]`): standalone components that import each other without it fail when they load
   (`ReferenceError: Cannot access 'A' before initialization`), and the API carries no imports to
-  tell a cycle apart, so every import takes the form that survives one, of any length.
+  tell a cycle apart, so every import takes the form that survives one, of any length. The same
+  holds for a child's slot directives (ADR-0056), which the parent lists beside it:
+  `imports: [forwardRef(() => Field), forwardRef(() => FieldTitle)]`.
 
 **Components as list items and branch content.** `ForNode.body` widens to
 `ElementNode | ComponentNode`: `items.map((item) => <Item key={item.id} label={item.label} />)`.

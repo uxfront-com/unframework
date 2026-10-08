@@ -27,11 +27,12 @@ test, in that target's toolchain directory:
 `tests/toolchains/<target>/consumers/<area>/<case>/<Fixture>.<ext>`. A fixture imports the case's
 golden outputs by relative path (`../../../../../integration/cases/<area>/<case>/__output__/vue/Field.vue`)
 and uses them as a consumer would. Each target's checker includes its `consumers/` tree: its
-tsconfig's `include`, or the file list the harness gives `astro check` (ADR-0028). A fixture
-outside the integration package cannot find the framework's types by Node resolution, so each
-checker's tsconfig maps them with `paths` (`"react"`, `"react/*"`), as Angular's maps
-`@angular/*` today; a correct React consumer there fails with `TS2307: Cannot find module 'react'`
-without it. Each case with
+tsconfig's `include`, or the file list the harness gives `astro check` (ADR-0028). The tsgo
+checkers (React, Solid, Qwik) cannot find their framework's types from `tests/toolchains/<t>` by
+Node resolution, so their tsconfigs map them with `paths` (`"react"`, `"react/*"`), as Angular's
+maps `@angular/*` today; a correct React consumer there fails with `TS2307: Cannot find module
+'react'` without it. Vue, Svelte, Astro and Angular already resolve from their toolchain
+directory. Each case with
 fixtures has, per target, one correct consumer, which must check clean, and one fixture per
 misuse kind the case's components declare: a prop, an event, a model, a slot. Lanes own their
 target's tree, so no two lanes write one fixture.
