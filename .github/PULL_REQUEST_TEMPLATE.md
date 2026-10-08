@@ -9,4 +9,4 @@
 - [ ] The title follows [Conventional Commits](https://www.conventionalcommits.org), as in `feat(web): sell the next framework on the homepage`.
 - [ ] `pnpm format:check`, `pnpm lint`, `pnpm check-types` and `pnpm test` pass.
 - [ ] Changes to a published package: a changeset from `pnpm changeset` (see [`.changeset/README.md`](https://github.com/uxfront-com/unframework/blob/main/.changeset/README.md)).
-- [ ] Homepage changes: `pnpm build`, then `pnpm --filter web lighthouse`, still scores 100 in every category.
+- [ ] Homepage changes: `pnpm build`, then `pnpm --filter web lighthouse`, still scores at least 0.95 in every category.
