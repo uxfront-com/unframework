@@ -95,7 +95,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0040](./0040-svg.md)                                              | SVG is lowered inside `<svg>`, with case-exact tables                | Accepted                                            | §4.3, §9 M1             |
 | [0041](./0041-script-blocks-and-frontmatter-are-formatted.md)      | Script blocks and frontmatter are formatted as TypeScript            | Accepted, amended by ADR-0051                       | §5.8, R14               |
 | [0042](./0042-l5-lints-the-emitters-idiom.md)                      | L5 lints the emitter's idiom                                         | Accepted, amended by ADR-0045, ADR-0047, ADR-0048   | §7.2 L5                 |
-| [0043](./0043-l8-behaviour-soft-parity-and-rerender.md)            | L8 records the spec's assertions, and parity is soft                 | Accepted, amended by ADR-0050                       | §7.2 L8, §7.7           |
+| [0043](./0043-l8-behaviour-soft-parity-and-rerender.md)            | L8 records the spec's assertions, and parity is soft                 | Accepted, amended by ADR-0050, ADR-0052             | §7.2 L8, §7.7           |
 | [0044](./0044-empty-class-and-style-and-declaration-order.md)      | An empty `class` or `style` is no attribute                          | Accepted                                            | §7.5                    |
 | [0045](./0045-setup-code-is-a-scope-analysed-subset.md)            | Setup code is a scope-analysed subset, in source order               | Accepted                                            | §4.2, §5.3, §5.4, §9 M2 |
 | [0046](./0046-state-and-derived-values-on-every-target.md)         | State and derived values keep one contract on every target           | Accepted                                            | §4.5, §6, §9 M2         |
@@ -104,6 +104,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0049](./0049-template-refs-and-ids.md)                            | A template ref holds one element, and every id starts `uf-id-`       | Accepted                                            | §4.2, §6, §7.5, §9 M2   |
 | [0050](./0050-l8-interactions-and-l9-traces.md)                    | L8 runs a person's input, and L9 compares every step                 | Accepted                                            | §7.2 L8, L9, §9 M2      |
 | [0051](./0051-copied-setup-code-never-ends-its-block.md)           | Copied setup code never ends a script block or a frontmatter         | Accepted                                            | §5.8, R14               |
+| [0052](./0052-browser-canaries-run-in-shards.md)                   | A canary whose browser specs run is sharded by case in CI            | Accepted                                            | §7.7, §7.9              |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 

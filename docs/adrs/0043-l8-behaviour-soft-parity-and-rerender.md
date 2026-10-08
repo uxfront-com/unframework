@@ -1,6 +1,6 @@
 # ADR-0043: L8 records the spec's own assertions, parity is soft, and every adapter can rerender
 
-- **Status:** Accepted, amended by ADR-0050
+- **Status:** Accepted, amended by ADR-0050, ADR-0052
 - **Date:** 2026-10-05
 - **Plan:** §4.5 (Reactive props), §7.2 (L8), §7.3, §7.4, §7.7, §7.9, §9 M1; P1, P2, P4; R9;
   ADR-0018, ADR-0024, ADR-0029, ADR-0033, ADR-0034

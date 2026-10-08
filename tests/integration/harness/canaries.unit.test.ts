@@ -14,7 +14,7 @@ import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
 import type { ProjectKind } from "@unframework/testing/node";
 import { describe, expect, it } from "vitest";
 
-import { selectCanaries } from "../scripts/canaries.ts";
+import { parseArguments, selectCanaries, shardCases, shardFilters } from "../scripts/canaries.ts";
 import {
   addRootAttribute,
   CANARIES,
@@ -229,31 +229,95 @@ describe("canaries", () => {
     expect(guardsGoldens("L6-golden-guard")).toBe(true);
   });
 
-  it("run in CI as a matrix: every canary once, and at most one browser canary per job", () => {
+  it("run in CI as a matrix: every canary once or in every shard, at most one browser canary per job, and shards for each whose browser specs run", () => {
     const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", "ci.yml"), "utf8");
     const job = workflow
       .slice(workflow.indexOf("\njobs:\n"))
       .split(/^ {2}(?=[a-z0-9-]+:\n)/m)
       .find((block) => block.startsWith("canaries:\n"));
     if (!job) throw new Error("ci.yml has no canaries job.");
-    expect(job).toContain("run: pnpm test:canaries ${{ matrix.canaries }}");
+    expect(job).toContain(
+      "run: pnpm test:canaries ${{ matrix.canaries }}${{ matrix.shard && format(' --shard {0}', matrix.shard) || '' }}\n",
+    );
     expect(job).toMatch(/^ {4}timeout-minutes: 10$/m);
-    // A block sequence, one entry a line: the formatter breaks a long flow sequence anyway.
+    // An `include` entry a job: its canaries, and its shard if it has one.
+    const include = /^ {8}include:\n((?: {10}.*\n)+)/m.exec(job)?.[1] ?? "";
     const entries = [
-      ...(/^ {8}canaries:\n((?: {10}- .*\n)+)/m.exec(job)?.[1] ?? "").matchAll(/^ {10}- (.+)$/gm),
-    ].map((entry) => entry[1]!);
-    const jobs = entries.map((entry) => selectCanaries([entry]));
-    expect(
-      jobs
-        .flat()
-        .map(({ id }) => id)
-        .toSorted(),
-    ).toEqual(CANARIES.map(({ id }) => id).toSorted());
-    // One browser canary runs every spec on seven targets: two would not fit the ten minutes.
-    for (const [index, selected] of jobs.entries()) {
-      const browser = selected.filter((canary) => canaryProjects(canary).includes("browser"));
-      expect(browser.length, entries[index]).toBeLessThanOrEqual(1);
+      ...include.matchAll(/^ {10}- canaries: (\S+)\n(?: {12}shard: (\S+)\n)?/gm),
+    ].map(([, names, shard]) => ({
+      name: `${names!}${shard ? ` --shard ${shard}` : ""}`,
+      canaries: selectCanaries([names!]),
+      shard: parseArguments(shard ? ["--shard", shard] : []).shard,
+    }));
+    // Every entry read: one in another shape would drop out of the checks below.
+    expect(entries.length).toBe(include.match(/^ {10}- /gm)?.length);
+    // Each canary runs once on every case, or in shards 1 to n of one count.
+    const runs = new Map<string, string[]>();
+    for (const { canaries, shard } of entries) {
+      const part = shard ? `${shard.index}/${shard.count}` : "all";
+      for (const { id } of canaries) runs.set(id, [...(runs.get(id) ?? []), part]);
     }
+    expect([...runs.keys()].toSorted()).toEqual(CANARIES.map(({ id }) => id).toSorted());
+    for (const [id, parts] of runs) {
+      const { length } = parts;
+      const whole = length === 1 ? ["all"] : parts.map((_, index) => `${index + 1}/${length}`);
+      expect(parts.toSorted(), id).toEqual(whole.toSorted());
+    }
+    // A canary whose browser specs run waits out a timeout at most of their failures, on every
+    // target: one job of the whole corpus outgrew the ten minutes (ADR-0052). The golden
+    // guard's specs fail to load, so they run no test and wait for nothing.
+    for (const { name, canaries, shard } of entries) {
+      const browser = canaries.filter((canary) => canaryProjects(canary).includes("browser"));
+      expect(browser.length, name).toBeLessThanOrEqual(1);
+      if (browser.some(({ evidence }) => "browser" in evidence)) {
+        expect(shard?.count ?? 1, name).toBeGreaterThanOrEqual(2);
+      }
+    }
+  });
+
+  it("take a shard, and run each case in exactly one of its parts", () => {
+    expect(parseArguments(["--", "L8", "--shard", "1/2"])).toEqual({
+      names: ["L8"],
+      shard: { index: 1, count: 2 },
+    });
+    expect(parseArguments(["--shard=3/3", "L7", "L11"])).toEqual({
+      names: ["L7", "L11"],
+      shard: { index: 3, count: 3 },
+    });
+    expect(parseArguments(["L5"])).toEqual({ names: ["L5"], shard: undefined });
+    for (const value of ["0/2", "3/2", "1", "a/b", ""]) {
+      expect(() => parseArguments(["L8", "--shard", value]), value).toThrow(/--shard takes/);
+    }
+    expect(() => parseArguments(["L8", "--shard"])).toThrow(/--shard takes/);
+    expect(() => parseArguments(["--shard", "1/2", "--shard=2/2"])).toThrow(/given twice/);
+
+    // Every count-th case: an area's cases, and the specs among them, spread over the shards.
+    expect(shardCases(["a/1", "a/2", "a/3", "b/1", "b/2"], { index: 2, count: 2 })).toEqual([
+      "a/2",
+      "b/1",
+    ]);
+    const cases = listCases().map(({ id }) => id);
+    for (const count of [2, 3]) {
+      const shards = Array.from({ length: count }, (_, index) =>
+        shardCases(cases, { index: index + 1, count }),
+      );
+      expect(shards.flat().toSorted()).toEqual(cases.toSorted());
+      const sizes = shards.map((shard) => shard.length);
+      expect(Math.max(...sizes) - Math.min(...sizes)).toBeLessThanOrEqual(1);
+    }
+    expect(shardCases(cases, undefined)).toEqual(cases);
+  });
+
+  it("filter a shard's run to its cases' specs, and run every other project whole", () => {
+    const cases = listCases().slice(0, 4).map(canaryCase);
+    const shard = { index: 2, count: 2 };
+    const specs = shardCases(cases, shard).flatMap((info) => (info.spec ? [info.spec] : []));
+    expect(specs.length).toBeGreaterThan(0);
+    expect(shardFilters(shardCases(cases, shard), shard)).toEqual(["harness/", ...specs]);
+    expect(shardFilters(cases, undefined)).toEqual([]);
+    // No spec path holds the filter the other projects' files match.
+    for (const info of listCases().map(canaryCase))
+      expect(info.spec ?? "").not.toContain("harness/");
   });
 
   it("are selected by id or by layer, and an unknown name or a layer without canaries throws", () => {

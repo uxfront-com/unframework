@@ -12,6 +12,7 @@ pnpm test:baselines       # rewrite the Linux screenshot baselines, in Docker
 pnpm test:baselines:check # compare the browser projects with them, as CI does, in Docker
 pnpm test:canaries        # prove that every live layer catches the corruption it exists for
 pnpm test:canaries L8     # the canaries of one layer, or name canaries by id
+pnpm test:canaries L8 --shard 1/2   # a part of the cases, as CI runs a browser canary (ADR-0052)
 ```
 
 ## A case
@@ -248,7 +249,10 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   and keeps the IR valid; the harness's unit tests run each one on every case of the corpus it
   applies to. CI runs the
   canaries as a matrix, a layer or a canary per job, with at most one canary that runs the
-  browser projects in each.
+  browser projects in each. A canary whose browser specs run waits out a timeout at most of
+  their failures, so it runs in shards (`--shard 1/2`, ADR-0052): each holds a part of the cases,
+  runs its specs in the browser projects and every other project whole, and is judged on its
+  cases alone.
 - **Qwik's listeners run as they do once each has run, and none is ordered by the harness.** A
   Qwik handler, task or local function runs once its QRL has resolved, and a QRL resolves on its
   first run, through the `import()` of its segment, which the browser answers in a later task,
