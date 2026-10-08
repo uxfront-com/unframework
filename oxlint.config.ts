@@ -14,4 +14,14 @@ export default defineConfig({
     // Third-party types vendored verbatim (see packages/unframework/scripts/vendor-jsx.ts).
     "packages/unframework/src/vendor/**",
   ],
+  overrides: [
+    {
+      // A component's event handler may be async: every target discards a handler's return value,
+      // its promise included (ADR-0047). The rule's other checks stay on.
+      files: ["**/*.uf.tsx", "packages/target-*/test/fixtures/**"],
+      rules: {
+        "typescript/no-misused-promises": ["error", { checksVoidReturn: { attributes: false } }],
+      },
+    },
+  ],
 });

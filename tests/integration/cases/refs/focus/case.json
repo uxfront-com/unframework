@@ -1,0 +1,6 @@
+{
+  "description": "Template refs give client code the elements: a button focuses a field, and Escape returns focus to the button.",
+  "ssr": {
+    "initial": {}
+  }
+}

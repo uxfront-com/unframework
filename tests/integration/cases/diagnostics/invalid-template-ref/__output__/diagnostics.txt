@@ -1,0 +1,8 @@
+error[UF3027]: `entry` is attached inside a list, where Vue fills a template ref with an array of elements and the other targets with the last one: a template ref holds one element.
+  --> diagnostics/invalid-template-ref/Menu.uf.tsx:24:35
+   |
+24 |             <button type="button" ref={entry}>
+   |                                   ^^^^^^^^^^^
+   |
+   = help: Attach it to an element outside the list.
+   = see: https://unframework.dev/diagnostics/UF3027

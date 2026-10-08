@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Increase Tickets' })",
+      "dom": [
+        "<div aria-label=\"Tickets\" class=\"quantity-stepper\" role=\"group\">",
+        "  <output>",
+        "    \"4\"",
+        "  </output>",
+        "  <button aria-label=\"Increase Tickets\" type=\"button\" uf:focused=\"\">",
+        "    \"+\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- group \"Tickets\":",
+        "  - status: \"4\"",
+        "  - button \"Increase Tickets\": +"
+      ],
+      "events": {}
+    },
+    {
+      "action": "rerender {\"initial\":10,\"label\":\"Seats\"}",
+      "dom": [
+        "<div aria-label=\"Seats\" class=\"quantity-stepper\" role=\"group\">",
+        "  <output>",
+        "    \"4\"",
+        "  </output>",
+        "  <button aria-label=\"Increase Seats\" type=\"button\" uf:focused=\"\">",
+        "    \"+\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- group \"Seats\":",
+        "  - status: \"4\"",
+        "  - button \"Increase Seats\": +"
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Increase Seats' })",
+      "dom": [
+        "<div aria-label=\"Seats\" class=\"quantity-stepper\" role=\"group\">",
+        "  <output>",
+        "    \"5\"",
+        "  </output>",
+        "  <button aria-label=\"Increase Seats\" type=\"button\" uf:focused=\"\">",
+        "    \"+\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- group \"Seats\":",
+        "  - status: \"5\"",
+        "  - button \"Increase Seats\": +"
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'yes' })",
+      "dom": [
+        "<section aria-label=\"Lunch\" class=\"ballot\">",
+        "  <p role=\"status\">",
+        "    \"2 votes left\"",
+        "  </p>",
+        "  <p>",
+        "    \"Picked: yes\"",
+        "  </p>",
+        "  <ul aria-label=\"Choices\">",
+        "    <li>",
+        "      <button type=\"button\" uf:focused=\"\">",
+        "        \"yes\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"no\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"maybe\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "  <button type=\"button\">",
+        "    \"Count the answers\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Lunch\":",
+        "  - status: 2 votes left",
+        "  - paragraph: \"Picked: yes\"",
+        "  - list \"Choices\":",
+        "    - listitem:",
+        "      - button \"yes\"",
+        "    - listitem:",
+        "      - button \"no\"",
+        "    - listitem:",
+        "      - button \"maybe\"",
+        "  - button \"Count the answers\""
+      ],
+      "events": {
+        "moved": [
+          [
+            "none:3>yes:2"
+          ]
+        ],
+        "report": [
+          [
+            "none with 3 left"
+          ],
+          [
+            "yes with 2 left"
+          ]
+        ],
+        "voted": [
+          [
+            2,
+            "Lunch (3)! 3"
+          ]
+        ]
+      }
+    }
+  ]
+}

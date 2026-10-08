@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "keyboard \"{Enter}hi\"",
+      "dom": [
+        "<section aria-label=\"Reply\" class=\"reply-box\">",
+        "  <label>",
+        "    \"Message\"",
+        "    <textarea name=\"message\" uf:focused=\"\" uf:value=\"\\nhi\"></textarea>",
+        "  </label>",
+        "  <p>",
+        "    \"Started\"",
+        "  </p>",
+        "  <label>",
+        "    \"Answer\"",
+        "    <textarea name=\"answer\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <button aria-pressed=\"false\" type=\"button\">",
+        "    \"Suggestions\"",
+        "  </button>",
+        "  <p>",
+        "    \"Accepted: 0\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Reply\":",
+        "  - text: Message",
+        "  - textbox \"Message\": hi",
+        "  - paragraph: Started",
+        "  - text: Answer",
+        "  - textbox \"Answer\"",
+        "  - button \"Suggestions\"",
+        "  - paragraph: \"Accepted: 0\""
+      ],
+      "events": {}
+    }
+  ]
+}

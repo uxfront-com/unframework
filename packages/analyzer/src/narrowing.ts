@@ -36,11 +36,15 @@
 //   union keep or take out the kinds they test, in either branch, where every target keeps the
 //   narrowing. A discriminant is a member TypeScript reads as one: of a literal type in some of
 //   the union's shapes.
+// - An assignment narrows the reference it writes until the next write, in its own function
+//   (`selected.value = member;`, `if (!cache.value) cache.value = make();`), as TypeScript
+//   narrows it by assignment: what it writes is never nullish, or of fewer kinds.
 
 import type { AST } from "@unframework/parser";
 import { visitorKeys } from "@unframework/parser";
 
 import type { RenderContext } from "./render.ts";
+import type { Resolution } from "./scope.ts";
 import {
   booleanLiteral,
   has,
@@ -55,9 +59,12 @@ import {
 } from "./types/kinds.ts";
 import type { Kinds, Member, ObjectShape, Primitive } from "./types/kinds.ts";
 
-/** A reference TypeScript narrows: a parameter (a prop or a list's item) and static keys. */
+/**
+ * A reference TypeScript narrows: a parameter (a prop or a list's item), or a ref the setup
+ * declares (ADR-0045), and static keys (a ref's value is its `value`).
+ */
 export interface ReferencePath {
-  /** What declares the parameter. */
+  /** What declares the parameter or the ref. */
   root: object;
   names: readonly string[];
 }
@@ -99,7 +106,8 @@ export function referencePath(
   const inner = unwrap(node);
   if (inner.type === "Identifier") {
     const resolution = render.scopes.resolve(inner);
-    return resolution.kind === "parameter"
+    if (resolution.kind === "parameter") return { root: resolution.declaration, names: [] };
+    return resolution.kind === "variable" && refOf(resolution, render)
       ? { root: resolution.declaration, names: [] }
       : undefined;
   }
@@ -114,11 +122,14 @@ export function referencePath(
 /**
  * Whether Angular's checker reads a reference as an expression whose type it checks, where a
  * needless `?.` or `??` is NG8107 or NG8102: anything but a template variable of its own, which
- * a prop (`@let label = this.label();`, the object form's `props.label` included) and a list's
- * item or index are. An arrow function's parameter is checked too.
+ * a prop (`@let label = this.label();`, the object form's `props.label` included), a ref's value
+ * (`@let count = this.count();`, ADR-0046) and a list's item or index are. An arrow function's
+ * parameter is checked too.
  */
 export function angularChecks(path: ReferencePath, render: RenderContext): boolean {
-  if (path.root === render.propsObject?.declaration) return path.names.length >= 2;
+  if (path.root === render.propsObject?.declaration || isRefRoot(path.root, render)) {
+    return path.names.length >= 2;
+  }
   if (render.propsByDeclaration.has(path.root) || render.loopVariables.has(path.root)) {
     return path.names.length >= 1;
   }
@@ -276,6 +287,245 @@ export function narrowingAt(node: AST.Node, path: ReferencePath, render: RenderC
   }
   NARROWINGS.set(node, found);
   return found;
+}
+
+/**
+ * The conditions around `node` that narrow `path`, which it reads (UF3029, UF3031), outermost
+ * last, each with whether it is a conditional child's, which every target keeps narrowed in its
+ * branch (Solid's non-keyed accessor callbacks, Angular's `@let`): each test that says the
+ * reference is there or absent, that the compiler does not follow, or that leaves fewer of its
+ * kinds.
+ */
+export function narrowingFacts(
+  node: AST.Node,
+  path: ReferencePath,
+  declared: Kinds | undefined,
+  render: RenderContext,
+): { condition: AST.Expression; child: boolean }[] {
+  const kinds = declared ?? declaredKinds(path, render) ?? UNKNOWN;
+  const ancestors = ancestorsOf(node, render.component);
+  return factsAround(ancestors, render.component)
+    .filter(
+      (fact) =>
+        effectOf(fact, path, render) !== "none" ||
+        changesKinds(kinds, refine(fact.condition, path, fact.holds, kinds, render)),
+    )
+    .map((fact) => ({ condition: fact.condition, child: fact.child }));
+}
+
+/** A condition around a read that narrows a path of it (ADR-0046, UF3031). */
+export interface PathFact {
+  condition: AST.Expression;
+  /**
+   * Whether it shows the path present: a test of it, a comparison with `null` or `undefined`, a
+   * member read through `?.`, `typeof`, `Array.isArray`, a discriminant, or an equality with a
+   * value the compiler does not follow, by which TypeScript narrows it too.
+   */
+  present: boolean;
+  /**
+   * Whether it narrows the path to fewer kinds that are there (`typeof`, `Array.isArray`, a
+   * literal, a discriminant, an equality the compiler does not follow): more than an assertion of
+   * presence says.
+   */
+  kinds: boolean;
+  /**
+   * Where it lies: with no function between it and the read (`local`), in a function around the
+   * read's (`closure`), or in the template around the read's handler (`template`).
+   */
+  scope: "local" | "closure" | "template";
+  /** Whether it is a conditional child's, whose branch every target keeps narrowed. */
+  child: boolean;
+}
+
+/**
+ * The conditions around `node` that narrow `path`, which it reads, as its kinds say (the declared
+ * ones of the path, or the caller's where it reads a member the tables do not type, an array's
+ * element), innermost first (ADR-0046, UF3031).
+ */
+export function pathFacts(
+  node: AST.Node,
+  path: ReferencePath,
+  kinds: Kinds,
+  render: RenderContext,
+  kindsOf?: (node: AST.Expression) => Kinds,
+): PathFact[] {
+  const ancestors = ancestorsOf(node, render.component);
+  const facts = factsAround(ancestors, render.component).flatMap((fact): PathFact[] => {
+    const effect = effectOf(fact, path, render, false, kinds);
+    const form = effect === "form";
+    const present = effect === "present" || form;
+    const narrowed =
+      form || narrowsKinds(kinds, refine(fact.condition, path, fact.holds, kinds, render));
+    if (!present && !narrowed) return [];
+    const scope = fact.boundary === "none" ? "local" : fact.template ? "template" : "closure";
+    return [{ condition: fact.condition, present, kinds: narrowed, scope, child: fact.child }];
+  });
+  const assigned = kindsOf && assignedFact(ancestors, path, kinds, render, kindsOf);
+  return assigned ? [assigned, ...facts] : facts;
+}
+
+/**
+ * The write before a read in its function that narrows the path there, as TypeScript narrows a
+ * reference by assignment until the next write (ADR-0046), as a fact whose condition is the
+ * assignment: the nearest write of the path in the blocks around the read, `x.value = v` (present
+ * where `v` is never nullish, and fewer kinds where `v` has fewer), `x.value ??= v` or
+ * `x.value ||= v` (present where `v` is never nullish), or an `if` without `else` whose test fails
+ * only where the path is present and whose branch ends with such a write
+ * (`if (!x.value) x.value = make();`). Any other write first (of the path or of what holds it),
+ * or one in a loop around the read, shows nothing.
+ */
+function assignedFact(
+  ancestors: readonly AST.Node[],
+  path: ReferencePath,
+  kinds: Kinds,
+  render: RenderContext,
+  kindsOf: (node: AST.Expression) => Kinds,
+): PathFact | undefined {
+  const found = assignedBefore(ancestors, path, kinds, render, kindsOf);
+  if (!found) return undefined;
+  const { write, whole } = found;
+  const value = kindsOf(write.right);
+  const present = !has(value, "null") && !has(value, "undefined");
+  const fewer =
+    whole &&
+    !has(value, "unknown") &&
+    narrowsKinds(without(kinds, "null", "undefined"), without(value, "null", "undefined"));
+  if (!present && !fewer) return undefined;
+  return { condition: write, present, kinds: fewer, scope: "local", child: false };
+}
+
+/** A write that leaves a path as it writes it, or `whole`ly so (`=`, not `??=` or `||=`). */
+interface Assigned {
+  write: AST.AssignmentExpression;
+  whole: boolean;
+}
+
+/** The nearest write before a read in its function that leaves the path as it writes it. */
+function assignedBefore(
+  ancestors: readonly AST.Node[],
+  path: ReferencePath,
+  kinds: Kinds,
+  render: RenderContext,
+  kindsOf: (node: AST.Expression) => Kinds,
+): Assigned | undefined {
+  for (let index = ancestors.length - 2; index >= 0; index--) {
+    const parent = ancestors[index]!;
+    const child = ancestors[index + 1]!;
+    if (parent === render.component || isFunctionNode(parent)) return undefined;
+    // TypeScript joins what a loop's body writes into the narrowing at its start.
+    if (LOOPS.has(parent.type) && writesPath(parent, path, render)) return undefined;
+    const statements =
+      parent.type === "BlockStatement"
+        ? parent.body
+        : parent.type === "SwitchCase"
+          ? parent.consequent
+          : undefined;
+    if (!statements) continue;
+    for (const statement of statements.toReversed()) {
+      if (statement.start >= child.start) continue;
+      const write = writeOf(statement, path, kinds, render, kindsOf);
+      if (write === "none") continue;
+      return write === "other" ? undefined : write;
+    }
+  }
+  return undefined;
+}
+
+const LOOPS: ReadonlySet<string> = new Set([
+  "ForStatement",
+  "ForInStatement",
+  "ForOfStatement",
+  "WhileStatement",
+  "DoWhileStatement",
+]);
+
+/**
+ * What a statement writes of a path: the assignment that leaves it as it writes it after the
+ * statement, another write (`other`), or none.
+ */
+function writeOf(
+  statement: AST.Statement,
+  path: ReferencePath,
+  kinds: Kinds,
+  render: RenderContext,
+  kindsOf: (node: AST.Expression) => Kinds,
+): Assigned | "other" | "none" {
+  const expression =
+    statement.type === "ExpressionStatement" ? withoutParentheses(statement.expression) : undefined;
+  if (expression?.type === "AssignmentExpression" && expression.left.type === "MemberExpression") {
+    const target = referencePath(expression.left, render);
+    if (target && samePath(target, path)) {
+      if (expression.operator === "=") return { write: expression, whole: true };
+      const logical = expression.operator === "??=" || expression.operator === "||=";
+      return logical ? { write: expression, whole: false } : "other";
+    }
+  }
+  if (
+    statement.type === "IfStatement" &&
+    !statement.alternate &&
+    writesPath(statement, path, render)
+  ) {
+    const branch =
+      statement.consequent.type === "BlockStatement"
+        ? statement.consequent.body
+        : [statement.consequent];
+    const last = branch.at(-1);
+    const write = last && writeOf(last, path, kinds, render, kindsOf);
+    const fails: Fact = {
+      condition: statement.test,
+      holds: false,
+      boundary: "none",
+      child: false,
+      template: false,
+    };
+    // Only presence: where the test fails, the path keeps its other kinds.
+    if (typeof write !== "object" || effectOf(fails, path, render, false, kinds) !== "present") {
+      return "other";
+    }
+    const value = kindsOf(write.write.right);
+    return has(value, "null") || has(value, "undefined") ? "other" : { ...write, whole: false };
+  }
+  return writesPath(statement, path, render) ? "other" : "none";
+}
+
+/**
+ * Whether a node writes a path, or what holds it (`x.value = …` writes `x.value.email`), outside
+ * the functions in it.
+ */
+function writesPath(node: AST.Node, path: ReferencePath, render: RenderContext): boolean {
+  // A path's root (a ref, a prop, a list's item) is never written itself: only members are.
+  const covers = (target: AST.Node): boolean => {
+    if (target.type !== "MemberExpression") {
+      return childrenOf(target).some((item) =>
+        Array.isArray(item)
+          ? item.some((part) => isNode(part) && covers(part))
+          : isNode(item) && covers(item),
+      );
+    }
+    const written = referencePath(target, render);
+    return (
+      written !== undefined &&
+      written.root === path.root &&
+      written.names.length <= path.names.length &&
+      written.names.every((name, index) => name === path.names[index])
+    );
+  };
+  const visit = (value: unknown): boolean => {
+    if (Array.isArray(value)) return value.some(visit);
+    if (!isNode(value) || isFunctionNode(value)) return false;
+    if (value.type === "AssignmentExpression" && covers(value.left)) return true;
+    if (value.type === "UpdateExpression" && covers(value.argument)) return true;
+    return childrenOf(value).some(visit);
+  };
+  return visit(node);
+}
+
+function isFunctionNode(node: AST.Node): boolean {
+  return (
+    node.type === "ArrowFunctionExpression" ||
+    node.type === "FunctionExpression" ||
+    node.type === "FunctionDeclaration"
+  );
 }
 
 /** A reference's kinds where it is read, and a narrowing of them some target does not keep. */
@@ -574,6 +824,18 @@ function changesKinds(before: Kinds, after: Kinds): boolean {
   return (before.objects?.length ?? 0) !== (after.objects?.length ?? 0);
 }
 
+/**
+ * Whether a narrowing leaves fewer kinds of value that are there, or fewer of their literals
+ * (`choice === "a"` of `"a" | "b"`): more than presence.
+ */
+function narrowsKinds(before: Kinds, after: Kinds): boolean {
+  if (changesKinds(before, after)) return true;
+  if (!presentKinds(after).length) return false;
+  return (["strings", "numbers", "booleans"] as const).some(
+    (field) => after[field] !== undefined && after[field]!.size !== (before[field]?.size ?? -1),
+  );
+}
+
 /** The primitives of a value that is there: neither `null` nor `undefined`. */
 function presentKinds(kinds: Kinds): Primitive[] {
   return [...kinds.primitives].filter(
@@ -605,10 +867,11 @@ function effectOf(
   source: ReferencePath,
   render: RenderContext,
   rootOnly = false,
+  kinds?: Kinds,
 ): Effect {
   const effect = testEffect(fact.condition, source, fact.holds, render, rootOnly);
   if (typeof effect !== "string") {
-    if (presentWithout(source, effect.removed, render)) return "present";
+    if (presentWithout(source, effect.removed, render, kinds)) return "present";
     return effect.unknown ? "form" : "none";
   }
   return effect === "unknown" ? "form" : effect;
@@ -705,19 +968,42 @@ function across(fact: Fact, effect: Effect, path: ReferencePath, render: RenderC
  * Whether a reference keeps a fact's narrowing in a closure on every target: a list's item and
  * an arrow function's parameter are parameters in every output, and so is a destructured prop in
  * a conditional child's branch (Solid's keyed callback receives it; the other targets read the
- * source's own local).
+ * source's own local). A ref's value is a property, which TypeScript forgets in a closure.
  */
 function keepsAcross(fact: Fact, path: ReferencePath, render: RenderContext): boolean {
   return (
     path.names.length === 0 &&
     path.root !== render.propsObject?.declaration &&
+    !isRefRoot(path.root, render) &&
     (fact.child || !render.propsByDeclaration.has(path.root))
   );
 }
 
-/** Whether a reference is a prop's, destructured or read through the object form. */
+/**
+ * Whether a reference is a prop's, destructured or read through the object form, or a ref's
+ * value: Angular's `track` reads either from the class again (`this.count()`).
+ */
 function isProp(path: ReferencePath, render: RenderContext): boolean {
-  return path.root === render.propsObject?.declaration || render.propsByDeclaration.has(path.root);
+  return (
+    path.root === render.propsObject?.declaration ||
+    render.propsByDeclaration.has(path.root) ||
+    isRefRoot(path.root, render)
+  );
+}
+
+/** Whether a scope resolution names a ref the setup declares, whose value narrows (ADR-0045). */
+function refOf(resolution: Resolution, render: RenderContext): boolean {
+  return (
+    resolution.kind === "variable" &&
+    resolution.scope === render.component &&
+    isRefRoot(resolution.declaration, render)
+  );
+}
+
+/** Whether a reference's root declares a ref: `state`, `derived` or `templateRef`. */
+function isRefRoot(root: object, render: RenderContext): boolean {
+  const kind = render.setup.bindings.get(root)?.kind;
+  return kind === "state" || kind === "derived" || kind === "templateRef";
 }
 
 /** Whether a node lies in a list's key, which Angular writes as its `@for`'s `track`. */
@@ -738,7 +1024,7 @@ function withoutParentheses(node: AST.Expression): AST.Expression {
 }
 
 /** A member's static key: `a.b`, `a["b"]`, `a[0]`. */
-function memberName(node: AST.MemberExpression): string | undefined {
+export function memberName(node: AST.MemberExpression): string | undefined {
   const { property } = node;
   if (!node.computed) return property.type === "Identifier" ? property.name : undefined;
   return property.type === "Literal" &&
@@ -777,34 +1063,92 @@ interface Fact {
    * than one inside an expression, which every target copies (Solid with `props.x`).
    */
   child: boolean;
+  /** Whether the condition is the template's and the read a handler's, inside an attribute. */
+  template: boolean;
 }
 
 /**
  * The conditions around a node, from its ancestors in the component, innermost first: the test
  * of each `?:` whose branch holds it, and the left side of each `&&` (which holds), `||` or `??`
- * (which fail) whose right side does.
+ * (which fail) whose right side does; in code, the test of each `if` whose branch holds it, of
+ * each `while` or `for` loop whose body does, and of each `if` before it in a block that leaves
+ * the block when its test holds (`if (!el) return;`), which then fails.
  */
 function factsAround(ancestors: readonly AST.Node[], component: AST.Node): Fact[] {
   const facts: Fact[] = [];
   let boundary: Fact["boundary"] = "none";
+  // Past an attribute, the read is a handler's (or an attribute's value) and the condition the
+  // template's around its element.
+  let template = false;
   for (let index = ancestors.length - 2; index >= 0; index--) {
     const parent = ancestors[index]!;
     const child = ancestors[index + 1];
     if (parent === component) break;
+    if (parent.type === "JSXAttribute") template = true;
     if (parent.type === "ArrowFunctionExpression" || parent.type === "FunctionExpression") {
       // JSX in a function is a list's element: anywhere else it is reported (UF3012).
       if (!containsJsx(parent.body)) boundary = "expression";
       else if (boundary === "none") boundary = "list";
     } else if (parent.type === "ConditionalExpression" && child !== parent.test) {
       const holds = child === parent.consequent;
-      facts.push({ condition: parent.test, holds, boundary, child: isIf(ancestors, index) });
+      const conditional = isIf(ancestors, index);
+      facts.push({ condition: parent.test, holds, boundary, child: conditional, template });
     } else if (parent.type === "LogicalExpression" && child === parent.right) {
       const holds = parent.operator === "&&";
       const conditional = holds && isIf(ancestors, index);
-      facts.push({ condition: parent.left, holds, boundary, child: conditional });
+      facts.push({ condition: parent.left, holds, boundary, child: conditional, template });
+    } else if (parent.type === "IfStatement" && child !== parent.test) {
+      facts.push({
+        condition: parent.test,
+        holds: child === parent.consequent,
+        boundary,
+        child: false,
+        template,
+      });
+    } else if (
+      (parent.type === "WhileStatement" || parent.type === "ForStatement") &&
+      parent.test &&
+      child === parent.body
+    ) {
+      // A loop's body runs where its test holds.
+      facts.push({ condition: parent.test, holds: true, boundary, child: false, template });
+    } else if (parent.type === "BlockStatement") {
+      for (const statement of parent.body.toReversed()) {
+        if (statement.start >= (child?.start ?? 0)) continue;
+        if (
+          statement.type === "IfStatement" &&
+          !statement.alternate &&
+          exits(statement.consequent)
+        ) {
+          facts.push({
+            condition: statement.test,
+            holds: false,
+            boundary,
+            child: false,
+            template,
+          });
+        }
+      }
     }
   }
   return facts;
+}
+
+/** Whether a statement always leaves the block it is in: a `return`, a `throw`, `break` or `continue`. */
+function exits(statement: AST.Statement): boolean {
+  switch (statement.type) {
+    case "ReturnStatement":
+    case "ThrowStatement":
+    case "BreakStatement":
+    case "ContinueStatement":
+      return true;
+    case "BlockStatement": {
+      const last = statement.body.at(-1);
+      return last !== undefined && exits(last);
+    }
+    default:
+      return false;
+  }
 }
 
 /**
@@ -849,7 +1193,7 @@ function containsJsx(node: unknown): boolean {
 }
 
 /** The nodes from `root` down to `target`, both included: none when `target` is not in it. */
-function ancestorsOf(target: AST.Node, root: AST.Node): AST.Node[] {
+export function ancestorsOf(target: AST.Node, root: AST.Node): AST.Node[] {
   const path: AST.Node[] = [];
   const visit = (value: unknown): boolean => {
     if (Array.isArray(value)) return value.some(visit);
@@ -1036,7 +1380,7 @@ function literalOf(
       : NOT_LITERAL;
   }
   if (inner.type === "Identifier" && inner.name === "undefined") {
-    return render.scopes.resolve(inner).kind === "parameter" ? NOT_LITERAL : undefined;
+    return render.scopes.resolve(inner).kind === "global" ? undefined : NOT_LITERAL;
   }
   return NOT_LITERAL;
 }
@@ -1071,8 +1415,9 @@ function presentWithout(
   source: ReferencePath,
   removed: readonly Nullish[],
   render: RenderContext,
+  declared?: Kinds,
 ): boolean {
-  const kinds = declaredKinds(source, render);
+  const kinds = declared ?? declaredKinds(source, render);
   if (!kinds) return false;
   const left = without(kinds, ...removed);
   return !has(left, "null") && !has(left, "undefined") && !has(left, "unknown");
@@ -1207,12 +1552,18 @@ function mayBeFalsy(kinds: Kinds): boolean {
   });
 }
 
-/** A reference's kinds as its props or its list declare them, or `undefined` when unknown. */
+/**
+ * A reference's kinds as its props, its list or its ref declare them, or `undefined` when
+ * unknown.
+ */
 function declaredKinds(path: ReferencePath, render: RenderContext): Kinds | undefined {
   let names = path.names;
   let kinds: Kinds | undefined;
   if (path.root === render.propsObject?.declaration) {
     kinds = names[0] === undefined ? undefined : render.props.get(names[0])?.kinds;
+    names = names.slice(1);
+  } else if (isRefRoot(path.root, render)) {
+    kinds = names[0] === "value" ? render.setup.bindings.get(path.root)?.kinds : undefined;
     names = names.slice(1);
   } else {
     kinds =

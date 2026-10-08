@@ -1,0 +1,14 @@
+- group "Rating":
+  - list:
+    - listitem:
+      - button "1 star"
+    - listitem:
+      - button "2 stars"
+    - listitem:
+      - button "3 stars"
+    - listitem:
+      - button "4 stars"
+    - listitem:
+      - button "5 stars"
+  - status: 0 of 5
+  - button "Clear"

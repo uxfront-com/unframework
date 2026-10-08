@@ -1,0 +1,19 @@
+- region "Invite":
+  - heading "Invite as a guest" [level=2]
+  - list "Members":
+    - listitem:
+      - button "Grace"
+  - group "Pages": Page 1 of 1
+  - status: Nobody selected
+  - button "Invite"
+  - button "Remove"
+  - form "Email invite":
+    - text: Email
+    - textbox "Email"
+    - button "Send"
+  - button "Tag as team"
+  - button "Use a link"
+  - textbox "Password"
+  - button "Start the clock"
+  - button "Stop the clock"
+  - paragraph: "Seconds: 0"

@@ -1,0 +1,72 @@
+---
+export interface Member {
+  id: number;
+  name: string;
+}
+
+export interface Inviter {
+  name: string;
+}
+
+export interface TeamInviteProps {
+  inviter?: Inviter;
+  members: Member[];
+}
+
+type Props = TeamInviteProps;
+
+const { inviter, members } = Astro.props;
+
+const greeting = inviter ? `Invite as ${inviter.name}` : "Invite as a guest";
+const selected = null as Member | null;
+const page = 1 as number;
+const pageCount = Math.ceil(members.length / 2);
+const visible = members.slice((page - 1) * 2, page * 2);
+const byPassword = true as boolean;
+const seconds = 0 as number;
+---
+
+<section class="team-invite" aria-label="Invite">
+  <h2>{greeting}</h2>
+  <ul aria-label="Members">
+    {visible.map((member) => (
+      <li>
+        <button
+          type="button"
+          aria-pressed={selected !== null && selected.id === member.id}
+        >{member.name}</button>
+      </li>
+    ))}
+  </ul>
+  <div class="pager" role="group" aria-label="Pages">
+    {page > 1 ? (
+      <button type="button">Previous</button>
+    ) : null}
+    <span>Page {page} of {pageCount}</span>
+    {page < pageCount ? (
+      <button type="button">Next</button>
+    ) : null}
+  </div>
+  <p role="status">{selected ? `Selected: ${selected.name}` : "Nobody selected"}</p>
+  <button type="button">Invite</button>
+  <button type="button">Remove</button>
+  <form aria-label="Email invite">
+    <label>Email<input type="email" name="email" /></label>
+    <button type="submit">Send</button>
+  </form>
+  <button type="button">Tag as team</button>
+  <button type="button">{byPassword ? "Use a link" : "Use a password"}</button>
+  <div class="field">
+    {byPassword ? (
+      <input type="password" aria-label="Password" />
+    ) : (
+      <>
+        <input type="text" aria-label="Sign-in email" />
+        <small>We send you a link.</small>
+      </>
+    )}
+  </div>
+  <button type="button">Start the clock</button>
+  <button type="button">Stop the clock</button>
+  <p>Seconds: {seconds}</p>
+</section>

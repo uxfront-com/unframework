@@ -1,0 +1,947 @@
+{
+  "irVersion": 1,
+  "file": "events/emit-payloads/FileRow.uf.tsx",
+  "components": [
+    {
+      "name": "FileRow",
+      "span": {
+        "start": 174,
+        "end": 1251
+      },
+      "props": [
+        {
+          "name": "path",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 147,
+              "end": 153
+            }
+          },
+          "binding": "path@208",
+          "span": {
+            "start": 141,
+            "end": 154
+          }
+        },
+        {
+          "name": "size",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 163,
+              "end": 169
+            }
+          },
+          "binding": "size@214",
+          "span": {
+            "start": 157,
+            "end": 170
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "FileRowProps",
+          "span": {
+            "start": 222,
+            "end": 234
+          }
+        },
+        "span": {
+          "start": 206,
+          "end": 234
+        }
+      },
+      "types": [
+        "FileInfo",
+        "FileRowProps"
+      ],
+      "emits": {
+        "binding": "emit@246",
+        "type": {
+          "code": "{\n    refresh: [];\n    open: [path: string];\n    move: [from: string, to: string];\n    pick: [file: FileInfo];\n    share: [path: string, note?: string];\n  }",
+          "span": {
+            "start": 265,
+            "end": 421
+          }
+        },
+        "events": [
+          {
+            "name": "refresh",
+            "parameters": [],
+            "span": {
+              "start": 271,
+              "end": 282
+            }
+          },
+          {
+            "name": "open",
+            "parameters": [
+              {
+                "name": "path",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 301,
+                    "end": 307
+                  }
+                },
+                "span": {
+                  "start": 295,
+                  "end": 307
+                }
+              }
+            ],
+            "span": {
+              "start": 288,
+              "end": 308
+            }
+          },
+          {
+            "name": "move",
+            "parameters": [
+              {
+                "name": "from",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 327,
+                    "end": 333
+                  }
+                },
+                "span": {
+                  "start": 321,
+                  "end": 333
+                }
+              },
+              {
+                "name": "to",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 339,
+                    "end": 345
+                  }
+                },
+                "span": {
+                  "start": 335,
+                  "end": 345
+                }
+              }
+            ],
+            "span": {
+              "start": 314,
+              "end": 346
+            }
+          },
+          {
+            "name": "pick",
+            "parameters": [
+              {
+                "name": "file",
+                "type": {
+                  "code": "FileInfo",
+                  "span": {
+                    "start": 365,
+                    "end": 373
+                  }
+                },
+                "span": {
+                  "start": 359,
+                  "end": 373
+                }
+              }
+            ],
+            "span": {
+              "start": 352,
+              "end": 374
+            }
+          },
+          {
+            "name": "share",
+            "parameters": [
+              {
+                "name": "path",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 394,
+                    "end": 400
+                  }
+                },
+                "span": {
+                  "start": 388,
+                  "end": 400
+                }
+              },
+              {
+                "name": "note",
+                "optional": true,
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 409,
+                    "end": 415
+                  }
+                },
+                "span": {
+                  "start": 402,
+                  "end": 415
+                }
+              }
+            ],
+            "span": {
+              "start": 380,
+              "end": 416
+            }
+          }
+        ],
+        "span": {
+          "start": 240,
+          "end": 425
+        }
+      },
+      "bindings": [
+        {
+          "id": "path@208",
+          "name": "path",
+          "kind": "prop",
+          "span": {
+            "start": 208,
+            "end": 212
+          }
+        },
+        {
+          "id": "size@214",
+          "name": "size",
+          "kind": "prop",
+          "span": {
+            "start": 214,
+            "end": 218
+          }
+        },
+        {
+          "id": "emit@246",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 246,
+            "end": 250
+          }
+        },
+        {
+          "id": "archive@438",
+          "name": "archive",
+          "kind": "localFn",
+          "span": {
+            "start": 438,
+            "end": 445
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Function",
+          "binding": "archive@438",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    emit(\"move\", path, `archive/${path}`);\n    emit(\"refresh\");\n  }",
+              "span": {
+                "start": 448,
+                "end": 517
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@246",
+                  "event": "move",
+                  "span": {
+                    "start": 454,
+                    "end": 491
+                  },
+                  "arguments": [
+                    {
+                      "start": 467,
+                      "end": 471
+                    },
+                    {
+                      "start": 473,
+                      "end": 490
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "path@208",
+                  "span": {
+                    "start": 467,
+                    "end": 471
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "path@208",
+                  "span": {
+                    "start": 484,
+                    "end": 488
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@246",
+                  "event": "refresh",
+                  "span": {
+                    "start": 497,
+                    "end": 512
+                  },
+                  "arguments": []
+                }
+              ]
+            },
+            "span": {
+              "start": 445,
+              "end": 517
+            }
+          },
+          "span": {
+            "start": 429,
+            "end": 517
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "file-row",
+            "span": {
+              "start": 539,
+              "end": 555
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "group",
+            "span": {
+              "start": 556,
+              "end": 568
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "path",
+              "span": {
+                "start": 581,
+                "end": 585
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "path@208",
+                  "span": {
+                    "start": 581,
+                    "end": 585
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 569,
+              "end": 586
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "span",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "path",
+                  "span": {
+                    "start": 610,
+                    "end": 614
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "path@208",
+                      "span": {
+                        "start": 610,
+                        "end": 614
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 609,
+                  "end": 615
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " (",
+                "span": {
+                  "start": 615,
+                  "end": 617
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "size",
+                  "span": {
+                    "start": 618,
+                    "end": 622
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "size@214",
+                      "span": {
+                        "start": 618,
+                        "end": 622
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 617,
+                  "end": 623
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " bytes)",
+                "span": {
+                  "start": 623,
+                  "end": 637
+                }
+              }
+            ],
+            "span": {
+              "start": 594,
+              "end": 644
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 659,
+                  "end": 672
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "emit(\"refresh\")",
+                      "span": {
+                        "start": 688,
+                        "end": 703
+                      },
+                      "refs": [
+                        {
+                          "kind": "Emit",
+                          "binding": "emit@246",
+                          "event": "refresh",
+                          "span": {
+                            "start": 688,
+                            "end": 703
+                          },
+                          "arguments": []
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 682,
+                      "end": 703
+                    }
+                  },
+                  "span": {
+                    "start": 682,
+                    "end": 703
+                  }
+                },
+                "span": {
+                  "start": 673,
+                  "end": 704
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Refresh",
+                "span": {
+                  "start": 705,
+                  "end": 728
+                }
+              }
+            ],
+            "span": {
+              "start": 651,
+              "end": 737
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 752,
+                  "end": 765
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "emit(\"open\", path)",
+                      "span": {
+                        "start": 781,
+                        "end": 799
+                      },
+                      "refs": [
+                        {
+                          "kind": "Emit",
+                          "binding": "emit@246",
+                          "event": "open",
+                          "span": {
+                            "start": 781,
+                            "end": 799
+                          },
+                          "arguments": [
+                            {
+                              "start": 794,
+                              "end": 798
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "path@208",
+                          "span": {
+                            "start": 794,
+                            "end": 798
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 775,
+                      "end": 799
+                    }
+                  },
+                  "span": {
+                    "start": 775,
+                    "end": 799
+                  }
+                },
+                "span": {
+                  "start": 766,
+                  "end": 800
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Open",
+                "span": {
+                  "start": 801,
+                  "end": 821
+                }
+              }
+            ],
+            "span": {
+              "start": 744,
+              "end": 830
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 845,
+                  "end": 858
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "archive@438",
+                  "span": {
+                    "start": 868,
+                    "end": 875
+                  }
+                },
+                "span": {
+                  "start": 859,
+                  "end": 876
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Archive",
+                "span": {
+                  "start": 877,
+                  "end": 900
+                }
+              }
+            ],
+            "span": {
+              "start": 837,
+              "end": 909
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 924,
+                  "end": 937
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "emit(\"pick\", { path, size })",
+                      "span": {
+                        "start": 953,
+                        "end": 981
+                      },
+                      "refs": [
+                        {
+                          "kind": "Emit",
+                          "binding": "emit@246",
+                          "event": "pick",
+                          "span": {
+                            "start": 953,
+                            "end": 981
+                          },
+                          "arguments": [
+                            {
+                              "start": 966,
+                              "end": 980
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "path@208",
+                          "span": {
+                            "start": 968,
+                            "end": 972
+                          },
+                          "shorthand": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "size@214",
+                          "span": {
+                            "start": 974,
+                            "end": 978
+                          },
+                          "shorthand": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 947,
+                      "end": 981
+                    }
+                  },
+                  "span": {
+                    "start": 947,
+                    "end": 981
+                  }
+                },
+                "span": {
+                  "start": 938,
+                  "end": 982
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Select",
+                "span": {
+                  "start": 983,
+                  "end": 1005
+                }
+              }
+            ],
+            "span": {
+              "start": 916,
+              "end": 1014
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1029,
+                  "end": 1042
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "emit(\"share\", path)",
+                      "span": {
+                        "start": 1058,
+                        "end": 1077
+                      },
+                      "refs": [
+                        {
+                          "kind": "Emit",
+                          "binding": "emit@246",
+                          "event": "share",
+                          "span": {
+                            "start": 1058,
+                            "end": 1077
+                          },
+                          "arguments": [
+                            {
+                              "start": 1072,
+                              "end": 1076
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "path@208",
+                          "span": {
+                            "start": 1072,
+                            "end": 1076
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1052,
+                      "end": 1077
+                    }
+                  },
+                  "span": {
+                    "start": 1052,
+                    "end": 1077
+                  }
+                },
+                "span": {
+                  "start": 1043,
+                  "end": 1078
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Share",
+                "span": {
+                  "start": 1079,
+                  "end": 1100
+                }
+              }
+            ],
+            "span": {
+              "start": 1021,
+              "end": 1109
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1124,
+                  "end": 1137
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "emit(\"share\", path, \"Please review\")",
+                      "span": {
+                        "start": 1153,
+                        "end": 1189
+                      },
+                      "refs": [
+                        {
+                          "kind": "Emit",
+                          "binding": "emit@246",
+                          "event": "share",
+                          "span": {
+                            "start": 1153,
+                            "end": 1189
+                          },
+                          "arguments": [
+                            {
+                              "start": 1167,
+                              "end": 1171
+                            },
+                            {
+                              "start": 1173,
+                              "end": 1188
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "path@208",
+                          "span": {
+                            "start": 1167,
+                            "end": 1171
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1147,
+                      "end": 1189
+                    }
+                  },
+                  "span": {
+                    "start": 1147,
+                    "end": 1189
+                  }
+                },
+                "span": {
+                  "start": 1138,
+                  "end": 1190
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Share with a note",
+                "span": {
+                  "start": 1191,
+                  "end": 1224
+                }
+              }
+            ],
+            "span": {
+              "start": 1116,
+              "end": 1233
+            }
+          }
+        ],
+        "span": {
+          "start": 534,
+          "end": 1244
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "FileRow",
+      "span": {
+        "start": 174,
+        "end": 1251
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "FileInfo",
+      "exported": true,
+      "code": "interface FileInfo {\n  path: string;\n  size: number;\n}",
+      "span": {
+        "start": 51,
+        "end": 105
+      }
+    },
+    {
+      "name": "FileRowProps",
+      "exported": true,
+      "code": "interface FileRowProps {\n  path: string;\n  size: number;\n}",
+      "span": {
+        "start": 114,
+        "end": 172
+      }
+    }
+  ]
+}

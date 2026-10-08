@@ -1,0 +1,23 @@
+- region "Sync desk":
+  - button "Suggest"
+  - button "Use this email"
+  - paragraph: "ada@example.com: valid"
+  - button "Load"
+  - paragraph: "Step: idle, owner nobody, editor nobody"
+  - text: Name
+  - textbox "Name"
+  - button "Save"
+  - paragraph: Not saving
+  - button "Import"
+  - paragraph: "Import: idle, 0 imported"
+  - button "Refresh"
+  - button "Prefetch"
+  - paragraph: "Note: prefetched by Ada"
+  - button "Send"
+  - paragraph: "Send: not sent"
+  - button "Louder"
+  - paragraph: "Level: 4"
+  - group "Server":
+    - button "Reply"
+    - button "Decline"
+    - button "Fail"

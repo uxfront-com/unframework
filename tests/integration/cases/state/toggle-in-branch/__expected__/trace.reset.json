@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Reset' })",
+      "dom": [
+        "<section aria-label=\"Filters\" class=\"filter-panel\">",
+        "  <button aria-expanded=\"false\" type=\"button\">",
+        "    \"Show colours\"",
+        "  </button>",
+        "  <p>",
+        "    \"No colour\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add a note\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Filters\":",
+        "  - button \"Show colours\"",
+        "  - paragraph: No colour",
+        "  - button \"Add a note\""
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+---
+export interface SectionHeadingProps {
+  title: string;
+}
+
+type Props = SectionHeadingProps;
+
+const { title } = Astro.props;
+---
+
+<h2 class="section-heading">{title}</h2>

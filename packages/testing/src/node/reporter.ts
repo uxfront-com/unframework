@@ -1,8 +1,9 @@
-// The parity reporter (DESIGN §4.6): collects every test's `meta.uf`, and each test file's (what
+// The parity reporter (plan §7.4): collects every test's `meta.uf`, and each test file's (what
 // a file records after its last test: setup.ts's late console check), writes this run's partial
 // matrix to `<reportsDir>/parity-matrix.<run>.json`, and fails the run loudly (plan §7.7) when:
 // - a selected project collected no tests: a project that silently runs nothing is never green;
 // - a test was skipped without recording why;
+// - two tests of a case share a name, so the summary could not tell them apart;
 // - a quarantine entry is stale, once the run has every record of its cell.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -111,15 +112,27 @@ export class ParityReporter {
     const problems: string[] = [];
     const counts = new Map<string, number>(projects.map((name) => [name, 0]));
     const records: ProjectRecord[] = [];
+    const named = new Set<string>();
     for (const module of testModules) {
       const fileRecord = module.meta().uf;
       if (fileRecord) records.push({ project: module.project.name, record: fileRecord });
       for (const test of module.children.allTests()) {
         counts.set(test.project.name, (counts.get(test.project.name) ?? 0) + 1);
         // A record carries the parity scenarios the test checked too: a scenario one target
-        // leaves out shows in no cell, so the summary compares each target's with the reference's.
-        const record = test.meta().uf;
-        if (record) records.push({ project: test.project.name, record });
+        // leaves out shows in no cell, so the summary compares each target's with the reference's,
+        // test by test, by a name every target gives the test alike.
+        const meta = test.meta().uf;
+        const record = meta && { ...meta, test: testKey(test.fullName, meta.target) };
+        if (record) {
+          records.push({ project: test.project.name, record });
+          const identity = JSON.stringify([test.project.name, record.case, record.test]);
+          if (named.has(identity)) {
+            problems.push(
+              `${test.project.name}: two tests of ${record.case} are named "${record.test}". Each test of a case has a name of its own: the summary compares each target's tests with the reference's by name.`,
+            );
+          }
+          named.add(identity);
+        }
         if (!filtered && test.result().state === "skipped" && !skipsWithReasons(record)) {
           problems.push(
             `${test.project.name}: "${test.fullName}" was skipped without recording why. A harness test never skips silently (plan §7.7): record each layer it skips, with the reason, before skipping.`,
@@ -220,6 +233,18 @@ function filterOf(vitest: ReportedVitest): string | null {
   if (tagsFilter?.length) reasons.push(`tests tagged ${tagsFilter.join(" ")}`);
   if (vitest.config.watch) reasons.push("watch mode, which reruns only what changed");
   return reasons.length ? reasons.join("; ") : null;
+}
+
+/**
+ * A test's name without the target `describeTargets` puts in its suite's name (`state/counter
+ * [vue] > increments` → `state/counter > increments`): the same on every target.
+ */
+export function testKey(fullName: string, target: string): string {
+  const suffix = ` [${target}]`;
+  return fullName
+    .split(" > ")
+    .map((part) => (part.endsWith(suffix) ? part.slice(0, -suffix.length) : part))
+    .join(" > ");
 }
 
 /** Whether a skipped test recorded every layer it skipped, each with a reason. */

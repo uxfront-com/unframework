@@ -1,0 +1,8 @@
+{
+  "description": "The WAI-ARIA keyboard handlers: a combobox whose switch on the key prevents each key it handles, a note whose if block prevents Enter beside other statements, options whose mousedown listener only prevents, and a form whose submit listener only prevents.",
+  "ssr": {
+    "initial": {
+      "props": { "cities": ["Basel", "Bern", "Berlin", "Bremen", "Geneva", "Zurich"] }
+    }
+  }
+}

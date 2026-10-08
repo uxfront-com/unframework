@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Search' })",
+      "dom": [
+        "<div class=\"search-toggle\" role=\"search\">",
+        "  <button type=\"button\">",
+        "    \"Search\"",
+        "  </button>",
+        "  <input aria-label=\"Search the docs\" name=\"query\" uf:focused=\"\" uf:value=\"\">",
+        "</div>"
+      ],
+      "aria": [
+        "- search:",
+        "  - button \"Search\"",
+        "  - textbox \"Search the docs\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "keyboard \"refs\"",
+      "dom": [
+        "<div class=\"search-toggle\" role=\"search\">",
+        "  <button type=\"button\">",
+        "    \"Search\"",
+        "  </button>",
+        "  <input aria-label=\"Search the docs\" name=\"query\" uf:focused=\"\" uf:value=\"refs\">",
+        "</div>"
+      ],
+      "aria": [
+        "- search:",
+        "  - button \"Search\"",
+        "  - textbox \"Search the docs\": refs"
+      ],
+      "events": {}
+    },
+    {
+      "action": "keyboard \"{Escape}\"",
+      "dom": [
+        "<div class=\"search-toggle\" role=\"search\">",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Search\"",
+        "  </button>",
+        "  <input aria-label=\"Search the docs\" name=\"query\" uf:value=\"refs\">",
+        "</div>"
+      ],
+      "aria": [
+        "- search:",
+        "  - button \"Search\"",
+        "  - textbox \"Search the docs\": refs"
+      ],
+      "events": {}
+    }
+  ]
+}

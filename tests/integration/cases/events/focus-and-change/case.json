@@ -1,0 +1,6 @@
+{
+  "description": "Focus and change: a field's focus and blur inside a container listening to focusin and focusout, a focusable container's own focus and blur counted by expression-bodied writes, a checkbox's click, input and change, a prevented click, and a text field with a plain and a once change listener.",
+  "ssr": {
+    "initial": {}
+  }
+}

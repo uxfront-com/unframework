@@ -1,0 +1,1039 @@
+{
+  "irVersion": 1,
+  "file": "semantics/read-after-write/Tally.uf.tsx",
+  "components": [
+    {
+      "name": "Tally",
+      "span": {
+        "start": 49,
+        "end": 1586
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@91",
+        "type": {
+          "code": "{\n    total: [value: number];\n    steps: [values: number[]];\n    logged: [entries: string[]];\n  }",
+          "span": {
+            "start": 110,
+            "end": 207
+          }
+        },
+        "events": [
+          {
+            "name": "total",
+            "parameters": [
+              {
+                "name": "value",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 131,
+                    "end": 137
+                  }
+                },
+                "span": {
+                  "start": 124,
+                  "end": 137
+                }
+              }
+            ],
+            "span": {
+              "start": 116,
+              "end": 138
+            }
+          },
+          {
+            "name": "steps",
+            "parameters": [
+              {
+                "name": "values",
+                "type": {
+                  "code": "number[]",
+                  "span": {
+                    "start": 160,
+                    "end": 168
+                  }
+                },
+                "span": {
+                  "start": 152,
+                  "end": 168
+                }
+              }
+            ],
+            "span": {
+              "start": 144,
+              "end": 169
+            }
+          },
+          {
+            "name": "logged",
+            "parameters": [
+              {
+                "name": "entries",
+                "type": {
+                  "code": "string[]",
+                  "span": {
+                    "start": 193,
+                    "end": 201
+                  }
+                },
+                "span": {
+                  "start": 184,
+                  "end": 201
+                }
+              }
+            ],
+            "span": {
+              "start": 175,
+              "end": 202
+            }
+          }
+        ],
+        "span": {
+          "start": 85,
+          "end": 211
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@91",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 91,
+            "end": 95
+          }
+        },
+        {
+          "id": "count@221",
+          "name": "count",
+          "kind": "state",
+          "span": {
+            "start": 221,
+            "end": 226
+          }
+        },
+        {
+          "id": "trail@245",
+          "name": "trail",
+          "kind": "state",
+          "span": {
+            "start": 245,
+            "end": 250
+          }
+        },
+        {
+          "id": "addTwice@284",
+          "name": "addTwice",
+          "kind": "localFn",
+          "span": {
+            "start": 284,
+            "end": 292
+          }
+        },
+        {
+          "id": "addFive@383",
+          "name": "addFive",
+          "kind": "localFn",
+          "span": {
+            "start": 383,
+            "end": 390
+          }
+        },
+        {
+          "id": "countUp@465",
+          "name": "countUp",
+          "kind": "localFn",
+          "span": {
+            "start": 465,
+            "end": 472
+          }
+        },
+        {
+          "id": "addTen@652",
+          "name": "addTen",
+          "kind": "localFn",
+          "span": {
+            "start": 652,
+            "end": 658
+          }
+        },
+        {
+          "id": "addTenAndReport@702",
+          "name": "addTenAndReport",
+          "kind": "localFn",
+          "span": {
+            "start": 702,
+            "end": 717
+          }
+        },
+        {
+          "id": "logCapture@784",
+          "name": "logCapture",
+          "kind": "localFn",
+          "span": {
+            "start": 784,
+            "end": 794
+          }
+        },
+        {
+          "id": "logBubble@862",
+          "name": "logBubble",
+          "kind": "localFn",
+          "span": {
+            "start": 862,
+            "end": 871
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "count@221",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 233,
+              "end": 234
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 215,
+            "end": 236
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "trail@245",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 257,
+              "end": 265
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 267,
+              "end": 269
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 239,
+            "end": 271
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "addTwice@284",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    count.value++;\n    count.value++;\n    emit(\"total\", count.value);\n  }",
+              "span": {
+                "start": 295,
+                "end": 370
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "count@221",
+                  "operator": "++",
+                  "span": {
+                    "start": 301,
+                    "end": 314
+                  },
+                  "target": {
+                    "start": 301,
+                    "end": 312
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "count@221",
+                  "operator": "++",
+                  "span": {
+                    "start": 320,
+                    "end": 333
+                  },
+                  "target": {
+                    "start": 320,
+                    "end": 331
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@91",
+                  "event": "total",
+                  "span": {
+                    "start": 339,
+                    "end": 365
+                  },
+                  "arguments": [
+                    {
+                      "start": 353,
+                      "end": 364
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "count@221",
+                  "span": {
+                    "start": 353,
+                    "end": 364
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 292,
+              "end": 370
+            }
+          },
+          "span": {
+            "start": 275,
+            "end": 370
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "addFive@383",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    count.value += 5;\n    emit(\"total\", count.value);\n  }",
+              "span": {
+                "start": 393,
+                "end": 452
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "count@221",
+                  "operator": "+=",
+                  "span": {
+                    "start": 399,
+                    "end": 415
+                  },
+                  "target": {
+                    "start": 399,
+                    "end": 410
+                  },
+                  "value": {
+                    "start": 414,
+                    "end": 415
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@91",
+                  "event": "total",
+                  "span": {
+                    "start": 421,
+                    "end": 447
+                  },
+                  "arguments": [
+                    {
+                      "start": 435,
+                      "end": 446
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "count@221",
+                  "span": {
+                    "start": 435,
+                    "end": 446
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 390,
+              "end": 452
+            }
+          },
+          "span": {
+            "start": 374,
+            "end": 452
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "countUp@465",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    const seen: number[] = [];\n    for (let step = 0; step < 3; step++) {\n      count.value += 1;\n      seen.push(count.value);\n    }\n    emit(\"steps\", seen);\n  }",
+              "span": {
+                "start": 475,
+                "end": 639
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "count@221",
+                  "operator": "+=",
+                  "span": {
+                    "start": 557,
+                    "end": 573
+                  },
+                  "target": {
+                    "start": 557,
+                    "end": 568
+                  },
+                  "value": {
+                    "start": 572,
+                    "end": 573
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "count@221",
+                  "span": {
+                    "start": 591,
+                    "end": 602
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@91",
+                  "event": "steps",
+                  "span": {
+                    "start": 615,
+                    "end": 634
+                  },
+                  "arguments": [
+                    {
+                      "start": 629,
+                      "end": 633
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 472,
+              "end": 639
+            }
+          },
+          "span": {
+            "start": 456,
+            "end": 639
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "addTen@652",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    count.value += 10;\n  }",
+              "span": {
+                "start": 661,
+                "end": 689
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "count@221",
+                  "operator": "+=",
+                  "span": {
+                    "start": 667,
+                    "end": 684
+                  },
+                  "target": {
+                    "start": 667,
+                    "end": 678
+                  },
+                  "value": {
+                    "start": 682,
+                    "end": 684
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 658,
+              "end": 689
+            }
+          },
+          "span": {
+            "start": 643,
+            "end": 689
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "addTenAndReport@702",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    addTen();\n    emit(\"total\", count.value);\n  }",
+              "span": {
+                "start": 720,
+                "end": 771
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "addTen@652",
+                  "span": {
+                    "start": 726,
+                    "end": 732
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@91",
+                  "event": "total",
+                  "span": {
+                    "start": 740,
+                    "end": 766
+                  },
+                  "arguments": [
+                    {
+                      "start": 754,
+                      "end": 765
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "count@221",
+                  "span": {
+                    "start": 754,
+                    "end": 765
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 717,
+              "end": 771
+            }
+          },
+          "span": {
+            "start": 693,
+            "end": 771
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "logCapture@784",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    trail.value = [...trail.value, \"capture\"];\n  }",
+              "span": {
+                "start": 797,
+                "end": 849
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "trail@245",
+                  "operator": "=",
+                  "span": {
+                    "start": 803,
+                    "end": 844
+                  },
+                  "target": {
+                    "start": 803,
+                    "end": 814
+                  },
+                  "value": {
+                    "start": 817,
+                    "end": 844
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "trail@245",
+                  "span": {
+                    "start": 821,
+                    "end": 832
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 794,
+              "end": 849
+            }
+          },
+          "span": {
+            "start": 775,
+            "end": 849
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "logBubble@862",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    trail.value = [...trail.value, \"bubble\"];\n    emit(\"logged\", trail.value);\n  }",
+              "span": {
+                "start": 874,
+                "end": 958
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "trail@245",
+                  "operator": "=",
+                  "span": {
+                    "start": 880,
+                    "end": 920
+                  },
+                  "target": {
+                    "start": 880,
+                    "end": 891
+                  },
+                  "value": {
+                    "start": 894,
+                    "end": 920
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "trail@245",
+                  "span": {
+                    "start": 898,
+                    "end": 909
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@91",
+                  "event": "logged",
+                  "span": {
+                    "start": 926,
+                    "end": 953
+                  },
+                  "arguments": [
+                    {
+                      "start": 941,
+                      "end": 952
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "trail@245",
+                  "span": {
+                    "start": 941,
+                    "end": 952
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 871,
+              "end": 958
+            }
+          },
+          "span": {
+            "start": 853,
+            "end": 958
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "tally",
+            "span": {
+              "start": 984,
+              "end": 997
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Tally",
+            "span": {
+              "start": 998,
+              "end": 1016
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 1027,
+                  "end": 1040
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Count: ",
+                "span": {
+                  "start": 1041,
+                  "end": 1048
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "count.value",
+                  "span": {
+                    "start": 1049,
+                    "end": 1060
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "count@221",
+                      "span": {
+                        "start": 1049,
+                        "end": 1060
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1048,
+                  "end": 1061
+                }
+              }
+            ],
+            "span": {
+              "start": 1024,
+              "end": 1065
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1080,
+                  "end": 1093
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "addTwice@284",
+                  "span": {
+                    "start": 1103,
+                    "end": 1111
+                  }
+                },
+                "span": {
+                  "start": 1094,
+                  "end": 1112
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add two",
+                "span": {
+                  "start": 1113,
+                  "end": 1136
+                }
+              }
+            ],
+            "span": {
+              "start": 1072,
+              "end": 1145
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1160,
+                  "end": 1173
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "addFive@383",
+                  "span": {
+                    "start": 1183,
+                    "end": 1190
+                  }
+                },
+                "span": {
+                  "start": 1174,
+                  "end": 1191
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add five",
+                "span": {
+                  "start": 1192,
+                  "end": 1216
+                }
+              }
+            ],
+            "span": {
+              "start": 1152,
+              "end": 1225
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1240,
+                  "end": 1253
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "countUp@465",
+                  "span": {
+                    "start": 1263,
+                    "end": 1270
+                  }
+                },
+                "span": {
+                  "start": 1254,
+                  "end": 1271
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Count up three",
+                "span": {
+                  "start": 1272,
+                  "end": 1302
+                }
+              }
+            ],
+            "span": {
+              "start": 1232,
+              "end": 1311
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1326,
+                  "end": 1339
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "addTenAndReport@702",
+                  "span": {
+                    "start": 1349,
+                    "end": 1364
+                  }
+                },
+                "span": {
+                  "start": 1340,
+                  "end": 1365
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add ten",
+                "span": {
+                  "start": 1366,
+                  "end": 1389
+                }
+              }
+            ],
+            "span": {
+              "start": 1318,
+              "end": 1398
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1413,
+                  "end": 1426
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "capture": true,
+                "handler": {
+                  "kind": "Function",
+                  "binding": "logCapture@784",
+                  "span": {
+                    "start": 1443,
+                    "end": 1453
+                  }
+                },
+                "span": {
+                  "start": 1427,
+                  "end": 1454
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "logBubble@862",
+                  "span": {
+                    "start": 1464,
+                    "end": 1473
+                  }
+                },
+                "span": {
+                  "start": 1455,
+                  "end": 1474
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Log the phases",
+                "span": {
+                  "start": 1475,
+                  "end": 1505
+                }
+              }
+            ],
+            "span": {
+              "start": 1405,
+              "end": 1514
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Phases: ",
+                "span": {
+                  "start": 1524,
+                  "end": 1532
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "trail.value.join(\" then \")",
+                  "span": {
+                    "start": 1533,
+                    "end": 1559
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "trail@245",
+                      "span": {
+                        "start": 1533,
+                        "end": 1544
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1532,
+                  "end": 1560
+                }
+              }
+            ],
+            "span": {
+              "start": 1521,
+              "end": 1564
+            }
+          }
+        ],
+        "span": {
+          "start": 975,
+          "end": 1579
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Tally",
+      "span": {
+        "start": 49,
+        "end": 1586
+      }
+    }
+  ],
+  "types": []
+}

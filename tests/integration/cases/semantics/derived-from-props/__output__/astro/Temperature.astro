@@ -1,0 +1,18 @@
+---
+export interface TemperatureProps {
+  celsius: number;
+}
+
+type Props = TemperatureProps;
+
+const { celsius } = Astro.props;
+
+const fahrenheit = Math.round((celsius * 9) / 5 + 32);
+const level = celsius >= 30 ? "hot" : celsius <= 5 ? "cold" : "mild";
+---
+
+<figure class="temperature" data-level={level}>
+  <p>{celsius} °C</p>
+  <p>{fahrenheit} °F</p>
+  <figcaption>Feels {level}</figcaption>
+</figure>

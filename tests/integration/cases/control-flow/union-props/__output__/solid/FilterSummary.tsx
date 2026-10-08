@@ -17,11 +17,11 @@ export default function FilterSummary(props: FilterSummaryProps) {
         {typeof props.limit === "number" ? props.limit.toFixed(0) : props.limit.toLowerCase()}
       </p>
       <Switch>
-        <Match keyed when={props.result.ok ? { result: props.result } : undefined}>
-          {({ result }) => <p>Found {result.match}</p>}
+        <Match when={props.result.ok ? { result: props.result } : undefined}>
+          {(narrowed) => <p>Found {narrowed().result.match}</p>}
         </Match>
-        <Match keyed when={props.result.ok ? undefined : { result: props.result }}>
-          {({ result }) => <p>No match: {result.error}</p>}
+        <Match when={props.result.ok ? undefined : { result: props.result }}>
+          {(narrowed) => <p>No match: {narrowed().result.error}</p>}
         </Match>
       </Switch>
     </section>

@@ -1,0 +1,6 @@
+{
+  "description": "Event payloads of every shape: none, one value, two values, an object of a local type, and an optional member, in order.",
+  "ssr": {
+    "readme": { "props": { "path": "docs/readme.md", "size": 2048 } }
+  }
+}

@@ -1,5 +1,5 @@
-// M1's tables and rules against the tools whose behaviour they stand for (design §1.2, §1.5,
-// §1.7): the HTML parser's SVG adjustments (parse5), Vue's and Svelte's boolean attributes,
+// M1's tables and rules against the tools whose behaviour they stand for (ADR-0035, ADR-0037,
+// ADR-0040): the HTML parser's SVG adjustments (parse5), Vue's and Svelte's boolean attributes,
 // Angular's security schema and template parser, ARIA's value types (aria-query, through
 // Svelte, which warns with them) and the vendored authoring types.
 import { readFileSync } from "node:fs";
@@ -351,7 +351,7 @@ describe("expressions Angular reads", () => {
   const PROPS =
     "label: string; count: number; on: boolean; items: string[]; user: { name: string }; maybe?: string";
 
-  /** A random expression of the accepted subset (design §1.2), depth-limited. */
+  /** A random expression of the accepted subset (ADR-0035), depth-limited. */
   function expression(next: () => number, depth: number, locals: readonly string[]): string {
     const pick = <T>(items: readonly T[]) => items[Math.floor(next() * items.length)]!;
     const leaf = () =>

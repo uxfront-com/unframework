@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Join #General' })",
+      "dom": [
+        "<section aria-label=\"Channels\" class=\"channel-picker\">",
+        "  <p role=\"status\">",
+        "    \"Channel: #General\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Join #random\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Join #General\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Channels\":",
+        "  - status: \"Channel: #General\"",
+        "  - 'button \"Join #random\"'",
+        "  - 'button \"Join #General\"'"
+      ],
+      "events": {
+        "join": [
+          [
+            "general"
+          ]
+        ]
+      }
+    }
+  ]
+}

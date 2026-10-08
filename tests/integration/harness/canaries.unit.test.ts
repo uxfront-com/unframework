@@ -4,8 +4,9 @@
 // the targets emit the uncorrupted module instead), and change only what its layer is meant to
 // catch. The runner (`pnpm test:canaries`) then proves each layer catches it on every case of
 // the corpus, and the verdict tests (canary-verdict.unit.test.ts) how it judges a run.
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 
 import { compile, TARGET_NAMES } from "@unframework/compiler";
 import type { CompileResult, TargetName } from "@unframework/compiler";
@@ -13,19 +14,22 @@ import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
 import type { ProjectKind } from "@unframework/testing/node";
 import { describe, expect, it } from "vitest";
 
-import { selectCanaries } from "../scripts/canaries.ts";
+import { parseArguments, selectCanaries, shardCases, shardFilters } from "../scripts/canaries.ts";
 import {
   addRootAttribute,
   CANARIES,
+  canaryCase,
   canaryFixes,
   canaryFormats,
   canaryPlugins,
   canaryProjects,
   canarySource,
+  corrupts,
   findCanary,
   guardsGoldens,
   injectScript,
   mismatchClosingTag,
+  withQwikImports,
 } from "./canaries.ts";
 import type { Canary, CanaryCase } from "./canaries.ts";
 import { listCases } from "./cases.ts";
@@ -91,6 +95,7 @@ const VERIFIED_BY: Record<string, readonly ProjectKind[]> = {
   L6: ["ssr"],
   L7: ["browser"],
   L8: ["browser"],
+  L9: ["browser"],
   L10: ["browser"],
   L11: ["browser"],
   L13: ["ssr", "browser"],
@@ -102,6 +107,10 @@ const fixture = (hasFixes: boolean): CanaryCase => ({
   hasOutput: () => true,
   spec: undefined,
   hasFixes: () => hasFixes,
+  runs: () => true,
+  interacts: () => false,
+  rerenders: () => false,
+  listens: false,
 });
 
 /** The elements of a render tree, in document order, through branches and list bodies. */
@@ -150,11 +159,11 @@ async function markedElements(input: string): Promise<string[]> {
     .map(({ tag }) => tag);
 }
 
-/** The targets a canary corrupts: every one, or the followers. */
+/** The targets a canary corrupts: every one, the followers, or the ones it names. */
 function corruptedTargets(canary: Canary): TargetName[] {
-  return canary.followersOnly
-    ? TARGET_NAMES.filter((name) => name !== REFERENCE)
-    : [...TARGET_NAMES];
+  return (
+    canary.followersOnly ? TARGET_NAMES.filter((name) => name !== REFERENCE) : [...TARGET_NAMES]
+  ).filter((name) => corrupts(canary, name));
 }
 
 describe("canaries", () => {
@@ -163,8 +172,12 @@ describe("canaries", () => {
     expect(new Set(CANARIES.map((canary) => canary.id)).size).toBe(CANARIES.length);
   });
 
-  it.each(CANARIES)("$id names the projects of its layer, each with a sub-check", (canary) => {
-    expect(Object.keys(canary.evidence)).toEqual(VERIFIED_BY[canary.layer]);
+  it.each(CANARIES)("$id names projects of its layer, each with a sub-check", (canary) => {
+    // A canary of one framework's own code (Qwik's handlers) proves the projects where that code
+    // runs; the layer's other canaries prove the rest (below).
+    for (const kind of Object.keys(canary.evidence)) {
+      expect(VERIFIED_BY[canary.layer]).toContain(kind);
+    }
     for (const checks of [
       ...Object.values(canary.evidence),
       ...Object.values(canary.loadEvidence ?? {}),
@@ -174,6 +187,15 @@ describe("canaries", () => {
     expect(canaryProjects(canary)).toEqual([
       ...new Set([...Object.keys(canary.evidence), ...Object.keys(canary.loadEvidence ?? {})]),
     ]);
+  });
+
+  it("prove every project of each live layer", () => {
+    for (const layer of LIVE_LAYERS) {
+      const proven = CANARIES.filter((canary) => canary.layer === layer).flatMap((canary) =>
+        Object.keys(canary.evidence),
+      );
+      expect(new Set(proven), layer).toEqual(new Set(VERIFIED_BY[layer]));
+    }
   });
 
   it("prove the golden guard where it fails a spec's import, in the browser projects", () => {
@@ -207,28 +229,95 @@ describe("canaries", () => {
     expect(guardsGoldens("L6-golden-guard")).toBe(true);
   });
 
-  it("run in CI as a matrix: every canary once, and at most one browser canary per job", () => {
+  it("run in CI as a matrix: every canary once or in every shard, at most one browser canary per job, and shards for each whose browser specs run", () => {
     const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", "ci.yml"), "utf8");
     const job = workflow
       .slice(workflow.indexOf("\njobs:\n"))
       .split(/^ {2}(?=[a-z0-9-]+:\n)/m)
       .find((block) => block.startsWith("canaries:\n"));
     if (!job) throw new Error("ci.yml has no canaries job.");
-    expect(job).toContain("run: pnpm test:canaries ${{ matrix.canaries }}");
+    expect(job).toContain(
+      "run: pnpm test:canaries ${{ matrix.canaries }}${{ matrix.shard && format(' --shard {0}', matrix.shard) || '' }}\n",
+    );
     expect(job).toMatch(/^ {4}timeout-minutes: 10$/m);
-    const entries = /^ {8}canaries: \[([^\]]*)\]/m.exec(job)?.[1]?.split(/,\s*/) ?? [];
-    const jobs = entries.map((entry) => selectCanaries([entry]));
-    expect(
-      jobs
-        .flat()
-        .map(({ id }) => id)
-        .toSorted(),
-    ).toEqual(CANARIES.map(({ id }) => id).toSorted());
-    // One browser canary runs every spec on seven targets: two would not fit the ten minutes.
-    for (const [index, selected] of jobs.entries()) {
-      const browser = selected.filter((canary) => canaryProjects(canary).includes("browser"));
-      expect(browser.length, entries[index]).toBeLessThanOrEqual(1);
+    // An `include` entry a job: its canaries, and its shard if it has one.
+    const include = /^ {8}include:\n((?: {10}.*\n)+)/m.exec(job)?.[1] ?? "";
+    const entries = [
+      ...include.matchAll(/^ {10}- canaries: (\S+)\n(?: {12}shard: (\S+)\n)?/gm),
+    ].map(([, names, shard]) => ({
+      name: `${names!}${shard ? ` --shard ${shard}` : ""}`,
+      canaries: selectCanaries([names!]),
+      shard: parseArguments(shard ? ["--shard", shard] : []).shard,
+    }));
+    // Every entry read: one in another shape would drop out of the checks below.
+    expect(entries.length).toBe(include.match(/^ {10}- /gm)?.length);
+    // Each canary runs once on every case, or in shards 1 to n of one count.
+    const runs = new Map<string, string[]>();
+    for (const { canaries, shard } of entries) {
+      const part = shard ? `${shard.index}/${shard.count}` : "all";
+      for (const { id } of canaries) runs.set(id, [...(runs.get(id) ?? []), part]);
     }
+    expect([...runs.keys()].toSorted()).toEqual(CANARIES.map(({ id }) => id).toSorted());
+    for (const [id, parts] of runs) {
+      const { length } = parts;
+      const whole = length === 1 ? ["all"] : parts.map((_, index) => `${index + 1}/${length}`);
+      expect(parts.toSorted(), id).toEqual(whole.toSorted());
+    }
+    // A canary whose browser specs run waits out a timeout at most of their failures, on every
+    // target: one job of the whole corpus outgrew the ten minutes (ADR-0052). The golden
+    // guard's specs fail to load, so they run no test and wait for nothing.
+    for (const { name, canaries, shard } of entries) {
+      const browser = canaries.filter((canary) => canaryProjects(canary).includes("browser"));
+      expect(browser.length, name).toBeLessThanOrEqual(1);
+      if (browser.some(({ evidence }) => "browser" in evidence)) {
+        expect(shard?.count ?? 1, name).toBeGreaterThanOrEqual(2);
+      }
+    }
+  });
+
+  it("take a shard, and run each case in exactly one of its parts", () => {
+    expect(parseArguments(["--", "L8", "--shard", "1/2"])).toEqual({
+      names: ["L8"],
+      shard: { index: 1, count: 2 },
+    });
+    expect(parseArguments(["--shard=3/3", "L7", "L11"])).toEqual({
+      names: ["L7", "L11"],
+      shard: { index: 3, count: 3 },
+    });
+    expect(parseArguments(["L5"])).toEqual({ names: ["L5"], shard: undefined });
+    for (const value of ["0/2", "3/2", "1", "a/b", ""]) {
+      expect(() => parseArguments(["L8", "--shard", value]), value).toThrow(/--shard takes/);
+    }
+    expect(() => parseArguments(["L8", "--shard"])).toThrow(/--shard takes/);
+    expect(() => parseArguments(["--shard", "1/2", "--shard=2/2"])).toThrow(/given twice/);
+
+    // Every count-th case: an area's cases, and the specs among them, spread over the shards.
+    expect(shardCases(["a/1", "a/2", "a/3", "b/1", "b/2"], { index: 2, count: 2 })).toEqual([
+      "a/2",
+      "b/1",
+    ]);
+    const cases = listCases().map(({ id }) => id);
+    for (const count of [2, 3]) {
+      const shards = Array.from({ length: count }, (_, index) =>
+        shardCases(cases, { index: index + 1, count }),
+      );
+      expect(shards.flat().toSorted()).toEqual(cases.toSorted());
+      const sizes = shards.map((shard) => shard.length);
+      expect(Math.max(...sizes) - Math.min(...sizes)).toBeLessThanOrEqual(1);
+    }
+    expect(shardCases(cases, undefined)).toEqual(cases);
+  });
+
+  it("filter a shard's run to its cases' specs, and run every other project whole", () => {
+    const cases = listCases().slice(0, 4).map(canaryCase);
+    const shard = { index: 2, count: 2 };
+    const specs = shardCases(cases, shard).flatMap((info) => (info.spec ? [info.spec] : []));
+    expect(specs.length).toBeGreaterThan(0);
+    expect(shardFilters(shardCases(cases, shard), shard)).toEqual(["harness/", ...specs]);
+    expect(shardFilters(cases, undefined)).toEqual([]);
+    // No spec path holds the filter the other projects' files match.
+    for (const info of listCases().map(canaryCase))
+      expect(info.spec ?? "").not.toContain("harness/");
   });
 
   it("are selected by id or by layer, and an unknown name or a layer without canaries throws", () => {
@@ -241,7 +330,11 @@ describe("canaries", () => {
     expect(selectCanaries(["L8", "L8-render-nothing"]).map(({ id }) => id)).toEqual([
       "L8-render-nothing",
     ]);
-    expect(() => selectCanaries(["L9"])).toThrow("No canary proves L9: it is not live.");
+    expect(selectCanaries(["L9"]).map(({ id }) => id)).toEqual([
+      "L9-unwired-handler",
+      "L9-rerender-text",
+    ]);
+    expect(() => selectCanaries(["L12"])).toThrow("No canary proves L12: it is not live.");
     expect(() => selectCanaries(["L5-lint"])).toThrow(/Unknown canary "L5-lint"/);
   });
 
@@ -327,7 +420,9 @@ describe("canaries", () => {
     }
   });
 
-  it.each(CANARIES.filter((canary) => canary.layer !== "L1"))(
+  // L9-unwired-handler's corruption needs a listener, which the fixture has none of: it has a
+  // test of its own below.
+  it.each(CANARIES.filter((canary) => canary.layer !== "L1" && canary.id !== "L9-unwired-handler"))(
     "$id changes the output of every target it corrupts, without plugin errors",
     async (canary) => {
       const clean = await compileWith(null);
@@ -336,7 +431,7 @@ describe("canaries", () => {
         expect(corrupted.diagnostics.filter((diagnostic) => diagnostic.code === "UF8001")).toEqual(
           [],
         );
-        if (canary.followersOnly && target === REFERENCE) {
+        if (!corruptedTargets(canary).includes(target)) {
           expect(corrupted.outputs[target], target).toEqual(clean.outputs[target]);
         } else {
           expect(corrupted.outputs[target], target).not.toEqual(clean.outputs[target]);
@@ -381,6 +476,54 @@ describe("canaries", () => {
     for (const target of TARGET_NAMES) {
       expect(debug.outputs[target]![0]!.contents.match(/\bdebugger;/g), target).toHaveLength(1);
     }
+  });
+
+  it("L13-qwik-handler-throws gives Qwik's component a throwing document listener, and changes no other target", async () => {
+    const clean = await compileWith(null);
+    const result = await compileWith("L13-qwik-handler-throws", "qwik");
+    const contents = result.outputs.qwik![0]!.contents;
+    const listener = [
+      "    useOnDocument(",
+      '      ["click", "pointerover", "keydown", "input", "focusin", "wheel"],',
+      "      $(() => {",
+      '        throw new Error("[uf canary] L13 in qwik");',
+      "      }),",
+      "    );",
+      "",
+    ].join("\n");
+    // The import names what the listener calls; the listener opens the component's body.
+    expect(contents).toMatch(
+      /^import \{ component\$, \$, useOnDocument \} from "@qwik\.dev\/core";$/m,
+    );
+    expect(contents).toContain(`tone = "info" }) => {\n${listener}`);
+    // Nothing else changed: the component's own code is as it was.
+    expect(contents.replace(listener, "").replace(", $, useOnDocument", "")).toBe(
+      clean.outputs.qwik![0]!.contents,
+    );
+    expect(canaryPlugins("L13-qwik-handler-throws", "react")).toEqual([]);
+    for (const target of TARGET_NAMES.filter((name) => name !== "qwik")) {
+      const other = await compileWith("L13-qwik-handler-throws", target);
+      expect(other.outputs[target], target).toEqual(clean.outputs[target]);
+    }
+  });
+
+  it("adds a name to Qwik's import only where it lacks it, in a multi-line import too", () => {
+    const file = (contents: string) => ({ path: "A.tsx", contents });
+    expect(
+      withQwikImports(file('import { $, type QRL, component$ } from "@qwik.dev/core";\n'), [
+        "$",
+        "useOnDocument",
+      ]),
+    ).toBe('import { $, type QRL, component$, useOnDocument } from "@qwik.dev/core";\n');
+    expect(
+      withQwikImports(
+        file('import {\n  component$,\n  useSignal,\n} from "@qwik.dev/core";\nconst a = 1;\n'),
+        ["$"],
+      ),
+    ).toBe('import { component$, useSignal, $ } from "@qwik.dev/core";\nconst a = 1;\n');
+    expect(() => withQwikImports(file("export {};\n"), ["$"])).toThrow(
+      /A\.tsx \(qwik\) has no value import from "@qwik\.dev\/core"/,
+    );
   });
 
   it("L5-framework-rule writes its framework's forbidden idiom on the root element", async () => {
@@ -483,6 +626,173 @@ describe("canaries", () => {
     });
     expect(component.bindings.map(({ kind }) => kind)).toEqual(["prop", "prop", "prop", "prop"]);
     expect(component.props.map(({ name }) => name)).toEqual(["title", "tasks", "done", "tone"]);
+    expect(component.setup).toEqual([]);
+  });
+
+  it("L8-render-nothing drops the setup but keeps the events and their binding", () => {
+    // What it does to a component with setup and events, on an IR of the shape the analyser
+    // makes (the plugin reads the kinds only).
+    const module = {
+      irVersion: 1,
+      file: "a/b/C.uf.tsx",
+      exports: [],
+      types: [],
+      components: [
+        {
+          name: "C",
+          span: { start: 0, end: 1 },
+          props: [],
+          types: [],
+          emits: { binding: "emit@1", events: [] },
+          bindings: [
+            { id: "label@0", name: "label", kind: "prop" },
+            { id: "emit@1", name: "emit", kind: "emit" },
+            { id: "count@2", name: "count", kind: "state" },
+            { id: "add@3", name: "add", kind: "localFn" },
+          ],
+          setup: [{ kind: "State", binding: "count@2" }],
+          render: {
+            kind: "Element",
+            tag: "p",
+            attributes: [],
+            children: [],
+            span: { start: 0, end: 1 },
+          },
+        },
+      ],
+    } as unknown as UfModule;
+    const plugin = findCanary("L8-render-nothing").plugin!();
+    const corrupted = (plugin.ir as (module: UfModule) => UfModule)(module).components[0]!;
+    expect(corrupted.setup).toEqual([]);
+    expect(corrupted.emits).toEqual(module.components[0]!.emits);
+    expect(corrupted.bindings.map(({ id }) => id)).toEqual(["label@0", "emit@1"]);
+  });
+
+  it("L9-unwired-handler removes every element listener, in branches and lists too", () => {
+    const listener = (event: string) => ({
+      kind: "Event",
+      event,
+      handler: { kind: "Function", binding: "add@3", span: { start: 0, end: 1 } },
+      span: { start: 0, end: 1 },
+    });
+    const element = (tag: string, attributes: unknown[], children: unknown[] = []) => ({
+      kind: "Element",
+      tag,
+      attributes,
+      children,
+      span: { start: 0, end: 1 },
+    });
+    const title = { kind: "Static", name: "title", value: "t", span: { start: 0, end: 1 } };
+    const render = element(
+      "div",
+      [listener("click"), title],
+      [
+        element("button", [listener("keydown")]),
+        {
+          kind: "If",
+          branches: [
+            { children: [element("input", [listener("input")])], span: { start: 0, end: 1 } },
+          ],
+          span: { start: 0, end: 1 },
+        },
+        {
+          kind: "For",
+          body: element("li", [listener("click")]),
+          span: { start: 0, end: 1 },
+        },
+      ],
+    );
+    const module = {
+      components: [{ name: "C", render }],
+    } as unknown as UfModule;
+    const plugin = findCanary("L9-unwired-handler").plugin!();
+    const corrupted = (plugin.ir as (module: UfModule) => UfModule)(module);
+    expect(JSON.stringify(corrupted)).not.toContain('"Event"');
+    // Everything else stays: the title, every element.
+    expect(JSON.stringify(corrupted)).toContain('"title"');
+    expect(JSON.stringify(corrupted).match(/"Element"/g)).toHaveLength(4);
+    // The module the compiler handed over is left as it was.
+    expect(JSON.stringify(module).match(/"Event"/g)).toHaveLength(4);
+  });
+
+  it("L9's canaries apply to the cases whose tests act or rerender, on the targets they run on", () => {
+    const unwired = findCanary("L9-unwired-handler");
+    const rerender = findCanary("L9-rerender-text");
+    const acting = {
+      ...fixture(false),
+      interacts: (target: string) => target !== "astro",
+      listens: true,
+    };
+    expect(unwired.followersOnly).toBe(true);
+    expect(unwired.appliesTo!(acting, "react")).toBe(true);
+    expect(unwired.appliesTo!(acting, "astro")).toBe(false);
+    expect(unwired.appliesTo!({ ...acting, listens: false }, "react")).toBe(false);
+    expect(unwired.appliesTo!({ ...acting, interacts: () => false }, "react")).toBe(false);
+    expect(rerender.appliesTo!({ ...fixture(false), rerenders: () => true }, "astro")).toBe(true);
+    expect(
+      rerender.appliesTo!(
+        { ...fixture(false), rerenders: (target) => target !== "astro" },
+        "astro",
+      ),
+    ).toBe(false);
+    expect(rerender.appliesTo!(fixture(false), "react")).toBe(false);
+  });
+
+  it("read which tests of a case run on each target, and which of those act or rerender", () => {
+    const dir = mkdtempSync(join(tmpdir(), "uf-canary-case-"));
+    try {
+      const write = (path: string, contents: string) => {
+        mkdirSync(dirname(join(dir, path)), { recursive: true });
+        writeFileSync(join(dir, path), contents);
+      };
+      const input = "export default function Card() {\n  return <p>Card</p>;\n}\n";
+      // A static test, a rerender that requires interactivity, and an action that requires
+      // event-capture too (unsupported nowhere but where interactivity is).
+      write("semantics/card/Card.uf.tsx", input);
+      write(
+        "semantics/card/card.test.ts",
+        `it("renders", async () => {
+  const view = await mount(Card);
+  await view.expectParity("initial");
+});
+it("rerenders", { requires: ["interactivity"] }, async () => {
+  const view = await mount(Card);
+  await view.rerender({});
+  await view.expectParity("rerendered");
+});
+it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
+  const view = await mount(Card);
+  await view.user.click(view.getByRole("button"));
+  await view.expectParity("clicked");
+});
+`,
+      );
+      // Every test requires interactivity (a case.json requires case).
+      write("lifecycle/mounted/Mounted.uf.tsx", input);
+      write(
+        "lifecycle/mounted/mounted.test.ts",
+        `it("renders", { requires: ["interactivity"] }, async () => {
+  const view = await mount(Mounted);
+  await view.expectParity("initial");
+});
+`,
+      );
+      write("lifecycle/mounted/case.json", '{ "requires": "onMounted writes the status." }');
+      const [mounted, card] = listCases(dir).map(canaryCase);
+      expect([card!.runs("astro"), card!.rerenders("astro"), card!.interacts("astro")]).toEqual([
+        true,
+        false,
+        false,
+      ]);
+      expect([card!.runs("react"), card!.rerenders("react"), card!.interacts("react")]).toEqual([
+        true,
+        true,
+        true,
+      ]);
+      expect([mounted!.runs("astro"), mounted!.runs("solid")]).toEqual([false, true]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("rename the last closing tag of each target's template, never a script block's", async () => {
@@ -623,6 +933,20 @@ describe("canaries", () => {
     expect(angular).toBe(
       "export default class A {\n  constructor() {\n    x();\n  }\n\n  readonly label = input.required<string>();\n}\n",
     );
+    // A class with a constructor of its own (M2's effects and hooks) gets it first in its body.
+    const withConstructor = injectScript(
+      {
+        path: "a.ts",
+        contents:
+          "export default class A {\n  readonly label = input.required<string>();\n\n  constructor() {\n    effect(() => this.label());\n  }\n}\n",
+      },
+      "angular",
+      "x();",
+      "render",
+    );
+    expect(withConstructor).toBe(
+      "export default class A {\n  readonly label = input.required<string>();\n\n  constructor() {\n    x();\n    effect(() => this.label());\n  }\n}\n",
+    );
   });
 
   it("fails loudly when an output has no shape to corrupt", () => {
@@ -688,9 +1012,12 @@ describe("every canary on the corpus", () => {
       const problems: string[] = [];
       for (const info of cases) {
         const { input, result } = await clean(info);
+        // Only the cases it applies to on each target: the verdict judges no other.
+        const applies = canaryCase(info);
         const targets = corruptedTargets(canary).filter(
           (target) =>
             result.outputs[target]?.length &&
+            (!canary.appliesTo || canary.appliesTo(applies, target)) &&
             !result.diagnostics.some(
               (diagnostic) =>
                 diagnostic.severity === "error" &&

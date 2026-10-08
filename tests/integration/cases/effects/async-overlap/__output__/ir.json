@@ -1,0 +1,2475 @@
+{
+  "irVersion": 1,
+  "file": "effects/async-overlap/InboxLookup.uf.tsx",
+  "components": [
+    {
+      "name": "InboxLookup",
+      "span": {
+        "start": 79,
+        "end": 4337
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@127",
+        "type": {
+          "code": "{\n    looked: [sender: string];\n    dropped: [sender: string];\n    sorted: [order: string];\n    scaled: [order: string];\n    busy: [count: number, loading: boolean];\n    failed: [message: string, loading: boolean];\n    counted: [count: number];\n  }",
+          "span": {
+            "start": 146,
+            "end": 394
+          }
+        },
+        "events": [
+          {
+            "name": "looked",
+            "parameters": [
+              {
+                "name": "sender",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 169,
+                    "end": 175
+                  }
+                },
+                "span": {
+                  "start": 161,
+                  "end": 175
+                }
+              }
+            ],
+            "span": {
+              "start": 152,
+              "end": 176
+            }
+          },
+          {
+            "name": "dropped",
+            "parameters": [
+              {
+                "name": "sender",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 200,
+                    "end": 206
+                  }
+                },
+                "span": {
+                  "start": 192,
+                  "end": 206
+                }
+              }
+            ],
+            "span": {
+              "start": 182,
+              "end": 207
+            }
+          },
+          {
+            "name": "sorted",
+            "parameters": [
+              {
+                "name": "order",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 229,
+                    "end": 235
+                  }
+                },
+                "span": {
+                  "start": 222,
+                  "end": 235
+                }
+              }
+            ],
+            "span": {
+              "start": 213,
+              "end": 236
+            }
+          },
+          {
+            "name": "scaled",
+            "parameters": [
+              {
+                "name": "order",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 258,
+                    "end": 264
+                  }
+                },
+                "span": {
+                  "start": 251,
+                  "end": 264
+                }
+              }
+            ],
+            "span": {
+              "start": 242,
+              "end": 265
+            }
+          },
+          {
+            "name": "busy",
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 285,
+                    "end": 291
+                  }
+                },
+                "span": {
+                  "start": 278,
+                  "end": 291
+                }
+              },
+              {
+                "name": "loading",
+                "type": {
+                  "code": "boolean",
+                  "span": {
+                    "start": 302,
+                    "end": 309
+                  }
+                },
+                "span": {
+                  "start": 293,
+                  "end": 309
+                }
+              }
+            ],
+            "span": {
+              "start": 271,
+              "end": 310
+            }
+          },
+          {
+            "name": "failed",
+            "parameters": [
+              {
+                "name": "message",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 334,
+                    "end": 340
+                  }
+                },
+                "span": {
+                  "start": 325,
+                  "end": 340
+                }
+              },
+              {
+                "name": "loading",
+                "type": {
+                  "code": "boolean",
+                  "span": {
+                    "start": 351,
+                    "end": 358
+                  }
+                },
+                "span": {
+                  "start": 342,
+                  "end": 358
+                }
+              }
+            ],
+            "span": {
+              "start": 316,
+              "end": 359
+            }
+          },
+          {
+            "name": "counted",
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 382,
+                    "end": 388
+                  }
+                },
+                "span": {
+                  "start": 375,
+                  "end": 388
+                }
+              }
+            ],
+            "span": {
+              "start": 365,
+              "end": 389
+            }
+          }
+        ],
+        "span": {
+          "start": 121,
+          "end": 398
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@127",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 127,
+            "end": 131
+          }
+        },
+        {
+          "id": "sender@408",
+          "name": "sender",
+          "kind": "state",
+          "span": {
+            "start": 408,
+            "end": 414
+          }
+        },
+        {
+          "id": "order@434",
+          "name": "order",
+          "kind": "state",
+          "span": {
+            "start": 434,
+            "end": 439
+          }
+        },
+        {
+          "id": "answers@465",
+          "name": "answers",
+          "kind": "state",
+          "span": {
+            "start": 465,
+            "end": 472
+          }
+        },
+        {
+          "id": "ordering@502",
+          "name": "ordering",
+          "kind": "state",
+          "span": {
+            "start": 502,
+            "end": 510
+          }
+        },
+        {
+          "id": "messages@534",
+          "name": "messages",
+          "kind": "state",
+          "span": {
+            "start": 534,
+            "end": 542
+          }
+        },
+        {
+          "id": "loading@572",
+          "name": "loading",
+          "kind": "state",
+          "span": {
+            "start": 572,
+            "end": 579
+          }
+        },
+        {
+          "id": "failure@602",
+          "name": "failure",
+          "kind": "state",
+          "span": {
+            "start": 602,
+            "end": 609
+          }
+        },
+        {
+          "id": "unread@629",
+          "name": "unread",
+          "kind": "state",
+          "span": {
+            "start": 629,
+            "end": 635
+          }
+        },
+        {
+          "id": "lookupReplies@652",
+          "name": "lookupReplies",
+          "kind": "localVar",
+          "span": {
+            "start": 652,
+            "end": 665
+          }
+        },
+        {
+          "id": "orderReply@706",
+          "name": "orderReply",
+          "kind": "localVar",
+          "span": {
+            "start": 706,
+            "end": 716
+          }
+        },
+        {
+          "id": "respond@762",
+          "name": "respond",
+          "kind": "localVar",
+          "span": {
+            "start": 762,
+            "end": 769
+          }
+        },
+        {
+          "id": "fail@817",
+          "name": "fail",
+          "kind": "localVar",
+          "span": {
+            "start": 817,
+            "end": 821
+          }
+        },
+        {
+          "id": "lookupReply@873",
+          "name": "lookupReply",
+          "kind": "localFn",
+          "span": {
+            "start": 873,
+            "end": 884
+          }
+        },
+        {
+          "id": "answerLookups@1027",
+          "name": "answerLookups",
+          "kind": "localFn",
+          "span": {
+            "start": 1027,
+            "end": 1040
+          }
+        },
+        {
+          "id": "request@1172",
+          "name": "request",
+          "kind": "localFn",
+          "span": {
+            "start": 1172,
+            "end": 1179
+          }
+        },
+        {
+          "id": "load@2300",
+          "name": "load",
+          "kind": "localFn",
+          "span": {
+            "start": 2300,
+            "end": 2304
+          }
+        },
+        {
+          "id": "refresh@2585",
+          "name": "refresh",
+          "kind": "localFn",
+          "span": {
+            "start": 2585,
+            "end": 2592
+          }
+        },
+        {
+          "id": "markTwice@2710",
+          "name": "markTwice",
+          "kind": "localFn",
+          "span": {
+            "start": 2710,
+            "end": 2719
+          }
+        },
+        {
+          "id": "line@3277",
+          "name": "line",
+          "kind": "loopVar",
+          "span": {
+            "start": 3277,
+            "end": 3281
+          }
+        },
+        {
+          "id": "index@3283",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 3283,
+            "end": 3288
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "sender@408",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 421,
+              "end": 423
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 402,
+            "end": 425
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "order@434",
+          "initial": {
+            "code": "\"newest\"",
+            "span": {
+              "start": 446,
+              "end": 454
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 428,
+            "end": 456
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "answers@465",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 479,
+              "end": 487
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 489,
+              "end": 491
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 459,
+            "end": 493
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "ordering@502",
+          "initial": {
+            "code": "\"none\"",
+            "span": {
+              "start": 517,
+              "end": 523
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 496,
+            "end": 525
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "messages@534",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 549,
+              "end": 557
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 559,
+              "end": 561
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 528,
+            "end": 563
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "loading@572",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 586,
+              "end": 591
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 566,
+            "end": 593
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "failure@602",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 616,
+              "end": 618
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 596,
+            "end": 620
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "unread@629",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 642,
+              "end": 643
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 623,
+            "end": 645
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "lookupReplies@652",
+          "type": {
+            "code": "((text: string) => void)[]",
+            "span": {
+              "start": 667,
+              "end": 693
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 696,
+              "end": 698
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 648,
+            "end": 699
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "orderReply@706",
+          "type": {
+            "code": "((text: string) => void) | undefined",
+            "span": {
+              "start": 718,
+              "end": 754
+            }
+          },
+          "span": {
+            "start": 702,
+            "end": 755
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "respond@762",
+          "type": {
+            "code": "((list: string[]) => void) | undefined",
+            "span": {
+              "start": 771,
+              "end": 809
+            }
+          },
+          "span": {
+            "start": 758,
+            "end": 810
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "fail@817",
+          "type": {
+            "code": "((error: Error) => void) | undefined",
+            "span": {
+              "start": 823,
+              "end": 859
+            }
+          },
+          "span": {
+            "start": 813,
+            "end": 860
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "lookupReply@873",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "returnType": {
+              "code": "Promise<string>",
+              "span": {
+                "start": 888,
+                "end": 903
+              }
+            },
+            "body": {
+              "code": "{\n    return new Promise<string>((resolve) => {\n      lookupReplies = [...lookupReplies, resolve];\n    });\n  }",
+              "span": {
+                "start": 904,
+                "end": 1014
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 921,
+                    "end": 928
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "lookupReplies@652",
+                  "operator": "=",
+                  "span": {
+                    "start": 958,
+                    "end": 1001
+                  },
+                  "target": {
+                    "start": 958,
+                    "end": 971
+                  },
+                  "value": {
+                    "start": 974,
+                    "end": 1001
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "lookupReplies@652",
+                  "span": {
+                    "start": 978,
+                    "end": 991
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 884,
+              "end": 1014
+            }
+          },
+          "span": {
+            "start": 864,
+            "end": 1014
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "answerLookups@1027",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    const waiting = lookupReplies;\n    lookupReplies = [];\n    waiting.forEach((resolve) => resolve(\"found\"));\n  }",
+              "span": {
+                "start": 1043,
+                "end": 1159
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "lookupReplies@652",
+                  "span": {
+                    "start": 1065,
+                    "end": 1078
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "lookupReplies@652",
+                  "operator": "=",
+                  "span": {
+                    "start": 1084,
+                    "end": 1102
+                  },
+                  "target": {
+                    "start": 1084,
+                    "end": 1097
+                  },
+                  "value": {
+                    "start": 1100,
+                    "end": 1102
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1040,
+              "end": 1159
+            }
+          },
+          "span": {
+            "start": 1018,
+            "end": 1159
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "request@1172",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "returnType": {
+              "code": "Promise<string[]>",
+              "span": {
+                "start": 1183,
+                "end": 1200
+              }
+            },
+            "body": {
+              "code": "{\n    return new Promise<string[]>((resolve, reject) => {\n      respond = resolve;\n      fail = reject;\n    });\n  }",
+              "span": {
+                "start": 1201,
+                "end": 1316
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 1218,
+                    "end": 1225
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "respond@762",
+                  "operator": "=",
+                  "span": {
+                    "start": 1265,
+                    "end": 1282
+                  },
+                  "target": {
+                    "start": 1265,
+                    "end": 1272
+                  },
+                  "value": {
+                    "start": 1275,
+                    "end": 1282
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "fail@817",
+                  "operator": "=",
+                  "span": {
+                    "start": 1290,
+                    "end": 1303
+                  },
+                  "target": {
+                    "start": 1290,
+                    "end": 1294
+                  },
+                  "value": {
+                    "start": 1297,
+                    "end": 1303
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1179,
+              "end": 1316
+            }
+          },
+          "span": {
+            "start": 1163,
+            "end": 1316
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "sender@408",
+              "span": {
+                "start": 1326,
+                "end": 1332
+              }
+            }
+          ],
+          "callback": {
+            "async": true,
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 1341,
+                  "end": 1346
+                }
+              },
+              {
+                "name": "previous",
+                "span": {
+                  "start": 1348,
+                  "end": 1356
+                }
+              },
+              {
+                "name": "onCleanup",
+                "span": {
+                  "start": 1358,
+                  "end": 1367
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    let cancelled = false;\n    onCleanup(() => {\n      cancelled = true;\n      emit(\"dropped\", value);\n    });\n    emit(\"looked\", value);\n    const text = await lookupReply();\n    if (!cancelled) {\n      answers.value = [...answers.value, `${value}: ${text}`];\n    }\n  }",
+              "span": {
+                "start": 1372,
+                "end": 1644
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@127",
+                  "event": "dropped",
+                  "span": {
+                    "start": 1453,
+                    "end": 1475
+                  },
+                  "arguments": [
+                    {
+                      "start": 1469,
+                      "end": 1474
+                    }
+                  ]
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@127",
+                  "event": "looked",
+                  "span": {
+                    "start": 1489,
+                    "end": 1510
+                  },
+                  "arguments": [
+                    {
+                      "start": 1504,
+                      "end": 1509
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "lookupReply@873",
+                  "span": {
+                    "start": 1535,
+                    "end": 1546
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "answers@465",
+                  "operator": "=",
+                  "span": {
+                    "start": 1578,
+                    "end": 1633
+                  },
+                  "target": {
+                    "start": 1578,
+                    "end": 1591
+                  },
+                  "value": {
+                    "start": 1594,
+                    "end": 1633
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "answers@465",
+                  "span": {
+                    "start": 1598,
+                    "end": 1611
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1334,
+              "end": 1644
+            }
+          },
+          "span": {
+            "start": 1320,
+            "end": 1646
+          }
+        },
+        {
+          "kind": "WatchEffect",
+          "effect": {
+            "async": true,
+            "parameters": [
+              {
+                "name": "onCleanup",
+                "span": {
+                  "start": 1669,
+                  "end": 1678
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    const current = order.value;\n    let cancelled = false;\n    onCleanup(() => {\n      cancelled = true;\n    });\n    emit(\"sorted\", current);\n    const text = await new Promise<string>((resolve) => {\n      orderReply = resolve;\n    });\n    if (!cancelled) {\n      ordering.value = `${current} ${text}`;\n      emit(\"scaled\", current);\n    }\n  }",
+              "span": {
+                "start": 1683,
+                "end": 2029
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "order@434",
+                  "span": {
+                    "start": 1705,
+                    "end": 1716
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@127",
+                  "event": "sorted",
+                  "span": {
+                    "start": 1803,
+                    "end": 1826
+                  },
+                  "arguments": [
+                    {
+                      "start": 1818,
+                      "end": 1825
+                    }
+                  ]
+                },
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 1855,
+                    "end": 1862
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "orderReply@706",
+                  "operator": "=",
+                  "span": {
+                    "start": 1892,
+                    "end": 1912
+                  },
+                  "target": {
+                    "start": 1892,
+                    "end": 1902
+                  },
+                  "value": {
+                    "start": 1905,
+                    "end": 1912
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "ordering@502",
+                  "operator": "=",
+                  "span": {
+                    "start": 1950,
+                    "end": 1987
+                  },
+                  "target": {
+                    "start": 1950,
+                    "end": 1964
+                  },
+                  "value": {
+                    "start": 1967,
+                    "end": 1987
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@127",
+                  "event": "scaled",
+                  "span": {
+                    "start": 1995,
+                    "end": 2018
+                  },
+                  "arguments": [
+                    {
+                      "start": 2010,
+                      "end": 2017
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 1662,
+              "end": 2029
+            }
+          },
+          "span": {
+            "start": 1650,
+            "end": 2031
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "messages@534",
+              "span": {
+                "start": 2042,
+                "end": 2050
+              }
+            },
+            {
+              "kind": "Ref",
+              "binding": "loading@572",
+              "span": {
+                "start": 2052,
+                "end": 2059
+              }
+            }
+          ],
+          "array": true,
+          "callback": {
+            "parameters": [
+              {
+                "pattern": {
+                  "code": "[list, busy]",
+                  "names": [
+                    "list",
+                    "busy"
+                  ],
+                  "span": {
+                    "start": 2063,
+                    "end": 2075
+                  }
+                },
+                "span": {
+                  "start": 2063,
+                  "end": 2075
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"busy\", list.length, busy);\n  }",
+              "span": {
+                "start": 2080,
+                "end": 2122
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@127",
+                  "event": "busy",
+                  "span": {
+                    "start": 2086,
+                    "end": 2117
+                  },
+                  "arguments": [
+                    {
+                      "start": 2099,
+                      "end": 2110
+                    },
+                    {
+                      "start": 2112,
+                      "end": 2116
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 2062,
+              "end": 2122
+            }
+          },
+          "span": {
+            "start": 2035,
+            "end": 2124
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "failure@602",
+              "span": {
+                "start": 2135,
+                "end": 2142
+              }
+            },
+            {
+              "kind": "Ref",
+              "binding": "loading@572",
+              "span": {
+                "start": 2144,
+                "end": 2151
+              }
+            }
+          ],
+          "array": true,
+          "callback": {
+            "parameters": [
+              {
+                "pattern": {
+                  "code": "[message, busy]",
+                  "names": [
+                    "message",
+                    "busy"
+                  ],
+                  "span": {
+                    "start": 2155,
+                    "end": 2170
+                  }
+                },
+                "span": {
+                  "start": 2155,
+                  "end": 2170
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"failed\", message, busy);\n  }",
+              "span": {
+                "start": 2175,
+                "end": 2215
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@127",
+                  "event": "failed",
+                  "span": {
+                    "start": 2181,
+                    "end": 2210
+                  },
+                  "arguments": [
+                    {
+                      "start": 2196,
+                      "end": 2203
+                    },
+                    {
+                      "start": 2205,
+                      "end": 2209
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 2154,
+              "end": 2215
+            }
+          },
+          "span": {
+            "start": 2128,
+            "end": 2217
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "unread@629",
+              "span": {
+                "start": 2227,
+                "end": 2233
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 2236,
+                  "end": 2241
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"counted\", value);\n  }",
+              "span": {
+                "start": 2246,
+                "end": 2279
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@127",
+                  "event": "counted",
+                  "span": {
+                    "start": 2252,
+                    "end": 2274
+                  },
+                  "arguments": [
+                    {
+                      "start": 2268,
+                      "end": 2273
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 2235,
+              "end": 2279
+            }
+          },
+          "span": {
+            "start": 2221,
+            "end": 2281
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "load@2300",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    loading.value = true;\n    failure.value = \"\";\n    try {\n      const list = await request();\n      messages.value = list;\n    } catch (error) {\n      failure.value = error instanceof Error ? error.message : \"unknown\";\n    }\n    loading.value = false;\n  }",
+              "span": {
+                "start": 2307,
+                "end": 2566
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "loading@572",
+                  "operator": "=",
+                  "span": {
+                    "start": 2313,
+                    "end": 2333
+                  },
+                  "target": {
+                    "start": 2313,
+                    "end": 2326
+                  },
+                  "value": {
+                    "start": 2329,
+                    "end": 2333
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "failure@602",
+                  "operator": "=",
+                  "span": {
+                    "start": 2339,
+                    "end": 2357
+                  },
+                  "target": {
+                    "start": 2339,
+                    "end": 2352
+                  },
+                  "value": {
+                    "start": 2355,
+                    "end": 2357
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "request@1172",
+                  "span": {
+                    "start": 2394,
+                    "end": 2401
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "messages@534",
+                  "operator": "=",
+                  "span": {
+                    "start": 2411,
+                    "end": 2432
+                  },
+                  "target": {
+                    "start": 2411,
+                    "end": 2425
+                  },
+                  "value": {
+                    "start": 2428,
+                    "end": 2432
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "failure@602",
+                  "operator": "=",
+                  "span": {
+                    "start": 2462,
+                    "end": 2528
+                  },
+                  "target": {
+                    "start": 2462,
+                    "end": 2475
+                  },
+                  "value": {
+                    "start": 2478,
+                    "end": 2528
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Error",
+                  "span": {
+                    "start": 2495,
+                    "end": 2500
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "loading@572",
+                  "operator": "=",
+                  "span": {
+                    "start": 2540,
+                    "end": 2561
+                  },
+                  "target": {
+                    "start": 2540,
+                    "end": 2553
+                  },
+                  "value": {
+                    "start": 2556,
+                    "end": 2561
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 2304,
+              "end": 2566
+            }
+          },
+          "span": {
+            "start": 2285,
+            "end": 2566
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "refresh@2585",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    loading.value = true;\n    messages.value = await request();\n    loading.value = false;\n  }",
+              "span": {
+                "start": 2595,
+                "end": 2691
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "loading@572",
+                  "operator": "=",
+                  "span": {
+                    "start": 2601,
+                    "end": 2621
+                  },
+                  "target": {
+                    "start": 2601,
+                    "end": 2614
+                  },
+                  "value": {
+                    "start": 2617,
+                    "end": 2621
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "messages@534",
+                  "operator": "=",
+                  "span": {
+                    "start": 2627,
+                    "end": 2659
+                  },
+                  "target": {
+                    "start": 2627,
+                    "end": 2641
+                  },
+                  "value": {
+                    "start": 2644,
+                    "end": 2659
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "request@1172",
+                  "span": {
+                    "start": 2650,
+                    "end": 2657
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "loading@572",
+                  "operator": "=",
+                  "span": {
+                    "start": 2665,
+                    "end": 2686
+                  },
+                  "target": {
+                    "start": 2665,
+                    "end": 2678
+                  },
+                  "value": {
+                    "start": 2681,
+                    "end": 2686
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 2592,
+              "end": 2691
+            }
+          },
+          "span": {
+            "start": 2570,
+            "end": 2691
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "markTwice@2710",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    const bump = () => {\n      unread.value += 1;\n    };\n    bump();\n    bump();\n    await nextTick();\n    bump();\n    bump();\n  }",
+              "span": {
+                "start": 2722,
+                "end": 2854
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "unread@629",
+                  "operator": "+=",
+                  "span": {
+                    "start": 2755,
+                    "end": 2772
+                  },
+                  "target": {
+                    "start": 2755,
+                    "end": 2767
+                  },
+                  "value": {
+                    "start": 2771,
+                    "end": 2772
+                  }
+                },
+                {
+                  "kind": "Api",
+                  "api": "nextTick",
+                  "span": {
+                    "start": 2815,
+                    "end": 2823
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 2719,
+              "end": 2854
+            }
+          },
+          "span": {
+            "start": 2695,
+            "end": 2854
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "inbox-lookup",
+            "span": {
+              "start": 2880,
+              "end": 2900
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Inbox",
+            "span": {
+              "start": 2901,
+              "end": 2919
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2935,
+                  "end": 2948
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(sender.value = \"Ann\")",
+                      "span": {
+                        "start": 2964,
+                        "end": 2986
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "sender@408",
+                          "operator": "=",
+                          "span": {
+                            "start": 2964,
+                            "end": 2986
+                          },
+                          "target": {
+                            "start": 2965,
+                            "end": 2977
+                          },
+                          "value": {
+                            "start": 2980,
+                            "end": 2985
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 2958,
+                      "end": 2986
+                    }
+                  },
+                  "span": {
+                    "start": 2958,
+                    "end": 2986
+                  }
+                },
+                "span": {
+                  "start": 2949,
+                  "end": 2987
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Find Ann",
+                "span": {
+                  "start": 2988,
+                  "end": 3012
+                }
+              }
+            ],
+            "span": {
+              "start": 2927,
+              "end": 3021
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 3036,
+                  "end": 3049
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(sender.value = \"Anna\")",
+                      "span": {
+                        "start": 3065,
+                        "end": 3088
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "sender@408",
+                          "operator": "=",
+                          "span": {
+                            "start": 3065,
+                            "end": 3088
+                          },
+                          "target": {
+                            "start": 3066,
+                            "end": 3078
+                          },
+                          "value": {
+                            "start": 3081,
+                            "end": 3087
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 3059,
+                      "end": 3088
+                    }
+                  },
+                  "span": {
+                    "start": 3059,
+                    "end": 3088
+                  }
+                },
+                "span": {
+                  "start": 3050,
+                  "end": 3089
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Find Anna",
+                "span": {
+                  "start": 3090,
+                  "end": 3115
+                }
+              }
+            ],
+            "span": {
+              "start": 3028,
+              "end": 3124
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 3139,
+                  "end": 3152
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "answerLookups@1027",
+                  "span": {
+                    "start": 3162,
+                    "end": 3175
+                  }
+                },
+                "span": {
+                  "start": 3153,
+                  "end": 3176
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Answer lookups",
+                "span": {
+                  "start": 3177,
+                  "end": 3207
+                }
+              }
+            ],
+            "span": {
+              "start": 3131,
+              "end": 3216
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Answers",
+                "span": {
+                  "start": 3227,
+                  "end": 3247
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "answers.value",
+                  "span": {
+                    "start": 3258,
+                    "end": 3271
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "answers@465",
+                      "span": {
+                        "start": 3258,
+                        "end": 3271
+                      }
+                    }
+                  ]
+                },
+                "item": "line@3277",
+                "index": "index@3283",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 3314,
+                    "end": 3319
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@3283",
+                      "span": {
+                        "start": 3314,
+                        "end": 3319
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "line",
+                        "span": {
+                          "start": 3322,
+                          "end": 3326
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "line@3277",
+                            "span": {
+                              "start": 3322,
+                              "end": 3326
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 3321,
+                        "end": 3327
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 3305,
+                    "end": 3332
+                  }
+                },
+                "span": {
+                  "start": 3258,
+                  "end": 3343
+                }
+              }
+            ],
+            "span": {
+              "start": 3223,
+              "end": 3356
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 3379,
+                  "end": 3392
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(order.value = order.value === \"newest\" ? \"oldest\" : \"newest\")",
+                      "span": {
+                        "start": 3416,
+                        "end": 3478
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "order@434",
+                          "operator": "=",
+                          "span": {
+                            "start": 3416,
+                            "end": 3478
+                          },
+                          "target": {
+                            "start": 3417,
+                            "end": 3428
+                          },
+                          "value": {
+                            "start": 3431,
+                            "end": 3477
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "order@434",
+                          "span": {
+                            "start": 3431,
+                            "end": 3442
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 3410,
+                      "end": 3478
+                    }
+                  },
+                  "span": {
+                    "start": 3410,
+                    "end": 3478
+                  }
+                },
+                "span": {
+                  "start": 3401,
+                  "end": 3479
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Switch order",
+                "span": {
+                  "start": 3487,
+                  "end": 3515
+                }
+              }
+            ],
+            "span": {
+              "start": 3363,
+              "end": 3524
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 3539,
+                  "end": 3552
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "orderReply?.(\"ready\")",
+                      "span": {
+                        "start": 3568,
+                        "end": 3589
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "orderReply@706",
+                          "span": {
+                            "start": 3568,
+                            "end": 3578
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 3562,
+                      "end": 3589
+                    }
+                  },
+                  "span": {
+                    "start": 3562,
+                    "end": 3589
+                  }
+                },
+                "span": {
+                  "start": 3553,
+                  "end": 3590
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Answer order",
+                "span": {
+                  "start": 3591,
+                  "end": 3619
+                }
+              }
+            ],
+            "span": {
+              "start": 3531,
+              "end": 3628
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Order: ",
+                "span": {
+                  "start": 3638,
+                  "end": 3645
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "ordering.value",
+                  "span": {
+                    "start": 3646,
+                    "end": 3660
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "ordering@502",
+                      "span": {
+                        "start": 3646,
+                        "end": 3660
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 3645,
+                  "end": 3661
+                }
+              }
+            ],
+            "span": {
+              "start": 3635,
+              "end": 3665
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 3680,
+                  "end": 3693
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "load@2300",
+                  "span": {
+                    "start": 3703,
+                    "end": 3707
+                  }
+                },
+                "span": {
+                  "start": 3694,
+                  "end": 3708
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Load",
+                "span": {
+                  "start": 3709,
+                  "end": 3729
+                }
+              }
+            ],
+            "span": {
+              "start": 3672,
+              "end": 3738
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 3753,
+                  "end": 3766
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "refresh@2585",
+                  "span": {
+                    "start": 3776,
+                    "end": 3783
+                  }
+                },
+                "span": {
+                  "start": 3767,
+                  "end": 3784
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Refresh",
+                "span": {
+                  "start": 3785,
+                  "end": 3808
+                }
+              }
+            ],
+            "span": {
+              "start": 3745,
+              "end": 3817
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 3832,
+                  "end": 3845
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "respond?.([\"Hello\", \"Welcome\"])",
+                      "span": {
+                        "start": 3861,
+                        "end": 3892
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "respond@762",
+                          "span": {
+                            "start": 3861,
+                            "end": 3868
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 3855,
+                      "end": 3892
+                    }
+                  },
+                  "span": {
+                    "start": 3855,
+                    "end": 3892
+                  }
+                },
+                "span": {
+                  "start": 3846,
+                  "end": 3893
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Reply",
+                "span": {
+                  "start": 3894,
+                  "end": 3915
+                }
+              }
+            ],
+            "span": {
+              "start": 3824,
+              "end": 3924
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 3939,
+                  "end": 3952
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "fail?.(new Error(\"offline\"))",
+                      "span": {
+                        "start": 3968,
+                        "end": 3996
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "fail@817",
+                          "span": {
+                            "start": 3968,
+                            "end": 3972
+                          }
+                        },
+                        {
+                          "kind": "Global",
+                          "name": "Error",
+                          "span": {
+                            "start": 3979,
+                            "end": 3984
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 3962,
+                      "end": 3996
+                    }
+                  },
+                  "span": {
+                    "start": 3962,
+                    "end": 3996
+                  }
+                },
+                "span": {
+                  "start": 3953,
+                  "end": 3997
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Fail",
+                "span": {
+                  "start": 3998,
+                  "end": 4018
+                }
+              }
+            ],
+            "span": {
+              "start": 3931,
+              "end": 4027
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 4037,
+                  "end": 4050
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "loading.value ? \"Loading\" : `${messages.value.length} messages`",
+                  "span": {
+                    "start": 4061,
+                    "end": 4124
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "loading@572",
+                      "span": {
+                        "start": 4061,
+                        "end": 4074
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "messages@534",
+                      "span": {
+                        "start": 4092,
+                        "end": 4106
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 4060,
+                  "end": 4125
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "failure.value === \"\" ? \"\" : `, ${failure.value}`",
+                  "span": {
+                    "start": 4135,
+                    "end": 4183
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "failure@602",
+                      "span": {
+                        "start": 4135,
+                        "end": 4148
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "failure@602",
+                      "span": {
+                        "start": 4168,
+                        "end": 4181
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 4134,
+                  "end": 4184
+                }
+              }
+            ],
+            "span": {
+              "start": 4034,
+              "end": 4195
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 4210,
+                  "end": 4223
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "markTwice@2710",
+                  "span": {
+                    "start": 4233,
+                    "end": 4242
+                  }
+                },
+                "span": {
+                  "start": 4224,
+                  "end": 4243
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Mark twice",
+                "span": {
+                  "start": 4244,
+                  "end": 4270
+                }
+              }
+            ],
+            "span": {
+              "start": 4202,
+              "end": 4279
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Unread: ",
+                "span": {
+                  "start": 4289,
+                  "end": 4297
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "unread.value",
+                  "span": {
+                    "start": 4298,
+                    "end": 4310
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "unread@629",
+                      "span": {
+                        "start": 4298,
+                        "end": 4310
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 4297,
+                  "end": 4311
+                }
+              }
+            ],
+            "span": {
+              "start": 4286,
+              "end": 4315
+            }
+          }
+        ],
+        "span": {
+          "start": 2871,
+          "end": 4330
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "InboxLookup",
+      "span": {
+        "start": 79,
+        "end": 4337
+      }
+    }
+  ],
+  "types": []
+}

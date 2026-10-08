@@ -36,6 +36,8 @@ describeTargets("stub/views", () => {
     await view.rerender({});
     await expect.element(view.getByText("Hello, world!")).toBeVisible();
     expect(view.html()).toBe('<p class="info">\n  "Hello, world!"\n</p>\n');
+    // Each rerender is a step of the view's trace (L9), which the scenario compares.
+    await view.expectParity("rerendered");
   });
 
   it("refuses props that are not an object, and a rerender after the unmount", async () => {

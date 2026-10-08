@@ -106,17 +106,25 @@ describe("react target", () => {
       "bound-attribute",
       "class-binding",
       "conditional",
+      "conditional-event-control",
       "element",
+      "event-capture",
+      "event-once",
+      "event-passive",
+      "event-semantics",
       "fragment",
       "interactivity",
       "interpolation",
+      "late-prop",
       "list",
       "listbox",
+      "next-tick",
       "props",
       "static-attribute",
       "style-binding",
       "svg",
       "text",
+      "use-id",
     ]);
   });
 
@@ -169,7 +177,7 @@ describe("react target", () => {
     expect(file.contents).toMatch(/^export function Hello\(\) \{/);
   });
 
-  // The target reports nothing (ADR-0033, design §5): what React renders differently from the
+  // The target reports nothing (ADR-0033): what React renders differently from the
   // other targets is the analyser's to reject, and the IR's invariants keep it out of any IR a
   // plugin returns. M0's target reported these itself.
   it.each([
@@ -198,7 +206,7 @@ describe("react target", () => {
   });
 });
 
-// Design §5.1: the shapes of the M1 output, one construct at a time.
+// The shapes of the M1 output (plan §6), one construct at a time.
 describe("react output shapes", () => {
   it("declares destructured props in source order, with the copied types above", async () => {
     const source = `interface Size {

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # `pnpm test:baselines`: (re)generates the committed Linux screenshot baselines in CI's image
 # (the screenshot ADR). Only the reference target (vue) writes; every other target must match.
-#   bash scripts/baselines.sh update   UF_UPDATE=1 browser run; copies back *-linux.png and geometry
+#   bash scripts/baselines.sh update   UF_UPDATE=1 browser:vue run; copies back *-linux.png and geometry,
+#                                      and fails where a DOM, ARIA or trace expectation reads otherwise on Linux
 #   bash scripts/baselines.sh check    CI's compare mode (CI=1) for the browser projects: nothing is written
 # UF_BASELINE_PLATFORM=linux/arm64 runs natively on Apple silicon, for `check` only: GitHub's
 # ubuntu runners are x64, so the committed baselines come from linux/amd64, and the write

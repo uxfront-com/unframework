@@ -1,0 +1,8 @@
+- region "Fruit":
+  - list "Fruits":
+    - listitem:
+      - button "Apple"
+    - listitem:
+      - button "Pear"
+  - button "Keep a copy"
+  - list "Basket"

@@ -1,0 +1,19 @@
+---
+const choices = [1, 2, 3, 4, 5];
+const stars = 0 as number;
+---
+
+<div class="star-rating" role="group" aria-label="Rating">
+  <ul>
+    {choices.map((choice) => (
+      <li>
+        <button
+          type="button"
+          aria-pressed={stars >= choice}
+        >{choice} {choice === 1 ? "star" : "stars"}</button>
+      </li>
+    ))}
+  </ul>
+  <p role="status">{stars} of 5</p>
+  <button type="button">Clear</button>
+</div>

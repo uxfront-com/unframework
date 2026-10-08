@@ -1,0 +1,55 @@
+[
+  {
+    "code": "UF2007",
+    "severity": "warning",
+    "message": "`greeting` reads the prop `name` when the setup runs, once, and keeps that value when it changes later.",
+    "file": "semantics/setup-once/WelcomeBanner.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 9,
+      "offset": 135
+    },
+    "end": {
+      "line": 6,
+      "column": 17,
+      "offset": 143
+    },
+    "help": "Make it a `computed` to follow it (`const greeting = computed(() => …)`, read as `greeting.value`), or keep the snapshot on purpose.",
+    "fixes": [
+      {
+        "title": "Make `greeting` a `computed`",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 0,
+              "end": 0
+            },
+            "text": "import { computed } from \"unframework\";\n"
+          },
+          {
+            "span": {
+              "start": 146,
+              "end": 146
+            },
+            "text": "computed(() => "
+          },
+          {
+            "span": {
+              "start": 164,
+              "end": 164
+            },
+            "text": ")"
+          },
+          {
+            "span": {
+              "start": 307,
+              "end": 315
+            },
+            "text": "greeting.value"
+          }
+        ]
+      }
+    ]
+  }
+]

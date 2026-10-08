@@ -1,4 +1,4 @@
-// The returned JSX, lowered to the IR's render tree (ADR-0036, design §1.3): elements, text,
+// The returned JSX, lowered to the IR's render tree (ADR-0036): elements, text,
 // expressions rendered as text, conditionals and lists. Children are read in order; text that
 // ends up side by side (across comments, nothing-children and fragments) is one text, as the DOM
 // has it. Constructs outside the subset, and markup the targets would render differently, are
@@ -337,7 +337,7 @@ function collect(
 }
 
 /**
- * Lowers an expression child (design §1.3): nothing, text, a conditional, a list, the children
+ * Lowers an expression child (ADR-0036): nothing, text, a conditional, a list, the children
  * of a fragment or an element, or an expression rendered as text. `at` is where it is written:
  * the braces around a child, or the branch itself.
  */
@@ -615,7 +615,7 @@ function lowerIf(
 }
 
 /**
- * Where text that an expression renders cannot sit (design §1.3): a returned report function
+ * Where text that an expression renders cannot sit (ADR-0036): a returned report function
  * that reports it there, or `undefined`. Text the parser moves (a table part), drops (a
  * `<select>`) or reads as raw text (an `<iframe>`) is UF3003; a `<textarea>`'s content is its
  * value, form state that lands in M3 (UF1002); SVG renders text only in its text elements
@@ -693,7 +693,7 @@ function checkJsxText(
 }
 
 /**
- * Checks where a text sits (design §1.3): in a table part the parser moves it out, and in an
+ * Checks where a text sits (ADR-0036): in a table part the parser moves it out, and in an
  * `<iframe>` it reads it as raw text (UF3003); whitespace that Svelte drops (in a `<select>`, a
  * `<datalist>`, a table part, or SVG outside a `<text>`) is UF3003 with a fix that removes it.
  * Returns whether the text can be lowered there.

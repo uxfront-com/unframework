@@ -1,0 +1,6 @@
+{
+  "description": "Handlers inside a conditional's branch that write the ref the branch tests: a toggle's two expression-bodied branches, a block body that closes the panel it sits in, a nullable ref cleared from the branch its truthiness opens, and a field that writes and clears the nullable ref its branch is narrowed by. A write is no read, so none needs the narrowing (UF3029).",
+  "ssr": {
+    "initial": { "props": {} }
+  }
+}

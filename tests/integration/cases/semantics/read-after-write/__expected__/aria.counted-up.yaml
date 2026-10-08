@@ -1,0 +1,8 @@
+- region "Tally":
+  - status: "Count: 3"
+  - button "Add two"
+  - button "Add five"
+  - button "Count up three"
+  - button "Add ten"
+  - button "Log the phases"
+  - paragraph: "Phases:"

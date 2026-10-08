@@ -1,0 +1,12 @@
+---
+const query = "" as string;
+const page = 1 as number;
+---
+
+<section class="search-pager" aria-label="Search">
+  <p role="status">{query === "" ? "All results" : `Results for ${query}`}, page {page}</p>
+  <button type="button">Search boots</button>
+  <button type="button">Search sandals</button>
+  <button type="button">Next page</button>
+  <button type="button">Skip two pages</button>
+</section>

@@ -16,7 +16,16 @@ let modules = 0;
 
 /** Compiles an `.astro` source and imports it; resolves to the component (default export). */
 export async function loadAstroComponent(directory: string, source: string): Promise<unknown> {
-  const name = `Component${++modules}`;
+  const file = writeAstroModule(directory, source, `Component${++modules}`);
+  const module: { default: unknown } = await import(file);
+  return module.default;
+}
+
+/**
+ * Compiles an `.astro` source into `<name>.mjs` in `directory`, which another component can
+ * import (`import Field from "./Field.mjs"`); returns its path.
+ */
+export function writeAstroModule(directory: string, source: string, name: string): string {
   const { code, diagnostics } = transform(source, {
     filename: join(directory, `${name}.astro`),
     normalizedFilename: `/${name}.astro`,
@@ -30,6 +39,5 @@ export async function loadAstroComponent(directory: string, source: string): Pro
   if (diagnostics.length > 0) throw new Error(JSON.stringify(diagnostics));
   const file = join(directory, `${name}.mjs`);
   writeFileSync(file, code);
-  const module: { default: unknown } = await import(file);
-  return module.default;
+  return file;
 }

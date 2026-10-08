@@ -1,0 +1,6 @@
+{
+  "description": "Everyday shapes the React Compiler cannot compile, which React's output opts out of memoising: a try block that throws and holds ??, ?: and an emit, with a finally clause; destructuring defaults that read state; a nested arrow whose parameter default reads state.",
+  "ssr": {
+    "initial": {}
+  }
+}

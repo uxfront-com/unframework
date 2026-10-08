@@ -1,0 +1,6 @@
+{
+  "description": "An async handler writes, awaits a resolved promise and nextTick, reads its earlier writes, writes again and emits after the awaits.",
+  "ssr": {
+    "initial": {}
+  }
+}

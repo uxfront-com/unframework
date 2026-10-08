@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF3026",
+    "severity": "error",
+    "message": "`count` is a ref, whose value is `count.value`: the targets that keep a ref's value apart read nothing else.",
+    "file": "diagnostics/ref-without-value/Counter.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 16,
+      "offset": 257
+    },
+    "end": {
+      "line": 10,
+      "column": 21,
+      "offset": 262
+    },
+    "help": "Read `count.value`: Vue's templates unwrap a ref, and the other targets do not.",
+    "fixes": [
+      {
+        "title": "Read `count.value`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 257,
+              "end": 262
+            },
+            "text": "count.value"
+          }
+        ]
+      }
+    ]
+  }
+]

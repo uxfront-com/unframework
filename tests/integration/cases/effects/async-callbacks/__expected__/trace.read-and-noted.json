@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Mark all read' })",
+      "dom": [
+        "<section aria-label=\"Mailbox\" class=\"mailbox\">",
+        "  <h2>",
+        "    \"Inbox, all read\"",
+        "  </h2>",
+        "  <p role=\"status\">",
+        "    \"0 unread\"",
+        "  </p>",
+        "  <p>",
+        "    \"Status: idle\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Refresh every second\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Mark all read\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Note\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Mailbox\":",
+        "  - heading \"Inbox, all read\" [level=2]",
+        "  - status: 0 unread",
+        "  - paragraph: \"Status: idle\"",
+        "  - button \"Save\"",
+        "  - button \"Refresh every second\"",
+        "  - button \"Mark all read\"",
+        "  - button \"Note\""
+      ],
+      "events": {
+        "loaded": [
+          [
+            "Inbox",
+            3
+          ],
+          [
+            "Inbox, all read",
+            0
+          ]
+        ],
+        "seen": [
+          [
+            "idle after 0"
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Note' })",
+      "dom": [
+        "<section aria-label=\"Mailbox\" class=\"mailbox\">",
+        "  <h2>",
+        "    \"Inbox, all read\"",
+        "  </h2>",
+        "  <p role=\"status\">",
+        "    \"0 unread\"",
+        "  </p>",
+        "  <p>",
+        "    \"Status: idle\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Refresh every second\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Mark all read\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Note\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Mailbox\":",
+        "  - heading \"Inbox, all read\" [level=2]",
+        "  - status: 0 unread",
+        "  - paragraph: \"Status: idle\"",
+        "  - button \"Save\"",
+        "  - button \"Refresh every second\"",
+        "  - button \"Mark all read\"",
+        "  - button \"Note\""
+      ],
+      "events": {
+        "noted": [
+          [
+            "Inbox, all read: 0"
+          ]
+        ]
+      }
+    }
+  ]
+}

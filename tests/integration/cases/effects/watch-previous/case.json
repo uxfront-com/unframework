@@ -1,0 +1,6 @@
+{
+  "description": "A watcher gets each new value with the previous one, and runs no callback when a write leaves the value unchanged.",
+  "ssr": {
+    "initial": {}
+  }
+}

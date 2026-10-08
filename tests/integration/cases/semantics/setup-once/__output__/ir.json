@@ -1,0 +1,347 @@
+{
+  "irVersion": 1,
+  "file": "semantics/setup-once/WelcomeBanner.uf.tsx",
+  "components": [
+    {
+      "name": "WelcomeBanner",
+      "span": {
+        "start": 57,
+        "end": 475
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 46,
+              "end": 52
+            }
+          },
+          "binding": "name@97",
+          "span": {
+            "start": 40,
+            "end": 53
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "WelcomeBannerProps",
+          "span": {
+            "start": 105,
+            "end": 123
+          }
+        },
+        "span": {
+          "start": 95,
+          "end": 123
+        }
+      },
+      "types": [
+        "WelcomeBannerProps"
+      ],
+      "bindings": [
+        {
+          "id": "name@97",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 97,
+            "end": 101
+          }
+        },
+        {
+          "id": "greeting@135",
+          "name": "greeting",
+          "kind": "localConst",
+          "span": {
+            "start": 135,
+            "end": 143
+          }
+        },
+        {
+          "id": "tips@174",
+          "name": "tips",
+          "kind": "localConst",
+          "span": {
+            "start": 174,
+            "end": 178
+          }
+        },
+        {
+          "id": "tip@385",
+          "name": "tip",
+          "kind": "loopVar",
+          "span": {
+            "start": 385,
+            "end": 388
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Const",
+          "binding": "greeting@135",
+          "value": {
+            "code": "`Welcome, ${name}`",
+            "span": {
+              "start": 146,
+              "end": 164
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "name@97",
+                "span": {
+                  "start": 158,
+                  "end": 162
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 129,
+            "end": 165
+          }
+        },
+        {
+          "kind": "Const",
+          "binding": "tips@174",
+          "value": {
+            "code": "[\"Set up your profile\", \"Invite your team\"]",
+            "span": {
+              "start": 181,
+              "end": 224
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 168,
+            "end": 225
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "welcome-banner",
+            "span": {
+              "start": 251,
+              "end": 273
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Welcome",
+            "span": {
+              "start": 274,
+              "end": 294
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "greeting",
+                  "span": {
+                    "start": 307,
+                    "end": 315
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "greeting@135",
+                      "span": {
+                        "start": 307,
+                        "end": 315
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 306,
+                  "end": 316
+                }
+              }
+            ],
+            "span": {
+              "start": 302,
+              "end": 321
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Signed in as ",
+                "span": {
+                  "start": 331,
+                  "end": 344
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "name",
+                  "span": {
+                    "start": 345,
+                    "end": 349
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@97",
+                      "span": {
+                        "start": 345,
+                        "end": 349
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 344,
+                  "end": 350
+                }
+              }
+            ],
+            "span": {
+              "start": 328,
+              "end": 354
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "tips",
+                  "span": {
+                    "start": 375,
+                    "end": 379
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tips@174",
+                      "span": {
+                        "start": 375,
+                        "end": 379
+                      }
+                    }
+                  ]
+                },
+                "item": "tip@385",
+                "key": {
+                  "code": "tip",
+                  "span": {
+                    "start": 414,
+                    "end": 417
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tip@385",
+                      "span": {
+                        "start": 414,
+                        "end": 417
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "tip",
+                        "span": {
+                          "start": 420,
+                          "end": 423
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "tip@385",
+                            "span": {
+                              "start": 420,
+                              "end": 423
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 419,
+                        "end": 424
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 405,
+                    "end": 429
+                  }
+                },
+                "span": {
+                  "start": 375,
+                  "end": 440
+                }
+              }
+            ],
+            "span": {
+              "start": 361,
+              "end": 453
+            }
+          }
+        ],
+        "span": {
+          "start": 242,
+          "end": 468
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "WelcomeBanner",
+      "span": {
+        "start": 57,
+        "end": 475
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "WelcomeBannerProps",
+      "exported": true,
+      "code": "interface WelcomeBannerProps {\n  name: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 55
+      }
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-// The summary (DESIGN §4.6): merges partial matrices into `parity-matrix.json` and
+// The summary (plan §7.4): merges partial matrices into `parity-matrix.json` and
 // `parity-matrix.md` (appended to $GITHUB_STEP_SUMMARY in CI), and reports what is wrong: every
 // failed cell, every stale quarantine entry and, when every project ran all its tests (or must
 // have), every missing or partly run project, every missing (case, target, live layer) cell and
@@ -6,8 +6,16 @@
 import { appendFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { LAYERS } from "../layers.ts";
+import {
+  LAYERS,
+  NO_INTERACTION_SKIP,
+  NO_OUTPUT_SKIP,
+  NO_OUTPUT_TEST_SKIP,
+  NOT_RENDERED_SKIP,
+  REQUIRES_SKIP,
+} from "../layers.ts";
 import type { LayerName } from "../layers.ts";
+import { LIVE_REFERENCE_SKIP } from "../visual-types.ts";
 import {
   cellHeadline,
   mergeMatrices,
@@ -31,6 +39,39 @@ export interface SummaryExpectations {
   liveLayers: readonly LayerName[];
   /** The skip reason recorded for the layers that are not live yet. */
   notLiveReason: string;
+  /**
+   * Every capability name: a skip by capability on a live layer (`requires <name>: …`) must
+   * name one. Without it, any kebab-case name passes.
+   */
+  capabilities?: readonly string[];
+}
+
+/**
+ * The skips a live layer may record besides one by capability (plan §7.7, ADR-0050): each has a
+ * mechanical cause. Anything else on a live layer would hide a check that never ran.
+ */
+const MECHANICAL_SKIPS: readonly string[] = [
+  NO_OUTPUT_SKIP,
+  LIVE_REFERENCE_SKIP,
+  NOT_RENDERED_SKIP,
+  NO_INTERACTION_SKIP,
+];
+
+/** Why a live layer's skip is not one the summary accepts, or nothing when it is. */
+export function unacceptedSkip(
+  reason: string,
+  capabilities?: readonly string[],
+): string | undefined {
+  // A browser test of a case its target has no output for: the errors that case expects.
+  if (MECHANICAL_SKIPS.includes(reason) || NO_OUTPUT_TEST_SKIP.test(reason)) return undefined;
+  const capability = REQUIRES_SKIP.exec(reason)?.[1];
+  if (capability === undefined) {
+    return `skipped (${reason}), which names no capability its target lacks and none of the mechanical causes (${[...MECHANICAL_SKIPS, "no output: <the expected errors>"].join("; ")}): a live layer skips only for a reason the matrix can show.`;
+  }
+  if (capabilities && !capabilities.includes(capability)) {
+    return `skipped for "${capability}", which is not a capability.`;
+  }
+  return undefined;
 }
 
 /** How to judge the merged matrix. */
@@ -157,11 +198,15 @@ export function summarise(
             problems.push(`${caseId} › ${target} › ${layer}: missing (no test recorded it).`);
           continue;
         }
-        // M1 (capabilities): a skip on a live layer must then name a capability or a
-        // quarantine entry (plan §7.7). In M0 the skips are mechanical (no output, a dependent
-        // layer, the live reference); they are listed under each table.
-        if (outcomeOfCell(cell).status === "fail")
+        // A skip on a live layer names a capability the target lacks or a mechanical cause
+        // (plan §7.7); a quarantined cell is not a skip. They are listed under each table.
+        const outcome = outcomeOfCell(cell);
+        if (outcome.status === "fail")
           problems.push(`${caseId} › ${target} › ${layer}: ${cellHeadline(cell)}`);
+        if (outcome.status === "skip" && live.has(layer)) {
+          const why = unacceptedSkip(outcome.reason, expected.capabilities);
+          if (why) problems.push(`${caseId} › ${target} › ${layer}: ${why}`);
+        }
       }
       targets[target] = Object.fromEntries(
         LAYERS.filter((layer) => cells[layer] !== undefined).map((layer) => [layer, cells[layer]!]),
@@ -189,11 +234,13 @@ export function summarise(
 }
 
 /**
- * The targets whose parity scenarios of a case differ from the reference's. Every target runs
- * the same spec, and a cell merges every test of its case, so a scenario one target leaves out
- * (a spec that branches on the target, a test that stops early) shows in no cell. Judged like
- * the missing cells, once every project ran all its tests: a filtered run checks only some
- * scenarios. A case the reference checked no scenario of has nothing to compare with.
+ * The targets whose parity scenarios of a case differ from the reference's, test by test. Every
+ * target runs the same spec, and a cell merges every test of its case, so a scenario one target
+ * leaves out (a spec that branches on the target, a test that stops early) shows in no cell.
+ * A test a target skipped (by capability, or because the target has no output for the case) is
+ * excused on that target, and only that test: its scenarios are the ones it would have checked
+ * (ADR-0050). Judged like the missing cells, once every project ran all its tests: a filtered
+ * run checks only some scenarios.
  */
 function scenarioProblems(
   matrix: MergedMatrix,
@@ -201,21 +248,33 @@ function scenarioProblems(
   reference: string,
   targets: readonly string[],
 ): string[] {
-  const expected = matrix.scenarios[caseId]?.[reference];
-  if (!expected || !targets.includes(reference)) return [];
+  if (!targets.includes(reference)) return [];
+  const expected = matrix.tests[caseId]?.[reference] ?? {};
   const problems: string[] = [];
   for (const target of targets) {
     if (target === reference) continue;
-    const actual = matrix.scenarios[caseId]?.[target] ?? [];
-    const missing = expected.filter((name) => !actual.includes(name));
-    const extra = actual.filter((name) => !expected.includes(name));
-    if (!missing.length && !extra.length) continue;
-    const differences = [
-      ...(missing.length ? [`it never checks ${missing.join(", ")}`] : []),
-      ...(extra.length ? [`it checks ${extra.join(", ")}, which ${reference} never checks`] : []),
-    ];
+    const actual = matrix.tests[caseId]?.[target] ?? {};
+    const differences: string[] = [];
+    for (const name of [...new Set([...Object.keys(expected), ...Object.keys(actual)])].sort()) {
+      const theirs = expected[name];
+      const ours = actual[name];
+      if (ours?.skipped !== undefined) continue;
+      const wanted = theirs?.skipped === undefined ? (theirs?.scenarios ?? []) : [];
+      const checked = ours?.scenarios ?? [];
+      const missing = wanted.filter((scenario) => !checked.includes(scenario));
+      const extra = checked.filter((scenario) => !wanted.includes(scenario));
+      if (missing.length) differences.push(`"${name}" never checks ${missing.join(", ")}`);
+      if (extra.length) {
+        const why =
+          theirs?.skipped === undefined ? "" : ` (it skipped the test: ${theirs.skipped})`;
+        differences.push(
+          `"${name}" checks ${extra.join(", ")}, which ${reference} never checks${why}`,
+        );
+      }
+    }
+    if (!differences.length) continue;
     problems.push(
-      `${caseId} › ${target}: its parity scenarios differ from ${reference}'s: ${differences.join("; ")}. Every target runs the same spec, so every target checks the same scenarios.`,
+      `${caseId} › ${target}: its parity scenarios differ from ${reference}'s: ${differences.join("; ")}. Every target runs the same spec, so every target checks the same scenarios, unless it skips a test by capability or has no output for the case.`,
     );
   }
   return problems;
@@ -409,7 +468,19 @@ export function renderMarkdown(
           : [...where.targets].join(", ");
       lines.push(`- ${escapeCell(note)}: ${[...where.layers].join(", ")} on ${on}.`);
     }
-    if (notes.size) lines.push("");
+    // The tests skipped by capability or for want of output, which a cell that another test of
+    // the case passes hides.
+    const skipped = expected.targets.flatMap((target) =>
+      Object.entries(matrix.tests[caseId]?.[target] ?? {}).flatMap(([name, test]) =>
+        test.skipped === undefined
+          ? []
+          : [
+              `- skipped on ${target} ${NO_OUTPUT_TEST_SKIP.test(test.skipped) ? "for want of output" : "by capability"}: "${escapeCell(name)}" (${escapeCell(test.skipped)}).`,
+            ],
+      ),
+    );
+    lines.push(...skipped);
+    if (notes.size || skipped.length) lines.push("");
   }
   lines.push(problems.length ? `### Problems (${problems.length})` : "### No problems", "");
   for (const problem of problems) lines.push(`- ${escapeCell(problem)}`);

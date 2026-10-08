@@ -1,0 +1,8 @@
+error[UF3032]: `event.isComposing` is not a member every target's event has: React's synthetic KeyboardEvent for `keydown` lacks `isComposing`, so React's output could not read it.
+ --> diagnostics/event-parameter-use/MessageInput.uf.tsx:9:35
+  |
+9 |     if (event.key === "Enter" && !event.isComposing) emit("send");
+  |                                   ^^^^^^^^^^^^^^^^^
+  |
+  = help: Read the members every target's event has (`key`, `code`, the modifier keys, `button`, `clientX`, `currentTarget`, `target`, `preventDefault()`, …), or listen natively from `onMounted` through a template ref (`addEventListener`).
+  = see: https://unframework.dev/diagnostics/UF3032

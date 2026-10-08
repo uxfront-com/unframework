@@ -1,0 +1,6 @@
+{
+  "description": "Setup lets seeded from a required prop, an optional prop and a seeded state, kept across a rerender; an annotated tuple parameter of an array-source watcher; a watchEffect reading through a local function; a captured let updated in an arrow's expression; a type-predicate helper.",
+  "ssr": {
+    "three-votes": { "props": { "limit": 3, "label": "Lunch", "choices": ["yes", "no", "maybe"] } }
+  }
+}

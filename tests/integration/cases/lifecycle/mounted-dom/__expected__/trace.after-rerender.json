@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"title\":\"Release notes\",\"text\":\"Short.\"}",
+      "dom": [
+        "<article aria-label=\"Release notes\" class=\"article-preview\">",
+        "  <h2>",
+        "    \"Release notes\"",
+        "  </h2>",
+        "  <p>",
+        "    \"Short.\"",
+        "  </p>",
+        "  <p role=\"status\">",
+        "    \"57 characters\"",
+        "  </p>",
+        "</article>"
+      ],
+      "aria": [
+        "- article \"Release notes\":",
+        "  - heading \"Release notes\" [level=2]",
+        "  - paragraph: Short.",
+        "  - status: 57 characters"
+      ],
+      "events": {
+        "ready": [
+          [
+            57
+          ]
+        ]
+      }
+    }
+  ]
+}

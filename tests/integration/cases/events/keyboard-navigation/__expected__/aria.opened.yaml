@@ -1,0 +1,12 @@
+- region "Trip":
+  - search "Destination":
+    - text: City
+    - combobox "City" [expanded]: Ber
+    - listbox "Cities":
+      - option "Bern" [selected]
+      - option "Berlin"
+    - button "Search"
+  - status: No city chosen
+  - text: Note
+  - textbox "Note"
+  - list "Notes"

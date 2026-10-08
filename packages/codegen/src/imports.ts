@@ -18,7 +18,7 @@ interface ModuleImports {
  *
  * Its {@link NameScope} is the output file's: a target reserves the source's names in it
  * (`sourceNames`) and claims its own locals from it (`props`, `cx`), so imports and locals
- * never collide either (design §4.2).
+ * never collide either (ADR-0035).
  */
 export class ImportSet {
   readonly #modules = new Map<string, ModuleImports>();

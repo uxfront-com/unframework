@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2017",
+    "severity": "error",
+    "message": "\"closed\" is not an event the component declares: it declares \"close\".",
+    "file": "diagnostics/invalid-emit/SettingsDialog.uf.tsx",
+    "start": {
+      "line": 9,
+      "column": 10,
+      "offset": 277
+    },
+    "end": {
+      "line": 9,
+      "column": 18,
+      "offset": 285
+    },
+    "help": "Declare the event in `defineEmits`, or emit one it declares."
+  }
+]

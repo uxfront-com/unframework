@@ -7,15 +7,22 @@ import type { ViteUserConfig } from "vitest/config";
 import { browserProject } from "../codegen/test/render-parity-node.ts";
 import target from "./src/index.ts";
 import { toolchain } from "./src/toolchain/index.ts";
+import { behaviourModules } from "./test/behaviour-modules.ts";
 
 const context = {
   root: fileURLToPath(new URL(".", import.meta.url)),
   toolchainDir: fileURLToPath(new URL("../../tests/toolchains/vue", import.meta.url)),
 };
 
+/** The toolchain's browser configuration, serving the behaviour components too. */
+function withBehaviour(vite: ViteUserConfig): ViteUserConfig {
+  return { ...vite, plugins: [behaviourModules(), ...(vite.plugins ?? [])] };
+}
+
 /**
  * `unit` runs in Node. `browser` mounts the render-parity components in headless Chromium with
- * the toolchain's own Vite configuration and mount adapter (test/render-parity.browser.test.ts).
+ * the toolchain's own Vite configuration and mount adapter (test/render-parity.browser.test.ts),
+ * and the behaviour components (test/behaviour.browser.test.ts).
  */
 const config: ViteUserConfig = defineConfig({
   test: {
@@ -30,7 +37,7 @@ const config: ViteUserConfig = defineConfig({
       },
       browserProject({
         provider: playwright(),
-        vite: await toolchain.vite("browser", context),
+        vite: withBehaviour(await toolchain.vite("browser", context)),
         // The script block is formatted (ADR-0041), so the formatted output differs too.
         modules: { target, extension: ".vue", formatted: true, perCase: true },
       }),

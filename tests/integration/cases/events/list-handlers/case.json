@@ -1,0 +1,14 @@
+{
+  "description": "Handlers inside a keyed list pass the item and its index to setup functions: choose a row, remove a row.",
+  "ssr": {
+    "initial": {
+      "props": {
+        "initial": [
+          { "id": "ada", "name": "Ada Lovelace" },
+          { "id": "grace", "name": "Grace Hopper" },
+          { "id": "alan", "name": "Alan Turing" }
+        ]
+      }
+    }
+  }
+}

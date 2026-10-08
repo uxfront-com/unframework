@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2015",
+    "severity": "error",
+    "message": "`watchEffect` reads `query.value` in or after an `if`: React's effect and Qwik's `track` list a function's reactive reads statically, so each lies in the straight-line start of its body.",
+    "file": "diagnostics/conditional-effect-read/LiveSearch.uf.tsx",
+    "start": {
+      "line": 15,
+      "column": 22,
+      "offset": 549
+    },
+    "end": {
+      "line": 15,
+      "column": 33,
+      "offset": 560
+    },
+    "help": "Read every value first, into locals (`const enabled = live.value;`), or watch explicit sources with `watch`."
+  }
+]

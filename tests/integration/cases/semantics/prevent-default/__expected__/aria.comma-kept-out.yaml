@@ -1,0 +1,7 @@
+- form "Tags":
+  - text: New tag
+  - textbox "New tag": designsystems
+  - button "Add tag"
+  - link "How tags work":
+    - /url: /help/tags
+  - list "Added tags"

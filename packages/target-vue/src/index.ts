@@ -6,8 +6,10 @@ import { scriptSetup } from "./script.ts";
 
 /**
  * The Vue 3.5 target, the reference (D10): single-file components. A component is its
- * `<script setup lang="ts">` when it takes props (`script.ts`), then its template, printed in
- * `vueDialect` (design §5.2). A component without props is a template alone.
+ * `<script setup lang="ts">` (`script.ts`), when it has props, events, setup code or a listener
+ * its template cannot hold, then its template, printed in `vueDialect` (plan §6): a setup
+ * ref's value read as the ref, which Vue unwraps, and each listener as `listeners.ts` plans it.
+ * A component with none of those is a template alone.
  */
 export const vue: Target = defineTarget({
   name: "vue",
@@ -26,7 +28,20 @@ export const vue: Target = defineTarget({
       reason:
         "runtime-dom's `nodeOps.createElement` sets `multiple` but not `size` before the options are inserted, so Vue's client selects the first option, as a drop-down does.",
     },
+    // The source's Composition API is Vue's (ADR-0045 to ADR-0049): state, watchers, hooks,
+    // template refs and `emit` are written as Vue writes them, listeners as `@click`, their
+    // options as Vue's modifiers (`.capture`, `.once`, `.passive`, which runtime-dom passes to
+    // `addEventListener`), on the DOM's own events.
     interactivity: { support: "native" },
+    "event-capture": { support: "native" },
+    "event-once": { support: "native" },
+    "event-passive": { support: "native" },
+    "event-semantics": { support: "native" },
+    "conditional-event-control": { support: "native" },
+    "use-id": { support: "native" },
+    "next-tick": { support: "native" },
+    // Vue's props are reactive whatever keys a parent passes.
+    "late-prop": { support: "native" },
     props: { support: "native" },
     interpolation: { support: "native" },
     conditional: { support: "native" },
@@ -39,12 +54,14 @@ export const vue: Target = defineTarget({
     svg: { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    const { block, rewrite } = scriptSetup(component, context.module);
+    const { block, rewrite, listeners } = scriptSetup(component, context.module);
     // The component resolves the names of loop variables.
     const template = printMarkup(component.render, vueDialect, {
       level: 1,
       component,
-      ...(rewrite ? { rewrite } : {}),
+      rewrite,
+      attribute: (attribute) =>
+        attribute.kind === "Event" ? listeners.attributes.get(attribute) : undefined,
     });
     const parts = [...(block === undefined ? [] : [block]), `<template>\n${template}\n</template>`];
     return [{ path: `${component.name}.vue`, contents: `${parts.join("\n\n")}\n` }];

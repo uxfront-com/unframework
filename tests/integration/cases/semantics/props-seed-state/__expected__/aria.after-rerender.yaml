@@ -1,0 +1,3 @@
+- group "Seats":
+  - status: "5"
+  - button "Increase Seats": +

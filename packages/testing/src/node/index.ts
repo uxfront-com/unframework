@@ -1,20 +1,31 @@
-// @unframework/testing/node: the Node side of the testing API (DESIGN §4.3–§4.6). The browser
+// @unframework/testing/node: the Node side of the testing API (plan §7.3, §7.4). The browser
 // commands, the artefact write policy as plain functions for the Node drivers (compile, SSR),
 // the run's mode and project ordering, the parity reporter and the summary writer.
-export { parityBrowser, VIEWPORT } from "./browser.ts";
+export { ACTION_TIMEOUT, parityBrowser, VIEWPORT } from "./browser.ts";
 export type { AnyBrowserCommand, ParityBrowserOptions } from "./browser.ts";
-export { browserCommands, ufAriaSnapshot, ufArtefact } from "./commands.ts";
-export type { AriaCommandContext } from "./commands.ts";
+export {
+  browserCommands,
+  ufAriaSnapshot,
+  ufArtefact,
+  ufComponentEvents,
+  ufFocus,
+  ufResetInput,
+} from "./commands.ts";
+export type { AriaCommandContext, FocusCommandContext, InputCommandContext } from "./commands.ts";
+export { compiledEvents, eventsOfModule, recordCompiledModule } from "./events.ts";
+export type { CompiledModule } from "./events.ts";
 export { caseDirectory, displayRoot, projectHarness, sharedArtefactContext } from "./context.ts";
 export type { CommandProject } from "./context.ts";
 export {
   buildCells,
   buildPartialMatrix,
+  buildTests,
   cellHeadline,
   cellOf,
   MATRIX_VERSION,
   mergeCells,
   mergeMatrices,
+  mergeTests,
   narrowing,
   outcomeOfCell,
   settleQuarantine,
@@ -23,6 +34,8 @@ export {
 } from "./matrix.ts";
 export type {
   MatrixCells,
+  MatrixTest,
+  MatrixTests,
   MergedMatrix,
   ParityMatrix,
   PartialMatrix,
@@ -36,9 +49,9 @@ export type { HarnessMode, HarnessRunOptions, ModeInput, ProjectKind } from "./m
 export { KEBAB_CASE } from "./names.ts";
 export { settleArtefact, settleArtefactDirectory, writeIfChanged } from "./policy.ts";
 export type { ArtefactContext, ArtefactOutcome, ArtefactRole, ArtefactStatus } from "./policy.ts";
-export { ParityReporter, readPartialMatrices, runName } from "./reporter.ts";
+export { ParityReporter, readPartialMatrices, runName, testKey } from "./reporter.ts";
 export type { ParityReporterOptions } from "./reporter.ts";
-export { renderMarkdown, summarise, writeSummary } from "./summary.ts";
+export { renderMarkdown, summarise, unacceptedSkip, writeSummary } from "./summary.ts";
 export type {
   SummaryExpectations,
   SummaryJudgement,
@@ -59,8 +72,15 @@ export {
   LayerFailure,
   layerFailures,
   mergeOutcomes,
+  NO_INTERACTION_SKIP,
+  NO_OUTPUT_SKIP,
+  NO_OUTPUT_TEST_SKIP,
+  noOutputSkip,
+  NOT_RENDERED_SKIP,
   quarantineFor,
   recordLayer,
+  REQUIRES_SKIP,
+  requiresSkip,
   settleOutcome,
 } from "../layers.ts";
 export type {

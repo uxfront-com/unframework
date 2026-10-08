@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Start' })",
+      "dom": [
+        "<section aria-label=\"Picker\" class=\"picker\">",
+        "  <div class=\"choices\" role=\"presentation\">",
+        "    <button type=\"button\">",
+        "      \"Alpha\"",
+        "    </button>",
+        "    <button type=\"button\">",
+        "      \"Beta\"",
+        "    </button>",
+        "  </div>",
+        "  <ol aria-label=\"Log\"></ol>",
+        "  <p role=\"status\">",
+        "    \"loaded 2\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Start\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Picker\":",
+        "  - button \"Alpha\"",
+        "  - button \"Beta\"",
+        "  - list \"Log\"",
+        "  - status: loaded 2",
+        "  - button \"Start\""
+      ],
+      "events": {
+        "done": [
+          [
+            2,
+            "loaded 2"
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "tab",
+      "dom": [
+        "<form aria-label=\"Sign up\" class=\"signup-form\">",
+        "  <label>",
+        "    \"Name\"",
+        "    <input name=\"name\" uf:value=\"Ada\">",
+        "  </label>",
+        "  <label>",
+        "    \"Email\"",
+        "    <input name=\"email\" type=\"email\" uf:focused=\"\" uf:value=\"\">",
+        "  </label>",
+        "  <label>",
+        "    \"Plan\"",
+        "    <select name=\"plan\">",
+        "      <option uf:selected=\"true\" value=\"free\">",
+        "        \"Free\"",
+        "      </option>",
+        "      <option uf:selected=\"false\" value=\"pro\">",
+        "        \"Pro\"",
+        "      </option>",
+        "    </select>",
+        "  </label>",
+        "  <label>",
+        "    <input name=\"newsletter\" type=\"checkbox\" uf:checked=\"false\" uf:indeterminate=\"false\">",
+        "    \"Send me the newsletter\"",
+        "  </label>",
+        "  <p role=\"status\">",
+        "    \"Name: Ada; email: ; plan: free; newsletter: no; focus: email\"",
+        "  </p>",
+        "  <button type=\"submit\">",
+        "    \"Sign up\"",
+        "  </button>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Sign up\":",
+        "  - text: Name",
+        "  - textbox \"Name\": Ada",
+        "  - text: Email",
+        "  - textbox \"Email\"",
+        "  - text: Plan",
+        "  - combobox \"Plan\":",
+        "    - option \"Free\" [selected]",
+        "    - option \"Pro\"",
+        "  - checkbox \"Send me the newsletter\"",
+        "  - text: Send me the newsletter",
+        "  - status: \"Name: Ada; email: ; plan: free; newsletter: no; focus: email\"",
+        "  - button \"Sign up\""
+      ],
+      "events": {}
+    }
+  ]
+}

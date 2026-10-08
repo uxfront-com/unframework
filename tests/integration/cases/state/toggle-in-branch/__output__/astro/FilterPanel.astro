@@ -1,0 +1,36 @@
+---
+const open = false as boolean;
+const colour = null as string | null;
+const note = null as string | null;
+---
+
+<section class="filter-panel" aria-label="Filters">
+  {open ? (
+    <button type="button" aria-expanded="true">Hide colours</button>
+  ) : (
+    <button type="button" aria-expanded="false">Show colours</button>
+  )}
+  {open ? (
+    <div class="colours">
+      <button type="button">Red</button>
+      <button type="button">Blue</button>
+      <button type="button">Reset</button>
+    </div>
+  ) : null}
+  {colour ? (
+    <div class="selection">
+      <p>{`Colour: ${colour}`}</p>
+      <button type="button">{`Clear ${colour}`}</button>
+    </div>
+  ) : (
+    <p>No colour</p>
+  )}
+  {note === null ? (
+    <button type="button">Add a note</button>
+  ) : (
+    <div class="note">
+      <label>Note<input /></label>
+      <p>{`Draft: "${note}"`}</p>
+    </div>
+  )}
+</section>

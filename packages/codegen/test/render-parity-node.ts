@@ -38,7 +38,7 @@ import type { Plugin } from "vite";
 import type { TestProjectInlineConfiguration, ViteUserConfig } from "vitest/config";
 import type { BrowserProviderOption } from "vitest/node";
 
-import { formatOutput, requiredCapabilities } from "../src/index.ts";
+import { BEHAVIOURAL_CAPABILITIES, formatOutput, requiredCapabilities } from "../src/index.ts";
 import type { CapabilityName, EmitContext, OutputFile, Target } from "../src/index.ts";
 import type { ClientCase } from "./render-parity-client.ts";
 import {
@@ -382,13 +382,18 @@ export function parityProps(suite: ParitySuite): Record<string, unknown> {
 /**
  * The capabilities a case uses that the target's matrix marks unsupported, by the derivation
  * the compiler's capability check reads: the compiler reports such a case for the target, so
- * its client test leaves the case out and checks that it still renders differently.
+ * its client test leaves the case out and checks that it still renders differently. A
+ * behavioural capability (`BEHAVIOURAL_CAPABILITIES`) changes nothing a static render shows, so
+ * it is not one of them (ADR-0033, as amended by ADR-0047): the case still renders exactly,
+ * listeners inert, and is compared as any other.
  */
 export function unsupportedCapabilities(target: Target, parityCase: ParityCase): CapabilityName[] {
   const module =
     parityCase.lowered?.module ?? parityModule({ title: parityCase.name, cases: [parityCase] });
   return [...requiredCapabilities(module).keys()].filter(
-    (capability) => target.capabilities[capability].support === "unsupported",
+    (capability) =>
+      !BEHAVIOURAL_CAPABILITIES.has(capability) &&
+      target.capabilities[capability].support === "unsupported",
   );
 }
 
@@ -657,7 +662,7 @@ const boolean = (value: boolean): BoundValue => ({ type: "boolean", value });
 /**
  * The values the bound sweep binds an attribute to, one case per entry, each entry's
  * alternatives most specific first (the analyzer takes the first it accepts). Only values the
- * contract covers (design §1.5, §1.9): booleans on bindable boolean attributes (present and
+ * contract covers (ADR-0035, ADR-0037): booleans on bindable boolean attributes (present and
  * absent), booleans on ARIA's and the other `"true"`/`"false"` attributes, numbers in range on
  * number-typed attributes, `about:blank` on URLs (no request, and no scheme a target blocks or
  * prefixes), and a string or a number elsewhere.

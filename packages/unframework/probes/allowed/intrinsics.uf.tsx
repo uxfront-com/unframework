@@ -51,6 +51,10 @@ export function Elements({ href, active }: { href?: string; active: boolean }) {
       <button type="button" onClick={() => amount.value++}>
         Increment
       </button>
+      {/* The vocabulary's own events, on every element (ADR-0047): lib.dom's `Event`. */}
+      <dialog onClose={(event) => event.type} onCancel={(event) => event.preventDefault()}>
+        <div onCommand={(event) => event.type} onCloseCapture={() => {}} />
+      </dialog>
       <svg viewBox="0 0 10 10">
         <defs>
           <linearGradient id="fill" x1="0" x2="1">

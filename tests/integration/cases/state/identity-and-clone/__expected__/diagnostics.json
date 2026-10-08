@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "state/identity-and-clone/FruitPicker.uf.tsx",
+    "start": {
+      "line": 38,
+      "column": 15,
+      "offset": 948
+    },
+    "end": {
+      "line": 38,
+      "column": 42,
+      "offset": 975
+    },
+    "target": "astro"
+  }
+]

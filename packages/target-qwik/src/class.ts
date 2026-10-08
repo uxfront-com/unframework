@@ -1,4 +1,4 @@
-// `class` from parts (ADR-0038, design §5.6). Qwik's `class` takes Vue's forms natively
+// `class` from parts (ADR-0038). Qwik's `class` takes Vue's forms natively
 // (`ClassList`: strings, arrays and objects of conditions, nested), so the parts are written
 // as the source wrote them, with no helper: a lone dynamic part as itself (`class={tone}`),
 // toggles alone as one object (`class={{ active, muted }}`), and anything else as an array.

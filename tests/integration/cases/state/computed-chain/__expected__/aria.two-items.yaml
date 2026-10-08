@@ -1,0 +1,7 @@
+- region "Order summary":
+  - status: "Quantity: 2"
+  - button "Remove one"
+  - button "Add one"
+  - paragraph: "Subtotal: 50.00"
+  - paragraph: "Tax: 10.00"
+  - paragraph: "Total: 60.00"

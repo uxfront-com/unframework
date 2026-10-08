@@ -92,13 +92,14 @@ async function check(contents: string) {
 }
 
 describe("solid frameworkCompile (L3)", () => {
+  // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output, with no warning", async () => {
     const files = solidGoldens();
     const results = await toolchain.frameworkCompile(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file.path, { errors: [], warnings: [] }])),
     );
-  });
+  }, 60_000);
 
   it("rejects a mismatched closing tag", async () => {
     const broken = golden("Hello.tsx").contents.replace("</p>", "</span>");
@@ -160,13 +161,14 @@ describe("solid frameworkCompile (L3)", () => {
 });
 
 describe("solid typecheck (L4)", () => {
+  // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output in one run", async () => {
     const files = solidGoldens().map((file) => file.path);
     const results = await toolchain.typecheck(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file, []])),
     );
-  });
+  }, 60_000);
 
   it("reports each injected type error against its own file", async () => {
     const goldenFiles = solidGoldens().map((file) => file.path);

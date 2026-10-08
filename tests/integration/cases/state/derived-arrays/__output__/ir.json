@@ -1,0 +1,1907 @@
+{
+  "irVersion": 1,
+  "file": "state/derived-arrays/TaskBoard.uf.tsx",
+  "components": [
+    {
+      "name": "TaskBoard",
+      "span": {
+        "start": 290,
+        "end": 4415
+      },
+      "props": [
+        {
+          "name": "initial",
+          "optional": false,
+          "type": {
+            "code": "Task[]",
+            "span": {
+              "start": 279,
+              "end": 285
+            }
+          },
+          "binding": "initial@326",
+          "span": {
+            "start": 270,
+            "end": 286
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TaskBoardProps",
+          "span": {
+            "start": 337,
+            "end": 351
+          }
+        },
+        "span": {
+          "start": 324,
+          "end": 351
+        }
+      },
+      "types": [
+        "Task",
+        "Filters",
+        "TaskBoardProps"
+      ],
+      "bindings": [
+        {
+          "id": "initial@326",
+          "name": "initial",
+          "kind": "prop",
+          "span": {
+            "start": 326,
+            "end": 333
+          }
+        },
+        {
+          "id": "tasks@363",
+          "name": "tasks",
+          "kind": "state",
+          "span": {
+            "start": 363,
+            "end": 368
+          }
+        },
+        {
+          "id": "filters@393",
+          "name": "filters",
+          "kind": "state",
+          "span": {
+            "start": 393,
+            "end": 400
+          }
+        },
+        {
+          "id": "notes@450",
+          "name": "notes",
+          "kind": "templateRef",
+          "span": {
+            "start": 450,
+            "end": 455
+          }
+        },
+        {
+          "id": "open@505",
+          "name": "open",
+          "kind": "derived",
+          "span": {
+            "start": 505,
+            "end": 509
+          }
+        },
+        {
+          "id": "alphabetical@618",
+          "name": "alphabetical",
+          "kind": "derived",
+          "span": {
+            "start": 618,
+            "end": 630
+          }
+        },
+        {
+          "id": "newestFirst@755",
+          "name": "newestFirst",
+          "kind": "derived",
+          "span": {
+            "start": 755,
+            "end": 766
+          }
+        },
+        {
+          "id": "kinds@842",
+          "name": "kinds",
+          "kind": "derived",
+          "span": {
+            "start": 842,
+            "end": 847
+          }
+        },
+        {
+          "id": "byId@1145",
+          "name": "byId",
+          "kind": "derived",
+          "span": {
+            "start": 1145,
+            "end": 1149
+          }
+        },
+        {
+          "id": "titlesByKind@1299",
+          "name": "titlesByKind",
+          "kind": "derived",
+          "span": {
+            "start": 1299,
+            "end": 1311
+          }
+        },
+        {
+          "id": "finishedByKind@1486",
+          "name": "finishedByKind",
+          "kind": "derived",
+          "span": {
+            "start": 1486,
+            "end": 1500
+          }
+        },
+        {
+          "id": "byState@1696",
+          "name": "byState",
+          "kind": "derived",
+          "span": {
+            "start": 1696,
+            "end": 1703
+          }
+        },
+        {
+          "id": "progress@1965",
+          "name": "progress",
+          "kind": "derived",
+          "span": {
+            "start": 1965,
+            "end": 1973
+          }
+        },
+        {
+          "id": "finish@2101",
+          "name": "finish",
+          "kind": "localFn",
+          "span": {
+            "start": 2101,
+            "end": 2107
+          }
+        },
+        {
+          "id": "addTag@2234",
+          "name": "addTag",
+          "kind": "localFn",
+          "span": {
+            "start": 2234,
+            "end": 2240
+          }
+        },
+        {
+          "id": "resize@2393",
+          "name": "resize",
+          "kind": "localFn",
+          "span": {
+            "start": 2393,
+            "end": 2399
+          }
+        },
+        {
+          "id": "sizeSummary@2630",
+          "name": "sizeSummary",
+          "kind": "localFn",
+          "span": {
+            "start": 2630,
+            "end": 2641
+          }
+        },
+        {
+          "id": "task@2993",
+          "name": "task",
+          "kind": "loopVar",
+          "span": {
+            "start": 2993,
+            "end": 2997
+          }
+        },
+        {
+          "id": "line@3588",
+          "name": "line",
+          "kind": "loopVar",
+          "span": {
+            "start": 3588,
+            "end": 3592
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "tasks@363",
+          "initial": {
+            "code": "initial",
+            "span": {
+              "start": 375,
+              "end": 382
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "initial@326",
+                "span": {
+                  "start": 375,
+                  "end": 382
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 357,
+            "end": 384
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "filters@393",
+          "type": {
+            "code": "Filters",
+            "span": {
+              "start": 407,
+              "end": 414
+            }
+          },
+          "initial": {
+            "code": "{ query: \"\", tags: [] }",
+            "span": {
+              "start": 416,
+              "end": 439
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 387,
+            "end": 441
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "notes@450",
+          "type": {
+            "code": "HTMLTextAreaElement",
+            "span": {
+              "start": 473,
+              "end": 492
+            }
+          },
+          "span": {
+            "start": 444,
+            "end": 496
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "open@505",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "tasks.value.filter((task) => !task.done).sort((a, b) => a.rank - b.rank)",
+              "span": {
+                "start": 531,
+                "end": 603
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@363",
+                  "span": {
+                    "start": 531,
+                    "end": 542
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 521,
+              "end": 603
+            }
+          },
+          "span": {
+            "start": 499,
+            "end": 609
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "alphabetical@618",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "tasks.value.slice().sort((a, b) => (a.title < b.title ? -1 : a.title > b.title ? 1 : 0))",
+              "span": {
+                "start": 652,
+                "end": 740
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@363",
+                  "span": {
+                    "start": 652,
+                    "end": 663
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 642,
+              "end": 740
+            }
+          },
+          "span": {
+            "start": 612,
+            "end": 746
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "newestFirst@755",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "tasks.value.map((task) => task.title).reverse()",
+              "span": {
+                "start": 784,
+                "end": 831
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@363",
+                  "span": {
+                    "start": 784,
+                    "end": 795
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 778,
+              "end": 831
+            }
+          },
+          "span": {
+            "start": 749,
+            "end": 833
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "kinds@842",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    const byKind: Record<string, Task[]> = {};\n    for (const task of tasks.value) {\n      if (!byKind[task.kind]) byKind[task.kind] = [];\n      byKind[task.kind]!.push(task);\n    }\n    return Object.keys(byKind).map((kind) => `${kind}: ${byKind[kind]!.length}`);\n  }",
+              "span": {
+                "start": 865,
+                "end": 1134
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@363",
+                  "span": {
+                    "start": 937,
+                    "end": 948
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Object",
+                  "span": {
+                    "start": 1060,
+                    "end": 1066
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 859,
+              "end": 1134
+            }
+          },
+          "span": {
+            "start": 836,
+            "end": 1136
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "byId@1145",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "tasks.value.reduce<Record<number, Task>>((acc, task) => {\n      acc[task.id] = task;\n      return acc;\n    }, {})",
+              "span": {
+                "start": 1171,
+                "end": 1284
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@363",
+                  "span": {
+                    "start": 1171,
+                    "end": 1182
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 1161,
+              "end": 1284
+            }
+          },
+          "span": {
+            "start": 1139,
+            "end": 1290
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "titlesByKind@1299",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "tasks.value.reduce<Record<string, string[]>>((acc, task) => {\n      (acc[task.kind] ||= []).push(task.title);\n      return acc;\n    }, {})",
+              "span": {
+                "start": 1333,
+                "end": 1471
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@363",
+                  "span": {
+                    "start": 1333,
+                    "end": 1344
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 1323,
+              "end": 1471
+            }
+          },
+          "span": {
+            "start": 1293,
+            "end": 1477
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "finishedByKind@1486",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "tasks.value.reduce((acc, task) => {\n      if (task.done) acc.set(task.kind, (acc.get(task.kind) ?? 0) + 1);\n      return acc;\n    }, new Map<string, number>())",
+              "span": {
+                "start": 1522,
+                "end": 1681
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@363",
+                  "span": {
+                    "start": 1522,
+                    "end": 1533
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Map",
+                  "span": {
+                    "start": 1659,
+                    "end": 1662
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 1512,
+              "end": 1681
+            }
+          },
+          "span": {
+            "start": 1480,
+            "end": 1687
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "byState@1696",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    const groups: Record<string, string[]> = {};\n    for (const task of tasks.value) {\n      const state = task.done ? \"done\" : \"open\";\n      groups[state] ??= [];\n      groups[state]!.push(task.title);\n    }\n    return groups;\n  }",
+              "span": {
+                "start": 1721,
+                "end": 1954
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@363",
+                  "span": {
+                    "start": 1795,
+                    "end": 1806
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1715,
+              "end": 1954
+            }
+          },
+          "span": {
+            "start": 1690,
+            "end": 1956
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "progress@1965",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "Math.round((tasks.value.filter((task) => task.done).length / tasks.value.length) * 100)",
+              "span": {
+                "start": 1995,
+                "end": 2082
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "Math",
+                  "span": {
+                    "start": 1995,
+                    "end": 1999
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@363",
+                  "span": {
+                    "start": 2007,
+                    "end": 2018
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@363",
+                  "span": {
+                    "start": 2056,
+                    "end": 2067
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 1985,
+              "end": 2082
+            }
+          },
+          "span": {
+            "start": 1959,
+            "end": 2088
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "finish@2101",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "id",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 2112,
+                    "end": 2118
+                  }
+                },
+                "span": {
+                  "start": 2108,
+                  "end": 2118
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    tasks.value = tasks.value.map((task) => (task.id === id ? { ...task, done: true } : task));\n  }",
+              "span": {
+                "start": 2120,
+                "end": 2221
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "tasks@363",
+                  "operator": "=",
+                  "span": {
+                    "start": 2126,
+                    "end": 2216
+                  },
+                  "target": {
+                    "start": 2126,
+                    "end": 2137
+                  },
+                  "value": {
+                    "start": 2140,
+                    "end": 2216
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@363",
+                  "span": {
+                    "start": 2140,
+                    "end": 2151
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 2107,
+              "end": 2221
+            }
+          },
+          "span": {
+            "start": 2092,
+            "end": 2221
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "addTag@2234",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "tag",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 2246,
+                    "end": 2252
+                  }
+                },
+                "span": {
+                  "start": 2241,
+                  "end": 2252
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    const next = { ...filters.value, tags: [...filters.value.tags] };\n    next.tags.push(tag);\n    filters.value = next;\n  }",
+              "span": {
+                "start": 2254,
+                "end": 2380
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "filters@393",
+                  "span": {
+                    "start": 2278,
+                    "end": 2291
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "filters@393",
+                  "span": {
+                    "start": 2303,
+                    "end": 2316
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "filters@393",
+                  "operator": "=",
+                  "span": {
+                    "start": 2355,
+                    "end": 2375
+                  },
+                  "target": {
+                    "start": 2355,
+                    "end": 2368
+                  },
+                  "value": {
+                    "start": 2371,
+                    "end": 2375
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 2240,
+              "end": 2380
+            }
+          },
+          "span": {
+            "start": 2225,
+            "end": 2380
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "resize@2393",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    const field = notes.value;\n    if (!field) return;\n    const lines = field.value.split(\"\\n\").length;\n    field.style.height = `${Math.max(lines, 2) * 1.5}em`;\n    field.classList.toggle(\"tall\", lines > 3);\n  }",
+              "span": {
+                "start": 2402,
+                "end": 2617
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "notes@450",
+                  "span": {
+                    "start": 2422,
+                    "end": 2433
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Math",
+                  "span": {
+                    "start": 2537,
+                    "end": 2541
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 2399,
+              "end": 2617
+            }
+          },
+          "span": {
+            "start": 2384,
+            "end": 2617
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "sizeSummary@2630",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "Event",
+                  "span": {
+                    "start": 2649,
+                    "end": 2654
+                  }
+                },
+                "event": "Event",
+                "span": {
+                  "start": 2642,
+                  "end": 2654
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    const area = event.currentTarget as HTMLTextAreaElement;\n    const lines = area.value.split(\"\\n\").length;\n    area.style.height = `${Math.max(lines, 2) * 1.5}em`;\n    area.classList.toggle(\"tall\", lines > 3);\n  }",
+              "span": {
+                "start": 2656,
+                "end": 2874
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "currentTarget",
+                  "span": {
+                    "start": 2675,
+                    "end": 2694
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Math",
+                  "span": {
+                    "start": 2795,
+                    "end": 2799
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 2641,
+              "end": 2874
+            }
+          },
+          "span": {
+            "start": 2621,
+            "end": 2874
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "task-board",
+            "span": {
+              "start": 2900,
+              "end": 2918
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Tasks",
+            "span": {
+              "start": 2919,
+              "end": 2937
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Open",
+                "span": {
+                  "start": 2949,
+                  "end": 2966
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 2977,
+                    "end": 2987
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@505",
+                      "span": {
+                        "start": 2977,
+                        "end": 2987
+                      }
+                    }
+                  ]
+                },
+                "item": "task@2993",
+                "key": {
+                  "code": "task.id",
+                  "span": {
+                    "start": 3023,
+                    "end": 3030
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "task@2993",
+                      "span": {
+                        "start": 3023,
+                        "end": 3027
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [
+                    {
+                      "kind": "Class",
+                      "items": [
+                        {
+                          "kind": "Toggle",
+                          "name": "first",
+                          "condition": {
+                            "code": "task.rank === 1",
+                            "span": {
+                              "start": 3048,
+                              "end": 3063
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "task@2993",
+                                "span": {
+                                  "start": 3048,
+                                  "end": 3052
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 3041,
+                            "end": 3063
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 3032,
+                        "end": 3066
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "task.title",
+                        "span": {
+                          "start": 3081,
+                          "end": 3091
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "task@2993",
+                            "span": {
+                              "start": 3081,
+                              "end": 3085
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 3080,
+                        "end": 3092
+                      }
+                    },
+                    {
+                      "kind": "Element",
+                      "tag": "button",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "type",
+                          "value": "button",
+                          "span": {
+                            "start": 3113,
+                            "end": 3126
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "event": "click",
+                          "handler": {
+                            "kind": "Inline",
+                            "function": {
+                              "parameters": [],
+                              "body": {
+                                "code": "finish(task.id)",
+                                "span": {
+                                  "start": 3142,
+                                  "end": 3157
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "finish@2101",
+                                    "span": {
+                                      "start": 3142,
+                                      "end": 3148
+                                    },
+                                    "call": true
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "task@2993",
+                                    "span": {
+                                      "start": 3149,
+                                      "end": 3153
+                                    }
+                                  }
+                                ]
+                              },
+                              "expression": true,
+                              "span": {
+                                "start": 3136,
+                                "end": 3157
+                              }
+                            },
+                            "span": {
+                              "start": 3136,
+                              "end": 3157
+                            }
+                          },
+                          "span": {
+                            "start": 3127,
+                            "end": 3158
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "`Finish ${task.title}`",
+                            "span": {
+                              "start": 3175,
+                              "end": 3197
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "task@2993",
+                                "span": {
+                                  "start": 3185,
+                                  "end": 3189
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 3174,
+                            "end": 3198
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 3105,
+                        "end": 3220
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 3014,
+                    "end": 3236
+                  }
+                },
+                "span": {
+                  "start": 2977,
+                  "end": 3247
+                }
+              }
+            ],
+            "span": {
+              "start": 2945,
+              "end": 3260
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "meter",
+                "span": {
+                  "start": 3272,
+                  "end": 3285
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "presentation",
+                "span": {
+                  "start": 3286,
+                  "end": 3305
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "div",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "fill",
+                    "span": {
+                      "start": 3320,
+                      "end": 3332
+                    }
+                  },
+                  {
+                    "kind": "Style",
+                    "declarations": [
+                      {
+                        "kind": "Bound",
+                        "property": "width",
+                        "value": {
+                          "code": "`${progress.value}%`",
+                          "span": {
+                            "start": 3349,
+                            "end": 3369
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "progress@1965",
+                              "span": {
+                                "start": 3352,
+                                "end": 3366
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 3342,
+                          "end": 3369
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 3333,
+                      "end": 3372
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 3315,
+                  "end": 3375
+                }
+              }
+            ],
+            "span": {
+              "start": 3267,
+              "end": 3388
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Alphabetical: ",
+                "span": {
+                  "start": 3398,
+                  "end": 3412
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "alphabetical.value.map((task) => task.title).join(\", \")",
+                  "span": {
+                    "start": 3413,
+                    "end": 3468
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "alphabetical@618",
+                      "span": {
+                        "start": 3413,
+                        "end": 3431
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 3412,
+                  "end": 3469
+                }
+              }
+            ],
+            "span": {
+              "start": 3395,
+              "end": 3473
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Newest first: ",
+                "span": {
+                  "start": 3483,
+                  "end": 3497
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "newestFirst.value.join(\", \")",
+                  "span": {
+                    "start": 3498,
+                    "end": 3526
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "newestFirst@755",
+                      "span": {
+                        "start": 3498,
+                        "end": 3515
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 3497,
+                  "end": 3527
+                }
+              }
+            ],
+            "span": {
+              "start": 3480,
+              "end": 3531
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Kinds",
+                "span": {
+                  "start": 3542,
+                  "end": 3560
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "kinds.value",
+                  "span": {
+                    "start": 3571,
+                    "end": 3582
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "kinds@842",
+                      "span": {
+                        "start": 3571,
+                        "end": 3582
+                      }
+                    }
+                  ]
+                },
+                "item": "line@3588",
+                "key": {
+                  "code": "line",
+                  "span": {
+                    "start": 3618,
+                    "end": 3622
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "line@3588",
+                      "span": {
+                        "start": 3618,
+                        "end": 3622
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "line",
+                        "span": {
+                          "start": 3625,
+                          "end": 3629
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "line@3588",
+                            "span": {
+                              "start": 3625,
+                              "end": 3629
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 3624,
+                        "end": 3630
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 3609,
+                    "end": 3635
+                  }
+                },
+                "span": {
+                  "start": 3571,
+                  "end": 3646
+                }
+              }
+            ],
+            "span": {
+              "start": 3538,
+              "end": 3659
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Task 2: ",
+                "span": {
+                  "start": 3669,
+                  "end": 3677
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "byId.value[2]?.title",
+                  "span": {
+                    "start": 3678,
+                    "end": 3698
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "byId@1145",
+                      "span": {
+                        "start": 3678,
+                        "end": 3688
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 3677,
+                  "end": 3699
+                }
+              }
+            ],
+            "span": {
+              "start": 3666,
+              "end": 3703
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Code tasks: ",
+                "span": {
+                  "start": 3713,
+                  "end": 3725
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "titlesByKind.value[\"code\"]?.join(\", \")",
+                  "span": {
+                    "start": 3726,
+                    "end": 3764
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "titlesByKind@1299",
+                      "span": {
+                        "start": 3726,
+                        "end": 3744
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 3725,
+                  "end": 3765
+                }
+              }
+            ],
+            "span": {
+              "start": 3710,
+              "end": 3769
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Finished code tasks: ",
+                "span": {
+                  "start": 3779,
+                  "end": 3800
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "finishedByKind.value.get(\"code\") ?? 0",
+                  "span": {
+                    "start": 3801,
+                    "end": 3838
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "finishedByKind@1486",
+                      "span": {
+                        "start": 3801,
+                        "end": 3821
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 3800,
+                  "end": 3839
+                }
+              }
+            ],
+            "span": {
+              "start": 3776,
+              "end": 3843
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Done: ",
+                "span": {
+                  "start": 3853,
+                  "end": 3859
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "byState.value[\"done\"]?.join(\", \") ?? \"nothing\"",
+                  "span": {
+                    "start": 3860,
+                    "end": 3906
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "byState@1696",
+                      "span": {
+                        "start": 3860,
+                        "end": 3873
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 3859,
+                  "end": 3907
+                }
+              }
+            ],
+            "span": {
+              "start": 3850,
+              "end": 3911
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 3926,
+                  "end": 3939
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "addTag(\"urgent\")",
+                      "span": {
+                        "start": 3955,
+                        "end": 3971
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "addTag@2234",
+                          "span": {
+                            "start": 3955,
+                            "end": 3961
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 3949,
+                      "end": 3971
+                    }
+                  },
+                  "span": {
+                    "start": 3949,
+                    "end": 3971
+                  }
+                },
+                "span": {
+                  "start": 3940,
+                  "end": 3972
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Tag urgent",
+                "span": {
+                  "start": 3973,
+                  "end": 3999
+                }
+              }
+            ],
+            "span": {
+              "start": 3918,
+              "end": 4008
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 4023,
+                  "end": 4036
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "addTag(\"later\")",
+                      "span": {
+                        "start": 4052,
+                        "end": 4067
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "addTag@2234",
+                          "span": {
+                            "start": 4052,
+                            "end": 4058
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 4046,
+                      "end": 4067
+                    }
+                  },
+                  "span": {
+                    "start": 4046,
+                    "end": 4067
+                  }
+                },
+                "span": {
+                  "start": 4037,
+                  "end": 4068
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Tag later",
+                "span": {
+                  "start": 4069,
+                  "end": 4094
+                }
+              }
+            ],
+            "span": {
+              "start": 4015,
+              "end": 4103
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Tags: ",
+                "span": {
+                  "start": 4113,
+                  "end": 4119
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "filters.value.tags.join(\", \")",
+                  "span": {
+                    "start": 4120,
+                    "end": 4149
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "filters@393",
+                      "span": {
+                        "start": 4120,
+                        "end": 4133
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 4119,
+                  "end": 4150
+                }
+              }
+            ],
+            "span": {
+              "start": 4110,
+              "end": 4154
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Notes",
+                "span": {
+                  "start": 4168,
+                  "end": 4191
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "textarea",
+                "attributes": [
+                  {
+                    "kind": "Ref",
+                    "binding": "notes@450",
+                    "span": {
+                      "start": 4201,
+                      "end": 4212
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "notes",
+                    "span": {
+                      "start": 4213,
+                      "end": 4225
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "notes",
+                    "span": {
+                      "start": 4226,
+                      "end": 4239
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "input",
+                    "handler": {
+                      "kind": "Function",
+                      "binding": "resize@2393",
+                      "span": {
+                        "start": 4249,
+                        "end": 4255
+                      }
+                    },
+                    "span": {
+                      "start": 4240,
+                      "end": 4256
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 4191,
+                  "end": 4259
+                }
+              }
+            ],
+            "span": {
+              "start": 4161,
+              "end": 4274
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Summary",
+                "span": {
+                  "start": 4288,
+                  "end": 4313
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "textarea",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "summary",
+                    "span": {
+                      "start": 4323,
+                      "end": 4337
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "class",
+                    "value": "summary",
+                    "span": {
+                      "start": 4338,
+                      "end": 4353
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "input",
+                    "handler": {
+                      "kind": "Function",
+                      "binding": "sizeSummary@2630",
+                      "span": {
+                        "start": 4363,
+                        "end": 4374
+                      }
+                    },
+                    "span": {
+                      "start": 4354,
+                      "end": 4375
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 4313,
+                  "end": 4378
+                }
+              }
+            ],
+            "span": {
+              "start": 4281,
+              "end": 4393
+            }
+          }
+        ],
+        "span": {
+          "start": 2891,
+          "end": 4408
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "TaskBoard",
+      "span": {
+        "start": 290,
+        "end": 4415
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Task",
+      "exported": true,
+      "code": "interface Task {\n  id: number;\n  title: string;\n  kind: string;\n  rank: number;\n  done: boolean;\n}",
+      "span": {
+        "start": 69,
+        "end": 167
+      }
+    },
+    {
+      "name": "Filters",
+      "exported": true,
+      "code": "interface Filters {\n  query: string;\n  tags: string[];\n}",
+      "span": {
+        "start": 176,
+        "end": 232
+      }
+    },
+    {
+      "name": "TaskBoardProps",
+      "exported": true,
+      "code": "interface TaskBoardProps {\n  initial: Task[];\n}",
+      "span": {
+        "start": 241,
+        "end": 288
+      }
+    }
+  ]
+}

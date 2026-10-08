@@ -10,6 +10,8 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { CAPABILITY_NAMES } from "@unframework/codegen";
+import type { Capabilities, CapabilityCell } from "@unframework/codegen";
 import type { TestProjectInlineConfiguration } from "vitest/config";
 
 import type { CaseConfig, HarnessContext } from "../../src/harness.ts";
@@ -74,6 +76,22 @@ export function fixtureHarness(
   });
 }
 
+/** The reason the stub gives for the one capability it lacks. */
+export const STUB_LISTBOX_REASON = "the stub target renders no list box";
+
+/**
+ * The stub target's capability matrix: every capability, but a list box, which a test that
+ * requires it is skipped for (`stub/requires`).
+ */
+export const STUB_CAPABILITIES: Capabilities = Object.fromEntries(
+  CAPABILITY_NAMES.map((name): [string, CapabilityCell] => [
+    name,
+    name === "listbox"
+      ? { support: "unsupported", code: "UF4001", severity: "info", reason: STUB_LISTBOX_REASON }
+      : { support: "native" },
+  ]),
+) as Capabilities;
+
 /**
  * The `parity` project: the stub target in Chromium, with the harness's browser and commands,
  * and the corpus's rule that every test asserts something (`requireAssertions`, ADR-0043). It
@@ -90,7 +108,11 @@ export function parityProject(
       name: "parity",
       root: packageRoot,
       include: [...include],
-      provide: { target: "dom", ufHarness: fixtureHarness(env) },
+      provide: {
+        target: "dom",
+        ufHarness: fixtureHarness(env),
+        ufCapabilities: STUB_CAPABILITIES,
+      },
       // The harness's: the setup bounds `expect.element` by the poll timeout, and requires one.
       expect: { requireAssertions: true, poll: { timeout: 5_000 } },
       browser: parityBrowser({ name: "parity" }),

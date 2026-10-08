@@ -1,6 +1,6 @@
 # ADR-0033: What a framework renders differently is a declared capability, on the reference too
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0047
 - **Date:** 2026-10-02
 - **Plan:** §11 D10; P2, P4; §5.7 (capabilities), §7.4 (`requires`); ADR-0014, ADR-0026
 

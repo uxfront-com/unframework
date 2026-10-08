@@ -1,0 +1,762 @@
+{
+  "irVersion": 1,
+  "file": "lifecycle/document-listener/ShortcutTip.uf.tsx",
+  "components": [
+    {
+      "name": "ShortcutTip",
+      "span": {
+        "start": 80,
+        "end": 1426
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@128",
+        "type": {
+          "code": "{ dismissed: []; shortcut: [key: string, count: number] }",
+          "span": {
+            "start": 147,
+            "end": 204
+          }
+        },
+        "events": [
+          {
+            "name": "dismissed",
+            "parameters": [],
+            "span": {
+              "start": 149,
+              "end": 162
+            }
+          },
+          {
+            "name": "shortcut",
+            "parameters": [
+              {
+                "name": "key",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 180,
+                    "end": 186
+                  }
+                },
+                "span": {
+                  "start": 175,
+                  "end": 186
+                }
+              },
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 195,
+                    "end": 201
+                  }
+                },
+                "span": {
+                  "start": 188,
+                  "end": 201
+                }
+              }
+            ],
+            "span": {
+              "start": 164,
+              "end": 202
+            }
+          }
+        ],
+        "span": {
+          "start": 122,
+          "end": 208
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@128",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 128,
+            "end": 132
+          }
+        },
+        {
+          "id": "open@218",
+          "name": "open",
+          "kind": "state",
+          "span": {
+            "start": 218,
+            "end": 222
+          }
+        },
+        {
+          "id": "enabled@244",
+          "name": "enabled",
+          "kind": "state",
+          "span": {
+            "start": 244,
+            "end": 251
+          }
+        },
+        {
+          "id": "count@274",
+          "name": "count",
+          "kind": "state",
+          "span": {
+            "start": 274,
+            "end": 279
+          }
+        },
+        {
+          "id": "onEscape@302",
+          "name": "onEscape",
+          "kind": "localFn",
+          "span": {
+            "start": 302,
+            "end": 310
+          }
+        },
+        {
+          "id": "onShortcut@442",
+          "name": "onShortcut",
+          "kind": "localFn",
+          "span": {
+            "start": 442,
+            "end": 452
+          }
+        },
+        {
+          "id": "toggle@600",
+          "name": "toggle",
+          "kind": "localFn",
+          "span": {
+            "start": 600,
+            "end": 606
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "open@218",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 229,
+              "end": 233
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 212,
+            "end": 235
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "enabled@244",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 258,
+              "end": 263
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 238,
+            "end": 265
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "count@274",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 286,
+              "end": 287
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 268,
+            "end": 289
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "onEscape@302",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 318,
+                    "end": 331
+                  }
+                },
+                "span": {
+                  "start": 311,
+                  "end": 331
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key === \"Escape\") {\n      open.value = false;\n      emit(\"dismissed\");\n    }\n  }",
+              "span": {
+                "start": 333,
+                "end": 429
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "open@218",
+                  "operator": "=",
+                  "span": {
+                    "start": 375,
+                    "end": 393
+                  },
+                  "target": {
+                    "start": 375,
+                    "end": 385
+                  },
+                  "value": {
+                    "start": 388,
+                    "end": 393
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@128",
+                  "event": "dismissed",
+                  "span": {
+                    "start": 401,
+                    "end": 418
+                  },
+                  "arguments": []
+                }
+              ]
+            },
+            "span": {
+              "start": 310,
+              "end": 429
+            }
+          },
+          "span": {
+            "start": 293,
+            "end": 429
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "onShortcut@442",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 460,
+                    "end": 473
+                  }
+                },
+                "span": {
+                  "start": 453,
+                  "end": 473
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key === \"k\") {\n      count.value += 1;\n      emit(\"shortcut\", event.key, count.value);\n    }\n  }",
+              "span": {
+                "start": 475,
+                "end": 587
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "count@274",
+                  "operator": "+=",
+                  "span": {
+                    "start": 512,
+                    "end": 528
+                  },
+                  "target": {
+                    "start": 512,
+                    "end": 523
+                  },
+                  "value": {
+                    "start": 527,
+                    "end": 528
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@128",
+                  "event": "shortcut",
+                  "span": {
+                    "start": 536,
+                    "end": 576
+                  },
+                  "arguments": [
+                    {
+                      "start": 553,
+                      "end": 562
+                    },
+                    {
+                      "start": 564,
+                      "end": 575
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "count@274",
+                  "span": {
+                    "start": 564,
+                    "end": 575
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 452,
+              "end": 587
+            }
+          },
+          "span": {
+            "start": 433,
+            "end": 587
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "toggle@600",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    enabled.value = !enabled.value;\n  }",
+              "span": {
+                "start": 609,
+                "end": 650
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "enabled@244",
+                  "operator": "=",
+                  "span": {
+                    "start": 615,
+                    "end": 645
+                  },
+                  "target": {
+                    "start": 615,
+                    "end": 628
+                  },
+                  "value": {
+                    "start": 631,
+                    "end": 645
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "enabled@244",
+                  "span": {
+                    "start": 632,
+                    "end": 645
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 606,
+              "end": 650
+            }
+          },
+          "span": {
+            "start": 591,
+            "end": 650
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "enabled@244",
+              "span": {
+                "start": 665,
+                "end": 672
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "on",
+                "span": {
+                  "start": 679,
+                  "end": 681
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n      if (on) {\n        document.addEventListener(\"keydown\", onShortcut);\n      } else {\n        document.removeEventListener(\"keydown\", onShortcut);\n      }\n    }",
+              "span": {
+                "start": 686,
+                "end": 851
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "document",
+                  "span": {
+                    "start": 712,
+                    "end": 720
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onShortcut@442",
+                  "span": {
+                    "start": 749,
+                    "end": 759
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "document",
+                  "span": {
+                    "start": 785,
+                    "end": 793
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onShortcut@442",
+                  "span": {
+                    "start": 825,
+                    "end": 835
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 678,
+              "end": 851
+            }
+          },
+          "post": true,
+          "span": {
+            "start": 654,
+            "end": 880
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    document.addEventListener(\"keydown\", onEscape);\n  }",
+              "span": {
+                "start": 900,
+                "end": 957
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "document",
+                  "span": {
+                    "start": 906,
+                    "end": 914
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onEscape@302",
+                  "span": {
+                    "start": 943,
+                    "end": 951
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 894,
+              "end": 957
+            }
+          },
+          "span": {
+            "start": 884,
+            "end": 959
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "unmounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    document.removeEventListener(\"keydown\", onEscape);\n    document.removeEventListener(\"keydown\", onShortcut);\n  }",
+              "span": {
+                "start": 981,
+                "end": 1098
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "document",
+                  "span": {
+                    "start": 987,
+                    "end": 995
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onEscape@302",
+                  "span": {
+                    "start": 1027,
+                    "end": 1035
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "document",
+                  "span": {
+                    "start": 1042,
+                    "end": 1050
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onShortcut@442",
+                  "span": {
+                    "start": 1082,
+                    "end": 1092
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 975,
+              "end": 1098
+            }
+          },
+          "span": {
+            "start": 963,
+            "end": 1100
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "shortcut-tip",
+            "span": {
+              "start": 1126,
+              "end": 1146
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Shortcuts",
+            "span": {
+              "start": 1147,
+              "end": 1169
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "open.value ? \"Press Escape to hide this tip.\" : \"Tip hidden.\"",
+                  "span": {
+                    "start": 1181,
+                    "end": 1242
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@218",
+                      "span": {
+                        "start": 1181,
+                        "end": 1191
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1180,
+                  "end": 1243
+                }
+              }
+            ],
+            "span": {
+              "start": 1177,
+              "end": 1247
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1262,
+                  "end": 1275
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-pressed",
+                "value": {
+                  "code": "enabled.value",
+                  "span": {
+                    "start": 1290,
+                    "end": 1303
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "enabled@244",
+                      "span": {
+                        "start": 1290,
+                        "end": 1303
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1276,
+                  "end": 1304
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "toggle@600",
+                  "span": {
+                    "start": 1314,
+                    "end": 1320
+                  }
+                },
+                "span": {
+                  "start": 1305,
+                  "end": 1321
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Shortcut K",
+                "span": {
+                  "start": 1322,
+                  "end": 1348
+                }
+              }
+            ],
+            "span": {
+              "start": 1254,
+              "end": 1357
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 1367,
+                  "end": 1380
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Used: ",
+                "span": {
+                  "start": 1381,
+                  "end": 1387
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "count.value",
+                  "span": {
+                    "start": 1388,
+                    "end": 1399
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "count@274",
+                      "span": {
+                        "start": 1388,
+                        "end": 1399
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1387,
+                  "end": 1400
+                }
+              }
+            ],
+            "span": {
+              "start": 1364,
+              "end": 1404
+            }
+          }
+        ],
+        "span": {
+          "start": 1117,
+          "end": 1419
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ShortcutTip",
+      "span": {
+        "start": 80,
+        "end": 1426
+      }
+    }
+  ],
+  "types": []
+}

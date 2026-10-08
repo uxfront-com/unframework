@@ -2,7 +2,7 @@
   {
     "code": "UF3020",
     "severity": "error",
-    "message": "`lable` is not a prop, a list's item or index, or a global a template expression can read.",
+    "message": "`lable` is not a prop, a setup binding, a list's item or index, or a global a template expression can read.",
     "file": "diagnostics/unresolved-reference/Greeting.uf.tsx",
     "start": {
       "line": 8,

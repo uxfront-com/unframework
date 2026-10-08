@@ -1,0 +1,3 @@
+- region "Draft":
+  - status: Not saved
+  - button "Save the draft"

@@ -10,7 +10,7 @@ import type { ToolchainContext } from "@unframework/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
-import { M1_SHAPES } from "./lint-probes.ts";
+import { M1_SHAPES, M2_SHAPES } from "./lint-probes.ts";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const repo = join(packageDir, "../..");
@@ -52,6 +52,7 @@ const component = (jsx: string, head = "") =>
   `${head}export default function Probe(props: { items: string[]; label: string }) {\n  return ${jsx};\n}\n`;
 
 describe("solid lint (L5)", { timeout: 60_000 }, () => {
+  // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output, with no message", async () => {
     expect(goldens.map((file) => file.split("/").at(-1))).toEqual(
       expect.arrayContaining(["Hello.tsx", "ProfileCard.tsx"]),
@@ -60,10 +61,18 @@ describe("solid lint (L5)", { timeout: 60_000 }, () => {
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(goldens.map((file) => [file, []])),
     );
+  }, 60_000);
+
+  it("accepts the shapes M1 emits", async () => {
+    const files = write(M1_SHAPES);
+    const results = await toolchain.lint(files, context);
+    expect(Object.fromEntries(results)).toEqual(
+      Object.fromEntries(files.map((file) => [file, []])),
+    );
   });
 
-  it("accepts the shapes M1 emits (design §5.4)", async () => {
-    const files = write(M1_SHAPES);
+  it("accepts the shapes M2 emits (ADR-0045 to ADR-0049)", async () => {
+    const files = write(M2_SHAPES);
     const results = await toolchain.lint(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file, []])),
@@ -122,6 +131,67 @@ describe("solid lint (L5)", { timeout: 60_000 }, () => {
         'import { For } from "solid-js";\n\n',
       ),
       rule: "no-unused-vars",
+    },
+    // M2: each rule pins a shape src/setup.ts, src/listeners.ts or src/helpers.ts prints.
+    {
+      what: "a prop the setup reads once outside `untrack`",
+      contents:
+        'import { createSignal } from "solid-js";\n\nexport default function Probe(props: { count: number }) {\n  const [count] = createSignal(props.count);\n  return <p>{count()}</p>;\n}\n',
+      rule: "solid/reactivity",
+    },
+    {
+      what: "a getter passed to a helper not named as a primitive (`create…`)",
+      contents:
+        'import { createEffect } from "solid-js";\n\nexport default function Probe(props: { label: string }) {\n  watch(() => props.label);\n  return <p>{props.label}</p>;\n}\n\nfunction watch(source: () => string): void {\n  createEffect(source);\n}\n',
+      rule: "solid/reactivity",
+    },
+    {
+      what: "two listeners of one event on one element as props",
+      contents: component(
+        '<button type="button" on:click={{ handleEvent: () => props.items.length, capture: true }} onClick={() => props.label}>x</button>',
+      ),
+      rule: "solid/jsx-no-duplicate-props",
+    },
+    {
+      what: "a template ref as a `let` Solid's compiler assigns",
+      contents:
+        'export default function Probe(props: { label: string }) {\n  let field!: HTMLInputElement;\n  return <input name="x" ref={field} aria-label={props.label} />;\n}\n',
+      rule: "no-unassigned-vars",
+    },
+    {
+      what: "a setter no code calls",
+      contents:
+        'import { createSignal } from "solid-js";\n\nexport default function Probe() {\n  const [count, setCount] = createSignal(0);\n  return <p>{count()}</p>;\n}\n',
+      rule: "no-unused-vars",
+    },
+    {
+      // Why an async `watchEffect` is no `createEffect`: the effect runs as a `create…` helper's
+      // callback, which the rule reads as a function called later, async or not.
+      what: "an async tracked scope (an async `watchEffect` as `createEffect(async …)`)",
+      contents:
+        'import { createEffect, createSignal } from "solid-js";\n\nexport default function Probe(props: { onSeen?: (value: number) => void }) {\n  const [count] = createSignal(0);\n  createEffect(async () => {\n    const value = count();\n    await Promise.resolve();\n    props.onSeen?.(value);\n  });\n  return <p>{count()}</p>;\n}\n',
+      rule: "solid/reactivity",
+    },
+    {
+      // A timer's callback is a called function to the rule; a promise continuation is not, so
+      // the output says its reads are untracked (`.then(() => untrack(() => …))`).
+      what: "a promise continuation that reads a signal outside `untrack`",
+      contents:
+        'import { createSignal } from "solid-js";\n\nexport default function Probe(props: { onSaved?: (value: number) => void }) {\n  const [count] = createSignal(0);\n  function save() {\n    void Promise.resolve().then(() => props.onSaved?.(count()));\n  }\n  return <button type="button" onClick={save}>{count()}</button>;\n}\n',
+      rule: "solid/reactivity",
+    },
+    {
+      what: "a microtask that reads a signal outside `untrack`",
+      contents:
+        'import { createSignal } from "solid-js";\n\nexport default function Probe(props: { onSaved?: (value: number) => void }) {\n  const [count] = createSignal(0);\n  function save() {\n    queueMicrotask(() => props.onSaved?.(count()));\n  }\n  return <button type="button" onClick={save}>{count()}</button>;\n}\n',
+      rule: "solid/reactivity",
+    },
+    {
+      // So an arrow a setup function hands to a function says `untrack` (src/untracked.ts).
+      what: "an arrow a setup function hands to a function, reading a signal outside `untrack`",
+      contents:
+        'import { createSignal } from "solid-js";\n\nexport default function Probe() {\n  const [items, setItems] = createSignal<number[]>([]);\n  const [draft] = createSignal(1);\n  function update(change: (list: number[]) => number[]) {\n    setItems(change(items()));\n  }\n  function add() {\n    update((list) => [...list, draft()]);\n  }\n  return <button type="button" onClick={add}>{items().length}</button>;\n}\n',
+      rule: "solid/reactivity",
     },
     {
       what: "a statement no output has a reason to hold",

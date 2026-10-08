@@ -98,6 +98,11 @@ export function ReactOnDoubleClick() {
   return <div onDoubleClick={() => {}} />;
 }
 
+export function OwnedEventPayload() {
+  // @ts-expect-error TS2322 `command` dispatches an `Event`, not a `KeyboardEvent` (ADR-0047)
+  return <div onCommand={(event: KeyboardEvent) => event.key} />;
+}
+
 export function VoidElementChildren() {
   // @ts-expect-error TS2747 <input> is a void element: its children are `never`
   return <input>text</input>;

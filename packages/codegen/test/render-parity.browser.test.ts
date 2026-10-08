@@ -120,7 +120,7 @@ describe("readDom", () => {
     expect(read('<div hidden="until-found"></div>')).not.toEqual(read("<div hidden></div>"));
   });
 
-  // Design §6.4: the same DOM state written differently is the same; anything else differs.
+  // ADR-0044: the same DOM state written differently is the same; anything else differs.
   it("compares a class by its tokens and drops an empty one, but keeps a doubled token", () => {
     expect(read('<p class=" b  a">x</p>')).toEqual(read('<p class="a b">x</p>'));
     expect(read('<p class="">x</p>')).toEqual(read("<p>x</p>"));

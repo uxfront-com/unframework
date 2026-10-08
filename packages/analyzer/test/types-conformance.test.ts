@@ -234,7 +234,7 @@ function pairs(): (Pair & { readonly named: boolean })[] {
       if (name === "class" || name === "style") continue;
       const known = namespace === "html" ? isHtmlAttribute(tag, name) : isSvgAttribute(tag, name);
       if (!known) continue;
-      found.push({ namespace, tag, name, named: !nameProblem(tag, namespace, name, name, true) });
+      found.push({ namespace, tag, name, named: !nameProblem(tag, namespace, name, name) });
     }
   };
   for (const tag of HTML_ELEMENTS) {

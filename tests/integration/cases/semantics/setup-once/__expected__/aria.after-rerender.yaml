@@ -1,0 +1,6 @@
+- region "Welcome":
+  - heading "Welcome, Ada" [level=2]
+  - paragraph: Signed in as Grace
+  - list:
+    - listitem: Set up your profile
+    - listitem: Invite your team

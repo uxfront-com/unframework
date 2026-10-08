@@ -1,8 +1,8 @@
-// The Astro dialect against design §1: the shared markup cases (codegen/test/markup-cases.ts),
-// printed with `astroDialect` after a frontmatter that reads their props as design §5.7 does,
-// compiled by Astro's own compiler with Astro's defaults (`compressHTML: "jsx"`), rendered by the
-// Container API, then linted with the target's L5 rules. The emitter's own output is tested once
-// the Astro lane lands it (wave 3).
+// The Astro dialect against M1's render contract (ADR-0035 to ADR-0040): the shared markup cases
+// (codegen/test/markup-cases.ts), printed with `astroDialect` after a frontmatter that reads their
+// props as the target's does, compiled by Astro's own compiler with Astro's defaults
+// (`compressHTML: "jsx"`), rendered by the Container API, then linted with the target's L5 rules.
+// The emitter's own output is tested by emit.test.ts and render-parity.test.ts.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -64,7 +64,7 @@ let linted = 0;
 describe.each<MarkupOptions>([{}, { printWidth: 30 }])(
   "astro markup (print width $printWidth)",
   (layout) => {
-    it("renders every case as design §1 says", async () => {
+    it("renders every case as the render contract says", async () => {
       const { cases, source } = components(layout)[0]!;
       const html = await render(source, passedProps(cases.props));
       for (const { name, expected, actual } of compareSuite(canonical(html), cases.cases)) {

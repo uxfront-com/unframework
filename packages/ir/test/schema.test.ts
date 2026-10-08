@@ -5,6 +5,10 @@ import { generateSchema } from "../scripts/generate-schema.ts";
 import {
   ATTRIBUTE_KINDS,
   BINDING_KINDS,
+  CODE_REFERENCE_KINDS,
+  HANDLER_KINDS,
+  SETUP_ITEM_KINDS,
+  WATCH_SOURCE_KINDS,
   createBranch,
   createComponent,
   createElement,
@@ -72,6 +76,13 @@ describe("the kind lists", () => {
 
   it("name every attribute kind in the schema", () => {
     expect([...ATTRIBUTE_KINDS].sort()).toEqual(kindsOf("Attribute").sort());
+  });
+
+  it("name every setup item, handler, watch source and code reference kind in the schema", () => {
+    expect([...SETUP_ITEM_KINDS].sort()).toEqual(kindsOf("SetupItem").sort());
+    expect([...HANDLER_KINDS].sort()).toEqual(kindsOf("Handler").sort());
+    expect([...WATCH_SOURCE_KINDS].sort()).toEqual(kindsOf("WatchSource").sort());
+    expect([...CODE_REFERENCE_KINDS].sort()).toEqual(kindsOf("CodeReference").sort());
   });
 
   it("name every binding kind in the schema", () => {
@@ -156,7 +167,7 @@ describe("validateModule", () => {
       "a module whose file is inherited",
       ({ file, ...module }) => Object.setPrototypeOf(module, { file }) as unknown,
     ],
-    // Holes, which `forEach` skips and Ajv checks as `undefined` (r3-analyzer-5).
+    // Holes, which `forEach` skips and Ajv checks as `undefined`.
     [
       "children with a hole",
       (module) => (((render(module).children as unknown[]).length = 3), module),
@@ -206,6 +217,25 @@ describe("validateModule", () => {
   const loop = (module: Json) =>
     ((list(module).branches[0]!.children as Json[])[0]!.children as Json[])[0]!;
   const attribute = (module: Json, index: number) => (card(module).attributes as Json[])[index]!;
+  const counter = (module: Json) => (module.components as Json[])[1]!;
+  const item = (module: Json, index: number) => (counter(module).setup as Json[])[index]!;
+  const emitsOf = (module: Json) => counter(module).emits as Json;
+  const fnOf = (module: Json, index: number) => {
+    const found = item(module, index);
+    return (found.function ?? found.callback ?? found.getter ?? found.effect) as Json;
+  };
+  const parameter = (module: Json, index: number, position: number) =>
+    (fnOf(module, index).parameters as Json[])[position]!;
+  const codeRef = (module: Json, index: number, position: number) =>
+    ((fnOf(module, index).body as Json).refs as Json[])[position]!;
+  const control = (module: Json) => (fnOf(module, 6).eventControls as Json[])[0]!;
+  const counterRender = (module: Json) => counter(module).render as Json;
+  const counterAttribute = (module: Json, child: number, index: number) =>
+    ((counterRender(module).children as Json[])[child]!.attributes as Json[])[index]!;
+  const listener = (module: Json) => (counterRender(module).attributes as Json[])[0]!;
+  /** The expression `<output>` renders: `label(doubled.value)`. */
+  const shown = (module: Json) =>
+    ((counterRender(module).children as Json[])[4]!.children as Json[])[0]!.value as Json;
   const kindSamples: [string, (module: Json) => unknown][] = [
     ["a module with every kind", (module) => module],
     ["a module without types", ({ types: _types, ...module }) => module],
@@ -264,6 +294,10 @@ describe("validateModule", () => {
     ],
     [
       "a binding of an unknown kind",
+      (module) => (((component(module).bindings as Json[])[0]!.kind = "slotScope"), module),
+    ],
+    [
+      "a binding of a setup kind",
       (module) => (((component(module).bindings as Json[])[0]!.kind = "state"), module),
     ],
     [
@@ -285,6 +319,118 @@ describe("validateModule", () => {
     ["a list's index set to undefined", (module) => ((loop(module).index = undefined), module)],
     ["a required key set to undefined", (module) => ((card(module).children = undefined), module)],
     ["an unknown key set to undefined", (module) => ((card(module).extra = undefined), module)],
+    // The kinds M2 adds (ADR-0045), each changed once.
+    ["a component without a setup", (module) => (delete counter(module).setup, module)],
+    ["a component without emits", (module) => (delete counter(module).emits, module)],
+    ["a setup item of an unknown kind", (module) => ((item(module, 0).kind = "Statement"), module)],
+    ["a state without its initial value", (module) => (delete item(module, 0).initial, module)],
+    [
+      "a state whose initial value is a string",
+      (module) => ((item(module, 0).initial = "1"), module),
+    ],
+    ["a derived value without a getter", (module) => (delete item(module, 1).getter, module)],
+    ["a const without its value", (module) => (delete item(module, 4).value, module)],
+    ["a function of an unknown form", (module) => ((item(module, 6).form = "expression"), module)],
+    [
+      "a function whose async is false",
+      (module) => (((item(module, 12).callback as Json).async = false), module),
+    ],
+    [
+      "a function without parameters",
+      (module) => (delete (item(module, 6).function as Json).parameters, module),
+    ],
+    [
+      "a parameter whose rest is a string",
+      (module) => ((parameter(module, 7, 3).rest = "yes"), module),
+    ],
+    [
+      "a parameter whose pattern has no names",
+      (module) => (delete (parameter(module, 7, 1).pattern as Json).names, module),
+    ],
+    ["a parameter without a name", (module) => (delete parameter(module, 7, 0).name, module)],
+    [
+      "an event control of an unknown method",
+      (module) => ((control(module).method = "stopImmediatePropagation"), module),
+    ],
+    [
+      "a watcher whose immediate is a string",
+      (module) => ((item(module, 9).immediate = "yes"), module),
+    ],
+    [
+      "a watch source of an unknown kind",
+      (module) => (((item(module, 9).sources as Json[])[0]!.kind = "Reactive"), module),
+    ],
+    [
+      "a getter source without a getter",
+      (module) => (delete (item(module, 10).sources as Json[])[0]!.getter, module),
+    ],
+    [
+      "a lifecycle hook of an unknown kind",
+      (module) => ((item(module, 12).hook = "updated"), module),
+    ],
+    [
+      "a write of an unknown operator",
+      (module) => ((codeRef(module, 6, 1).operator = ">>>="), module),
+    ],
+    [
+      "a write of a bitwise operator",
+      (module) => ((codeRef(module, 6, 1).operator = "|="), module),
+    ],
+    ["a write without a target", (module) => (delete codeRef(module, 6, 1).target, module)],
+    [
+      "an emit whose arguments are not spans",
+      (module) => ((codeRef(module, 6, 3).arguments = ["count.value"]), module),
+    ],
+    ["an emit whose event is a number", (module) => ((codeRef(module, 6, 3).event = 1), module)],
+    ["an api other than nextTick", (module) => ((codeRef(module, 12, 3).api = "tick"), module)],
+    [
+      "an event reference whose call is false",
+      (module) => ((codeRef(module, 6, 0).call = false), module),
+    ],
+    [
+      "a code reference of an unknown kind",
+      (module) => ((codeRef(module, 6, 0).kind = "Read"), module),
+    ],
+    [
+      "an event name in camel case",
+      (module) => (((emitsOf(module).events as Json[])[0]!.name = "Change"), module),
+    ],
+    [
+      "an event name with a hyphen",
+      (module) => (((emitsOf(module).events as Json[])[0]!.name = "item-select"), module),
+    ],
+    [
+      "an event parameter whose optional is false",
+      (module) => (
+        (((emitsOf(module).events as Json[])[0]!.parameters as Json[])[1]!.optional = false),
+        module
+      ),
+    ],
+    ["emits without a type", (module) => (delete emitsOf(module).type, module)],
+    [
+      "a listener's event in camel case",
+      (module) => ((listener(module).event = "wheelPassive"), module),
+    ],
+    [
+      "a listener whose passive is a string",
+      (module) => ((listener(module).passive = "yes"), module),
+    ],
+    [
+      "a handler of an unknown kind",
+      (module) => (((listener(module).handler as Json).kind = "Expression"), module),
+    ],
+    [
+      "an inline handler without a function",
+      (module) => (delete (listener(module).handler as Json).function, module),
+    ],
+    [
+      "a template ref attribute without a binding",
+      (module) => (delete counterAttribute(module, 1, 1).binding, module),
+    ],
+    [
+      "a reference whose call is false",
+      (module) => (((shown(module).refs as Json[])[0]!.call = false), module),
+    ],
   ];
 
   it.each(kindSamples)("agrees with Ajv on %s", (_, change) => {
@@ -309,7 +455,7 @@ describe("validateModule", () => {
   });
 
   // The `kind` fast path: a node is checked against the branch of its kind only, so a node whose
-  // kind comes late in its union costs the same at any depth (map-ir §6.3).
+  // kind comes late in its union costs the same at any depth.
   it("validates deeply nested control flow in linear time", () => {
     let node: RenderNode = createText("x", at);
     for (let depth = 0; depth < 60; depth++) {

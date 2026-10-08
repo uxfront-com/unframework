@@ -151,6 +151,9 @@ The raw DOM each target produced inside the mount container is the normaliser's 
   were taken with other spikes running.
 - A public Qwik settle API, or polling, before M2's interaction traces depend on it.
 
+See also ADR-0050: M2's interaction traces settle Qwik by waiting for the segments and handlers an
+action starts, beside `_waitUntilRendered`; Qwik has no public settle API yet.
+
 ## Alternatives considered
 
 - **One project with several `browser.instances`.** Instances share the parent's Vite config and

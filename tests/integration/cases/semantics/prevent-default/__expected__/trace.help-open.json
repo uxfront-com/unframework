@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('link', { name: 'How tags work' })",
+      "dom": [
+        "<form aria-label=\"Tags\" class=\"tag-form\">",
+        "  <label>",
+        "    \"New tag\"",
+        "    <input name=\"tag\" uf:value=\"\">",
+        "  </label>",
+        "  <button type=\"submit\">",
+        "    \"Add tag\"",
+        "  </button>",
+        "  <a href=\"/help/tags\" uf:focused=\"\">",
+        "    \"How tags work\"",
+        "  </a>",
+        "  <p>",
+        "    \"A tag is one word: commas are not allowed.\"",
+        "  </p>",
+        "  <ul aria-label=\"Added tags\"></ul>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Tags\":",
+        "  - text: New tag",
+        "  - textbox \"New tag\"",
+        "  - button \"Add tag\"",
+        "  - link \"How tags work\":",
+        "    - /url: /help/tags",
+        "  - paragraph: \"A tag is one word: commas are not allowed.\"",
+        "  - list \"Added tags\""
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+- region "Shortcuts":
+  - paragraph: Tip hidden.
+  - button "Shortcut K"
+  - status: "Used: 0"

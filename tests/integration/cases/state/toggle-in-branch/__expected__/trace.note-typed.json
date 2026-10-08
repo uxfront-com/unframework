@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "type getByLabel('Note') \"Bring snacks\"",
+      "dom": [
+        "<section aria-label=\"Filters\" class=\"filter-panel\">",
+        "  <button aria-expanded=\"false\" type=\"button\">",
+        "    \"Show colours\"",
+        "  </button>",
+        "  <p>",
+        "    \"No colour\"",
+        "  </p>",
+        "  <div class=\"note\">",
+        "    <label>",
+        "      \"Note\"",
+        "      <input uf:focused=\"\" uf:value=\"Bring snacks\">",
+        "    </label>",
+        "    <p>",
+        "      \"Draft: \\\"Bring snacks\\\"\"",
+        "    </p>",
+        "  </div>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Filters\":",
+        "  - button \"Show colours\"",
+        "  - paragraph: No colour",
+        "  - text: Note",
+        "  - textbox \"Note\": Bring snacks",
+        "  - paragraph: \"Draft: \\\"Bring snacks\\\"\""
+      ],
+      "events": {}
+    }
+  ]
+}

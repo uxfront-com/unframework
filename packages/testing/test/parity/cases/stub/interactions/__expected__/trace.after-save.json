@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Save' })",
+      "dom": [
+        "<button type=\"button\" uf:focused=\"\">",
+        "  \"Save\"",
+        "</button>",
+        "<p role=\"status\">",
+        "  \"Saved\"",
+        "</p>"
+      ],
+      "aria": [
+        "- button \"Save\"",
+        "- status: Saved"
+      ],
+      "events": {
+        "saved": [
+          []
+        ]
+      }
+    }
+  ]
+}

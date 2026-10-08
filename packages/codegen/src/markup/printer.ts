@@ -1,8 +1,8 @@
-// The markup printer (design §4.3): one walk over the IR for every template language, which lays
-// out lines so that no whitespace it adds can reach the DOM, while each dialect decides how its
-// language writes text, attributes, bindings and control flow. Expressions reach a dialect as code
-// in the target's spelling (`RewriteRules`, design §4.1); the dialect escapes them for where they
-// sit.
+// The markup printer (plan §5.8, ADR-0026): one walk over the IR for every template language, which
+// lays out lines so that no whitespace it adds can reach the DOM, while each dialect decides how
+// its language writes text, attributes, bindings, listeners and control flow. Expressions and
+// handlers reach a dialect as code in the target's spelling (`RewriteRules`, plan §5.4); the
+// dialect escapes them for where they sit.
 import {
   elementNamespace,
   isBlockElement,
@@ -12,25 +12,25 @@ import {
 import type {
   Attribute,
   ElementNode,
+  EventAttribute,
   Expression,
   ForNode,
   FragmentNode,
+  Handler,
   IfBranch,
   Namespace,
+  RefAttribute,
   RenderNode,
   UfComponent,
 } from "@unframework/ir";
 
-import {
-  bindingOf,
-  needsParentheses,
-  parenthesesNeeded,
-  parseExpression,
-  referencedBindings,
-  rewriteExpression,
-} from "../rewrite.ts";
-import type { RewriteRules } from "../rewrite.ts";
-import { isIdentifierName } from "./escape.ts";
+import { functionSource, handlerText } from "../functions.ts";
+import { parseExpression } from "../parse.ts";
+import { referencedBindings } from "../references.ts";
+import { bindingOf, needsParentheses, parenthesesNeeded, rewriteExpression } from "../rewrite.ts";
+import type { RewriteRules, RewriteSite } from "../rewrite.ts";
+import { codeTokens, isIdentifierName } from "./escape.ts";
+import type { CodeToken } from "./escape.ts";
 
 /** What holds a child list: an element, a branch of an `If`, a `For` (its body) or the root. */
 export type Container = ElementNode | FragmentNode | IfBranch | ForNode;
@@ -76,6 +76,31 @@ export type ClassPart =
 export type StylePart =
   | { kind: "Static"; property: string; value: string }
   | { kind: "Bound"; property: string; value: string };
+
+/** A listener, with its handler as code. */
+export interface PrintedEvent {
+  /** The listener: its DOM event's name, its option and its handler. */
+  attribute: EventAttribute;
+  /**
+   * The handler as JavaScript, for the `client` site: a named handler's function as the rules
+   * spell it (`save`), or an inline handler as an arrow (`functionText`: `() => count++`).
+   * Rewritten only when read.
+   */
+  readonly handler: string;
+  /**
+   * The handler as the target writes it in its template, when it supplies one
+   * (`MarkupOptions.handler`): a template statement, such as Angular's `onSave($event)` calling a
+   * method it hoisted the handler to.
+   */
+  statement?: string;
+}
+
+/** A template ref, with its binding's name. */
+export interface PrintedRef {
+  attribute: RefAttribute;
+  /** The `templateRef` binding's name. */
+  name: string;
+}
 
 /** A branch of a conditional, with its condition as code: absent on the final else. */
 export interface ConditionalBranch {
@@ -191,6 +216,20 @@ export interface MarkupDialect {
   conditional(branches: readonly ConditionalBranch[]): MarkupPiece[];
   /** Writes a list: the body for each item of the source, in order. */
   list(list: ListParts): MarkupPiece[];
+  /**
+   * Writes a listener (ADR-0047): the handler runs, with the DOM event, each time the element's
+   * event of that name fires, in the phase and with the option it asks for. A language without a
+   * spelling for an option, or for the handler, throws: its target writes the listener itself
+   * (`MarkupOptions.attribute` or `handler`), or declares the capability unsupported.
+   */
+  eventAttribute(event: PrintedEvent, context: AttributeContext): PrintedAttribute[];
+  /** Writes a template ref (ADR-0049): the element is the ref's value while it is rendered. */
+  refAttribute(ref: PrintedRef, context: AttributeContext): PrintedAttribute[];
+  /**
+   * Whether the language runs no code in the browser (Astro): it writes no listener and no
+   * template ref, so a list's index that only a handler reads is left out too.
+   */
+  inert?: boolean;
   /** Orders an element's printed attributes, when the language's lint rules want an order. */
   orderAttributes?(attributes: readonly PrintedAttribute[]): PrintedAttribute[];
 }
@@ -217,15 +256,26 @@ export interface MarkupOptions {
   level?: number;
   /** The line length above which a tag with attributes puts one per line. Defaults to 100. */
   printWidth?: number;
-  /** Prints an attribute the target writes its own way, or returns `undefined`. */
+  /**
+   * Prints an attribute the target writes its own way, or returns `undefined`; `""` prints
+   * nothing (an attribute another one of the element is written with, as Angular writes the
+   * listeners of one event in one).
+   */
   attribute?(attribute: Attribute, element: ElementNode): string | undefined;
+  /**
+   * The template statement a listener runs, when the target writes one its dialect needs
+   * (Angular's `onSave($event)`, for a handler it hoisted to a method), or `undefined` to leave
+   * the dialect the handler's code (`PrintedEvent.statement`).
+   */
+  handler?(attribute: EventAttribute, element: ElementNode): string | undefined;
   /**
    * The component the markup belongs to: its bindings resolve the references `rewrite`
    * spells.
    */
   component?: UfComponent;
   /**
-   * How the target spells references (Angular's `label()`): expressions are printed as
+   * How the target spells references (Angular's `label()`), for each site: `render` for the
+   * template's expressions, `key` for a list's key, `client` for a handler. Code is printed as
    * written without it. Needs `component`.
    */
   rewrite?: RewriteRules;
@@ -386,11 +436,20 @@ interface InlineItem {
   text: string;
 }
 
+/**
+ * An attribute as its dialect writes it, and whether its value is code, whose layout is not
+ * content (`rebase`): a static value's is.
+ */
+interface AttributeText {
+  text: string;
+  code: boolean;
+}
+
 /** An element, a wrapper a dialect adds, or a fragment (`<>`, with an empty tag). */
 interface ElementItem {
   kind: "element";
   tag: string;
-  attributes: string[];
+  attributes: AttributeText[];
   /** `>`, or ` />` for a self-closing element. */
   end: string;
   children: Item[];
@@ -441,8 +500,10 @@ export function printMarkup(
 ): string {
   const { rewrite, component } = options;
   if (rewrite && !component) throw new Error("printMarkup: `rewrite` needs the `component`.");
-  const code = (expression: Expression): string =>
-    rewrite && component ? rewriteExpression(expression, component, rewrite) : expression.code;
+  const code = (expression: Expression, site: RewriteSite = "render"): string =>
+    rewrite && component
+      ? rewriteExpression(expression, component, rewrite, site)
+      : expression.code;
   const indent = options.indent ?? "  ";
   const printWidth = options.printWidth ?? 100;
   const scope: Scope = { dialect, element: undefined, namespace: "html", preformatted: false };
@@ -455,6 +516,14 @@ export function printMarkup(
   /** A binding's name: from the component, or from its id (`name@offset`) without one. */
   function bindingName(id: string): string {
     return component ? bindingOf(component, id).name : id.slice(0, id.lastIndexOf("@"));
+  }
+
+  /** A handler's code for the `client` site, as written without a component to rewrite it. */
+  function handlerCode(handler: Handler): string {
+    if (component) return handlerText(handler, component, rewrite, "client");
+    return handler.kind === "Function"
+      ? bindingName(handler.binding)
+      : functionSource(handler.function, handler.function.body.code);
   }
 
   /** The items of a container's children, each laid out as its kind and the dialect say. */
@@ -509,17 +578,17 @@ export function printMarkup(
   }
 
   function listParts(node: ForNode): ListParts {
-    // An index no printed expression reads is left out, so linters see no unused variable.
+    // An index no printed expression or handler reads is left out, so linters see no unused
+    // variable; one only a handler reads is kept where the language runs handlers.
+    const read = referencedBindings(node, { includeClient: dialect.inert !== true });
     const index =
-      node.index !== undefined && referencedBindings(node).has(node.index)
-        ? bindingName(node.index)
-        : undefined;
+      node.index !== undefined && read.has(node.index) ? bindingName(node.index) : undefined;
     return {
       node,
       source: code(node.source),
       item: bindingName(node.item),
       ...(index === undefined ? {} : { index }),
-      key: code(node.key),
+      key: code(node.key, "key"),
     };
   }
 
@@ -534,7 +603,7 @@ export function printMarkup(
       case "element":
         return [elementItem(piece.element, piece.directives, at)];
       case "wrapper": {
-        const attributes = piece.attributes.map(({ text }) => text);
+        const attributes = piece.attributes.map(({ text }) => ({ text, code: false }));
         return [
           {
             kind: "element",
@@ -614,9 +683,11 @@ export function printMarkup(
     directives: readonly PrintedAttribute[],
     of: MarkupDialect,
     namespace: Namespace,
-  ): string[] {
+  ): AttributeText[] {
     const context: AttributeContext = { element, namespace };
     const printed: PrintedAttribute[] = [...directives];
+    // The attributes whose text is a static value, never code.
+    const values = new Set<PrintedAttribute>();
     const custom = new Map<Attribute, string>();
     for (const attribute of element.attributes) {
       const text = options.attribute?.(attribute, element);
@@ -636,7 +707,7 @@ export function printMarkup(
     for (const attribute of element.attributes) {
       const text = custom.get(attribute);
       if (text !== undefined) {
-        printed.push({ name: attributeName(attribute), text });
+        if (text !== "") printed.push({ name: attributeName(attribute), text });
         continue;
       }
       switch (attribute.kind) {
@@ -645,13 +716,15 @@ export function printMarkup(
             claimClass();
             classParts.push({ kind: "Static", value: attribute.value });
           } else {
-            printed.push({
+            const value: PrintedAttribute = {
               name: attribute.name,
               text:
                 attribute.value === true
                   ? attribute.name
                   : of.attribute(attribute.name, attribute.value, element.tag, context),
-            });
+            };
+            values.add(value);
+            printed.push(value);
           }
           break;
         case "Bound":
@@ -701,13 +774,33 @@ export function printMarkup(
           }
           break;
         }
+        case "Event": {
+          const statement = options.handler?.(attribute, element);
+          const event: PrintedEvent = {
+            attribute,
+            get handler() {
+              return handlerCode(attribute.handler);
+            },
+            ...(statement === undefined ? {} : { statement }),
+          };
+          printed.push(...of.eventAttribute(event, context));
+          break;
+        }
+        case "Ref":
+          printed.push(
+            ...of.refAttribute({ attribute, name: bindingName(attribute.binding) }, context),
+          );
+          break;
         default:
           unreachable(attribute);
       }
     }
     if (classAt !== undefined)
       printed.splice(classAt, 0, ...of.classAttribute(classParts, context));
-    return (of.orderAttributes?.(printed) ?? printed).map(({ text }) => text);
+    return (of.orderAttributes?.(printed) ?? printed).map((each) => ({
+      text: each.text,
+      code: !values.has(each),
+    }));
   }
 
   /**
@@ -830,22 +923,148 @@ export function printMarkup(
   /**
    * Writes an opening tag from the end of the last line. Whitespace inside a tag is never
    * content, so a tag with attributes that would take its line past `printWidth`, with what
-   * follows it on the line (`after` characters), puts one attribute per line, indented from
-   * that line.
+   * follows it on the line (`after` characters), or with an attribute whose code spans lines,
+   * puts one attribute per line, indented from that line. Code that spans lines is moved to its
+   * attribute's column (`rebase`).
    */
   function writeOpenTag(lines: string[], item: ElementItem, after: number): void {
     const items = item.attributes;
-    const tag = `<${item.tag}${items.map((text) => ` ${text}`).join("")}${item.end}`;
+    const tag = `<${item.tag}${items.map(({ text }) => ` ${text}`).join("")}${item.end}`;
     const line = lines[lines.length - 1]!;
     const column = line.length - line.lastIndexOf("\n") - 1;
-    if (!items.length || column + tag.length + after <= printWidth) {
+    const multiline = items.some(({ text, code }) => code && text.includes("\n"));
+    if (!items.length || (!multiline && column + tag.length + after <= printWidth)) {
       lines[lines.length - 1] += tag;
       return;
     }
     const base = /^[\t ]*/.exec(line)![0];
+    const pad = `${base}${indent}`;
     lines[lines.length - 1] += `<${item.tag}`;
-    lines.push(...items.map((text) => `${base}${indent}${text}`), `${base}${item.end.trim()}`);
+    lines.push(
+      ...items.map(({ text, code }) => `${pad}${code ? rebase(text, pad, indent) : text}`),
+      `${base}${item.end.trim()}`,
+    );
   }
+}
+
+/**
+ * An attribute whose code spans lines, with its continuation lines moved to its own column,
+ * `pad`, keeping their indentation relative to each other. Code from the source carries the
+ * source's indentation, which is not the output's (the markup is laid out by the printer, never
+ * by a formatter, ADR-0026). The source's own layout says where the attribute stood: a line that
+ * closes a bracket the first line opened (a handler's closing brace) stood at its column and
+ * goes to `pad`; without one, the continuation lines stood one level in (a conditional's `?`
+ * and `:`), and go one `indent` past `pad`. A line that starts inside a string or template
+ * literal stays as it is: its text is the literal's value. An attribute whose code cannot be
+ * found or parsed keeps its lines as they are.
+ */
+function rebase(text: string, pad: string, indent: string): string {
+  if (!text.includes("\n")) return text;
+  const lines = attributeLines(text);
+  if (!lines) return text;
+  const texts = text.split("\n");
+  const moved = lines.filter((line) => line.index > 0 && !line.fixed && !line.blank);
+  if (!moved.length) return text;
+  const width = (index: number) => /^[\t ]*/.exec(texts[index]!)![0].length;
+  const common = Math.min(...moved.map(({ index }) => width(index)));
+  const opened = lines[1]?.depth ?? 0;
+  const closing = moved.find(({ closes, depth }) => closes > 0 && depth - closes < opened);
+  const at = closing && width(closing.index) === common ? pad : `${pad}${indent}`;
+  return texts
+    .map((line, index) => {
+      if (index === 0 || lines[index]!.fixed) return line;
+      return lines[index]!.blank ? "" : `${at}${line.slice(common)}`;
+    })
+    .join("\n");
+}
+
+/** Where an attribute's code starts: after `name={`, `name="`, `{@attach `, `{...` or `{`. */
+const ATTRIBUTE_CODE = /^[^"{]*?(?:\{@attach\s+|\{\.\.\.|\{|")/;
+
+/** A line of an attribute's code, as {@link rebase} reads it. */
+interface CodeLine {
+  index: number;
+  /** Whether it starts inside a string or template literal. */
+  fixed: boolean;
+  blank: boolean;
+  /** The brackets open at its start. */
+  depth: number;
+  /** The closing brackets it starts with. */
+  closes: number;
+}
+
+/**
+ * Each line of an attribute's text, as its code reads it; `undefined` when the code cannot be
+ * found or parsed. The code is read token by token (`codeTokens`), so a bracket or a line break
+ * in a literal or a comment is no code.
+ */
+function attributeLines(text: string): CodeLine[] | undefined {
+  const opening = ATTRIBUTE_CODE.exec(text)?.[0];
+  const quoted = opening?.endsWith('"');
+  if (opening === undefined || !text.endsWith(quoted ? '"' : "}")) return undefined;
+  // References never span lines, so decoding them keeps every line where it is.
+  const code = text.slice(opening.length, -1);
+  const source = quoted ? decodeReferences(code) : code;
+  let tokens: CodeToken[];
+  try {
+    tokens = codeTokens(source, "expression");
+  } catch {
+    try {
+      tokens = codeTokens(source, "statements");
+    } catch {
+      return undefined;
+    }
+  }
+  const literalAt = (offset: number) =>
+    tokens.some(
+      (token) =>
+        (token.kind === "string" || token.kind === "template") &&
+        token.start < offset &&
+        offset <= token.end,
+    );
+  const inToken = (offset: number) =>
+    tokens.some((token) => token.start <= offset && offset < token.end);
+  const lines: CodeLine[] = [];
+  let depth = 0;
+  let offset = 0;
+  source.split("\n").forEach((line, index) => {
+    const indentation = /^[\t ]*/.exec(line)![0].length;
+    const closes = /^[)\]}]*/.exec(line.slice(indentation))![0].length;
+    lines.push({
+      index,
+      fixed: index > 0 && literalAt(offset),
+      blank: line.trim() === "",
+      depth,
+      closes: inToken(offset + indentation) ? 0 : closes,
+    });
+    for (let at = 0; at < line.length; at++) {
+      if (inToken(offset + at)) continue;
+      const character = line[at]!;
+      if (character === "(" || character === "[" || character === "{") depth++;
+      else if (character === ")" || character === "]" || character === "}") depth--;
+    }
+    offset += line.length + 1;
+  });
+  return lines;
+}
+
+/** HTML's character references in a quoted attribute's code, decoded. */
+function decodeReferences(code: string): string {
+  const named: Record<string, string> = {
+    amp: "&",
+    apos: "'",
+    gt: ">",
+    lt: "<",
+    nbsp: "\u00a0",
+    quot: '"',
+  };
+  return code.replace(/&(?:#x([0-9a-f]+)|#(\d+)|([a-z]+));/gi, (reference, hex, decimal, name) =>
+    hex !== undefined
+      ? String.fromCodePoint(Number.parseInt(hex as string, 16))
+      : decimal !== undefined
+        ? String.fromCodePoint(Number(decimal))
+        : (named[(name as string).toLowerCase()] ?? reference),
+  );
 }
 
 /** An item's one-line form. */
@@ -854,7 +1073,7 @@ function inlineText(item: Item): string {
     case "inline":
       return item.text;
     case "element": {
-      const open = `<${item.tag}${item.attributes.map((text) => ` ${text}`).join("")}${item.end}`;
+      const open = `<${item.tag}${item.attributes.map(({ text }) => ` ${text}`).join("")}${item.end}`;
       const text = `${open}${item.children.map(inlineText).join("")}${item.close}`;
       return item.region ? `${item.region.open}${text}${item.region.close}` : text;
     }
@@ -887,6 +1106,11 @@ function attributeName(attribute: Attribute): string {
       return "style";
     case "Spread":
       return "";
+    // A listener orders as Vue's `@event`, which `vue/attributes-order` puts last.
+    case "Event":
+      return `@${attribute.event}`;
+    case "Ref":
+      return "ref";
     default:
       return unreachable(attribute);
   }

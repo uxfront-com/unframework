@@ -1,0 +1,14 @@
+---
+const open = false as boolean;
+---
+
+<section class="shipping-details" aria-label="Shipping">
+  <button type="button" aria-expanded={open}>Shipping details</button>
+  {open ? (
+    <ul>
+      <li>Ships in two days</li>
+      <li>Free returns</li>
+      <li>Tracked delivery</li>
+    </ul>
+  ) : null}
+</section>

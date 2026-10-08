@@ -1,9 +1,15 @@
 // What the Qwik target needs to know about a value's type. Value kinds are the analyser's own
-// (design §1.6) and do not reach the IR, so the target reads what it needs from an expression's
+// (ADR-0037) and do not reach the IR, so the target reads what it needs from an expression's
 // syntax and from its props' declared types, and answers "not certainly" whenever it cannot
 // tell: its callers then write the form that type-checks for any value.
 import { bindingOf, parseExpression } from "@unframework/codegen";
-import type { BindingReference, Expression, UfComponent, UfModule } from "@unframework/ir";
+import type {
+  BindingKind,
+  BindingReference,
+  Expression,
+  UfComponent,
+  UfModule,
+} from "@unframework/ir";
 
 type Node = ReturnType<typeof parseExpression>;
 
@@ -218,13 +224,32 @@ function propReads(
   }
   return (node) => {
     const reference = references.get(`${node.start}:${node.end}`);
-    if (!reference || bindingOf(component, reference.binding).kind !== "prop") return undefined;
+    if (!reference || !isProp(bindingOf(component, reference.binding).kind)) return undefined;
     const prop = component.props.find((candidate) => candidate.binding === reference.binding);
     if (!prop) return undefined;
     const kinds = declaredKinds(prop.type.code, module);
     if (prop.optional && prop.default === undefined) kinds.add("undefined");
     return kinds;
   };
+}
+
+/** Whether a binding is a prop, whose declared type tells its kinds; nothing else's does here. */
+function isProp(kind: BindingKind): boolean {
+  switch (kind) {
+    case "prop":
+      return true;
+    case "loopVar":
+    case "state":
+    case "derived":
+    case "templateRef":
+    case "localConst":
+    case "localFn":
+    case "localVar":
+    case "emit":
+      return false;
+    default:
+      return kind satisfies never;
+  }
 }
 
 /** Whether a call of `callee` returns a primitive whatever its arguments. */

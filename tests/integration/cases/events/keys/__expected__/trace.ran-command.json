@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByLabel('Command')",
+      "dom": [
+        "<section aria-label=\"Command menu\" class=\"command-menu\">",
+        "  <form aria-label=\"Commands\" role=\"search\">",
+        "    <label>",
+        "      \"Command\"",
+        "      <input name=\"command\" uf:focused=\"\" uf:value=\"\">",
+        "    </label>",
+        "  </form>",
+        "  <ul aria-label=\"Suggestions\">",
+        "    <li aria-current=\"true\">",
+        "      \"Deploy\"",
+        "    </li>",
+        "    <li>",
+        "      \"Roll back\"",
+        "    </li>",
+        "    <li>",
+        "      \"Open the logs\"",
+        "    </li>",
+        "  </ul>",
+        "  <label>",
+        "    \"Shortcut name\"",
+        "    <input name=\"shortcut\" uf:value=\"\">",
+        "  </label>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Command menu\":",
+        "  - search \"Commands\":",
+        "    - text: Command",
+        "    - textbox \"Command\"",
+        "  - list \"Suggestions\":",
+        "    - listitem: Deploy",
+        "    - listitem: Roll back",
+        "    - listitem: Open the logs",
+        "  - text: Shortcut name",
+        "  - textbox \"Shortcut name\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "keyboard \"{ArrowDown}{ArrowDown}{ArrowDown}{ArrowUp}\"",
+      "dom": [
+        "<section aria-label=\"Command menu\" class=\"command-menu\">",
+        "  <form aria-label=\"Commands\" role=\"search\">",
+        "    <label>",
+        "      \"Command\"",
+        "      <input name=\"command\" uf:focused=\"\" uf:value=\"\">",
+        "    </label>",
+        "  </form>",
+        "  <ul aria-label=\"Suggestions\">",
+        "    <li>",
+        "      \"Deploy\"",
+        "    </li>",
+        "    <li>",
+        "      \"Roll back\"",
+        "    </li>",
+        "    <li aria-current=\"true\">",
+        "      \"Open the logs\"",
+        "    </li>",
+        "  </ul>",
+        "  <label>",
+        "    \"Shortcut name\"",
+        "    <input name=\"shortcut\" uf:value=\"\">",
+        "  </label>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Command menu\":",
+        "  - search \"Commands\":",
+        "    - text: Command",
+        "    - textbox \"Command\"",
+        "  - list \"Suggestions\":",
+        "    - listitem: Deploy",
+        "    - listitem: Roll back",
+        "    - listitem: Open the logs",
+        "  - text: Shortcut name",
+        "  - textbox \"Shortcut name\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "keyboard \"{Enter}\"",
+      "dom": [
+        "<section aria-label=\"Command menu\" class=\"command-menu\">",
+        "  <form aria-label=\"Commands\" role=\"search\">",
+        "    <label>",
+        "      \"Command\"",
+        "      <input name=\"command\" uf:focused=\"\" uf:value=\"\">",
+        "    </label>",
+        "  </form>",
+        "  <ul aria-label=\"Suggestions\">",
+        "    <li>",
+        "      \"Deploy\"",
+        "    </li>",
+        "    <li>",
+        "      \"Roll back\"",
+        "    </li>",
+        "    <li aria-current=\"true\">",
+        "      \"Open the logs\"",
+        "    </li>",
+        "  </ul>",
+        "  <label>",
+        "    \"Shortcut name\"",
+        "    <input name=\"shortcut\" uf:value=\"\">",
+        "  </label>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Command menu\":",
+        "  - search \"Commands\":",
+        "    - text: Command",
+        "    - textbox \"Command\"",
+        "  - list \"Suggestions\":",
+        "    - listitem: Deploy",
+        "    - listitem: Roll back",
+        "    - listitem: Open the logs",
+        "  - text: Shortcut name",
+        "  - textbox \"Shortcut name\""
+      ],
+      "events": {
+        "run": [
+          [
+            "Open the logs"
+          ]
+        ]
+      }
+    }
+  ]
+}

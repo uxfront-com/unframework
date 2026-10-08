@@ -1,6 +1,6 @@
-// How React writes what the JSX printer's defaults (design §4.2) write differently: React's
-// prop names, number-typed props as numbers, `className` through an inline `cx`, style objects
-// typed for custom properties, and spreads written out key by key (design §5.1). Every boolean
+// How React writes what the JSX printer's defaults write differently: React's prop names,
+// number-typed props as numbers, `className` through an inline `cx`, style objects typed for
+// custom properties, and spreads written out key by key (ADR-0037 to ADR-0039). Every boolean
 // attribute the IR can hold is one of React's boolean props (test/attributes.test.ts), so the
 // defaults write it bare and bind it as it is.
 import {
@@ -18,6 +18,8 @@ import {
 import type { ImportSet, JsxContext, JsxDialect } from "@unframework/codegen";
 import type { ClassAttribute, ElementNode } from "@unframework/ir";
 
+import { keyedTernary } from "./branches.ts";
+import type { ReactListeners } from "./listeners.ts";
 import { formControlProp, REACT_PROP_NAMES } from "./props.ts";
 
 type JsxAttribute = ReturnType<typeof js.jsxAttribute>;
@@ -32,8 +34,11 @@ export interface ReactNames {
   cx?: string;
 }
 
-/** The React dialect of the JSX printer, claiming names in `names` as it needs them. */
-export function reactDialect(names: ReactNames): JsxDialect {
+/**
+ * The React dialect of the JSX printer, claiming names in `names` as it needs them; `listeners`
+ * prints the listeners and template refs.
+ */
+export function reactDialect(names: ReactNames, listeners: ReactListeners): JsxDialect {
   return {
     attributeName: (name, element) =>
       formControlProp(name, element) ?? REACT_PROP_NAMES[name] ?? name,
@@ -85,6 +90,12 @@ export function reactDialect(names: ReactNames): JsxDialect {
         .filter((key) => !(merged && key.name === "class"))
         .map((key) => prop(key.name, element, context, spreadRead(attribute, key, context)));
     },
+
+    conditional: (node, context) => keyedTernary(node, context, names.imports),
+
+    eventAttribute: (attribute, element, context) => listeners.event(attribute, element, context),
+
+    refAttribute: (attribute, element, context) => listeners.ref(attribute, element, context),
   };
 }
 

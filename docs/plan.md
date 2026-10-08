@@ -1693,12 +1693,12 @@ These are npm `latest` versions on 2026-10-01. Each target pins its tested range
 | tsdown                                    | 0.23.0            |                                                                            |
 | axe-core                                  | 4.13.0            |                                                                            |
 | oxlint / oxlint-tsgolint                  | 1.86.0 / 7.0.2003 | the repo's linter, and L5's baseline on every target (ADR-0042)            |
-| eslint                                    | 10.11.0           | L5 for Vue, Svelte, Astro and Angular, on TypeScript 6                     |
+| eslint                                    | 10.11.0           | L5 for Vue, Svelte, Astro, Angular and Qwik's typed rules, on TypeScript 6 |
 | typescript-eslint                         | 8.71.0            | peers TypeScript `<6.1`, so only the TypeScript 6 toolchains load it       |
 | eslint-plugin-vue / vue-eslint-parser     | 10.11.1 / 10.4.1  | L5 for Vue                                                                 |
 | eslint-plugin-svelte                      | 3.23.0            | L5 for Svelte                                                              |
 | eslint-plugin-astro / astro-eslint-parser | 3.2.1 / 3.2.0     | L5 for Astro                                                               |
 | @angular-eslint/eslint-plugin             | 22.5.0            | with `eslint-plugin-template` and `template-parser`: L5 for Angular        |
 | eslint-plugin-solid                       | 0.18.0            | L5 for Solid, as an oxlint JS plugin                                       |
-| eslint-plugin-qwik                        | 2.0.0-beta.47     | the `beta` tag (`latest` is Qwik 1's); a JS plugin without its typed rules |
+| eslint-plugin-qwik                        | 2.0.0-beta.47     | the `beta` tag (`latest` is Qwik 1's); typed rules in ESLint (ADR-0045)    |
 | vue-jsx-vapor                             | 3.2.25            | prior art: Vue directives and macros in JSX                                |

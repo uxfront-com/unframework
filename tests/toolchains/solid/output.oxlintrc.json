@@ -4,7 +4,7 @@
 // but for the import allow-list (tests/integration/harness/toolchain-lint.unit.test.ts compares
 // them).
 //
-// L5 judges the emitter's idiom, not the author's code (design §6.1). A rule that can only fire
+// L5 judges the emitter's idiom, not the author's code (ADR-0042). A rule that can only fire
 // on what the author wrote (an expression, a literal, text, markup) is off below: oxlint sees
 // the author's expressions only in the JSX targets' output, so it would fail one target's copy
 // of an expression and pass another's (P4). The author's own linter judges the source.
@@ -35,8 +35,22 @@
     "typescript/no-extraneous-class": ["error", { "allowWithDecorator": true }],
     // A useless escape in an output is in code it copies, so it is the author's, `<\/script`
     // included: UF1002 asks for it where a copied string would end a Vue or Svelte script block.
-    // Only the Vue target escapes one itself, as a guard (design §4.4).
+    // Only the Vue target escapes one itself, as a guard (ADR-0051).
     "no-useless-escape": "off",
+
+    // Off: they judge the author's statements, which every target copies but Astro, which drops
+    // client code (ADR-0045): where the author nests a function, and one correct spelling over
+    // another (`sort()` on a fresh array, `instanceof Array`, `new Array(length)`, `Promise.all`
+    // of one promise, an `on…` handler property). No target writes them itself. The targets' own
+    // placement of the setup's functions (React, Solid and Qwik move what captures nothing to
+    // module scope, ADR-0045) is pinned by their emitter tests.
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/no-array-reverse": "off",
+    "unicorn/no-array-sort": "off",
+    "unicorn/no-instanceof-builtins": "off",
+    "unicorn/no-new-array": "off",
+    "unicorn/no-single-promise-in-promise-methods": "off",
+    "unicorn/prefer-add-event-listener": "off",
 
     // Off: they judge the author's expressions and literals.
     "no-compare-neg-zero": "off",
@@ -79,7 +93,7 @@
   },
   // The framework layer: eslint-plugin-solid as an oxlint JS plugin (no type information, which
   // its rules do not need). Its `flat/typescript` rules, as errors, and `prefer-show`, which
-  // pins the lowering of conditionals to <Show> and <Switch> (design §5.4).
+  // pins the lowering of conditionals to <Show> and <Switch> (plan §6).
   "overrides": [
     {
       "files": ["**/*"],

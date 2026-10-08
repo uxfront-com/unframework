@@ -1,0 +1,743 @@
+{
+  "irVersion": 1,
+  "file": "semantics/emit/StarRating.uf.tsx",
+  "components": [
+    {
+      "name": "StarRating",
+      "span": {
+        "start": 49,
+        "end": 1167
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@96",
+        "type": {
+          "code": "{\n    preview: [stars: number];\n    rate: [stars: number, previous: number];\n    cleared: [];\n  }",
+          "span": {
+            "start": 115,
+            "end": 212
+          }
+        },
+        "events": [
+          {
+            "name": "preview",
+            "parameters": [
+              {
+                "name": "stars",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 138,
+                    "end": 144
+                  }
+                },
+                "span": {
+                  "start": 131,
+                  "end": 144
+                }
+              }
+            ],
+            "span": {
+              "start": 121,
+              "end": 145
+            }
+          },
+          {
+            "name": "rate",
+            "parameters": [
+              {
+                "name": "stars",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 165,
+                    "end": 171
+                  }
+                },
+                "span": {
+                  "start": 158,
+                  "end": 171
+                }
+              },
+              {
+                "name": "previous",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 183,
+                    "end": 189
+                  }
+                },
+                "span": {
+                  "start": 173,
+                  "end": 189
+                }
+              }
+            ],
+            "span": {
+              "start": 151,
+              "end": 190
+            }
+          },
+          {
+            "name": "cleared",
+            "parameters": [],
+            "span": {
+              "start": 196,
+              "end": 207
+            }
+          }
+        ],
+        "span": {
+          "start": 90,
+          "end": 216
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@96",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 96,
+            "end": 100
+          }
+        },
+        {
+          "id": "choices@226",
+          "name": "choices",
+          "kind": "localConst",
+          "span": {
+            "start": 226,
+            "end": 233
+          }
+        },
+        {
+          "id": "stars@261",
+          "name": "stars",
+          "kind": "state",
+          "span": {
+            "start": 261,
+            "end": 266
+          }
+        },
+        {
+          "id": "choose@289",
+          "name": "choose",
+          "kind": "localFn",
+          "span": {
+            "start": 289,
+            "end": 295
+          }
+        },
+        {
+          "id": "clear@454",
+          "name": "clear",
+          "kind": "localFn",
+          "span": {
+            "start": 454,
+            "end": 459
+          }
+        },
+        {
+          "id": "choice@711",
+          "name": "choice",
+          "kind": "loopVar",
+          "span": {
+            "start": 711,
+            "end": 717
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Const",
+          "binding": "choices@226",
+          "value": {
+            "code": "[1, 2, 3, 4, 5]",
+            "span": {
+              "start": 236,
+              "end": 251
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 220,
+            "end": 252
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "stars@261",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 273,
+              "end": 274
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 255,
+            "end": 276
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "choose@289",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "next",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 302,
+                    "end": 308
+                  }
+                },
+                "span": {
+                  "start": 296,
+                  "end": 308
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    const previous = stars.value;\n    emit(\"preview\", next);\n    stars.value = next;\n    emit(\"rate\", stars.value, previous);\n  }",
+              "span": {
+                "start": 310,
+                "end": 441
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "stars@261",
+                  "span": {
+                    "start": 333,
+                    "end": 344
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@96",
+                  "event": "preview",
+                  "span": {
+                    "start": 350,
+                    "end": 371
+                  },
+                  "arguments": [
+                    {
+                      "start": 366,
+                      "end": 370
+                    }
+                  ]
+                },
+                {
+                  "kind": "Write",
+                  "binding": "stars@261",
+                  "operator": "=",
+                  "span": {
+                    "start": 377,
+                    "end": 395
+                  },
+                  "target": {
+                    "start": 377,
+                    "end": 388
+                  },
+                  "value": {
+                    "start": 391,
+                    "end": 395
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@96",
+                  "event": "rate",
+                  "span": {
+                    "start": 401,
+                    "end": 436
+                  },
+                  "arguments": [
+                    {
+                      "start": 414,
+                      "end": 425
+                    },
+                    {
+                      "start": 427,
+                      "end": 435
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "stars@261",
+                  "span": {
+                    "start": 414,
+                    "end": 425
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 295,
+              "end": 441
+            }
+          },
+          "span": {
+            "start": 280,
+            "end": 441
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "clear@454",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    for (let star = stars.value - 1; star >= 0; star--) {\n      emit(\"preview\", star);\n    }\n    stars.value = 0;\n    emit(\"cleared\");\n  }",
+              "span": {
+                "start": 462,
+                "end": 602
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "stars@261",
+                  "span": {
+                    "start": 484,
+                    "end": 495
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@96",
+                  "event": "preview",
+                  "span": {
+                    "start": 528,
+                    "end": 549
+                  },
+                  "arguments": [
+                    {
+                      "start": 544,
+                      "end": 548
+                    }
+                  ]
+                },
+                {
+                  "kind": "Write",
+                  "binding": "stars@261",
+                  "operator": "=",
+                  "span": {
+                    "start": 561,
+                    "end": 576
+                  },
+                  "target": {
+                    "start": 561,
+                    "end": 572
+                  },
+                  "value": {
+                    "start": 575,
+                    "end": 576
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@96",
+                  "event": "cleared",
+                  "span": {
+                    "start": 582,
+                    "end": 597
+                  },
+                  "arguments": []
+                }
+              ]
+            },
+            "span": {
+              "start": 459,
+              "end": 602
+            }
+          },
+          "span": {
+            "start": 445,
+            "end": 602
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "star-rating",
+            "span": {
+              "start": 624,
+              "end": 643
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "group",
+            "span": {
+              "start": 644,
+              "end": 656
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Rating",
+            "span": {
+              "start": 657,
+              "end": 676
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "choices",
+                  "span": {
+                    "start": 698,
+                    "end": 705
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "choices@226",
+                      "span": {
+                        "start": 698,
+                        "end": 705
+                      }
+                    }
+                  ]
+                },
+                "item": "choice@711",
+                "key": {
+                  "code": "choice",
+                  "span": {
+                    "start": 743,
+                    "end": 749
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "choice@711",
+                      "span": {
+                        "start": 743,
+                        "end": 749
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Element",
+                      "tag": "button",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "type",
+                          "value": "button",
+                          "span": {
+                            "start": 786,
+                            "end": 799
+                          }
+                        },
+                        {
+                          "kind": "Bound",
+                          "name": "aria-pressed",
+                          "value": {
+                            "code": "stars.value >= choice",
+                            "span": {
+                              "start": 828,
+                              "end": 849
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "stars@261",
+                                "span": {
+                                  "start": 828,
+                                  "end": 839
+                                }
+                              },
+                              {
+                                "kind": "Binding",
+                                "binding": "choice@711",
+                                "span": {
+                                  "start": 843,
+                                  "end": 849
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 814,
+                            "end": 850
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "event": "click",
+                          "handler": {
+                            "kind": "Inline",
+                            "function": {
+                              "parameters": [],
+                              "body": {
+                                "code": "choose(choice)",
+                                "span": {
+                                  "start": 880,
+                                  "end": 894
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "choose@289",
+                                    "span": {
+                                      "start": 880,
+                                      "end": 886
+                                    },
+                                    "call": true
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "choice@711",
+                                    "span": {
+                                      "start": 887,
+                                      "end": 893
+                                    }
+                                  }
+                                ]
+                              },
+                              "expression": true,
+                              "span": {
+                                "start": 874,
+                                "end": 894
+                              }
+                            },
+                            "span": {
+                              "start": 874,
+                              "end": 894
+                            }
+                          },
+                          "span": {
+                            "start": 865,
+                            "end": 895
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "choice",
+                            "span": {
+                              "start": 925,
+                              "end": 931
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "choice@711",
+                                "span": {
+                                  "start": 925,
+                                  "end": 931
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 924,
+                            "end": 932
+                          }
+                        },
+                        {
+                          "kind": "Text",
+                          "value": " ",
+                          "span": {
+                            "start": 932,
+                            "end": 933
+                          }
+                        },
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "choice === 1 ? \"star\" : \"stars\"",
+                            "span": {
+                              "start": 934,
+                              "end": 965
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "choice@711",
+                                "span": {
+                                  "start": 934,
+                                  "end": 940
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 933,
+                            "end": 966
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 764,
+                        "end": 988
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 734,
+                    "end": 1004
+                  }
+                },
+                "span": {
+                  "start": 698,
+                  "end": 1015
+                }
+              }
+            ],
+            "span": {
+              "start": 684,
+              "end": 1028
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 1038,
+                  "end": 1051
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "stars.value",
+                  "span": {
+                    "start": 1053,
+                    "end": 1064
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "stars@261",
+                      "span": {
+                        "start": 1053,
+                        "end": 1064
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1052,
+                  "end": 1065
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " of 5",
+                "span": {
+                  "start": 1065,
+                  "end": 1070
+                }
+              }
+            ],
+            "span": {
+              "start": 1035,
+              "end": 1074
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1089,
+                  "end": 1102
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "clear@454",
+                  "span": {
+                    "start": 1112,
+                    "end": 1117
+                  }
+                },
+                "span": {
+                  "start": 1103,
+                  "end": 1118
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Clear",
+                "span": {
+                  "start": 1119,
+                  "end": 1140
+                }
+              }
+            ],
+            "span": {
+              "start": 1081,
+              "end": 1149
+            }
+          }
+        ],
+        "span": {
+          "start": 619,
+          "end": 1160
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "StarRating",
+      "span": {
+        "start": 49,
+        "end": 1167
+      }
+    }
+  ],
+  "types": []
+}

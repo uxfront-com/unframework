@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Stop listening' })",
+      "dom": [
+        "<section aria-label=\"Draft\" class=\"draft-panel\">",
+        "  <button aria-expanded=\"false\" type=\"button\">",
+        "    \"Options\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Listen\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Stop listening\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Handle\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <p role=\"status\">",
+        "    \"Options closed, draft\"",
+        "  </p>",
+        "  <ol aria-label=\"Log\">",
+        "    <li>",
+        "      \"key a\"",
+        "    </li>",
+        "  </ol>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Draft\":",
+        "  - button \"Options\"",
+        "  - button \"Listen\"",
+        "  - button \"Stop listening\"",
+        "  - button \"Handle\"",
+        "  - button \"Save\"",
+        "  - status: Options closed, draft",
+        "  - list \"Log\":",
+        "    - listitem: key a"
+      ],
+      "events": {}
+    },
+    {
+      "action": "keyboard \"b\"",
+      "dom": [
+        "<section aria-label=\"Draft\" class=\"draft-panel\">",
+        "  <button aria-expanded=\"false\" type=\"button\">",
+        "    \"Options\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Listen\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Stop listening\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Handle\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <p role=\"status\">",
+        "    \"Options closed, draft\"",
+        "  </p>",
+        "  <ol aria-label=\"Log\">",
+        "    <li>",
+        "      \"key a\"",
+        "    </li>",
+        "  </ol>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Draft\":",
+        "  - button \"Options\"",
+        "  - button \"Listen\"",
+        "  - button \"Stop listening\"",
+        "  - button \"Handle\"",
+        "  - button \"Save\"",
+        "  - status: Options closed, draft",
+        "  - list \"Log\":",
+        "    - listitem: key a"
+      ],
+      "events": {}
+    }
+  ]
+}

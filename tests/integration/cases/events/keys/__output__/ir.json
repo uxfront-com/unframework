@@ -1,0 +1,966 @@
+{
+  "irVersion": 1,
+  "file": "events/keys/CommandMenu.uf.tsx",
+  "components": [
+    {
+      "name": "CommandMenu",
+      "span": {
+        "start": 126,
+        "end": 1830
+      },
+      "props": [
+        {
+          "name": "commands",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 113,
+              "end": 121
+            }
+          },
+          "binding": "commands@164",
+          "span": {
+            "start": 103,
+            "end": 122
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "CommandMenuProps",
+          "span": {
+            "start": 176,
+            "end": 192
+          }
+        },
+        "span": {
+          "start": 162,
+          "end": 192
+        }
+      },
+      "types": [
+        "CommandMenuProps"
+      ],
+      "emits": {
+        "binding": "emit@204",
+        "type": {
+          "code": "{ run: [command: string]; dismiss: [] }",
+          "span": {
+            "start": 223,
+            "end": 262
+          }
+        },
+        "events": [
+          {
+            "name": "run",
+            "parameters": [
+              {
+                "name": "command",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 240,
+                    "end": 246
+                  }
+                },
+                "span": {
+                  "start": 231,
+                  "end": 246
+                }
+              }
+            ],
+            "span": {
+              "start": 225,
+              "end": 247
+            }
+          },
+          {
+            "name": "dismiss",
+            "parameters": [],
+            "span": {
+              "start": 249,
+              "end": 260
+            }
+          }
+        ],
+        "span": {
+          "start": 198,
+          "end": 266
+        }
+      },
+      "bindings": [
+        {
+          "id": "commands@164",
+          "name": "commands",
+          "kind": "prop",
+          "span": {
+            "start": 164,
+            "end": 172
+          }
+        },
+        {
+          "id": "emit@204",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 204,
+            "end": 208
+          }
+        },
+        {
+          "id": "active@276",
+          "name": "active",
+          "kind": "state",
+          "span": {
+            "start": 276,
+            "end": 282
+          }
+        },
+        {
+          "id": "query@301",
+          "name": "query",
+          "kind": "state",
+          "span": {
+            "start": 301,
+            "end": 306
+          }
+        },
+        {
+          "id": "shortcutField@326",
+          "name": "shortcutField",
+          "kind": "templateRef",
+          "span": {
+            "start": 326,
+            "end": 339
+          }
+        },
+        {
+          "id": "handleKey@390",
+          "name": "handleKey",
+          "kind": "localFn",
+          "span": {
+            "start": 390,
+            "end": 399
+          }
+        },
+        {
+          "id": "clearShortcut@902",
+          "name": "clearShortcut",
+          "kind": "localFn",
+          "span": {
+            "start": 902,
+            "end": 915
+          }
+        },
+        {
+          "id": "command@1430",
+          "name": "command",
+          "kind": "loopVar",
+          "span": {
+            "start": 1430,
+            "end": 1437
+          }
+        },
+        {
+          "id": "index@1439",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 1439,
+            "end": 1444
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "active@276",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 289,
+              "end": 290
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 270,
+            "end": 292
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "query@301",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 313,
+              "end": 315
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 295,
+            "end": 317
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "shortcutField@326",
+          "type": {
+            "code": "HTMLInputElement",
+            "span": {
+              "start": 357,
+              "end": 373
+            }
+          },
+          "span": {
+            "start": 320,
+            "end": 377
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "handleKey@390",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 407,
+                    "end": 420
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 400,
+                  "end": 420
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key === \"Enter\") event.preventDefault();\n    if (event.key === \"ArrowDown\") {\n      active.value = (active.value + 1) % commands.length;\n    } else if (event.key === \"ArrowUp\") {\n      active.value = (active.value + commands.length - 1) % commands.length;\n    } else if (event.key === \"Enter\") {\n      emit(\"run\", commands[active.value] ?? query.value);\n    } else if (event.key === \"Escape\") {\n      active.value = 0;\n      emit(\"dismiss\");\n    }\n  }",
+              "span": {
+                "start": 422,
+                "end": 889
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 432,
+                    "end": 441
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 455,
+                    "end": 475
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 487,
+                    "end": 496
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "active@276",
+                  "operator": "=",
+                  "span": {
+                    "start": 522,
+                    "end": 573
+                  },
+                  "target": {
+                    "start": 522,
+                    "end": 534
+                  },
+                  "value": {
+                    "start": 537,
+                    "end": 573
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "active@276",
+                  "span": {
+                    "start": 538,
+                    "end": 550
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "commands@164",
+                  "span": {
+                    "start": 558,
+                    "end": 566
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 590,
+                    "end": 599
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "active@276",
+                  "operator": "=",
+                  "span": {
+                    "start": 623,
+                    "end": 692
+                  },
+                  "target": {
+                    "start": 623,
+                    "end": 635
+                  },
+                  "value": {
+                    "start": 638,
+                    "end": 692
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "active@276",
+                  "span": {
+                    "start": 639,
+                    "end": 651
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "commands@164",
+                  "span": {
+                    "start": 654,
+                    "end": 662
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "commands@164",
+                  "span": {
+                    "start": 677,
+                    "end": 685
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 709,
+                    "end": 718
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@204",
+                  "event": "run",
+                  "span": {
+                    "start": 740,
+                    "end": 790
+                  },
+                  "arguments": [
+                    {
+                      "start": 752,
+                      "end": 789
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "commands@164",
+                  "span": {
+                    "start": 752,
+                    "end": 760
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "active@276",
+                  "span": {
+                    "start": 761,
+                    "end": 773
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "query@301",
+                  "span": {
+                    "start": 778,
+                    "end": 789
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 807,
+                    "end": 816
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "active@276",
+                  "operator": "=",
+                  "span": {
+                    "start": 839,
+                    "end": 855
+                  },
+                  "target": {
+                    "start": 839,
+                    "end": 851
+                  },
+                  "value": {
+                    "start": 854,
+                    "end": 855
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@204",
+                  "event": "dismiss",
+                  "span": {
+                    "start": 863,
+                    "end": 878
+                  },
+                  "arguments": []
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "preventDefault",
+                "condition": {
+                  "code": "event.key === \"Enter\"",
+                  "span": {
+                    "start": 432,
+                    "end": 453
+                  },
+                  "refs": [
+                    {
+                      "kind": "Event",
+                      "member": "key",
+                      "span": {
+                        "start": 432,
+                        "end": 441
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 428,
+                  "end": 478
+                }
+              }
+            ],
+            "span": {
+              "start": 399,
+              "end": 889
+            }
+          },
+          "span": {
+            "start": 381,
+            "end": 889
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "clearShortcut@902",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    const input = shortcutField.value;\n    if (input) input.value = \"\";\n  }",
+              "span": {
+                "start": 918,
+                "end": 995
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "shortcutField@326",
+                  "span": {
+                    "start": 938,
+                    "end": 957
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 915,
+              "end": 995
+            }
+          },
+          "span": {
+            "start": 893,
+            "end": 995
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "command-menu",
+            "span": {
+              "start": 1021,
+              "end": 1041
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Command menu",
+            "span": {
+              "start": 1042,
+              "end": 1067
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "form",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "search",
+                "span": {
+                  "start": 1081,
+                  "end": 1094
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Commands",
+                "span": {
+                  "start": 1095,
+                  "end": 1116
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "label",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Command",
+                    "span": {
+                      "start": 1133,
+                      "end": 1162
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "input",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "name",
+                        "value": "command",
+                        "span": {
+                          "start": 1181,
+                          "end": 1195
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "input",
+                        "handler": {
+                          "kind": "Inline",
+                          "function": {
+                            "parameters": [
+                              {
+                                "name": "event",
+                                "event": "InputEvent",
+                                "span": {
+                                  "start": 1218,
+                                  "end": 1223
+                                }
+                              }
+                            ],
+                            "body": {
+                              "code": "(query.value = (event.currentTarget as HTMLInputElement).value)",
+                              "span": {
+                                "start": 1228,
+                                "end": 1291
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Write",
+                                  "binding": "query@301",
+                                  "operator": "=",
+                                  "span": {
+                                    "start": 1228,
+                                    "end": 1291
+                                  },
+                                  "target": {
+                                    "start": 1229,
+                                    "end": 1240
+                                  },
+                                  "value": {
+                                    "start": 1243,
+                                    "end": 1290
+                                  },
+                                  "arrowBody": true
+                                },
+                                {
+                                  "kind": "Event",
+                                  "member": "currentTarget",
+                                  "span": {
+                                    "start": 1244,
+                                    "end": 1263
+                                  }
+                                }
+                              ]
+                            },
+                            "expression": true,
+                            "span": {
+                              "start": 1217,
+                              "end": 1291
+                            }
+                          },
+                          "span": {
+                            "start": 1217,
+                            "end": 1291
+                          }
+                        },
+                        "span": {
+                          "start": 1208,
+                          "end": 1292
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "keydown",
+                        "handler": {
+                          "kind": "Function",
+                          "binding": "handleKey@390",
+                          "span": {
+                            "start": 1316,
+                            "end": 1325
+                          }
+                        },
+                        "span": {
+                          "start": 1305,
+                          "end": 1326
+                        }
+                      }
+                    ],
+                    "children": [],
+                    "span": {
+                      "start": 1162,
+                      "end": 1339
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1126,
+                  "end": 1356
+                }
+              }
+            ],
+            "span": {
+              "start": 1075,
+              "end": 1370
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Suggestions",
+                "span": {
+                  "start": 1381,
+                  "end": 1405
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "commands",
+                  "span": {
+                    "start": 1416,
+                    "end": 1424
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "commands@164",
+                      "span": {
+                        "start": 1416,
+                        "end": 1424
+                      }
+                    }
+                  ]
+                },
+                "item": "command@1430",
+                "index": "index@1439",
+                "key": {
+                  "code": "command",
+                  "span": {
+                    "start": 1470,
+                    "end": 1477
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "command@1430",
+                      "span": {
+                        "start": 1470,
+                        "end": 1477
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [
+                    {
+                      "kind": "Bound",
+                      "name": "aria-current",
+                      "value": {
+                        "code": "index === active.value ? \"true\" : undefined",
+                        "span": {
+                          "start": 1493,
+                          "end": 1536
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "index@1439",
+                            "span": {
+                              "start": 1493,
+                              "end": 1498
+                            }
+                          },
+                          {
+                            "kind": "Binding",
+                            "binding": "active@276",
+                            "span": {
+                              "start": 1503,
+                              "end": 1515
+                            }
+                          },
+                          {
+                            "kind": "Global",
+                            "name": "undefined",
+                            "span": {
+                              "start": 1527,
+                              "end": 1536
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 1479,
+                        "end": 1537
+                      }
+                    }
+                  ],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "command",
+                        "span": {
+                          "start": 1552,
+                          "end": 1559
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "command@1430",
+                            "span": {
+                              "start": 1552,
+                              "end": 1559
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 1551,
+                        "end": 1560
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 1461,
+                    "end": 1576
+                  }
+                },
+                "span": {
+                  "start": 1416,
+                  "end": 1587
+                }
+              }
+            ],
+            "span": {
+              "start": 1377,
+              "end": 1600
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Shortcut name",
+                "span": {
+                  "start": 1614,
+                  "end": 1645
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "shortcut",
+                    "span": {
+                      "start": 1662,
+                      "end": 1677
+                    }
+                  },
+                  {
+                    "kind": "Ref",
+                    "binding": "shortcutField@326",
+                    "span": {
+                      "start": 1688,
+                      "end": 1707
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "keydown",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "KeyboardEvent",
+                            "span": {
+                              "start": 1730,
+                              "end": 1735
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "event.key === \"Escape\" && clearShortcut()",
+                          "span": {
+                            "start": 1740,
+                            "end": 1781
+                          },
+                          "refs": [
+                            {
+                              "kind": "Event",
+                              "member": "key",
+                              "span": {
+                                "start": 1740,
+                                "end": 1749
+                              }
+                            },
+                            {
+                              "kind": "Binding",
+                              "binding": "clearShortcut@902",
+                              "span": {
+                                "start": 1766,
+                                "end": 1779
+                              },
+                              "call": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1729,
+                          "end": 1781
+                        }
+                      },
+                      "span": {
+                        "start": 1729,
+                        "end": 1781
+                      }
+                    },
+                    "span": {
+                      "start": 1718,
+                      "end": 1782
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 1645,
+                  "end": 1793
+                }
+              }
+            ],
+            "span": {
+              "start": 1607,
+              "end": 1808
+            }
+          }
+        ],
+        "span": {
+          "start": 1012,
+          "end": 1823
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "CommandMenu",
+      "span": {
+        "start": 126,
+        "end": 1830
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "CommandMenuProps",
+      "exported": true,
+      "code": "interface CommandMenuProps {\n  commands: string[];\n}",
+      "span": {
+        "start": 72,
+        "end": 124
+      }
+    }
+  ]
+}

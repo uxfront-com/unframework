@@ -95,9 +95,36 @@ export interface Toolchain {
 /** Declares a toolchain, checking its shape at compile time. */
 export type DefineToolchain = (toolchain: Toolchain) => Toolchain;
 
+/**
+ * An event a component declares with `defineEmits` (ADR-0047), as a mount adapter listens to it:
+ * its name in the source, and the shape of its payload, which an adapter whose framework
+ * delivers one value per event needs to give the listener the arguments back (Angular's
+ * `output()` emits nothing for an empty payload, the value for one required member, and a tuple
+ * otherwise).
+ */
+export interface MountEvent {
+  /** The event's name as the source declares it, `change`: each adapter spells it its own way. */
+  name: string;
+  /** Whether each member of the event's named tuple is optional, in order. */
+  optional: readonly boolean[];
+}
+
+/** A listener a test gives a mounted component: the arguments of one emit, as the source passed them. */
+export type MountListener = (...args: unknown[]) => void;
+
 /** What a test mounts a component with. */
 export interface MountOptions {
   props?: Readonly<Record<string, unknown>>;
+  /**
+   * Listeners for events the component declares, by the source's event name (`change`), never a
+   * framework's spelling: each adapter passes each listener the way its framework's consumer
+   * would (React's and Solid's `onChange` prop, Vue's `onChange` listener, Svelte's `onchange`
+   * prop, Angular's output, Qwik's `onChange$` QRL) and keeps it across `rerender`, which
+   * replaces the props alone. Astro's components run no client code, so its adapter has none.
+   */
+  on?: Readonly<Record<string, MountListener>>;
+  /** The events the component declares, every one `on` names among them (see {@link MountEvent}). */
+  events?: readonly MountEvent[];
 }
 
 /** A console message captured outside the page, such as during Astro's server render. */
@@ -114,7 +141,11 @@ export interface RenderReport {
 
 /** A component mounted by a target's adapter. */
 export interface MountedComponent extends RenderReport {
-  /** Resolves once the framework has flushed every pending update and effect. */
+  /**
+   * Resolves once the framework has flushed every pending update and effect it knows of. The
+   * test calls it in a loop, with two frames between calls, until the DOM and the emitted events
+   * stop changing: work a handler continues after an `await` lands in a later round.
+   */
   settle(): Promise<void>;
   /**
    * Renders the component again with new props, as a parent that re-renders it would (plan
@@ -124,6 +155,14 @@ export interface MountedComponent extends RenderReport {
    * inputs), where `undefined` is the only way to remove it.
    */
   rerender(props: Readonly<Record<string, unknown>>): Promise<RenderReport | void>;
+  /**
+   * Runs a user's action (a click, typing, a key: real input the test sends to the page) the way
+   * the framework needs it run, and resolves with its result once the work it started is done:
+   * React runs it inside `act`, and Qwik waits for the handlers it loads lazily. Without it the
+   * action runs as it is. The test settles after it either way (`settle`, until the page is
+   * quiet), so the adapter need not repeat that.
+   */
+  interact?<T>(action: () => Promise<T>): Promise<T>;
   unmount(): Promise<void>;
 }
 

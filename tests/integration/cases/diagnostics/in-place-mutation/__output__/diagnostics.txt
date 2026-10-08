@@ -1,0 +1,9 @@
+error[UF2004]: `push` changes `tags.value`, a ref's value, in place: state is replaced whole (ADR-0008), and no target sees a change made in place.
+ --> diagnostics/in-place-mutation/TagList.uf.tsx:9:5
+  |
+9 |     tags.value.push("systems");
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: Build a new value and write it: `items.value = [...items.value, item]`, `user.value = { ...user.value, name }`, `toSorted`, `toSpliced`. Code may change in place an array or an object it builds itself (a literal, `new Map()`, a copy), but not what a shallow copy holds (`structuredClone(…)` copies deeply); an element, the event and a global; and a local or a setup `let` that only ever holds one of these.
+  = fix (likely): Write `tags.value = [...tags.value, …]`
+  = see: https://unframework.dev/diagnostics/UF2004

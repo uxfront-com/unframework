@@ -1,0 +1,15 @@
+---
+export interface AutoRefreshProps {
+  /** Milliseconds between two refreshes. */
+  interval: number;
+}
+
+export type Props = AutoRefreshProps;
+
+const enabled = false as boolean;
+---
+
+<section class="auto-refresh" aria-label="Auto-refresh">
+  <button type="button" aria-pressed={enabled}>Auto-refresh</button>
+  <p role="status">{enabled ? "Refreshing" : "Paused"}</p>
+</section>

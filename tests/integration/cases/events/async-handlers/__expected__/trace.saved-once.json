@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Save the draft' })",
+      "dom": [
+        "<section aria-label=\"Draft\" class=\"save-draft\">",
+        "  <p role=\"status\">",
+        "    \"Saved, attempt 1\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Save the draft\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Draft\":",
+        "  - status: Saved, attempt 1",
+        "  - button \"Save the draft\""
+      ],
+      "events": {
+        "saved": [
+          [
+            1,
+            "Saved, attempt 1"
+          ]
+        ]
+      }
+    }
+  ]
+}

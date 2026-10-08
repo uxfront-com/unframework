@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "keyboard \"{Escape}\"",
+      "dom": [
+        "<section aria-label=\"Shortcuts\" class=\"shortcut-tip\">",
+        "  <p>",
+        "    \"Tip hidden.\"",
+        "  </p>",
+        "  <button aria-pressed=\"false\" type=\"button\">",
+        "    \"Shortcut K\"",
+        "  </button>",
+        "  <p role=\"status\">",
+        "    \"Used: 0\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Shortcuts\":",
+        "  - paragraph: Tip hidden.",
+        "  - button \"Shortcut K\"",
+        "  - status: \"Used: 0\""
+      ],
+      "events": {
+        "dismissed": [
+          []
+        ]
+      }
+    }
+  ]
+}

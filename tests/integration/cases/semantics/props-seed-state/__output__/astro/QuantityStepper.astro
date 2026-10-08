@@ -1,0 +1,17 @@
+---
+export interface QuantityStepperProps {
+  initial: number;
+  label: string;
+}
+
+type Props = QuantityStepperProps;
+
+const { initial, label } = Astro.props;
+
+const quantity = initial;
+---
+
+<div class="quantity-stepper" role="group" aria-label={label}>
+  <output>{quantity}</output>
+  <button type="button" aria-label={`Increase ${label}`}>+</button>
+</div>

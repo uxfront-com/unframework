@@ -1,0 +1,8 @@
+error[UF3029]: A handler is code, not a string: the compiler analyses a handler, and every target runs it as a function.
+ --> diagnostics/invalid-handler/PrintButton.uf.tsx:5:56
+  |
+5 |     <button type="button" class="print-button" onClick="window.print()">
+  |                                                        ^^^^^^^^^^^^^^^^
+  |
+  = help: Name a local function (`onClick={save}`), or write an arrow function (`onClick={() => save()}`).
+  = see: https://unframework.dev/diagnostics/UF3029

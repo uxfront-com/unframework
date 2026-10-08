@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF2020",
+    "severity": "error",
+    "message": "`page` is a prop's value, which nothing can watch: a watcher's source is a `ref` or a `computed` (`watch(count, …)`), a getter (`watch(() => page, …)`), or an array of them.",
+    "file": "diagnostics/unwatchable-source/Pagination.uf.tsx",
+    "start": {
+      "line": 12,
+      "column": 9,
+      "offset": 383
+    },
+    "end": {
+      "line": 12,
+      "column": 13,
+      "offset": 387
+    },
+    "help": "Watch the ref itself, or a getter that reads the value: `watch(() => page, …)`.",
+    "fixes": [
+      {
+        "title": "Watch `() => page`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 383,
+              "end": 387
+            },
+            "text": "() => page"
+          }
+        ]
+      }
+    ]
+  }
+]

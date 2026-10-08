@@ -1,4 +1,4 @@
-// The markup printer and its dialects (design §4.3), under the names targets import: the generic
+// The markup printer and its dialects (plan §5.8), under the names targets import: the generic
 // printer in `markup/printer.ts`, one file per template language beside it.
 export {
   classArrayItems,
@@ -25,9 +25,13 @@ export type {
   MarkupOptions,
   MarkupPiece,
   PrintedAttribute,
+  PrintedEvent,
+  PrintedRef,
   StylePart,
   TextPosition,
 } from "./markup/printer.ts";
+export { codeTokens, mapCode } from "./markup/escape.ts";
+export type { CodeMap, CodeToken } from "./markup/escape.ts";
 export { htmlDialect } from "./markup/html.ts";
 export { vueAttributeCode, vueClassValue, vueDialect, vueInterpolationCode } from "./markup/vue.ts";
 export { svelteDialect } from "./markup/svelte.ts";

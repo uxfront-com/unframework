@@ -1,0 +1,65 @@
+<section aria-label="Composer" class="comment-composer">
+  <label>
+    "Comment"
+    <textarea name="comment" uf:value=""></textarea>
+  </label>
+  <form aria-label="Tags">
+    <label>
+      "Tag"
+      <input name="tag" uf:value="">
+    </label>
+    <button type="submit" uf:focused="">
+      "Save tags"
+    </button>
+  </form>
+  <ul aria-label="Tag list">
+    <li>
+      "vue"
+    </li>
+  </ul>
+  <label>
+    "Code"
+    <input name="code" uf:value="">
+  </label>
+  <div class="panel" role="presentation">
+    <label>
+      "Search"
+      <input name="search" uf:value="">
+    </label>
+    <p>
+      "Searching for:"
+    </p>
+  </div>
+  <div class="page" role="presentation">
+    <div class="tip" role="presentation" style="padding: 12px;">
+      "Click here to hide this tip."
+      <button type="button">
+        "More tips"
+      </button>
+    </div>
+    <div class="backdrop" data-testid="backdrop" role="presentation" style="padding: 24px;">
+      <div aria-label="Discard draft" role="dialog">
+        <p>
+          "Discard this draft?"
+        </p>
+        <button type="button">
+          "Keep"
+        </button>
+      </div>
+    </div>
+  </div>
+  <button type="button">
+    "Save"
+  </button>
+  <button type="button">
+    "Upload"
+  </button>
+  <button type="button">
+    "Finish upload"
+  </button>
+  <ol aria-label="Log">
+    <li>
+      "tags submitted"
+    </li>
+  </ol>
+</section>

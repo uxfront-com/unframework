@@ -1,0 +1,16 @@
+---
+const saves = 0 as number;
+const lastKey = "none" as string;
+const tags = [] as string[];
+---
+
+<section class="note-editor" aria-label="Note">
+  <button type="button">Save</button>
+  <label>Title<input name="title" /></label>
+  <label>Body<textarea name="body"></textarea></label>
+  <p role="status">Saved {saves} times, last key {lastKey}</p>
+  <button type="button">Save and close</button>
+  <label>Tag<input name="tag" /></label>
+  <button type="button">Add tag</button>
+  <p>Tags: {tags.join(", ")}</p>
+</section>

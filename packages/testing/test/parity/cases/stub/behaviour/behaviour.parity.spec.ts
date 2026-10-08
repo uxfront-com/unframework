@@ -22,6 +22,12 @@ describeTargets("stub/behaviour", () => {
     await expect.element(view.getByText("Goodbye"), { timeout: 100 }).toBeVisible();
   });
 
+  it.fails("fails L8 with an action on an element that is not there", async () => {
+    const view = await mount({ html: "<p>Hello</p>" });
+    // An action waits the provider's action timeout, as an assertion waits the poll's.
+    await view.user.click(view.getByRole("button", { name: "Goodbye" }));
+  });
+
   it.fails("fails L8 when the test asserts nothing", async () => {
     await mount({ html: "<p>Hello</p>" });
   });
@@ -60,6 +66,14 @@ describeTargets("stub/behaviour", () => {
         /^VitestBrowserElementError: Cannot find element with locator: getByTestId\('uf-root-\d+'\)\.getByText\('Goodbye'\)\n\nARIA tree:\n- paragraph: Hello$/,
       ),
     });
+    // What a canary that empties the render makes of a spec whose first statement after its
+    // first expectParity acts: Playwright's timeout, naming the locator under the view's root.
+    expect(l8("fails L8 with an action on an element that is not there")).toEqual({
+      status: "fail",
+      message: expect.stringMatching(
+        /^TimeoutError: locator\.hover: Timeout 5000ms exceeded\.\nCall log:\n {2}- waiting for .*getByTestId\('uf-root-\d+'\)\.getByRole\('button', \{ name: 'Goodbye', exact: true \}\)\n?$/,
+      ),
+    });
     expect(l8("fails L8 when the test asserts nothing")).toEqual({
       status: "fail",
       message:
@@ -72,6 +86,7 @@ describeTargets("stub/behaviour", () => {
     // A failed L8 is all they failed on.
     for (const name of [
       "fails L8 with the test's own failed assertion",
+      "fails L8 with an action on an element that is not there",
       "fails L8 when the test asserts nothing",
       "fails L8 when the unmount fails",
     ]) {

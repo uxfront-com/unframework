@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Start' })",
+      "dom": [
+        "<p data-every=\"20\" role=\"status\">",
+        "  \"0\"",
+        "</p>",
+        "<button type=\"button\" uf:focused=\"\">",
+        "  \"Start\"",
+        "</button>"
+      ],
+      "aria": [
+        "- status: \"0\"",
+        "- button \"Start\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "tick 50ms",
+      "dom": [
+        "<p data-every=\"20\" role=\"status\">",
+        "  \"2\"",
+        "</p>",
+        "<button type=\"button\" uf:focused=\"\">",
+        "  \"Start\"",
+        "</button>"
+      ],
+      "aria": [
+        "- status: \"2\"",
+        "- button \"Start\""
+      ],
+      "events": {
+        "tick": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -34,15 +34,20 @@ function attributesOf(jsx: string) {
 }
 
 describe("event attributes", () => {
-  // HTML names are case-insensitive: the browser runs `ONCLICK` as `onclick`.
-  it.each(["onClick", "onclick", "ONCLICK", "OnClick", "OnMouseOver", "onKeyDown", "onClick$"])(
-    "reports %s as an event attribute, whatever its case",
-    (name) => {
-      const diagnostic = only(`<button type="button" ${name}="go()">Go</button>`);
-      expect([diagnostic.code, diagnostic.at]).toEqual(["UF1002", name]);
-      expect(diagnostic.message).toContain(`Static event attributes such as \`${name}\``);
-    },
-  );
+  // HTML names are case-insensitive: the browser runs `ONCLICK` as `onclick`. A listener is
+  // named as Vue names it (UF3004), and its handler is code, never a string (UF3029).
+  it.each([
+    ["onClick", []],
+    ["onclick", ["UF3004 onclick"]],
+    ["ONCLICK", ["UF3004 ONCLICK"]],
+    ["OnClick", ["UF3004 OnClick"]],
+    ["OnMouseEnter", ["UF3004 OnMouseEnter"]],
+    ["onKeyDown", ["UF3004 onKeyDown"]],
+    ["onClick$", ["UF3006 onClick$"]],
+  ])("reads %s as a listener, whatever its case", (name, found) => {
+    const { source, diagnostics } = component(`<button type="button" ${name}="go()">Go</button>`);
+    expect(problems(source, diagnostics)).toEqual([...found, 'UF3029 "go()"']);
+  });
 
   // M1 lowers `style` (ADR-0038): a name in another case is renamed like any other.
   it.each(["STYLE", "Style"])("reports %s as written style, and lowers it", (name) => {
@@ -189,8 +194,11 @@ describe("attribute names", () => {
     );
   });
 
+  it("reports a string ref, which is Vue's (UF3027)", () => {
+    expect(only('<p ref="r">a</p>')).toMatchObject({ code: "UF3027", at: '"r"' });
+  });
+
   it.each([
-    ['<p ref="r">a</p>', "ref"],
     ['<input v-model="x" />', "v-model"],
     ['<p v-if="x">a</p>', "v-if"],
     ['<p innerHTML="<b>x</b>">a</p>', "innerHTML"],
@@ -677,9 +685,7 @@ describe("the generated-id prefix, wherever the tests would rename it", () => {
     const { source, diagnostics } = component(markupWith(name, "note uf-id-x"));
     const owner = ownerOf(name) ?? "div";
     // A name the analyser rejects (`commandfor`, which React's types lack) hides its value.
-    const named = isHtmlAttribute(owner, name)
-      ? nameProblem(owner, "html", name, name, false)
-      : undefined;
+    const named = isHtmlAttribute(owner, name) ? nameProblem(owner, "html", name, name) : undefined;
     const accepted = isHtmlAttribute(owner, name);
     expect(codes(diagnostics)).toEqual([named?.code ?? (accepted ? "UF3005" : "UF3006")]);
     expect(slices(source, diagnostics)).toEqual([name]);

@@ -1,0 +1,9 @@
+- region "Search":
+  - paragraph: Ready
+  - text: Query
+  - textbox "Query": vue
+  - list "Results":
+    - listitem: vue
+    - listitem: vue docs
+  - status: "0"
+  - button "Add one"

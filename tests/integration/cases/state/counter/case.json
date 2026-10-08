@@ -1,0 +1,6 @@
+{
+  "description": "Plan §4.1's Counter: a ref seeded from a prop, a computed over it, and a handler that writes by the step and emits the new value.",
+  "ssr": {
+    "initial": { "props": { "initial": 2, "step": 3 } }
+  }
+}

@@ -1,4 +1,4 @@
-// The quarantine (plan §7.7, DESIGN §4.5): known failures, each tied to an issue. A quarantined
+// The quarantine (plan §7.7): known failures, each tied to an issue. A quarantined
 // (case, target, layer) still runs and must still fail; it is recorded as quarantined(issue)
 // instead of failing the test. Once it passes, the entry is stale and fails the test until it
 // is removed (`settleOutcome` in @unframework/testing), so this list only shrinks.
@@ -10,7 +10,7 @@ export const QUARANTINE: readonly QuarantineEntry[] = [];
 
 /**
  * The layers a quarantine entry may name: the live ones, where a failure can occur. M1 made L5
- * (lint, ADR-0042) and L8 (behaviour, ADR-0043) live.
+ * (lint, ADR-0042) and L8 (behaviour, ADR-0043) live; M2 made L9 (interaction traces, ADR-0050).
  */
 export const LIVE_LAYERS: readonly LayerName[] = [
   "L1",
@@ -21,6 +21,7 @@ export const LIVE_LAYERS: readonly LayerName[] = [
   "L6",
   "L7",
   "L8",
+  "L9",
   "L10",
   "L11",
   "L13",

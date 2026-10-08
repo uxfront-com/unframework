@@ -1,0 +1,24 @@
+---
+const open = false as boolean;
+const status = "draft" as string;
+const log = [] as string[];
+---
+
+<section class="draft-panel" aria-label="Draft">
+  <button type="button" aria-expanded={open}>Options</button>
+  {open ? (
+    <div class="options" role="group" aria-label="Draft options">
+      <button type="button">Close</button>
+    </div>
+  ) : null}
+  <button type="button">Listen</button>
+  <button type="button">Stop listening</button>
+  <button type="button">Handle</button>
+  <button type="button">Save</button>
+  <p role="status">{open ? "Options open" : "Options closed"}, {status}</p>
+  <ol aria-label="Log">
+    {log.map((line) => (
+      <li>{line}</li>
+    ))}
+  </ol>
+</section>

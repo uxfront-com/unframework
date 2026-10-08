@@ -1,0 +1,12 @@
+- region "Note":
+  - button "Save"
+  - text: Title
+  - textbox "Title"
+  - text: Body
+  - textbox "Body"
+  - status: Saved 0 times, last key none
+  - button "Save and close"
+  - text: Tag
+  - textbox "Tag"
+  - button "Add tag"
+  - paragraph: "Tags:"

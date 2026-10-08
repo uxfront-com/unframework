@@ -1,9 +1,11 @@
 // What the markup dialects share to write text, attribute values and expression code so that each
-// template compiler reads back exactly what was meant (ADR-0026, design §4.3). Expression code is
-// read token by token (oxc, through the rewrite engine's parser): a template scanner that looks
-// inside expressions (Vue's `}}`, Angular's lexer) must not see its delimiters in a string,
-// a regular expression or a comment, and a rewrite must not change what a literal means.
-import { parseExpressionSource } from "../rewrite.ts";
+// template compiler reads back exactly what was meant (ADR-0026, ADR-0035). Code (an
+// expression, or a handler's statements) is read token by token (oxc, through the rewrite
+// engine's parser): a template scanner that looks inside it (Vue's `}}`, Angular's lexer) must not
+// see its delimiters in a string, a regular expression or a comment, and a rewrite must not
+// change what a literal means.
+import { parseCodeSource } from "../parse.ts";
+import type { CodeKind } from "../parse.ts";
 
 /**
  * Text as HTML reads it back: `&` and `<` as references, no-break spaces visible, and carriage
@@ -121,9 +123,12 @@ function isQuasiValue(value: unknown): value is { raw: string; cooked: string | 
   );
 }
 
-/** The literal and comment tokens of an expression's code, in source order. */
-export function codeTokens(code: string): CodeToken[] {
-  const { expression, comments } = parseExpressionSource(code);
+/**
+ * The literal and comment tokens of code, in source order: an expression's by default, or with
+ * `kind` a list of statements' (a handler a template runs as statements, Vue's `@click="a(); b()"`).
+ */
+export function codeTokens(code: string, kind: CodeKind = "expression"): CodeToken[] {
+  const { root, comments } = parseCodeSource(code, kind);
   const tokens: CodeToken[] = comments.map(({ start, end }) => ({ kind: "comment", start, end }));
   const visit = (value: unknown): void => {
     if (Array.isArray(value)) {
@@ -152,21 +157,22 @@ export function codeTokens(code: string): CodeToken[] {
       if (key !== "type" && typeof child === "object") visit(child);
     }
   };
-  visit(expression);
+  visit(root);
   return tokens.toSorted((a, b) => a.start - b.start);
 }
 
 const at = (node: Node) => ({ start: node.start, end: node.end });
 
 /**
- * Rewrites expression code token by token: each literal and comment through its own function in
- * `map`, the code between them through `other`. A function left out keeps its text.
+ * Rewrites code token by token (an expression's by default, statements' with `kind`): each
+ * literal and comment through its own function in `map`, the code between them through `other`.
+ * A function left out keeps its text.
  */
-export function mapCode(code: string, map: CodeMap): string {
+export function mapCode(code: string, map: CodeMap, kind: CodeKind = "expression"): string {
   let output = "";
   let position = 0;
   const other = (text: string) => (map.other && text ? map.other(text, output) : text);
-  for (const token of codeTokens(code)) {
+  for (const token of codeTokens(code, kind)) {
     output += other(code.slice(position, token.start));
     const raw = code.slice(token.start, token.end);
     switch (token.kind) {

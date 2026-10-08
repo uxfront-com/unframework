@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF2022",
+    "severity": "error",
+    "message": "`focusField` is passed to `onMounted` by name: the targets write the callback into their own effect or hook (Angular's method, Qwik's task), which takes it written in place.",
+    "file": "diagnostics/function-value/SearchField.uf.tsx",
+    "start": {
+      "line": 12,
+      "column": 13,
+      "offset": 413
+    },
+    "end": {
+      "line": 12,
+      "column": 23,
+      "offset": 423
+    },
+    "help": "Write the callback in place: `onMounted(() => { … })`.",
+    "fixes": [
+      {
+        "title": "Wrap `focusField` in an arrow function",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 413,
+              "end": 423
+            },
+            "text": "() => focusField()"
+          }
+        ]
+      }
+    ]
+  }
+]

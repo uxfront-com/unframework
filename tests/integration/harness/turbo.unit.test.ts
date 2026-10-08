@@ -12,6 +12,15 @@ import { selectTargets } from "./targets.ts";
 /** The targets whose toolchain lints with ESLint too: oxlint cannot read their templates. */
 const ESLINT_TARGETS: ReadonlySet<string> = new Set(["vue", "svelte", "astro", "angular"]);
 
+/**
+ * The lint hosts a toolchain installs, which run its type-aware rules in ESLint on TypeScript 6
+ * (ADR-0042, amended): the toolchain's transit node depends on the host's, which hashes its
+ * configuration.
+ */
+const ESLINT_HOSTS: Readonly<Record<string, string>> = {
+  qwik: "@unframework/toolchain-qwik-eslint",
+};
+
 interface DryTask {
   taskId: string;
   inputs: Record<string, string>;
@@ -37,7 +46,7 @@ describe("the integration test task", () => {
     expect(Object.keys(test.inputs)).toContain("../../.github/workflows/ci.yml");
   });
 
-  it("hashes every toolchain's tsconfig and lint configuration through its transit node", () => {
+  it("hashes every toolchain's tsconfig and lint configurations through its transit node", () => {
     for (const target of selectTargets(undefined)) {
       const id = `@unframework/toolchain-${target}#transit`;
       expect(test.dependencies).toContain(id);
@@ -47,6 +56,11 @@ describe("the integration test task", () => {
       // L5 (ADR-0042): oxlint everywhere, and ESLint for the template languages.
       expect(inputs, id).toContain("output.oxlintrc.json");
       if (ESLINT_TARGETS.has(target)) expect(inputs, id).toContain("eslint.config.js");
+      const host = ESLINT_HOSTS[target];
+      if (host === undefined) continue;
+      expect(transit?.dependencies, id).toContain(`${host}#transit`);
+      const hostTransit = tasks.find((task) => task.taskId === `${host}#transit`);
+      expect(Object.keys(hostTransit?.inputs ?? {}), host).toContain("eslint.config.js");
     }
   });
 });

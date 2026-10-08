@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add two' })",
+      "dom": [
+        "<section aria-label=\"Tally\" class=\"tally\">",
+        "  <p role=\"status\">",
+        "    \"Count: 2\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add two\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Add five\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Count up three\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Add ten\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Log the phases\"",
+        "  </button>",
+        "  <p>",
+        "    \"Phases:\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Tally\":",
+        "  - status: \"Count: 2\"",
+        "  - button \"Add two\"",
+        "  - button \"Add five\"",
+        "  - button \"Count up three\"",
+        "  - button \"Add ten\"",
+        "  - button \"Log the phases\"",
+        "  - paragraph: \"Phases:\""
+      ],
+      "events": {
+        "total": [
+          [
+            2
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Add five' })",
+      "dom": [
+        "<section aria-label=\"Tally\" class=\"tally\">",
+        "  <p role=\"status\">",
+        "    \"Count: 7\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add two\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add five\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Count up three\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Add ten\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Log the phases\"",
+        "  </button>",
+        "  <p>",
+        "    \"Phases:\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Tally\":",
+        "  - status: \"Count: 7\"",
+        "  - button \"Add two\"",
+        "  - button \"Add five\"",
+        "  - button \"Count up three\"",
+        "  - button \"Add ten\"",
+        "  - button \"Log the phases\"",
+        "  - paragraph: \"Phases:\""
+      ],
+      "events": {
+        "total": [
+          [
+            7
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,686 @@
+{
+  "irVersion": 1,
+  "file": "semantics/derived-consistency/SeatPicker.uf.tsx",
+  "components": [
+    {
+      "name": "SeatPicker",
+      "span": {
+        "start": 121,
+        "end": 1145
+      },
+      "props": [
+        {
+          "name": "pricePerSeat",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 110,
+              "end": 116
+            }
+          },
+          "binding": "pricePerSeat@158",
+          "span": {
+            "start": 96,
+            "end": 117
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "SeatPickerProps",
+          "span": {
+            "start": 174,
+            "end": 189
+          }
+        },
+        "span": {
+          "start": 156,
+          "end": 189
+        }
+      },
+      "types": [
+        "SeatPickerProps"
+      ],
+      "emits": {
+        "binding": "emit@201",
+        "type": {
+          "code": "{ quote: [seats: number, total: number, summary: string] }",
+          "span": {
+            "start": 220,
+            "end": 278
+          }
+        },
+        "events": [
+          {
+            "name": "quote",
+            "parameters": [
+              {
+                "name": "seats",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 237,
+                    "end": 243
+                  }
+                },
+                "span": {
+                  "start": 230,
+                  "end": 243
+                }
+              },
+              {
+                "name": "total",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 252,
+                    "end": 258
+                  }
+                },
+                "span": {
+                  "start": 245,
+                  "end": 258
+                }
+              },
+              {
+                "name": "summary",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 269,
+                    "end": 275
+                  }
+                },
+                "span": {
+                  "start": 260,
+                  "end": 275
+                }
+              }
+            ],
+            "span": {
+              "start": 222,
+              "end": 276
+            }
+          }
+        ],
+        "span": {
+          "start": 195,
+          "end": 282
+        }
+      },
+      "bindings": [
+        {
+          "id": "pricePerSeat@158",
+          "name": "pricePerSeat",
+          "kind": "prop",
+          "span": {
+            "start": 158,
+            "end": 170
+          }
+        },
+        {
+          "id": "emit@201",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 201,
+            "end": 205
+          }
+        },
+        {
+          "id": "seats@292",
+          "name": "seats",
+          "kind": "state",
+          "span": {
+            "start": 292,
+            "end": 297
+          }
+        },
+        {
+          "id": "total@316",
+          "name": "total",
+          "kind": "derived",
+          "span": {
+            "start": 316,
+            "end": 321
+          }
+        },
+        {
+          "id": "summary@376",
+          "name": "summary",
+          "kind": "derived",
+          "span": {
+            "start": 376,
+            "end": 383
+          }
+        },
+        {
+          "id": "addSeat@515",
+          "name": "addSeat",
+          "kind": "localFn",
+          "span": {
+            "start": 515,
+            "end": 522
+          }
+        },
+        {
+          "id": "addGroupWithGuide@625",
+          "name": "addGroupWithGuide",
+          "kind": "localFn",
+          "span": {
+            "start": 625,
+            "end": 642
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "seats@292",
+          "initial": {
+            "code": "1",
+            "span": {
+              "start": 304,
+              "end": 305
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 286,
+            "end": 307
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "total@316",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "seats.value * pricePerSeat",
+              "span": {
+                "start": 339,
+                "end": 365
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "seats@292",
+                  "span": {
+                    "start": 339,
+                    "end": 350
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "pricePerSeat@158",
+                  "span": {
+                    "start": 353,
+                    "end": 365
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 333,
+              "end": 365
+            }
+          },
+          "span": {
+            "start": 310,
+            "end": 367
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "summary@376",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "seats.value === 1 ? `1 seat for ${total.value}` : `${seats.value} seats for ${total.value}`",
+              "span": {
+                "start": 405,
+                "end": 496
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "seats@292",
+                  "span": {
+                    "start": 405,
+                    "end": 416
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "total@316",
+                  "span": {
+                    "start": 439,
+                    "end": 450
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "seats@292",
+                  "span": {
+                    "start": 458,
+                    "end": 469
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "total@316",
+                  "span": {
+                    "start": 483,
+                    "end": 494
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 395,
+              "end": 496
+            }
+          },
+          "span": {
+            "start": 370,
+            "end": 502
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "addSeat@515",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    seats.value += 1;\n    emit(\"quote\", seats.value, total.value, summary.value);\n  }",
+              "span": {
+                "start": 525,
+                "end": 612
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "seats@292",
+                  "operator": "+=",
+                  "span": {
+                    "start": 531,
+                    "end": 547
+                  },
+                  "target": {
+                    "start": 531,
+                    "end": 542
+                  },
+                  "value": {
+                    "start": 546,
+                    "end": 547
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@201",
+                  "event": "quote",
+                  "span": {
+                    "start": 553,
+                    "end": 607
+                  },
+                  "arguments": [
+                    {
+                      "start": 567,
+                      "end": 578
+                    },
+                    {
+                      "start": 580,
+                      "end": 591
+                    },
+                    {
+                      "start": 593,
+                      "end": 606
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "seats@292",
+                  "span": {
+                    "start": 567,
+                    "end": 578
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "total@316",
+                  "span": {
+                    "start": 580,
+                    "end": 591
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "summary@376",
+                  "span": {
+                    "start": 593,
+                    "end": 606
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 522,
+              "end": 612
+            }
+          },
+          "span": {
+            "start": 506,
+            "end": 612
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "addGroupWithGuide@625",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    seats.value += 4;\n    const groupTotal = total.value;\n    seats.value += 1;\n    emit(\"quote\", seats.value, total.value, `${summary.value}, ${groupTotal} without the guide`);\n  }",
+              "span": {
+                "start": 645,
+                "end": 828
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "seats@292",
+                  "operator": "+=",
+                  "span": {
+                    "start": 651,
+                    "end": 667
+                  },
+                  "target": {
+                    "start": 651,
+                    "end": 662
+                  },
+                  "value": {
+                    "start": 666,
+                    "end": 667
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "total@316",
+                  "span": {
+                    "start": 692,
+                    "end": 703
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "seats@292",
+                  "operator": "+=",
+                  "span": {
+                    "start": 709,
+                    "end": 725
+                  },
+                  "target": {
+                    "start": 709,
+                    "end": 720
+                  },
+                  "value": {
+                    "start": 724,
+                    "end": 725
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@201",
+                  "event": "quote",
+                  "span": {
+                    "start": 731,
+                    "end": 823
+                  },
+                  "arguments": [
+                    {
+                      "start": 745,
+                      "end": 756
+                    },
+                    {
+                      "start": 758,
+                      "end": 769
+                    },
+                    {
+                      "start": 771,
+                      "end": 822
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "seats@292",
+                  "span": {
+                    "start": 745,
+                    "end": 756
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "total@316",
+                  "span": {
+                    "start": 758,
+                    "end": 769
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "summary@376",
+                  "span": {
+                    "start": 774,
+                    "end": 787
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 642,
+              "end": 828
+            }
+          },
+          "span": {
+            "start": 616,
+            "end": 828
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "seat-picker",
+            "span": {
+              "start": 854,
+              "end": 873
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Seats",
+            "span": {
+              "start": 874,
+              "end": 892
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 903,
+                  "end": 916
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "summary.value",
+                  "span": {
+                    "start": 918,
+                    "end": 931
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "summary@376",
+                      "span": {
+                        "start": 918,
+                        "end": 931
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 917,
+                  "end": 932
+                }
+              }
+            ],
+            "span": {
+              "start": 900,
+              "end": 936
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 951,
+                  "end": 964
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "addSeat@515",
+                  "span": {
+                    "start": 974,
+                    "end": 981
+                  }
+                },
+                "span": {
+                  "start": 965,
+                  "end": 982
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add a seat",
+                "span": {
+                  "start": 983,
+                  "end": 1009
+                }
+              }
+            ],
+            "span": {
+              "start": 943,
+              "end": 1018
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1033,
+                  "end": 1046
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "addGroupWithGuide@625",
+                  "span": {
+                    "start": 1056,
+                    "end": 1073
+                  }
+                },
+                "span": {
+                  "start": 1047,
+                  "end": 1074
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add a group and a guide",
+                "span": {
+                  "start": 1075,
+                  "end": 1114
+                }
+              }
+            ],
+            "span": {
+              "start": 1025,
+              "end": 1123
+            }
+          }
+        ],
+        "span": {
+          "start": 845,
+          "end": 1138
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SeatPicker",
+      "span": {
+        "start": 121,
+        "end": 1145
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "SeatPickerProps",
+      "exported": true,
+      "code": "interface SeatPickerProps {\n  pricePerSeat: number;\n}",
+      "span": {
+        "start": 66,
+        "end": 119
+      }
+    }
+  ]
+}

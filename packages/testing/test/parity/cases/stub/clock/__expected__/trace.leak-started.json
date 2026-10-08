@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Start' })",
+      "dom": [
+        "<p data-every=\"20\" role=\"status\">",
+        "  \"0\"",
+        "</p>",
+        "<button type=\"button\" uf:focused=\"\">",
+        "  \"Start\"",
+        "</button>"
+      ],
+      "aria": [
+        "- status: \"0\"",
+        "- button \"Start\""
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -1,10 +1,10 @@
-// The Angular dialect against design §1: the shared markup cases (codegen/test/markup-cases.ts),
-// printed with `angularDialect` and a rewrite that reads each prop's signal input by calling it,
-// in a component that declares them as design §5.5 does, compiled by ngtsc (the `ssr:angular`
-// project's plugin, with its extended diagnostics), rendered by Angular's server platform, then
-// linted with the target's L5 rules. The dialect prints a reference however the target spells
-// it: the emitter reads props through `@let` variables instead (src/template.ts), whose output
-// test/output.test.ts and the corpus render.
+// The Angular dialect against the rendering rules (ADR-0030, ADR-0035 to ADR-0040): the shared
+// markup cases (codegen/test/markup-cases.ts), printed with `angularDialect` and a rewrite that
+// reads each prop's signal input by calling it, in a component that declares them as the target
+// does (ADR-0034), compiled by ngtsc (the `ssr:angular` project's plugin, with its extended
+// diagnostics), rendered by Angular's server platform, then linted with the target's L5 rules. The
+// dialect prints a reference however the target spells it: the emitter reads props through `@let`
+// variables instead (src/template.ts), whose output test/output.test.ts and the corpus render.
 // Angular's own packages ship partially compiled; in this plain-Node project the JIT compiler
 // finishes them as they load (see render-parity.test.ts).
 // oxlint-disable-next-line import/no-unassigned-import -- loaded for its side effect
@@ -118,7 +118,7 @@ async function render(source: string, props: Record<string, unknown>): Promise<s
 describe.each<MarkupOptions>([{}, { printWidth: 30 }])(
   "angular markup (print width $printWidth)",
   (layout) => {
-    it("renders every case as design §1 says", async () => {
+    it("renders every case as the rendering rules say", async () => {
       const { cases, source } = components(layout)[0]!;
       const html = await render(source, passedProps(cases.props));
       for (const { name, expected, actual } of compareSuite(canonical(html), cases.cases)) {

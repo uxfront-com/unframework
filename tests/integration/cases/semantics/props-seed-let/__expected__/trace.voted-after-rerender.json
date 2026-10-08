@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"limit\":5,\"label\":\"Dinner\",\"choices\":[\"yes\",\"no\",\"maybe\"]}",
+      "dom": [
+        "<section aria-label=\"Dinner\" class=\"ballot\">",
+        "  <p role=\"status\">",
+        "    \"3 votes left\"",
+        "  </p>",
+        "  <p>",
+        "    \"Picked: none\"",
+        "  </p>",
+        "  <ul aria-label=\"Choices\">",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"yes\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"no\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"maybe\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "  <button type=\"button\">",
+        "    \"Count the answers\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Dinner\":",
+        "  - status: 3 votes left",
+        "  - paragraph: \"Picked: none\"",
+        "  - list \"Choices\":",
+        "    - listitem:",
+        "      - button \"yes\"",
+        "    - listitem:",
+        "      - button \"no\"",
+        "    - listitem:",
+        "      - button \"maybe\"",
+        "  - button \"Count the answers\""
+      ],
+      "events": {
+        "report": [
+          [
+            "none with 3 left"
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'no' })",
+      "dom": [
+        "<section aria-label=\"Dinner\" class=\"ballot\">",
+        "  <p role=\"status\">",
+        "    \"2 votes left\"",
+        "  </p>",
+        "  <p>",
+        "    \"Picked: no\"",
+        "  </p>",
+        "  <ul aria-label=\"Choices\">",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"yes\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\" uf:focused=\"\">",
+        "        \"no\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button type=\"button\">",
+        "        \"maybe\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "  <button type=\"button\">",
+        "    \"Count the answers\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Dinner\":",
+        "  - status: 2 votes left",
+        "  - paragraph: \"Picked: no\"",
+        "  - list \"Choices\":",
+        "    - listitem:",
+        "      - button \"yes\"",
+        "    - listitem:",
+        "      - button \"no\"",
+        "    - listitem:",
+        "      - button \"maybe\"",
+        "  - button \"Count the answers\""
+      ],
+      "events": {
+        "moved": [
+          [
+            "none:3>no:2"
+          ]
+        ],
+        "report": [
+          [
+            "no with 2 left"
+          ]
+        ],
+        "voted": [
+          [
+            2,
+            "Lunch (3)! 3"
+          ]
+        ]
+      }
+    }
+  ]
+}

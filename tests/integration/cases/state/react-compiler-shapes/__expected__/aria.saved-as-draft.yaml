@@ -1,0 +1,11 @@
+- region "Display":
+  - status: Theme light, size 14
+  - button "Dark"
+  - button "Larger"
+  - button "Allow up to 30"
+  - button "Save"
+  - paragraph: Saved as a draft
+  - group "Server":
+    - button "Reply with an id"
+    - button "Reply as a draft"
+    - button "Reply with an error"

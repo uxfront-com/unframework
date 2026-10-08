@@ -1,0 +1,15 @@
+- region "Reading list":
+  - text: Search
+  - searchbox "Search"
+  - status: 0 found
+  - list "Books"
+  - group "Shelf":
+    - button "All" [pressed]
+    - button "Unread"
+  - button "Check for new books" [pressed]
+  - paragraph: "Checks: 1"
+  - button "Refresh shelves"
+  - list "Shelves":
+    - listitem: "Fiction: not counted"
+    - listitem: "History: not counted"
+  - paragraph: Up to date

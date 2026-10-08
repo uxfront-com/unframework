@@ -1,0 +1,11 @@
+- region "Shirt order":
+  - status: 3 x size L
+  - group "Size":
+    - button "Small"
+    - button "Medium"
+    - button "Large" [pressed]
+  - button "Add one"
+  - text: Note
+  - textbox "Note"
+  - paragraph: "Note:"
+  - button "Reset"

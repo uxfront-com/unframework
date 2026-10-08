@@ -1,0 +1,18 @@
+- region "Meetings":
+  - list "Upcoming":
+    - listitem:
+      - button "Standup"
+    - listitem:
+      - button "Review"
+  - list "Rooms":
+    - listitem:
+      - button "Atlas"
+    - listitem:
+      - button "Borealis"
+  - button "Thank Ada"
+  - button "Track"
+  - paragraph: "Clicks: 2"
+  - text: Filter
+  - textbox "Filter"
+  - paragraph: "Last key: none"
+  - list "Log"

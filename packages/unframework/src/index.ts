@@ -62,8 +62,9 @@ export interface WatchOptions<Immediate extends boolean = boolean> {
 export interface WatchEffectOptions {
   flush?: "pre" | "post" | "sync";
 }
+/** The values of an array source, a mutable tuple as Vue passes it: a callback may annotate it. */
 type WatchValues<S extends readonly WatchSource<unknown>[]> = {
-  [K in keyof S]: S[K] extends WatchSource<infer V> ? V : never;
+  -readonly [K in keyof S]: S[K] extends WatchSource<infer V> ? V : never;
 };
 
 /** `defineEmits<{ change: [value: number] }>()`: each event name maps to a named-tuple payload. */
@@ -104,7 +105,9 @@ export function computed<T>(_getter: () => T): ComputedRef<T> {
   return compileTimeOnly("computed");
 }
 
-// Effects (client-only: they never run during SSR)
+// Effects (client-only: they never run during SSR). A watch callback, an effect and a mount hook may
+// be async (ADR-0048), so their return type is `unknown`, as Vue's is `any`; an unmount hook may not
+// (UF2026), so its type keeps a `void` return, which the source's typed lint holds a promise to.
 
 /** Runs `callback` after the source changes, with the new and previous values. */
 export function watch<T, Immediate extends boolean = false>(
@@ -113,7 +116,7 @@ export function watch<T, Immediate extends boolean = false>(
     value: T,
     previous: Immediate extends true ? T | undefined : T,
     onCleanup: OnCleanup,
-  ) => void,
+  ) => unknown,
   options?: WatchOptions<Immediate>,
 ): WatchStopHandle;
 /** Runs `callback` after any of the sources changes, with the tuples of new and previous values. */
@@ -126,7 +129,7 @@ export function watch<
     values: WatchValues<S>,
     previous: Immediate extends true ? Partial<WatchValues<S>> : WatchValues<S>,
     onCleanup: OnCleanup,
-  ) => void,
+  ) => unknown,
   options?: WatchOptions<Immediate>,
 ): WatchStopHandle;
 export function watch(_source: unknown, _callback: unknown, _options?: unknown): WatchStopHandle {
@@ -135,7 +138,7 @@ export function watch(_source: unknown, _callback: unknown, _options?: unknown):
 
 /** Runs `effect` now and again whenever a value it read changes. */
 export function watchEffect(
-  _effect: (onCleanup: OnCleanup) => void,
+  _effect: (onCleanup: OnCleanup) => unknown,
   _options?: WatchEffectOptions,
 ): WatchStopHandle {
   return compileTimeOnly("watchEffect");
@@ -144,7 +147,7 @@ export function watchEffect(
 // Lifecycle (client-only)
 
 /** Runs after the component's DOM is in the document. */
-export function onMounted(_hook: () => void): void {
+export function onMounted(_hook: () => unknown): void {
   compileTimeOnly("onMounted");
 }
 

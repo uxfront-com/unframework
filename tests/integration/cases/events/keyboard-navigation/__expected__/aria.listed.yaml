@@ -1,0 +1,11 @@
+- region "Trip":
+  - search "Destination":
+    - text: City
+    - combobox "City" [expanded]: Ba
+    - listbox "Cities":
+      - option "Basel"
+    - button "Search"
+  - status: No city chosen
+  - text: Note
+  - textbox "Note"
+  - list "Notes"

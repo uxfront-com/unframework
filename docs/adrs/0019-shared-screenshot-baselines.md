@@ -1,6 +1,6 @@
 # ADR-0019: Screenshot baselines are shared through a custom browser command
 
-- **Status:** Accepted (M0 spike), amended by ADR-0029
+- **Status:** Accepted (M0 spike), amended by ADR-0029 and ADR-0050
 - **Date:** 2026-10-01
 - **Plan:** §9 (M0 spike 2); §11 D9 and D10; §7.1, §7.2 (L10), §7.4, §7.6, §7.7, §7.9, R10
 

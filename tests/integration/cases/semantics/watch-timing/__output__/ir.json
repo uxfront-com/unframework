@@ -1,0 +1,931 @@
+{
+  "irVersion": 1,
+  "file": "semantics/watch-timing/SearchPager.uf.tsx",
+  "components": [
+    {
+      "name": "SearchPager",
+      "span": {
+        "start": 56,
+        "end": 1398
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@104",
+        "type": {
+          "code": "{\n    queryRun: [value: string, previous: string];\n    pageRun: [value: number, previous: number];\n    cleanedUp: [watcher: string];\n  }",
+          "span": {
+            "start": 123,
+            "end": 259
+          }
+        },
+        "events": [
+          {
+            "name": "queryRun",
+            "parameters": [
+              {
+                "name": "value",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 147,
+                    "end": 153
+                  }
+                },
+                "span": {
+                  "start": 140,
+                  "end": 153
+                }
+              },
+              {
+                "name": "previous",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 165,
+                    "end": 171
+                  }
+                },
+                "span": {
+                  "start": 155,
+                  "end": 171
+                }
+              }
+            ],
+            "span": {
+              "start": 129,
+              "end": 172
+            }
+          },
+          {
+            "name": "pageRun",
+            "parameters": [
+              {
+                "name": "value",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 195,
+                    "end": 201
+                  }
+                },
+                "span": {
+                  "start": 188,
+                  "end": 201
+                }
+              },
+              {
+                "name": "previous",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 213,
+                    "end": 219
+                  }
+                },
+                "span": {
+                  "start": 203,
+                  "end": 219
+                }
+              }
+            ],
+            "span": {
+              "start": 178,
+              "end": 220
+            }
+          },
+          {
+            "name": "cleanedUp",
+            "parameters": [
+              {
+                "name": "watcher",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 247,
+                    "end": 253
+                  }
+                },
+                "span": {
+                  "start": 238,
+                  "end": 253
+                }
+              }
+            ],
+            "span": {
+              "start": 226,
+              "end": 254
+            }
+          }
+        ],
+        "span": {
+          "start": 98,
+          "end": 263
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@104",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 104,
+            "end": 108
+          }
+        },
+        {
+          "id": "query@273",
+          "name": "query",
+          "kind": "state",
+          "span": {
+            "start": 273,
+            "end": 278
+          }
+        },
+        {
+          "id": "page@298",
+          "name": "page",
+          "kind": "state",
+          "span": {
+            "start": 298,
+            "end": 302
+          }
+        },
+        {
+          "id": "search@566",
+          "name": "search",
+          "kind": "localFn",
+          "span": {
+            "start": 566,
+            "end": 572
+          }
+        },
+        {
+          "id": "nextPage@694",
+          "name": "nextPage",
+          "kind": "localFn",
+          "span": {
+            "start": 694,
+            "end": 702
+          }
+        },
+        {
+          "id": "skipTwoPages@744",
+          "name": "skipTwoPages",
+          "kind": "localFn",
+          "span": {
+            "start": 744,
+            "end": 756
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "query@273",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 285,
+              "end": 287
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 267,
+            "end": 289
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "page@298",
+          "initial": {
+            "code": "1",
+            "span": {
+              "start": 309,
+              "end": 310
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 292,
+            "end": 312
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "query@273",
+              "span": {
+                "start": 322,
+                "end": 327
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 330,
+                  "end": 335
+                }
+              },
+              {
+                "name": "previous",
+                "span": {
+                  "start": 337,
+                  "end": 345
+                }
+              },
+              {
+                "name": "onCleanup",
+                "span": {
+                  "start": 347,
+                  "end": 356
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"queryRun\", value, previous);\n    onCleanup(() => {\n      emit(\"cleanedUp\", \"query\");\n    });\n  }",
+              "span": {
+                "start": 361,
+                "end": 469
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@104",
+                  "event": "queryRun",
+                  "span": {
+                    "start": 367,
+                    "end": 400
+                  },
+                  "arguments": [
+                    {
+                      "start": 384,
+                      "end": 389
+                    },
+                    {
+                      "start": 391,
+                      "end": 399
+                    }
+                  ]
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@104",
+                  "event": "cleanedUp",
+                  "span": {
+                    "start": 430,
+                    "end": 456
+                  },
+                  "arguments": [
+                    {
+                      "start": 448,
+                      "end": 455
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 329,
+              "end": 469
+            }
+          },
+          "span": {
+            "start": 316,
+            "end": 471
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "page@298",
+              "span": {
+                "start": 481,
+                "end": 485
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 488,
+                  "end": 493
+                }
+              },
+              {
+                "name": "previous",
+                "span": {
+                  "start": 495,
+                  "end": 503
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"pageRun\", value, previous);\n  }",
+              "span": {
+                "start": 508,
+                "end": 551
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@104",
+                  "event": "pageRun",
+                  "span": {
+                    "start": 514,
+                    "end": 546
+                  },
+                  "arguments": [
+                    {
+                      "start": 530,
+                      "end": 535
+                    },
+                    {
+                      "start": 537,
+                      "end": 545
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 487,
+              "end": 551
+            }
+          },
+          "span": {
+            "start": 475,
+            "end": 553
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "search@566",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "term",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 579,
+                    "end": 585
+                  }
+                },
+                "span": {
+                  "start": 573,
+                  "end": 585
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    query.value = term;\n    query.value = query.value.toLowerCase();\n    page.value = 1;\n  }",
+              "span": {
+                "start": 587,
+                "end": 681
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "query@273",
+                  "operator": "=",
+                  "span": {
+                    "start": 593,
+                    "end": 611
+                  },
+                  "target": {
+                    "start": 593,
+                    "end": 604
+                  },
+                  "value": {
+                    "start": 607,
+                    "end": 611
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "query@273",
+                  "operator": "=",
+                  "span": {
+                    "start": 617,
+                    "end": 656
+                  },
+                  "target": {
+                    "start": 617,
+                    "end": 628
+                  },
+                  "value": {
+                    "start": 631,
+                    "end": 656
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "query@273",
+                  "span": {
+                    "start": 631,
+                    "end": 642
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "page@298",
+                  "operator": "=",
+                  "span": {
+                    "start": 662,
+                    "end": 676
+                  },
+                  "target": {
+                    "start": 662,
+                    "end": 672
+                  },
+                  "value": {
+                    "start": 675,
+                    "end": 676
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 572,
+              "end": 681
+            }
+          },
+          "span": {
+            "start": 557,
+            "end": 681
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "nextPage@694",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    page.value += 1;\n  }",
+              "span": {
+                "start": 705,
+                "end": 731
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "page@298",
+                  "operator": "+=",
+                  "span": {
+                    "start": 711,
+                    "end": 726
+                  },
+                  "target": {
+                    "start": 711,
+                    "end": 721
+                  },
+                  "value": {
+                    "start": 725,
+                    "end": 726
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 702,
+              "end": 731
+            }
+          },
+          "span": {
+            "start": 685,
+            "end": 731
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "skipTwoPages@744",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    page.value += 1;\n    page.value += 1;\n  }",
+              "span": {
+                "start": 759,
+                "end": 806
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "page@298",
+                  "operator": "+=",
+                  "span": {
+                    "start": 765,
+                    "end": 780
+                  },
+                  "target": {
+                    "start": 765,
+                    "end": 775
+                  },
+                  "value": {
+                    "start": 779,
+                    "end": 780
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "page@298",
+                  "operator": "+=",
+                  "span": {
+                    "start": 786,
+                    "end": 801
+                  },
+                  "target": {
+                    "start": 786,
+                    "end": 796
+                  },
+                  "value": {
+                    "start": 800,
+                    "end": 801
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 756,
+              "end": 806
+            }
+          },
+          "span": {
+            "start": 735,
+            "end": 806
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "search-pager",
+            "span": {
+              "start": 832,
+              "end": 852
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Search",
+            "span": {
+              "start": 853,
+              "end": 872
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 883,
+                  "end": 896
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "query.value === \"\" ? \"All results\" : `Results for ${query.value}`",
+                  "span": {
+                    "start": 907,
+                    "end": 972
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "query@273",
+                      "span": {
+                        "start": 907,
+                        "end": 918
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "query@273",
+                      "span": {
+                        "start": 959,
+                        "end": 970
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 906,
+                  "end": 973
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ", page ",
+                "span": {
+                  "start": 973,
+                  "end": 980
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "page.value",
+                  "span": {
+                    "start": 981,
+                    "end": 991
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "page@298",
+                      "span": {
+                        "start": 981,
+                        "end": 991
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 980,
+                  "end": 992
+                }
+              }
+            ],
+            "span": {
+              "start": 880,
+              "end": 1003
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1018,
+                  "end": 1031
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "search(\"Boots\")",
+                      "span": {
+                        "start": 1047,
+                        "end": 1062
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "search@566",
+                          "span": {
+                            "start": 1047,
+                            "end": 1053
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1041,
+                      "end": 1062
+                    }
+                  },
+                  "span": {
+                    "start": 1041,
+                    "end": 1062
+                  }
+                },
+                "span": {
+                  "start": 1032,
+                  "end": 1063
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Search boots",
+                "span": {
+                  "start": 1064,
+                  "end": 1092
+                }
+              }
+            ],
+            "span": {
+              "start": 1010,
+              "end": 1101
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1116,
+                  "end": 1129
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "search(\"Sandals\")",
+                      "span": {
+                        "start": 1145,
+                        "end": 1162
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "search@566",
+                          "span": {
+                            "start": 1145,
+                            "end": 1151
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1139,
+                      "end": 1162
+                    }
+                  },
+                  "span": {
+                    "start": 1139,
+                    "end": 1162
+                  }
+                },
+                "span": {
+                  "start": 1130,
+                  "end": 1163
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Search sandals",
+                "span": {
+                  "start": 1164,
+                  "end": 1194
+                }
+              }
+            ],
+            "span": {
+              "start": 1108,
+              "end": 1203
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1218,
+                  "end": 1231
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "nextPage@694",
+                  "span": {
+                    "start": 1241,
+                    "end": 1249
+                  }
+                },
+                "span": {
+                  "start": 1232,
+                  "end": 1250
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Next page",
+                "span": {
+                  "start": 1251,
+                  "end": 1276
+                }
+              }
+            ],
+            "span": {
+              "start": 1210,
+              "end": 1285
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1300,
+                  "end": 1313
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "skipTwoPages@744",
+                  "span": {
+                    "start": 1323,
+                    "end": 1335
+                  }
+                },
+                "span": {
+                  "start": 1314,
+                  "end": 1336
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Skip two pages",
+                "span": {
+                  "start": 1337,
+                  "end": 1367
+                }
+              }
+            ],
+            "span": {
+              "start": 1292,
+              "end": 1376
+            }
+          }
+        ],
+        "span": {
+          "start": 823,
+          "end": 1391
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SearchPager",
+      "span": {
+        "start": 56,
+        "end": 1398
+      }
+    }
+  ],
+  "types": []
+}

@@ -1,0 +1,13 @@
+{
+  "name": "@unframework/toolchain-qwik-eslint",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The qwik test toolchain's ESLint host: the config that runs eslint-plugin-qwik's type-aware rules over every case's qwik golden output (L5), through typescript-eslint on TypeScript 6, which the qwik toolchain beside it, on TypeScript 7 for tsgo (L4), cannot install.",
+  "type": "module",
+  "devDependencies": {
+    "eslint": "catalog:",
+    "eslint-plugin-qwik": "catalog:",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "typescript-eslint": "catalog:"
+  }
+}

@@ -73,11 +73,29 @@ export type DomElementFor<K> = K extends keyof HTMLElementTagNameMap
     ? SVGElementTagNameMap[K]
     : Element;
 
+/**
+ * The events of the compiler's vocabulary (ADR-0047) the upstream declares on no element but a few
+ * or none: `cancel` and `close`, which a `<dialog>` fires, and `command`, which an invoker's
+ * target receives. lib.dom dispatches each as an `Event`.
+ */
+export interface OwnedEvents {
+  onCancel: Event;
+  onClose: Event;
+  onCommand: Event;
+}
+
+/** The owned events' listeners, on every element. */
+export type OwnedEventHandlers = {
+  [K in keyof OwnedEvents]?: ((event: OwnedEvents[K]) => void) | undefined;
+};
+
 /** Vue's event-option suffixes (plan §4.3): `onClickCapture`, `onClickOnce`, `onClickPassive`. */
 export type EventOptionSuffix = "Capture" | "Once" | "Passive";
-/** The upstream has no event-option handlers, so they are derived from its event map. */
+/** The upstream has no event-option handlers, so they are derived from its event map and ours. */
 export type EventOptionHandlers = {
   [K in keyof UpstreamEvents as `${K}${EventOptionSuffix}`]?: (event: UpstreamEvents[K]) => void;
+} & {
+  [K in keyof OwnedEvents as `${K}${EventOptionSuffix}`]?: (event: OwnedEvents[K]) => void;
 };
 
 /**
@@ -129,6 +147,7 @@ export type ElementAttributes<K extends keyof UpstreamIntrinsicElements> = Omit<
   OwnedKeys
 > &
   OwnedElementAttributes<DomElementFor<K>> &
+  OwnedEventHandlers &
   EventOptionHandlers &
   (K extends VoidElementTag ? { children?: never } : unknown) &
   (K extends FormControlTag ? VModelAttributes : unknown);
@@ -142,7 +161,7 @@ export type UfIntrinsicElements = {
  * (plan §4.3). The upstream's own `is?: string` is omitted: it would widen `is` to any string.
  */
 export interface DynamicComponentAttributes
-  extends Omit<UpstreamHTMLAttributes, OwnedKeys | "is">, EventOptionHandlers {
+  extends Omit<UpstreamHTMLAttributes, OwnedKeys | "is">, OwnedEventHandlers, EventOptionHandlers {
   is: keyof UpstreamIntrinsicElements | ((props: any) => JSX.Element | null);
   key?: ListKey | undefined;
   ref?: RefAttribute<any> | undefined;
@@ -152,7 +171,7 @@ export interface DynamicComponentAttributes
 
 /** Custom elements (`<my-element>`): typed global attributes, and any other attribute. */
 export interface CustomElementAttributes
-  extends Omit<UpstreamHTMLAttributes, OwnedKeys>, EventOptionHandlers {
+  extends Omit<UpstreamHTMLAttributes, OwnedKeys>, OwnedEventHandlers, EventOptionHandlers {
   key?: ListKey | undefined;
   ref?: RefAttribute<HTMLElement> | undefined;
   children?: Children;

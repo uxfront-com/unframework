@@ -1,0 +1,1724 @@
+{
+  "irVersion": 1,
+  "file": "events/listener-pairs/DraftPanel.uf.tsx",
+  "components": [
+    {
+      "name": "DraftPanel",
+      "span": {
+        "start": 96,
+        "end": 2659
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@143",
+        "type": {
+          "code": "{\n    save: [count: number];\n    status: [value: string];\n    closed: [reason: string];\n    key: [key: string];\n  }",
+          "span": {
+            "start": 162,
+            "end": 277
+          }
+        },
+        "events": [
+          {
+            "name": "save",
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 182,
+                    "end": 188
+                  }
+                },
+                "span": {
+                  "start": 175,
+                  "end": 188
+                }
+              }
+            ],
+            "span": {
+              "start": 168,
+              "end": 189
+            }
+          },
+          {
+            "name": "status",
+            "parameters": [
+              {
+                "name": "value",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 211,
+                    "end": 217
+                  }
+                },
+                "span": {
+                  "start": 204,
+                  "end": 217
+                }
+              }
+            ],
+            "span": {
+              "start": 195,
+              "end": 218
+            }
+          },
+          {
+            "name": "closed",
+            "parameters": [
+              {
+                "name": "reason",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 241,
+                    "end": 247
+                  }
+                },
+                "span": {
+                  "start": 233,
+                  "end": 247
+                }
+              }
+            ],
+            "span": {
+              "start": 224,
+              "end": 248
+            }
+          },
+          {
+            "name": "key",
+            "parameters": [
+              {
+                "name": "key",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 265,
+                    "end": 271
+                  }
+                },
+                "span": {
+                  "start": 260,
+                  "end": 271
+                }
+              }
+            ],
+            "span": {
+              "start": 254,
+              "end": 272
+            }
+          }
+        ],
+        "span": {
+          "start": 137,
+          "end": 281
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@143",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 143,
+            "end": 147
+          }
+        },
+        {
+          "id": "open@291",
+          "name": "open",
+          "kind": "state",
+          "span": {
+            "start": 291,
+            "end": 295
+          }
+        },
+        {
+          "id": "status@318",
+          "name": "status",
+          "kind": "state",
+          "span": {
+            "start": 318,
+            "end": 324
+          }
+        },
+        {
+          "id": "saves@349",
+          "name": "saves",
+          "kind": "state",
+          "span": {
+            "start": 349,
+            "end": 354
+          }
+        },
+        {
+          "id": "log@373",
+          "name": "log",
+          "kind": "state",
+          "span": {
+            "start": 373,
+            "end": 376
+          }
+        },
+        {
+          "id": "handle@406",
+          "name": "handle",
+          "kind": "templateRef",
+          "span": {
+            "start": 406,
+            "end": 412
+          }
+        },
+        {
+          "id": "handleElement@458",
+          "name": "handleElement",
+          "kind": "localVar",
+          "span": {
+            "start": 458,
+            "end": 471
+          }
+        },
+        {
+          "id": "record@518",
+          "name": "record",
+          "kind": "localFn",
+          "span": {
+            "start": 518,
+            "end": 524
+          }
+        },
+        {
+          "id": "onKey@595",
+          "name": "onKey",
+          "kind": "localFn",
+          "span": {
+            "start": 595,
+            "end": 600
+          }
+        },
+        {
+          "id": "close@701",
+          "name": "close",
+          "kind": "localFn",
+          "span": {
+            "start": 701,
+            "end": 706
+          }
+        },
+        {
+          "id": "onEscape@848",
+          "name": "onEscape",
+          "kind": "localFn",
+          "span": {
+            "start": 848,
+            "end": 856
+          }
+        },
+        {
+          "id": "show@946",
+          "name": "show",
+          "kind": "localFn",
+          "span": {
+            "start": 946,
+            "end": 950
+          }
+        },
+        {
+          "id": "onHandleClick@1046",
+          "name": "onHandleClick",
+          "kind": "localFn",
+          "span": {
+            "start": 1046,
+            "end": 1059
+          }
+        },
+        {
+          "id": "save@1102",
+          "name": "save",
+          "kind": "localFn",
+          "span": {
+            "start": 1102,
+            "end": 1106
+          }
+        },
+        {
+          "id": "stop@1208",
+          "name": "stop",
+          "kind": "localFn",
+          "span": {
+            "start": 1208,
+            "end": 1212
+          }
+        },
+        {
+          "id": "line@2558",
+          "name": "line",
+          "kind": "loopVar",
+          "span": {
+            "start": 2558,
+            "end": 2562
+          }
+        },
+        {
+          "id": "index@2564",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 2564,
+            "end": 2569
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "open@291",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 302,
+              "end": 307
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 285,
+            "end": 309
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "status@318",
+          "initial": {
+            "code": "\"draft\"",
+            "span": {
+              "start": 331,
+              "end": 338
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 312,
+            "end": 340
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "saves@349",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 361,
+              "end": 362
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 343,
+            "end": 364
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "log@373",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 383,
+              "end": 391
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 393,
+              "end": 395
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 367,
+            "end": 397
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "handle@406",
+          "type": {
+            "code": "HTMLButtonElement",
+            "span": {
+              "start": 430,
+              "end": 447
+            }
+          },
+          "span": {
+            "start": 400,
+            "end": 451
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "handleElement@458",
+          "type": {
+            "code": "HTMLButtonElement | null",
+            "span": {
+              "start": 473,
+              "end": 497
+            }
+          },
+          "initial": {
+            "code": "null",
+            "span": {
+              "start": 500,
+              "end": 504
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 454,
+            "end": 505
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "record@518",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "line",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 531,
+                    "end": 537
+                  }
+                },
+                "span": {
+                  "start": 525,
+                  "end": 537
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    log.value = [...log.value, line];\n  }",
+              "span": {
+                "start": 539,
+                "end": 582
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "log@373",
+                  "operator": "=",
+                  "span": {
+                    "start": 545,
+                    "end": 577
+                  },
+                  "target": {
+                    "start": 545,
+                    "end": 554
+                  },
+                  "value": {
+                    "start": 557,
+                    "end": 577
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "log@373",
+                  "span": {
+                    "start": 561,
+                    "end": 570
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 524,
+              "end": 582
+            }
+          },
+          "span": {
+            "start": 509,
+            "end": 582
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "onKey@595",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 608,
+                    "end": 621
+                  }
+                },
+                "span": {
+                  "start": 601,
+                  "end": 621
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    record(`key ${event.key}`);\n    emit(\"key\", event.key);\n  }",
+              "span": {
+                "start": 623,
+                "end": 688
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "record@518",
+                  "span": {
+                    "start": 629,
+                    "end": 635
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@143",
+                  "event": "key",
+                  "span": {
+                    "start": 661,
+                    "end": 683
+                  },
+                  "arguments": [
+                    {
+                      "start": 673,
+                      "end": 682
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 600,
+              "end": 688
+            }
+          },
+          "span": {
+            "start": 586,
+            "end": 688
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "close@701",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "reason",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 715,
+                    "end": 721
+                  }
+                },
+                "span": {
+                  "start": 707,
+                  "end": 721
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    open.value = false;\n    document.removeEventListener(\"keydown\", onEscape);\n    emit(\"closed\", reason);\n  }",
+              "span": {
+                "start": 723,
+                "end": 835
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "open@291",
+                  "operator": "=",
+                  "span": {
+                    "start": 729,
+                    "end": 747
+                  },
+                  "target": {
+                    "start": 729,
+                    "end": 739
+                  },
+                  "value": {
+                    "start": 742,
+                    "end": 747
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "document",
+                  "span": {
+                    "start": 753,
+                    "end": 761
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onEscape@848",
+                  "span": {
+                    "start": 793,
+                    "end": 801
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@143",
+                  "event": "closed",
+                  "span": {
+                    "start": 808,
+                    "end": 830
+                  },
+                  "arguments": [
+                    {
+                      "start": 823,
+                      "end": 829
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 706,
+              "end": 835
+            }
+          },
+          "span": {
+            "start": 692,
+            "end": 835
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "onEscape@848",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 864,
+                    "end": 877
+                  }
+                },
+                "span": {
+                  "start": 857,
+                  "end": 877
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key === \"Escape\") close(\"escape\");\n  }",
+              "span": {
+                "start": 879,
+                "end": 933
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "close@701",
+                  "span": {
+                    "start": 913,
+                    "end": 918
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 856,
+              "end": 933
+            }
+          },
+          "span": {
+            "start": 839,
+            "end": 933
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "show@946",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    open.value = true;\n    document.addEventListener(\"keydown\", onEscape);\n  }",
+              "span": {
+                "start": 953,
+                "end": 1033
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "open@291",
+                  "operator": "=",
+                  "span": {
+                    "start": 959,
+                    "end": 976
+                  },
+                  "target": {
+                    "start": 959,
+                    "end": 969
+                  },
+                  "value": {
+                    "start": 972,
+                    "end": 976
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "document",
+                  "span": {
+                    "start": 982,
+                    "end": 990
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onEscape@848",
+                  "span": {
+                    "start": 1019,
+                    "end": 1027
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 950,
+              "end": 1033
+            }
+          },
+          "span": {
+            "start": 937,
+            "end": 1033
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "onHandleClick@1046",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    record(\"handle\");\n  }",
+              "span": {
+                "start": 1062,
+                "end": 1089
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "record@518",
+                  "span": {
+                    "start": 1068,
+                    "end": 1074
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 1059,
+              "end": 1089
+            }
+          },
+          "span": {
+            "start": 1037,
+            "end": 1089
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "save@1102",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    saves.value += 1;\n    status.value = \"saved\";\n    emit(\"save\", saves.value);\n  }",
+              "span": {
+                "start": 1109,
+                "end": 1195
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "saves@349",
+                  "operator": "+=",
+                  "span": {
+                    "start": 1115,
+                    "end": 1131
+                  },
+                  "target": {
+                    "start": 1115,
+                    "end": 1126
+                  },
+                  "value": {
+                    "start": 1130,
+                    "end": 1131
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "status@318",
+                  "operator": "=",
+                  "span": {
+                    "start": 1137,
+                    "end": 1159
+                  },
+                  "target": {
+                    "start": 1137,
+                    "end": 1149
+                  },
+                  "value": {
+                    "start": 1152,
+                    "end": 1159
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@143",
+                  "event": "save",
+                  "span": {
+                    "start": 1165,
+                    "end": 1190
+                  },
+                  "arguments": [
+                    {
+                      "start": 1178,
+                      "end": 1189
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "saves@349",
+                  "span": {
+                    "start": 1178,
+                    "end": 1189
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1106,
+              "end": 1195
+            }
+          },
+          "span": {
+            "start": 1093,
+            "end": 1195
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "stop@1208",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    document.removeEventListener(\"keydown\", onEscape);\n    document.removeEventListener(\"keydown\", onKey);\n    handleElement?.removeEventListener(\"click\", onHandleClick);\n  }",
+              "span": {
+                "start": 1215,
+                "end": 1391
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "document",
+                  "span": {
+                    "start": 1221,
+                    "end": 1229
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onEscape@848",
+                  "span": {
+                    "start": 1261,
+                    "end": 1269
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "document",
+                  "span": {
+                    "start": 1276,
+                    "end": 1284
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onKey@595",
+                  "span": {
+                    "start": 1316,
+                    "end": 1321
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "handleElement@458",
+                  "span": {
+                    "start": 1328,
+                    "end": 1341
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onHandleClick@1046",
+                  "span": {
+                    "start": 1372,
+                    "end": 1385
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1212,
+              "end": 1391
+            }
+          },
+          "span": {
+            "start": 1199,
+            "end": 1391
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "status@318",
+              "span": {
+                "start": 1401,
+                "end": 1407
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 1410,
+                  "end": 1415
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"status\", value);\n  }",
+              "span": {
+                "start": 1420,
+                "end": 1452
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@143",
+                  "event": "status",
+                  "span": {
+                    "start": 1426,
+                    "end": 1447
+                  },
+                  "arguments": [
+                    {
+                      "start": 1441,
+                      "end": 1446
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 1409,
+              "end": 1452
+            }
+          },
+          "span": {
+            "start": 1395,
+            "end": 1454
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    handleElement = handle.value;\n    handleElement?.addEventListener(\"click\", onHandleClick);\n  }",
+              "span": {
+                "start": 1474,
+                "end": 1574
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "handleElement@458",
+                  "operator": "=",
+                  "span": {
+                    "start": 1480,
+                    "end": 1508
+                  },
+                  "target": {
+                    "start": 1480,
+                    "end": 1493
+                  },
+                  "value": {
+                    "start": 1496,
+                    "end": 1508
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "handle@406",
+                  "span": {
+                    "start": 1496,
+                    "end": 1508
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "handleElement@458",
+                  "span": {
+                    "start": 1514,
+                    "end": 1527
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "onHandleClick@1046",
+                  "span": {
+                    "start": 1555,
+                    "end": 1568
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1468,
+              "end": 1574
+            }
+          },
+          "span": {
+            "start": 1458,
+            "end": 1576
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "unmounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "stop()",
+              "span": {
+                "start": 1598,
+                "end": 1604
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "stop@1208",
+                  "span": {
+                    "start": 1598,
+                    "end": 1602
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 1592,
+              "end": 1604
+            }
+          },
+          "span": {
+            "start": 1580,
+            "end": 1606
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "draft-panel",
+            "span": {
+              "start": 1632,
+              "end": 1651
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Draft",
+            "span": {
+              "start": 1652,
+              "end": 1670
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1686,
+                  "end": 1699
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-expanded",
+                "value": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 1715,
+                    "end": 1725
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@291",
+                      "span": {
+                        "start": 1715,
+                        "end": 1725
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1700,
+                  "end": 1726
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "show@946",
+                  "span": {
+                    "start": 1736,
+                    "end": 1740
+                  }
+                },
+                "span": {
+                  "start": 1727,
+                  "end": 1741
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Options",
+                "span": {
+                  "start": 1742,
+                  "end": 1765
+                }
+              }
+            ],
+            "span": {
+              "start": 1678,
+              "end": 1774
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 1782,
+                    "end": 1792
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@291",
+                      "span": {
+                        "start": 1782,
+                        "end": 1792
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "div",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "options",
+                        "span": {
+                          "start": 1810,
+                          "end": 1825
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "role",
+                        "value": "group",
+                        "span": {
+                          "start": 1826,
+                          "end": 1838
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "aria-label",
+                        "value": "Draft options",
+                        "span": {
+                          "start": 1839,
+                          "end": 1865
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "button",
+                        "attributes": [
+                          {
+                            "kind": "Static",
+                            "name": "type",
+                            "value": "button",
+                            "span": {
+                              "start": 1885,
+                              "end": 1898
+                            }
+                          },
+                          {
+                            "kind": "Event",
+                            "event": "click",
+                            "handler": {
+                              "kind": "Inline",
+                              "function": {
+                                "parameters": [],
+                                "body": {
+                                  "code": "close(\"button\")",
+                                  "span": {
+                                    "start": 1914,
+                                    "end": 1929
+                                  },
+                                  "refs": [
+                                    {
+                                      "kind": "Binding",
+                                      "binding": "close@701",
+                                      "span": {
+                                        "start": 1914,
+                                        "end": 1919
+                                      },
+                                      "call": true
+                                    }
+                                  ]
+                                },
+                                "expression": true,
+                                "span": {
+                                  "start": 1908,
+                                  "end": 1929
+                                }
+                              },
+                              "span": {
+                                "start": 1908,
+                                "end": 1929
+                              }
+                            },
+                            "span": {
+                              "start": 1899,
+                              "end": 1930
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "Text",
+                            "value": "Close",
+                            "span": {
+                              "start": 1931,
+                              "end": 1960
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 1877,
+                          "end": 1969
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1805,
+                      "end": 1984
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1782,
+                  "end": 1984
+                }
+              }
+            ],
+            "span": {
+              "start": 1782,
+              "end": 1999
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2015,
+                  "end": 2028
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "document.addEventListener(\"keydown\", onKey)",
+                      "span": {
+                        "start": 2044,
+                        "end": 2087
+                      },
+                      "refs": [
+                        {
+                          "kind": "Global",
+                          "name": "document",
+                          "span": {
+                            "start": 2044,
+                            "end": 2052
+                          }
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "onKey@595",
+                          "span": {
+                            "start": 2081,
+                            "end": 2086
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 2038,
+                      "end": 2087
+                    }
+                  },
+                  "span": {
+                    "start": 2038,
+                    "end": 2087
+                  }
+                },
+                "span": {
+                  "start": 2029,
+                  "end": 2088
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Listen",
+                "span": {
+                  "start": 2089,
+                  "end": 2111
+                }
+              }
+            ],
+            "span": {
+              "start": 2007,
+              "end": 2120
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2135,
+                  "end": 2148
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "document.removeEventListener(\"keydown\", onKey)",
+                      "span": {
+                        "start": 2164,
+                        "end": 2210
+                      },
+                      "refs": [
+                        {
+                          "kind": "Global",
+                          "name": "document",
+                          "span": {
+                            "start": 2164,
+                            "end": 2172
+                          }
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "onKey@595",
+                          "span": {
+                            "start": 2204,
+                            "end": 2209
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 2158,
+                      "end": 2210
+                    }
+                  },
+                  "span": {
+                    "start": 2158,
+                    "end": 2210
+                  }
+                },
+                "span": {
+                  "start": 2149,
+                  "end": 2211
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Stop listening",
+                "span": {
+                  "start": 2212,
+                  "end": 2242
+                }
+              }
+            ],
+            "span": {
+              "start": 2127,
+              "end": 2251
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2266,
+                  "end": 2279
+                }
+              },
+              {
+                "kind": "Ref",
+                "binding": "handle@406",
+                "span": {
+                  "start": 2280,
+                  "end": 2292
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Handle",
+                "span": {
+                  "start": 2293,
+                  "end": 2315
+                }
+              }
+            ],
+            "span": {
+              "start": 2258,
+              "end": 2324
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2339,
+                  "end": 2352
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "save@1102",
+                  "span": {
+                    "start": 2362,
+                    "end": 2366
+                  }
+                },
+                "span": {
+                  "start": 2353,
+                  "end": 2367
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Save",
+                "span": {
+                  "start": 2368,
+                  "end": 2388
+                }
+              }
+            ],
+            "span": {
+              "start": 2331,
+              "end": 2397
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 2407,
+                  "end": 2420
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "open.value ? \"Options open\" : \"Options closed\"",
+                  "span": {
+                    "start": 2431,
+                    "end": 2477
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@291",
+                      "span": {
+                        "start": 2431,
+                        "end": 2441
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 2430,
+                  "end": 2478
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ", ",
+                "span": {
+                  "start": 2478,
+                  "end": 2480
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "status.value",
+                  "span": {
+                    "start": 2481,
+                    "end": 2493
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "status@318",
+                      "span": {
+                        "start": 2481,
+                        "end": 2493
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 2480,
+                  "end": 2494
+                }
+              }
+            ],
+            "span": {
+              "start": 2404,
+              "end": 2505
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Log",
+                "span": {
+                  "start": 2516,
+                  "end": 2532
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "log.value",
+                  "span": {
+                    "start": 2543,
+                    "end": 2552
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "log@373",
+                      "span": {
+                        "start": 2543,
+                        "end": 2552
+                      }
+                    }
+                  ]
+                },
+                "item": "line@2558",
+                "index": "index@2564",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 2595,
+                    "end": 2600
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@2564",
+                      "span": {
+                        "start": 2595,
+                        "end": 2600
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "line",
+                        "span": {
+                          "start": 2603,
+                          "end": 2607
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "line@2558",
+                            "span": {
+                              "start": 2603,
+                              "end": 2607
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 2602,
+                        "end": 2608
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 2586,
+                    "end": 2613
+                  }
+                },
+                "span": {
+                  "start": 2543,
+                  "end": 2624
+                }
+              }
+            ],
+            "span": {
+              "start": 2512,
+              "end": 2637
+            }
+          }
+        ],
+        "span": {
+          "start": 1623,
+          "end": 2652
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "DraftPanel",
+      "span": {
+        "start": 96,
+        "end": 2659
+      }
+    }
+  ],
+  "types": []
+}

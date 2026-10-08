@@ -1,0 +1,8 @@
+error[UF2009]: The call-signature form of `defineEmits` is Vue's: unframework declares each event as a property whose type is a named tuple.
+ --> diagnostics/invalid-emits/Rating.uf.tsx:6:30
+  |
+6 |   const emit = defineEmits<{ (event: "rate", stars: number): void }>();
+  |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: Declare each event as a named tuple: `defineEmits<{ change: [value: number] }>()`.
+  = see: https://unframework.dev/diagnostics/UF2009

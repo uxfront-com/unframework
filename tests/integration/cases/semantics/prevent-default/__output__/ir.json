@@ -1,0 +1,978 @@
+{
+  "irVersion": 1,
+  "file": "semantics/prevent-default/TagForm.uf.tsx",
+  "components": [
+    {
+      "name": "TagForm",
+      "span": {
+        "start": 65,
+        "end": 1516
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@109",
+        "type": {
+          "code": "{ tagsChange: [tags: string[]] }",
+          "span": {
+            "start": 128,
+            "end": 160
+          }
+        },
+        "events": [
+          {
+            "name": "tagsChange",
+            "parameters": [
+              {
+                "name": "tags",
+                "type": {
+                  "code": "string[]",
+                  "span": {
+                    "start": 149,
+                    "end": 157
+                  }
+                },
+                "span": {
+                  "start": 143,
+                  "end": 157
+                }
+              }
+            ],
+            "span": {
+              "start": 130,
+              "end": 158
+            }
+          }
+        ],
+        "span": {
+          "start": 103,
+          "end": 164
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@109",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 109,
+            "end": 113
+          }
+        },
+        {
+          "id": "tags@174",
+          "name": "tags",
+          "kind": "state",
+          "span": {
+            "start": 174,
+            "end": 178
+          }
+        },
+        {
+          "id": "draft@208",
+          "name": "draft",
+          "kind": "state",
+          "span": {
+            "start": 208,
+            "end": 213
+          }
+        },
+        {
+          "id": "helpOpen@233",
+          "name": "helpOpen",
+          "kind": "state",
+          "span": {
+            "start": 233,
+            "end": 241
+          }
+        },
+        {
+          "id": "field@264",
+          "name": "field",
+          "kind": "templateRef",
+          "span": {
+            "start": 264,
+            "end": 269
+          }
+        },
+        {
+          "id": "blockComma@320",
+          "name": "blockComma",
+          "kind": "localFn",
+          "span": {
+            "start": 320,
+            "end": 330
+          }
+        },
+        {
+          "id": "updateDraft@422",
+          "name": "updateDraft",
+          "kind": "localFn",
+          "span": {
+            "start": 422,
+            "end": 433
+          }
+        },
+        {
+          "id": "addTag@538",
+          "name": "addTag",
+          "kind": "localFn",
+          "span": {
+            "start": 538,
+            "end": 544
+          }
+        },
+        {
+          "id": "toggleHelp@857",
+          "name": "toggleHelp",
+          "kind": "localFn",
+          "span": {
+            "start": 857,
+            "end": 867
+          }
+        },
+        {
+          "id": "tag@1429",
+          "name": "tag",
+          "kind": "loopVar",
+          "span": {
+            "start": 1429,
+            "end": 1432
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "tags@174",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 185,
+              "end": 193
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 195,
+              "end": 197
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 168,
+            "end": 199
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "draft@208",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 220,
+              "end": 222
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 202,
+            "end": 224
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "helpOpen@233",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 248,
+              "end": 253
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 227,
+            "end": 255
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "field@264",
+          "type": {
+            "code": "HTMLInputElement",
+            "span": {
+              "start": 287,
+              "end": 303
+            }
+          },
+          "span": {
+            "start": 258,
+            "end": 307
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "blockComma@320",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 338,
+                    "end": 351
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 331,
+                  "end": 351
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key === \",\") event.preventDefault();\n  }",
+              "span": {
+                "start": 353,
+                "end": 409
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 363,
+                    "end": 372
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 382,
+                    "end": 402
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "preventDefault",
+                "condition": {
+                  "code": "event.key === \",\"",
+                  "span": {
+                    "start": 363,
+                    "end": 380
+                  },
+                  "refs": [
+                    {
+                      "kind": "Event",
+                      "member": "key",
+                      "span": {
+                        "start": 363,
+                        "end": 372
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 359,
+                  "end": 405
+                }
+              }
+            ],
+            "span": {
+              "start": 330,
+              "end": 409
+            }
+          },
+          "span": {
+            "start": 311,
+            "end": 409
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "updateDraft@422",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "InputEvent",
+                  "span": {
+                    "start": 441,
+                    "end": 451
+                  }
+                },
+                "event": "InputEvent",
+                "span": {
+                  "start": 434,
+                  "end": 451
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    draft.value = (event.currentTarget as HTMLInputElement).value;\n  }",
+              "span": {
+                "start": 453,
+                "end": 525
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "draft@208",
+                  "operator": "=",
+                  "span": {
+                    "start": 459,
+                    "end": 520
+                  },
+                  "target": {
+                    "start": 459,
+                    "end": 470
+                  },
+                  "value": {
+                    "start": 473,
+                    "end": 520
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "currentTarget",
+                  "span": {
+                    "start": 474,
+                    "end": 493
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 433,
+              "end": 525
+            }
+          },
+          "span": {
+            "start": 413,
+            "end": 525
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "addTag@538",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "SubmitEvent",
+                  "span": {
+                    "start": 552,
+                    "end": 563
+                  }
+                },
+                "event": "SubmitEvent",
+                "span": {
+                  "start": 545,
+                  "end": 563
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    event.preventDefault();\n    if (draft.value !== \"\" && !tags.value.includes(draft.value)) {\n      tags.value = [...tags.value, draft.value];\n      emit(\"tagsChange\", tags.value);\n    }\n    draft.value = \"\";\n    const input = field.value;\n    if (input) input.value = \"\";\n  }",
+              "span": {
+                "start": 565,
+                "end": 844
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 571,
+                    "end": 591
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "draft@208",
+                  "span": {
+                    "start": 603,
+                    "end": 614
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tags@174",
+                  "span": {
+                    "start": 626,
+                    "end": 636
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "draft@208",
+                  "span": {
+                    "start": 646,
+                    "end": 657
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "tags@174",
+                  "operator": "=",
+                  "span": {
+                    "start": 668,
+                    "end": 709
+                  },
+                  "target": {
+                    "start": 668,
+                    "end": 678
+                  },
+                  "value": {
+                    "start": 681,
+                    "end": 709
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tags@174",
+                  "span": {
+                    "start": 685,
+                    "end": 695
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "draft@208",
+                  "span": {
+                    "start": 697,
+                    "end": 708
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@109",
+                  "event": "tagsChange",
+                  "span": {
+                    "start": 717,
+                    "end": 747
+                  },
+                  "arguments": [
+                    {
+                      "start": 736,
+                      "end": 746
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tags@174",
+                  "span": {
+                    "start": 736,
+                    "end": 746
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "draft@208",
+                  "operator": "=",
+                  "span": {
+                    "start": 759,
+                    "end": 775
+                  },
+                  "target": {
+                    "start": 759,
+                    "end": 770
+                  },
+                  "value": {
+                    "start": 773,
+                    "end": 775
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "field@264",
+                  "span": {
+                    "start": 795,
+                    "end": 806
+                  }
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "preventDefault",
+                "span": {
+                  "start": 571,
+                  "end": 594
+                }
+              }
+            ],
+            "span": {
+              "start": 544,
+              "end": 844
+            }
+          },
+          "span": {
+            "start": 529,
+            "end": 844
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "toggleHelp@857",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "MouseEvent",
+                  "span": {
+                    "start": 875,
+                    "end": 885
+                  }
+                },
+                "event": "MouseEvent",
+                "span": {
+                  "start": 868,
+                  "end": 885
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    event.preventDefault();\n    helpOpen.value = !helpOpen.value;\n  }",
+              "span": {
+                "start": 887,
+                "end": 958
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 893,
+                    "end": 913
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "helpOpen@233",
+                  "operator": "=",
+                  "span": {
+                    "start": 921,
+                    "end": 953
+                  },
+                  "target": {
+                    "start": 921,
+                    "end": 935
+                  },
+                  "value": {
+                    "start": 938,
+                    "end": 953
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "helpOpen@233",
+                  "span": {
+                    "start": 939,
+                    "end": 953
+                  }
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "preventDefault",
+                "span": {
+                  "start": 893,
+                  "end": 916
+                }
+              }
+            ],
+            "span": {
+              "start": 867,
+              "end": 958
+            }
+          },
+          "span": {
+            "start": 848,
+            "end": 958
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "form",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "tag-form",
+            "span": {
+              "start": 981,
+              "end": 997
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Tags",
+            "span": {
+              "start": 998,
+              "end": 1015
+            }
+          },
+          {
+            "kind": "Event",
+            "event": "submit",
+            "handler": {
+              "kind": "Function",
+              "binding": "addTag@538",
+              "span": {
+                "start": 1026,
+                "end": 1032
+              }
+            },
+            "span": {
+              "start": 1016,
+              "end": 1033
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "New tag",
+                "span": {
+                  "start": 1048,
+                  "end": 1073
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "tag",
+                    "span": {
+                      "start": 1080,
+                      "end": 1090
+                    }
+                  },
+                  {
+                    "kind": "Ref",
+                    "binding": "field@264",
+                    "span": {
+                      "start": 1091,
+                      "end": 1102
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "keydown",
+                    "handler": {
+                      "kind": "Function",
+                      "binding": "blockComma@320",
+                      "span": {
+                        "start": 1114,
+                        "end": 1124
+                      }
+                    },
+                    "span": {
+                      "start": 1103,
+                      "end": 1125
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "input",
+                    "handler": {
+                      "kind": "Function",
+                      "binding": "updateDraft@422",
+                      "span": {
+                        "start": 1135,
+                        "end": 1146
+                      }
+                    },
+                    "span": {
+                      "start": 1126,
+                      "end": 1147
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 1073,
+                  "end": 1150
+                }
+              }
+            ],
+            "span": {
+              "start": 1041,
+              "end": 1165
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "submit",
+                "span": {
+                  "start": 1180,
+                  "end": 1193
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add tag",
+                "span": {
+                  "start": 1194,
+                  "end": 1201
+                }
+              }
+            ],
+            "span": {
+              "start": 1172,
+              "end": 1210
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "a",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "href",
+                "value": "/help/tags",
+                "span": {
+                  "start": 1220,
+                  "end": 1237
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "toggleHelp@857",
+                  "span": {
+                    "start": 1247,
+                    "end": 1257
+                  }
+                },
+                "span": {
+                  "start": 1238,
+                  "end": 1258
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "How tags work",
+                "span": {
+                  "start": 1259,
+                  "end": 1288
+                }
+              }
+            ],
+            "span": {
+              "start": 1217,
+              "end": 1292
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "helpOpen.value",
+                  "span": {
+                    "start": 1300,
+                    "end": 1314
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "helpOpen@233",
+                      "span": {
+                        "start": 1300,
+                        "end": 1314
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "A tag is one word: commas are not allowed.",
+                        "span": {
+                          "start": 1321,
+                          "end": 1363
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1318,
+                      "end": 1367
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1300,
+                  "end": 1367
+                }
+              }
+            ],
+            "span": {
+              "start": 1300,
+              "end": 1367
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Added tags",
+                "span": {
+                  "start": 1379,
+                  "end": 1402
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "tags.value",
+                  "span": {
+                    "start": 1413,
+                    "end": 1423
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tags@174",
+                      "span": {
+                        "start": 1413,
+                        "end": 1423
+                      }
+                    }
+                  ]
+                },
+                "item": "tag@1429",
+                "key": {
+                  "code": "tag",
+                  "span": {
+                    "start": 1458,
+                    "end": 1461
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tag@1429",
+                      "span": {
+                        "start": 1458,
+                        "end": 1461
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "tag",
+                        "span": {
+                          "start": 1464,
+                          "end": 1467
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "tag@1429",
+                            "span": {
+                              "start": 1464,
+                              "end": 1467
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 1463,
+                        "end": 1468
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 1449,
+                    "end": 1473
+                  }
+                },
+                "span": {
+                  "start": 1413,
+                  "end": 1484
+                }
+              }
+            ],
+            "span": {
+              "start": 1375,
+              "end": 1497
+            }
+          }
+        ],
+        "span": {
+          "start": 975,
+          "end": 1509
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "TagForm",
+      "span": {
+        "start": 65,
+        "end": 1516
+      }
+    }
+  ],
+  "types": []
+}

@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { formatOutput } from "@unframework/codegen";
+import { BEHAVIOURAL_CAPABILITIES, CAPABILITY_NAMES, formatOutput } from "@unframework/codegen";
 import type { EmitContext } from "@unframework/codegen";
 import {
   BINDABLE_BOOLEAN_ATTRIBUTES,
@@ -76,28 +76,37 @@ const scratch = scratchDirectory("emit");
 afterAll(() => scratch.remove());
 
 describe("astro target", () => {
-  it("declares every capability, with interactivity unsupported", () => {
-    expect(Object.keys(target.capabilities).toSorted()).toEqual([
-      "attribute-spread",
-      "bound-attribute",
-      "class-binding",
-      "conditional",
-      "element",
-      "fragment",
+  it("declares every capability: what runs in the browser unsupported, `use-id` emulated", () => {
+    expect(Object.keys(target.capabilities).toSorted()).toEqual([...CAPABILITY_NAMES].toSorted());
+    // Nothing runs in the browser, so these are inert, reported for information (ADR-0047).
+    for (const name of [
       "interactivity",
-      "interpolation",
-      "list",
-      "listbox",
-      "props",
-      "static-attribute",
-      "style-binding",
-      "svg",
-      "text",
-    ]);
+      "event-capture",
+      "event-once",
+      "event-passive",
+      "event-semantics",
+      "conditional-event-control",
+      "next-tick",
+    ] as const) {
+      expect(target.capabilities[name], name).toMatchObject({
+        support: "unsupported",
+        code: "UF4001",
+        severity: "info",
+      });
+    }
+    // A test that checks state across a rerender requires `interactivity`, and its skip
+    // names this reason.
     expect(target.capabilities.interactivity).toMatchObject({
-      support: "unsupported",
-      code: "UF4001",
+      reason: expect.stringContaining("each render is a new instance"),
     });
+    expect(target.capabilities["use-id"]).toMatchObject({
+      support: "emulated",
+      helper: "uniqueId",
+    });
+    const unsupported = CAPABILITY_NAMES.filter(
+      (name) => target.capabilities[name].support === "unsupported",
+    );
+    expect(unsupported.every((name) => BEHAVIOURAL_CAPABILITIES.has(name))).toBe(true);
   });
 
   it("emits one file per component, named after it whatever the export", () => {
@@ -142,7 +151,7 @@ describe("astro target", () => {
   });
 });
 
-// M1 (design §5.7): real sources lowered by the analyser, then emitted by this target.
+// M1: real sources lowered by the analyser, then emitted by this target.
 
 /** Lines of a file, each ending in a line break. */
 const lines = (...rows: string[]) => rows.map((row) => `${row}\n`).join("");
@@ -291,7 +300,7 @@ export default function Panel({ on, size, gap, attrs, more, n }: PanelProps) {
 }
 `;
 
-describe("props: the frontmatter (design §5.7, ADR-0034)", () => {
+describe("props: the frontmatter (ADR-0034)", () => {
   it("copies the types, aliases them as `Props` and destructures `Astro.props`, defaults included", () => {
     expect(emitted(primitives)).toBe(
       lines(
@@ -324,7 +333,7 @@ describe("props: the frontmatter (design §5.7, ADR-0034)", () => {
     await expect(renderSource(output, { name: "Desk", price: 0, available: false })).resolves.toBe(
       '<article class="product-tile" aria-label="Desk"><p>Price: 0 EUR</p><p>Unavailable</p><button type="button" disabled>Add Desk</button></article>',
     );
-    // Absent and `undefined` are the same (design §1.1): the default applies.
+    // Absent and `undefined` are the same (ADR-0034): the default applies.
     await expect(
       renderSource(output, { name: "A", price: 1, available: undefined }),
     ).resolves.toContain("<p>Available</p>");
@@ -503,7 +512,7 @@ describe("props: the frontmatter (design §5.7, ADR-0034)", () => {
   });
 });
 
-describe("control flow (design §5.7)", () => {
+describe("control flow (ADR-0036)", () => {
   it("writes conditionals as ternaries ending in `null`, and lists as `.map` without keys", () => {
     expect(markupOf(emitted(controlFlow))).toBe(
       lines(
@@ -574,7 +583,7 @@ describe("control flow (design §5.7)", () => {
   });
 });
 
-describe("attributes (design §5.7, ADR-0037 to ADR-0040)", () => {
+describe("attributes (ADR-0037 to ADR-0040)", () => {
   it("writes bindings, `class:list`, style objects and spreads key by key", () => {
     expect(markupOf(emitted(attributes))).toBe(
       lines(

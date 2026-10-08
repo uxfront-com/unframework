@@ -1,0 +1,6 @@
+{
+  "description": "Async client code and the watchers that answer it: a pre watcher whose flag cancels out around an await, beside a post watcher, a watchEffect and a handler that awaits nextTick; two awaited assignments in one function; a guard after a change; a loop that awaits; a local async function's promise chained and held; writes after a try whose block and catch return; a watcher calling a function that reassigns its parameter. Every reply comes from a button.",
+  "ssr": {
+    "initial": { "props": { "files": ["a.csv", "b.csv"] } }
+  }
+}

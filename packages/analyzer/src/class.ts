@@ -1,4 +1,4 @@
-// `class={…}` (ADR-0038, design §1.5): lowered to parts every target writes its own way (Vue's
+// `class={…}` (ADR-0038): lowered to parts every target writes its own way (Vue's
 // and Svelte's class arrays and objects, Angular's `[class.x]`, React's inline `cx`). The
 // rendered names are the union of the static names, the toggles whose condition holds and the
 // names each dynamic part holds, in no particular order.

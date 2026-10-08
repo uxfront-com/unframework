@@ -58,7 +58,7 @@ export interface ComponentModule {
  * Prints a JSX target's output file: the imports, the copied type declarations, the
  * component, then its helpers, a blank line between each, with every placeholder spliced.
  * Code copied from the source enters only as text joined between printed pieces or through
- * placeholders, never re-printed (design §4.2).
+ * placeholders, never re-printed (plan §5.4, ADR-0035).
  */
 export function printComponentModule(
   parts: ComponentModule,

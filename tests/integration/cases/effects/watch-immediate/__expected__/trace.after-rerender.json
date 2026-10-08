@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"title\":\"Setup\"}",
+      "dom": [
+        "<h2 class=\"section-heading\">",
+        "  \"Setup\"",
+        "</h2>"
+      ],
+      "aria": [
+        "- heading \"Setup\" [level=2]"
+      ],
+      "events": {
+        "change": [
+          [
+            "Introduction"
+          ],
+          [
+            "Setup",
+            "Introduction"
+          ]
+        ],
+        "ready": [
+          []
+        ]
+      }
+    }
+  ]
+}

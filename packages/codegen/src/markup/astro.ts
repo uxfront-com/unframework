@@ -1,4 +1,4 @@
-// Astro markup (design §5.7): JSX-like expressions in `{…}`, ternary chains ending in `null` for
+// Astro markup (plan §6): JSX-like expressions in `{…}`, ternary chains ending in `null` for
 // conditionals (never `&&`, which renders a falsy left side), `.map` without `key` (Astro would
 // render it as an attribute), `class:list` and style objects. Astro's compiler reads balanced
 // JavaScript in `{…}`, braces in strings, templates and regular expressions included, so
@@ -6,7 +6,7 @@
 import { BINDABLE_BOOLEAN_ATTRIBUTES } from "@unframework/ir";
 import type { ForNode } from "@unframework/ir";
 
-import { referencedBindings } from "../rewrite.ts";
+import { referencedBindings } from "../references.ts";
 import {
   camelCaseProperty,
   escapeBraces,
@@ -47,7 +47,7 @@ const ASTRO_BOOLEAN_ATTRIBUTES: ReadonlySet<string> = new Set(
  * an index any expression reads), and a callback that reads neither takes none.
  */
 function listParameters(node: ForNode, item: string, index: string | undefined): string {
-  const read = referencedBindings(node.body, { includeKeys: false });
+  const read = referencedBindings(node.body, { includeKeys: false, includeClient: false });
   if (index !== undefined && node.index !== undefined && read.has(node.index)) {
     return `${item}, ${index}`;
   }
@@ -88,6 +88,9 @@ function content(nodes: ConditionalBranch["branch"]): MarkupPiece {
  * (`multiple`, `ismap`) is written `name={c ? "" : undefined}` (ADR-0037). A class goes through
  * `class:list` whenever anything in it is bound (Astro's lint rule), and a style through an
  * object whenever any declaration is bound.
+ *
+ * Astro renders on the server only: a listener and a template ref write nothing, and the capability
+ * check reports the module's first as inert (`interactivity`, UF4001 info).
  *
  * `compressHTML` is a project setting a component cannot pin. Deferred to M6 (plan §8.2): the
  * unplugin reads Astro's resolved configuration and reports any value but the default.
@@ -161,4 +164,7 @@ export const astroDialect: MarkupDialect = {
       close: ")}",
     },
   ],
+  eventAttribute: () => [],
+  refAttribute: () => [],
+  inert: true,
 };

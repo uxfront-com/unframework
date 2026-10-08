@@ -67,6 +67,8 @@
     "@angular/platform-server": "catalog:",
     "@types/node": "catalog:",
     "@uxfront/typescript-config": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
+    "playwright": "catalog:",
     "rxjs": "catalog:",
     "tsdown": "catalog:",
     "tslib": "catalog:",

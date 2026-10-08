@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Like' })",
+      "dom": [
+        "<section aria-label=\"Comment\" class=\"comment-card\">",
+        "  <label>",
+        "    \"Comment\"",
+        "    <textarea name=\"comment\" rows=\"2\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <div class=\"meter\" role=\"presentation\">",
+        "    <div class=\"fill\" style=\"width: 0%;\"></div>",
+        "  </div>",
+        "  <p>",
+        "    \"0 characters\"",
+        "  </p>",
+        "  <div aria-pressed=\"true\" class=\"like\" role=\"button\" tabindex=\"0\" uf:focused=\"\">",
+        "    \"Like\"",
+        "  </div>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Comment\":",
+        "  - text: Comment",
+        "  - textbox \"Comment\"",
+        "  - paragraph: 0 characters",
+        "  - button \"Like\" [pressed]"
+      ],
+      "events": {
+        "liked": [
+          [
+            true,
+            "click"
+          ]
+        ]
+      }
+    }
+  ]
+}

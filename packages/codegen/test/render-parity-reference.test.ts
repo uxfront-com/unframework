@@ -1,7 +1,7 @@
-// The reference evaluator is the oracle every target is held to, so each rule of design §1 it
-// encodes is tested here against a DOM written by hand: a component's source, lowered by the
-// analyser as an author's is, with props, against the HTML it must render. Then the markup cases
-// another agent wrote by hand (./markup-cases.ts) are evaluated too, as a second, independent
+// The reference evaluator is the oracle every target is held to, so each rule of ADR-0034 to
+// ADR-0040 it encodes is tested here against a DOM written by hand: a component's source, lowered
+// by the analyser as an author's is, with props, against the HTML it must render. Then the markup
+// cases another agent wrote by hand (./markup-cases.ts) are evaluated too, as a second, independent
 // reading of the same rules.
 import type { ElementNode, InterpolationNode } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
@@ -18,7 +18,7 @@ function rendered(params: string, jsx: string, props: Record<string, unknown> = 
   return expectedNodes(parityCase!);
 }
 
-/** The DOM some HTML describes, compared as the kit compares (§6.4). */
+/** The DOM some HTML describes, compared as the kit compares (ADR-0044). */
 const html = (source: string) => parseHtml(source);
 
 /** A list with a hole. */
@@ -215,7 +215,7 @@ describe("instantiate", () => {
     expect(domNodesOf(instantiate(component, { s: "x" }))).toEqual(html("<p>x</p>"));
   });
 
-  // Values outside the contract (design §1.9): a case holding one would test nothing.
+  // Values outside the contract (ADR-0035): a case holding one would test nothing.
   it.each([
     ["a boolean as text", "{ v }: { v: string }", "<p>{JSON.parse(v)}</p>", { v: "true" }],
     ["NaN alone", "{ v }: { v: number }", "<p>{v}</p>", { v: Number.NaN }],
@@ -267,7 +267,8 @@ describe("instantiate", () => {
 });
 
 // The markup cases (./markup-cases.ts) are trees with props and the HTML each must render, written
-// by hand by another agent from design §1: the reference must read the rules as they do.
+// by hand from the rules of ADR-0034 to ADR-0040, apart from the reference: it must read the
+// rules as they do.
 describe("instantiate, on the markup cases", () => {
   it.each(MARKUP_CASES.map((each) => [each.name, each] as const))("renders %s", (_, each) => {
     const built = markupSuite([each]);

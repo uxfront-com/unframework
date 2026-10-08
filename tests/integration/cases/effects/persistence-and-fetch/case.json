@@ -1,0 +1,6 @@
+{
+  "description": "The browser's APIs in client code: a watcher that writes localStorage, a search watcher that fetches a URL built with URLSearchParams and aborts it in onCleanup, a watchEffect that hands a named function to setInterval and keeps the handle in a setup let, and a handler that awaits Promise.all over a local async function. The specs answer every request from a fake fetch on the view's clock.",
+  "ssr": {
+    "initial": { "props": { "shelves": ["Fiction", "History"] } }
+  }
+}

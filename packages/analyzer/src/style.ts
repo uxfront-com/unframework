@@ -1,4 +1,4 @@
-// `style` (ADR-0038, design §1.5): a static declaration list (`style="color: red"`) or an object
+// `style` (ADR-0038): a static declaration list (`style="color: red"`) or an object
 // (`style={{ color: tone, marginTop: "4px" }}`), lowered to declarations. The present ones
 // render in no particular order, so no two may set what the other sets, and every value is one
 // the targets write alike.

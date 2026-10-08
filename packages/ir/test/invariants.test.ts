@@ -30,17 +30,42 @@ import {
   createTypeDeclaration,
   createTypeText,
   span,
+  createApiReference,
+  createBindingReference,
+  createCode,
+  createConstItem,
+  createEmitReference,
+  createEventControl,
+  createEventDeclaration,
+  createEventReference,
+  createFunctionCode,
+  createGlobalReference,
+  createIdItem,
+  createNarrowedPath,
+  createParameter,
+  createParameterPattern,
+  createRefAttribute,
+  createRefSource,
+  createWriteReference,
 } from "../src/index.ts";
 import type {
   Attribute,
+  Code,
+  CodeReference,
   ElementNode,
+  EventAttribute,
   Expression,
   FragmentNode,
+  FunctionCode,
+  InterpolationNode,
   RenderNode,
+  SetupItem,
+  Span,
   StyleDeclaration,
+  UfComponent,
   UfModule,
 } from "../src/index.ts";
-import { everyKind, expression, ids } from "./fixtures.ts";
+import { counterIds, everyKind, expression, find, ids, piece } from "./fixtures.ts";
 
 const at = span(0, 1);
 
@@ -137,7 +162,7 @@ describe("checkInvariants", () => {
     expect(checkInvariants(moduleOf(render))).toEqual([]);
   });
 
-  // What a plugin's IR could bring back (core-4): each breaks one invariant.
+  // What a plugin's IR could bring back (ADR-0032): each breaks one invariant.
   it.each([
     [element("script"), "/components/0/render/tag", "a component can render: <script> holds code"],
     [element("slot"), "/components/0/render/tag", "a component can render: <slot>"],
@@ -177,8 +202,8 @@ describe("checkInvariants", () => {
     [element("p", [], [createText("\u0007", at)]), "/children/0/value", "U+0007 (control)"],
     [element("p", [], [createText("￾", at)]), "/children/0/value", "(noncharacter)"],
     [element("br", [], [createText("x", at)]), "/components/0/render/children", "void"],
-    // What the targets render differently (r3-analyzer-4), and documents and scripts the
-    // compiler cannot analyse (r3-analyzer-6).
+    // What the targets render differently, and documents and scripts the compiler cannot
+    // analyse.
     [element("search"), "/components/0/render/tag", "renders as itself: Vue 3.5"],
     [
       element("select", [], [element("selectedcontent")]),
@@ -271,7 +296,7 @@ describe("checkInvariants", () => {
   });
 
   // Every target writes a component's name as an identifier and names its file by it, and
-  // writes each export's name in an export list (r3-analyzer-4).
+  // writes each export's name in an export list.
   it.each([
     ["card", "must be PascalCase"],
     ["../../x/Pwned", "must be PascalCase"],
@@ -1482,7 +1507,7 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
       "an event's name as a prop",
       () => withProps(["onClick"]),
       "/props/0/name",
-      "events land in M2",
+      "declares its events with `defineEmits`",
     ],
     [
       "a prop name Angular reserves",
@@ -1843,3 +1868,1549 @@ describe("checkInvariants on props, bindings, expressions and types", () => {
     expect(errors[0]!.message).toContain(message);
   });
 });
+
+/** `everyKind` with its counter, the component that uses every kind of the setup, changed. */
+function counterChanged(change: (counter: UfComponent) => void): UfModule {
+  const module = everyKind();
+  change(module.components[1]!);
+  return module;
+}
+
+/** A setup item of the counter, of the kind it has. */
+const setupItem = <K extends SetupItem["kind"]>(
+  counter: UfComponent,
+  index: number,
+  _kind: K,
+): Extract<SetupItem, { kind: K }> => counter.setup[index] as Extract<SetupItem, { kind: K }>;
+
+/** The counter's function at a setup index: a function item's, a callback, a getter or an effect. */
+function fnAt(counter: UfComponent, index: number): FunctionCode {
+  const found = counter.setup[index]!;
+  switch (found.kind) {
+    case "Function":
+      return found.function;
+    case "Derived":
+      return found.getter;
+    case "Watch":
+    case "Lifecycle":
+      return found.callback;
+    case "WatchEffect":
+      return found.effect;
+    default:
+      throw new Error(`setup/${index} has no function`);
+  }
+}
+
+/** The getter of the counter's array watcher's first source, `() => start`. */
+const sourceGetter = (counter: UfComponent) =>
+  (
+    setupItem(counter, 10, "Watch").sources[0] as Extract<
+      Extract<SetupItem, { kind: "Watch" }>["sources"][number],
+      { kind: "Getter" }
+    >
+  ).getter;
+
+/** A child element of the counter's root `<div>`. */
+const childAt = (counter: UfComponent, index: number) =>
+  (counter.render as ElementNode).children[index] as ElementNode;
+
+/** The button in the counter's list. */
+const listButton = (counter: UfComponent) =>
+  (childAt(counter, 5).children[0] as Extract<RenderNode, { kind: "For" }>).body
+    .children[0] as ElementNode;
+
+/** A listener of an element, and the function its handler writes in place. */
+const listenerAt = (element: ElementNode, index: number) =>
+  element.attributes[index] as EventAttribute;
+const inlineAt = (element: ElementNode, index: number) =>
+  (listenerAt(element, index).handler as Extract<EventAttribute["handler"], { kind: "Inline" }>)
+    .function;
+
+/** The interpolation the counter's `<output>` renders. */
+const shown = (counter: UfComponent) => childAt(counter, 4).children[0] as InterpolationNode;
+
+/**
+ * Code at `start` whose references `refs` builds, each at the `nth` occurrence of a part of the
+ * code.
+ */
+function codeAt(
+  text: string,
+  start: number,
+  refs: (locate: (part: string, nth?: number) => Span, whole: Span) => CodeReference[] = () => [],
+): Code {
+  const whole = span(start, start + text.length);
+  const locate = (part: string, nth = 0): Span => {
+    let offset = -1;
+    for (let found = 0; found <= nth; found++) offset = text.indexOf(part, offset + 1);
+    if (offset === -1) throw new Error(`"${part}" is not in "${text}"`);
+    return span(start + offset, start + offset + part.length);
+  };
+  return createCode(text, whole, refs(locate, whole));
+}
+
+/** An expression at `start` reading the bindings `[text, binding, call?]` at their first occurrence. */
+function expressionAt(text: string, start: number, refs: [string, string, boolean?][]): Expression {
+  const code = codeAt(text, start, (locate) =>
+    refs.map(([part, binding, call]) => createBindingReference(binding, locate(part), false, call)),
+  );
+  return createExpression(code.code, code.span, code.refs as Expression["refs"]);
+}
+
+/** Gives a function a body at its body's start, which the function's span then covers. */
+function withBody(fn: FunctionCode, body: (start: number) => Code): void {
+  fn.body = body(fn.body.span.start);
+  fn.span = span(fn.span.start, Math.max(fn.span.end, fn.body.span.end));
+}
+
+/** Where the counter's `return` is: between its last setup item and its render. */
+const returnAt = () => find("return (");
+
+/** The counter with one more `const` of `name` at its `return`, the last binding before the list's. */
+function extraConst(name: string): UfModule {
+  return counterChanged((counter) => {
+    const where = returnAt();
+    const binding = createBinding(name, "localConst", span(where.start, where.start + 1));
+    counter.bindings.splice(12, 0, binding);
+    counter.setup.push(
+      createConstItem(binding.id, createCode("1", span(where.end, where.end + 1)), where),
+    );
+  });
+}
+
+/** A function at offset 9000 handling an event: `(event) => text`, its body at 9012. */
+function handlerAt(
+  parameter: string | undefined,
+  event: string,
+  text: string,
+  refs: Parameters<typeof codeAt>[2],
+): FunctionCode {
+  const body = codeAt(text, 9012, refs);
+  return createFunctionCode(
+    parameter === undefined ? [] : [createParameter(parameter, span(9001, 9006), { event })],
+    body,
+    span(9000, body.span.end),
+    { expression: !text.startsWith("{") },
+  );
+}
+
+describe("checkInvariants on the setup, events and template refs", () => {
+  it.each<[string, () => UfModule]>([
+    ["the counter", everyKind],
+    [
+      "a getter that calls a function reading only static values",
+      () =>
+        counterChanged((counter) =>
+          withBody(sourceGetter(counter), (start) =>
+            codeAt("label(step)", start, (locate) => [
+              createBindingReference(counterIds.label, locate("label"), false, true),
+              createBindingReference(counterIds.step, locate("step")),
+            ]),
+          ),
+        ),
+    ],
+    // A `function` declaration is hoisted: only what it reads and reaches counts.
+    [
+      "a getter that calls a function declaration declared after it",
+      () =>
+        counterChanged((counter) => {
+          const label = setupItem(counter, 7, "Function");
+          label.form = "declaration";
+          delete label.function.expression;
+          withBody(label.function, (start) => codeAt('{ return "x"; }', start, () => []));
+          withBody(fnAt(counter, 1), (start) =>
+            codeAt("label(2)", start, (locate) => [
+              createBindingReference(counterIds.label, locate("label"), false, true),
+            ]),
+          );
+        }),
+    ],
+    [
+      "a local function passed as a value in client code",
+      () =>
+        counterChanged((counter) =>
+          withBody(fnAt(counter, 13), (start) =>
+            codeAt("setTimeout(select)", start, (locate) => [
+              createGlobalReference("setTimeout", locate("setTimeout")),
+              createBindingReference(counterIds.select, locate("select")),
+            ]),
+          ),
+        ),
+    ],
+    [
+      "a click handler that takes its event as an Event",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 6).parameters[0]!.event = "Event";
+        }),
+    ],
+    [
+      "a post watcher that reads the DOM",
+      () =>
+        counterChanged((counter) =>
+          withBody(fnAt(counter, 10), (start) =>
+            codeAt("console.log(input.value)", start, (locate) => [
+              createGlobalReference("console", locate("console")),
+              createBindingReference(counterIds.input, locate("input.value")),
+            ]),
+          ),
+        ),
+    ],
+    // After `await nextTick()` the DOM has updated on every target (ADR-0007).
+    [
+      "a watcher that reads the DOM after `await nextTick()`",
+      () =>
+        counterChanged((counter) => {
+          delete setupItem(counter, 10, "Watch").post;
+          fnAt(counter, 10).async = true;
+          delete fnAt(counter, 10).expression;
+          withBody(fnAt(counter, 10), (start) =>
+            codeAt("{ await nextTick(); console.log(input.value); }", start, (locate) => [
+              createApiReference("nextTick", locate("nextTick")),
+              createGlobalReference("console", locate("console")),
+              createBindingReference(counterIds.input, locate("input.value")),
+            ]),
+          );
+        }),
+    ],
+    // What `watchEffect` hands on to run later is tracked by no target (ADR-0048).
+    [
+      "`watchEffect` reading a setup `let` in a timer's callback",
+      () =>
+        counterChanged((counter) =>
+          withBody(fnAt(counter, 11), (start) =>
+            codeAt("{ setTimeout(() => console.log(timer), 1); }", start, (locate) => [
+              createGlobalReference("setTimeout", locate("setTimeout")),
+              createGlobalReference("console", locate("console")),
+              { ...createBindingReference(c.timer, locate("timer")), later: true },
+            ]),
+          ),
+        ),
+    ],
+    // Storage, `history` and `document.title` read nothing a render changes (ADR-0048).
+    [
+      "a watcher that writes storage, the history and the title before the DOM updates",
+      () =>
+        counterChanged((counter) => {
+          delete setupItem(counter, 10, "Watch").post;
+          delete fnAt(counter, 10).expression;
+          withBody(fnAt(counter, 10), (start) =>
+            codeAt(
+              '{ localStorage.setItem("a", "b"); window.history.replaceState(null, "", "?a"); document.title = "a"; }',
+              start,
+              (locate) => [
+                createGlobalReference("localStorage", locate("localStorage")),
+                createGlobalReference("window", locate("window")),
+                createGlobalReference("document", locate("document")),
+              ],
+            ),
+          );
+        }),
+    ],
+    // Angular's lexer reads a JavaScript reserved word that is not its own keyword as a name.
+    [
+      "an event named as a JavaScript reserved word Angular reads as a name",
+      () => withEvent("delete"),
+    ],
+    // A setup binding is private to the component: Angular's output aliases its output.
+    ["an event named as a setup binding", () => withEvent("count")],
+  ])("accepts %s", (_, build) => {
+    const errors = checkInvariants(build());
+    expect(errors, JSON.stringify(errors)).toEqual([]);
+  });
+
+  const c = counterIds;
+  it.each<[string, () => UfModule, string, string, number?]>([
+    // Setup items (ADR-0045).
+    [
+      "a setup item that names a binding of another kind",
+      () =>
+        counterChanged((counter) => {
+          (counter.setup[2] as { kind: string }).kind = "Id";
+        }),
+      "/components/1/setup/2/binding",
+      `must name a localConst binding, and "${c.input}" is not one`,
+    ],
+    [
+      "a setup binding no item declares",
+      () => counterChanged((counter) => void counter.setup.splice(3, 1)),
+      "/components/1/bindings/6",
+      `must be declared by one setup item, and "${c.id}" is by 0`,
+    ],
+    [
+      "a setup binding two items declare",
+      () => counterChanged((counter) => void counter.setup.push(createIdItem(c.id, returnAt()))),
+      "/components/1/bindings/6",
+      "is by 2",
+      2,
+    ],
+    [
+      "setup items out of order",
+      () =>
+        counterChanged((counter) => {
+          const [state, derived] = counter.setup;
+          counter.setup.splice(0, 2, derived!, state!);
+        }),
+      "/components/1/setup/1/span",
+      "must follow the item before it",
+    ],
+    [
+      "a setup item after the render",
+      () =>
+        counterChanged((counter) => {
+          const { end } = counter.render.span;
+          counter.setup[13]!.span = span(end, end + 1);
+        }),
+      "/components/1/setup/13/span",
+      "must lie in the component, before its render",
+    ],
+    // Names (ADR-0045, UF2003).
+    [
+      "a setup binding named as Angular's constructor",
+      () => extraConst("constructor"),
+      "/components/1/bindings/12/name",
+      "Angular's output declares the component class's constructor",
+    ],
+    [
+      "a setup binding named as a React hook",
+      () => extraConst("useCount"),
+      "/components/1/bindings/12/name",
+      "as a hook",
+    ],
+    [
+      "a setup binding named as a prop",
+      () => extraConst("start"),
+      "/components/1/bindings/12/name",
+      'must differ from the prop "start"\'s',
+    ],
+    [
+      "two setup bindings of one name",
+      () => extraConst("count"),
+      "/components/1/bindings/12/name",
+      'must differ from the setup binding "count"\'s',
+    ],
+    // Events a component declares (ADR-0047).
+    [
+      "an emit binding the declaration does not declare",
+      () =>
+        counterChanged((counter) =>
+          counter.bindings.splice(12, 0, createBinding("notify", "emit", returnAt())),
+        ),
+      "/components/1/bindings/12",
+      "must be the binding `emits` declares",
+    ],
+    [
+      "events whose names differ only in case",
+      () => withEvent("rEset"),
+      "/components/1/emits/events/2/name",
+      'must differ from "reset" by more than case',
+    ],
+    [
+      "an event named as an event prop",
+      () => withEvent("onClose"),
+      "/components/1/emits/events/2/name",
+      "`no-output-on-prefix`",
+    ],
+    [
+      "an event named as a prop",
+      () => withEvent("start"),
+      "/components/1/emits/events/2/name",
+      'must differ from the prop "start"\'s name',
+    ],
+    // Angular declares a member for each event, which its template statements read by name.
+    [
+      "an event named as an Angular keyword that is a reserved word",
+      () => withEvent("if"),
+      "/components/1/emits/events/2/name",
+      "must not be \"if\", which Angular's output declares as a member its templates read: `if` is a keyword in Angular's template expressions",
+    ],
+    [
+      "an event named as an Angular keyword",
+      () => withEvent("as"),
+      "/components/1/emits/events/2/name",
+      "`as` is a keyword in Angular's template expressions",
+    ],
+    [
+      "an event named as a global expressions read",
+      () => withEvent("parseInt"),
+      "/components/1/emits/events/2/name",
+      "`parseInt` is a global expressions may read",
+    ],
+    [
+      "an event named as Angular's constructor",
+      () => withEvent("constructor"),
+      "/components/1/emits/events/2/name",
+      "`constructor` would be the Angular component class's constructor",
+    ],
+    [
+      "an event whose Svelte prop a prop takes",
+      () =>
+        counterChanged((counter) => {
+          const offset = find("items }").start + 6;
+          const binding = createBinding("onreset", "prop", span(offset, offset + 1));
+          const type = createTypeText("() => void", span(5000, 5010));
+          counter.props.push(createProp("onreset", true, type, span(5000, 5010), binding.id));
+          counter.bindings.splice(2, 0, binding);
+        }),
+      "/components/1/emits/events/1/name",
+      'Svelte names its prop "onreset"',
+    ],
+    [
+      "a required event member after an optional one",
+      () =>
+        counterChanged((counter) => {
+          const [value, previous] = counter.emits!.events[0]!.parameters;
+          value!.optional = true;
+          delete previous!.optional;
+        }),
+      "/components/1/emits/events/0/parameters/1/optional",
+      "a required member cannot follow an optional one",
+    ],
+    [
+      "an event member named twice",
+      () =>
+        counterChanged((counter) => {
+          counter.emits!.events[0]!.parameters[1]!.name = "value";
+        }),
+      "/components/1/emits/events/0/parameters/1/name",
+      'no other member takes, and "value" is not',
+    ],
+    // References in the template (ADR-0045).
+    [
+      "a ref's value read without `.value`",
+      () =>
+        counterChanged((counter) => {
+          const ref = shown(counter).value.refs[1]!;
+          ref.span = span(ref.span.start, ref.span.start + "doubled".length);
+        }),
+      "/render/children/4/children/0/value/refs/1/span",
+      'must span "doubled.value"',
+    ],
+    [
+      "a call of a binding that is no function",
+      () =>
+        counterChanged((counter) => {
+          Object.assign(shown(counter).value.refs[1]!, { call: true });
+        }),
+      "/render/children/4/children/0/value/refs/1/call",
+      "only a local function is called",
+    ],
+    [
+      "a shorthand reference to a ref's value",
+      () =>
+        counterChanged((counter) => {
+          Object.assign(shown(counter).value.refs[1]!, { shorthand: true });
+        }),
+      "/render/children/4/children/0/value/refs/1/shorthand",
+      'must be absent on a reference that spans "doubled.value"',
+    ],
+    [
+      "a local function read as a value in the template",
+      () =>
+        counterChanged((counter) => {
+          delete (shown(counter).value.refs[0] as { call?: true }).call;
+        }),
+      "/render/children/4/children/0/value/refs/0/binding",
+      'must call the local function "label',
+    ],
+    [
+      "an impure local function called in the template",
+      () =>
+        counterChanged((counter) => {
+          shown(counter).value = expressionAt("select(doubled.value)", 9000, [
+            ["select", c.select, true],
+            ["doubled.value", c.doubled],
+          ]);
+        }),
+      "/render/children/4/children/0/value/refs/0/binding",
+      `must call only a pure local function in a template, and "${c.select}" is not: it emits "change"`,
+    ],
+    [
+      "a template ref read in the template",
+      () =>
+        counterChanged((counter) => {
+          shown(counter).value = expressionAt("input.value", 9000, [["input.value", c.input]]);
+        }),
+      "/render/children/4/children/0/value/refs/0/binding",
+      "must not read the template ref",
+    ],
+    [
+      "a setup `let` read in the template",
+      () =>
+        counterChanged((counter) => {
+          shown(counter).value = expressionAt("timer", 9000, [["timer", c.timer]]);
+        }),
+      "/render/children/4/children/0/value/refs/0/binding",
+      "must not read the setup `let`",
+    ],
+    [
+      "`emit` read in the template",
+      () =>
+        counterChanged((counter) => {
+          shown(counter).value = expressionAt("emit", 9000, [["emit", c.emit]]);
+        }),
+      "/render/children/4/children/0/value/refs/0/binding",
+      "code calls `emit` only as an emit",
+    ],
+    // What the setup evaluates: initial values and getters (ADR-0045).
+    [
+      "a write in an initial value",
+      () =>
+        constValue("count.value = 1", (locate, whole) => [
+          createWriteReference(c.count, "=", whole, locate("count.value"), locate("1")),
+        ]),
+      "/components/1/setup/4/value/refs/0",
+      "must not write in an initial value",
+    ],
+    [
+      "an emit in an initial value",
+      () =>
+        constValue('emit("reset")', (_, whole) => [createEmitReference(c.emit, "reset", whole)]),
+      "/components/1/setup/4/value/refs/0",
+      "must not emit in an initial value",
+    ],
+    [
+      "`nextTick` in an initial value",
+      () =>
+        constValue("nextTick()", (locate) => [createApiReference("nextTick", locate("nextTick"))]),
+      "/components/1/setup/4/value/refs/0",
+      "must not call `nextTick` in an initial value",
+    ],
+    [
+      "`nextTick` given a callback",
+      () =>
+        counterChanged((counter) =>
+          withBody(fnAt(counter, 12), (start) =>
+            codeAt("{ nextTick(() => count.value); }", start, (locate) => [
+              createApiReference("nextTick", locate("nextTick")),
+              createBindingReference(c.count, locate("count.value")),
+            ]),
+          ),
+        ),
+      "/components/1/setup/12/callback/body/refs/0",
+      "must be called without arguments: `await nextTick()` is its one form",
+    ],
+    [
+      "a global only client code may read in an initial value",
+      () => constValue("Date.now()", (locate) => [createGlobalReference("Date", locate("Date"))]),
+      "/components/1/setup/4/value/refs/0/name",
+      'must be a global an initial value may read, and "Date" is not one',
+    ],
+    [
+      "a template ref read in an initial value",
+      () =>
+        constValue("input.value", (locate) => [
+          createBindingReference(c.input, locate("input.value")),
+        ]),
+      "/components/1/setup/4/value/refs/0/binding",
+      "must not read the template ref",
+    ],
+    [
+      "a setup `let` read in a getter",
+      () =>
+        counterChanged((counter) =>
+          withBody(sourceGetter(counter), (start) =>
+            codeAt("timer", start, (locate) => [createBindingReference(c.timer, locate("timer"))]),
+          ),
+        ),
+      "/components/1/setup/10/sources/0/getter/body/refs/0/binding",
+      'must not read the setup `let` "timer',
+    ],
+    [
+      "a getter that calls a function reading a prop",
+      () =>
+        counterChanged((counter) => {
+          withBody(fnAt(counter, 7), (start) =>
+            codeAt("String(start)", start, (locate) => [
+              createGlobalReference("String", locate("String")),
+              createBindingReference(c.start, locate("start")),
+            ]),
+          );
+          withBody(sourceGetter(counter), (start) =>
+            codeAt("label(1)", start, (locate) => [
+              createBindingReference(c.label, locate("label"), false, true),
+            ]),
+          );
+        }),
+      "/components/1/setup/10/sources/0/getter/body/refs/0/binding",
+      `which Qwik hoists out of the component, and "${c.label}" reads "${c.start}"`,
+    ],
+    [
+      "an initial value that reads what is declared after it",
+      () =>
+        counterChanged((counter) => {
+          const state = setupItem(counter, 0, "State");
+          state.initial = codeAt("doubled.value", state.initial!.span.start, (locate) => [
+            createBindingReference(c.doubled, locate("doubled.value")),
+          ]);
+        }),
+      "/components/1/setup/0/initial",
+      `must read only what is declared before it, and "${c.doubled}" is not`,
+    ],
+    [
+      "a getter that calls a function declared after it",
+      () =>
+        counterChanged((counter) =>
+          withBody(fnAt(counter, 1), (start) =>
+            codeAt("label(2)", start, (locate) => [
+              createBindingReference(c.label, locate("label"), false, true),
+            ]),
+          ),
+        ),
+      "/components/1/setup/1/getter",
+      `must read only what is declared before it, and "${c.label}" is not`,
+    ],
+    // Writes, emits and the order of code references (ADR-0045, ADR-0047).
+    [
+      "a write of a derived value",
+      () =>
+        counterChanged((counter) => {
+          Object.assign(fnAt(counter, 6).body.refs[1]!, { binding: c.doubled });
+        }),
+      "/components/1/setup/6/function/body/refs/1/binding",
+      'must name a state or a setup `let`, and "doubled',
+    ],
+    [
+      "a write whose target is not the ref's value",
+      () =>
+        counterChanged((counter) => {
+          const write = fnAt(counter, 6).body.refs[1] as { target: Span };
+          write.target = span(write.target.start, write.target.start + "count".length);
+        }),
+      "/components/1/setup/6/function/body/refs/1/target",
+      'must span "count.value" in the write',
+    ],
+    [
+      "an update with a value",
+      () =>
+        counterChanged((counter) => {
+          const update = fnAt(counter, 12).body.refs[2] as { target: Span; value?: Span };
+          update.value = update.target;
+        }),
+      "/components/1/setup/12/callback/body/refs/2/value",
+      'must be absent for "++"',
+    ],
+    [
+      "an assignment without a value",
+      () => counterChanged((counter) => void delete resetWrite(counter).value),
+      "/render/children/3/attributes/1/handler/function/body/refs/0/value",
+      'must be present for "="',
+    ],
+    [
+      "an arrow's whole-body write without its flag",
+      () => counterChanged((counter) => void delete resetWrite(counter).arrowBody),
+      "/render/children/3/attributes/1/handler/function/body/refs/0/arrowBody",
+      "must be set: the write is the arrow's whole body",
+    ],
+    [
+      "a reference in a write's target",
+      () =>
+        counterChanged((counter) => {
+          const [write, global] = fnAt(counter, 12).body.refs;
+          global!.span = (write as { target: Span }).target;
+        }),
+      "/components/1/setup/12/callback/body/refs/1/span",
+      "must lie in the value of the write or an argument of the emit it is in",
+    ],
+    [
+      "code references out of order",
+      () =>
+        counterChanged((counter) => {
+          const { refs } = fnAt(counter, 6).body;
+          refs.splice(4, 2, refs[5]!, refs[4]!);
+        }),
+      "/components/1/setup/6/function/body/refs/5/span",
+      "must follow the reference before it",
+    ],
+    [
+      "an emit of an undeclared event",
+      () =>
+        counterChanged((counter) => {
+          Object.assign(fnAt(counter, 6).body.refs[3]!, { event: "save" });
+        }),
+      "/components/1/setup/6/function/body/refs/3/event",
+      'must name an event the component declares, and "save" is not one',
+    ],
+    [
+      "an emit with more arguments than its event takes",
+      () =>
+        counterChanged((counter) => {
+          const emit = inlineAt(counter.render as ElementNode, 0).body.refs[0] as {
+            span: Span;
+            arguments: Span[];
+          };
+          emit.arguments = [span(emit.span.start + 5, emit.span.end - 1)];
+        }),
+      "/render/attributes/0/handler/function/body/refs/0/arguments",
+      'must pass 0 arguments to "reset", and passes 1',
+    ],
+    [
+      "an emit with fewer arguments than its event takes",
+      () =>
+        counterChanged((counter) => {
+          Object.assign(fnAt(counter, 8).body.refs[0]!, { arguments: [] });
+        }),
+      "/components/1/setup/8/function/body/refs/0/arguments",
+      'must pass 1 to 2 arguments to "change", and passes 0',
+    ],
+    [
+      "an emit of another binding",
+      () =>
+        counterChanged((counter) => {
+          Object.assign(fnAt(counter, 8).body.refs[0]!, { binding: c.count });
+        }),
+      "/components/1/setup/8/function/body/refs/0/binding",
+      "must name the `emit` that `emits` declares",
+    ],
+    // A handler's event (ADR-0047).
+    [
+      "an event read outside a handler",
+      () =>
+        counterChanged((counter) => {
+          const { refs } = fnAt(counter, 13).body;
+          refs[1] = createEventReference("type", refs[1]!.span);
+        }),
+      "/components/1/setup/13/callback/body/refs/1",
+      "must be in the body of a function with an event parameter",
+    ],
+    [
+      "an event member React's synthetic event lacks",
+      () =>
+        counterChanged((counter) => {
+          const input = childAt(counter, 1);
+          const handler = listenerAt(input, 2).handler as { function: FunctionCode };
+          handler.function = handlerAt(
+            "event",
+            "KeyboardEvent",
+            "{ console.log(event.isComposing); }",
+            (locate) => [
+              createGlobalReference("console", locate("console")),
+              createEventReference("isComposing", locate("event.isComposing")),
+            ],
+          );
+        }),
+      "/render/children/1/attributes/2/handler/function/body/refs/1/member",
+      'must be a member every target\'s KeyboardEvent has (`PORTABLE_EVENT_MEMBERS`), and "isComposing"',
+      2,
+    ],
+    [
+      "an event member React's event of that event lacks",
+      () =>
+        counterChanged((counter) => {
+          const handler = listenerAt(listButton(counter), 1).handler as {
+            function: FunctionCode;
+          };
+          handler.function = handlerAt(
+            "event",
+            "PointerEvent",
+            "console.log(event.pointerType)",
+            (locate) => [
+              createGlobalReference("console", locate("console")),
+              createEventReference("pointerType", locate("event.pointerType")),
+            ],
+          );
+        }),
+      "/children/0/attributes/1/handler",
+      'must use only the members every target\'s "click" event has, and `pointerType` is not one',
+    ],
+    [
+      "an event method read without a call",
+      () =>
+        counterChanged((counter) => {
+          const handler = listenerAt(childAt(counter, 1), 2).handler as {
+            function: FunctionCode;
+          };
+          handler.function = handlerAt(
+            "event",
+            "KeyboardEvent",
+            "console.log(event.preventDefault)",
+            (locate) => [
+              createGlobalReference("console", locate("console")),
+              createEventReference("preventDefault", locate("event.preventDefault")),
+            ],
+          );
+        }),
+      "/render/children/1/attributes/2/handler/function/body/refs/1/call",
+      'must be set: "preventDefault" is a method',
+    ],
+    [
+      "event controls without an event parameter",
+      () =>
+        counterChanged((counter) => {
+          const fn = fnAt(counter, 13);
+          fn.eventControls = [createEventControl("preventDefault", fn.body.span)];
+        }),
+      "/components/1/setup/13/callback/eventControls",
+      "must be absent on a function without an event parameter",
+    ],
+    [
+      "an event control whose condition is not the body's code",
+      () =>
+        counterChanged((counter) => {
+          const control = inlineAt(childAt(counter, 1), 2).eventControls![0]!;
+          control.condition!.code = 'event.key === "Enter!"';
+        }),
+      "/render/children/1/attributes/2/handler/function/eventControls/0/condition",
+      "must be the body's code at its span",
+    ],
+    [
+      "an event control without its call",
+      () =>
+        counterChanged((counter) => {
+          const fn = fnAt(counter, 6);
+          fn.eventControls![0]!.span = piece("count.value += step;").span;
+        }),
+      "/components/1/setup/6/function/eventControls/0/span",
+      "must hold the call of `preventDefault`",
+    ],
+    [
+      "a handler that takes another event's interface",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 6).parameters[0]!.event = "KeyboardEvent";
+        }),
+      "/render/children/2/attributes/1/handler",
+      'must take "click" as PointerEvent or an interface it extends, and KeyboardEvent is not one',
+      2,
+    ],
+    [
+      "an event interface outside the vocabulary",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 8).parameters[0]!.event = "MessageEvent";
+        }),
+      "/components/1/setup/8/function/parameters/0/event",
+      'must be an event interface of the vocabulary (`EVENT_INTERFACES`), and "MessageEvent"',
+    ],
+    [
+      "an event parameter of a watch callback",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 9).parameters[0]!.event = "Event";
+        }),
+      "/components/1/setup/9/callback/parameters/0/event",
+      "only a handler's or a setup function's parameter is an event",
+    ],
+    [
+      "two event parameters",
+      () =>
+        counterChanged((counter) => {
+          const fn = fnAt(counter, 6);
+          const after = fn.parameters[0]!.span.end;
+          fn.parameters.push(createParameter("other", span(after, after + 1), { event: "Event" }));
+        }),
+      "/components/1/setup/6/function/parameters/1/event",
+      "a function takes one event",
+    ],
+    [
+      "a handler's parameter that is not its event's",
+      () =>
+        counterChanged((counter) => {
+          const fn = inlineAt(counter.render as ElementNode, 0);
+          fn.parameters.push(createParameter("event", span(fn.span.start, fn.span.start + 1)));
+        }),
+      "/render/attributes/0/handler/function/parameters/0/event",
+      "must be set: a handler's parameter is its event's",
+      2,
+    ],
+    // Parameters (ADR-0045, UF3024).
+    [
+      "a parameter named after a setup binding",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 8).parameters[0]!.name = "count";
+        }),
+      "/components/1/setup/8/function/parameters/0/name",
+      'must not be named "count": it would shadow the setup binding "count"',
+    ],
+    [
+      "a parameter named after a prop",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 8).parameters[0]!.name = "start";
+        }),
+      "/components/1/setup/8/function/parameters/0/name",
+      'it would shadow the prop "start"',
+    ],
+    [
+      "a handler's parameter named after its list's item",
+      () =>
+        counterChanged((counter) => {
+          const handler = listenerAt(listButton(counter), 1).handler as {
+            function: FunctionCode;
+          };
+          handler.function = handlerAt("item", "MouseEvent", "select(item)", (locate) => [
+            createBindingReference(c.select, locate("select"), false, true),
+            createBindingReference(c.item, locate("item")),
+          ]);
+        }),
+      "/children/0/attributes/1/handler/function/parameters/0/name",
+      `it would shadow "${c.item}", a loop variable of a list around it`,
+    ],
+    [
+      "a parameter's default that reads a binding",
+      () =>
+        counterChanged((counter) => {
+          const parameter = fnAt(counter, 7).parameters[1]!;
+          parameter.default = expressionAt("[step]", 9000, [["step", c.step]]);
+        }),
+      "/components/1/setup/7/function/parameters/1/default/refs",
+      "must be empty: a default is static",
+    ],
+    [
+      "an optional parameter with a default",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 7).parameters[1]!.optional = true;
+        }),
+      "/components/1/setup/7/function/parameters/1/default",
+      "must be absent on an optional or a rest parameter",
+    ],
+    [
+      "a rest parameter before the last",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 7).parameters[2]!.rest = true;
+        }),
+      "/components/1/setup/7/function/parameters/2/rest",
+      "must be absent but on the last parameter",
+    ],
+    [
+      "a parameter with a name and a pattern",
+      () =>
+        counterChanged((counter) => {
+          const parameter = fnAt(counter, 7).parameters[0]!;
+          parameter.pattern = createParameterPattern("[a]", ["a"], span(9000, 9003));
+        }),
+      "/components/1/setup/7/function/parameters/0",
+      "must have a name or a pattern, and not both",
+    ],
+    [
+      "a pattern that binds a name that is not an identifier",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 7).parameters[1]!.pattern!.names.push("é");
+        }),
+      "/components/1/setup/7/function/parameters/1/pattern/names/1",
+      "it is not an ASCII identifier",
+    ],
+    [
+      "two parameters of one name",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 7).parameters[2]!.name = "value";
+        }),
+      "/components/1/setup/7/function/parameters/2/name",
+      "another parameter of the function takes it",
+    ],
+    // What each function's role takes (ADR-0045, ADR-0048).
+    [
+      "a watch callback with four parameters",
+      () =>
+        counterChanged((counter) => {
+          pushParameter(fnAt(counter, 9));
+        }),
+      "/components/1/setup/9/callback/parameters",
+      "must hold at most 3",
+    ],
+    [
+      "a getter with a parameter",
+      () =>
+        counterChanged((counter) => {
+          pushParameter(fnAt(counter, 1));
+        }),
+      "/components/1/setup/1/getter/parameters",
+      "must hold at most 0: a getter takes none",
+    ],
+    [
+      "a lifecycle hook with a parameter",
+      () =>
+        counterChanged((counter) => {
+          pushParameter(fnAt(counter, 13));
+        }),
+      "/components/1/setup/13/callback/parameters",
+      "a lifecycle hook takes none",
+    ],
+    [
+      "a watch callback with a rest parameter",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 9).parameters[2]!.rest = true;
+        }),
+      "/components/1/setup/9/callback/parameters/2",
+      "must be a plain parameter",
+    ],
+    [
+      "an asynchronous getter",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 1).async = true;
+        }),
+      "/components/1/setup/1/getter/async",
+      "must be absent: a getter is pure",
+    ],
+    [
+      "a block body flagged as an expression",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 11).expression = true;
+        }),
+      "/components/1/setup/11/effect/expression",
+      "must be absent: the body is a block",
+    ],
+    [
+      "an expression body without its flag",
+      () => counterChanged((counter) => void delete fnAt(counter, 13).expression),
+      "/components/1/setup/13/callback/expression",
+      "must be set: the body is an expression",
+    ],
+    [
+      "a function declaration with an expression body",
+      () =>
+        counterChanged((counter) => {
+          setupItem(counter, 7, "Function").form = "declaration";
+        }),
+      "/components/1/setup/7/form",
+      'must be "arrow"',
+    ],
+    [
+      "a setup function whose body is a write",
+      () =>
+        counterChanged((counter) => {
+          const select = setupItem(counter, 8, "Function");
+          select.form = "arrow";
+          select.function.expression = true;
+          withBody(select.function, (start) =>
+            codeAt("count.value++", start, (locate, whole) => [
+              createWriteReference(c.count, "++", whole, locate("count.value"), undefined, true),
+            ]),
+          );
+        }),
+      "/components/1/setup/8/function/body",
+      "must be a block: a setup function returns no write",
+    ],
+    [
+      "a local function that calls itself",
+      () =>
+        counterChanged((counter) =>
+          withBody(fnAt(counter, 8), (start) =>
+            codeAt("{ select(entry); }", start, (locate) => [
+              createBindingReference(c.select, locate("select"), false, true),
+            ]),
+          ),
+        ),
+      "/components/1/setup/8/binding",
+      "must not call itself",
+    ],
+    [
+      "a return type that is not its span's length",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 7).returnType!.code = "str";
+        }),
+      "/components/1/setup/7/function/returnType/code",
+      "must be the source at its span",
+    ],
+    // Watchers (ADR-0048).
+    [
+      "a watched binding that is no ref",
+      () =>
+        counterChanged((counter) => {
+          Object.assign(setupItem(counter, 9, "Watch").sources[0]!, { binding: c.step });
+        }),
+      "/components/1/setup/9/sources/0/binding",
+      'must name a state or a derived value, and "step',
+    ],
+    [
+      "a watcher of one source with two",
+      () =>
+        counterChanged((counter) => {
+          const watcher = setupItem(counter, 9, "Watch");
+          watcher.sources.push(createRefSource(c.doubled, watcher.sources[0]!.span));
+        }),
+      "/components/1/setup/9/sources",
+      "must hold one source, or `array` be set",
+    ],
+    [
+      "an array watcher without sources",
+      () =>
+        counterChanged((counter) => {
+          setupItem(counter, 10, "Watch").sources = [];
+        }),
+      "/components/1/setup/10/sources",
+      "must hold a source",
+    ],
+    [
+      "an immediate watcher that writes state",
+      () =>
+        counterChanged((counter) =>
+          withBody(fnAt(counter, 9), (start) =>
+            codeAt("{ increment(); }", start, (locate) => [
+              createBindingReference(c.increment, locate("increment"), false, true),
+            ]),
+          ),
+        ),
+      "/components/1/setup/9/callback",
+      `must be safe on the server, as Vue runs an immediate watcher's first callback there, and it writes "${c.count}"`,
+    ],
+    [
+      "an immediate watcher that awaits",
+      () =>
+        counterChanged((counter) => {
+          fnAt(counter, 9).async = true;
+        }),
+      "/components/1/setup/9/callback",
+      "it is asynchronous",
+    ],
+    [
+      "an immediate watcher that runs after the DOM updates",
+      () =>
+        counterChanged((counter) => {
+          setupItem(counter, 9, "Watch").post = true;
+        }),
+      "/components/1/setup/9/post",
+      "must be absent on an immediate watcher",
+    ],
+    [
+      "a watcher that reads the DOM before it updates",
+      () =>
+        counterChanged((counter) => {
+          delete setupItem(counter, 10, "Watch").post;
+          withBody(fnAt(counter, 10), (start) =>
+            codeAt("console.log(input.value)", start, (locate) => [
+              createGlobalReference("console", locate("console")),
+              createBindingReference(c.input, locate("input.value")),
+            ]),
+          );
+        }),
+      "/components/1/setup/10/post",
+      "must be set: the callback reads the DOM (a template ref)",
+    ],
+    [
+      "a watcher that reads `window`'s scroll before the DOM updates",
+      () =>
+        counterChanged((counter) => {
+          delete setupItem(counter, 10, "Watch").post;
+          withBody(fnAt(counter, 10), (start) =>
+            codeAt("console.log(window.scrollY)", start, (locate) => [
+              createGlobalReference("console", locate("console")),
+              createGlobalReference("window", locate("window")),
+            ]),
+          );
+        }),
+      "/components/1/setup/10/post",
+      "must be set: the callback reads the DOM (`window`)",
+    ],
+    [
+      "a watcher that reads the DOM before `await nextTick()`",
+      () =>
+        counterChanged((counter) => {
+          delete setupItem(counter, 10, "Watch").post;
+          fnAt(counter, 10).async = true;
+          delete fnAt(counter, 10).expression;
+          withBody(fnAt(counter, 10), (start) =>
+            codeAt("{ console.log(input.value); await nextTick(); }", start, (locate) => [
+              createGlobalReference("console", locate("console")),
+              createBindingReference(c.input, locate("input.value")),
+              createApiReference("nextTick", locate("nextTick")),
+            ]),
+          );
+        }),
+      "/components/1/setup/10/post",
+      "must be set: the callback reads the DOM (a template ref) before `await nextTick()`",
+    ],
+    [
+      "`watchEffect` reading a setup `let`",
+      () =>
+        counterChanged((counter) =>
+          withBody(fnAt(counter, 11), (start) =>
+            codeAt("{ console.log(timer); }", start, (locate) => [
+              createGlobalReference("console", locate("console")),
+              createBindingReference(c.timer, locate("timer")),
+            ]),
+          ),
+        ),
+      "/components/1/setup/11/effect",
+      "must read no setup `let`",
+    ],
+    [
+      "a reference marked `later` in a getter",
+      () =>
+        counterChanged((counter) => {
+          const [ref] = setupItem(counter, 1, "Derived").getter.body.refs;
+          if (ref?.kind === "Binding") ref.later = true;
+        }),
+      "/components/1/setup/1/getter/body/refs/0/later",
+      "must be absent in a getter, which runs nothing later",
+    ],
+    // Listeners (ADR-0047).
+    [
+      "a listener of a window event",
+      () =>
+        counterChanged((counter) => void (listenerAt(childAt(counter, 1), 2).event = "popstate")),
+      "/render/children/1/attributes/2/event",
+      'must be an event an element receives, and "popstate" only the window does',
+    ],
+    [
+      "a listener of an event no target listens to alike",
+      () => counterChanged((counter) => void (listenerAt(childAt(counter, 1), 2).event = "resize")),
+      "/render/children/1/attributes/2/event",
+      'must be an event every target listens to alike, and "resize" is not',
+    ],
+    [
+      "a listener of an unknown event",
+      () => counterChanged((counter) => void (listenerAt(childAt(counter, 1), 2).event = "keydwn")),
+      "/render/children/1/attributes/2/event",
+      "must be an event of the vocabulary (`DOM_EVENTS`)",
+    ],
+    [
+      "a listener with two options",
+      () => counterChanged((counter) => void (listenerAt(childAt(counter, 3), 1).capture = true)),
+      "/render/children/3/attributes/1",
+      "must set at most one option",
+    ],
+    [
+      "a passive listener of a click",
+      () =>
+        counterChanged((counter) => {
+          const listener = listenerAt(childAt(counter, 3), 1);
+          delete listener.once;
+          listener.passive = true;
+        }),
+      "/render/children/3/attributes/1/passive",
+      'must be absent on "click"',
+    ],
+    [
+      "two listeners of one event with one option set",
+      () => counterChanged((counter) => void delete listenerAt(childAt(counter, 2), 2).capture),
+      "/render/children/2/attributes/2",
+      'must listen to "click" once with its options on an element',
+    ],
+    [
+      "a listener in Angular's literal region",
+      () =>
+        counterChanged((counter) =>
+          childAt(counter, 3).attributes.push(createStaticAttribute("title", "{{ a }}", at)),
+        ),
+      "/render/children/3/attributes/1",
+      "must not be in Angular's literal region",
+    ],
+    [
+      "a listener inside an element of Angular's literal region",
+      () =>
+        counterChanged((counter) =>
+          childAt(counter, 5).attributes.push(createStaticAttribute("title", "{{ a }}", at)),
+        ),
+      "/children/0/attributes/1",
+      "must not be in Angular's literal region",
+    ],
+    [
+      "a handler that names no local function",
+      () =>
+        counterChanged((counter) => {
+          Object.assign(listenerAt(childAt(counter, 2), 1).handler, { binding: c.count });
+        }),
+      "/render/children/2/attributes/1/handler/binding",
+      `must name a local function, and "${c.count}" is not one`,
+    ],
+    // Template refs (ADR-0049).
+    [
+      "a ref attribute of a binding that is no template ref",
+      () =>
+        counterChanged((counter) => {
+          Object.assign(childAt(counter, 1).attributes[1]!, { binding: c.count });
+        }),
+      "/render/children/1/attributes/1/binding",
+      `must name a template ref, and "${c.count}" is not one`,
+      2,
+    ],
+    [
+      "a template ref two elements attach",
+      () =>
+        counterChanged((counter) =>
+          childAt(counter, 0).attributes.push(createRefAttribute(c.input, at)),
+        ),
+      "/components/1/bindings/5",
+      `must be attached by the \`ref\` of one element, and "${c.input}" is by 2`,
+    ],
+    [
+      "a template ref no element attaches",
+      () => counterChanged((counter) => void childAt(counter, 1).attributes.splice(1, 1)),
+      "/components/1/bindings/5",
+      "is by 0",
+    ],
+    [
+      "a template ref in a list",
+      () =>
+        counterChanged((counter) => {
+          const [ref] = childAt(counter, 1).attributes.splice(1, 1);
+          listButton(counter).attributes.push(ref!);
+        }),
+      "/children/0/attributes/2",
+      "must not be in a list",
+    ],
+    [
+      "an element attached to two template refs",
+      () =>
+        counterChanged((counter) =>
+          childAt(counter, 1).attributes.splice(1, 0, createRefAttribute(c.input, at)),
+        ),
+      "/render/children/1/attributes/2",
+      "must attach the element to one template ref",
+      2,
+    ],
+  ])("reports %s", (_, build, path, message, count = 1) => {
+    const errors = checkInvariants(build());
+    expect(errors, JSON.stringify(errors)).toHaveLength(count);
+    expect(
+      errors.some((error) => error.path.endsWith(path) && error.message.includes(message)),
+      JSON.stringify(errors),
+    ).toBe(true);
+  });
+});
+
+describe("checkInvariants on narrowed reads", () => {
+  const c = counterIds;
+  /** The counter's `select` with `text` for its body, and the references `refs` builds. */
+  const selectBody = (
+    text: string,
+    refs: (locate: (part: string, nth?: number) => Span) => CodeReference[],
+  ) =>
+    counterChanged((counter) => withBody(fnAt(counter, 13), (start) => codeAt(text, start, refs)));
+
+  it.each<[string, () => UfModule]>([
+    [
+      "a prop's read and a member path off it, and a ref's value, narrowed in client code",
+      () =>
+        selectBody("console.log(items [0] .length, input.value.value, start)", (locate) => [
+          createGlobalReference("console", locate("console")),
+          createBindingReference(c.items, locate("items"), false, false, [
+            createNarrowedPath(locate("items"), "local"),
+            createNarrowedPath(locate("items [0] .length"), "local"),
+          ]),
+          createBindingReference(c.input, locate("input.value"), false, false, [
+            createNarrowedPath(locate("input.value"), "template"),
+          ]),
+          createBindingReference(c.start, locate("start"), false, false, [
+            createNarrowedPath(locate("start"), "closure"),
+          ]),
+        ]),
+    ],
+    [
+      "a compound write's target, narrowed where its operator reads it",
+      () =>
+        selectBody("count.value += 1", (locate) => [
+          createWriteReference(
+            c.count,
+            "+=",
+            locate("count.value += 1"),
+            locate("count.value"),
+            locate("1"),
+            true,
+            [createNarrowedPath(locate("count.value"), "local")],
+          ),
+        ]),
+    ],
+  ])("accepts %s", (_, build) => {
+    const errors = checkInvariants(build());
+    expect(errors, JSON.stringify(errors)).toEqual([]);
+  });
+
+  it.each<[string, () => UfModule, string, string]>([
+    [
+      "a narrowed read of a local function",
+      () =>
+        selectBody("setTimeout(increment)", (locate) => [
+          createGlobalReference("setTimeout", locate("setTimeout")),
+          createBindingReference(c.increment, locate("increment"), false, false, [
+            createNarrowedPath(locate("increment"), "local"),
+          ]),
+        ]),
+      "/narrowed",
+      "only a prop's or a ref's value's read narrows",
+    ],
+    [
+      "an empty list of narrowed paths",
+      () =>
+        selectBody("console.log(start)", (locate) => [
+          createGlobalReference("console", locate("console")),
+          { ...createBindingReference(c.start, locate("start")), narrowed: [] },
+        ]),
+      "/narrowed",
+      "must hold a path, or be absent",
+    ],
+    [
+      "a path that does not start at the read",
+      () =>
+        selectBody("console.log(items[0].length)", (locate) => [
+          createGlobalReference("console", locate("console")),
+          createBindingReference(c.items, locate("items"), false, false, [
+            createNarrowedPath(locate("[0].length"), "local"),
+          ]),
+        ]),
+      "/narrowed/0/span",
+      "must start at the read",
+    ],
+    [
+      "paths out of order",
+      () =>
+        selectBody("console.log(items[0].length)", (locate) => [
+          createGlobalReference("console", locate("console")),
+          createBindingReference(c.items, locate("items"), false, false, [
+            createNarrowedPath(locate("items[0]"), "local"),
+            createNarrowedPath(locate("items"), "local"),
+          ]),
+        ]),
+      "/narrowed/1/span",
+      "longer than the path before it",
+    ],
+    [
+      "a path through a call",
+      () =>
+        selectBody("console.log(items.at(0).length)", (locate) => [
+          createGlobalReference("console", locate("console")),
+          createBindingReference(c.items, locate("items"), false, false, [
+            createNarrowedPath(locate("items.at(0)"), "local"),
+          ]),
+        ]),
+      "/narrowed/0/span",
+      "a member path off it",
+    ],
+    [
+      "a path through `?.`",
+      () =>
+        selectBody("console.log(items?.[0].length)", (locate) => [
+          createGlobalReference("console", locate("console")),
+          createBindingReference(c.items, locate("items"), false, false, [
+            createNarrowedPath(locate("items?.[0]"), "local"),
+          ]),
+        ]),
+      "/narrowed/0/span",
+      "a member path off it",
+    ],
+    [
+      "a member path narrowed across a closure",
+      () =>
+        selectBody("console.log(items[0])", (locate) => [
+          createGlobalReference("console", locate("console")),
+          createBindingReference(c.items, locate("items"), false, false, [
+            createNarrowedPath(locate("items[0]"), "closure"),
+          ]),
+        ]),
+      "/narrowed/0/scope",
+      "but on a destructured prop's own read",
+    ],
+    [
+      "a ref's value narrowed across a closure",
+      () =>
+        selectBody("console.log(input.value)", (locate) => [
+          createGlobalReference("console", locate("console")),
+          createBindingReference(c.input, locate("input.value"), false, false, [
+            createNarrowedPath(locate("input.value"), "closure"),
+          ]),
+        ]),
+      "/narrowed/0/scope",
+      "but on a destructured prop's own read",
+    ],
+    [
+      "a getter narrowed by the template",
+      () =>
+        counterChanged((counter) =>
+          withBody(fnAt(counter, 1), (start) =>
+            codeAt("start * 2", start, (locate) => [
+              createBindingReference(c.start, locate("start"), false, false, [
+                createNarrowedPath(locate("start"), "template"),
+              ]),
+            ]),
+          ),
+        ),
+      "/narrowed/0/scope",
+      "must not be `template` outside client code",
+    ],
+    [
+      "a narrowed target of a write that does not read it",
+      () =>
+        selectBody("count.value = 1", (locate) => [
+          createWriteReference(
+            c.count,
+            "=",
+            locate("count.value = 1"),
+            locate("count.value"),
+            locate("1"),
+            true,
+            [createNarrowedPath(locate("count.value"), "local")],
+          ),
+        ]),
+      "/narrowed",
+      "whose operator reads it",
+    ],
+    [
+      "a write's narrowed path that is not its target",
+      () =>
+        selectBody("count.value++", (locate) => [
+          createWriteReference(
+            c.count,
+            "++",
+            locate("count.value++"),
+            locate("count.value"),
+            undefined,
+            true,
+            [createNarrowedPath(locate("count"), "local")],
+          ),
+        ]),
+      "/narrowed",
+      "one `local` path spanning the target",
+    ],
+  ])("reports %s", (_, build, path, message) => {
+    const errors = checkInvariants(build());
+    expect(errors, JSON.stringify(errors)).toHaveLength(1);
+    expect(errors[0]!.path.endsWith(path), errors[0]!.path).toBe(true);
+    expect(errors[0]!.message).toContain(message);
+  });
+
+  it("reports a narrowed read in a template expression that is not local", () => {
+    const render = element(
+      "p",
+      [],
+      [
+        createInterpolation(
+          createExpression("label", span(0, 5), [
+            createBindingReference(ids.label, span(0, 5), false, false, [
+              createNarrowedPath(span(0, 5), "template"),
+            ]),
+          ]),
+          at,
+        ),
+      ],
+    );
+    const errors = checkInvariants(moduleOf(render));
+    expect(errors.map((error) => error.message)).toEqual([
+      "must not be `template` outside client code: only a handler's code is narrowed by the template around it",
+    ]);
+  });
+});
+
+/** The counter with one more event, after its others. */
+function withEvent(name: string): UfModule {
+  return counterChanged((counter) => {
+    const { end } = counter.emits!.events.at(-1)!.span;
+    counter.emits!.events.push(createEventDeclaration(name, [], span(end, end + 1)));
+  });
+}
+
+/** The counter with its step `const` set to `text`, with the references `refs` builds. */
+function constValue(source: string, refs: Parameters<typeof codeAt>[2]): UfModule {
+  return counterChanged((counter) => {
+    const step = setupItem(counter, 4, "Const");
+    step.value = codeAt(source, step.value.span.start, refs);
+  });
+}
+
+/** The write of the counter's reset button: `() => (count.value = 0)`. */
+const resetWrite = (counter: UfComponent) =>
+  inlineAt(childAt(counter, 3), 1).body.refs[0] as { value?: Span; arrowBody?: true };
+
+/** Adds a parameter just before a function's body. */
+function pushParameter(fn: FunctionCode): void {
+  const before = fn.body.span.start - 1;
+  fn.parameters.push(createParameter("extra", span(before, before)));
+}

@@ -1,0 +1,9 @@
+- form "Note":
+  - text: Title
+  - textbox "Title"
+  - text: Text
+  - textbox "Text"
+  - group "Format":
+    - button "Bold"
+  - button "Save"
+  - status: "Saves: 0"

@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Shift up' })",
+      "dom": [
+        "<section aria-label=\"Price range\" class=\"price-range\">",
+        "  <p role=\"status\">",
+        "    \"20 to 60 EUR\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Shift up\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Widen\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Price range\":",
+        "  - status: 20 to 60 EUR",
+        "  - button \"Shift up\"",
+        "  - button \"Widen\""
+      ],
+      "events": {
+        "rangeUpdate": [
+          [
+            20,
+            60
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Widen' })",
+      "dom": [
+        "<section aria-label=\"Price range\" class=\"price-range\">",
+        "  <p role=\"status\">",
+        "    \"20 to 70 EUR\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Shift up\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Widen\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Price range\":",
+        "  - status: 20 to 70 EUR",
+        "  - button \"Shift up\"",
+        "  - button \"Widen\""
+      ],
+      "events": {
+        "rangeUpdate": [
+          [
+            20,
+            70
+          ]
+        ],
+        "spanUpdate": [
+          [
+            50
+          ]
+        ]
+      }
+    }
+  ]
+}

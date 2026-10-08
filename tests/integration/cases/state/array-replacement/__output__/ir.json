@@ -1,0 +1,983 @@
+{
+  "irVersion": 1,
+  "file": "state/array-replacement/TaskList.uf.tsx",
+  "components": [
+    {
+      "name": "TaskList",
+      "span": {
+        "start": 149,
+        "end": 1791
+      },
+      "props": [
+        {
+          "name": "initial",
+          "optional": false,
+          "type": {
+            "code": "Task[]",
+            "span": {
+              "start": 138,
+              "end": 144
+            }
+          },
+          "binding": "initial@184",
+          "span": {
+            "start": 129,
+            "end": 145
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TaskListProps",
+          "span": {
+            "start": 195,
+            "end": 208
+          }
+        },
+        "span": {
+          "start": 182,
+          "end": 208
+        }
+      },
+      "types": [
+        "Task",
+        "TaskListProps"
+      ],
+      "bindings": [
+        {
+          "id": "initial@184",
+          "name": "initial",
+          "kind": "prop",
+          "span": {
+            "start": 184,
+            "end": 191
+          }
+        },
+        {
+          "id": "tasks@220",
+          "name": "tasks",
+          "kind": "state",
+          "span": {
+            "start": 220,
+            "end": 225
+          }
+        },
+        {
+          "id": "selected@250",
+          "name": "selected",
+          "kind": "state",
+          "span": {
+            "start": 250,
+            "end": 258
+          }
+        },
+        {
+          "id": "added@282",
+          "name": "added",
+          "kind": "localVar",
+          "span": {
+            "start": 282,
+            "end": 287
+          }
+        },
+        {
+          "id": "add@305",
+          "name": "add",
+          "kind": "localFn",
+          "span": {
+            "start": 305,
+            "end": 308
+          }
+        },
+        {
+          "id": "select@433",
+          "name": "select",
+          "kind": "localFn",
+          "span": {
+            "start": 433,
+            "end": 439
+          }
+        },
+        {
+          "id": "remove@495",
+          "name": "remove",
+          "kind": "localFn",
+          "span": {
+            "start": 495,
+            "end": 501
+          }
+        },
+        {
+          "id": "moveUp@598",
+          "name": "moveUp",
+          "kind": "localFn",
+          "span": {
+            "start": 598,
+            "end": 604
+          }
+        },
+        {
+          "id": "task@1077",
+          "name": "task",
+          "kind": "loopVar",
+          "span": {
+            "start": 1077,
+            "end": 1081
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "tasks@220",
+          "initial": {
+            "code": "initial",
+            "span": {
+              "start": 232,
+              "end": 239
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "initial@184",
+                "span": {
+                  "start": 232,
+                  "end": 239
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 214,
+            "end": 241
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "selected@250",
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 265,
+              "end": 271
+            }
+          },
+          "span": {
+            "start": 244,
+            "end": 275
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "added@282",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 290,
+              "end": 291
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 278,
+            "end": 292
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "add@305",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    added += 1;\n    tasks.value = [...tasks.value, { id: `new-${added}`, label: `New task ${added}` }];\n  }",
+              "span": {
+                "start": 311,
+                "end": 420
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "added@282",
+                  "operator": "+=",
+                  "span": {
+                    "start": 317,
+                    "end": 327
+                  },
+                  "target": {
+                    "start": 317,
+                    "end": 322
+                  },
+                  "value": {
+                    "start": 326,
+                    "end": 327
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "tasks@220",
+                  "operator": "=",
+                  "span": {
+                    "start": 333,
+                    "end": 415
+                  },
+                  "target": {
+                    "start": 333,
+                    "end": 344
+                  },
+                  "value": {
+                    "start": 347,
+                    "end": 415
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@220",
+                  "span": {
+                    "start": 351,
+                    "end": 362
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "added@282",
+                  "span": {
+                    "start": 377,
+                    "end": 382
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "added@282",
+                  "span": {
+                    "start": 405,
+                    "end": 410
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 308,
+              "end": 420
+            }
+          },
+          "span": {
+            "start": 296,
+            "end": 420
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "select@433",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "id",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 444,
+                    "end": 450
+                  }
+                },
+                "span": {
+                  "start": 440,
+                  "end": 450
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    selected.value = id;\n  }",
+              "span": {
+                "start": 452,
+                "end": 482
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "selected@250",
+                  "operator": "=",
+                  "span": {
+                    "start": 458,
+                    "end": 477
+                  },
+                  "target": {
+                    "start": 458,
+                    "end": 472
+                  },
+                  "value": {
+                    "start": 475,
+                    "end": 477
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 439,
+              "end": 482
+            }
+          },
+          "span": {
+            "start": 424,
+            "end": 482
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "remove@495",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "id",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 506,
+                    "end": 512
+                  }
+                },
+                "span": {
+                  "start": 502,
+                  "end": 512
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    tasks.value = tasks.value.filter((entry) => entry.id !== id);\n  }",
+              "span": {
+                "start": 514,
+                "end": 585
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "tasks@220",
+                  "operator": "=",
+                  "span": {
+                    "start": 520,
+                    "end": 580
+                  },
+                  "target": {
+                    "start": 520,
+                    "end": 531
+                  },
+                  "value": {
+                    "start": 534,
+                    "end": 580
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@220",
+                  "span": {
+                    "start": 534,
+                    "end": 545
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 501,
+              "end": 585
+            }
+          },
+          "span": {
+            "start": 486,
+            "end": 585
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "moveUp@598",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    const index = tasks.value.findIndex((entry) => entry.id === selected.value);\n    const above = tasks.value[index - 1];\n    const current = tasks.value[index];\n    if (index > 0 && above && current) {\n      tasks.value = tasks.value.toSpliced(index - 1, 2, current, above);\n    }\n  }",
+              "span": {
+                "start": 607,
+                "end": 895
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@220",
+                  "span": {
+                    "start": 627,
+                    "end": 638
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "selected@250",
+                  "span": {
+                    "start": 673,
+                    "end": 687
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@220",
+                  "span": {
+                    "start": 708,
+                    "end": 719
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@220",
+                  "span": {
+                    "start": 752,
+                    "end": 763
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "tasks@220",
+                  "operator": "=",
+                  "span": {
+                    "start": 819,
+                    "end": 884
+                  },
+                  "target": {
+                    "start": 819,
+                    "end": 830
+                  },
+                  "value": {
+                    "start": 833,
+                    "end": 884
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "tasks@220",
+                  "span": {
+                    "start": 833,
+                    "end": 844
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 604,
+              "end": 895
+            }
+          },
+          "span": {
+            "start": 589,
+            "end": 895
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "task-list",
+            "span": {
+              "start": 921,
+              "end": 938
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Tasks",
+            "span": {
+              "start": 939,
+              "end": 957
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "tasks.value.length === 0",
+                  "span": {
+                    "start": 966,
+                    "end": 990
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tasks@220",
+                      "span": {
+                        "start": 966,
+                        "end": 977
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "No tasks yet.",
+                        "span": {
+                          "start": 1006,
+                          "end": 1019
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1003,
+                      "end": 1023
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 966,
+                  "end": 1023
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "ul",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "For",
+                        "source": {
+                          "code": "tasks.value",
+                          "span": {
+                            "start": 1060,
+                            "end": 1071
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "tasks@220",
+                              "span": {
+                                "start": 1060,
+                                "end": 1071
+                              }
+                            }
+                          ]
+                        },
+                        "item": "task@1077",
+                        "key": {
+                          "code": "task.id",
+                          "span": {
+                            "start": 1109,
+                            "end": 1116
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "task@1077",
+                              "span": {
+                                "start": 1109,
+                                "end": 1113
+                              }
+                            }
+                          ]
+                        },
+                        "body": {
+                          "kind": "Element",
+                          "tag": "li",
+                          "attributes": [],
+                          "children": [
+                            {
+                              "kind": "Element",
+                              "tag": "button",
+                              "attributes": [
+                                {
+                                  "kind": "Static",
+                                  "name": "type",
+                                  "value": "button",
+                                  "span": {
+                                    "start": 1157,
+                                    "end": 1170
+                                  }
+                                },
+                                {
+                                  "kind": "Bound",
+                                  "name": "aria-pressed",
+                                  "value": {
+                                    "code": "selected.value === task.id",
+                                    "span": {
+                                      "start": 1201,
+                                      "end": 1227
+                                    },
+                                    "refs": [
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "selected@250",
+                                        "span": {
+                                          "start": 1201,
+                                          "end": 1215
+                                        }
+                                      },
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "task@1077",
+                                        "span": {
+                                          "start": 1220,
+                                          "end": 1224
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "span": {
+                                    "start": 1187,
+                                    "end": 1228
+                                  }
+                                },
+                                {
+                                  "kind": "Event",
+                                  "event": "click",
+                                  "handler": {
+                                    "kind": "Inline",
+                                    "function": {
+                                      "parameters": [],
+                                      "body": {
+                                        "code": "select(task.id)",
+                                        "span": {
+                                          "start": 1260,
+                                          "end": 1275
+                                        },
+                                        "refs": [
+                                          {
+                                            "kind": "Binding",
+                                            "binding": "select@433",
+                                            "span": {
+                                              "start": 1260,
+                                              "end": 1266
+                                            },
+                                            "call": true
+                                          },
+                                          {
+                                            "kind": "Binding",
+                                            "binding": "task@1077",
+                                            "span": {
+                                              "start": 1267,
+                                              "end": 1271
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      "expression": true,
+                                      "span": {
+                                        "start": 1254,
+                                        "end": 1275
+                                      }
+                                    },
+                                    "span": {
+                                      "start": 1254,
+                                      "end": 1275
+                                    }
+                                  },
+                                  "span": {
+                                    "start": 1245,
+                                    "end": 1276
+                                  }
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "kind": "Interpolation",
+                                  "value": {
+                                    "code": "task.label",
+                                    "span": {
+                                      "start": 1310,
+                                      "end": 1320
+                                    },
+                                    "refs": [
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "task@1077",
+                                        "span": {
+                                          "start": 1310,
+                                          "end": 1314
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "span": {
+                                    "start": 1309,
+                                    "end": 1321
+                                  }
+                                }
+                              ],
+                              "span": {
+                                "start": 1133,
+                                "end": 1345
+                              }
+                            },
+                            {
+                              "kind": "Element",
+                              "tag": "button",
+                              "attributes": [
+                                {
+                                  "kind": "Static",
+                                  "name": "type",
+                                  "value": "button",
+                                  "span": {
+                                    "start": 1384,
+                                    "end": 1397
+                                  }
+                                },
+                                {
+                                  "kind": "Bound",
+                                  "name": "aria-label",
+                                  "value": {
+                                    "code": "`Remove ${task.label}`",
+                                    "span": {
+                                      "start": 1426,
+                                      "end": 1448
+                                    },
+                                    "refs": [
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "task@1077",
+                                        "span": {
+                                          "start": 1436,
+                                          "end": 1440
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "span": {
+                                    "start": 1414,
+                                    "end": 1449
+                                  }
+                                },
+                                {
+                                  "kind": "Event",
+                                  "event": "click",
+                                  "handler": {
+                                    "kind": "Inline",
+                                    "function": {
+                                      "parameters": [],
+                                      "body": {
+                                        "code": "remove(task.id)",
+                                        "span": {
+                                          "start": 1481,
+                                          "end": 1496
+                                        },
+                                        "refs": [
+                                          {
+                                            "kind": "Binding",
+                                            "binding": "remove@495",
+                                            "span": {
+                                              "start": 1481,
+                                              "end": 1487
+                                            },
+                                            "call": true
+                                          },
+                                          {
+                                            "kind": "Binding",
+                                            "binding": "task@1077",
+                                            "span": {
+                                              "start": 1488,
+                                              "end": 1492
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      "expression": true,
+                                      "span": {
+                                        "start": 1475,
+                                        "end": 1496
+                                      }
+                                    },
+                                    "span": {
+                                      "start": 1475,
+                                      "end": 1496
+                                    }
+                                  },
+                                  "span": {
+                                    "start": 1466,
+                                    "end": 1497
+                                  }
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "kind": "Text",
+                                  "value": "Remove",
+                                  "span": {
+                                    "start": 1513,
+                                    "end": 1551
+                                  }
+                                }
+                              ],
+                              "span": {
+                                "start": 1360,
+                                "end": 1560
+                              }
+                            }
+                          ],
+                          "span": {
+                            "start": 1100,
+                            "end": 1578
+                          }
+                        },
+                        "span": {
+                          "start": 1060,
+                          "end": 1591
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1044,
+                      "end": 1606
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1044,
+                  "end": 1606
+                }
+              }
+            ],
+            "span": {
+              "start": 966,
+              "end": 1614
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1630,
+                  "end": 1643
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "add@305",
+                  "span": {
+                    "start": 1653,
+                    "end": 1656
+                  }
+                },
+                "span": {
+                  "start": 1644,
+                  "end": 1657
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add task",
+                "span": {
+                  "start": 1658,
+                  "end": 1682
+                }
+              }
+            ],
+            "span": {
+              "start": 1622,
+              "end": 1691
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1706,
+                  "end": 1719
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "moveUp@598",
+                  "span": {
+                    "start": 1729,
+                    "end": 1735
+                  }
+                },
+                "span": {
+                  "start": 1720,
+                  "end": 1736
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Move up",
+                "span": {
+                  "start": 1737,
+                  "end": 1760
+                }
+              }
+            ],
+            "span": {
+              "start": 1698,
+              "end": 1769
+            }
+          }
+        ],
+        "span": {
+          "start": 912,
+          "end": 1784
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "TaskList",
+      "span": {
+        "start": 149,
+        "end": 1791
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Task",
+      "exported": true,
+      "code": "interface Task {\n  id: string;\n  label: string;\n}",
+      "span": {
+        "start": 43,
+        "end": 92
+      }
+    },
+    {
+      "name": "TaskListProps",
+      "exported": true,
+      "code": "interface TaskListProps {\n  initial: Task[];\n}",
+      "span": {
+        "start": 101,
+        "end": 147
+      }
+    }
+  ]
+}

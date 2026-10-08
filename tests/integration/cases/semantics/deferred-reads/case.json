@@ -1,0 +1,6 @@
+{
+  "description": "Deferred code (an async handler's continuation) reads the latest state and props, including a write and a rerender made while it waited.",
+  "ssr": {
+    "initial": { "props": { "fileName": "report.pdf" } }
+  }
+}

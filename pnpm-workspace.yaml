@@ -41,6 +41,13 @@ packageExtensions:
   "@analogjs/vite-plugin-angular@2":
     peerDependencies:
       typescript: ">=6.0 <6.1"
+  # eslint-plugin-qwik imports `typescript` without declaring it, so pnpm would resolve the root's
+  # TypeScript 7. As a peer, its type-aware rules share the TypeScript 6 of tests/toolchains/
+  # qwik-eslint, the one typescript-eslint builds the program with (ADR-0042). The range is
+  # typescript-eslint's. No version range: a range would not match the 2.0 prereleases.
+  eslint-plugin-qwik:
+    peerDependencies:
+      typescript: ">=4.8.4 <6.1.0"
 peerDependencyRules:
   allowedVersions:
     # Qwik 2.0.0-beta.47 declares an optional `vitest: ">=2 <5"` peer; the harness runs Vitest 5.
@@ -49,7 +56,9 @@ peerDependencyRules:
     "@uxfront/oxfmt-config>oxfmt": "0.71"
     # eslint-plugin-solid and eslint-plugin-qwik depend on @typescript-eslint/utils, which peers
     # TypeScript <6.1. The Solid and Qwik toolchains run them as oxlint JS plugins with their
-    # type-aware rules off, so nothing calls TypeScript's API there (ADR-0042).
+    # type-aware rules off, so nothing calls TypeScript's API there (ADR-0042); Qwik's type-aware
+    # rules run from tests/toolchains/qwik-eslint, on TypeScript 6.
+    "eslint-plugin-qwik>typescript": "7"
     "@typescript-eslint/utils>typescript": "7"
     "@typescript-eslint/typescript-estree>typescript": "7"
     "@typescript-eslint/project-service>typescript": "7"

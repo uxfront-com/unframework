@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { CAPABILITY_NAMES } from "@unframework/codegen";
 import type { EmitContext } from "@unframework/codegen";
 import {
   createComponent,
@@ -13,6 +14,7 @@ import {
 import { describe, expect, it } from "vitest";
 
 import target from "../src/index.ts";
+import { vueEventInterface } from "../src/listeners.ts";
 import { corpus, emitFormatted, emitSource, lower } from "./helpers.ts";
 
 const at = { start: 0, end: 0 };
@@ -37,30 +39,18 @@ function emit(kind: "default" | "named" = "default") {
 
 describe("vue target", () => {
   // Its client selects the first option of a single-selection list box (the client parity
-  // test checks that this still holds), so the compiler reports one, at its `size`.
-  it("declares every capability, with single-selection list boxes unsupported", () => {
-    expect(Object.keys(target.capabilities).toSorted()).toEqual([
-      "attribute-spread",
-      "bound-attribute",
-      "class-binding",
-      "conditional",
-      "element",
-      "fragment",
-      "interactivity",
-      "interpolation",
-      "list",
-      "listbox",
-      "props",
-      "static-attribute",
-      "style-binding",
-      "svg",
-      "text",
-    ]);
+  // test checks that this still holds), so the compiler reports one, at its `size`. Everything
+  // else is native: the source's Composition API, listeners and their options are Vue's own.
+  it("declares every capability, native but for single-selection list boxes", () => {
+    expect(Object.keys(target.capabilities).toSorted()).toEqual(CAPABILITY_NAMES.toSorted());
     expect(target.capabilities.listbox).toMatchObject({
       support: "unsupported",
       code: "UF4001",
       severity: "error",
     });
+    for (const name of CAPABILITY_NAMES.filter((name) => name !== "listbox")) {
+      expect(target.capabilities[name], name).toEqual({ support: "native" });
+    }
   });
 
   it("emits a static component as a template-only single-file component", () => {
@@ -101,7 +91,7 @@ const sfc = (script: string[], template: string[]) =>
     "",
   ].join("\n");
 
-describe("vue script setup (design §5.2)", () => {
+describe("vue script setup", () => {
   it("destructures the props, with a default for every optional one", async () => {
     const source = `
 export interface BadgeProps {
@@ -287,7 +277,7 @@ export default function Probe({ Set, label }: { Set: string; label: string }) {
     );
   });
 
-  it("writes `</script` in copied code so that it cannot end the block (design §4.4)", () => {
+  it("writes `</script` in copied code so that it cannot end the block", () => {
     // The analyser rejects such a default; the target escapes it anyway, as Vue's parser ends
     // the block at the first `</script` wherever it sits.
     const module = lower(`
@@ -325,7 +315,7 @@ export default function Card({ title, tags = ["a", "b"], meta = { author: "x", y
   });
 });
 
-describe("vue template (design §5.2)", () => {
+describe("vue template", () => {
   it("prints conditionals on their element, or on a template around other content", async () => {
     const source = `
 export default function Status({ state, note }: { state: string; note?: string }) {
@@ -415,5 +405,396 @@ export default function Quote({ tone }: { tone: string }) {
       ].join("\n"),
     );
     expect(output).toContain(`<b :style="{ quotes: '&quot;;&quot; &quot;;&quot;', color: tone }">`);
+  });
+});
+
+describe("vue setup (M2, ADR-0045 to ADR-0049)", () => {
+  // State is replaced whole (ADR-0008, UF2004), so a value not known to be a primitive is a
+  // `shallowRef`: the source's own object, never a proxy of it (ADR-0046).
+  it.each([
+    ["ref(0)", "ref(0)"],
+    ['ref<"a" | "b" | undefined>()', 'ref<"a" | "b" | undefined>()'],
+    ['ref<Mode>("on")', 'ref<Mode>("on")'],
+    ["ref(mode)", "ref(mode)"],
+    ["ref<string[]>([])", "shallowRef<string[]>([])"],
+    ["ref({ a: 1 })", "shallowRef({ a: 1 })"],
+    ["ref(item)", "shallowRef(item)"],
+    ["ref<Item | null>(null)", "shallowRef<Item | null>(null)"],
+    // A call, by its function's declared return type.
+    ["ref(label())", "ref(label())"],
+    ["ref(first())", "shallowRef(first())"],
+    // Built-ins by what they return, and a `computed` by its getter's value.
+    ["ref(Math.round(price * 100))", "ref(Math.round(price * 100))"],
+    ["ref(Math.PI)", "ref(Math.PI)"],
+    ["ref(Number(title))", "ref(Number(title))"],
+    ["ref(String(price))", "ref(String(price))"],
+    ["ref(parseInt(title, 10))", "ref(parseInt(title, 10))"],
+    ["ref(items.length)", "ref(items.length)"],
+    ["ref(title.trim())", "ref(title.trim())"],
+    ["ref(title.toUpperCase())", "ref(title.toUpperCase())"],
+    ["ref(title.slice(1))", "ref(title.slice(1))"],
+    ["ref(price.toFixed(2))", "ref(price.toFixed(2))"],
+    ["ref(items.map((each) => each.id).join())", "ref(items.map((each) => each.id).join())"],
+    ["ref(items.includes(item))", "ref(items.includes(item))"],
+    ["ref(doubled.value)", "ref(doubled.value)"],
+    ["ref(tier.value)", "ref(tier.value)"],
+    ["ref(firstItem.value)", "shallowRef(firstItem.value)"],
+    ["ref(items.slice(1))", "shallowRef(items.slice(1))"],
+    ["ref(items.at(0))", "shallowRef(items.at(0))"],
+    ['ref(title.split(","))', 'shallowRef(title.split(","))'],
+    ["ref(Array.from(items))", "shallowRef(Array.from(items))"],
+  ])("declares %s as %s", async (written, declared) => {
+    const source = [
+      'import { computed, ref } from "unframework";',
+      'type Mode = "on" | "off";',
+      "interface Item {",
+      "  id: string;",
+      "}",
+      "export default function Probe({",
+      "  mode,",
+      "  item,",
+      "  title,",
+      "  price,",
+      "  items,",
+      "}: { mode: Mode; item: Item; title: string; price: number; items: Item[] }) {",
+      "  function label(): string {",
+      '    return "a";',
+      "  }",
+      "  function first(): Item {",
+      '    return { id: "a" };',
+      "  }",
+      "  const doubled = computed(() => price * 2);",
+      "  const tier = computed(() => {",
+      '    if (price > 10) return "high";',
+      '    return "low";',
+      "  });",
+      "  const firstItem = computed(() => ({ id: title }));",
+      `  const value = ${written};`,
+      "  return (",
+      "    <p>",
+      "      {String(value.value)}{label()}{first().id}{mode}{item.id}{title}{price}{items.length}",
+      "      {doubled.value}{tier.value}{firstItem.value.id}",
+      "    </p>",
+      "  );",
+      "}",
+    ].join("\n");
+    expect(await emitSource(source)).toContain(`const value = ${declared};`);
+  });
+
+  // Vue calls a watcher back on every run once one of its sources is a shallow ref
+  // (`forceTrigger`), changed or not, so such a source is read through a getter, alone or in an
+  // array; a `ref` and a `computed` are not shallow, and stay as written.
+  it("reads a shallowRef source through a getter, alone or among an array watcher's", async () => {
+    const source = [
+      'import { computed, ref, watch } from "unframework";',
+      "export default function Probe() {",
+      "  const picks = ref<string[]>([]);",
+      "  const selected = ref<{ id: string } | null>(null);",
+      "  const count = ref(0);",
+      "  const total = computed(() => picks.value.length);",
+      "  watch([picks, count, () => count.value > 1], ([list, n, many]) => {",
+      "    console.info(list, n, many);",
+      "  });",
+      "  watch(picks, (list) => {",
+      "    console.info(list);",
+      "  });",
+      "  watch(selected, (item, previous) => {",
+      "    console.info(item, previous);",
+      "  }, { immediate: true });",
+      "  watch(count, (n) => {",
+      "    console.info(n);",
+      "  });",
+      "  watch(total, (n) => {",
+      "    console.info(n);",
+      "  });",
+      "  return <p>{count.value}</p>;",
+      "}",
+    ].join("\n");
+    const output = await emitSource(source);
+    expect(output).toContain("watch([() => picks.value, count, () => count.value > 1], ");
+    expect(output).toContain("watch(\n  () => picks.value,\n  (list) => {");
+    expect(output).toContain("watch(\n  () => selected.value,\n  (item, previous) => {");
+    expect(output).toContain("watch(count, (n) => {");
+    expect(output).toContain("watch(total, (n) => {");
+  });
+
+  // The script is the source's setup: Vue's Composition API is the source language's, so only
+  // the imports, the macros' places and the template's spelling of a ref change.
+  it("writes the setup as the source does, with `defineEmits` after the props and refs unwrapped in the template", async () => {
+    const source = `
+import { computed, defineEmits, ref } from "unframework";
+
+export interface StepperProps {
+  label: string;
+  step?: number;
+}
+
+export default function Stepper({ label, step = 1 }: StepperProps) {
+  const count = ref(0);
+  const emit = defineEmits<{ change: [value: number] }>();
+  const doubled = computed(() => count.value * 2);
+  const limits = [0, 10];
+  let clicks = 0;
+
+  function increment() {
+    clicks += 1;
+    count.value += step;
+    emit("change", count.value);
+  }
+
+  return (
+    <div role="group" aria-label={label}>
+      <output>{count.value}</output>
+      {doubled.value > (limits[1] ?? 0) ? <span>Big</span> : null}
+      <button type="button" onClick={() => count.value--}>-</button>
+      <button type="button" onClick={increment}>+{step}</button>
+    </div>
+  );
+}`;
+    expect(await emitSource(source)).toBe(
+      sfc(
+        [
+          'import { computed, ref } from "vue";',
+          "",
+          "export interface StepperProps {",
+          "  label: string;",
+          "  step?: number;",
+          "}",
+          "",
+          "const { label, step = 1 } = defineProps<StepperProps>();",
+          "const emit = defineEmits<{ change: [value: number] }>();",
+          "",
+          "const count = ref(0);",
+          "const doubled = computed(() => count.value * 2);",
+          "const limits = [0, 10];",
+          "let clicks = 0;",
+          "",
+          "function increment() {",
+          "  clicks += 1;",
+          "  count.value += step;",
+          '  emit("change", count.value);',
+          "}",
+        ],
+        [
+          '<div role="group" :aria-label="label">',
+          "  <output>{{ count }}</output>",
+          '  <span v-if="doubled > (limits[1] ?? 0)">Big</span>',
+          '  <button type="button" @click="count--">-</button>',
+          '  <button type="button" @click="increment">+{{ step }}</button>',
+          "</div>",
+        ],
+      ),
+    );
+  });
+
+  it("keys a template ref by its binding's name, prefixes an id, and writes effects with Vue's APIs", async () => {
+    const source = `
+import { defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch, watchEffect } from "unframework";
+
+export default function Panel({ title }: { title: string }) {
+  const emit = defineEmits<{ titled: [title: string, previous?: string]; rendered: [count: number] }>();
+  const open = ref(false);
+  const list = useTemplateRef<HTMLUListElement>();
+  const headingId = useId();
+
+  watch(() => title, (value, previous) => {
+    emit("titled", value, previous);
+  }, { immediate: true });
+
+  watch(open, () => {
+    emit("rendered", list.value?.childElementCount ?? 0);
+  }, { flush: "post" });
+
+  watchEffect((onCleanup) => {
+    const shown = open.value;
+    onCleanup(() => {
+      emit("titled", shown ? "open" : "closed");
+    });
+  });
+
+  onMounted(() => {
+    emit("rendered", 0);
+  });
+
+  onUnmounted(() => {
+    emit("rendered", -1);
+  });
+
+  async function toggle() {
+    open.value = !open.value;
+    await nextTick();
+    emit("rendered", list.value?.childElementCount ?? 0);
+  }
+
+  return (
+    <section aria-labelledby={headingId}>
+      <h2 id={headingId}>{title}</h2>
+      <button type="button" aria-expanded={open.value} onClick={toggle}>Toggle</button>
+      {open.value && <ul ref={list}><li>One</li></ul>}
+    </section>
+  );
+}`;
+    expect(await emitSource(source)).toBe(
+      sfc(
+        [
+          "import {",
+          "  nextTick,",
+          "  onMounted,",
+          "  onUnmounted,",
+          "  ref,",
+          "  useId,",
+          "  useTemplateRef,",
+          "  watch,",
+          "  watchPostEffect,",
+          '} from "vue";',
+          "",
+          "const { title } = defineProps<{ title: string }>();",
+          "const emit = defineEmits<{",
+          "  titled: [title: string, previous?: string];",
+          "  rendered: [count: number];",
+          "}>();",
+          "",
+          "const open = ref(false);",
+          'const list = useTemplateRef<HTMLUListElement>("list");',
+          "const headingId = `uf-id-${useId()}`;",
+          "",
+          "watch(",
+          "  () => title,",
+          "  (value, previous) => {",
+          '    emit("titled", value, previous);',
+          "  },",
+          "  { immediate: true },",
+          ");",
+          "",
+          "watch(",
+          "  open,",
+          "  () => {",
+          '    emit("rendered", list.value?.childElementCount ?? 0);',
+          "  },",
+          '  { flush: "post" },',
+          ");",
+          "",
+          "watchPostEffect((onCleanup) => {",
+          "  const shown = open.value;",
+          "  onCleanup(() => {",
+          '    emit("titled", shown ? "open" : "closed");',
+          "  });",
+          "});",
+          "",
+          "onMounted(() => {",
+          '  emit("rendered", 0);',
+          "});",
+          "",
+          "onUnmounted(() => {",
+          '  emit("rendered", -1);',
+          "});",
+          "",
+          "async function toggle() {",
+          "  open.value = !open.value;",
+          "  await nextTick();",
+          '  emit("rendered", list.value?.childElementCount ?? 0);',
+          "}",
+        ],
+        [
+          '<section :aria-labelledby="headingId">',
+          '  <h2 :id="headingId">{{ title }}</h2>',
+          '  <button type="button" :aria-expanded="open" @click="toggle">Toggle</button>',
+          '  <ul v-if="open" ref="list">',
+          "    <li>One</li>",
+          "  </ul>",
+          "</section>",
+        ],
+      ),
+    );
+  });
+
+  // Vue's modifiers set a listener's options and run a handler's leading `stopPropagation()` or
+  // `preventDefault()`; a one-expression handler is an inline statement, or the arrow when it
+  // reads its event; anything else moves to a script function named after its event, its event
+  // parameter typed as Vue types the event.
+  it("writes listeners as Vue does, and moves a handler the template cannot hold to the script", async () => {
+    const source = `
+import { defineEmits, ref } from "unframework";
+
+export default function Log() {
+  const emit = defineEmits<{ reset: [] }>();
+  const lines = ref<string[]>([]);
+  const note = ref("");
+  let resets = 0;
+
+  function record(line: string) {
+    lines.value = [...lines.value, line];
+  }
+
+  return (
+    <div role="presentation" onClickCapture={() => record("capture")}>
+      <button type="button" onClickOnce={() => record("once")}>Once</button>
+      <button type="button" onClick={(event) => { event.stopPropagation(); record("stopped"); }}>Stop</button>
+      <form aria-label="Note" onSubmit={(event) => event.preventDefault()}>
+        <input name="note" onInput={(event) => (note.value = (event.currentTarget as HTMLInputElement).value)} />
+      </form>
+      <button type="button" onClick={() => emit("reset")}>Reset</button>
+      <button type="button" onClick={(event) => { resets += 1; record(event.type + resets); }}>Count</button>
+      <p>{lines.value.join(", ")}</p>
+    </div>
+  );
+}`;
+    expect(await emitSource(source)).toBe(
+      sfc(
+        [
+          'import { ref, shallowRef } from "vue";',
+          "",
+          "const emit = defineEmits<{ reset: [] }>();",
+          "",
+          "const lines = shallowRef<string[]>([]);",
+          'const note = ref("");',
+          "let resets = 0;",
+          "",
+          "function record(line: string) {",
+          "  lines.value = [...lines.value, line];",
+          "}",
+          "",
+          "function onClick(event: PointerEvent) {",
+          "  resets += 1;",
+          "  record(event.type + resets);",
+          "}",
+        ],
+        [
+          '<div role="presentation" @click.capture="record(\'capture\')">',
+          '  <button type="button" @click.once="record(\'once\')">Once</button>',
+          '  <button type="button" @click.stop="record(\'stopped\')">Stop</button>',
+          '  <form aria-label="Note" @submit.prevent>',
+          "    <input",
+          '      name="note"',
+          '      @input="(event) => (note = (event.currentTarget as HTMLInputElement).value)"',
+          "    />",
+          "  </form>",
+          '  <button type="button" @click="emit(\'reset\')">Reset</button>',
+          '  <button type="button" @click="onClick">Count</button>',
+          '  <p>{{ lines.join(", ") }}</p>',
+          "</div>",
+        ],
+      ),
+    );
+  });
+
+  it("declares the events without a binding when nothing calls `emit`", async () => {
+    const source = `
+import { defineEmits } from "unframework";
+
+export default function Silent() {
+  const emit = defineEmits<{ ready: [] }>();
+  return <p>Silent</p>;
+}`;
+    expect(await emitSource(source)).toBe(
+      sfc(["defineEmits<{ ready: [] }>();"], ["<p>Silent</p>"]),
+    );
+  });
+
+  it("types a hoisted handler's event as Vue's element types do", () => {
+    expect(vueEventInterface("click")).toBe("PointerEvent");
+    expect(vueEventInterface("keydown")).toBe("KeyboardEvent");
+    // lib.dom has `ErrorEvent`; `@vue/runtime-dom` types `onError` with `Event`.
+    expect(vueEventInterface("error")).toBe("Event");
   });
 });

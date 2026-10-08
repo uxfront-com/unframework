@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { normalizeDom, serializeDom } from "../src/dom/serialize.ts";
+import { normalizeDom, normalizeDomWithIds, serializeDom } from "../src/dom/serialize.ts";
 import { normalizeHtml } from "../src/normalize/index.ts";
 
 /** A fresh mount container in the document, filled with `html`. */
@@ -190,6 +190,47 @@ describe("serializeDom: form-control state from properties", () => {
   });
 });
 
+describe("serializeDom: the focus", () => {
+  it("marks the element that has the focus, and moves the mark with it", () => {
+    const root = container('<button type="button">A</button><input type="text">');
+    const [button, input] = [root.querySelector("button")!, root.querySelector("input")!];
+    expect(normalizeDom(root)).not.toContain("uf:focused");
+    button.focus();
+    expect(normalizeDom(root)).toBe(
+      lines(
+        '<button type="button" uf:focused="">',
+        '  "A"',
+        "</button>",
+        '<input type="text" uf:value="">',
+      ),
+    );
+    input.focus();
+    expect(normalizeDom(root)).toBe(
+      lines(
+        '<button type="button">',
+        '  "A"',
+        "</button>",
+        '<input type="text" uf:focused="" uf:value="">',
+      ),
+    );
+    input.blur();
+    expect(normalizeDom(root)).not.toContain("uf:focused");
+  });
+
+  it("marks a focused SVG element too, and never the body", () => {
+    const root = container(
+      '<svg viewBox="0 0 8 8"><a href="#x" tabindex="0"><title>T</title></a></svg>',
+    );
+    const link = root.querySelector("a")!;
+    link.focus();
+    expect(document.activeElement).toBe(link);
+    expect(normalizeDom(root)).toContain('<a href="#x" tabindex="0" uf:focused="">');
+    link.blur();
+    expect(document.activeElement).toBe(document.body);
+    expect(normalizeDom(root)).not.toContain("uf:focused");
+  });
+});
+
 describe("serializeDom: styles from the CSSOM", () => {
   it("serialises a style set through the CSSOM like the same style set as an attribute", () => {
     const byProperty = container("<p>x</p>");
@@ -248,6 +289,13 @@ describe("normalizeDom", () => {
     expect(normalizeDom(root, { target: "qwik" })).toContain('<input id="uf-id-1" uf:value="">');
     expect(normalizeDom(root)).toContain('<input id="uf-id-1" q:key="k" uf:value="">');
     expect(normalizeDom(root, { target: "qwik" })).toContain('<span id="email">');
+  });
+
+  it("gives the renaming of the generated ids it found, for the payloads of a trace's step", () => {
+    const root = container('<label for="uf-id-_r_1_">A</label><input id="uf-id-_r_1_">');
+    const { html, ids } = normalizeDomWithIds(root);
+    expect(html).toBe(normalizeDom(root));
+    expect([...ids]).toEqual([["uf-id-_r_1_", "uf-id-1"]]);
   });
 
   it("joins the separate text nodes a framework creates", () => {

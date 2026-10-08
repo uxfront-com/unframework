@@ -1,0 +1,8 @@
+- region "Filters":
+  - button "Hide colours" [expanded]
+  - button "Red"
+  - button "Blue"
+  - button "Reset"
+  - paragraph: "Colour: Blue"
+  - button "Clear Blue"
+  - button "Add a note"

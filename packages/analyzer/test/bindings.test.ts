@@ -79,6 +79,10 @@ function describeAttribute(attribute: Attribute): string {
     case "Spread":
       // `?.` marks a source that may be nullish, whose keys the targets read through `?.`.
       return `...{${attribute.value.code}}${attribute.nullish ? "?." : ""}[${attribute.keys.map((key) => key.name).join(" ")}]`;
+    case "Event":
+      return `on:${attribute.event}`;
+    case "Ref":
+      return `ref:${attribute.binding}`;
   }
 }
 
@@ -130,7 +134,7 @@ describe("bound attributes", () => {
 
   it("keeps the M0 checks of a name for a binding: events, form state, `is`", () => {
     for (const [jsx, code] of [
-      ["<button onClick={label}>a</button>", "UF1002"],
+      ["<button onClick={label}>a</button>", "UF3029"],
       ['<input type="text" value={label} />', "UF1002"],
       ["<p is={label}>a</p>", "UF3005"],
       ["<p srcdoc={label}>a</p>", "UF3006"],

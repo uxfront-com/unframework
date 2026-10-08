@@ -1,0 +1,493 @@
+{
+  "irVersion": 1,
+  "file": "effects/watch-effect/UnreadBadge.uf.tsx",
+  "components": [
+    {
+      "name": "UnreadBadge",
+      "span": {
+        "start": 120,
+        "end": 835
+      },
+      "props": [
+        {
+          "name": "appName",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 109,
+              "end": 115
+            }
+          },
+          "binding": "appName@158",
+          "span": {
+            "start": 100,
+            "end": 116
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "UnreadBadgeProps",
+          "span": {
+            "start": 169,
+            "end": 185
+          }
+        },
+        "span": {
+          "start": 156,
+          "end": 185
+        }
+      },
+      "types": [
+        "UnreadBadgeProps"
+      ],
+      "emits": {
+        "binding": "emit@197",
+        "type": {
+          "code": "{ titleChange: [title: string]; titleRelease: [title: string] }",
+          "span": {
+            "start": 216,
+            "end": 279
+          }
+        },
+        "events": [
+          {
+            "name": "titleChange",
+            "parameters": [
+              {
+                "name": "title",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 239,
+                    "end": 245
+                  }
+                },
+                "span": {
+                  "start": 232,
+                  "end": 245
+                }
+              }
+            ],
+            "span": {
+              "start": 218,
+              "end": 246
+            }
+          },
+          {
+            "name": "titleRelease",
+            "parameters": [
+              {
+                "name": "title",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 270,
+                    "end": 276
+                  }
+                },
+                "span": {
+                  "start": 263,
+                  "end": 276
+                }
+              }
+            ],
+            "span": {
+              "start": 248,
+              "end": 277
+            }
+          }
+        ],
+        "span": {
+          "start": 191,
+          "end": 283
+        }
+      },
+      "bindings": [
+        {
+          "id": "appName@158",
+          "name": "appName",
+          "kind": "prop",
+          "span": {
+            "start": 158,
+            "end": 165
+          }
+        },
+        {
+          "id": "emit@197",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 197,
+            "end": 201
+          }
+        },
+        {
+          "id": "unread@293",
+          "name": "unread",
+          "kind": "state",
+          "span": {
+            "start": 293,
+            "end": 299
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "unread@293",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 306,
+              "end": 307
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 287,
+            "end": 309
+          }
+        },
+        {
+          "kind": "WatchEffect",
+          "effect": {
+            "parameters": [
+              {
+                "name": "onCleanup",
+                "span": {
+                  "start": 326,
+                  "end": 335
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    const title = `(${unread.value}) ${appName}`;\n    emit(\"titleChange\", title);\n    onCleanup(() => {\n      emit(\"titleRelease\", title);\n    });\n  }",
+              "span": {
+                "start": 340,
+                "end": 492
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "unread@293",
+                  "span": {
+                    "start": 364,
+                    "end": 376
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "appName@158",
+                  "span": {
+                    "start": 381,
+                    "end": 388
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@197",
+                  "event": "titleChange",
+                  "span": {
+                    "start": 396,
+                    "end": 422
+                  },
+                  "arguments": [
+                    {
+                      "start": 416,
+                      "end": 421
+                    }
+                  ]
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@197",
+                  "event": "titleRelease",
+                  "span": {
+                    "start": 452,
+                    "end": 479
+                  },
+                  "arguments": [
+                    {
+                      "start": 473,
+                      "end": 478
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 325,
+              "end": 492
+            }
+          },
+          "span": {
+            "start": 313,
+            "end": 494
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "unread-badge",
+            "span": {
+              "start": 520,
+              "end": 540
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Inbox",
+            "span": {
+              "start": 541,
+              "end": 559
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 570,
+                  "end": 583
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "unread.value",
+                  "span": {
+                    "start": 585,
+                    "end": 597
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "unread@293",
+                      "span": {
+                        "start": 585,
+                        "end": 597
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 584,
+                  "end": 598
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " unread",
+                "span": {
+                  "start": 598,
+                  "end": 605
+                }
+              }
+            ],
+            "span": {
+              "start": 567,
+              "end": 609
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 624,
+                  "end": 637
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "unread.value++",
+                      "span": {
+                        "start": 653,
+                        "end": 667
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "unread@293",
+                          "operator": "++",
+                          "span": {
+                            "start": 653,
+                            "end": 667
+                          },
+                          "target": {
+                            "start": 653,
+                            "end": 665
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 647,
+                      "end": 667
+                    }
+                  },
+                  "span": {
+                    "start": 647,
+                    "end": 667
+                  }
+                },
+                "span": {
+                  "start": 638,
+                  "end": 668
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Receive a message",
+                "span": {
+                  "start": 669,
+                  "end": 702
+                }
+              }
+            ],
+            "span": {
+              "start": 616,
+              "end": 711
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 726,
+                  "end": 739
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(unread.value = 0)",
+                      "span": {
+                        "start": 755,
+                        "end": 773
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "unread@293",
+                          "operator": "=",
+                          "span": {
+                            "start": 755,
+                            "end": 773
+                          },
+                          "target": {
+                            "start": 756,
+                            "end": 768
+                          },
+                          "value": {
+                            "start": 771,
+                            "end": 772
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 749,
+                      "end": 773
+                    }
+                  },
+                  "span": {
+                    "start": 749,
+                    "end": 773
+                  }
+                },
+                "span": {
+                  "start": 740,
+                  "end": 774
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Mark all read",
+                "span": {
+                  "start": 775,
+                  "end": 804
+                }
+              }
+            ],
+            "span": {
+              "start": 718,
+              "end": 813
+            }
+          }
+        ],
+        "span": {
+          "start": 511,
+          "end": 828
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "UnreadBadge",
+      "span": {
+        "start": 120,
+        "end": 835
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "UnreadBadgeProps",
+      "exported": true,
+      "code": "interface UnreadBadgeProps {\n  appName: string;\n}",
+      "span": {
+        "start": 69,
+        "end": 118
+      }
+    }
+  ]
+}

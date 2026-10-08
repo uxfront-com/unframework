@@ -1,0 +1,1493 @@
+{
+  "irVersion": 1,
+  "file": "effects/async-callbacks/Mailbox.uf.tsx",
+  "components": [
+    {
+      "name": "Mailbox",
+      "span": {
+        "start": 171,
+        "end": 2434
+      },
+      "props": [
+        {
+          "name": "folder",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 160,
+              "end": 166
+            }
+          },
+          "binding": "folder@205",
+          "span": {
+            "start": 152,
+            "end": 167
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "MailboxProps",
+          "span": {
+            "start": 215,
+            "end": 227
+          }
+        },
+        "span": {
+          "start": 203,
+          "end": 227
+        }
+      },
+      "types": [
+        "MailboxProps"
+      ],
+      "emits": {
+        "binding": "emit@239",
+        "type": {
+          "code": "{\n    loaded: [name: string, unread: number];\n    progress: [status: string, attempts: number];\n    seen: [text: string];\n    noted: [text: string];\n  }",
+          "span": {
+            "start": 258,
+            "end": 410
+          }
+        },
+        "events": [
+          {
+            "name": "loaded",
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 279,
+                    "end": 285
+                  }
+                },
+                "span": {
+                  "start": 273,
+                  "end": 285
+                }
+              },
+              {
+                "name": "unread",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 295,
+                    "end": 301
+                  }
+                },
+                "span": {
+                  "start": 287,
+                  "end": 301
+                }
+              }
+            ],
+            "span": {
+              "start": 264,
+              "end": 302
+            }
+          },
+          {
+            "name": "progress",
+            "parameters": [
+              {
+                "name": "status",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 327,
+                    "end": 333
+                  }
+                },
+                "span": {
+                  "start": 319,
+                  "end": 333
+                }
+              },
+              {
+                "name": "attempts",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 345,
+                    "end": 351
+                  }
+                },
+                "span": {
+                  "start": 335,
+                  "end": 351
+                }
+              }
+            ],
+            "span": {
+              "start": 308,
+              "end": 352
+            }
+          },
+          {
+            "name": "seen",
+            "parameters": [
+              {
+                "name": "text",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 371,
+                    "end": 377
+                  }
+                },
+                "span": {
+                  "start": 365,
+                  "end": 377
+                }
+              }
+            ],
+            "span": {
+              "start": 358,
+              "end": 378
+            }
+          },
+          {
+            "name": "noted",
+            "parameters": [
+              {
+                "name": "text",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 398,
+                    "end": 404
+                  }
+                },
+                "span": {
+                  "start": 392,
+                  "end": 404
+                }
+              }
+            ],
+            "span": {
+              "start": 384,
+              "end": 405
+            }
+          }
+        ],
+        "span": {
+          "start": 233,
+          "end": 414
+        }
+      },
+      "bindings": [
+        {
+          "id": "folder@205",
+          "name": "folder",
+          "kind": "prop",
+          "span": {
+            "start": 205,
+            "end": 211
+          }
+        },
+        {
+          "id": "emit@239",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 239,
+            "end": 243
+          }
+        },
+        {
+          "id": "name@424",
+          "name": "name",
+          "kind": "state",
+          "span": {
+            "start": 424,
+            "end": 428
+          }
+        },
+        {
+          "id": "unread@455",
+          "name": "unread",
+          "kind": "state",
+          "span": {
+            "start": 455,
+            "end": 461
+          }
+        },
+        {
+          "id": "status@480",
+          "name": "status",
+          "kind": "state",
+          "span": {
+            "start": 480,
+            "end": 486
+          }
+        },
+        {
+          "id": "attempts@510",
+          "name": "attempts",
+          "kind": "state",
+          "span": {
+            "start": 510,
+            "end": 518
+          }
+        },
+        {
+          "id": "summary@537",
+          "name": "summary",
+          "kind": "state",
+          "span": {
+            "start": 537,
+            "end": 544
+          }
+        },
+        {
+          "id": "timer@573",
+          "name": "timer",
+          "kind": "localVar",
+          "span": {
+            "start": 573,
+            "end": 578
+          }
+        },
+        {
+          "id": "save@1301",
+          "name": "save",
+          "kind": "localFn",
+          "span": {
+            "start": 1301,
+            "end": 1305
+          }
+        },
+        {
+          "id": "refreshEverySecond@1476",
+          "name": "refreshEverySecond",
+          "kind": "localFn",
+          "span": {
+            "start": 1476,
+            "end": 1494
+          }
+        },
+        {
+          "id": "markAllRead@1656",
+          "name": "markAllRead",
+          "kind": "localFn",
+          "span": {
+            "start": 1656,
+            "end": 1667
+          }
+        },
+        {
+          "id": "note@1789",
+          "name": "note",
+          "kind": "localFn",
+          "span": {
+            "start": 1789,
+            "end": 1793
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "name@424",
+          "initial": {
+            "code": "\"Loading\"",
+            "span": {
+              "start": 435,
+              "end": 444
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 418,
+            "end": 446
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "unread@455",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 468,
+              "end": 469
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 449,
+            "end": 471
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "status@480",
+          "initial": {
+            "code": "\"idle\"",
+            "span": {
+              "start": 493,
+              "end": 499
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 474,
+            "end": 501
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "attempts@510",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 525,
+              "end": 526
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 504,
+            "end": 528
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "summary@537",
+          "initial": {
+            "code": "\"No messages\"",
+            "span": {
+              "start": 551,
+              "end": 564
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 531,
+            "end": 566
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "timer@573",
+          "type": {
+            "code": "ReturnType<typeof setInterval> | undefined",
+            "span": {
+              "start": 580,
+              "end": 622
+            }
+          },
+          "span": {
+            "start": 569,
+            "end": 623
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "name@424",
+              "span": {
+                "start": 634,
+                "end": 638
+              }
+            },
+            {
+              "kind": "Ref",
+              "binding": "unread@455",
+              "span": {
+                "start": 640,
+                "end": 646
+              }
+            }
+          ],
+          "array": true,
+          "callback": {
+            "parameters": [
+              {
+                "pattern": {
+                  "code": "[nextName, nextUnread]",
+                  "names": [
+                    "nextName",
+                    "nextUnread"
+                  ],
+                  "span": {
+                    "start": 650,
+                    "end": 672
+                  }
+                },
+                "span": {
+                  "start": 650,
+                  "end": 672
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"loaded\", nextName, nextUnread);\n  }",
+              "span": {
+                "start": 677,
+                "end": 724
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@239",
+                  "event": "loaded",
+                  "span": {
+                    "start": 683,
+                    "end": 719
+                  },
+                  "arguments": [
+                    {
+                      "start": 698,
+                      "end": 706
+                    },
+                    {
+                      "start": 708,
+                      "end": 718
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 649,
+              "end": 724
+            }
+          },
+          "span": {
+            "start": 627,
+            "end": 726
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "status@480",
+              "span": {
+                "start": 737,
+                "end": 743
+              }
+            },
+            {
+              "kind": "Ref",
+              "binding": "attempts@510",
+              "span": {
+                "start": 745,
+                "end": 753
+              }
+            }
+          ],
+          "array": true,
+          "callback": {
+            "parameters": [
+              {
+                "pattern": {
+                  "code": "[nextStatus, nextAttempts]",
+                  "names": [
+                    "nextStatus",
+                    "nextAttempts"
+                  ],
+                  "span": {
+                    "start": 757,
+                    "end": 783
+                  }
+                },
+                "span": {
+                  "start": 757,
+                  "end": 783
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"progress\", nextStatus, nextAttempts);\n  }",
+              "span": {
+                "start": 788,
+                "end": 841
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@239",
+                  "event": "progress",
+                  "span": {
+                    "start": 794,
+                    "end": 836
+                  },
+                  "arguments": [
+                    {
+                      "start": 811,
+                      "end": 821
+                    },
+                    {
+                      "start": 823,
+                      "end": 835
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 756,
+              "end": 841
+            }
+          },
+          "span": {
+            "start": 730,
+            "end": 843
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "unread@455",
+              "span": {
+                "start": 853,
+                "end": 859
+              }
+            }
+          ],
+          "callback": {
+            "async": true,
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 868,
+                  "end": 873
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    const text = await Promise.resolve(`${value} unread`);\n    summary.value = text;\n  }",
+              "span": {
+                "start": 878,
+                "end": 968
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 903,
+                    "end": 910
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "summary@537",
+                  "operator": "=",
+                  "span": {
+                    "start": 943,
+                    "end": 963
+                  },
+                  "target": {
+                    "start": 943,
+                    "end": 956
+                  },
+                  "value": {
+                    "start": 959,
+                    "end": 963
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 861,
+              "end": 968
+            }
+          },
+          "span": {
+            "start": 847,
+            "end": 970
+          }
+        },
+        {
+          "kind": "WatchEffect",
+          "effect": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    const text = `${status.value} after ${attempts.value}`;\n    await Promise.resolve();\n    emit(\"seen\", text);\n  }",
+              "span": {
+                "start": 998,
+                "end": 1116
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "status@480",
+                  "span": {
+                    "start": 1020,
+                    "end": 1032
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "attempts@510",
+                  "span": {
+                    "start": 1042,
+                    "end": 1056
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 1070,
+                    "end": 1077
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@239",
+                  "event": "seen",
+                  "span": {
+                    "start": 1093,
+                    "end": 1111
+                  },
+                  "arguments": [
+                    {
+                      "start": 1106,
+                      "end": 1110
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 986,
+              "end": 1116
+            }
+          },
+          "span": {
+            "start": 974,
+            "end": 1118
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    await Promise.resolve();\n    name.value = folder;\n    unread.value = 3;\n  }",
+              "span": {
+                "start": 1144,
+                "end": 1225
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 1156,
+                    "end": 1163
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "name@424",
+                  "operator": "=",
+                  "span": {
+                    "start": 1179,
+                    "end": 1198
+                  },
+                  "target": {
+                    "start": 1179,
+                    "end": 1189
+                  },
+                  "value": {
+                    "start": 1192,
+                    "end": 1198
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "folder@205",
+                  "span": {
+                    "start": 1192,
+                    "end": 1198
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "unread@455",
+                  "operator": "=",
+                  "span": {
+                    "start": 1204,
+                    "end": 1220
+                  },
+                  "target": {
+                    "start": 1204,
+                    "end": 1216
+                  },
+                  "value": {
+                    "start": 1219,
+                    "end": 1220
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1132,
+              "end": 1225
+            }
+          },
+          "span": {
+            "start": 1122,
+            "end": 1227
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "unmounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    clearInterval(timer);\n  }",
+              "span": {
+                "start": 1249,
+                "end": 1280
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "clearInterval",
+                  "span": {
+                    "start": 1255,
+                    "end": 1268
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "timer@573",
+                  "span": {
+                    "start": 1269,
+                    "end": 1274
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1243,
+              "end": 1280
+            }
+          },
+          "span": {
+            "start": 1231,
+            "end": 1282
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "save@1301",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    const label = name.value.trim();\n    status.value = `saving ${label}`;\n    attempts.value += 1;\n    await nextTick();\n    status.value = \"saved\";\n  }",
+              "span": {
+                "start": 1308,
+                "end": 1463
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "name@424",
+                  "span": {
+                    "start": 1328,
+                    "end": 1338
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "status@480",
+                  "operator": "=",
+                  "span": {
+                    "start": 1351,
+                    "end": 1383
+                  },
+                  "target": {
+                    "start": 1351,
+                    "end": 1363
+                  },
+                  "value": {
+                    "start": 1366,
+                    "end": 1383
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "attempts@510",
+                  "operator": "+=",
+                  "span": {
+                    "start": 1389,
+                    "end": 1408
+                  },
+                  "target": {
+                    "start": 1389,
+                    "end": 1403
+                  },
+                  "value": {
+                    "start": 1407,
+                    "end": 1408
+                  }
+                },
+                {
+                  "kind": "Api",
+                  "api": "nextTick",
+                  "span": {
+                    "start": 1420,
+                    "end": 1428
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "status@480",
+                  "operator": "=",
+                  "span": {
+                    "start": 1436,
+                    "end": 1458
+                  },
+                  "target": {
+                    "start": 1436,
+                    "end": 1448
+                  },
+                  "value": {
+                    "start": 1451,
+                    "end": 1458
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1305,
+              "end": 1463
+            }
+          },
+          "span": {
+            "start": 1286,
+            "end": 1463
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "refreshEverySecond@1476",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    clearInterval(timer);\n    timer = setInterval(() => {\n      name.value = `${folder} (refreshed)`;\n      unread.value += 1;\n    }, 1000);\n  }",
+              "span": {
+                "start": 1497,
+                "end": 1643
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "clearInterval",
+                  "span": {
+                    "start": 1503,
+                    "end": 1516
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "timer@573",
+                  "span": {
+                    "start": 1517,
+                    "end": 1522
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "timer@573",
+                  "operator": "=",
+                  "span": {
+                    "start": 1529,
+                    "end": 1638
+                  },
+                  "target": {
+                    "start": 1529,
+                    "end": 1534
+                  },
+                  "value": {
+                    "start": 1537,
+                    "end": 1638
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "setInterval",
+                  "span": {
+                    "start": 1537,
+                    "end": 1548
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "name@424",
+                  "operator": "=",
+                  "span": {
+                    "start": 1563,
+                    "end": 1599
+                  },
+                  "target": {
+                    "start": 1563,
+                    "end": 1573
+                  },
+                  "value": {
+                    "start": 1576,
+                    "end": 1599
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "folder@205",
+                  "span": {
+                    "start": 1579,
+                    "end": 1585
+                  },
+                  "later": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "unread@455",
+                  "operator": "+=",
+                  "span": {
+                    "start": 1607,
+                    "end": 1624
+                  },
+                  "target": {
+                    "start": 1607,
+                    "end": 1619
+                  },
+                  "value": {
+                    "start": 1623,
+                    "end": 1624
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1494,
+              "end": 1643
+            }
+          },
+          "span": {
+            "start": 1467,
+            "end": 1643
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "markAllRead@1656",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    queueMicrotask(() => {\n      unread.value = 0;\n      name.value = `${folder}, all read`;\n    });\n  }",
+              "span": {
+                "start": 1670,
+                "end": 1776
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "queueMicrotask",
+                  "span": {
+                    "start": 1676,
+                    "end": 1690
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "unread@455",
+                  "operator": "=",
+                  "span": {
+                    "start": 1705,
+                    "end": 1721
+                  },
+                  "target": {
+                    "start": 1705,
+                    "end": 1717
+                  },
+                  "value": {
+                    "start": 1720,
+                    "end": 1721
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "name@424",
+                  "operator": "=",
+                  "span": {
+                    "start": 1729,
+                    "end": 1763
+                  },
+                  "target": {
+                    "start": 1729,
+                    "end": 1739
+                  },
+                  "value": {
+                    "start": 1742,
+                    "end": 1763
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "folder@205",
+                  "span": {
+                    "start": 1745,
+                    "end": 1751
+                  },
+                  "later": true
+                }
+              ]
+            },
+            "span": {
+              "start": 1667,
+              "end": 1776
+            }
+          },
+          "span": {
+            "start": 1647,
+            "end": 1776
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "note@1789",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    void Promise.resolve().then(() => {\n      emit(\"noted\", `${name.value}: ${unread.value}`);\n    });\n  }",
+              "span": {
+                "start": 1796,
+                "end": 1904
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 1807,
+                    "end": 1814
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@239",
+                  "event": "noted",
+                  "span": {
+                    "start": 1844,
+                    "end": 1891
+                  },
+                  "arguments": [
+                    {
+                      "start": 1858,
+                      "end": 1890
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "name@424",
+                  "span": {
+                    "start": 1861,
+                    "end": 1871
+                  },
+                  "later": true
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "unread@455",
+                  "span": {
+                    "start": 1876,
+                    "end": 1888
+                  },
+                  "later": true
+                }
+              ]
+            },
+            "span": {
+              "start": 1793,
+              "end": 1904
+            }
+          },
+          "span": {
+            "start": 1780,
+            "end": 1904
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "mailbox",
+            "span": {
+              "start": 1930,
+              "end": 1945
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Mailbox",
+            "span": {
+              "start": 1946,
+              "end": 1966
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "name.value",
+                  "span": {
+                    "start": 1979,
+                    "end": 1989
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@424",
+                      "span": {
+                        "start": 1979,
+                        "end": 1989
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1978,
+                  "end": 1990
+                }
+              }
+            ],
+            "span": {
+              "start": 1974,
+              "end": 1995
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 2005,
+                  "end": 2018
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "summary.value",
+                  "span": {
+                    "start": 2020,
+                    "end": 2033
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "summary@537",
+                      "span": {
+                        "start": 2020,
+                        "end": 2033
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 2019,
+                  "end": 2034
+                }
+              }
+            ],
+            "span": {
+              "start": 2002,
+              "end": 2038
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Status: ",
+                "span": {
+                  "start": 2048,
+                  "end": 2056
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "status.value",
+                  "span": {
+                    "start": 2057,
+                    "end": 2069
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "status@480",
+                      "span": {
+                        "start": 2057,
+                        "end": 2069
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 2056,
+                  "end": 2070
+                }
+              }
+            ],
+            "span": {
+              "start": 2045,
+              "end": 2074
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2089,
+                  "end": 2102
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "save@1301",
+                  "span": {
+                    "start": 2112,
+                    "end": 2116
+                  }
+                },
+                "span": {
+                  "start": 2103,
+                  "end": 2117
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Save",
+                "span": {
+                  "start": 2118,
+                  "end": 2138
+                }
+              }
+            ],
+            "span": {
+              "start": 2081,
+              "end": 2147
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2162,
+                  "end": 2175
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "refreshEverySecond@1476",
+                  "span": {
+                    "start": 2185,
+                    "end": 2203
+                  }
+                },
+                "span": {
+                  "start": 2176,
+                  "end": 2204
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Refresh every second",
+                "span": {
+                  "start": 2205,
+                  "end": 2241
+                }
+              }
+            ],
+            "span": {
+              "start": 2154,
+              "end": 2250
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2265,
+                  "end": 2278
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "markAllRead@1656",
+                  "span": {
+                    "start": 2288,
+                    "end": 2299
+                  }
+                },
+                "span": {
+                  "start": 2279,
+                  "end": 2300
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Mark all read",
+                "span": {
+                  "start": 2301,
+                  "end": 2330
+                }
+              }
+            ],
+            "span": {
+              "start": 2257,
+              "end": 2339
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 2354,
+                  "end": 2367
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "note@1789",
+                  "span": {
+                    "start": 2377,
+                    "end": 2381
+                  }
+                },
+                "span": {
+                  "start": 2368,
+                  "end": 2382
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Note",
+                "span": {
+                  "start": 2383,
+                  "end": 2403
+                }
+              }
+            ],
+            "span": {
+              "start": 2346,
+              "end": 2412
+            }
+          }
+        ],
+        "span": {
+          "start": 1921,
+          "end": 2427
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Mailbox",
+      "span": {
+        "start": 171,
+        "end": 2434
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "MailboxProps",
+      "exported": true,
+      "code": "interface MailboxProps {\n  folder: string;\n}",
+      "span": {
+        "start": 125,
+        "end": 169
+      }
+    }
+  ]
+}

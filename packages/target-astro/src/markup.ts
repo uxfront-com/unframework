@@ -1,4 +1,4 @@
-// The component's markup: the Astro dialect (`astroDialect`, design §4.3), and the attributes
+// The component's markup: the Astro dialect (`astroDialect`, ADR-0026), and the attributes
 // Astro's own types do not declare, which `astro check` (L4) would reject as written.
 import { astroDialect, isIdentifier, printMarkup } from "@unframework/codegen";
 import type { MarkupDialect, RewriteRules } from "@unframework/codegen";
@@ -46,7 +46,11 @@ const dialect: MarkupDialect = {
   },
 };
 
-/** A component's markup, with references spelled by `rewrite` when the frontmatter renames them. */
+/**
+ * A component's markup, with references spelled by `rewrite`, as the frontmatter declares them
+ * (`count.value` is `count`), or as written without it. Listeners and template refs print
+ * nothing: the dialect is inert.
+ */
 export function printComponentMarkup(component: UfComponent, rewrite?: RewriteRules): string {
   return printMarkup(component.render, dialect, { component, ...(rewrite ? { rewrite } : {}) });
 }

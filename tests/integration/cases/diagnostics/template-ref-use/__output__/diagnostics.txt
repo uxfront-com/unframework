@@ -1,0 +1,8 @@
+error[UF3028]: Setting `textContent` changes the element's text behind its framework's back: every framework renders the element from state, and Vue's, React's and Svelte's would undo or trip over the change.
+  --> diagnostics/template-ref-use/HelpPanel.uf.tsx:10:13
+   |
+10 |     if (el) el.textContent = "Press the question mark to see the shortcuts.";
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Render it from state: keep what the element shows in a ref, and let the template render it.
+   = see: https://unframework.dev/diagnostics/UF3028

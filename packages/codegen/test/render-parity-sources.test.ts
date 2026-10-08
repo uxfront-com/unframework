@@ -1,4 +1,4 @@
-// The source cases (design §4.5): every one is a component the analyser accepts, the suites put
+// The source cases: every one is a component the analyser accepts, the suites put
 // them into one component without changing what any renders, and the seeded fuzz is
 // deterministic and as varied as the printers' hard parts.
 import { walk } from "@unframework/ir";

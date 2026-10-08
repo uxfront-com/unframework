@@ -1,0 +1,1226 @@
+{
+  "irVersion": 1,
+  "file": "events/form-events/SignupForm.uf.tsx",
+  "components": [
+    {
+      "name": "SignupForm",
+      "span": {
+        "start": 49,
+        "end": 1998
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@96",
+        "type": {
+          "code": "{\n    signup: [fullName: string, email: string, plan: string, newsletter: boolean];\n  }",
+          "span": {
+            "start": 115,
+            "end": 202
+          }
+        },
+        "events": [
+          {
+            "name": "signup",
+            "parameters": [
+              {
+                "name": "fullName",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 140,
+                    "end": 146
+                  }
+                },
+                "span": {
+                  "start": 130,
+                  "end": 146
+                }
+              },
+              {
+                "name": "email",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 155,
+                    "end": 161
+                  }
+                },
+                "span": {
+                  "start": 148,
+                  "end": 161
+                }
+              },
+              {
+                "name": "plan",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 169,
+                    "end": 175
+                  }
+                },
+                "span": {
+                  "start": 163,
+                  "end": 175
+                }
+              },
+              {
+                "name": "newsletter",
+                "type": {
+                  "code": "boolean",
+                  "span": {
+                    "start": 189,
+                    "end": 196
+                  }
+                },
+                "span": {
+                  "start": 177,
+                  "end": 196
+                }
+              }
+            ],
+            "span": {
+              "start": 121,
+              "end": 197
+            }
+          }
+        ],
+        "span": {
+          "start": 90,
+          "end": 206
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@96",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 96,
+            "end": 100
+          }
+        },
+        {
+          "id": "fullName@216",
+          "name": "fullName",
+          "kind": "state",
+          "span": {
+            "start": 216,
+            "end": 224
+          }
+        },
+        {
+          "id": "email@244",
+          "name": "email",
+          "kind": "state",
+          "span": {
+            "start": 244,
+            "end": 249
+          }
+        },
+        {
+          "id": "plan@269",
+          "name": "plan",
+          "kind": "state",
+          "span": {
+            "start": 269,
+            "end": 273
+          }
+        },
+        {
+          "id": "newsletter@297",
+          "name": "newsletter",
+          "kind": "state",
+          "span": {
+            "start": 297,
+            "end": 307
+          }
+        },
+        {
+          "id": "focused@330",
+          "name": "focused",
+          "kind": "state",
+          "span": {
+            "start": 330,
+            "end": 337
+          }
+        },
+        {
+          "id": "submit@365",
+          "name": "submit",
+          "kind": "localFn",
+          "span": {
+            "start": 365,
+            "end": 371
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "fullName@216",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 231,
+              "end": 233
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 210,
+            "end": 235
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "email@244",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 256,
+              "end": 258
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 238,
+            "end": 260
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "plan@269",
+          "initial": {
+            "code": "\"free\"",
+            "span": {
+              "start": 280,
+              "end": 286
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 263,
+            "end": 288
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "newsletter@297",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 314,
+              "end": 319
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 291,
+            "end": 321
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "focused@330",
+          "initial": {
+            "code": "\"none\"",
+            "span": {
+              "start": 344,
+              "end": 350
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 324,
+            "end": 352
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "submit@365",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "SubmitEvent",
+                  "span": {
+                    "start": 379,
+                    "end": 390
+                  }
+                },
+                "event": "SubmitEvent",
+                "span": {
+                  "start": 372,
+                  "end": 390
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    event.preventDefault();\n    emit(\"signup\", fullName.value, email.value, plan.value, newsletter.value);\n  }",
+              "span": {
+                "start": 392,
+                "end": 504
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 398,
+                    "end": 418
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@96",
+                  "event": "signup",
+                  "span": {
+                    "start": 426,
+                    "end": 499
+                  },
+                  "arguments": [
+                    {
+                      "start": 441,
+                      "end": 455
+                    },
+                    {
+                      "start": 457,
+                      "end": 468
+                    },
+                    {
+                      "start": 470,
+                      "end": 480
+                    },
+                    {
+                      "start": 482,
+                      "end": 498
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "fullName@216",
+                  "span": {
+                    "start": 441,
+                    "end": 455
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "email@244",
+                  "span": {
+                    "start": 457,
+                    "end": 468
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "plan@269",
+                  "span": {
+                    "start": 470,
+                    "end": 480
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "newsletter@297",
+                  "span": {
+                    "start": 482,
+                    "end": 498
+                  }
+                }
+              ]
+            },
+            "eventControls": [
+              {
+                "method": "preventDefault",
+                "span": {
+                  "start": 398,
+                  "end": 421
+                }
+              }
+            ],
+            "span": {
+              "start": 371,
+              "end": 504
+            }
+          },
+          "span": {
+            "start": 356,
+            "end": 504
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "form",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "signup-form",
+            "span": {
+              "start": 527,
+              "end": 546
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Sign up",
+            "span": {
+              "start": 547,
+              "end": 567
+            }
+          },
+          {
+            "kind": "Event",
+            "event": "submit",
+            "handler": {
+              "kind": "Function",
+              "binding": "submit@365",
+              "span": {
+                "start": 578,
+                "end": 584
+              }
+            },
+            "span": {
+              "start": 568,
+              "end": 585
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Name",
+                "span": {
+                  "start": 600,
+                  "end": 622
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "name",
+                    "span": {
+                      "start": 639,
+                      "end": 650
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "change",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "Event",
+                            "span": {
+                              "start": 672,
+                              "end": 677
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "(fullName.value = (event.currentTarget as HTMLInputElement).value)",
+                          "span": {
+                            "start": 682,
+                            "end": 748
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "fullName@216",
+                              "operator": "=",
+                              "span": {
+                                "start": 682,
+                                "end": 748
+                              },
+                              "target": {
+                                "start": 683,
+                                "end": 697
+                              },
+                              "value": {
+                                "start": 700,
+                                "end": 747
+                              },
+                              "arrowBody": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 701,
+                                "end": 720
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 671,
+                          "end": 748
+                        }
+                      },
+                      "span": {
+                        "start": 671,
+                        "end": 748
+                      }
+                    },
+                    "span": {
+                      "start": 661,
+                      "end": 749
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "focus",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "(focused.value = \"name\")",
+                          "span": {
+                            "start": 775,
+                            "end": 799
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "focused@330",
+                              "operator": "=",
+                              "span": {
+                                "start": 775,
+                                "end": 799
+                              },
+                              "target": {
+                                "start": 776,
+                                "end": 789
+                              },
+                              "value": {
+                                "start": 792,
+                                "end": 798
+                              },
+                              "arrowBody": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 769,
+                          "end": 799
+                        }
+                      },
+                      "span": {
+                        "start": 769,
+                        "end": 799
+                      }
+                    },
+                    "span": {
+                      "start": 760,
+                      "end": 800
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "blur",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "(focused.value = \"none\")",
+                          "span": {
+                            "start": 825,
+                            "end": 849
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "focused@330",
+                              "operator": "=",
+                              "span": {
+                                "start": 825,
+                                "end": 849
+                              },
+                              "target": {
+                                "start": 826,
+                                "end": 839
+                              },
+                              "value": {
+                                "start": 842,
+                                "end": 848
+                              },
+                              "arrowBody": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 819,
+                          "end": 849
+                        }
+                      },
+                      "span": {
+                        "start": 819,
+                        "end": 849
+                      }
+                    },
+                    "span": {
+                      "start": 811,
+                      "end": 850
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 622,
+                  "end": 861
+                }
+              }
+            ],
+            "span": {
+              "start": 593,
+              "end": 876
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Email",
+                "span": {
+                  "start": 890,
+                  "end": 913
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "email",
+                    "span": {
+                      "start": 930,
+                      "end": 942
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "email",
+                    "span": {
+                      "start": 953,
+                      "end": 965
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "input",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "InputEvent",
+                            "span": {
+                              "start": 986,
+                              "end": 991
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "(email.value = (event.currentTarget as HTMLInputElement).value)",
+                          "span": {
+                            "start": 996,
+                            "end": 1059
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "email@244",
+                              "operator": "=",
+                              "span": {
+                                "start": 996,
+                                "end": 1059
+                              },
+                              "target": {
+                                "start": 997,
+                                "end": 1008
+                              },
+                              "value": {
+                                "start": 1011,
+                                "end": 1058
+                              },
+                              "arrowBody": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 1012,
+                                "end": 1031
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 985,
+                          "end": 1059
+                        }
+                      },
+                      "span": {
+                        "start": 985,
+                        "end": 1059
+                      }
+                    },
+                    "span": {
+                      "start": 976,
+                      "end": 1060
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "focus",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "(focused.value = \"email\")",
+                          "span": {
+                            "start": 1086,
+                            "end": 1111
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "focused@330",
+                              "operator": "=",
+                              "span": {
+                                "start": 1086,
+                                "end": 1111
+                              },
+                              "target": {
+                                "start": 1087,
+                                "end": 1100
+                              },
+                              "value": {
+                                "start": 1103,
+                                "end": 1110
+                              },
+                              "arrowBody": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1080,
+                          "end": 1111
+                        }
+                      },
+                      "span": {
+                        "start": 1080,
+                        "end": 1111
+                      }
+                    },
+                    "span": {
+                      "start": 1071,
+                      "end": 1112
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "blur",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "(focused.value = \"none\")",
+                          "span": {
+                            "start": 1137,
+                            "end": 1161
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "focused@330",
+                              "operator": "=",
+                              "span": {
+                                "start": 1137,
+                                "end": 1161
+                              },
+                              "target": {
+                                "start": 1138,
+                                "end": 1151
+                              },
+                              "value": {
+                                "start": 1154,
+                                "end": 1160
+                              },
+                              "arrowBody": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1131,
+                          "end": 1161
+                        }
+                      },
+                      "span": {
+                        "start": 1131,
+                        "end": 1161
+                      }
+                    },
+                    "span": {
+                      "start": 1123,
+                      "end": 1162
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 913,
+                  "end": 1173
+                }
+              }
+            ],
+            "span": {
+              "start": 883,
+              "end": 1188
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Plan",
+                "span": {
+                  "start": 1202,
+                  "end": 1224
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "select",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "plan",
+                    "span": {
+                      "start": 1242,
+                      "end": 1253
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "change",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "Event",
+                            "span": {
+                              "start": 1275,
+                              "end": 1280
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "(plan.value = (event.currentTarget as HTMLSelectElement).value)",
+                          "span": {
+                            "start": 1285,
+                            "end": 1348
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "plan@269",
+                              "operator": "=",
+                              "span": {
+                                "start": 1285,
+                                "end": 1348
+                              },
+                              "target": {
+                                "start": 1286,
+                                "end": 1296
+                              },
+                              "value": {
+                                "start": 1299,
+                                "end": 1347
+                              },
+                              "arrowBody": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 1300,
+                                "end": 1319
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1274,
+                          "end": 1348
+                        }
+                      },
+                      "span": {
+                        "start": 1274,
+                        "end": 1348
+                      }
+                    },
+                    "span": {
+                      "start": 1264,
+                      "end": 1349
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "option",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "value",
+                        "value": "free",
+                        "span": {
+                          "start": 1378,
+                          "end": 1390
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Free",
+                        "span": {
+                          "start": 1391,
+                          "end": 1395
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1370,
+                      "end": 1404
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "option",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "value",
+                        "value": "pro",
+                        "span": {
+                          "start": 1423,
+                          "end": 1434
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Pro",
+                        "span": {
+                          "start": 1435,
+                          "end": 1438
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1415,
+                      "end": 1447
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1224,
+                  "end": 1465
+                }
+              }
+            ],
+            "span": {
+              "start": 1195,
+              "end": 1480
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "newsletter",
+                    "span": {
+                      "start": 1520,
+                      "end": 1537
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "checkbox",
+                    "span": {
+                      "start": 1548,
+                      "end": 1563
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "change",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "Event",
+                            "span": {
+                              "start": 1585,
+                              "end": 1590
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "(newsletter.value = (event.currentTarget as HTMLInputElement).checked)",
+                          "span": {
+                            "start": 1607,
+                            "end": 1677
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "newsletter@297",
+                              "operator": "=",
+                              "span": {
+                                "start": 1607,
+                                "end": 1677
+                              },
+                              "target": {
+                                "start": 1608,
+                                "end": 1624
+                              },
+                              "value": {
+                                "start": 1627,
+                                "end": 1676
+                              },
+                              "arrowBody": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 1628,
+                                "end": 1647
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1584,
+                          "end": 1677
+                        }
+                      },
+                      "span": {
+                        "start": 1584,
+                        "end": 1677
+                      }
+                    },
+                    "span": {
+                      "start": 1574,
+                      "end": 1689
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 1503,
+                  "end": 1700
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "Send me the newsletter",
+                "span": {
+                  "start": 1700,
+                  "end": 1738
+                }
+              }
+            ],
+            "span": {
+              "start": 1487,
+              "end": 1746
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 1756,
+                  "end": 1769
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "`Name: ${fullName.value}; email: ${email.value}; plan: ${plan.value}; newsletter: ${newsletter.value ? \"yes\" : \"no\"}; focus: ${focused.value}`",
+                  "span": {
+                    "start": 1780,
+                    "end": 1922
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "fullName@216",
+                      "span": {
+                        "start": 1789,
+                        "end": 1803
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "email@244",
+                      "span": {
+                        "start": 1815,
+                        "end": 1826
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "plan@269",
+                      "span": {
+                        "start": 1837,
+                        "end": 1847
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "newsletter@297",
+                      "span": {
+                        "start": 1864,
+                        "end": 1880
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "focused@330",
+                      "span": {
+                        "start": 1907,
+                        "end": 1920
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1779,
+                  "end": 1923
+                }
+              }
+            ],
+            "span": {
+              "start": 1753,
+              "end": 1934
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "submit",
+                "span": {
+                  "start": 1949,
+                  "end": 1962
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Sign up",
+                "span": {
+                  "start": 1963,
+                  "end": 1970
+                }
+              }
+            ],
+            "span": {
+              "start": 1941,
+              "end": 1979
+            }
+          }
+        ],
+        "span": {
+          "start": 521,
+          "end": 1991
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SignupForm",
+      "span": {
+        "start": 49,
+        "end": 1998
+      }
+    }
+  ],
+  "types": []
+}

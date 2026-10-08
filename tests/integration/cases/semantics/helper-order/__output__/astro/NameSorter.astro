@@ -1,0 +1,15 @@
+---
+const names = ["Cy", "Al"].toSorted((a, b) => compare(a, b));
+const count = 0 as number;
+
+function compare(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+---
+
+<section class="name-sorter" aria-label="Names">
+  <p>Names: {names.join(", ")}</p>
+  <p>Added: {count}</p>
+  <button type="button">Add Bo</button>
+  <button type="button">Report</button>
+</section>

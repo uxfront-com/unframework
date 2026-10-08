@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: '3 stars' })",
+      "dom": [
+        "<div aria-label=\"Rating\" class=\"star-rating\" role=\"group\">",
+        "  <ul>",
+        "    <li>",
+        "      <button aria-pressed=\"true\" type=\"button\">",
+        "        \"1 star\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button aria-pressed=\"true\" type=\"button\">",
+        "        \"2 stars\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button aria-pressed=\"true\" type=\"button\" uf:focused=\"\">",
+        "        \"3 stars\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button aria-pressed=\"false\" type=\"button\">",
+        "        \"4 stars\"",
+        "      </button>",
+        "    </li>",
+        "    <li>",
+        "      <button aria-pressed=\"false\" type=\"button\">",
+        "        \"5 stars\"",
+        "      </button>",
+        "    </li>",
+        "  </ul>",
+        "  <p role=\"status\">",
+        "    \"3 of 5\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Clear\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- group \"Rating\":",
+        "  - list:",
+        "    - listitem:",
+        "      - button \"1 star\" [pressed]",
+        "    - listitem:",
+        "      - button \"2 stars\" [pressed]",
+        "    - listitem:",
+        "      - button \"3 stars\" [pressed]",
+        "    - listitem:",
+        "      - button \"4 stars\"",
+        "    - listitem:",
+        "      - button \"5 stars\"",
+        "  - status: 3 of 5",
+        "  - button \"Clear\""
+      ],
+      "events": {
+        "preview": [
+          [
+            3
+          ]
+        ],
+        "rate": [
+          [
+            3,
+            0
+          ]
+        ]
+      }
+    }
+  ]
+}

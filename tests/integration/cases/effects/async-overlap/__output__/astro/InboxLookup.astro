@@ -1,0 +1,31 @@
+---
+const answers = [] as string[];
+const ordering = "none" as string;
+const messages = [] as string[];
+const loading = false as boolean;
+const failure = "" as string;
+const unread = 0 as number;
+---
+
+<section class="inbox-lookup" aria-label="Inbox">
+  <button type="button">Find Ann</button>
+  <button type="button">Find Anna</button>
+  <button type="button">Answer lookups</button>
+  <ol aria-label="Answers">
+    {answers.map((line) => (
+      <li>{line}</li>
+    ))}
+  </ol>
+  <button type="button">Switch order</button>
+  <button type="button">Answer order</button>
+  <p>Order: {ordering}</p>
+  <button type="button">Load</button>
+  <button type="button">Refresh</button>
+  <button type="button">Reply</button>
+  <button type="button">Fail</button>
+  <p
+    role="status"
+  >{loading ? "Loading" : `${messages.length} messages`}{failure === "" ? "" : `, ${failure}`}</p>
+  <button type="button">Mark twice</button>
+  <p>Unread: {unread}</p>
+</section>

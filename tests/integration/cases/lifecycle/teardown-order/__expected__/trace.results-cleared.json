@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Clear results' })",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-session\">",
+        "  <label>",
+        "    \"Query\"",
+        "    <input name=\"query\" uf:value=\"vue\">",
+        "  </label>",
+        "  <ul aria-label=\"Results\"></ul>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Clear results\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - text: Query",
+        "  - textbox \"Query\": vue",
+        "  - list \"Results\"",
+        "  - button \"Clear results\""
+      ],
+      "events": {
+        "summary": [
+          [
+            "0 results for \"vue\""
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+- region "Filters":
+  - button "Show colours"
+  - paragraph: No colour
+  - button "Add a note"

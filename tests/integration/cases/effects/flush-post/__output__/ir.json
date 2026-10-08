@@ -1,0 +1,433 @@
+{
+  "irVersion": 1,
+  "file": "effects/flush-post/MessageList.uf.tsx",
+  "components": [
+    {
+      "name": "MessageList",
+      "span": {
+        "start": 72,
+        "end": 814
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@120",
+        "type": {
+          "code": "{ rendered: [count: number] }",
+          "span": {
+            "start": 139,
+            "end": 168
+          }
+        },
+        "events": [
+          {
+            "name": "rendered",
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 159,
+                    "end": 165
+                  }
+                },
+                "span": {
+                  "start": 152,
+                  "end": 165
+                }
+              }
+            ],
+            "span": {
+              "start": 141,
+              "end": 166
+            }
+          }
+        ],
+        "span": {
+          "start": 114,
+          "end": 172
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@120",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 120,
+            "end": 124
+          }
+        },
+        {
+          "id": "messages@182",
+          "name": "messages",
+          "kind": "state",
+          "span": {
+            "start": 182,
+            "end": 190
+          }
+        },
+        {
+          "id": "list@231",
+          "name": "list",
+          "kind": "templateRef",
+          "span": {
+            "start": 231,
+            "end": 235
+          }
+        },
+        {
+          "id": "add@417",
+          "name": "add",
+          "kind": "localFn",
+          "span": {
+            "start": 417,
+            "end": 420
+          }
+        },
+        {
+          "id": "message@631",
+          "name": "message",
+          "kind": "loopVar",
+          "span": {
+            "start": 631,
+            "end": 638
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "messages@182",
+          "initial": {
+            "code": "[\"Welcome to the team\"]",
+            "span": {
+              "start": 197,
+              "end": 220
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 176,
+            "end": 222
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "list@231",
+          "type": {
+            "code": "HTMLUListElement",
+            "span": {
+              "start": 253,
+              "end": 269
+            }
+          },
+          "span": {
+            "start": 225,
+            "end": 273
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "messages@182",
+              "span": {
+                "start": 288,
+                "end": 296
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n      emit(\"rendered\", list.value?.childElementCount ?? 0);\n    }",
+              "span": {
+                "start": 308,
+                "end": 375
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@120",
+                  "event": "rendered",
+                  "span": {
+                    "start": 316,
+                    "end": 368
+                  },
+                  "arguments": [
+                    {
+                      "start": 333,
+                      "end": 367
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "list@231",
+                  "span": {
+                    "start": 333,
+                    "end": 343
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 302,
+              "end": 375
+            }
+          },
+          "post": true,
+          "span": {
+            "start": 277,
+            "end": 404
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "add@417",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    messages.value = [...messages.value, `Message ${messages.value.length + 1}`];\n  }",
+              "span": {
+                "start": 423,
+                "end": 510
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "messages@182",
+                  "operator": "=",
+                  "span": {
+                    "start": 429,
+                    "end": 505
+                  },
+                  "target": {
+                    "start": 429,
+                    "end": 443
+                  },
+                  "value": {
+                    "start": 446,
+                    "end": 505
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "messages@182",
+                  "span": {
+                    "start": 450,
+                    "end": 464
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "messages@182",
+                  "span": {
+                    "start": 477,
+                    "end": 491
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 420,
+              "end": 510
+            }
+          },
+          "span": {
+            "start": 408,
+            "end": 510
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "message-list",
+            "span": {
+              "start": 536,
+              "end": 556
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Messages",
+            "span": {
+              "start": 557,
+              "end": 578
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Ref",
+                "binding": "list@231",
+                "span": {
+                  "start": 590,
+                  "end": 600
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "messages.value",
+                  "span": {
+                    "start": 611,
+                    "end": 625
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "messages@182",
+                      "span": {
+                        "start": 611,
+                        "end": 625
+                      }
+                    }
+                  ]
+                },
+                "item": "message@631",
+                "key": {
+                  "code": "message",
+                  "span": {
+                    "start": 664,
+                    "end": 671
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "message@631",
+                      "span": {
+                        "start": 664,
+                        "end": 671
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "message",
+                        "span": {
+                          "start": 674,
+                          "end": 681
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "message@631",
+                            "span": {
+                              "start": 674,
+                              "end": 681
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 673,
+                        "end": 682
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 655,
+                    "end": 687
+                  }
+                },
+                "span": {
+                  "start": 611,
+                  "end": 698
+                }
+              }
+            ],
+            "span": {
+              "start": 586,
+              "end": 711
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 726,
+                  "end": 739
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "add@417",
+                  "span": {
+                    "start": 749,
+                    "end": 752
+                  }
+                },
+                "span": {
+                  "start": 740,
+                  "end": 753
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add a message",
+                "span": {
+                  "start": 754,
+                  "end": 783
+                }
+              }
+            ],
+            "span": {
+              "start": 718,
+              "end": 792
+            }
+          }
+        ],
+        "span": {
+          "start": 527,
+          "end": 807
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "MessageList",
+      "span": {
+        "start": 72,
+        "end": 814
+      }
+    }
+  ],
+  "types": []
+}

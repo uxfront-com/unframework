@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "type getByLabel('Command') \"logs\"",
+      "dom": [
+        "<section aria-label=\"Command menu\" class=\"command-menu\">",
+        "  <form aria-label=\"Commands\" role=\"search\">",
+        "    <label>",
+        "      \"Command\"",
+        "      <input name=\"command\" uf:focused=\"\" uf:value=\"logs\">",
+        "    </label>",
+        "  </form>",
+        "  <ul aria-label=\"Suggestions\">",
+        "    <li aria-current=\"true\">",
+        "      \"Deploy\"",
+        "    </li>",
+        "    <li>",
+        "      \"Roll back\"",
+        "    </li>",
+        "    <li>",
+        "      \"Open the logs\"",
+        "    </li>",
+        "  </ul>",
+        "  <label>",
+        "    \"Shortcut name\"",
+        "    <input name=\"shortcut\" uf:value=\"\">",
+        "  </label>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Command menu\":",
+        "  - search \"Commands\":",
+        "    - text: Command",
+        "    - textbox \"Command\": logs",
+        "  - list \"Suggestions\":",
+        "    - listitem: Deploy",
+        "    - listitem: Roll back",
+        "    - listitem: Open the logs",
+        "  - text: Shortcut name",
+        "  - textbox \"Shortcut name\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "type getByLabel('Shortcut name') \"deploy-prod\"",
+      "dom": [
+        "<section aria-label=\"Command menu\" class=\"command-menu\">",
+        "  <form aria-label=\"Commands\" role=\"search\">",
+        "    <label>",
+        "      \"Command\"",
+        "      <input name=\"command\" uf:value=\"logs\">",
+        "    </label>",
+        "  </form>",
+        "  <ul aria-label=\"Suggestions\">",
+        "    <li aria-current=\"true\">",
+        "      \"Deploy\"",
+        "    </li>",
+        "    <li>",
+        "      \"Roll back\"",
+        "    </li>",
+        "    <li>",
+        "      \"Open the logs\"",
+        "    </li>",
+        "  </ul>",
+        "  <label>",
+        "    \"Shortcut name\"",
+        "    <input name=\"shortcut\" uf:focused=\"\" uf:value=\"deploy-prod\">",
+        "  </label>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Command menu\":",
+        "  - search \"Commands\":",
+        "    - text: Command",
+        "    - textbox \"Command\": logs",
+        "  - list \"Suggestions\":",
+        "    - listitem: Deploy",
+        "    - listitem: Roll back",
+        "    - listitem: Open the logs",
+        "  - text: Shortcut name",
+        "  - textbox \"Shortcut name\": deploy-prod"
+      ],
+      "events": {}
+    }
+  ]
+}

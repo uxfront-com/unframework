@@ -1,0 +1,57 @@
+---
+export interface Meeting {
+  id: number;
+  title: string;
+  done: boolean;
+}
+
+export interface Organiser {
+  name: string;
+}
+
+export interface MeetingListProps {
+  meetings: Meeting[];
+  organiser?: Organiser;
+}
+
+type Props = MeetingListProps;
+
+const { meetings, organiser } = Astro.props;
+
+const rooms = ["Atlas", "Borealis"];
+const log = [] as string[];
+const lastKey = "none" as string;
+const clicks = 0 as number;
+const upcoming = meetings.filter((meeting) => !meeting.done);
+---
+
+<section class="meeting-list" aria-label="Meetings">
+  <ul aria-label="Upcoming">
+    {upcoming.map((event) => (
+      <li>
+        <button type="button">{event.title}</button>
+      </li>
+    ))}
+  </ul>
+  <ul aria-label="Rooms">
+    {rooms.map((room) => (
+      <li>
+        <button type="button">{room}</button>
+      </li>
+    ))}
+  </ul>
+  {organiser ? (
+    <button type="button">{`Thank ${organiser.name}`}</button>
+  ) : (
+    <p>No organiser</p>
+  )}
+  <button type="button">Track</button>
+  <p>Clicks: {clicks}</p>
+  <label>Filter<input name="filter" /></label>
+  <p>Last key: {lastKey}</p>
+  <ol aria-label="Log">
+    {log.map((line) => (
+      <li>{line}</li>
+    ))}
+  </ol>
+</section>

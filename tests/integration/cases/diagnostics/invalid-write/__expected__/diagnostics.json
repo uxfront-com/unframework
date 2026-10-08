@@ -1,0 +1,41 @@
+[
+  {
+    "code": "UF2011",
+    "severity": "error",
+    "message": "A setup function whose expression body writes `on.value` returns the written value, which the targets that write state through a setter do not have.",
+    "file": "diagnostics/invalid-write/NotificationToggle.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 23,
+      "offset": 351
+    },
+    "end": {
+      "line": 8,
+      "column": 43,
+      "offset": 371
+    },
+    "help": "Give the function a block body, so that the write is a statement of its own.",
+    "fixes": [
+      {
+        "title": "Give the function a block body",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 350,
+              "end": 350
+            },
+            "text": "{ "
+          },
+          {
+            "span": {
+              "start": 372,
+              "end": 372
+            },
+            "text": "; }"
+          }
+        ]
+      }
+    ]
+  }
+]

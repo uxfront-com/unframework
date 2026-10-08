@@ -1,0 +1,8 @@
+error[UF2014]: A template expression calls `greet`, and it writes `renders.value`: rendering must not change or read what only client code may, and a framework runs it when it decides to.
+  --> diagnostics/impure-function-call/Greeting.uf.tsx:17:32
+   |
+17 |   return <h2 class="greeting">{greet()}</h2>;
+   |                                ^^^^^
+   |
+   = help: Call it from client code (a handler, a watcher's callback, a lifecycle hook), or compute the value without it.
+   = see: https://unframework.dev/diagnostics/UF2014

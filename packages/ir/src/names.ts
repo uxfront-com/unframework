@@ -1,3 +1,4 @@
+import { LIB_DOM_GLOBALS, WINDOW_MEMBER_GLOBALS } from "./browser.ts";
 import { words } from "./tables.ts";
 
 /**
@@ -26,15 +27,107 @@ export function isIdentifier(name: string): boolean {
 }
 
 /**
- * The globals an expression may read (ADR-0035): pure, deterministic built-ins every target
- * reaches, which Vue's templates allow and the Angular target declares as component members.
- * `Date`, `Intl`, `crypto`, `performance` and `globalThis` are not: they make the rendering
- * depend on time, locale or randomness.
+ * The globals a template expression may read (ADR-0035): pure, deterministic built-ins every
+ * target reaches, which Vue's templates allow and the Angular target declares as component
+ * members. `Date`, `Intl`, `crypto`, `performance` and `globalThis` are not: they make the
+ * rendering depend on time, locale or randomness. Setup code reads more ({@link PURE_GLOBALS},
+ * {@link CLIENT_GLOBALS}).
  */
 export const ALLOWED_GLOBALS: ReadonlySet<string> = words(`
   undefined NaN Infinity Math Number String Boolean Array Object JSON parseInt parseFloat isNaN
   isFinite encodeURIComponent decodeURIComponent encodeURI decodeURI
 `);
+
+/**
+ * The globals code that runs during setup may read besides {@link ALLOWED_GLOBALS} (ADR-0045):
+ * the initial values of `ref`, `const` and `let` and the getters of `computed` and of watch
+ * sources, which are script or class code on every target, never an Angular template. They are
+ * deterministic, and Qwik serialises what they build (`new Map()`, `new Set()`).
+ */
+export const PURE_GLOBALS: ReadonlySet<string> = new Set([
+  ...ALLOWED_GLOBALS,
+  ...words("Map Set WeakMap WeakSet Symbol Error TypeError RangeError structuredClone"),
+]);
+
+/**
+ * The globals that schedule code for later (ADR-0048): client code reads them, and an immediate
+ * watcher's callback may not, since a timer started during the server's setup outlives the
+ * request (UF2013).
+ */
+export const SCHEDULING_GLOBALS: ReadonlySet<string> = words(`
+  setTimeout clearTimeout setInterval clearInterval queueMicrotask
+`);
+
+/**
+ * What client code reads besides the browser's globals, which every runtime has: `console`,
+ * `Promise`, and what makes a value depend on time, locale or randomness (`Date`, `Intl`,
+ * `performance`, `crypto`), which only the browser's code may read.
+ */
+const RUNTIME_GLOBALS: ReadonlySet<string> = words("console Promise Date Intl performance crypto");
+
+/**
+ * The globals only a browser has (ADR-0045, ADR-0048): every name lib.dom declares
+ * ({@link LIB_DOM_GLOBALS}: `document`, `localStorage`, `navigator`, `location`, `history`,
+ * `fetch`, `URL`, `FormData`, `AbortController`, the observers, `HTMLInputElement`,
+ * `KeyboardEvent`, …) but the timers, the pure and runtime globals and the `window` members client
+ * code reads through `window` ({@link WINDOW_MEMBER_GLOBALS}). Client code reads them, and an
+ * immediate watcher's callback, which Vue runs during the server's setup, may not (UF2013). Only
+ * some read the rendered DOM ({@link readsDom}).
+ */
+export const BROWSER_GLOBALS: ReadonlySet<string> = new Set(
+  [...LIB_DOM_GLOBALS].filter(
+    (name) =>
+      !WINDOW_MEMBER_GLOBALS.has(name) &&
+      !SCHEDULING_GLOBALS.has(name) &&
+      !PURE_GLOBALS.has(name) &&
+      !RUNTIME_GLOBALS.has(name),
+  ),
+);
+
+/**
+ * The globals client code may read (ADR-0045): handlers, watch callbacks, `watchEffect`, lifecycle
+ * hooks and the local functions they call. They are {@link PURE_GLOBALS}, {@link BROWSER_GLOBALS}
+ * and {@link SCHEDULING_GLOBALS}, with `console`, `Promise`, and what makes a value depend on time,
+ * locale or randomness (`Date`, `Intl`, `performance`, `crypto`), which only the browser's code
+ * may: every target runs client code as script or class code, and only in the browser, and
+ * prints a global as written. A `window` member of {@link WINDOW_MEMBER_GLOBALS} is read through
+ * `window`.
+ */
+export const CLIENT_GLOBALS: ReadonlySet<string> = new Set([
+  ...PURE_GLOBALS,
+  ...BROWSER_GLOBALS,
+  ...SCHEDULING_GLOBALS,
+  ...RUNTIME_GLOBALS,
+]);
+
+/** The globals whose every read sees the rendered DOM, or may (UF2018, ADR-0048). */
+const DOM_GLOBALS: ReadonlySet<string> = words("getComputedStyle getSelection");
+
+/** The members of `window` that read the rendered DOM: its document, layout and scroll. */
+const WINDOW_DOM_MEMBERS: ReadonlySet<string> = words(`
+  document getComputedStyle getSelection innerWidth innerHeight outerWidth outerHeight scrollX
+  scrollY pageXOffset pageYOffset scroll scrollTo scrollBy frames length
+`);
+
+/** The members of `document` that read nothing a render changes: its title, cookie, visibility and listeners. */
+const DOCUMENT_OTHER_MEMBERS: ReadonlySet<string> = words(`
+  addEventListener removeEventListener dispatchEvent title cookie visibilityState hidden
+`);
+
+/**
+ * Whether a global's read sees the DOM a render changes (UF2018 and the `post` invariant,
+ * ADR-0048), given the code that follows the global's name: `document` but its title, cookie,
+ * visibility and listeners; `window` used whole or through its document, layout and scroll
+ * (`window.scrollY`); `getComputedStyle` and `getSelection`. Storage, `navigator`, `history`,
+ * `location`, `fetch`, the timers and the observers read nothing a render changes.
+ */
+export function readsDom(name: string, following: string): boolean {
+  if (DOM_GLOBALS.has(name)) return true;
+  if (name !== "document" && name !== "window") return false;
+  const member = /^\s*\??\.\s*([A-Za-z_$][\w$]*)/.exec(following)?.[1];
+  if (name === "document") return member === undefined || !DOCUMENT_OTHER_MEMBERS.has(member);
+  return member === undefined || WINDOW_DOM_MEMBERS.has(member);
+}
 
 /**
  * ECMAScript's reserved words in strict mode (the targets' output is modules), with `arguments`
@@ -108,8 +201,9 @@ export const PROP_NAME_PATTERN: RegExp = /^[A-Za-z][A-Za-z0-9]*$/;
 /**
  * Why a target cannot take a prop of this name, or `undefined` when every target can: a name
  * outside {@link PROP_NAME_PATTERN} or in {@link RESERVED_PROP_NAMES}, an event's name
- * (`onClick`: events land in M2), or a name Angular reserves for its own directives (`ngIf`).
- * (`PROP_NAME_PATTERN` also rules out a name ending in `$`, which Qwik reads as a QRL.)
+ * (`onClick`, which the targets give the events `defineEmits` declares: ADR-0012), or a name
+ * Angular reserves for its own directives (`ngIf`). (`PROP_NAME_PATTERN` also rules out a name
+ * ending in `$`, which Qwik reads as a QRL.)
  */
 export function reservedPropName(name: string): string | undefined {
   if (!PROP_NAME_PATTERN.test(name)) {
@@ -117,9 +211,29 @@ export function reservedPropName(name: string): string | undefined {
   }
   const reserved = RESERVED_PROP_NAMES.get(name);
   if (reserved) return reserved;
-  if (/^on[A-Z]/.test(name)) return `\`${name}\` is an event's name: events land in M2.`;
+  if (/^on[A-Z]/.test(name)) {
+    return `\`${name}\` is an event's name: a component declares its events with \`defineEmits\`, and the targets name their props by them (ADR-0012).`;
+  }
   if (/^ng[A-Z]/.test(name)) return `\`${name}\` is a name Angular reserves for its directives.`;
   return undefined;
+}
+
+/**
+ * Why an event a component declares cannot take a name, or `undefined` (ADR-0047, UF2008): the
+ * Angular output declares a member for each event beside the props, and its template statements
+ * read it by name (`picked.emit(item)`) in Angular's expression grammar, whose lexer reads its
+ * own keywords ({@link ANGULAR_KEYWORDS}) and no other word as a keyword. So an event takes no
+ * Angular expression keyword, no global expressions may read (the Angular target declares a
+ * member for each one a template reads), and not `constructor`, the class's own. A JavaScript
+ * reserved word Angular reads as a name (`delete`, `new`, `default`) is free: a class member and
+ * every other target's prop (`onDelete`) may take it.
+ */
+export function reservedEventName(name: string): string | undefined {
+  if (ANGULAR_KEYWORDS.has(name))
+    return `\`${name}\` is a keyword in Angular's template expressions.`;
+  return name === "constructor" || ALLOWED_GLOBALS.has(name)
+    ? RESERVED_PROP_NAMES.get(name)
+    : undefined;
 }
 
 /**
@@ -153,6 +267,36 @@ export function reservedParameterName(name: string): string | undefined {
     return "Vue's compiled render functions declare names starting with `_` (`_ctx`, `__props`)";
   }
   if (ANGULAR_KEYWORDS.has(name)) return "it is a keyword in Angular's template expressions";
+  return undefined;
+}
+
+/**
+ * Why a setup binding (a `ref`, a `computed`, a template ref, a `const`, a `let`, a function or
+ * `emit`) cannot take a name whatever the component declares, or `undefined` (ADR-0045, UF2003):
+ * a name that is not an ASCII identifier, as Angular's lexer reads only those; a name a list's or
+ * an arrow's parameter cannot take ({@link reservedParameterName}); a reserved word; and the names
+ * the targets give meaning beside the setup's: `constructor` and the names Angular's lifecycle
+ * hooks and directives take (`ngOnInit`), since Angular's output declares each binding as a
+ * member of the component's class; a hook's name (`useState`, `useX`), which React's lint rules
+ * (`react-hooks/rules-of-hooks`) forbid a handler to call; and a name ending in `$`, which Qwik's
+ * optimizer reads as a QRL. A setup binding cannot take a prop's name either, or another
+ * binding's: `checkInvariants` checks that.
+ */
+export function reservedSetupName(name: string): string | undefined {
+  if (!isIdentifier(name)) {
+    return "it is not an ASCII identifier, which Angular's expression lexer reads";
+  }
+  const parameter = reservedParameterName(name);
+  if (parameter) return parameter;
+  if (RESERVED_WORDS.has(name)) return "it is a reserved word in JavaScript's strict mode";
+  if (name === "constructor") return "Angular's output declares the component class's constructor";
+  if (/^ng[A-Z]/.test(name)) {
+    return "Angular reserves the names starting with `ng` and a capital for its lifecycle hooks (`ngOnInit`) and directives";
+  }
+  if (/^use[A-Z0-9]/.test(name)) {
+    return "React's lint rules read a name starting with `use` and a capital as a hook, which a handler cannot call";
+  }
+  if (name.endsWith("$")) return "Qwik's optimizer reads a name ending in `$` as a QRL";
   return undefined;
 }
 

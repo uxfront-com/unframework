@@ -10,7 +10,7 @@ import type { ToolchainContext } from "@unframework/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
-import { M1_SHAPES } from "./lint-probes.ts";
+import { M1_SHAPES, M2_SHAPES } from "./lint-probes.ts";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const repo = join(packageDir, "../..");
@@ -63,6 +63,7 @@ const component = (markup: string, frontmatter = FRONTMATTER) =>
   `---\n${frontmatter}---\n\n${markup}\n`;
 
 describe("astro lint (L5)", { timeout: 60_000 }, () => {
+  // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output, with no message", async () => {
     expect(goldens.map((file) => file.split("/").at(-1))).toEqual(
       expect.arrayContaining(["Hello.astro", "ProfileCard.astro"]),
@@ -71,10 +72,13 @@ describe("astro lint (L5)", { timeout: 60_000 }, () => {
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(goldens.map((file) => [file, []])),
     );
-  });
+  }, 60_000);
 
-  it("accepts the shapes M1 emits (design §5.7)", async () => {
-    const files = write(M1_SHAPES);
+  it.each([
+    ["M1", "ADR-0034 to ADR-0040", M1_SHAPES],
+    ["M2", "ADR-0045 to ADR-0049", M2_SHAPES],
+  ] as const)("accepts the shapes %s emits (%s)", async (_milestone, _section, shapes) => {
+    const files = write(shapes);
     const results = await toolchain.lint(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file, []])),
@@ -102,6 +106,14 @@ describe("astro lint (L5)", { timeout: 60_000 }, () => {
       markup: "<p data-on={on} title={size}>{label}</p>",
       frontmatter: `${FRONTMATTER}debugger;\n`,
       rule: "no-debugger",
+    },
+    {
+      // Why the setup keeps only what the server render reaches (ADR-0046): a function
+      // only a handler called, copied, would be unused.
+      what: "a function nothing calls",
+      markup: "<p data-on={on} title={size}>{label}</p>",
+      frontmatter: `${FRONTMATTER}function toggle() {\n  return !on;\n}\n`,
+      rule: "@typescript-eslint/no-unused-vars",
     },
     {
       // astro-eslint-parser counts Astro's read of `Props` only in a file that names `Astro`:

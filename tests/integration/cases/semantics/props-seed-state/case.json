@@ -1,0 +1,6 @@
+{
+  "description": "State seeded from a prop takes the creation-time value; a rerender with a new seed keeps the state, and increments continue from it.",
+  "ssr": {
+    "seeded": { "props": { "initial": 3, "label": "Tickets" } }
+  }
+}

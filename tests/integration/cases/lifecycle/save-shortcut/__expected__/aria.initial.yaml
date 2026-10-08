@@ -1,0 +1,4 @@
+- region "Draft":
+  - text: Draft
+  - textbox "Draft"
+  - status: "Saved: 0"

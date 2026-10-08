@@ -1,0 +1,43 @@
+---
+export interface Book {
+  id: number;
+  title: string;
+}
+
+export interface BookShelfProps {
+  books: Book[];
+}
+
+type Props = BookShelfProps;
+
+const { books } = Astro.props;
+
+const focused = null as Book | null;
+const reads = new Map<number, number>();
+const open = false as boolean;
+const label = "Idle" as string;
+const loading = false as boolean;
+const low = 1 as number;
+const high = 5 as number;
+---
+
+<section class="book-shelf" aria-label="Books">
+  <ul aria-label="Shelf">
+    {books.map((book) => (
+      <li>
+        <span>{book.title}</span>
+        <button type="button">{`Focus ${book.title}`}</button>
+        <button type="button">{`Peek ${book.title}`}</button>
+        <button type="button">{`Read ${book.title}`}</button>
+      </li>
+    ))}
+  </ul>
+  <p>Focused: {focused?.title ?? "none"}</p>
+  <p>Books read: {reads.size}</p>
+  <button type="button">Count again</button>
+  <button type="button" aria-expanded={open}>Details</button>
+  <button type="button">Start</button>
+  <p role="status">{label}: {loading ? "busy" : "idle"}</p>
+  <button type="button">Raise the limit</button>
+  <p>Range: {low} to {high}</p>
+</section>

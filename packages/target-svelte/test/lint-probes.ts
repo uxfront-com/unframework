@@ -1,11 +1,11 @@
-// What this target will emit for M1's constructs, written by hand before the emitter does, in the
-// shapes of design §5.3: `$props()` with a typed destructure or `props`, `{#if}` chains, keyed
-// `{#each}`, one `class={[…]}`, `style:` directives, whitespace as string-literal mustaches, the
-// printer's glued layout. The same three components on every target: a badge (props with defaults,
-// a conditional chain, class and style bindings, bound attributes, SVG), a list (nested keyed
-// lists, conditionals inside and around them, a root fragment) and a card (the `props` form, a
-// typed spread written out key by key, a static style). lint.test.ts pins the L5 configuration
-// against them (ADR-0042): a rule that rejects one of them would force an emitter change.
+// M1's constructs in this target's shapes, written by hand: `$props()` with a typed destructure or
+// `props`, `{#if}` chains, keyed `{#each}`, one `class={[…]}`, `style:` directives, whitespace as
+// string-literal mustaches, the printer's glued layout. The same three components on every target:
+// a badge (props with defaults, a conditional chain, class and style bindings, bound attributes,
+// SVG), a list (nested keyed lists, conditionals inside and around them, a root fragment) and a
+// card (the `props` form, a typed spread written out key by key, a static style). lint.test.ts pins
+// the L5 configuration against them (ADR-0042): a rule that rejects one of them would force an
+// emitter change.
 
 /** File name → contents. */
 export const M1_SHAPES: Readonly<Record<string, string>> = {
@@ -98,3 +98,19 @@ export const M1_SHAPES: Readonly<Record<string, string>> = {
   </ol>{:else}<p>Nothing to do.</p>{/if}
 `,
 };
+
+/**
+ * The shapes M2 emits (ADR-0045 to ADR-0049), as the emitter prints them: test/fixtures holds
+ * each, which emit.test.ts pins to the emitter's output and lint.test.ts lints. State and derived
+ * values, watchers, effects and lifecycle hooks, listeners and attachments, template refs and
+ * ids, and an object form's callback props.
+ */
+export const M2_FIXTURES: readonly string[] = [
+  "Stepper.svelte",
+  "Pager.svelte",
+  "Ticker.svelte",
+  "Panel.svelte",
+  "Disclosure.svelte",
+  "Chip.svelte",
+  "WatchEdges.svelte",
+];

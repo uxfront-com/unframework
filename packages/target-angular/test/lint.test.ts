@@ -11,7 +11,8 @@ import type { ToolchainContext } from "@unframework/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
-import { M1_SHAPES } from "./lint-probes.ts";
+import { emitFormatted, lower } from "./helpers.ts";
+import { M1_SHAPES, M2_SOURCES } from "./lint-probes.ts";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const repo = join(packageDir, "../..");
@@ -74,6 +75,7 @@ const component = (
   ].join("\n");
 
 describe("angular lint (L5)", { timeout: 60_000 }, () => {
+  // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output, with no message", async () => {
     expect(goldens.map((file) => file.split("/").at(-1))).toEqual(
       expect.arrayContaining(["hello.ts", "profile-card.ts"]),
@@ -82,14 +84,42 @@ describe("angular lint (L5)", { timeout: 60_000 }, () => {
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(goldens.map((file) => [file, []])),
     );
-  });
+  }, 60_000);
 
-  it("accepts the shapes M1 emits (design §5.5)", async () => {
+  it("accepts the shapes M1 emits (plan §6)", async () => {
     const files = write(M1_SHAPES);
     const results = await toolchain.lint(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file, []])),
     );
+  });
+
+  it("accepts the shapes M2 emits (ADR-0045 to ADR-0049)", async () => {
+    const outputs = await Promise.all(
+      Object.entries(M2_SOURCES).map(async ([file, source]) =>
+        emitFormatted(lower(source, file, true)),
+      ),
+    );
+    const files = write(
+      Object.fromEntries(outputs.flat().map((output) => [output.path, output.contents])),
+    );
+    const results = await toolchain.lint(files, context);
+    expect(Object.fromEntries(results)).toEqual(
+      Object.fromEntries(files.map((file) => [file, []])),
+    );
+  });
+
+  it("names an output after a DOM event, as the author does (ADR-0012)", async () => {
+    // `no-output-native` is off: it judges the author's event names (ADR-0047).
+    const members = `${MEMBERS}\n  readonly change = output<string>();`;
+    expect(
+      await lintCodes(
+        component("<p>{{ label() }}{{ items().length }}</p>", {
+          members,
+          imports: "Component, input, output",
+        }),
+      ),
+    ).toEqual([]);
   });
 
   it.each([
@@ -144,7 +174,7 @@ describe("angular lint (L5)", { timeout: 60_000 }, () => {
   it.each([
     { what: "a loose equality", template: "@if (label() == null) {\n      <b>none</b>\n    }" },
     {
-      // Angular's styling precedence: the binding adds to the static value (design §5.5).
+      // Angular's styling precedence: the binding adds to the static value (ADR-0038).
       what: "a static class and style beside their bindings",
       template:
         '<p class="a" [class]="label()" style="color: red" [style.margin-top]="label()"></p>',

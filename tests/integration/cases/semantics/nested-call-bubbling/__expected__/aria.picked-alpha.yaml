@@ -1,0 +1,7 @@
+- region "Picker":
+  - button "Alpha"
+  - button "Beta"
+  - list "Log":
+    - listitem: "picked alpha #1"
+  - status: idle
+  - button "Start"

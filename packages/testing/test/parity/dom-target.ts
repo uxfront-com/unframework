@@ -2,7 +2,11 @@
 // are plain HTML that the adapter sets as the container's innerHTML (as the screenshot spike's
 // stand-in targets did), with an optional server-side console and ways to fail on purpose. A
 // `text` component renders one element whose text is split over several text nodes, as React,
-// Solid and Qwik write `Price: {price} EUR`, and updates those same nodes when it rerenders.
+// Solid and Qwik write `Price: {price} EUR`, and updates those same nodes when it rerenders. A
+// component with `setup` has behaviour: listeners on its elements that change the DOM and emit
+// the events it declares (`emits`), as a compiled component's handlers and `defineEmits` would;
+// with `settle`, the adapter waits for the work they scheduled, as for a framework's render.
+import type { MountEvent } from "../../src/index.ts";
 import { registerTarget } from "../../src/index.ts";
 
 type Props = Readonly<Record<string, unknown>>;
@@ -33,32 +37,64 @@ export interface StubComponent {
   failUnmount?: string;
   /** A warning the unmount leaves for later, as a framework's scheduler can. */
   lateWarning?: string;
+  /** The events it declares, as `defineEmits` would: the view listens to these. */
+  emits?: readonly MountEvent[];
+  /**
+   * Its behaviour, wired after every render: listeners on its elements (on `signal`, which aborts
+   * at the next render and at the unmount) that may change the DOM and call `emit`, which reaches
+   * the view's listener for the event.
+   */
+  setup?(container: HTMLElement, emit: Emit, signal: AbortSignal): void;
+  /**
+   * Waits for the work its behaviour scheduled, as a framework's adapter waits for a render it
+   * has queued; nothing by default.
+   */
+  settle?(): Promise<void>;
 }
 
-registerTarget("dom", async (component, container, options) => {
-  const stub = component as StubComponent;
-  if (stub.fail) throw new Error(stub.fail);
-  const nodes: Text[] = [];
-  const render = (props: Props) => {
-    if (stub.text) return renderText(container, stub.text, props, nodes);
-    container.innerHTML = typeof stub.html === "function" ? stub.html(props) : (stub.html ?? "");
-  };
-  render(options.props ?? {});
-  return {
-    settle: async () => {},
-    async rerender(props) {
-      render(props);
-      return stub.rerenderConsole ? { console: stub.rerenderConsole } : {};
-    },
-    unmount: async () => {
-      container.replaceChildren();
-      if (stub.failUnmount !== undefined) throw new Error(stub.failUnmount);
-      const late = stub.lateWarning;
-      if (late !== undefined) setTimeout(() => console.warn(late), 0);
-    },
-    ...(stub.console ? { console: stub.console } : {}),
-  };
-});
+/** How a stub's behaviour emits one of its events. */
+export type Emit = (name: string, ...args: unknown[]) => void;
+
+registerTarget(
+  "dom",
+  async (component, container, options) => {
+    const stub = component as StubComponent;
+    if (stub.fail) throw new Error(stub.fail);
+    const nodes: Text[] = [];
+    const emit: Emit = (name, ...args) => options.on?.[name]?.(...args);
+    let wiring = new AbortController();
+    const render = (props: Props) => {
+      wiring.abort();
+      wiring = new AbortController();
+      if (stub.text) renderText(container, stub.text, props, nodes);
+      else {
+        container.innerHTML =
+          typeof stub.html === "function" ? stub.html(props) : (stub.html ?? "");
+      }
+      stub.setup?.(container, emit, wiring.signal);
+    };
+    render(options.props ?? {});
+    return {
+      settle: async () => {
+        await stub.settle?.();
+      },
+      async rerender(props) {
+        render(props);
+        return stub.rerenderConsole ? { console: stub.rerenderConsole } : {};
+      },
+      unmount: async () => {
+        wiring.abort();
+        container.replaceChildren();
+        if (stub.failUnmount !== undefined) throw new Error(stub.failUnmount);
+        const late = stub.lateWarning;
+        if (late !== undefined) setTimeout(() => console.warn(late), 0);
+      },
+      ...(stub.console ? { console: stub.console } : {}),
+    };
+  },
+  // The stub's components are not compiled: they declare their events themselves.
+  { events: (component) => (component as StubComponent).emits ?? [] },
+);
 
 /**
  * Renders split text the first time, then, as a framework does, writes each piece into the text

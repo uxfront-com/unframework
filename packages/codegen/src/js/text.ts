@@ -8,7 +8,7 @@
 // knows to be text, are the target's to decide.
 import type * as AST from "@oxc-project/types";
 
-import { parseExpression } from "../rewrite.ts";
+import { parseExpression } from "../parse.ts";
 import { conditionalExpression, logicalExpression, stringLiteral } from "./builders.ts";
 import type { Placeholders } from "./placeholders.ts";
 

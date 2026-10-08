@@ -1,0 +1,6 @@
+- article "Profile":
+  - heading "Ada Lovelace" [level=2]
+  - paragraph: Analyst
+  - status: Away
+  - button "Use married name"
+  - button "Available"

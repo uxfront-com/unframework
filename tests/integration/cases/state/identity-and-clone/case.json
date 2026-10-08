@@ -1,0 +1,13 @@
+{
+  "description": "State holds the value written to it: a state given a prop list's item compares equal to it by identity, and structuredClone copies a state's object value.",
+  "ssr": {
+    "two-fruits": {
+      "props": {
+        "fruits": [
+          { "name": "Apple", "colour": "red" },
+          { "name": "Pear", "colour": "green" }
+        ]
+      }
+    }
+  }
+}

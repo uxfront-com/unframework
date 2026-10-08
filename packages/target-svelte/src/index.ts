@@ -15,7 +15,8 @@ const OPTIONS = "<svelte:options runes={true} preserveWhitespace={false} />";
 
 /**
  * The Svelte 5 target: runes-mode components. A component is its options, its instance script
- * when it takes props (`script.ts`), and its markup, printed in `svelteDialect` (design §5.3).
+ * when it takes props or has a setup (`script.ts`), and its markup, printed in `svelteDialect`
+ * (plan §6).
  */
 export const svelte: Target = defineTarget({
   name: "svelte",
@@ -36,14 +37,32 @@ export const svelte: Target = defineTarget({
     "style-binding": { support: "native" },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
+    // A capture listener is an attribute, `onclickcapture` (ADR-0047).
+    "event-capture": { support: "native" },
+    // `once` and `passive` listen through `on` from `svelte/events`, in an attachment (`events.ts`):
+    // `passive` with `addEventListener`'s own option, `once` through a guard (`script.ts`).
+    "event-once": {
+      support: "emulated",
+      helper: "once",
+      note: "A once listener's handler goes through `once`, a wrapper whose guard is set when the handler first runs, never `{ once: true }`: `on` runs the handlers Svelte delegated below its element inside its own listener, so the option would be used up by an event one of them stopped.",
+    },
+    "event-passive": { support: "native" },
+    // Svelte's listeners are the DOM's, delegated for some events with the propagation kept;
+    // the events its attributes make passive listen through `on` (`events.ts`).
+    "event-semantics": { support: "native" },
+    // A control runs where the handler calls it, while the event is dispatched.
+    "conditional-event-control": { support: "native" },
+    // `$props.id()`, once per component, every further id derived from it (`script.ts`).
+    "use-id": { support: "native" },
+    // `tick` from `svelte`.
+    "next-tick": { support: "native" },
+    // `$props()` is reactive whatever keys a parent passes.
+    "late-prop": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    const { block, rewrite } = instanceScript(component, context.module);
-    // The component resolves the names of loop variables.
-    const markup = printMarkup(component.render, svelteDialect, {
-      component,
-      ...(rewrite ? { rewrite } : {}),
-    });
+    const { block, markup: options } = instanceScript(component, context.module);
+    // The component resolves the names of loop variables and setup bindings.
+    const markup = printMarkup(component.render, svelteDialect, { component, ...options });
     const parts = block === undefined ? [OPTIONS, markup] : [OPTIONS, block, markup];
     return [{ path: `${component.name}.svelte`, contents: `${parts.join("\n\n")}\n` }];
   },

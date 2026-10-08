@@ -1,0 +1,25 @@
+---
+export interface FileInfo {
+  path: string;
+  size: number;
+}
+
+export interface FileRowProps {
+  path: string;
+  size: number;
+}
+
+type Props = FileRowProps;
+
+const { path, size } = Astro.props;
+---
+
+<div class="file-row" role="group" aria-label={path}>
+  <span>{path} ({size} bytes)</span>
+  <button type="button">Refresh</button>
+  <button type="button">Open</button>
+  <button type="button">Archive</button>
+  <button type="button">Select</button>
+  <button type="button">Share</button>
+  <button type="button">Share with a note</button>
+</div>

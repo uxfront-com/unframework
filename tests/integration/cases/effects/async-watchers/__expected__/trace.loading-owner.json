@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Load' })",
+      "dom": [
+        "<section aria-label=\"Sync desk\" class=\"sync-desk\">",
+        "  <button type=\"button\">",
+        "    \"Suggest\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Use this email\"",
+        "  </button>",
+        "  <p>",
+        "    \"ada@example.com: valid\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Load\"",
+        "  </button>",
+        "  <p>",
+        "    \"Step: owner, owner nobody, editor nobody\"",
+        "  </p>",
+        "  <label>",
+        "    \"Name\"",
+        "    <input name=\"name\" uf:value=\"\">",
+        "  </label>",
+        "  <button type=\"button\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <p>",
+        "    \"Not saving\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Import\"",
+        "  </button>",
+        "  <p>",
+        "    \"Import: idle, 0 imported\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Refresh\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Prefetch\"",
+        "  </button>",
+        "  <p>",
+        "    \"Note: idle\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Send\"",
+        "  </button>",
+        "  <p>",
+        "    \"Send: not sent\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Louder\"",
+        "  </button>",
+        "  <p>",
+        "    \"Level: 4\"",
+        "  </p>",
+        "  <div aria-label=\"Server\" role=\"group\">",
+        "    <button type=\"button\">",
+        "      \"Reply\"",
+        "    </button>",
+        "    <button type=\"button\">",
+        "      \"Decline\"",
+        "    </button>",
+        "    <button type=\"button\">",
+        "      \"Fail\"",
+        "    </button>",
+        "  </div>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Sync desk\":",
+        "  - button \"Suggest\"",
+        "  - button \"Use this email\"",
+        "  - paragraph: \"ada@example.com: valid\"",
+        "  - button \"Load\"",
+        "  - paragraph: \"Step: owner, owner nobody, editor nobody\"",
+        "  - text: Name",
+        "  - textbox \"Name\"",
+        "  - button \"Save\"",
+        "  - paragraph: Not saving",
+        "  - button \"Import\"",
+        "  - paragraph: \"Import: idle, 0 imported\"",
+        "  - button \"Refresh\"",
+        "  - button \"Prefetch\"",
+        "  - paragraph: \"Note: idle\"",
+        "  - button \"Send\"",
+        "  - paragraph: \"Send: not sent\"",
+        "  - button \"Louder\"",
+        "  - paragraph: \"Level: 4\"",
+        "  - group \"Server\":",
+        "    - button \"Reply\"",
+        "    - button \"Decline\"",
+        "    - button \"Fail\""
+      ],
+      "events": {
+        "progress": [
+          [
+            "owner",
+            "nobody"
+          ]
+        ],
+        "summary": [
+          [
+            "ada@example.com is valid"
+          ]
+        ]
+      }
+    }
+  ]
+}

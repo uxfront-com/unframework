@@ -1,0 +1,11 @@
+- region "Dinner":
+  - status: 2 votes left
+  - paragraph: "Picked: no"
+  - list "Choices":
+    - listitem:
+      - button "yes"
+    - listitem:
+      - button "no"
+    - listitem:
+      - button "maybe"
+  - button "Count the answers"

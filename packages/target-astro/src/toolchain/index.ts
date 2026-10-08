@@ -1,4 +1,4 @@
-// The Astro toolchain (DESIGN §4.1): how tests and tooling build, check and run Astro output.
+// The Astro toolchain (plan §5.7): how tests and tooling build, check and run Astro output.
 // Heavy tools (Astro, its compiler, Vite, the TypeScript 6 checker) load on first use, so a
 // config that imports every target's toolchain pays only for the projects it runs.
 import type { Toolchain } from "@unframework/codegen";

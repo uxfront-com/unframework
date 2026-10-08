@@ -1,0 +1,4 @@
+- region "Shortcuts":
+  - paragraph: Press Escape to hide this tip.
+  - button "Shortcut K" [pressed]
+  - status: "Used: 1"

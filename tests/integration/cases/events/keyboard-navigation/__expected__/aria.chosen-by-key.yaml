@@ -1,0 +1,9 @@
+- region "Trip":
+  - search "Destination":
+    - text: City
+    - combobox "City": Bern
+    - button "Search"
+  - status: "Chosen: Bern"
+  - text: Note
+  - textbox "Note"
+  - list "Notes"

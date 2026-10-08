@@ -1,0 +1,747 @@
+{
+  "irVersion": 1,
+  "file": "semantics/deferred-reads/DeleteFile.uf.tsx",
+  "components": [
+    {
+      "name": "DeleteFile",
+      "span": {
+        "start": 107,
+        "end": 1219
+      },
+      "props": [
+        {
+          "name": "fileName",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 96,
+              "end": 102
+            }
+          },
+          "binding": "fileName@144",
+          "span": {
+            "start": 86,
+            "end": 103
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "DeleteFileProps",
+          "span": {
+            "start": 156,
+            "end": 171
+          }
+        },
+        "span": {
+          "start": 142,
+          "end": 171
+        }
+      },
+      "types": [
+        "DeleteFileProps"
+      ],
+      "emits": {
+        "binding": "emit@183",
+        "type": {
+          "code": "{ deleted: [fileName: string, copies: number] }",
+          "span": {
+            "start": 202,
+            "end": 249
+          }
+        },
+        "events": [
+          {
+            "name": "deleted",
+            "parameters": [
+              {
+                "name": "fileName",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 224,
+                    "end": 230
+                  }
+                },
+                "span": {
+                  "start": 214,
+                  "end": 230
+                }
+              },
+              {
+                "name": "copies",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 240,
+                    "end": 246
+                  }
+                },
+                "span": {
+                  "start": 232,
+                  "end": 246
+                }
+              }
+            ],
+            "span": {
+              "start": 204,
+              "end": 247
+            }
+          }
+        ],
+        "span": {
+          "start": 177,
+          "end": 253
+        }
+      },
+      "bindings": [
+        {
+          "id": "fileName@144",
+          "name": "fileName",
+          "kind": "prop",
+          "span": {
+            "start": 144,
+            "end": 152
+          }
+        },
+        {
+          "id": "emit@183",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 183,
+            "end": 187
+          }
+        },
+        {
+          "id": "copies@263",
+          "name": "copies",
+          "kind": "state",
+          "span": {
+            "start": 263,
+            "end": 269
+          }
+        },
+        {
+          "id": "confirming@288",
+          "name": "confirming",
+          "kind": "state",
+          "span": {
+            "start": 288,
+            "end": 298
+          }
+        },
+        {
+          "id": "resolveConfirmation@319",
+          "name": "resolveConfirmation",
+          "kind": "localVar",
+          "span": {
+            "start": 319,
+            "end": 338
+          }
+        },
+        {
+          "id": "requestDelete@384",
+          "name": "requestDelete",
+          "kind": "localFn",
+          "span": {
+            "start": 384,
+            "end": 397
+          }
+        },
+        {
+          "id": "addCopy@610",
+          "name": "addCopy",
+          "kind": "localFn",
+          "span": {
+            "start": 610,
+            "end": 617
+          }
+        },
+        {
+          "id": "confirmDelete@661",
+          "name": "confirmDelete",
+          "kind": "localFn",
+          "span": {
+            "start": 661,
+            "end": 674
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "copies@263",
+          "initial": {
+            "code": "1",
+            "span": {
+              "start": 276,
+              "end": 277
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 257,
+            "end": 279
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "confirming@288",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 305,
+              "end": 310
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 282,
+            "end": 312
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "resolveConfirmation@319",
+          "type": {
+            "code": "(() => void) | undefined",
+            "span": {
+              "start": 340,
+              "end": 364
+            }
+          },
+          "span": {
+            "start": 315,
+            "end": 365
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "requestDelete@384",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    confirming.value = true;\n    await new Promise<void>((resolve) => {\n      resolveConfirmation = resolve;\n    });\n    confirming.value = false;\n    emit(\"deleted\", fileName, copies.value);\n  }",
+              "span": {
+                "start": 400,
+                "end": 597
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "confirming@288",
+                  "operator": "=",
+                  "span": {
+                    "start": 406,
+                    "end": 429
+                  },
+                  "target": {
+                    "start": 406,
+                    "end": 422
+                  },
+                  "value": {
+                    "start": 425,
+                    "end": 429
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 445,
+                    "end": 452
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "resolveConfirmation@319",
+                  "operator": "=",
+                  "span": {
+                    "start": 480,
+                    "end": 509
+                  },
+                  "target": {
+                    "start": 480,
+                    "end": 499
+                  },
+                  "value": {
+                    "start": 502,
+                    "end": 509
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "confirming@288",
+                  "operator": "=",
+                  "span": {
+                    "start": 523,
+                    "end": 547
+                  },
+                  "target": {
+                    "start": 523,
+                    "end": 539
+                  },
+                  "value": {
+                    "start": 542,
+                    "end": 547
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@183",
+                  "event": "deleted",
+                  "span": {
+                    "start": 553,
+                    "end": 592
+                  },
+                  "arguments": [
+                    {
+                      "start": 569,
+                      "end": 577
+                    },
+                    {
+                      "start": 579,
+                      "end": 591
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "fileName@144",
+                  "span": {
+                    "start": 569,
+                    "end": 577
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "copies@263",
+                  "span": {
+                    "start": 579,
+                    "end": 591
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 397,
+              "end": 597
+            }
+          },
+          "span": {
+            "start": 369,
+            "end": 597
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "addCopy@610",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    copies.value += 1;\n  }",
+              "span": {
+                "start": 620,
+                "end": 648
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "copies@263",
+                  "operator": "+=",
+                  "span": {
+                    "start": 626,
+                    "end": 643
+                  },
+                  "target": {
+                    "start": 626,
+                    "end": 638
+                  },
+                  "value": {
+                    "start": 642,
+                    "end": 643
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 617,
+              "end": 648
+            }
+          },
+          "span": {
+            "start": 601,
+            "end": 648
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "confirmDelete@661",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    resolveConfirmation?.();\n  }",
+              "span": {
+                "start": 677,
+                "end": 711
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "resolveConfirmation@319",
+                  "span": {
+                    "start": 683,
+                    "end": 702
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 674,
+              "end": 711
+            }
+          },
+          "span": {
+            "start": 652,
+            "end": 711
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "delete-file",
+            "span": {
+              "start": 737,
+              "end": 756
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "File",
+            "span": {
+              "start": 757,
+              "end": 774
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "fileName",
+                  "span": {
+                    "start": 795,
+                    "end": 803
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "fileName@144",
+                      "span": {
+                        "start": 795,
+                        "end": 803
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 794,
+                  "end": 804
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ", ",
+                "span": {
+                  "start": 804,
+                  "end": 806
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "copies.value",
+                  "span": {
+                    "start": 807,
+                    "end": 819
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "copies@263",
+                      "span": {
+                        "start": 807,
+                        "end": 819
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 806,
+                  "end": 820
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " ",
+                "span": {
+                  "start": 820,
+                  "end": 821
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "copies.value === 1 ? \"copy\" : \"copies\"",
+                  "span": {
+                    "start": 822,
+                    "end": 860
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "copies@263",
+                      "span": {
+                        "start": 822,
+                        "end": 834
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 821,
+                  "end": 861
+                }
+              }
+            ],
+            "span": {
+              "start": 782,
+              "end": 872
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 887,
+                  "end": 900
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "addCopy@610",
+                  "span": {
+                    "start": 910,
+                    "end": 917
+                  }
+                },
+                "span": {
+                  "start": 901,
+                  "end": 918
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add a copy",
+                "span": {
+                  "start": 919,
+                  "end": 945
+                }
+              }
+            ],
+            "span": {
+              "start": 879,
+              "end": 954
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "confirming.value",
+                  "span": {
+                    "start": 962,
+                    "end": 978
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "confirming@288",
+                      "span": {
+                        "start": 962,
+                        "end": 978
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "button",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "type",
+                        "value": "button",
+                        "span": {
+                          "start": 999,
+                          "end": 1012
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "click",
+                        "handler": {
+                          "kind": "Function",
+                          "binding": "confirmDelete@661",
+                          "span": {
+                            "start": 1022,
+                            "end": 1035
+                          }
+                        },
+                        "span": {
+                          "start": 1013,
+                          "end": 1036
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Confirm the deletion",
+                        "span": {
+                          "start": 1037,
+                          "end": 1077
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 991,
+                      "end": 1086
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 962,
+                  "end": 1086
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "button",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "type",
+                        "value": "button",
+                        "span": {
+                          "start": 1115,
+                          "end": 1128
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "click",
+                        "handler": {
+                          "kind": "Function",
+                          "binding": "requestDelete@384",
+                          "span": {
+                            "start": 1138,
+                            "end": 1151
+                          }
+                        },
+                        "span": {
+                          "start": 1129,
+                          "end": 1152
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Delete",
+                        "span": {
+                          "start": 1153,
+                          "end": 1179
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1107,
+                      "end": 1188
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1107,
+                  "end": 1188
+                }
+              }
+            ],
+            "span": {
+              "start": 962,
+              "end": 1196
+            }
+          }
+        ],
+        "span": {
+          "start": 728,
+          "end": 1212
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "DeleteFile",
+      "span": {
+        "start": 107,
+        "end": 1219
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "DeleteFileProps",
+      "exported": true,
+      "code": "interface DeleteFileProps {\n  fileName: string;\n}",
+      "span": {
+        "start": 56,
+        "end": 105
+      }
+    }
+  ]
+}

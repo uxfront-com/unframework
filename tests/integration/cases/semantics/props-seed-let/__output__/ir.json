@@ -1,0 +1,1339 @@
+{
+  "irVersion": 1,
+  "file": "semantics/props-seed-let/Ballot.uf.tsx",
+  "components": [
+    {
+      "name": "Ballot",
+      "span": {
+        "start": 159,
+        "end": 1930
+      },
+      "props": [
+        {
+          "name": "limit",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 109,
+              "end": 115
+            }
+          },
+          "binding": "limit@192",
+          "span": {
+            "start": 102,
+            "end": 116
+          }
+        },
+        {
+          "name": "label",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 127,
+              "end": 133
+            }
+          },
+          "default": {
+            "code": "\"Vote\"",
+            "span": {
+              "start": 207,
+              "end": 213
+            },
+            "refs": []
+          },
+          "binding": "label@199",
+          "span": {
+            "start": 119,
+            "end": 134
+          }
+        },
+        {
+          "name": "choices",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 146,
+              "end": 154
+            }
+          },
+          "binding": "choices@215",
+          "span": {
+            "start": 137,
+            "end": 155
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "BallotProps",
+          "span": {
+            "start": 226,
+            "end": 237
+          }
+        },
+        "span": {
+          "start": 190,
+          "end": 237
+        }
+      },
+      "types": [
+        "BallotProps"
+      ],
+      "emits": {
+        "binding": "emit@249",
+        "type": {
+          "code": "{\n    voted: [remaining: number, text: string];\n    moved: [line: string];\n    report: [text: string];\n    counted: [answers: number];\n  }",
+          "span": {
+            "start": 268,
+            "end": 406
+          }
+        },
+        "events": [
+          {
+            "name": "voted",
+            "parameters": [
+              {
+                "name": "remaining",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 293,
+                    "end": 299
+                  }
+                },
+                "span": {
+                  "start": 282,
+                  "end": 299
+                }
+              },
+              {
+                "name": "text",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 307,
+                    "end": 313
+                  }
+                },
+                "span": {
+                  "start": 301,
+                  "end": 313
+                }
+              }
+            ],
+            "span": {
+              "start": 274,
+              "end": 314
+            }
+          },
+          {
+            "name": "moved",
+            "parameters": [
+              {
+                "name": "line",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 334,
+                    "end": 340
+                  }
+                },
+                "span": {
+                  "start": 328,
+                  "end": 340
+                }
+              }
+            ],
+            "span": {
+              "start": 320,
+              "end": 341
+            }
+          },
+          {
+            "name": "report",
+            "parameters": [
+              {
+                "name": "text",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 362,
+                    "end": 368
+                  }
+                },
+                "span": {
+                  "start": 356,
+                  "end": 368
+                }
+              }
+            ],
+            "span": {
+              "start": 347,
+              "end": 369
+            }
+          },
+          {
+            "name": "counted",
+            "parameters": [
+              {
+                "name": "answers",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 394,
+                    "end": 400
+                  }
+                },
+                "span": {
+                  "start": 385,
+                  "end": 400
+                }
+              }
+            ],
+            "span": {
+              "start": 375,
+              "end": 401
+            }
+          }
+        ],
+        "span": {
+          "start": 243,
+          "end": 410
+        }
+      },
+      "bindings": [
+        {
+          "id": "limit@192",
+          "name": "limit",
+          "kind": "prop",
+          "span": {
+            "start": 192,
+            "end": 197
+          }
+        },
+        {
+          "id": "label@199",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 199,
+            "end": 204
+          }
+        },
+        {
+          "id": "choices@215",
+          "name": "choices",
+          "kind": "prop",
+          "span": {
+            "start": 215,
+            "end": 222
+          }
+        },
+        {
+          "id": "emit@249",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 249,
+            "end": 253
+          }
+        },
+        {
+          "id": "votes@420",
+          "name": "votes",
+          "kind": "state",
+          "span": {
+            "start": 420,
+            "end": 425
+          }
+        },
+        {
+          "id": "picked@448",
+          "name": "picked",
+          "kind": "state",
+          "span": {
+            "start": 448,
+            "end": 454
+          }
+        },
+        {
+          "id": "remaining@476",
+          "name": "remaining",
+          "kind": "localVar",
+          "span": {
+            "start": 476,
+            "end": 485
+          }
+        },
+        {
+          "id": "text@501",
+          "name": "text",
+          "kind": "localVar",
+          "span": {
+            "start": 501,
+            "end": 505
+          }
+        },
+        {
+          "id": "lastVotes@537",
+          "name": "lastVotes",
+          "kind": "localVar",
+          "span": {
+            "start": 537,
+            "end": 546
+          }
+        },
+        {
+          "id": "isAnswer@574",
+          "name": "isAnswer",
+          "kind": "localFn",
+          "span": {
+            "start": 574,
+            "end": 582
+          }
+        },
+        {
+          "id": "describe@685",
+          "name": "describe",
+          "kind": "localFn",
+          "span": {
+            "start": 685,
+            "end": 693
+          }
+        },
+        {
+          "id": "vote@1039",
+          "name": "vote",
+          "kind": "localFn",
+          "span": {
+            "start": 1039,
+            "end": 1043
+          }
+        },
+        {
+          "id": "count@1301",
+          "name": "count",
+          "kind": "localFn",
+          "span": {
+            "start": 1301,
+            "end": 1306
+          }
+        },
+        {
+          "id": "choice@1632",
+          "name": "choice",
+          "kind": "loopVar",
+          "span": {
+            "start": 1632,
+            "end": 1638
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "votes@420",
+          "initial": {
+            "code": "limit",
+            "span": {
+              "start": 432,
+              "end": 437
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "limit@192",
+                "span": {
+                  "start": 432,
+                  "end": 437
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 414,
+            "end": 439
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "picked@448",
+          "initial": {
+            "code": "\"none\"",
+            "span": {
+              "start": 461,
+              "end": 467
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 442,
+            "end": 469
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "remaining@476",
+          "initial": {
+            "code": "limit",
+            "span": {
+              "start": 488,
+              "end": 493
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "limit@192",
+                "span": {
+                  "start": 488,
+                  "end": 493
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 472,
+            "end": 494
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "text@501",
+          "initial": {
+            "code": "`${label} (${limit})`",
+            "span": {
+              "start": 508,
+              "end": 529
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "label@199",
+                "span": {
+                  "start": 511,
+                  "end": 516
+                }
+              },
+              {
+                "kind": "Binding",
+                "binding": "limit@192",
+                "span": {
+                  "start": 521,
+                  "end": 526
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 497,
+            "end": 530
+          }
+        },
+        {
+          "kind": "Variable",
+          "binding": "lastVotes@537",
+          "initial": {
+            "code": "votes.value",
+            "span": {
+              "start": 549,
+              "end": 560
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "votes@420",
+                "span": {
+                  "start": 549,
+                  "end": 560
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 533,
+            "end": 561
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "isAnswer@574",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "value",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 590,
+                    "end": 596
+                  }
+                },
+                "span": {
+                  "start": 583,
+                  "end": 596
+                }
+              }
+            ],
+            "returnType": {
+              "code": "value is \"yes\" | \"no\"",
+              "span": {
+                "start": 599,
+                "end": 620
+              }
+            },
+            "body": {
+              "code": "{\n    return value === \"yes\" || value === \"no\";\n  }",
+              "span": {
+                "start": 621,
+                "end": 672
+              },
+              "refs": []
+            },
+            "span": {
+              "start": 582,
+              "end": 672
+            }
+          },
+          "span": {
+            "start": 565,
+            "end": 672
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "describe@685",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "returnType": {
+              "code": "string",
+              "span": {
+                "start": 697,
+                "end": 703
+              }
+            },
+            "body": {
+              "code": "{\n    const line = `${picked.value} with ${votes.value} left`;\n    return line;\n  }",
+              "span": {
+                "start": 704,
+                "end": 787
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "picked@448",
+                  "span": {
+                    "start": 726,
+                    "end": 738
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "votes@420",
+                  "span": {
+                    "start": 747,
+                    "end": 758
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 693,
+              "end": 787
+            }
+          },
+          "span": {
+            "start": 676,
+            "end": 787
+          }
+        },
+        {
+          "kind": "WatchEffect",
+          "effect": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    emit(\"report\", describe());\n  }",
+              "span": {
+                "start": 809,
+                "end": 846
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@249",
+                  "event": "report",
+                  "span": {
+                    "start": 815,
+                    "end": 841
+                  },
+                  "arguments": [
+                    {
+                      "start": 830,
+                      "end": 840
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "describe@685",
+                  "span": {
+                    "start": 830,
+                    "end": 838
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 803,
+              "end": 846
+            }
+          },
+          "span": {
+            "start": 791,
+            "end": 848
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "votes@420",
+              "span": {
+                "start": 859,
+                "end": 864
+              }
+            },
+            {
+              "kind": "Ref",
+              "binding": "picked@448",
+              "span": {
+                "start": 866,
+                "end": 872
+              }
+            }
+          ],
+          "array": true,
+          "callback": {
+            "parameters": [
+              {
+                "pattern": {
+                  "code": "[nextVotes, nextPicked]",
+                  "names": [
+                    "nextVotes",
+                    "nextPicked"
+                  ],
+                  "span": {
+                    "start": 876,
+                    "end": 899
+                  }
+                },
+                "type": {
+                  "code": "[number, string]",
+                  "span": {
+                    "start": 901,
+                    "end": 917
+                  }
+                },
+                "span": {
+                  "start": 876,
+                  "end": 917
+                }
+              },
+              {
+                "pattern": {
+                  "code": "[lastCount, lastPick]",
+                  "names": [
+                    "lastCount",
+                    "lastPick"
+                  ],
+                  "span": {
+                    "start": 919,
+                    "end": 940
+                  }
+                },
+                "span": {
+                  "start": 919,
+                  "end": 940
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"moved\", `${lastPick}:${lastCount}>${nextPicked}:${nextVotes}`);\n  }",
+              "span": {
+                "start": 945,
+                "end": 1024
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@249",
+                  "event": "moved",
+                  "span": {
+                    "start": 951,
+                    "end": 1019
+                  },
+                  "arguments": [
+                    {
+                      "start": 965,
+                      "end": 1018
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 875,
+              "end": 1024
+            }
+          },
+          "span": {
+            "start": 852,
+            "end": 1026
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "vote@1039",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "choice",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 1052,
+                    "end": 1058
+                  }
+                },
+                "span": {
+                  "start": 1044,
+                  "end": 1058
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (remaining > 0) remaining -= 1;\n    text = `${text}!`;\n    lastVotes = votes.value;\n    votes.value -= 1;\n    picked.value = isAnswer(choice) ? choice : \"other\";\n    emit(\"voted\", remaining, `${text} ${lastVotes}`);\n  }",
+              "span": {
+                "start": 1060,
+                "end": 1288
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "remaining@476",
+                  "span": {
+                    "start": 1070,
+                    "end": 1079
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "remaining@476",
+                  "operator": "-=",
+                  "span": {
+                    "start": 1085,
+                    "end": 1099
+                  },
+                  "target": {
+                    "start": 1085,
+                    "end": 1094
+                  },
+                  "value": {
+                    "start": 1098,
+                    "end": 1099
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "text@501",
+                  "operator": "=",
+                  "span": {
+                    "start": 1105,
+                    "end": 1122
+                  },
+                  "target": {
+                    "start": 1105,
+                    "end": 1109
+                  },
+                  "value": {
+                    "start": 1112,
+                    "end": 1122
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "text@501",
+                  "span": {
+                    "start": 1115,
+                    "end": 1119
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "lastVotes@537",
+                  "operator": "=",
+                  "span": {
+                    "start": 1128,
+                    "end": 1151
+                  },
+                  "target": {
+                    "start": 1128,
+                    "end": 1137
+                  },
+                  "value": {
+                    "start": 1140,
+                    "end": 1151
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "votes@420",
+                  "span": {
+                    "start": 1140,
+                    "end": 1151
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "votes@420",
+                  "operator": "-=",
+                  "span": {
+                    "start": 1157,
+                    "end": 1173
+                  },
+                  "target": {
+                    "start": 1157,
+                    "end": 1168
+                  },
+                  "value": {
+                    "start": 1172,
+                    "end": 1173
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "picked@448",
+                  "operator": "=",
+                  "span": {
+                    "start": 1179,
+                    "end": 1229
+                  },
+                  "target": {
+                    "start": 1179,
+                    "end": 1191
+                  },
+                  "value": {
+                    "start": 1194,
+                    "end": 1229
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "isAnswer@574",
+                  "span": {
+                    "start": 1194,
+                    "end": 1202
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@249",
+                  "event": "voted",
+                  "span": {
+                    "start": 1235,
+                    "end": 1283
+                  },
+                  "arguments": [
+                    {
+                      "start": 1249,
+                      "end": 1258
+                    },
+                    {
+                      "start": 1260,
+                      "end": 1282
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "remaining@476",
+                  "span": {
+                    "start": 1249,
+                    "end": 1258
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "text@501",
+                  "span": {
+                    "start": 1263,
+                    "end": 1267
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "lastVotes@537",
+                  "span": {
+                    "start": 1271,
+                    "end": 1280
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1043,
+              "end": 1288
+            }
+          },
+          "span": {
+            "start": 1030,
+            "end": 1288
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "count@1301",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    let answers = 0;\n    choices.forEach((choice) => isAnswer(choice) && answers++);\n    emit(\"counted\", answers);\n  }",
+              "span": {
+                "start": 1309,
+                "end": 1429
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "choices@215",
+                  "span": {
+                    "start": 1336,
+                    "end": 1343
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "isAnswer@574",
+                  "span": {
+                    "start": 1364,
+                    "end": 1372
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@249",
+                  "event": "counted",
+                  "span": {
+                    "start": 1400,
+                    "end": 1424
+                  },
+                  "arguments": [
+                    {
+                      "start": 1416,
+                      "end": 1423
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 1306,
+              "end": 1429
+            }
+          },
+          "span": {
+            "start": 1292,
+            "end": 1429
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "ballot",
+            "span": {
+              "start": 1455,
+              "end": 1469
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 1482,
+                "end": 1487
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@199",
+                  "span": {
+                    "start": 1482,
+                    "end": 1487
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1470,
+              "end": 1488
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 1499,
+                  "end": 1512
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "votes.value",
+                  "span": {
+                    "start": 1514,
+                    "end": 1525
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "votes@420",
+                      "span": {
+                        "start": 1514,
+                        "end": 1525
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1513,
+                  "end": 1526
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " votes left",
+                "span": {
+                  "start": 1526,
+                  "end": 1537
+                }
+              }
+            ],
+            "span": {
+              "start": 1496,
+              "end": 1541
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Picked: ",
+                "span": {
+                  "start": 1551,
+                  "end": 1559
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "picked.value",
+                  "span": {
+                    "start": 1560,
+                    "end": 1572
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "picked@448",
+                      "span": {
+                        "start": 1560,
+                        "end": 1572
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1559,
+                  "end": 1573
+                }
+              }
+            ],
+            "span": {
+              "start": 1548,
+              "end": 1577
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Choices",
+                "span": {
+                  "start": 1588,
+                  "end": 1608
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "choices",
+                  "span": {
+                    "start": 1619,
+                    "end": 1626
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "choices@215",
+                      "span": {
+                        "start": 1619,
+                        "end": 1626
+                      }
+                    }
+                  ]
+                },
+                "item": "choice@1632",
+                "key": {
+                  "code": "choice",
+                  "span": {
+                    "start": 1664,
+                    "end": 1670
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "choice@1632",
+                      "span": {
+                        "start": 1664,
+                        "end": 1670
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Element",
+                      "tag": "button",
+                      "attributes": [
+                        {
+                          "kind": "Static",
+                          "name": "type",
+                          "value": "button",
+                          "span": {
+                            "start": 1693,
+                            "end": 1706
+                          }
+                        },
+                        {
+                          "kind": "Event",
+                          "event": "click",
+                          "handler": {
+                            "kind": "Inline",
+                            "function": {
+                              "parameters": [],
+                              "body": {
+                                "code": "vote(choice)",
+                                "span": {
+                                  "start": 1722,
+                                  "end": 1734
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "vote@1039",
+                                    "span": {
+                                      "start": 1722,
+                                      "end": 1726
+                                    },
+                                    "call": true
+                                  },
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "choice@1632",
+                                    "span": {
+                                      "start": 1727,
+                                      "end": 1733
+                                    }
+                                  }
+                                ]
+                              },
+                              "expression": true,
+                              "span": {
+                                "start": 1716,
+                                "end": 1734
+                              }
+                            },
+                            "span": {
+                              "start": 1716,
+                              "end": 1734
+                            }
+                          },
+                          "span": {
+                            "start": 1707,
+                            "end": 1735
+                          }
+                        }
+                      ],
+                      "children": [
+                        {
+                          "kind": "Interpolation",
+                          "value": {
+                            "code": "choice",
+                            "span": {
+                              "start": 1752,
+                              "end": 1758
+                            },
+                            "refs": [
+                              {
+                                "kind": "Binding",
+                                "binding": "choice@1632",
+                                "span": {
+                                  "start": 1752,
+                                  "end": 1758
+                                }
+                              }
+                            ]
+                          },
+                          "span": {
+                            "start": 1751,
+                            "end": 1759
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 1685,
+                        "end": 1781
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 1655,
+                    "end": 1797
+                  }
+                },
+                "span": {
+                  "start": 1619,
+                  "end": 1808
+                }
+              }
+            ],
+            "span": {
+              "start": 1584,
+              "end": 1821
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1836,
+                  "end": 1849
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "count@1301",
+                  "span": {
+                    "start": 1859,
+                    "end": 1864
+                  }
+                },
+                "span": {
+                  "start": 1850,
+                  "end": 1865
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Count the answers",
+                "span": {
+                  "start": 1866,
+                  "end": 1899
+                }
+              }
+            ],
+            "span": {
+              "start": 1828,
+              "end": 1908
+            }
+          }
+        ],
+        "span": {
+          "start": 1446,
+          "end": 1923
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Ballot",
+      "span": {
+        "start": 159,
+        "end": 1930
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "BallotProps",
+      "exported": true,
+      "code": "interface BallotProps {\n  limit: number;\n  label?: string;\n  choices: string[];\n}",
+      "span": {
+        "start": 76,
+        "end": 157
+      }
+    }
+  ]
+}

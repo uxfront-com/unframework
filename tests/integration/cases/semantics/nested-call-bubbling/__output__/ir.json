@@ -1,0 +1,1130 @@
+{
+  "irVersion": 1,
+  "file": "semantics/nested-call-bubbling/Picker.uf.tsx",
+  "components": [
+    {
+      "name": "Picker",
+      "span": {
+        "start": 59,
+        "end": 1512
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@102",
+        "type": {
+          "code": "{ done: [step: number, status: string] }",
+          "span": {
+            "start": 121,
+            "end": 161
+          }
+        },
+        "events": [
+          {
+            "name": "done",
+            "parameters": [
+              {
+                "name": "step",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 136,
+                    "end": 142
+                  }
+                },
+                "span": {
+                  "start": 130,
+                  "end": 142
+                }
+              },
+              {
+                "name": "status",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 152,
+                    "end": 158
+                  }
+                },
+                "span": {
+                  "start": 144,
+                  "end": 158
+                }
+              }
+            ],
+            "span": {
+              "start": 123,
+              "end": 159
+            }
+          }
+        ],
+        "span": {
+          "start": 96,
+          "end": 165
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@102",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 102,
+            "end": 106
+          }
+        },
+        {
+          "id": "selected@175",
+          "name": "selected",
+          "kind": "state",
+          "span": {
+            "start": 175,
+            "end": 183
+          }
+        },
+        {
+          "id": "hits@207",
+          "name": "hits",
+          "kind": "state",
+          "span": {
+            "start": 207,
+            "end": 211
+          }
+        },
+        {
+          "id": "log@230",
+          "name": "log",
+          "kind": "state",
+          "span": {
+            "start": 230,
+            "end": 233
+          }
+        },
+        {
+          "id": "status@263",
+          "name": "status",
+          "kind": "state",
+          "span": {
+            "start": 263,
+            "end": 269
+          }
+        },
+        {
+          "id": "step@293",
+          "name": "step",
+          "kind": "state",
+          "span": {
+            "start": 293,
+            "end": 297
+          }
+        },
+        {
+          "id": "record@320",
+          "name": "record",
+          "kind": "localFn",
+          "span": {
+            "start": 320,
+            "end": 326
+          }
+        },
+        {
+          "id": "pick@397",
+          "name": "pick",
+          "kind": "localFn",
+          "span": {
+            "start": 397,
+            "end": 401
+          }
+        },
+        {
+          "id": "report@482",
+          "name": "report",
+          "kind": "localFn",
+          "span": {
+            "start": 482,
+            "end": 488
+          }
+        },
+        {
+          "id": "load@570",
+          "name": "load",
+          "kind": "localFn",
+          "span": {
+            "start": 570,
+            "end": 574
+          }
+        },
+        {
+          "id": "run@681",
+          "name": "run",
+          "kind": "localFn",
+          "span": {
+            "start": 681,
+            "end": 684
+          }
+        },
+        {
+          "id": "start@853",
+          "name": "start",
+          "kind": "localFn",
+          "span": {
+            "start": 853,
+            "end": 858
+          }
+        },
+        {
+          "id": "entry@1292",
+          "name": "entry",
+          "kind": "loopVar",
+          "span": {
+            "start": 1292,
+            "end": 1297
+          }
+        },
+        {
+          "id": "index@1299",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 1299,
+            "end": 1304
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "selected@175",
+          "initial": {
+            "code": "\"none\"",
+            "span": {
+              "start": 190,
+              "end": 196
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 169,
+            "end": 198
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "hits@207",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 218,
+              "end": 219
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 201,
+            "end": 221
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "log@230",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 240,
+              "end": 248
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 250,
+              "end": 252
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 224,
+            "end": 254
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "status@263",
+          "initial": {
+            "code": "\"idle\"",
+            "span": {
+              "start": 276,
+              "end": 282
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 257,
+            "end": 284
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "step@293",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 304,
+              "end": 305
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 287,
+            "end": 307
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "record@320",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "line",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 333,
+                    "end": 339
+                  }
+                },
+                "span": {
+                  "start": 327,
+                  "end": 339
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    log.value = [...log.value, line];\n  }",
+              "span": {
+                "start": 341,
+                "end": 384
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "log@230",
+                  "operator": "=",
+                  "span": {
+                    "start": 347,
+                    "end": 379
+                  },
+                  "target": {
+                    "start": 347,
+                    "end": 356
+                  },
+                  "value": {
+                    "start": 359,
+                    "end": 379
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "log@230",
+                  "span": {
+                    "start": 363,
+                    "end": 372
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 326,
+              "end": 384
+            }
+          },
+          "span": {
+            "start": 311,
+            "end": 384
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "pick@397",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 408,
+                    "end": 414
+                  }
+                },
+                "span": {
+                  "start": 402,
+                  "end": 414
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    selected.value = name;\n    hits.value += 1;\n  }",
+              "span": {
+                "start": 416,
+                "end": 469
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "selected@175",
+                  "operator": "=",
+                  "span": {
+                    "start": 422,
+                    "end": 443
+                  },
+                  "target": {
+                    "start": 422,
+                    "end": 436
+                  },
+                  "value": {
+                    "start": 439,
+                    "end": 443
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "hits@207",
+                  "operator": "+=",
+                  "span": {
+                    "start": 449,
+                    "end": 464
+                  },
+                  "target": {
+                    "start": 449,
+                    "end": 459
+                  },
+                  "value": {
+                    "start": 463,
+                    "end": 464
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 401,
+              "end": 469
+            }
+          },
+          "span": {
+            "start": 388,
+            "end": 469
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "report@482",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    record(`picked ${selected.value} #${hits.value}`);\n  }",
+              "span": {
+                "start": 491,
+                "end": 551
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "record@320",
+                  "span": {
+                    "start": 497,
+                    "end": 503
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "selected@175",
+                  "span": {
+                    "start": 514,
+                    "end": 528
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "hits@207",
+                  "span": {
+                    "start": 533,
+                    "end": 543
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 488,
+              "end": 551
+            }
+          },
+          "span": {
+            "start": 473,
+            "end": 551
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "load@570",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    status.value = \"loading\";\n    await Promise.resolve();\n    step.value += 1;\n  }",
+              "span": {
+                "start": 577,
+                "end": 662
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "status@263",
+                  "operator": "=",
+                  "span": {
+                    "start": 583,
+                    "end": 607
+                  },
+                  "target": {
+                    "start": 583,
+                    "end": 595
+                  },
+                  "value": {
+                    "start": 598,
+                    "end": 607
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 619,
+                    "end": 626
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "step@293",
+                  "operator": "+=",
+                  "span": {
+                    "start": 642,
+                    "end": 657
+                  },
+                  "target": {
+                    "start": 642,
+                    "end": 652
+                  },
+                  "value": {
+                    "start": 656,
+                    "end": 657
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 574,
+              "end": 662
+            }
+          },
+          "span": {
+            "start": 555,
+            "end": 662
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "run@681",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    step.value += 1;\n    await load();\n    status.value = `loaded ${step.value}`;\n    await nextTick();\n    emit(\"done\", step.value, status.value);\n  }",
+              "span": {
+                "start": 687,
+                "end": 840
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "step@293",
+                  "operator": "+=",
+                  "span": {
+                    "start": 693,
+                    "end": 708
+                  },
+                  "target": {
+                    "start": 693,
+                    "end": 703
+                  },
+                  "value": {
+                    "start": 707,
+                    "end": 708
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "load@570",
+                  "span": {
+                    "start": 720,
+                    "end": 724
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "status@263",
+                  "operator": "=",
+                  "span": {
+                    "start": 732,
+                    "end": 769
+                  },
+                  "target": {
+                    "start": 732,
+                    "end": 744
+                  },
+                  "value": {
+                    "start": 747,
+                    "end": 769
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "step@293",
+                  "span": {
+                    "start": 757,
+                    "end": 767
+                  }
+                },
+                {
+                  "kind": "Api",
+                  "api": "nextTick",
+                  "span": {
+                    "start": 781,
+                    "end": 789
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@102",
+                  "event": "done",
+                  "span": {
+                    "start": 797,
+                    "end": 835
+                  },
+                  "arguments": [
+                    {
+                      "start": 810,
+                      "end": 820
+                    },
+                    {
+                      "start": 822,
+                      "end": 834
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "step@293",
+                  "span": {
+                    "start": 810,
+                    "end": 820
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "status@263",
+                  "span": {
+                    "start": 822,
+                    "end": 834
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 684,
+              "end": 840
+            }
+          },
+          "span": {
+            "start": 666,
+            "end": 840
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "start@853",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    void run();\n    status.value = \"started\";\n  }",
+              "span": {
+                "start": 861,
+                "end": 912
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "run@681",
+                  "span": {
+                    "start": 872,
+                    "end": 875
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "status@263",
+                  "operator": "=",
+                  "span": {
+                    "start": 883,
+                    "end": 907
+                  },
+                  "target": {
+                    "start": 883,
+                    "end": 895
+                  },
+                  "value": {
+                    "start": 898,
+                    "end": 907
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 858,
+              "end": 912
+            }
+          },
+          "span": {
+            "start": 844,
+            "end": 912
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "picker",
+            "span": {
+              "start": 938,
+              "end": 952
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Picker",
+            "span": {
+              "start": 953,
+              "end": 972
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "choices",
+                "span": {
+                  "start": 985,
+                  "end": 1000
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "presentation",
+                "span": {
+                  "start": 1001,
+                  "end": 1020
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "report@482",
+                  "span": {
+                    "start": 1030,
+                    "end": 1036
+                  }
+                },
+                "span": {
+                  "start": 1021,
+                  "end": 1037
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 1055,
+                      "end": 1068
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "pick(\"alpha\")",
+                          "span": {
+                            "start": 1084,
+                            "end": 1097
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "pick@397",
+                              "span": {
+                                "start": 1084,
+                                "end": 1088
+                              },
+                              "call": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1078,
+                          "end": 1097
+                        }
+                      },
+                      "span": {
+                        "start": 1078,
+                        "end": 1097
+                      }
+                    },
+                    "span": {
+                      "start": 1069,
+                      "end": 1098
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Alpha",
+                    "span": {
+                      "start": 1099,
+                      "end": 1124
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1047,
+                  "end": 1133
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 1150,
+                      "end": 1163
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "pick(\"beta\")",
+                          "span": {
+                            "start": 1179,
+                            "end": 1191
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "pick@397",
+                              "span": {
+                                "start": 1179,
+                                "end": 1183
+                              },
+                              "call": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 1173,
+                          "end": 1191
+                        }
+                      },
+                      "span": {
+                        "start": 1173,
+                        "end": 1191
+                      }
+                    },
+                    "span": {
+                      "start": 1164,
+                      "end": 1192
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Beta",
+                    "span": {
+                      "start": 1193,
+                      "end": 1217
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1142,
+                  "end": 1226
+                }
+              }
+            ],
+            "span": {
+              "start": 980,
+              "end": 1239
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Log",
+                "span": {
+                  "start": 1250,
+                  "end": 1266
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "log.value",
+                  "span": {
+                    "start": 1277,
+                    "end": 1286
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "log@230",
+                      "span": {
+                        "start": 1277,
+                        "end": 1286
+                      }
+                    }
+                  ]
+                },
+                "item": "entry@1292",
+                "index": "index@1299",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 1330,
+                    "end": 1335
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@1299",
+                      "span": {
+                        "start": 1330,
+                        "end": 1335
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "entry",
+                        "span": {
+                          "start": 1338,
+                          "end": 1343
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "entry@1292",
+                            "span": {
+                              "start": 1338,
+                              "end": 1343
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 1337,
+                        "end": 1344
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 1321,
+                    "end": 1349
+                  }
+                },
+                "span": {
+                  "start": 1277,
+                  "end": 1360
+                }
+              }
+            ],
+            "span": {
+              "start": 1246,
+              "end": 1373
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 1383,
+                  "end": 1396
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "status.value",
+                  "span": {
+                    "start": 1398,
+                    "end": 1410
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "status@263",
+                      "span": {
+                        "start": 1398,
+                        "end": 1410
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1397,
+                  "end": 1411
+                }
+              }
+            ],
+            "span": {
+              "start": 1380,
+              "end": 1415
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1430,
+                  "end": 1443
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "start@853",
+                  "span": {
+                    "start": 1453,
+                    "end": 1458
+                  }
+                },
+                "span": {
+                  "start": 1444,
+                  "end": 1459
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Start",
+                "span": {
+                  "start": 1460,
+                  "end": 1481
+                }
+              }
+            ],
+            "span": {
+              "start": 1422,
+              "end": 1490
+            }
+          }
+        ],
+        "span": {
+          "start": 929,
+          "end": 1505
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Picker",
+      "span": {
+        "start": 59,
+        "end": 1512
+      }
+    }
+  ],
+  "types": []
+}

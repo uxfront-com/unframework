@@ -129,6 +129,7 @@
           }
         }
       ],
+      "setup": [],
       "render": {
         "kind": "Fragment",
         "children": [

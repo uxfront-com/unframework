@@ -1,4 +1,4 @@
-// What the Vue output renders for props (design §1.1, ADR-0034), compiled as @vitejs/plugin-vue
+// What the Vue output renders for props (ADR-0034), compiled as @vitejs/plugin-vue
 // compiles it, for a production build (the template inlined into `setup`) and under a dev server
 // (a separate render function), and rendered by Vue's server renderer, failing on any warning.
 // The render-parity kit compares every target with the reference evaluator; these pin what is

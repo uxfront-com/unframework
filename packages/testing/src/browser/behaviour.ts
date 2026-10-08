@@ -48,23 +48,30 @@ export function expectLayerFailure(layer: LayerName, pattern: RegExp): string {
  *   no other layer failed (Vitest recorded them before the afterEach hooks ran).
  * - Then it throws one `LayerFailure` with every failed layer but L8, whose errors Vitest
  *   reports already (a failed unmount, which it never saw, is added).
+ *
+ * `late` are the test's own failures that Vitest never saw either: what the page refused after
+ * the test's last settle (a navigation the component did not prevent).
  */
 export function judgeTest(
   task: RunnerTestCase,
   subject: LayerSubject,
   unmountError?: unknown,
+  late: readonly string[] = [],
 ): void {
   const errors = task.result?.errors ?? [];
   const own = errors.filter((error) => error.name !== "LayerFailure");
   const messages = own.map(describeTestError);
-  const unmounted =
-    unmountError === undefined ? [] : [`Unmounting failed: ${formatError(unmountError)}`];
+  // What Vitest never saw: a failed unmount, and what the page refused after the last settle.
+  const unseen = [
+    ...(unmountError === undefined ? [] : [`Unmounting failed: ${formatError(unmountError)}`]),
+    ...late,
+  ];
   const recorded = recordLayer(
     task,
     subject,
     "L8",
-    messages.length || unmounted.length
-      ? { status: "fail", message: [...messages, ...unmounted].join("\n") }
+    messages.length || unseen.length
+      ? { status: "fail", message: [...messages, ...unseen].join("\n") }
       : { status: "pass" },
   );
 
@@ -80,8 +87,8 @@ export function judgeTest(
     const kept = errors.filter((error) => !own.includes(error));
     task.result.errors = kept.length ? kept : undefined;
     if (!kept.length && !failures.length) task.result.state = "pass";
-  } else if (recorded.status === "fail" && unmounted.length) {
-    failures.push(...unmounted.map((message) => `L8: ${message}`));
+  } else if (recorded.status === "fail" && unseen.length) {
+    failures.push(...unseen.map((message) => `L8: ${message}`));
   }
   if (failures.length) throw new LayerFailure(subject, failures);
 }

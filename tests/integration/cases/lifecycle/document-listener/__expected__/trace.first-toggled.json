@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Shortcut K' })",
+      "dom": [
+        "<section aria-label=\"Shortcuts\" class=\"shortcut-tip\">",
+        "  <p>",
+        "    \"Press Escape to hide this tip.\"",
+        "  </p>",
+        "  <button aria-pressed=\"true\" type=\"button\" uf:focused=\"\">",
+        "    \"Shortcut K\"",
+        "  </button>",
+        "  <p role=\"status\">",
+        "    \"Used: 0\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Shortcuts\":",
+        "  - paragraph: Press Escape to hide this tip.",
+        "  - button \"Shortcut K\" [pressed]",
+        "  - status: \"Used: 0\""
+      ],
+      "events": {}
+    }
+  ]
+}

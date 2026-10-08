@@ -1,0 +1,41 @@
+[
+  {
+    "code": "UF2025",
+    "severity": "error",
+    "message": "`nextTick` is given a callback: `await nextTick()` is its one form, and React's, Angular's and Qwik's `nextTick` take no callback, which would never run.",
+    "file": "diagnostics/non-canonical-call/CopyButton.uf.tsx",
+    "start": {
+      "line": 13,
+      "column": 5,
+      "offset": 553
+    },
+    "end": {
+      "line": 15,
+      "column": 7,
+      "offset": 630
+    },
+    "help": "Make the function `async`, `await nextTick()`, and write the callback's code after it.",
+    "fixes": [
+      {
+        "title": "Await `nextTick()` in an `async` function",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 508,
+              "end": 508
+            },
+            "text": "async "
+          },
+          {
+            "span": {
+              "start": 553,
+              "end": 631
+            },
+            "text": "await nextTick();\n    emit(\"copied\", label.value?.textContent ?? \"\");"
+          }
+        ]
+      }
+    ]
+  }
+]

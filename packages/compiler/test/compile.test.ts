@@ -264,8 +264,8 @@ function withAttribute(module: UfModule, name: string, value: string | true): Uf
   return copy;
 }
 
-// compile() never throws (core-9): a misbehaving plugin or target is a diagnostic, and a hook
-// that fails leaves nothing of its step behind.
+// compile() never throws (P2): a misbehaving plugin or target is a diagnostic, and a hook that
+// fails leaves nothing of its step behind.
 describe("misbehaving plugins", () => {
   it("rejects an ir hook's result that is not valid IR, and keeps the analysed module", async () => {
     const result = await compile(hello, {
@@ -279,7 +279,7 @@ describe("misbehaving plugins", () => {
     expect(result.outputs.vue![0]!.contents).toContain("Hello, world!");
   });
 
-  // The schema cannot say these, and the targets rely on them (core-4): a plugin must not bring
+  // The schema cannot say these, and the targets rely on them (ADR-0032): a plugin must not bring
   // back an inline handler copied into six targets, or a `true` four targets print bare and
   // React prints empty.
   it("rejects an ir hook's result that breaks the IR's invariants, on every target", async () => {
@@ -319,7 +319,7 @@ describe("misbehaving plugins", () => {
 
   // A target writes a component's name as an identifier and names its file by it, and React
   // renders no `autofocus` and an iframe runs its `srcdoc`: each was UF9001 on four targets, or
-  // a file written outside the output directory on three (r3-analyzer-4, r3-analyzer-6).
+  // a file written outside the output directory on three.
   it.each<[string, (module: UfModule) => UfModule, string]>([
     [
       "a component's name that is a path",
@@ -366,8 +366,62 @@ describe("misbehaving plugins", () => {
     }
   });
 
+  // Client code is analysed by looser rules than a getter: `Math.random()` in a getter is UF3019,
+  // and a server render would differ from the browser's (ADR-0045).
+  it("rejects an ir hook's result that moves a local function into a getter, once", async () => {
+    const dice = [
+      'import { computed, ref } from "unframework";',
+      "",
+      "export default function Dice() {",
+      "  const last = ref(1);",
+      "  const label = computed(() => `Rolled ${last.value}`);",
+      "  const roll = () => Math.random();",
+      "  return (",
+      '    <button type="button" onClick={() => (last.value = roll())}>',
+      "      {label.value}",
+      "    </button>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const clean = await compile(dice, { filename: "Dice.uf.tsx", targets: ["vue"] });
+    expect(clean.diagnostics).toEqual([]);
+    const result = await compile(dice, {
+      filename: "Dice.uf.tsx",
+      targets: TARGET_NAMES,
+      plugins: [
+        {
+          name: "mover",
+          ir: (module) => {
+            const copy = structuredClone(module);
+            const [, label, roll] = copy.components[0]!.setup;
+            if (label?.kind !== "Derived" || roll?.kind !== "Function") {
+              throw new Error("Dice's setup holds `last`, `label` and `roll`.");
+            }
+            label.getter = roll.function;
+            return copy;
+          },
+        },
+      ],
+    });
+    expect(
+      result.diagnostics
+        .filter((diagnostic) => diagnostic.code !== "UF4001")
+        .map((diagnostic) => [diagnostic.code, diagnostic.message]),
+    ).toEqual([
+      [
+        "UF8001",
+        'The "mover" plugin\'s ir hook returned invalid IR: /components/0/setup/1/getter must be a function the analyser produced, with its parameters, types, body, event controls and flags, in a place of its context and role',
+      ],
+    ]);
+    // The hook's step is left out: the getter is the analysed one.
+    expect(result.outputs["vue"]![0]!.contents).toContain(
+      "const label = computed(() => `Rolled ${last.value}`);",
+    );
+  });
+
   // validateModule walked arrays with forEach, which skips a hole, and every target crashed on
-  // it as an internal error (r3-analyzer-5).
+  // it as an internal error.
   it("rejects an ir hook's result with a hole in an array, once", async () => {
     const result = await compile(hello, {
       filename: "Hello.uf.tsx",
@@ -699,7 +753,7 @@ describe("misbehaving targets", () => {
   });
 });
 
-// core-14: case-insensitive file systems (macOS, Windows) merge paths that differ only in case.
+// Case-insensitive file systems (macOS, Windows) merge paths that differ only in case.
 describe("output paths", () => {
   it("reports two files at one path, compared without case, and keeps the first", async () => {
     const lower = htmlTarget({

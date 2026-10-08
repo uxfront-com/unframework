@@ -33,7 +33,7 @@
           "items": {
             "$ref": "#/definitions/TypeDeclaration"
           },
-          "description": "The local type declarations the components' props use, in source order, each name once: the targets that print types copy them into the outputs of the components that use them."
+          "description": "The local type declarations the components' props, events and setup code use, in source order, each name once: the targets that print types copy them into the outputs of the components that use them."
         }
       },
       "required": [
@@ -72,14 +72,25 @@
           "items": {
             "type": "string"
           },
-          "description": "The names of the module's `types` this component's output declares: the declarations its props' types reach, in source order."
+          "description": "The names of the module's `types` this component's output declares: the declarations its props' types, its events' payloads and its setup code's annotations reach, in source order."
+        },
+        "emits": {
+          "$ref": "#/definitions/Emits",
+          "description": "The events the component declares with `const emit = defineEmits<{ … }>()` (ADR-0047). Absent when it declares none."
         },
         "bindings": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/Binding"
           },
-          "description": "Every binding the component declares, by the start of its span: the props (each destructured prop, or every prop in the object form) and the loop variables. Expressions refer to them by id."
+          "description": "Every binding the component declares, by the start of its span: the props (each destructured prop, or every prop in the object form), the setup's declarations, the `emit` function and the loop variables. Expressions and code refer to them by id."
+        },
+        "setup": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SetupItem"
+          },
+          "description": "The setup: what the component's body declares and runs before its return, in source order (plan §4.2, ADR-0045). Empty for a component whose body is only its return."
         },
         "render": {
           "anyOf": [
@@ -99,6 +110,7 @@
         "props",
         "types",
         "bindings",
+        "setup",
         "render"
       ],
       "additionalProperties": false,
@@ -223,12 +235,29 @@
         },
         "span": {
           "$ref": "#/definitions/Span",
-          "description": "What a target replaces with its own spelling of the binding: the identifier, or the whole `props.label` in the object form."
+          "description": "What a target replaces with its own spelling of the binding: the identifier; the whole `props.label` in the object form; and the whole `count.value` for a `state`, `derived` or `templateRef` binding, whose value is the only thing code reads (ADR-0045)."
         },
         "shorthand": {
           "type": "boolean",
           "const": true,
           "description": "Set for a shorthand property (`{ label }`), which a rewrite must expand to `label: …`."
+        },
+        "call": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set where the reference is the callee of a call (`save()`, `format(total.value)`): only a `localFn` binding is called, and outside client code it is used only so; client code may also pass one as a call's argument (`setTimeout(tick, 100)`, ADR-0045). A target whose functions are asynchronous there (Qwik's QRLs) awaits the call."
+        },
+        "narrowed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NarrowedPath"
+          },
+          "description": "The paths of the read that a condition around it narrows, where the read relies on it (ADR-0046): set on a read of a prop or of a ref's value only, shortest path first."
+        },
+        "later": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set where the reference lies in client code that runs later than the code around it (ADR-0048): in a function that code hands to a call that runs it later or never (a timer's or an observer's callback, a promise's `then`, `addEventListener`, `onCleanup`), written in place or held in a local `const` that only such calls are given. No target tracks what it reads while the code around it runs: a `watchEffect` lists only the other reads as its dependencies (`summarizeTracked`)."
         }
       },
       "required": [
@@ -244,6 +273,30 @@
       "description": "A binding's id: its name and the offset where it is declared, `name@offset` (plan §5.3). Unique in a component, and stable for one source, so expressions refer to bindings by it.",
       "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*@(0|[1-9][0-9]*)$"
     },
+    "NarrowedPath": {
+      "type": "object",
+      "properties": {
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The path, from the reference's start: the reference itself (`selected.value`, `user`, `props.user`) or a member path off it written with `.` or a literal key (`draft.value.email`, `contact.email`, `rows.value[0]`), no `?.` in it."
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "local",
+            "closure",
+            "template"
+          ],
+          "description": "Where the innermost condition that narrows the path is:\n- `local`: no function lies between it and the read (an `if`'s or a guard clause's test in   the read's function, or a `?:`, `&&` or `||` in the same expression), where TypeScript   narrows a property (`props.user`, `userRef.current`) too, and never a call;\n- `closure`: in a function of the setup around the read's: only a destructured prop's own   read, which TypeScript narrows in a closure as a parameter, and a property's not;\n- `template`: a conditional of the template around the read's handler, whose branch the   targets keep narrowed (UF3029 keeps the read to an argument of the handler's one call). It   may narrow kinds (`typeof`), where an assertion is not enough."
+        }
+      },
+      "required": [
+        "span",
+        "scope"
+      ],
+      "additionalProperties": false,
+      "description": "A path of a read that a condition around it narrows (ADR-0046), and that the read then uses as narrowed: a member read through `.`, a call's argument, a local's initial value, an operand. The source's TypeScript narrows it there, and a target whose own spelling of the read it does not narrow (a call: `selected()`, `this.user()`; a property in a closure: `props.user`, `userRef.current`) asserts the path present (`selected()!`, `draft().email!`) or reads a narrowed value of its own. Only a template's condition around a handler may narrow a path to fewer kinds than its declared ones without `null` and `undefined` (`typeof`, a discriminant): the analyser rejects such a narrowing in code (UF3031), where no target keeps it."
+    },
     "GlobalReference": {
       "type": "object",
       "properties": {
@@ -253,7 +306,7 @@
         },
         "name": {
           "type": "string",
-          "description": "The global's name: one of `ALLOWED_GLOBALS`."
+          "description": "The global's name: one of the globals its context may read."
         },
         "span": {
           "$ref": "#/definitions/Span",
@@ -266,7 +319,7 @@
         "span"
       ],
       "additionalProperties": false,
-      "description": "A read of a global every target can reach (`ALLOWED_GLOBALS`): Angular templates see only the component's members, so its target declares one for each."
+      "description": "A read of a global every target can reach: in a template expression one of `ALLOWED_GLOBALS` (Angular templates see only the component's members, so its target declares one for each); in setup code one of `PURE_GLOBALS` or, in client code, `CLIENT_GLOBALS` (ADR-0045)."
     },
     "PropsParameter": {
       "type": "object",
@@ -299,6 +352,94 @@
       "additionalProperties": false,
       "description": "How a component declares its props: `({ label, tone = \"info\" }: Props)` or `(props: Props)`."
     },
+    "Emits": {
+      "type": "object",
+      "properties": {
+        "binding": {
+          "$ref": "#/definitions/BindingId",
+          "description": "The `emit` binding."
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The type argument as written: an object type literal, or a reference to a local type."
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EventDeclaration"
+          },
+          "description": "The events, in member order, each name once."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The declaration, from `const` to its end."
+        }
+      },
+      "required": [
+        "binding",
+        "type",
+        "events",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "The events a component declares: `const emit = defineEmits<{ change: [value: number] }>()`."
+    },
+    "EventDeclaration": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name a consumer listens to (`onChange` in the source): camelCase ASCII, which every target spells its own way (ADR-0012).",
+          "pattern": "^[a-z][A-Za-z0-9]*$"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EventParameter"
+          },
+          "description": "The payload: the members of the event's named tuple, in order."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The member that declares the event."
+        }
+      },
+      "required": [
+        "name",
+        "parameters",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An event a component declares (ADR-0047)."
+    },
+    "EventParameter": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The member's label."
+        },
+        "optional": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set for an optional member (`value?: number`)."
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The member's type as written."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "name",
+        "type",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A member of an event's named tuple: `value: number` in `change: [value: number]`."
+    },
     "Binding": {
       "type": "object",
       "properties": {
@@ -315,7 +456,7 @@
         },
         "span": {
           "$ref": "#/definitions/Span",
-          "description": "Where the binding is declared: the destructured name, the props member, or the parameter."
+          "description": "Where the binding is declared: the destructured name, the props member, the parameter, or the identifier a setup declaration binds."
         }
       },
       "required": [
@@ -331,9 +472,743 @@
       "type": "string",
       "enum": [
         "prop",
-        "loopVar"
+        "loopVar",
+        "state",
+        "derived",
+        "templateRef",
+        "localConst",
+        "localFn",
+        "localVar",
+        "emit"
       ],
-      "description": "What declares a binding: a prop, or the item or index parameter of a list's callback. Only the kinds the analyser lowers: the coverage gate requires a corpus case for each."
+      "description": "What declares a binding. Only the kinds the analyser lowers: the coverage gate requires a corpus case for each.\n- `prop`: a prop, destructured or read through the props object;\n- `loopVar`: the item or index parameter of a list's callback;\n- `state`: `const count = ref(…)`, read and written through `count.value`;\n- `derived`: `const total = computed(() => …)`, read through `total.value`;\n- `templateRef`: `const input = useTemplateRef<HTMLInputElement>()`, read through   `input.value` in client code, and attached with `ref={input}`;\n- `localConst`: a setup `const` holding a value, `useId()`'s included;\n- `localFn`: a setup function, `function save() {…}` or `const save = () => …`;\n- `localVar`: a setup `let`, which holds what no template reads (a timer's id);\n- `emit`: the function `defineEmits` returns."
+    },
+    "SetupItem": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/StateItem"
+        },
+        {
+          "$ref": "#/definitions/DerivedItem"
+        },
+        {
+          "$ref": "#/definitions/TemplateRefItem"
+        },
+        {
+          "$ref": "#/definitions/IdItem"
+        },
+        {
+          "$ref": "#/definitions/ConstItem"
+        },
+        {
+          "$ref": "#/definitions/VariableItem"
+        },
+        {
+          "$ref": "#/definitions/FunctionItem"
+        },
+        {
+          "$ref": "#/definitions/WatchItem"
+        },
+        {
+          "$ref": "#/definitions/WatchEffectItem"
+        },
+        {
+          "$ref": "#/definitions/LifecycleItem"
+        }
+      ],
+      "description": "What a component's setup declares or runs, in source order (ADR-0045)."
+    },
+    "StateItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "State"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The type argument as written (`ref<Item[]>([])`)."
+        },
+        "initial": {
+          "$ref": "#/definitions/Code",
+          "description": "The initial value: an expression the setup evaluates once, which may read props and the values declared before it. Absent for `ref()`, which starts `undefined`."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`const count = ref(initial)`: a `state` binding (ADR-0046)."
+    },
+    "Code": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "The source text, exactly `source.slice(span.start, span.end)`."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        },
+        "refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CodeReference"
+          },
+          "description": "Each reference in source order, by the start of its span. A `Write`'s value and an `Emit`'s arguments hold references of their own, which follow it in the list; no other references overlap."
+        }
+      },
+      "required": [
+        "code",
+        "span",
+        "refs"
+      ],
+      "additionalProperties": false,
+      "description": "Code the setup runs (ADR-0045): an expression or a function's body, with every name in it resolved. Like an  {@link  Expression } , its code is exactly `source.slice(span.start, span.end)` and targets print it by splicing their own spelling of each reference; unlike one, it may write state, call `emit` and `nextTick`, and read what only client code may."
+    },
+    "CodeReference": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/BindingReference"
+        },
+        {
+          "$ref": "#/definitions/GlobalReference"
+        },
+        {
+          "$ref": "#/definitions/WriteReference"
+        },
+        {
+          "$ref": "#/definitions/EmitReference"
+        },
+        {
+          "$ref": "#/definitions/ApiReference"
+        },
+        {
+          "$ref": "#/definitions/EventReference"
+        }
+      ],
+      "description": "A resolved name in setup code."
+    },
+    "WriteReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Write"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId",
+          "description": "A `state` or a `localVar` binding."
+        },
+        "operator": {
+          "type": "string",
+          "description": "`=`, an arithmetic or logical compound assignment operator (`+=`, `??=`, …), or `++` or `--`. Bitwise and shift assignments are not accepted (UF1002).",
+          "pattern": "^(?:=|\\+=|-=|\\*=|\\/=|%=|\\*\\*=|&&=|\\|\\|=|\\?\\?=|\\+\\+|--)$"
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The whole assignment or update expression; for a write that is an arrow's expression body, the whole body, its parentheses included (`() => (open.value = !open.value)`)."
+        },
+        "target": {
+          "$ref": "#/definitions/Span",
+          "description": "What is written: `count.value`, or the variable."
+        },
+        "value": {
+          "$ref": "#/definitions/Span",
+          "description": "An assignment's value: its references follow this one in the list. Absent for `++`/`--`."
+        },
+        "arrowBody": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set where the write is an arrow function's expression body (`() => count.value++`)."
+        },
+        "narrowed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NarrowedPath"
+          },
+          "description": "The target, where the operator reads it (`+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `++`, `--`) and a condition around the write narrows it present (`if (count.value !== null) count.value += 1`, ADR-0046): one `local` path spanning `target`. A target that reads the written value through a call asserts it (`count()! + 1`)."
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "operator",
+        "span",
+        "target"
+      ],
+      "additionalProperties": false,
+      "description": "A write of a `state` binding's value or of a `localVar`: `count.value = 1`, `count.value += step`, `count.value++`, `timer = setInterval(…)` (ADR-0045). A write is a statement of its own: the whole expression of an expression statement, or the whole body of an arrow function."
+    },
+    "EmitReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Emit"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId",
+          "description": "The `emit` binding."
+        },
+        "event": {
+          "type": "string",
+          "description": "The event's name, as `defineEmits` declares it."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The whole call, from `emit` to its closing parenthesis."
+        },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Span"
+          },
+          "description": "The payload's arguments, in order: their references follow this one in the list."
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "event",
+        "span",
+        "arguments"
+      ],
+      "additionalProperties": false,
+      "description": "A call of the component's `emit`: `emit(\"change\", count.value)` (ADR-0047). The event is a string literal naming one the component declares."
+    },
+    "ApiReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Api"
+        },
+        "api": {
+          "type": "string",
+          "const": "nextTick",
+          "description": "The API: `nextTick`."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The identifier."
+        }
+      },
+      "required": [
+        "kind",
+        "api",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A use of an authoring API inside setup code: only `nextTick` (ADR-0048). The macros and the other APIs are setup items, called at the top level of the body."
+    },
+    "EventReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Event"
+        },
+        "member": {
+          "type": "string",
+          "description": "The member: `key`, `currentTarget`, `preventDefault`, …"
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The member expression, `event.key`."
+        },
+        "call": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set where the member is called (`event.preventDefault()`)."
+        }
+      },
+      "required": [
+        "kind",
+        "member",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A use of a handler's event parameter, `event.key` or `event.preventDefault()` (ADR-0047): a member every target's event object has (`PORTABLE_EVENT_MEMBERS`), read or called. The parameter is the one a  {@link  Parameter }  marks with `event`."
+    },
+    "DerivedItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Derived"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The type argument as written (`computed<number>(…)`)."
+        },
+        "getter": {
+          "$ref": "#/definitions/FunctionCode",
+          "description": "The getter: a function without parameters, pure as a template expression is."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "getter",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`const total = computed(() => …)`: a `derived` binding (ADR-0046)."
+    },
+    "FunctionCode": {
+      "type": "object",
+      "properties": {
+        "async": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set for an `async` function."
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Parameter"
+          },
+          "description": "The parameters, in order."
+        },
+        "returnType": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The return type annotation as written, without its colon."
+        },
+        "body": {
+          "$ref": "#/definitions/Code",
+          "description": "The body: a block `{ … }`, or an arrow's expression."
+        },
+        "expression": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set where the body is an arrow's expression rather than a block."
+        },
+        "eventControls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EventControl"
+          },
+          "description": "The leading `preventDefault()` and `stopPropagation()` calls of a handler's body (see  {@link  EventControl } ), in source order: set on a function that handles an event (an inline handler, or a setup function a handler names) when it makes any. The body may make others while the event is dispatched (in an `if` block beside other statements, a `switch` case, after a guard on state), which every target runs in place and codegen's `handlerControls` reads from the body; never one after an `await` or in a function inside it (UF3033)."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The whole function, from `async` or its first parameter to the end of its body."
+        }
+      },
+      "required": [
+        "parameters",
+        "body",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A function the source writes: a setup function, a handler, a callback or a getter (ADR-0045). Targets print it from its parts: a hoisted handler (Angular's methods) needs them apart, and every other target prints them back as the author wrote them."
+    },
+    "Parameter": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of an identifier parameter. Absent for a pattern."
+        },
+        "pattern": {
+          "$ref": "#/definitions/ParameterPattern",
+          "description": "A destructuring pattern (`[first, last]`, `{ id }`), as written. Absent for an identifier."
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The type annotation as written, without its colon."
+        },
+        "optional": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set for an optional parameter (`label?: string`)."
+        },
+        "rest": {
+          "type": "boolean",
+          "const": true,
+          "description": "A rest parameter (`...values`)."
+        },
+        "default": {
+          "$ref": "#/definitions/Expression",
+          "description": "The default: a static value, which references nothing."
+        },
+        "event": {
+          "type": "string",
+          "description": "Set on a handler's event parameter: the DOM interface of its event (`KeyboardEvent`), from its annotation or, unannotated, from the event's own (`DOM_EVENTS`). Code uses it only through  {@link  EventReference } s."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A parameter of a function the source writes: an identifier or a destructuring pattern, with its type and default. A function's own names are not bindings: code refers to them as written."
+    },
+    "ParameterPattern": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Exactly `source.slice(span.start, span.end)`: its defaults are static."
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The names the pattern binds, each an identifier."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "code",
+        "names",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A destructuring pattern in a parameter: its code, and the names it declares, in order."
+    },
+    "EventControl": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": [
+            "preventDefault",
+            "stopPropagation"
+          ]
+        },
+        "condition": {
+          "$ref": "#/definitions/Code",
+          "description": "The `if`'s test when the call is conditional: code that reads only the event."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The statement that makes the call: the expression statement, or the whole `if`."
+        }
+      },
+      "required": [
+        "method",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A `preventDefault()` or `stopPropagation()` call on a handler's event (ADR-0047): a statement at the top of the handler's body, or the only statement under an `if` there whose test reads only the event, with no statement before it that may leave the body but guard clauses whose tests read only the event (`if (event.key !== \"Enter\") return;`, which `handlerControls` of `@unframework/codegen` reads). Qwik runs these synchronously (`preventdefault:click`, `sync$`), apart from the lazily loaded handler."
+    },
+    "TemplateRefItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "TemplateRef"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The element type as written (`HTMLInputElement`)."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`const input = useTemplateRef<HTMLInputElement>()`: a `templateRef` binding (ADR-0049)."
+    },
+    "IdItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Id"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`const id = useId()`: a `localConst` binding holding an id unique to the instance (ADR-0049)."
+    },
+    "ConstItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Const"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The type annotation as written."
+        },
+        "value": {
+          "$ref": "#/definitions/Code"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`const label = …`: a `localConst` binding, evaluated once when the setup runs (ADR-0045)."
+    },
+    "VariableItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Variable"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The type annotation as written."
+        },
+        "initial": {
+          "$ref": "#/definitions/Code"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`let timer: number | undefined`: a `localVar` binding (ADR-0045), which client code writes and reads and no template, getter or watched source reads."
+    },
+    "FunctionItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Function"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "form": {
+          "type": "string",
+          "enum": [
+            "declaration",
+            "arrow"
+          ],
+          "description": "How the source declares it: a function declaration, or a `const` holding an arrow."
+        },
+        "function": {
+          "$ref": "#/definitions/FunctionCode"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "form",
+        "function",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`function save() {…}` or `const save = () => …`: a `localFn` binding (ADR-0045)."
+    },
+    "WatchItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Watch"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WatchSource"
+          },
+          "description": "What it watches: one source, or each element of an array of sources."
+        },
+        "array": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set for an array of sources (`watch([a, b], …)`): the callback gets arrays of values."
+        },
+        "callback": {
+          "$ref": "#/definitions/FunctionCode",
+          "description": "The callback: its parameters are the value, the previous value and `onCleanup`."
+        },
+        "immediate": {
+          "type": "boolean",
+          "const": true,
+          "description": "`immediate: true`: the callback also runs once when the setup does."
+        },
+        "post": {
+          "type": "boolean",
+          "const": true,
+          "description": "`flush: \"post\"`: the callback runs after the DOM has updated."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "sources",
+        "callback",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`watch(source, (value, previous, onCleanup) => …, options)` (ADR-0048): the callback runs in the browser after the sources change."
+    },
+    "WatchSource": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/RefSource"
+        },
+        {
+          "$ref": "#/definitions/GetterSource"
+        }
+      ],
+      "description": "What a watcher watches: a `state` or `derived` binding, or a getter."
+    },
+    "RefSource": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Ref"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A `state` or `derived` binding, written as the ref itself: `watch(count, …)`."
+    },
+    "GetterSource": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Getter"
+        },
+        "getter": {
+          "$ref": "#/definitions/FunctionCode"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "getter",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A getter, `watch(() => step, …)`: a function without parameters, pure as a getter is."
+    },
+    "WatchEffectItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "WatchEffect"
+        },
+        "effect": {
+          "$ref": "#/definitions/FunctionCode",
+          "description": "The effect: its one parameter, when it has one, is `onCleanup`."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "effect",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`watchEffect((onCleanup) => …)` (ADR-0048): runs in the browser after the component mounts, and again after any value it reads changes."
+    },
+    "LifecycleItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Lifecycle"
+        },
+        "hook": {
+          "type": "string",
+          "enum": [
+            "mounted",
+            "unmounted"
+          ]
+        },
+        "callback": {
+          "$ref": "#/definitions/FunctionCode",
+          "description": "The hook: a function without parameters."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "hook",
+        "callback",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`onMounted(…)` or `onUnmounted(…)` (ADR-0048): runs in the browser only."
     },
     "ElementNode": {
       "type": "object",
@@ -391,6 +1266,12 @@
         },
         {
           "$ref": "#/definitions/SpreadAttribute"
+        },
+        {
+          "$ref": "#/definitions/EventAttribute"
+        },
+        {
+          "$ref": "#/definitions/RefAttribute"
         }
       ],
       "description": "An attribute on an element."
@@ -717,6 +1598,128 @@
       ],
       "additionalProperties": false,
       "description": "A key a spread's type declares: an attribute the spread renders."
+    },
+    "EventAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Event"
+        },
+        "event": {
+          "type": "string",
+          "description": "The DOM event's name, as `addEventListener` takes it: the source's name without `on` and its option suffix, in lower case (`onDblclick` → `dblclick`).",
+          "pattern": "^[a-z][a-z0-9]*$"
+        },
+        "capture": {
+          "type": "boolean",
+          "const": true,
+          "description": "`onClickCapture`: the listener runs in the capture phase."
+        },
+        "once": {
+          "type": "boolean",
+          "const": true,
+          "description": "`onClickOnce`: the listener runs once, then is removed."
+        },
+        "passive": {
+          "type": "boolean",
+          "const": true,
+          "description": "`onWheelPassive`: the listener is passive."
+        },
+        "handler": {
+          "$ref": "#/definitions/Handler"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "event",
+        "handler",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An event listener, `onClick={save}` or `onKeydownCapture={(event) => …}` (ADR-0047): it renders no attribute, and runs in the browser only."
+    },
+    "Handler": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/FunctionHandler"
+        },
+        {
+          "$ref": "#/definitions/InlineHandler"
+        }
+      ],
+      "description": "What an event runs: a setup function by name, or a function written in place."
+    },
+    "FunctionHandler": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Function"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The identifier."
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`onClick={save}`: a `localFn` binding, which runs with the event as its argument."
+    },
+    "InlineHandler": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Inline"
+        },
+        "function": {
+          "$ref": "#/definitions/FunctionCode"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "function",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`onClick={() => count.value++}`: an arrow function, which runs with the event as its argument."
+    },
+    "RefAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Ref"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId",
+          "description": "The `templateRef` binding."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`ref={input}` (ADR-0049): attaches the element to a `templateRef` binding. It renders nothing."
     },
     "RenderNode": {
       "anyOf": [

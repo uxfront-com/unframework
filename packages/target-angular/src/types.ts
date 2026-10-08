@@ -1,5 +1,5 @@
 // The TypeScript an Angular component file declares besides its class: the source's own type
-// declarations (ADR-0034), and the type of each signal input (design §5.5). Type text is copied as
+// declarations (ADR-0034), and the type of each signal input (ADR-0034). Type text is copied as
 // the author wrote it; it is parsed only to find the names it refers to and the `undefined` an
 // input with a default leaves out of its value type.
 import { parseExpressionSource } from "@unframework/codegen";
@@ -68,19 +68,20 @@ function declaredType(declaration: TypeDeclaration): string {
 
 /**
  * The type declarations a component's file declares, in source order: every exported one of
- * its props' closure (`component.types`), which consumers type their props with (M5), and every
- * other one an input's type or a declared one refers to. An Angular component types each input
- * by its member's type, never by the props type itself, so a props interface the source does not
- * export would be declared and never used, which the L5 baseline rejects (`no-unused-vars`).
+ * its closure (`component.types`), which consumers type their props with (M5), and every other
+ * one the output reads (`roots`: an input's or an output's type, the setup's annotations and
+ * code) or a declared one refers to. An Angular component types each input by its member's
+ * type, never by the props type itself, so a props interface the source does not export would be
+ * declared and never used, which the L5 baseline rejects (`no-unused-vars`).
  */
 export function declaredTypes(
   closure: readonly TypeDeclaration[],
-  inputTypes: readonly string[],
+  roots: Iterable<string>,
 ): TypeDeclaration[] {
   const byName = new Map(closure.map((declaration) => [declaration.name, declaration]));
   const kept = new Set<string>();
   const pending = [
-    ...inputTypes.flatMap((code) => [...referencedNames(code)]),
+    ...roots,
     ...closure.filter(({ exported }) => exported).map((declaration) => declaration.name),
   ];
   for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
@@ -94,27 +95,40 @@ export function declaredTypes(
 
 /**
  * A type without `undefined`: the value type of an input with a default, which the input's
- * transform never lets through (design §5.5). A union's `undefined` members are left out as
+ * transform never lets through (ADR-0034). A union's `undefined` members are left out as
  * written; a reference to a local alias that admits `undefined` becomes `Exclude<…, undefined>`.
  */
 export function withoutUndefined(code: string, declarations: readonly TypeDeclaration[]): string {
+  return without(code, declarations, false);
+}
+
+/**
+ * A type without `undefined` and `null`, as `??` and `!` leave it: a union's nullish members are
+ * left out as written; a reference to a local alias that admits either becomes `NonNullable<…>`.
+ */
+export function withoutNullish(code: string, declarations: readonly TypeDeclaration[]): string {
+  return without(code, declarations, true);
+}
+
+function without(code: string, declarations: readonly TypeDeclaration[], nullish: boolean): string {
+  const left = (type: TypeNode) =>
+    type.type === "TSUndefinedKeyword" || (nullish && type.type === "TSNullKeyword");
   const aliases = new Map(
     declarations
       .filter((declaration) => declaration.code.startsWith("type"))
       .map((declaration) => [declaration.name, declaredType(declaration)]),
   );
-  // Whether an alias a member refers to admits `undefined`, through other aliases.
-  const admitsUndefined = (type: TypeNode, seen: ReadonlySet<string>): boolean => {
+  // Whether an alias a member refers to admits what is left out, through other aliases.
+  const admits = (type: TypeNode, seen: ReadonlySet<string>): boolean => {
+    if (left(type)) return true;
     switch (type.type) {
-      case "TSUndefinedKeyword":
-        return true;
       case "TSUnionType":
-        return (type.types as TypeNode[]).some((member) => admitsUndefined(member, seen));
+        return (type.types as TypeNode[]).some((member) => admits(member, seen));
       case "TSTypeReference": {
         const name = (type.typeName as { name?: unknown }).name;
         if (typeof name !== "string" || seen.has(name)) return false;
         const alias = aliases.get(name);
-        return alias !== undefined && admitsUndefined(parseType(alias), new Set([...seen, name]));
+        return alias !== undefined && admits(parseType(alias), new Set([...seen, name]));
       }
       default:
         return false;
@@ -122,14 +136,37 @@ export function withoutUndefined(code: string, declarations: readonly TypeDeclar
   };
   const type = parseType(code);
   const members = type.type === "TSUnionType" ? (type.types as TypeNode[]) : [type];
-  const kept = members.filter((member) => member.type !== "TSUndefinedKeyword");
-  const written =
-    kept.length === members.length
-      ? code.trim()
-      : kept
-          .map((member) => code.slice(member.start - PREFIX.length, member.end - PREFIX.length))
-          .join(" | ");
-  return kept.some((member) => admitsUndefined(member, new Set()))
-    ? `Exclude<${written}, undefined>`
-    : written;
+  const kept = members.filter((member) => !left(member));
+  if (!kept.length) return "never";
+  // A function or conditional type keeps parentheses in a union.
+  const text = (member: TypeNode) => {
+    const written = code.slice(member.start - PREFIX.length, member.end - PREFIX.length);
+    return kept.length > 1 && /=>|\bextends\b|^\s*new\b/.test(written) && !written.startsWith("(")
+      ? `(${written})`
+      : written;
+  };
+  const written = kept.length === members.length ? code.trim() : kept.map(text).join(" | ");
+  if (!kept.some((member) => admits(member, new Set()))) return written;
+  return nullish ? `NonNullable<${written}>` : `Exclude<${written}, undefined>`;
+}
+
+/**
+ * The element type of an array type as written (`Item[]`, `readonly Item[]`, `Array<Item>`,
+ * `ReadonlyArray<Item>`), or `undefined` for any other type.
+ */
+export function arrayElement(code: string): string | undefined {
+  let type = parseType(code);
+  const text = (node: TypeNode) => code.slice(node.start - PREFIX.length, node.end - PREFIX.length);
+  if (type.type === "TSTypeOperator" && type.operator === "readonly") {
+    type = type.typeAnnotation as TypeNode;
+  }
+  if (type.type === "TSArrayType") return text(type.elementType as TypeNode);
+  if (type.type === "TSTypeReference") {
+    const name = (type.typeName as { name?: unknown }).name;
+    const parameters = (type.typeArguments as { params?: TypeNode[] } | null)?.params ?? [];
+    if ((name === "Array" || name === "ReadonlyArray") && parameters.length === 1) {
+      return text(parameters[0]!);
+    }
+  }
+  return undefined;
 }

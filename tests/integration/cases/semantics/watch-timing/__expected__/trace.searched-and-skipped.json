@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Search boots' })",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-pager\">",
+        "  <p role=\"status\">",
+        "    \"Results for boots, page 1\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Search boots\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Search sandals\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Next page\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Skip two pages\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - status: Results for boots, page 1",
+        "  - button \"Search boots\"",
+        "  - button \"Search sandals\"",
+        "  - button \"Next page\"",
+        "  - button \"Skip two pages\""
+      ],
+      "events": {
+        "queryRun": [
+          [
+            "boots",
+            ""
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Skip two pages' })",
+      "dom": [
+        "<section aria-label=\"Search\" class=\"search-pager\">",
+        "  <p role=\"status\">",
+        "    \"Results for boots, page 3\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Search boots\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Search sandals\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Next page\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Skip two pages\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - status: Results for boots, page 3",
+        "  - button \"Search boots\"",
+        "  - button \"Search sandals\"",
+        "  - button \"Next page\"",
+        "  - button \"Skip two pages\""
+      ],
+      "events": {
+        "pageRun": [
+          [
+            3,
+            1
+          ]
+        ]
+      }
+    }
+  ]
+}

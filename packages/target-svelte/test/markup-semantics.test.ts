@@ -1,8 +1,8 @@
-// The Svelte dialect against design §1: the shared markup cases (codegen/test/markup-cases.ts),
-// printed with `svelteDialect`, wrapped in a runes-mode component that declares their props as
-// design §5.3 does, compiled by Svelte's own compiler as vite-plugin-svelte compiles it, rendered
-// by `svelte/server`, then linted with the target's L5 rules. The emitter's own output is tested
-// once the Svelte lane lands it (wave 3).
+// The Svelte dialect against ADR-0035 to ADR-0040: the shared markup cases
+// (codegen/test/markup-cases.ts), printed with `svelteDialect`, wrapped in a runes-mode component
+// that declares their props as the target does (ADR-0034), compiled by Svelte's own compiler as
+// vite-plugin-svelte compiles it, rendered by `svelte/server`, then linted with the target's L5
+// rules. The emitter's own output is tested by emit.test.ts and the corpus.
 import { join } from "node:path";
 
 import { printMarkup, svelteDialect } from "@unframework/codegen";
@@ -88,7 +88,7 @@ describe.each<MarkupOptions & { preserveWhitespace: boolean }>([
 ])(
   "svelte markup (print width $printWidth, consumer's preserveWhitespace $preserveWhitespace)",
   ({ preserveWhitespace, ...layout }) => {
-    it("renders every case as design §1 says", async () => {
+    it("renders every case as the markup cases say", async () => {
       const { cases, source } = components(layout)[0]!;
       const html = await render(source, passedProps(cases.props), preserveWhitespace);
       for (const { name, expected, actual } of compareSuite(canonical(html), cases.cases)) {

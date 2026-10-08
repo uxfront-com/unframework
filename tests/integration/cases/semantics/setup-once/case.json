@@ -1,0 +1,6 @@
+{
+  "description": "The setup runs once: a const that reads a prop (warned as UF2007) keeps its first value after a rerender; a static const renders as written.",
+  "ssr": {
+    "ada": { "props": { "name": "Ada" } }
+  }
+}

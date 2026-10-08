@@ -17,11 +17,17 @@ export const FRAMEWORK_ATTRIBUTES: readonly { framework: NormalizeTarget; patter
   { framework: "angular", pattern: /^ng-version$/ },
   { framework: "angular", pattern: /^ng-server-context$/ },
   { framework: "angular", pattern: /^ngh$/ },
-  // Qwik 2: q:key, q:p, q:container…; event and data attributes q-e:click, q-d:…, q-w:…; and the
+  // Qwik 2: q:key, q:p, q:container…; event and data attributes q-e:click, q-d:…, q-w:…, and
+  // their passive scopes q-ep:wheel, q-dp:…, q-wp:… (a `passive:wheel` listener's); and the
   // bare `:` (Q_PROPS_SEPARATOR) on every server-rendered element.
   { framework: "qwik", pattern: /^q:/ },
-  { framework: "qwik", pattern: /^q-[a-z]:/ },
+  { framework: "qwik", pattern: /^q-[a-z]p?:/ },
   { framework: "qwik", pattern: /^:$/ },
+  // The listener options its loader reads at dispatch, which the output writes as attributes
+  // (`preventdefault:submit`, `stoppropagation:click`, `capture:click`): how Qwik runs an event's
+  // handlers, which the other targets keep in their listeners (ADR-0047). Its `passive:` never
+  // renders: it selects the passive scope of the handler instead.
+  { framework: "qwik", pattern: /^(?:preventdefault|stoppropagation|capture):/ },
   // Qwik 1 listeners.
   { framework: "qwik", pattern: /^on(?:-document|-window)?:/ },
   // Hydration keys.

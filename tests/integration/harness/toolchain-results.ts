@@ -1,9 +1,9 @@
-// What L3, L4 and L5 make of a toolchain's results (DESIGN §4.1). A case fails on every message
-// the tool reported on its own output files, and on every message the tool reported on any
-// other path: the toolchain's tsconfig or lint configuration (an option the tool does not know
-// is ignored, so the check is weaker than configured), or a file an output imports. Each case
-// was checked with that configuration, so each fails, loudly, rather than passing a check that
-// did not run as set up.
+// What L3, L4 and L5 make of a toolchain's results (ADR-0028, ADR-0042). A case fails on every
+// message the tool reported on its own output files, and on every message the tool reported on any
+// other path: the toolchain's tsconfig or lint configuration (an option the tool does not know is
+// ignored, so the check is weaker than configured), or a file an output imports. Each case was
+// checked with that configuration, so each fails, loudly, rather than passing a check that did not
+// run as set up.
 import { relative, sep } from "node:path";
 
 import type { FrameworkCompileResult, ToolchainMessage } from "@unframework/codegen";

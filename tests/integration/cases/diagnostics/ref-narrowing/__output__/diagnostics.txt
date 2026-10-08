@@ -1,0 +1,9 @@
+error[UF3031]: `query.value` is used as a member read through `.`, which relies on a condition around it narrowing the ref's value, which is one of several kinds: Solid and Angular read a ref's value through a call (`query()`), which TypeScript does not narrow.
+  --> diagnostics/ref-narrowing/SearchBox.uf.tsx:11:57
+   |
+11 |     if (typeof query.value === "string") emit("search", query.value.trim());
+   |                                                         ^^^^^^^^^^^
+   |
+   = help: Read it into a local before the condition that narrows it, and test the local, which every target narrows: `const queryValue = query.value;`.
+   = fix (likely): Read `query.value` into `queryValue` first
+   = see: https://unframework.dev/diagnostics/UF3031

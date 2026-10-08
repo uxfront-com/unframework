@@ -1,4 +1,4 @@
-// Solid against the attributes the analyser lets a binding take (design §1.5, §5.4): how its
+// Solid against the attributes the analyser lets a binding take (ADR-0037): how its
 // compiler sets each bindable boolean, and which bindings its JSX types reject although the
 // authoring types and the analyser accept them (L4 would fail on Solid alone).
 import { randomUUID } from "node:crypto";
@@ -62,16 +62,16 @@ function compiled(source: string, generate: "dom" | "ssr"): string {
 }
 
 describe("solid bindable boolean attributes", () => {
-  // Design §5.4 prints `bool:name={x}` for a bindable boolean Solid's compiler does not know
-  // as one, which would set `name="false"`. It knows every one the analyser accepts, so the
-  // output writes them as HTML does; this fails when either list changes.
+  // A bindable boolean Solid's compiler does not know as one would need `bool:name={x}`, or it
+  // would set `name="false"`. It knows every one the analyser accepts, so the output writes them
+  // as HTML does; this fails when either list changes.
   it("are booleans to Solid's compiler, as a property or presence, in the DOM and on the server", () => {
     const pairs = [...BINDABLE_BOOLEAN_ATTRIBUTES].flatMap((name) => {
       const tag = [...HTML_ELEMENTS].find(
         (candidate) =>
           isHtmlAttribute(candidate, name) &&
           !isStateAttribute(candidate, name, undefined) &&
-          !nameProblem(candidate, "html", name, name, true) &&
+          !nameProblem(candidate, "html", name, name) &&
           !boundValueProblem(candidate, "html", name, kinds("boolean")),
       );
       return tag ? [{ tag, name }] : [];
@@ -117,7 +117,7 @@ function bindings(): SweptBinding[] {
     // Attributes the analyser takes only statically, or by a kind of their own (class, style).
     if (["class", "style"].includes(name)) return;
     if (namespace === "html" && isStateAttribute(tag, name, undefined)) return;
-    if (nameProblem(tag, namespace, name, name, true)) return;
+    if (nameProblem(tag, namespace, name, name)) return;
     for (const kind of KINDS) {
       if (!boundValueProblem(tag, namespace, name, kinds(kind))) {
         found.push([tag, name, `v.${kind}`]);

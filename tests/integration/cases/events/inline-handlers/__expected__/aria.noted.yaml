@@ -1,0 +1,11 @@
+- region "Shirt order":
+  - status: 1 x size S
+  - group "Size":
+    - button "Small" [pressed]
+    - button "Medium"
+    - button "Large"
+  - button "Add one"
+  - text: Note
+  - textbox "Note": Gift wrap
+  - paragraph: "Note: Gift wrap"
+  - button "Reset"

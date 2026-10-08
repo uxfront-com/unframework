@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Express shipping' })",
+      "dom": [
+        "<section aria-label=\"Order total\" class=\"checkout-total\">",
+        "  <p>",
+        "    \"Subtotal: EUR 49.99\"",
+        "  </p>",
+        "  <p>",
+        "    \"Shipping: EUR 12.00\"",
+        "  </p>",
+        "  <p role=\"status\">",
+        "    \"Total: EUR 61.99\"",
+        "  </p>",
+        "  <button aria-pressed=\"false\" type=\"button\">",
+        "    \"Standard shipping\"",
+        "  </button>",
+        "  <button aria-pressed=\"true\" type=\"button\" uf:focused=\"\">",
+        "    \"Express shipping\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Order total\":",
+        "  - paragraph: \"Subtotal: EUR 49.99\"",
+        "  - paragraph: \"Shipping: EUR 12.00\"",
+        "  - status: \"Total: EUR 61.99\"",
+        "  - button \"Standard shipping\"",
+        "  - button \"Express shipping\" [pressed]"
+      ],
+      "events": {
+        "shippingChange": [
+          [
+            "express"
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Standard shipping' })",
+      "dom": [
+        "<section aria-label=\"Order total\" class=\"checkout-total\">",
+        "  <p>",
+        "    \"Subtotal: EUR 49.99\"",
+        "  </p>",
+        "  <p>",
+        "    \"Shipping: EUR 0.00\"",
+        "  </p>",
+        "  <p role=\"status\">",
+        "    \"Total: EUR 49.99\"",
+        "  </p>",
+        "  <button aria-pressed=\"true\" type=\"button\" uf:focused=\"\">",
+        "    \"Standard shipping\"",
+        "  </button>",
+        "  <button aria-pressed=\"false\" type=\"button\">",
+        "    \"Express shipping\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Order total\":",
+        "  - paragraph: \"Subtotal: EUR 49.99\"",
+        "  - paragraph: \"Shipping: EUR 0.00\"",
+        "  - status: \"Total: EUR 49.99\"",
+        "  - button \"Standard shipping\" [pressed]",
+        "  - button \"Express shipping\""
+      ],
+      "events": {
+        "shippingChange": [
+          [
+            "standard"
+          ]
+        ]
+      }
+    }
+  ]
+}

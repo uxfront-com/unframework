@@ -1,0 +1,58 @@
+---
+export interface CityPickerProps {
+  cities: string[];
+}
+
+type Props = CityPickerProps;
+
+const { cities } = Astro.props;
+
+function uniqueId(): string {
+  const locals = Astro.locals as { ufIdCount?: number };
+  locals.ufIdCount = (locals.ufIdCount ?? 0) + 1;
+  return `uf-id-${locals.ufIdCount}`;
+}
+
+const listId = uniqueId();
+const query = "" as string;
+const open = false as boolean;
+const active = -1 as number;
+const chosen = "" as string;
+const notes = [] as string[];
+const matches = cities.filter((city) => city.toLowerCase().startsWith(query.toLowerCase()));
+---
+
+<section class="city-picker" aria-label="Trip">
+  <form role="search" aria-label="Destination">
+    <label>City<input
+      type="search"
+      name="city"
+      role="combobox"
+      aria-autocomplete="list"
+      aria-controls={open ? listId : undefined}
+      aria-expanded={open}
+      aria-activedescendant={open && active >= 0 ? `${listId}-${active}` : undefined}
+    /></label>
+    {open ? (
+      <div id={listId} role="listbox" aria-label="Cities">
+        {matches.map((city, index) => (
+          <button
+            type="button"
+            id={`${listId}-${index}`}
+            role="option"
+            tabindex="-1"
+            aria-selected={index === active}
+          >{city}</button>
+        ))}
+      </div>
+    ) : null}
+    <button type="submit">Search</button>
+  </form>
+  <p role="status">{chosen === "" ? "No city chosen" : `Chosen: ${chosen}`}</p>
+  <label>Note<textarea name="note"></textarea></label>
+  <ul aria-label="Notes">
+    {notes.map((note) => (
+      <li>{note}</li>
+    ))}
+  </ul>
+</section>

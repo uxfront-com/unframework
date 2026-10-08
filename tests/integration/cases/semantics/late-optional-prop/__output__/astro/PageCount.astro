@@ -1,0 +1,17 @@
+---
+export interface PageCountProps {
+  page?: number;
+  total: number;
+}
+
+type Props = PageCountProps;
+
+const { page = 1, total } = Astro.props;
+
+const label = `Page ${page} of ${total}`;
+---
+
+<nav class="page-count" aria-label="Pages">
+  <p role="status">{label}</p>
+  <p>Direct: {page}</p>
+</nav>

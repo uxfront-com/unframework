@@ -1,4 +1,4 @@
-// L4 against the attribute vocabulary (design §1.5, §1.7): vue-tsc with strict templates checks
+// L4 against the attribute vocabulary (ADR-0037, ADR-0040): vue-tsc with strict templates checks
 // every attribute of a native element against Vue's element types, where TSX leaves a hyphenated
 // name the types do not declare unchecked. So a source can type-check with a hyphenated attribute
 // that its Vue output fails on (`accept-charset`: Vue's types declare `acceptcharset`). Every
@@ -6,8 +6,13 @@
 // Vue's types lack goes in the toolchain's `dataAttributes` (tests/toolchains/vue/tsconfig.json),
 // or the analyser rejects it. Values are out of scope: a declared name's value is checked in the
 // source already, against the same Vue types the authoring JSX types are vendored from.
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname } from "node:path";
+
 import {
   ARIA_ATTRIBUTES,
+  DOM_EVENTS,
   SVG_PRESENTATION_ATTRIBUTES,
   createComponent,
   createElement,
@@ -25,6 +30,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { analyze } from "../../analyzer/src/index.ts";
 import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
+import { vueEventInterface } from "../src/listeners.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { packageDir, removeScratch, toolchainDir, writeScratch } from "./helpers.ts";
 
@@ -122,5 +128,33 @@ describe("vue attribute vocabulary (L4)", { timeout: 60_000 }, () => {
       .filter(({ tag, name }) => tag === "title" && SVG_PRESENTATION_ATTRIBUTES.has(name))
       .map(({ name }) => `<title ${name}="1" />`);
     expect(unknown).toEqual(titles);
+  });
+});
+
+// A handler the template cannot hold moves to a script function, whose unannotated event
+// parameter takes the interface `@vue/runtime-dom`'s `Events` gives its event: a parameter typed
+// otherwise would not take what Vue passes (typecheck.test.ts shows `error`'s). The table is
+// lib.dom's (`DOM_EVENTS`) but where Vue's types differ; an event Vue's types lack keeps
+// lib.dom's (vue-tsc accepts a `<dialog>`'s `@close` with `Event`).
+describe("vue event interfaces", () => {
+  it("are the ones `@vue/runtime-dom`'s `Events` declares, for every event of the vocabulary", () => {
+    const types = readFileSync(
+      createRequire(import.meta.url).resolve("@vue/runtime-dom/dist/runtime-dom.d.ts", {
+        paths: [dirname(createRequire(import.meta.url).resolve("vue/package.json"))],
+      }),
+      "utf8",
+    );
+    const start = types.indexOf("export interface Events {");
+    const block = types.slice(start, types.indexOf("}", start));
+    const vue = new Map(
+      [...block.matchAll(/^\s+on([A-Z][A-Za-z]*): ([A-Za-z]+);$/gm)].map((match) => [
+        match[1]!.toLowerCase(),
+        match[2]!,
+      ]),
+    );
+    expect(vue.size).toBeGreaterThan(90);
+    for (const [event, domInterface] of DOM_EVENTS) {
+      expect(vueEventInterface(event), event).toBe(vue.get(event) ?? domInterface);
+    }
   });
 });

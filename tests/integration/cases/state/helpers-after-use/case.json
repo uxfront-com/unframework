@@ -1,0 +1,6 @@
+{
+  "description": "Local function declarations written after the code that calls them: from an initial value, a getter, a watcher and handlers; one reads state and a prop, one reads nothing.",
+  "ssr": {
+    "single": { "props": { "price": 250 } }
+  }
+}

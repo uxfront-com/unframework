@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add Bo' })",
+      "dom": [
+        "<section aria-label=\"Names\" class=\"name-sorter\">",
+        "  <p>",
+        "    \"Names: Al, Bo, Cy\"",
+        "  </p>",
+        "  <p>",
+        "    \"Added: 1\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add Bo\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Report\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Names\":",
+        "  - paragraph: \"Names: Al, Bo, Cy\"",
+        "  - paragraph: \"Added: 1\"",
+        "  - button \"Add Bo\"",
+        "  - button \"Report\""
+      ],
+      "events": {
+        "firstSeen": [
+          [
+            "doubled 2"
+          ]
+        ],
+        "secondSeen": [
+          [
+            1
+          ]
+        ],
+        "started": [
+          [
+            "first doubled 0"
+          ],
+          [
+            "second"
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Report' })",
+      "dom": [
+        "<section aria-label=\"Names\" class=\"name-sorter\">",
+        "  <p>",
+        "    \"Names: Al, Bo, Cy\"",
+        "  </p>",
+        "  <p>",
+        "    \"Added: 1\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add Bo\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Report\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Names\":",
+        "  - paragraph: \"Names: Al, Bo, Cy\"",
+        "  - paragraph: \"Added: 1\"",
+        "  - button \"Add Bo\"",
+        "  - button \"Report\""
+      ],
+      "events": {
+        "total": [
+          [
+            6
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+- region "Tasks":
+  - list:
+    - listitem:
+      - button "Write the report"
+      - button "Remove Write the report": Remove
+    - listitem:
+      - button "Review the pull request"
+      - button "Remove Review the pull request": Remove
+    - listitem:
+      - button "Ship the release"
+      - button "Remove Ship the release": Remove
+    - listitem:
+      - button "New task 1"
+      - button "Remove New task 1": Remove
+    - listitem:
+      - button "New task 2"
+      - button "Remove New task 2": Remove
+  - button "Add task"
+  - button "Move up"

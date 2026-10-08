@@ -1,0 +1,6 @@
+{
+  "description": "Event controls through helpers: Escape through a helper that prevents the key, boolean-returning helpers called from an inline key handler and from a list's key handler, a state read only in a list handler's arguments, and a form with a once and a plain submit listener that both prevent.",
+  "ssr": {
+    "initial": { "props": { "actions": ["Copy", "Paste"] } }
+  }
+}

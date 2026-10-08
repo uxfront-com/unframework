@@ -1,0 +1,8 @@
+error[UF2012]: The component's body returns before its last statement: the setup runs once, and the template its last statement returns decides what renders.
+ --> diagnostics/conditional-return/Toast.uf.tsx:8:17
+  |
+8 |   if (!message) return null;
+  |                 ^^^^^^^^^^^^
+  |
+  = help: Move the condition into the JSX: `{message && <p>{message}</p>}`, or `c ? <A /> : <B />`.
+  = see: https://unframework.dev/diagnostics/UF2012

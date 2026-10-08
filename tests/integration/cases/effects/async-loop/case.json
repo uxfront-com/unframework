@@ -1,0 +1,6 @@
+{
+  "description": "A run of client code that crosses the boundary of a loop holding an await: writes before the loop and in its first iteration, at the end of one iteration and the start of the next, and in the last iteration and after the loop, each run separated by nextTick.",
+  "ssr": {
+    "initial": { "props": { "files": ["a.csv", "b.csv"] } }
+  }
+}

@@ -1,0 +1,35 @@
+---
+export interface QuickActionsProps {
+  actions: string[];
+}
+
+type Props = QuickActionsProps;
+
+const { actions } = Astro.props;
+
+const query = "" as string;
+const lastKey = "none" as string;
+const subscriptions = 0 as number;
+---
+
+<section class="quick-actions" aria-label="Quick actions">
+  <label>Search<input name="query" /></label>
+  <p>Query: {query}</p>
+  <label>Note<input name="note" /></label>
+  <label>Scope<select
+    name="scope"
+  ><option value="mine">Mine</option><option value="team">Team</option></select></label>
+  <ul aria-label="Actions">
+    {actions.map((action) => (
+      <li>
+        <label>{`Shortcut for ${action}`}<input name={action} /></label>
+        <button type="button">{`Run ${action}`}</button>
+      </li>
+    ))}
+  </ul>
+  <p>Last key: {lastKey}</p>
+  <form class="subscribe" aria-label="Subscribe">
+    <p>Subscriptions: {subscriptions}</p>
+    <button type="submit">Subscribe</button>
+  </form>
+</section>

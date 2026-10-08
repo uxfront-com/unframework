@@ -1,0 +1,478 @@
+{
+  "irVersion": 1,
+  "file": "effects/watch-cleanup/ChannelPicker.uf.tsx",
+  "components": [
+    {
+      "name": "ChannelPicker",
+      "span": {
+        "start": 56,
+        "end": 795
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@106",
+        "type": {
+          "code": "{ join: [channel: string]; leave: [channel: string] }",
+          "span": {
+            "start": 125,
+            "end": 178
+          }
+        },
+        "events": [
+          {
+            "name": "join",
+            "parameters": [
+              {
+                "name": "channel",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 143,
+                    "end": 149
+                  }
+                },
+                "span": {
+                  "start": 134,
+                  "end": 149
+                }
+              }
+            ],
+            "span": {
+              "start": 127,
+              "end": 150
+            }
+          },
+          {
+            "name": "leave",
+            "parameters": [
+              {
+                "name": "channel",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 169,
+                    "end": 175
+                  }
+                },
+                "span": {
+                  "start": 160,
+                  "end": 175
+                }
+              }
+            ],
+            "span": {
+              "start": 152,
+              "end": 176
+            }
+          }
+        ],
+        "span": {
+          "start": 100,
+          "end": 182
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@106",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 106,
+            "end": 110
+          }
+        },
+        {
+          "id": "channel@192",
+          "name": "channel",
+          "kind": "state",
+          "span": {
+            "start": 192,
+            "end": 199
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "channel@192",
+          "initial": {
+            "code": "\"general\"",
+            "span": {
+              "start": 206,
+              "end": 215
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 186,
+            "end": 217
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Getter",
+              "getter": {
+                "parameters": [],
+                "body": {
+                  "code": "channel.value.toLowerCase()",
+                  "span": {
+                    "start": 238,
+                    "end": 265
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "channel@192",
+                      "span": {
+                        "start": 238,
+                        "end": 251
+                      }
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 232,
+                  "end": 265
+                }
+              },
+              "span": {
+                "start": 232,
+                "end": 265
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "name",
+                "span": {
+                  "start": 272,
+                  "end": 276
+                }
+              },
+              {
+                "name": "previous",
+                "span": {
+                  "start": 278,
+                  "end": 286
+                }
+              },
+              {
+                "name": "onCleanup",
+                "span": {
+                  "start": 288,
+                  "end": 297
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n      emit(\"join\", name);\n      onCleanup(() => {\n        emit(\"leave\", name);\n      });\n    }",
+              "span": {
+                "start": 302,
+                "end": 398
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@106",
+                  "event": "join",
+                  "span": {
+                    "start": 310,
+                    "end": 328
+                  },
+                  "arguments": [
+                    {
+                      "start": 323,
+                      "end": 327
+                    }
+                  ]
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@106",
+                  "event": "leave",
+                  "span": {
+                    "start": 362,
+                    "end": 381
+                  },
+                  "arguments": [
+                    {
+                      "start": 376,
+                      "end": 380
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 271,
+              "end": 398
+            }
+          },
+          "immediate": true,
+          "span": {
+            "start": 221,
+            "end": 429
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "channel-picker",
+            "span": {
+              "start": 455,
+              "end": 477
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Channels",
+            "span": {
+              "start": 478,
+              "end": 499
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 510,
+                  "end": 523
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Channel: #",
+                "span": {
+                  "start": 524,
+                  "end": 534
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "channel.value",
+                  "span": {
+                    "start": 535,
+                    "end": 548
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "channel@192",
+                      "span": {
+                        "start": 535,
+                        "end": 548
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 534,
+                  "end": 549
+                }
+              }
+            ],
+            "span": {
+              "start": 507,
+              "end": 553
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 568,
+                  "end": 581
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(channel.value = \"random\")",
+                      "span": {
+                        "start": 597,
+                        "end": 623
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "channel@192",
+                          "operator": "=",
+                          "span": {
+                            "start": 597,
+                            "end": 623
+                          },
+                          "target": {
+                            "start": 598,
+                            "end": 611
+                          },
+                          "value": {
+                            "start": 614,
+                            "end": 622
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 591,
+                      "end": 623
+                    }
+                  },
+                  "span": {
+                    "start": 591,
+                    "end": 623
+                  }
+                },
+                "span": {
+                  "start": 582,
+                  "end": 624
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Join #random",
+                "span": {
+                  "start": 625,
+                  "end": 653
+                }
+              }
+            ],
+            "span": {
+              "start": 560,
+              "end": 662
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 677,
+                  "end": 690
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(channel.value = \"General\")",
+                      "span": {
+                        "start": 706,
+                        "end": 733
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "channel@192",
+                          "operator": "=",
+                          "span": {
+                            "start": 706,
+                            "end": 733
+                          },
+                          "target": {
+                            "start": 707,
+                            "end": 720
+                          },
+                          "value": {
+                            "start": 723,
+                            "end": 732
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 700,
+                      "end": 733
+                    }
+                  },
+                  "span": {
+                    "start": 700,
+                    "end": 733
+                  }
+                },
+                "span": {
+                  "start": 691,
+                  "end": 734
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Join #General",
+                "span": {
+                  "start": 735,
+                  "end": 764
+                }
+              }
+            ],
+            "span": {
+              "start": 669,
+              "end": 773
+            }
+          }
+        ],
+        "span": {
+          "start": 446,
+          "end": 788
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ChannelPicker",
+      "span": {
+        "start": 56,
+        "end": 795
+      }
+    }
+  ],
+  "types": []
+}

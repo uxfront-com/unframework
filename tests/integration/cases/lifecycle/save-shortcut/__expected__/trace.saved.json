@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "type getByRole('textbox', { name: 'Draft' }) \"Hi\"",
+      "dom": [
+        "<section aria-label=\"Draft\" class=\"draft-editor\">",
+        "  <label>",
+        "    \"Draft\"",
+        "    <textarea name=\"draft\" uf:focused=\"\" uf:value=\"Hi\"></textarea>",
+        "  </label>",
+        "  <p role=\"status\">",
+        "    \"Saved: 0\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Draft\":",
+        "  - text: Draft",
+        "  - textbox \"Draft\": Hi",
+        "  - status: \"Saved: 0\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "keyboard \"{Control>}s{/Control}\"",
+      "dom": [
+        "<section aria-label=\"Draft\" class=\"draft-editor\">",
+        "  <label>",
+        "    \"Draft\"",
+        "    <textarea name=\"draft\" uf:focused=\"\" uf:value=\"Hi\"></textarea>",
+        "  </label>",
+        "  <p role=\"status\">",
+        "    \"Saved: 1\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Draft\":",
+        "  - text: Draft",
+        "  - textbox \"Draft\": Hi",
+        "  - status: \"Saved: 1\""
+      ],
+      "events": {
+        "saved": [
+          [
+            1
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "description": "onMounted and a watcher run in the browser only: the server renders the initial state, and the mounted component shows what they wrote.",
+  "ssr": {
+    "initial": {}
+  },
+  "requires": "onMounted and a watcher change the status once the component mounts, so every browser capture depends on client code; the server render (ssr.initial.html) checks the initial state on every target."
+}

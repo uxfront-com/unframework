@@ -1,0 +1,9 @@
+error[UF3026]: `count` is a ref, whose value is `count.value`: the targets that keep a ref's value apart read nothing else.
+  --> diagnostics/ref-without-value/Counter.uf.tsx:10:16
+   |
+10 |       <output>{count}</output>
+   |                ^^^^^
+   |
+   = help: Read `count.value`: Vue's templates unwrap a ref, and the other targets do not.
+   = fix (safe): Read `count.value`
+   = see: https://unframework.dev/diagnostics/UF3026

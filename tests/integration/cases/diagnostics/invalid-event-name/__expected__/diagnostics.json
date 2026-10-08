@@ -1,0 +1,41 @@
+[
+  {
+    "code": "UF2008",
+    "severity": "error",
+    "message": "`level-change` is not camelCase in ASCII letters and digits, starting with a lower-case letter: every target spells an event's name in an identifier, a prop (`onChange`, Svelte's `onchange`) or an Angular output.",
+    "file": "diagnostics/invalid-event-name/VolumeSlider.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 30,
+      "offset": 361
+    },
+    "end": {
+      "line": 7,
+      "column": 44,
+      "offset": 375
+    },
+    "help": "Name the event in camelCase, as its own word: `change`, `levelChange`, `select`.",
+    "fixes": [
+      {
+        "title": "Rename the event `level-change` to `levelChange`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 361,
+              "end": 375
+            },
+            "text": "levelChange"
+          },
+          {
+            "span": {
+              "start": 481,
+              "end": 493
+            },
+            "text": "levelChange"
+          }
+        ]
+      }
+    ]
+  }
+]

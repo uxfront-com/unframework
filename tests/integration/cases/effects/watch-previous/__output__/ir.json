@@ -1,0 +1,588 @@
+{
+  "irVersion": 1,
+  "file": "effects/watch-previous/ZoomControl.uf.tsx",
+  "components": [
+    {
+      "name": "ZoomControl",
+      "span": {
+        "start": 43,
+        "end": 810
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "zoom@91",
+          "name": "zoom",
+          "kind": "state",
+          "span": {
+            "start": 91,
+            "end": 95
+          }
+        },
+        {
+          "id": "history@116",
+          "name": "history",
+          "kind": "state",
+          "span": {
+            "start": 116,
+            "end": 123
+          }
+        },
+        {
+          "id": "entry@707",
+          "name": "entry",
+          "kind": "loopVar",
+          "span": {
+            "start": 707,
+            "end": 712
+          }
+        },
+        {
+          "id": "index@714",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 714,
+            "end": 719
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "zoom@91",
+          "initial": {
+            "code": "100",
+            "span": {
+              "start": 102,
+              "end": 105
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 85,
+            "end": 107
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "history@116",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 130,
+              "end": 138
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 140,
+              "end": 142
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 110,
+            "end": 144
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "zoom@91",
+              "span": {
+                "start": 154,
+                "end": 158
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 161,
+                  "end": 166
+                }
+              },
+              {
+                "name": "previous",
+                "span": {
+                  "start": 168,
+                  "end": 176
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    history.value = [...history.value, `${previous}% to ${value}%`];\n  }",
+              "span": {
+                "start": 181,
+                "end": 255
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "history@116",
+                  "operator": "=",
+                  "span": {
+                    "start": 187,
+                    "end": 250
+                  },
+                  "target": {
+                    "start": 187,
+                    "end": 200
+                  },
+                  "value": {
+                    "start": 203,
+                    "end": 250
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "history@116",
+                  "span": {
+                    "start": 207,
+                    "end": 220
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 160,
+              "end": 255
+            }
+          },
+          "span": {
+            "start": 148,
+            "end": 257
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "zoom-control",
+            "span": {
+              "start": 283,
+              "end": 303
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Zoom",
+            "span": {
+              "start": 304,
+              "end": 321
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "zoom.value",
+                  "span": {
+                    "start": 338,
+                    "end": 348
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "zoom@91",
+                      "span": {
+                        "start": 338,
+                        "end": 348
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 337,
+                  "end": 349
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "%",
+                "span": {
+                  "start": 349,
+                  "end": 350
+                }
+              }
+            ],
+            "span": {
+              "start": 329,
+              "end": 359
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 374,
+                  "end": 387
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(zoom.value += 25)",
+                      "span": {
+                        "start": 403,
+                        "end": 421
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "zoom@91",
+                          "operator": "+=",
+                          "span": {
+                            "start": 403,
+                            "end": 421
+                          },
+                          "target": {
+                            "start": 404,
+                            "end": 414
+                          },
+                          "value": {
+                            "start": 418,
+                            "end": 420
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 397,
+                      "end": 421
+                    }
+                  },
+                  "span": {
+                    "start": 397,
+                    "end": 421
+                  }
+                },
+                "span": {
+                  "start": 388,
+                  "end": 422
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Zoom in",
+                "span": {
+                  "start": 423,
+                  "end": 446
+                }
+              }
+            ],
+            "span": {
+              "start": 366,
+              "end": 455
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 470,
+                  "end": 483
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(zoom.value -= 25)",
+                      "span": {
+                        "start": 499,
+                        "end": 517
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "zoom@91",
+                          "operator": "-=",
+                          "span": {
+                            "start": 499,
+                            "end": 517
+                          },
+                          "target": {
+                            "start": 500,
+                            "end": 510
+                          },
+                          "value": {
+                            "start": 514,
+                            "end": 516
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 493,
+                      "end": 517
+                    }
+                  },
+                  "span": {
+                    "start": 493,
+                    "end": 517
+                  }
+                },
+                "span": {
+                  "start": 484,
+                  "end": 518
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Zoom out",
+                "span": {
+                  "start": 519,
+                  "end": 543
+                }
+              }
+            ],
+            "span": {
+              "start": 462,
+              "end": 552
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 567,
+                  "end": 580
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(zoom.value = 100)",
+                      "span": {
+                        "start": 596,
+                        "end": 614
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "zoom@91",
+                          "operator": "=",
+                          "span": {
+                            "start": 596,
+                            "end": 614
+                          },
+                          "target": {
+                            "start": 597,
+                            "end": 607
+                          },
+                          "value": {
+                            "start": 610,
+                            "end": 613
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 590,
+                      "end": 614
+                    }
+                  },
+                  "span": {
+                    "start": 590,
+                    "end": 614
+                  }
+                },
+                "span": {
+                  "start": 581,
+                  "end": 615
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Reset",
+                "span": {
+                  "start": 616,
+                  "end": 637
+                }
+              }
+            ],
+            "span": {
+              "start": 559,
+              "end": 646
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ol",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "History",
+                "span": {
+                  "start": 657,
+                  "end": 677
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "history.value",
+                  "span": {
+                    "start": 688,
+                    "end": 701
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "history@116",
+                      "span": {
+                        "start": 688,
+                        "end": 701
+                      }
+                    }
+                  ]
+                },
+                "item": "entry@707",
+                "index": "index@714",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 745,
+                    "end": 750
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@714",
+                      "span": {
+                        "start": 745,
+                        "end": 750
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "entry",
+                        "span": {
+                          "start": 753,
+                          "end": 758
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "entry@707",
+                            "span": {
+                              "start": 753,
+                              "end": 758
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 752,
+                        "end": 759
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 736,
+                    "end": 764
+                  }
+                },
+                "span": {
+                  "start": 688,
+                  "end": 775
+                }
+              }
+            ],
+            "span": {
+              "start": 653,
+              "end": 788
+            }
+          }
+        ],
+        "span": {
+          "start": 274,
+          "end": 803
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ZoomControl",
+      "span": {
+        "start": 43,
+        "end": 810
+      }
+    }
+  ],
+  "types": []
+}

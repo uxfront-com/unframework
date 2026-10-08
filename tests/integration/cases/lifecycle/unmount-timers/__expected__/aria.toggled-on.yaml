@@ -1,0 +1,3 @@
+- region "Auto-refresh":
+  - button "Auto-refresh" [pressed]
+  - status: Refreshing

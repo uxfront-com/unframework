@@ -1,0 +1,10 @@
+---
+const online = undefined as boolean | undefined;
+const label = "Checking the connection" as string;
+---
+
+<p
+  class="network-badge"
+  role="status"
+  data-checked={online === undefined ? "no" : "yes"}
+>{label}</p>

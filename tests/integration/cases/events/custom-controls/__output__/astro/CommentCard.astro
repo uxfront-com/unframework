@@ -1,0 +1,13 @@
+---
+const text = "" as string;
+const liked = false as boolean;
+---
+
+<section class="comment-card" aria-label="Comment">
+  <label>Comment<textarea name="comment" rows="2"></textarea></label>
+  <div class="meter" role="presentation">
+    <div class="fill" style={{ width: `${Math.min(text.length, 100)}%` }}></div>
+  </div>
+  <p>{text.length} characters</p>
+  <div class="like" role="button" tabindex="0" aria-pressed={liked}>Like</div>
+</section>

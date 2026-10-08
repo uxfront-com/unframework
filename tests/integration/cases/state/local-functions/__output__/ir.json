@@ -1,0 +1,856 @@
+{
+  "irVersion": 1,
+  "file": "state/local-functions/CheckoutTotal.uf.tsx",
+  "components": [
+    {
+      "name": "CheckoutTotal",
+      "span": {
+        "start": 215,
+        "end": 1436
+      },
+      "props": [
+        {
+          "name": "subtotal",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 204,
+              "end": 210
+            }
+          },
+          "binding": "subtotal@255",
+          "span": {
+            "start": 194,
+            "end": 211
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "CheckoutTotalProps",
+          "span": {
+            "start": 267,
+            "end": 285
+          }
+        },
+        "span": {
+          "start": 253,
+          "end": 285
+        }
+      },
+      "types": [
+        "ShippingMethod",
+        "CheckoutTotalProps"
+      ],
+      "emits": {
+        "binding": "emit@297",
+        "type": {
+          "code": "{ shippingChange: [method: ShippingMethod] }",
+          "span": {
+            "start": 316,
+            "end": 360
+          }
+        },
+        "events": [
+          {
+            "name": "shippingChange",
+            "parameters": [
+              {
+                "name": "method",
+                "type": {
+                  "code": "ShippingMethod",
+                  "span": {
+                    "start": 343,
+                    "end": 357
+                  }
+                },
+                "span": {
+                  "start": 335,
+                  "end": 357
+                }
+              }
+            ],
+            "span": {
+              "start": 318,
+              "end": 358
+            }
+          }
+        ],
+        "span": {
+          "start": 291,
+          "end": 364
+        }
+      },
+      "bindings": [
+        {
+          "id": "subtotal@255",
+          "name": "subtotal",
+          "kind": "prop",
+          "span": {
+            "start": 255,
+            "end": 263
+          }
+        },
+        {
+          "id": "emit@297",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 297,
+            "end": 301
+          }
+        },
+        {
+          "id": "rates@374",
+          "name": "rates",
+          "kind": "localConst",
+          "span": {
+            "start": 374,
+            "end": 379
+          }
+        },
+        {
+          "id": "formatCents@426",
+          "name": "formatCents",
+          "kind": "localFn",
+          "span": {
+            "start": 426,
+            "end": 437
+          }
+        },
+        {
+          "id": "method@522",
+          "name": "method",
+          "kind": "state",
+          "span": {
+            "start": 522,
+            "end": 528
+          }
+        },
+        {
+          "id": "shipping@572",
+          "name": "shipping",
+          "kind": "derived",
+          "span": {
+            "start": 572,
+            "end": 580
+          }
+        },
+        {
+          "id": "total@628",
+          "name": "total",
+          "kind": "derived",
+          "span": {
+            "start": 628,
+            "end": 633
+          }
+        },
+        {
+          "id": "choose@704",
+          "name": "choose",
+          "kind": "localFn",
+          "span": {
+            "start": 704,
+            "end": 710
+          }
+        },
+        {
+          "id": "chooseExpress@807",
+          "name": "chooseExpress",
+          "kind": "localFn",
+          "span": {
+            "start": 807,
+            "end": 820
+          }
+        },
+        {
+          "id": "chooseStandard@871",
+          "name": "chooseStandard",
+          "kind": "localFn",
+          "span": {
+            "start": 871,
+            "end": 885
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Const",
+          "binding": "rates@374",
+          "value": {
+            "code": "{ standard: 0, express: 1200 }",
+            "span": {
+              "start": 382,
+              "end": 412
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 368,
+            "end": 413
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "formatCents@426",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "cents",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 445,
+                    "end": 451
+                  }
+                },
+                "span": {
+                  "start": 438,
+                  "end": 451
+                }
+              }
+            ],
+            "returnType": {
+              "code": "string",
+              "span": {
+                "start": 454,
+                "end": 460
+              }
+            },
+            "body": {
+              "code": "{\n    return `EUR ${(cents / 100).toFixed(2)}`;\n  }",
+              "span": {
+                "start": 461,
+                "end": 512
+              },
+              "refs": []
+            },
+            "span": {
+              "start": 437,
+              "end": 512
+            }
+          },
+          "span": {
+            "start": 417,
+            "end": 512
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "method@522",
+          "type": {
+            "code": "ShippingMethod",
+            "span": {
+              "start": 535,
+              "end": 549
+            }
+          },
+          "initial": {
+            "code": "\"standard\"",
+            "span": {
+              "start": 551,
+              "end": 561
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 516,
+            "end": 563
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "shipping@572",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "rates[method.value]",
+              "span": {
+                "start": 598,
+                "end": 617
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "rates@374",
+                  "span": {
+                    "start": 598,
+                    "end": 603
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "method@522",
+                  "span": {
+                    "start": 604,
+                    "end": 616
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 592,
+              "end": 617
+            }
+          },
+          "span": {
+            "start": 566,
+            "end": 619
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "total@628",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "formatCents(subtotal + shipping.value)",
+              "span": {
+                "start": 651,
+                "end": 689
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "formatCents@426",
+                  "span": {
+                    "start": 651,
+                    "end": 662
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "subtotal@255",
+                  "span": {
+                    "start": 663,
+                    "end": 671
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "shipping@572",
+                  "span": {
+                    "start": 674,
+                    "end": 688
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 645,
+              "end": 689
+            }
+          },
+          "span": {
+            "start": 622,
+            "end": 691
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "choose@704",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "next",
+                "type": {
+                  "code": "ShippingMethod",
+                  "span": {
+                    "start": 717,
+                    "end": 731
+                  }
+                },
+                "span": {
+                  "start": 711,
+                  "end": 731
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    method.value = next;\n    emit(\"shippingChange\", next);\n  }",
+              "span": {
+                "start": 733,
+                "end": 797
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "method@522",
+                  "operator": "=",
+                  "span": {
+                    "start": 739,
+                    "end": 758
+                  },
+                  "target": {
+                    "start": 739,
+                    "end": 751
+                  },
+                  "value": {
+                    "start": 754,
+                    "end": 758
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@297",
+                  "event": "shippingChange",
+                  "span": {
+                    "start": 764,
+                    "end": 792
+                  },
+                  "arguments": [
+                    {
+                      "start": 787,
+                      "end": 791
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 710,
+              "end": 797
+            }
+          },
+          "span": {
+            "start": 695,
+            "end": 797
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "chooseExpress@807",
+          "form": "arrow",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    choose(\"express\");\n  }",
+              "span": {
+                "start": 829,
+                "end": 857
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "choose@704",
+                  "span": {
+                    "start": 835,
+                    "end": 841
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 823,
+              "end": 857
+            }
+          },
+          "span": {
+            "start": 801,
+            "end": 858
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "chooseStandard@871",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    choose(\"standard\");\n  }",
+              "span": {
+                "start": 888,
+                "end": 917
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "choose@704",
+                  "span": {
+                    "start": 894,
+                    "end": 900
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 885,
+              "end": 917
+            }
+          },
+          "span": {
+            "start": 862,
+            "end": 917
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "checkout-total",
+            "span": {
+              "start": 943,
+              "end": 965
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Order total",
+            "span": {
+              "start": 966,
+              "end": 990
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Subtotal: ",
+                "span": {
+                  "start": 1001,
+                  "end": 1011
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "formatCents(subtotal)",
+                  "span": {
+                    "start": 1012,
+                    "end": 1033
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "formatCents@426",
+                      "span": {
+                        "start": 1012,
+                        "end": 1023
+                      },
+                      "call": true
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "subtotal@255",
+                      "span": {
+                        "start": 1024,
+                        "end": 1032
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1011,
+                  "end": 1034
+                }
+              }
+            ],
+            "span": {
+              "start": 998,
+              "end": 1038
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Shipping: ",
+                "span": {
+                  "start": 1048,
+                  "end": 1058
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "formatCents(shipping.value)",
+                  "span": {
+                    "start": 1059,
+                    "end": 1086
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "formatCents@426",
+                      "span": {
+                        "start": 1059,
+                        "end": 1070
+                      },
+                      "call": true
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "shipping@572",
+                      "span": {
+                        "start": 1071,
+                        "end": 1085
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1058,
+                  "end": 1087
+                }
+              }
+            ],
+            "span": {
+              "start": 1045,
+              "end": 1091
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 1101,
+                  "end": 1114
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Total: ",
+                "span": {
+                  "start": 1115,
+                  "end": 1122
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "total.value",
+                  "span": {
+                    "start": 1123,
+                    "end": 1134
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "total@628",
+                      "span": {
+                        "start": 1123,
+                        "end": 1134
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1122,
+                  "end": 1135
+                }
+              }
+            ],
+            "span": {
+              "start": 1098,
+              "end": 1139
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1154,
+                  "end": 1167
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-pressed",
+                "value": {
+                  "code": "method.value === \"standard\"",
+                  "span": {
+                    "start": 1182,
+                    "end": 1209
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "method@522",
+                      "span": {
+                        "start": 1182,
+                        "end": 1194
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1168,
+                  "end": 1210
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "chooseStandard@871",
+                  "span": {
+                    "start": 1220,
+                    "end": 1234
+                  }
+                },
+                "span": {
+                  "start": 1211,
+                  "end": 1235
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Standard shipping",
+                "span": {
+                  "start": 1236,
+                  "end": 1269
+                }
+              }
+            ],
+            "span": {
+              "start": 1146,
+              "end": 1278
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1293,
+                  "end": 1306
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-pressed",
+                "value": {
+                  "code": "method.value === \"express\"",
+                  "span": {
+                    "start": 1321,
+                    "end": 1347
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "method@522",
+                      "span": {
+                        "start": 1321,
+                        "end": 1333
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1307,
+                  "end": 1348
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "chooseExpress@807",
+                  "span": {
+                    "start": 1358,
+                    "end": 1371
+                  }
+                },
+                "span": {
+                  "start": 1349,
+                  "end": 1372
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Express shipping",
+                "span": {
+                  "start": 1373,
+                  "end": 1405
+                }
+              }
+            ],
+            "span": {
+              "start": 1285,
+              "end": 1414
+            }
+          }
+        ],
+        "span": {
+          "start": 934,
+          "end": 1429
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "CheckoutTotal",
+      "span": {
+        "start": 215,
+        "end": 1436
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ShippingMethod",
+      "exported": true,
+      "code": "type ShippingMethod = \"standard\" | \"express\";",
+      "span": {
+        "start": 66,
+        "end": 111
+      }
+    },
+    {
+      "name": "CheckoutTotalProps",
+      "exported": true,
+      "code": "interface CheckoutTotalProps {\n  /** The order's subtotal, in cents. */\n  subtotal: number;\n}",
+      "span": {
+        "start": 120,
+        "end": 213
+      }
+    }
+  ]
+}

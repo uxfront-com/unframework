@@ -10,7 +10,7 @@ import type { ToolchainContext } from "@unframework/codegen";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
-import { M1_SHAPES } from "./lint-probes.ts";
+import { M1_SHAPES, M2_FIXTURES } from "./lint-probes.ts";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const repo = join(packageDir, "../..");
@@ -54,6 +54,7 @@ const component = (markup: string, script = SCRIPT, lang = ' lang="ts"') =>
   `<svelte:options runes={true} />\n\n<script${lang}>\n${script}</script>\n\n${markup}\n`;
 
 describe("svelte lint (L5)", { timeout: 60_000 }, () => {
+  // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output, with no message", async () => {
     expect(goldens.map((file) => file.split("/").at(-1))).toEqual(
       expect.arrayContaining(["Hello.svelte", "ProfileCard.svelte"]),
@@ -62,10 +63,20 @@ describe("svelte lint (L5)", { timeout: 60_000 }, () => {
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(goldens.map((file) => [file, []])),
     );
+  }, 60_000);
+
+  it("accepts the shapes M1 emits", async () => {
+    const files = write(M1_SHAPES);
+    const results = await toolchain.lint(files, context);
+    expect(Object.fromEntries(results)).toEqual(
+      Object.fromEntries(files.map((file) => [file, []])),
+    );
   });
 
-  it("accepts the shapes M1 emits (design §5.3)", async () => {
-    const files = write(M1_SHAPES);
+  // ADR-0045 to ADR-0049: runes, watchers through `$effect.pre`, callback props, attachments.
+  // The fixtures are what the emitter prints (emit.test.ts pins them).
+  it("accepts the shapes M2 emits", async () => {
+    const files = M2_FIXTURES.map((name) => join(packageDir, "test/fixtures", name));
     const results = await toolchain.lint(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file, []])),
@@ -95,6 +106,13 @@ describe("svelte lint (L5)", { timeout: 60_000 }, () => {
       script: `${SCRIPT}  debugger;\n`,
       rule: "no-debugger",
     },
+    // UF3028 rejects such a mutation through a template ref: render it from state.
+    {
+      what: "a template ref's text replaced",
+      markup: "<p bind:this={box}>{label}{items.length}</p>",
+      script: `${SCRIPT}  let box: HTMLParagraphElement | null = null;\n  export function clear() {\n    if (box) box.textContent = "";\n  }\n`,
+      rule: "svelte/no-dom-manipulating",
+    },
   ])("rejects $what ($rule)", async ({ markup, script, lang, rule }) => {
     const contents =
       lang === undefined
@@ -118,6 +136,20 @@ describe("svelte lint (L5)", { timeout: 60_000 }, () => {
       what: "a prop the component never reads",
       markup: "<p>{label}</p>",
       script: "  let { label }: { items?: string[]; label: string } = $props();\n",
+    },
+    // `svelte/prefer-svelte-reactivity` is off: a handler's own `Map`, which the client subset
+    // allows to fill (UF2004), is the author's.
+    {
+      what: "a handler that fills a Map of its own",
+      markup: '<p>{label}</p><button type="button" onclick={count}>{items.length}</button>',
+      script: `${SCRIPT}  function count() {\n    const tally = new Map<string, number>();\n    for (const item of items) tally.set(item, (tally.get(item) ?? 0) + 1);\n    return tally.size;\n  }\n`,
+    },
+    // `svelte/prefer-writable-derived` is off: the author chose `watchEffect` over `computed`,
+    // and an effect runs in the browser only, where a derived value renders on the server too.
+    {
+      what: "a watchEffect that writes one state",
+      markup: "<p>{label}{total}</p>",
+      script: `${SCRIPT}  let total = $state(0);\n\n  $effect(() => {\n    total = items.length * 2;\n  });\n`,
     },
   ])("accepts $what", async ({ markup, script }) => {
     const reads = script === undefined ? `${markup}\n<i>{items.length}</i>` : markup;

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "keyboard \"{Control>}s{/Control}\"",
+      "dom": [
+        "<section aria-label=\"Draft\" class=\"draft-editor\">",
+        "  <label>",
+        "    \"Draft\"",
+        "    <textarea name=\"draft\" uf:value=\"\"></textarea>",
+        "  </label>",
+        "  <p role=\"status\">",
+        "    \"Saved: 1\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Draft\":",
+        "  - text: Draft",
+        "  - textbox \"Draft\"",
+        "  - status: \"Saved: 1\""
+      ],
+      "events": {
+        "saved": [
+          [
+            1
+          ]
+        ]
+      }
+    }
+  ]
+}

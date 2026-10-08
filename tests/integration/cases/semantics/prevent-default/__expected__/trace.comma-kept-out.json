@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "type getByLabel('New tag') \"design,systems\"",
+      "dom": [
+        "<form aria-label=\"Tags\" class=\"tag-form\">",
+        "  <label>",
+        "    \"New tag\"",
+        "    <input name=\"tag\" uf:focused=\"\" uf:value=\"designsystems\">",
+        "  </label>",
+        "  <button type=\"submit\">",
+        "    \"Add tag\"",
+        "  </button>",
+        "  <a href=\"/help/tags\">",
+        "    \"How tags work\"",
+        "  </a>",
+        "  <ul aria-label=\"Added tags\"></ul>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Tags\":",
+        "  - text: New tag",
+        "  - textbox \"New tag\": designsystems",
+        "  - button \"Add tag\"",
+        "  - link \"How tags work\":",
+        "    - /url: /help/tags",
+        "  - list \"Added tags\""
+      ],
+      "events": {}
+    }
+  ]
+}

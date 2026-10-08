@@ -1,0 +1,33 @@
+---
+export interface PriceTagProps {
+  /** The unit price, in cents. */
+  price: number;
+}
+
+type Props = PriceTagProps;
+
+const { price } = Astro.props;
+
+const quantity = 1 as number;
+const unit = formatCents(price);
+const summary = describe();
+const total = formatCents(price * quantity);
+const last = "none" as string;
+
+function formatCents(cents: number): string {
+  return `EUR ${(cents / 100).toFixed(2)}`;
+}
+
+function describe(): string {
+  return `${quantity} at ${formatCents(price)}`;
+}
+---
+
+<section class="price-tag" aria-label="Price">
+  <p>Unit: {unit}</p>
+  <p role="status">{summary}</p>
+  <p>Total: {total}</p>
+  <p>Last change: {last}</p>
+  <button type="button">Add one</button>
+  <button type="button">Price two</button>
+</section>

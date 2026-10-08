@@ -1,4 +1,4 @@
-// An element's attributes (design §1.5): each attribute is read on its own first (its name, then
+// An element's attributes (ADR-0037): each attribute is read on its own first (its name, then
 // its value: a string, a literal in braces, a binding, a class, a style or a spread), then checked
 // against its element and the others. An attribute with a problem is reported and left out.
 
@@ -27,6 +27,8 @@ import {
 import type { Attribute, Namespace, NumberKind, Span, SpreadKey } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
 
+import { handlerProblems } from "./a11y.ts";
+import type { A11yValue } from "./a11y.ts";
 import { ARIA_TYPES, ariaValueProblem, roleProblem } from "./aria.ts";
 import {
   canonicalName,
@@ -49,6 +51,7 @@ import { checkExpression, span } from "./expressions.ts";
 import type { CheckedExpression } from "./expressions.ts";
 import { htmlOnlyReferences, readJsxAttribute } from "./jsx/text.ts";
 import type { HtmlOnlyReference, Piece } from "./jsx/text.ts";
+import { listenerName, lowerListener, lowerRef } from "./listeners.ts";
 import { isStaticString, piecesOf, reportCharacters, valueOf } from "./literals.ts";
 import type { StaticString } from "./literals.ts";
 import type { RenderContext } from "./render.ts";
@@ -127,6 +130,18 @@ interface Read {
   form: Form;
 }
 
+/** A listener or a template ref, lowered on its own (`./listeners.ts`). */
+interface OwnRead {
+  own: "listener" | "ref";
+  node: AST.JSXAttribute;
+  nameNode: AST.JSXIdentifier;
+  attribute: Attribute | undefined;
+  /** What the element sets once: a listener's event and option, or `ref`. */
+  key: string;
+  /** Its name as it is written canonically, which a message names it by. */
+  canonical: string;
+}
+
 /** A spread, read on its own. */
 interface SpreadRead {
   node: AST.JSXSpreadAttribute;
@@ -148,7 +163,7 @@ export function lowerAttributes(
   element: ElementContext,
 ): LoweredAttributes {
   const { reporter } = element.render;
-  const entries: (Read | SpreadRead)[] = [];
+  const entries: (Read | SpreadRead | OwnRead)[] = [];
   let key: AST.JSXAttribute | undefined;
   let after = opening.name.end;
   for (const item of opening.attributes) {
@@ -168,6 +183,27 @@ export function lowerAttributes(
       continue;
     }
     const name = canonicalName(element.tag, element.namespace, authored);
+    // Listeners and template refs (ADR-0047, ADR-0049) are attributes of their own kinds.
+    if (nameNode.type === "JSXIdentifier") {
+      const own = { tag: element.tag, render: element.render };
+      if (name === "ref") {
+        const attribute = lowerRef(item, nameNode, own, element.render.attached);
+        entries.push({ own: "ref", node: item, nameNode, attribute, key: "ref", canonical: "ref" });
+        continue;
+      }
+      const listener = listenerName(authored);
+      if (listener) {
+        const lowered = lowerListener(item, nameNode, listener, own);
+        entries.push({
+          own: "listener",
+          node: item,
+          nameNode,
+          canonical: listener.canonical,
+          ...lowered,
+        });
+        continue;
+      }
+    }
     if (name === "key") {
       if (!element.listBody) misplacedKey(item, previous, reporter);
       else if (key) {
@@ -183,13 +219,7 @@ export function lowerAttributes(
       }
       continue;
     }
-    const problem = nameProblem(
-      element.tag,
-      element.namespace,
-      authored,
-      name,
-      item.value?.type === "JSXExpressionContainer",
-    );
+    const problem = nameProblem(element.tag, element.namespace, authored, name);
     if (problem) {
       report(reporter, nameNode, problem);
       continue;
@@ -199,7 +229,8 @@ export function lowerAttributes(
   }
   const binds = entries.some(
     (entry) =>
-      (!("form" in entry) && entry.binds) ||
+      "own" in entry ||
+      ("node" in entry && "binds" in entry && entry.binds) ||
       ("form" in entry && entry.form.kind === "bound") ||
       ("form" in entry && entry.form.kind === "class" && !entry.form.lowered.names) ||
       ("form" in entry && entry.form.kind === "style" && entry.form.lowered.binds),
@@ -210,7 +241,46 @@ export function lowerAttributes(
       entry.form.kind === "static" &&
       (entry.form.value?.includes("{{") ?? false),
   )?.node;
+  checkHandlers(opening, entries, element);
   return { attributes: checkAgainstElement(entries, element), key, binds, braces };
+}
+
+/**
+ * Reports the listeners of an element a keyboard user cannot reach or a screen reader does not
+ * announce (UF3030), as Svelte 5.57.1's accessibility rules judge them (`./a11y.ts`).
+ */
+function checkHandlers(
+  opening: AST.JSXOpeningElement,
+  entries: readonly (Read | SpreadRead | OwnRead)[],
+  element: ElementContext,
+): void {
+  const handlers = new Set<string>();
+  const attributes = new Map<string, A11yValue>();
+  for (const entry of entries) {
+    if ("own" in entry) {
+      const event = entry.own === "listener" ? listenerName(entry.nameNode.name)?.event : undefined;
+      if (event) handlers.add(event);
+    } else if ("form" in entry) {
+      const { form } = entry;
+      if (form.kind === "absent") continue;
+      attributes.set(
+        entry.name,
+        form.kind === "static" ? (form.value === null ? true : form.value) : null,
+      );
+    } else {
+      for (const { name } of entry.keys) attributes.set(name, null);
+    }
+  }
+  for (const problem of handlerProblems(element.tag, attributes, handlers)) {
+    element.render.reporter.report(
+      "UF3030",
+      opening.name,
+      `${problem.message} (Svelte's \`${problem.rule}\`).`,
+      {
+        help: "Put the handler on a `<button>` or a form control, which every user can reach and activate; or give the element a role and the key handling and focus that role takes.",
+      },
+    );
+  }
 }
 
 /** `key` outside a list's element (UF3014): it does nothing there, and the fix removes it. */
@@ -502,6 +572,19 @@ function readSpread(
   }
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(argument, render);
+  // Fallthrough of a setup value's keys lands with composition (ADR-0045, amending ADR-0039).
+  const setup = new Set([...render.setup.bindings.values()].map((binding) => binding.id));
+  if (
+    checked.clean &&
+    checked.expression.refs.some((ref) => ref.kind === "Binding" && setup.has(ref.binding))
+  ) {
+    reporter.unsupported(
+      item,
+      "Spreads of the setup's values are not supported yet: they land with fallthrough (M3).",
+      { help: "Spread a prop or a list's item, or write the attributes." },
+    );
+    return { node: item, binds: true, attribute: undefined, keys: [] };
+  }
   const shape = declaredShapeOf(checked.kinds);
   if (!shape) {
     if (checked.clean) {
@@ -575,7 +658,7 @@ function readSpread(
                 message: `The spread's key \`${authored}\` is written \`${name}\`: a spread's keys are attribute names.`,
                 help: "Rename the member in its type.",
               }
-            : nameProblem(tag, namespace, authored, name, true);
+            : nameProblem(tag, namespace, authored, name);
     if (problem) {
       report(reporter, item, problem, related);
       continue;
@@ -666,7 +749,7 @@ function objectSpread(
       name === "class" ||
       name === "style" ||
       written.has(name) ||
-      nameProblem(tag, namespace, authored, name, true)
+      nameProblem(tag, namespace, authored, name)
     ) {
       fixable = false;
       checkExpression(value, render);
@@ -713,7 +796,7 @@ function objectSpread(
  * lowers what is accepted.
  */
 function checkAgainstElement(
-  entries: readonly (Read | SpreadRead)[],
+  entries: readonly (Read | SpreadRead | OwnRead)[],
   element: ElementContext,
 ): Attribute[] {
   const { tag, namespace, hasChildren } = element;
@@ -723,6 +806,7 @@ function checkAgainstElement(
   // offered only where it changes no duplicate (a spread's `class` merges with the element's).
   const counts = new Map<string, number>();
   for (const entry of entries) {
+    if ("own" in entry) continue;
     const names =
       "form" in entry
         ? [entry.name]
@@ -763,7 +847,29 @@ function checkAgainstElement(
     return false;
   };
 
+  const owned = new Map<string, Span>();
   for (const entry of entries) {
+    if ("own" in entry) {
+      // One listener per event and option on an element, and one template ref (ADR-0047).
+      const first = owned.get(entry.key);
+      if (first) {
+        reporter.report(
+          "UF3007",
+          entry.nameNode,
+          entry.own === "ref"
+            ? `\`ref\` is set twice on this <${tag}>.`
+            : `\`${entry.canonical}\` is set twice on this <${tag}>: an element listens to an event with one handler for each option.`,
+          {
+            help: "Keep one: call both functions from one handler.",
+            related: [{ span: first, message: "First set here" }],
+          },
+        );
+        continue;
+      }
+      owned.set(entry.key, span(entry.nameNode));
+      if (entry.attribute) attributes.push(entry.attribute);
+      continue;
+    }
     if (!("form" in entry)) {
       let accepted = true;
       for (const key of entry.keys) {

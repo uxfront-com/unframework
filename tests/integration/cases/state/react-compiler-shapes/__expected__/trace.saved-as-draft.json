@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Save' })",
+      "dom": [
+        "<section aria-label=\"Display\" class=\"display-settings\">",
+        "  <p role=\"status\">",
+        "    \"Theme light, size 14\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Dark\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Larger\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Allow up to 30\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <p>",
+        "    \"Saving\"",
+        "  </p>",
+        "  <div aria-label=\"Server\" role=\"group\">",
+        "    <button type=\"button\">",
+        "      \"Reply with an id\"",
+        "    </button>",
+        "    <button type=\"button\">",
+        "      \"Reply as a draft\"",
+        "    </button>",
+        "    <button type=\"button\">",
+        "      \"Reply with an error\"",
+        "    </button>",
+        "  </div>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Display\":",
+        "  - status: Theme light, size 14",
+        "  - button \"Dark\"",
+        "  - button \"Larger\"",
+        "  - button \"Allow up to 30\"",
+        "  - button \"Save\"",
+        "  - paragraph: Saving",
+        "  - group \"Server\":",
+        "    - button \"Reply with an id\"",
+        "    - button \"Reply as a draft\"",
+        "    - button \"Reply with an error\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Reply as a draft' })",
+      "dom": [
+        "<section aria-label=\"Display\" class=\"display-settings\">",
+        "  <p role=\"status\">",
+        "    \"Theme light, size 14\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Dark\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Larger\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Allow up to 30\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Save\"",
+        "  </button>",
+        "  <p>",
+        "    \"Saved as a draft\"",
+        "  </p>",
+        "  <div aria-label=\"Server\" role=\"group\">",
+        "    <button type=\"button\">",
+        "      \"Reply with an id\"",
+        "    </button>",
+        "    <button type=\"button\" uf:focused=\"\">",
+        "      \"Reply as a draft\"",
+        "    </button>",
+        "    <button type=\"button\">",
+        "      \"Reply with an error\"",
+        "    </button>",
+        "  </div>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Display\":",
+        "  - status: Theme light, size 14",
+        "  - button \"Dark\"",
+        "  - button \"Larger\"",
+        "  - button \"Allow up to 30\"",
+        "  - button \"Save\"",
+        "  - paragraph: Saved as a draft",
+        "  - group \"Server\":",
+        "    - button \"Reply with an id\"",
+        "    - button \"Reply as a draft\"",
+        "    - button \"Reply with an error\""
+      ],
+      "events": {
+        "saved": [
+          [
+            0
+          ]
+        ]
+      }
+    }
+  ]
+}

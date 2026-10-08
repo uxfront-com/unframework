@@ -3,7 +3,7 @@
 // Astro dialect, exactly the pairs `isUntypedAttribute` names fail, as a missing declaration;
 // printed as the target prints them, none does. So the target's list is neither short nor long.
 // Values are typed `never` here: whether a value's type fits an attribute is the analyser's
-// question (design §1.5), not a declaration's.
+// question (ADR-0037), not a declaration's.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -73,8 +73,8 @@ function vocabulary(): ElementNode[] {
     ];
     for (const name of names.toSorted()) {
       if (OWN_FORMS.has(name)) continue;
-      if (!nameProblem(tag, "html", name, name, true)) add(tag, bound(name));
-      if (BOOLEAN_ATTRIBUTES.has(name) && !nameProblem(tag, "html", name, name, false)) {
+      if (!nameProblem(tag, "html", name, name)) add(tag, bound(name));
+      if (BOOLEAN_ATTRIBUTES.has(name) && !nameProblem(tag, "html", name, name)) {
         add(tag, createStaticAttribute(name, true, at));
       }
     }
@@ -87,7 +87,7 @@ function vocabulary(): ElementNode[] {
       ...ARIA_ATTRIBUTES,
     ];
     for (const name of names.toSorted()) {
-      if (OWN_FORMS.has(name) || nameProblem(tag, "svg", name, name, true)) continue;
+      if (OWN_FORMS.has(name) || nameProblem(tag, "svg", name, name)) continue;
       const attribute = bound(name);
       elements.push(
         tag === "svg"

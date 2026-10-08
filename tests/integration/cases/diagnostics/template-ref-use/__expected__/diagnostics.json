@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3028",
+    "severity": "error",
+    "message": "Setting `textContent` changes the element's text behind its framework's back: every framework renders the element from state, and Vue's, React's and Svelte's would undo or trip over the change.",
+    "file": "diagnostics/template-ref-use/HelpPanel.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 13,
+      "offset": 379
+    },
+    "end": {
+      "line": 10,
+      "column": 77,
+      "offset": 443
+    },
+    "help": "Render it from state: keep what the element shows in a ref, and let the template render it."
+  }
+]

@@ -1,0 +1,43 @@
+---
+export interface ReadingListProps {
+  shelves: string[];
+}
+
+type Props = ReadingListProps;
+
+const { shelves } = Astro.props;
+
+const books = [] as string[];
+const searching = false as boolean;
+const failure = "" as string;
+const shelf = "all" as string;
+const checking = false as boolean;
+const checks = 0 as number;
+const counts = {} as Record<string, number>;
+const refreshing = false as boolean;
+---
+
+<section class="reading-list" aria-label="Reading list">
+  <label>Search<input type="search" name="query" /></label>
+  <p
+    role="status"
+  >{searching ? "Searching" : `${books.length} found`}{failure === "" ? "" : `: ${failure}`}</p>
+  <ul aria-label="Books">
+    {books.map((book) => (
+      <li>{book}</li>
+    ))}
+  </ul>
+  <div role="group" aria-label="Shelf">
+    <button type="button" aria-pressed={shelf === "all"}>All</button>
+    <button type="button" aria-pressed={shelf === "unread"}>Unread</button>
+  </div>
+  <button type="button" aria-pressed={checking}>Check for new books</button>
+  <p>Checks: {checks}</p>
+  <button type="button">Refresh shelves</button>
+  <ul aria-label="Shelves">
+    {shelves.map((name) => (
+      <li>{name}: {counts[name] ?? "not counted"}</li>
+    ))}
+  </ul>
+  <p>{refreshing ? "Refreshing" : "Up to date"}</p>
+</section>

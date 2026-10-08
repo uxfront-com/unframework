@@ -1,0 +1,868 @@
+{
+  "irVersion": 1,
+  "file": "state/helpers-after-use/PriceTag.uf.tsx",
+  "components": [
+    {
+      "name": "PriceTag",
+      "span": {
+        "start": 141,
+        "end": 1158
+      },
+      "props": [
+        {
+          "name": "price",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 130,
+              "end": 136
+            }
+          },
+          "binding": "price@176",
+          "span": {
+            "start": 123,
+            "end": 137
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "PriceTagProps",
+          "span": {
+            "start": 185,
+            "end": 198
+          }
+        },
+        "span": {
+          "start": 174,
+          "end": 198
+        }
+      },
+      "types": [
+        "PriceTagProps"
+      ],
+      "bindings": [
+        {
+          "id": "price@176",
+          "name": "price",
+          "kind": "prop",
+          "span": {
+            "start": 176,
+            "end": 181
+          }
+        },
+        {
+          "id": "quantity@210",
+          "name": "quantity",
+          "kind": "state",
+          "span": {
+            "start": 210,
+            "end": 218
+          }
+        },
+        {
+          "id": "unit@237",
+          "name": "unit",
+          "kind": "state",
+          "span": {
+            "start": 237,
+            "end": 241
+          }
+        },
+        {
+          "id": "summary@277",
+          "name": "summary",
+          "kind": "state",
+          "span": {
+            "start": 277,
+            "end": 284
+          }
+        },
+        {
+          "id": "total@312",
+          "name": "total",
+          "kind": "derived",
+          "span": {
+            "start": 312,
+            "end": 317
+          }
+        },
+        {
+          "id": "last@381",
+          "name": "last",
+          "kind": "state",
+          "span": {
+            "start": 381,
+            "end": 385
+          }
+        },
+        {
+          "id": "add@475",
+          "name": "add",
+          "kind": "localFn",
+          "span": {
+            "start": 475,
+            "end": 478
+          }
+        },
+        {
+          "id": "formatCents@553",
+          "name": "formatCents",
+          "kind": "localFn",
+          "span": {
+            "start": 553,
+            "end": 564
+          }
+        },
+        {
+          "id": "describe@652",
+          "name": "describe",
+          "kind": "localFn",
+          "span": {
+            "start": 652,
+            "end": 660
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "quantity@210",
+          "initial": {
+            "code": "1",
+            "span": {
+              "start": 225,
+              "end": 226
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 204,
+            "end": 228
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "unit@237",
+          "initial": {
+            "code": "formatCents(price)",
+            "span": {
+              "start": 248,
+              "end": 266
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "formatCents@553",
+                "span": {
+                  "start": 248,
+                  "end": 259
+                },
+                "call": true
+              },
+              {
+                "kind": "Binding",
+                "binding": "price@176",
+                "span": {
+                  "start": 260,
+                  "end": 265
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 231,
+            "end": 268
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "summary@277",
+          "initial": {
+            "code": "describe()",
+            "span": {
+              "start": 291,
+              "end": 301
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "describe@652",
+                "span": {
+                  "start": 291,
+                  "end": 299
+                },
+                "call": true
+              }
+            ]
+          },
+          "span": {
+            "start": 271,
+            "end": 303
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "total@312",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "formatCents(price * quantity.value)",
+              "span": {
+                "start": 335,
+                "end": 370
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "formatCents@553",
+                  "span": {
+                    "start": 335,
+                    "end": 346
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "price@176",
+                  "span": {
+                    "start": 347,
+                    "end": 352
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "quantity@210",
+                  "span": {
+                    "start": 355,
+                    "end": 369
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 329,
+              "end": 370
+            }
+          },
+          "span": {
+            "start": 306,
+            "end": 372
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "last@381",
+          "initial": {
+            "code": "\"none\"",
+            "span": {
+              "start": 392,
+              "end": 398
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 375,
+            "end": 400
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "quantity@210",
+              "span": {
+                "start": 410,
+                "end": 418
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    last.value = describe();\n  }",
+              "span": {
+                "start": 426,
+                "end": 460
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "last@381",
+                  "operator": "=",
+                  "span": {
+                    "start": 432,
+                    "end": 455
+                  },
+                  "target": {
+                    "start": 432,
+                    "end": 442
+                  },
+                  "value": {
+                    "start": 445,
+                    "end": 455
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "describe@652",
+                  "span": {
+                    "start": 445,
+                    "end": 453
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 420,
+              "end": 460
+            }
+          },
+          "span": {
+            "start": 404,
+            "end": 462
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "add@475",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    quantity.value++;\n    summary.value = describe();\n  }",
+              "span": {
+                "start": 481,
+                "end": 540
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "quantity@210",
+                  "operator": "++",
+                  "span": {
+                    "start": 487,
+                    "end": 503
+                  },
+                  "target": {
+                    "start": 487,
+                    "end": 501
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "summary@277",
+                  "operator": "=",
+                  "span": {
+                    "start": 509,
+                    "end": 535
+                  },
+                  "target": {
+                    "start": 509,
+                    "end": 522
+                  },
+                  "value": {
+                    "start": 525,
+                    "end": 535
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "describe@652",
+                  "span": {
+                    "start": 525,
+                    "end": 533
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 478,
+              "end": 540
+            }
+          },
+          "span": {
+            "start": 466,
+            "end": 540
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "formatCents@553",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "cents",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 572,
+                    "end": 578
+                  }
+                },
+                "span": {
+                  "start": 565,
+                  "end": 578
+                }
+              }
+            ],
+            "returnType": {
+              "code": "string",
+              "span": {
+                "start": 581,
+                "end": 587
+              }
+            },
+            "body": {
+              "code": "{\n    return `EUR ${(cents / 100).toFixed(2)}`;\n  }",
+              "span": {
+                "start": 588,
+                "end": 639
+              },
+              "refs": []
+            },
+            "span": {
+              "start": 564,
+              "end": 639
+            }
+          },
+          "span": {
+            "start": 544,
+            "end": 639
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "describe@652",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "returnType": {
+              "code": "string",
+              "span": {
+                "start": 664,
+                "end": 670
+              }
+            },
+            "body": {
+              "code": "{\n    return `${quantity.value} at ${formatCents(price)}`;\n  }",
+              "span": {
+                "start": 671,
+                "end": 733
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "quantity@210",
+                  "span": {
+                    "start": 687,
+                    "end": 701
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "formatCents@553",
+                  "span": {
+                    "start": 708,
+                    "end": 719
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "price@176",
+                  "span": {
+                    "start": 720,
+                    "end": 725
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 660,
+              "end": 733
+            }
+          },
+          "span": {
+            "start": 643,
+            "end": 733
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "price-tag",
+            "span": {
+              "start": 759,
+              "end": 776
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Price",
+            "span": {
+              "start": 777,
+              "end": 795
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Unit: ",
+                "span": {
+                  "start": 806,
+                  "end": 812
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "unit.value",
+                  "span": {
+                    "start": 813,
+                    "end": 823
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "unit@237",
+                      "span": {
+                        "start": 813,
+                        "end": 823
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 812,
+                  "end": 824
+                }
+              }
+            ],
+            "span": {
+              "start": 803,
+              "end": 828
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 838,
+                  "end": 851
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "summary.value",
+                  "span": {
+                    "start": 853,
+                    "end": 866
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "summary@277",
+                      "span": {
+                        "start": 853,
+                        "end": 866
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 852,
+                  "end": 867
+                }
+              }
+            ],
+            "span": {
+              "start": 835,
+              "end": 871
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Total: ",
+                "span": {
+                  "start": 881,
+                  "end": 888
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "total.value",
+                  "span": {
+                    "start": 889,
+                    "end": 900
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "total@312",
+                      "span": {
+                        "start": 889,
+                        "end": 900
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 888,
+                  "end": 901
+                }
+              }
+            ],
+            "span": {
+              "start": 878,
+              "end": 905
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Last change: ",
+                "span": {
+                  "start": 915,
+                  "end": 928
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "last.value",
+                  "span": {
+                    "start": 929,
+                    "end": 939
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "last@381",
+                      "span": {
+                        "start": 929,
+                        "end": 939
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 928,
+                  "end": 940
+                }
+              }
+            ],
+            "span": {
+              "start": 912,
+              "end": 944
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 959,
+                  "end": 972
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "add@475",
+                  "span": {
+                    "start": 982,
+                    "end": 985
+                  }
+                },
+                "span": {
+                  "start": 973,
+                  "end": 986
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add one",
+                "span": {
+                  "start": 987,
+                  "end": 1010
+                }
+              }
+            ],
+            "span": {
+              "start": 951,
+              "end": 1019
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1034,
+                  "end": 1047
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(unit.value = formatCents(price * 2))",
+                      "span": {
+                        "start": 1063,
+                        "end": 1100
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "unit@237",
+                          "operator": "=",
+                          "span": {
+                            "start": 1063,
+                            "end": 1100
+                          },
+                          "target": {
+                            "start": 1064,
+                            "end": 1074
+                          },
+                          "value": {
+                            "start": 1077,
+                            "end": 1099
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "formatCents@553",
+                          "span": {
+                            "start": 1077,
+                            "end": 1088
+                          },
+                          "call": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "price@176",
+                          "span": {
+                            "start": 1089,
+                            "end": 1094
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1057,
+                      "end": 1100
+                    }
+                  },
+                  "span": {
+                    "start": 1057,
+                    "end": 1100
+                  }
+                },
+                "span": {
+                  "start": 1048,
+                  "end": 1101
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Price two",
+                "span": {
+                  "start": 1102,
+                  "end": 1127
+                }
+              }
+            ],
+            "span": {
+              "start": 1026,
+              "end": 1136
+            }
+          }
+        ],
+        "span": {
+          "start": 750,
+          "end": 1151
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "PriceTag",
+      "span": {
+        "start": 141,
+        "end": 1158
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "PriceTagProps",
+      "exported": true,
+      "code": "interface PriceTagProps {\n  /** The unit price, in cents. */\n  price: number;\n}",
+      "span": {
+        "start": 60,
+        "end": 139
+      }
+    }
+  ]
+}

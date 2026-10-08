@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2027",
+    "severity": "error",
+    "message": "`watchEffect` writes `history.value`, which it also reads: Vue ignores what an effect writes while it runs, and Svelte, Solid, Angular, Qwik and React run it again after its own write, without end.",
+    "file": "diagnostics/self-triggering-effect/VisitLog.uf.tsx",
+    "start": {
+      "line": 11,
+      "column": 5,
+      "offset": 421
+    },
+    "end": {
+      "line": 11,
+      "column": 52,
+      "offset": 468
+    },
+    "help": "Watch the sources with `watch(sources, callback)`, whose callback is untracked, and write the state there."
+  }
+]

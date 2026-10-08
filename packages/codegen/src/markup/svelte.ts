@@ -1,6 +1,7 @@
-// Svelte markup in runes mode (design §5.3): `{expr}`, `attr={expr}`, `{#if}` and keyed `{#each}`
-// blocks, one `class={[…]}` (clsx) and `style:` directives. Svelte parses balanced JavaScript in
-// `{…}`, braces in strings and comments included, so expression code is printed as written.
+// Svelte markup in runes mode (plan §6): `{expr}`, `attr={expr}`, `{#if}` and keyed `{#each}`
+// blocks, one `class={[…]}` (clsx), `style:` directives, `on<event>` listener attributes and
+// `bind:this`. Svelte parses balanced JavaScript in `{…}`, braces in strings and comments
+// included, so expression code is printed as written.
 import { HTML_ELEMENTS } from "@unframework/ir";
 import type { ElementNode } from "@unframework/ir";
 
@@ -16,6 +17,7 @@ import {
   keepsWhitespace,
   staticClassValue,
   staticStyleValue,
+  unreachable,
   withoutEmptyBranches,
 } from "./printer.ts";
 import type { AttributeContext, MarkupDialect } from "./printer.ts";
@@ -101,8 +103,13 @@ const hasSpread = (element: ElementNode) =>
         return untyped(attribute.name, element.tag) || assignedValue(attribute.name, element.tag);
       case "Static":
         return untyped(attribute.name, element.tag);
-      default:
+      case "Class":
+      case "Style":
+      case "Event":
+      case "Ref":
         return false;
+      default:
+        return unreachable(attribute);
     }
   });
 
@@ -168,6 +175,12 @@ const styleDirective = (property: string, value: string) =>
  * produces (ADR-0038). A style is a static `style="…"` when every declaration is static, and
  * otherwise one `style:` directive per declaration in source order: Svelte renders `style={{…}}`
  * as `[object Object]`.
+ *
+ * A listener is an `on<event>` attribute, `onclickcapture` in the capture phase (Svelte 5's
+ * event attributes, which `svelte/elements` types), its handler as code: a setup function's name
+ * (`{onclick}` when it is named like the attribute) or an arrow. Svelte has no attribute for a
+ * `once` or a `passive` listener, which its target writes itself (ADR-0047). A template ref is
+ * `bind:this`, to the variable the target declares for it.
  *
  * SVG elements get their namespace from the `<svg>` around them in the component, which every
  * IR tree has: a component rooted in an SVG child, which would need
@@ -279,4 +292,16 @@ export const svelteDialect: MarkupDialect = {
       close: "{/each}",
     },
   ],
+  eventAttribute: ({ attribute, handler, statement }) => {
+    const option = attribute.once ? "once" : attribute.passive ? "passive" : undefined;
+    if (option) {
+      throw new Error(
+        `Svelte has no attribute for a ${option} \`${attribute.event}\` listener: the Svelte target writes it.`,
+      );
+    }
+    const name = `on${attribute.event}${attribute.capture ? "capture" : ""}`;
+    const code = statement ?? handler;
+    return [{ name, text: shorthand(name, code) ? `{${name}}` : `${name}={${code}}` }];
+  },
+  refAttribute: ({ name }) => [{ name: "bind:this", text: `bind:this={${name}}` }],
 };

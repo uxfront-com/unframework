@@ -1,8 +1,9 @@
-// The JSX printer (design §4.2): IR render trees as JSX ASTs, for React, Solid and Qwik. The
+// The JSX printer (plan §5.8): IR render trees as JSX ASTs, for React, Solid and Qwik. The
 // defaults print React-style JSX (ternary chains with `null`, `.map` with keys, `{expr}`,
-// `name={expr}`); a dialect overrides what its framework writes differently. Expressions
-// enter the AST as placeholders that `printComponentModule` (or `Placeholders.print`) splices
-// with their source text, so literals, spacing and comments stay as the author wrote them.
+// `name={expr}`, `onClick={handler}`, `ref={input}`); a dialect overrides what its framework
+// writes differently. Expressions and handlers enter the AST as placeholders that
+// `printComponentModule` (or `Placeholders.print`) splices with their source text, so
+// literals, spacing and comments stay as the author wrote them.
 import type * as AST from "@oxc-project/types";
 import type {
   Binding,
@@ -10,10 +11,13 @@ import type {
   BoundAttribute,
   ClassAttribute,
   ElementNode,
+  EventAttribute,
   Expression,
   ForNode,
   FragmentNode,
+  Handler,
   IfNode,
+  RefAttribute,
   RenderNode,
   SpreadAttribute,
   SpreadKey,
@@ -22,10 +26,12 @@ import type {
   UfComponent,
 } from "@unframework/ir";
 
+import { handlerText } from "./functions.ts";
 import * as js from "./js/builders.ts";
 import { Placeholders } from "./js/placeholders.ts";
-import { bindingOf, referencedBindings, rewriteExpression } from "./rewrite.ts";
-import type { ParenthesesSlot, RewriteRules } from "./rewrite.ts";
+import { referencedBindings } from "./references.ts";
+import { bindingOf, rewriteExpression } from "./rewrite.ts";
+import type { ParenthesesSlot, RewriteRules, RewriteSite } from "./rewrite.ts";
 
 /**
  * How a JSX target writes what its framework writes differently from the defaults. Each hook
@@ -44,10 +50,10 @@ export interface JsxDialect {
    */
   presentAttributeValue?(name: string, element: ElementNode): true | string;
   /**
-   * The code an expression prints as. By default its source text, with each reference
-   * spelled by the context's rewrite rules.
+   * The code an expression prints as, for `site` (`render`, or `key` for a list's key). By
+   * default its source text, with each reference spelled by the context's rewrite rules.
    */
-  expression?(expression: Expression, context: JsxContext): string;
+  expression?(expression: Expression, context: JsxContext, site: RewriteSite): string;
   /** A conditional: by default a ternary chain ending in `null` ({@link ternaryChain}). */
   conditional?(node: IfNode, context: JsxContext): AST.Expression;
   /** A list: by default `source.map((item, index) => <el key={…}>…</el>)` ({@link mapCall}). */
@@ -85,6 +91,21 @@ export interface JsxDialect {
     element: ElementNode,
     context: JsxContext,
   ): AST.JSXAttributeItem[];
+  /**
+   * A listener: by default `onClick={handler}` (see {@link eventJsxAttribute}). The event's name
+   * is the framework's (React's `onKeyDown`, Qwik's `onKeyDown$`), so a target writes its own.
+   */
+  eventAttribute?(
+    attribute: EventAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
+  /** A template ref: by default `ref={input}`, the binding by its name. */
+  refAttribute?(
+    attribute: RefAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
 }
 
 /** What a JSX printer prints one component with. */
@@ -96,8 +117,8 @@ export interface JsxContext {
   /** Where expressions go until the module is printed. */
   readonly placeholders: Placeholders;
   /**
-   * The bindings the printed expressions reference: a list's index parameter outside it is
-   * left out (an unused parameter fails L5).
+   * The bindings the printed code references, handlers included: a list's index parameter
+   * outside it is left out (an unused parameter fails L5).
    */
   readonly referenced: ReadonlySet<BindingId>;
 }
@@ -110,6 +131,11 @@ export interface JsxContextOptions {
   placeholders?: Placeholders;
   /** Whether lists' keys count as printed references: `false` for a target without keys. */
   includeKeys?: boolean;
+  /**
+   * Whether handlers and the setup's client code count as printed references: `false` for a
+   * target that prints none (see `referencedBindings`). Default `true`.
+   */
+  includeClient?: boolean;
 }
 
 /** The context to print a component's JSX with. */
@@ -119,7 +145,10 @@ export function jsxContext(options: JsxContextOptions): JsxContext {
     dialect: options.dialect ?? {},
     rules: options.rules,
     placeholders: options.placeholders ?? new Placeholders(),
-    referenced: referencedBindings(options.component, { includeKeys: options.includeKeys }),
+    referenced: referencedBindings(options.component, {
+      ...(options.includeKeys === undefined ? {} : { includeKeys: options.includeKeys }),
+      ...(options.includeClient === undefined ? {} : { includeClient: options.includeClient }),
+    }),
   };
 }
 
@@ -128,11 +157,18 @@ export function jsxBinding(id: BindingId, context: JsxContext): Binding {
   return bindingOf(context.component, id);
 }
 
-/** The code an expression prints as: the dialect's, or its source with references rewritten. */
-export function expressionCode(expression: Expression, context: JsxContext): string {
-  if (context.dialect.expression) return context.dialect.expression(expression, context);
+/**
+ * The code an expression prints as, for `site` (`render` by default): the dialect's, or its
+ * source with references rewritten.
+ */
+export function expressionCode(
+  expression: Expression,
+  context: JsxContext,
+  site: RewriteSite = "render",
+): string {
+  if (context.dialect.expression) return context.dialect.expression(expression, context, site);
   return context.rules
-    ? rewriteExpression(expression, context.component, context.rules)
+    ? rewriteExpression(expression, context.component, context.rules, site)
     : expression.code;
 }
 
@@ -145,8 +181,9 @@ export function jsxExpression(
   expression: Expression,
   context: JsxContext,
   slot: ParenthesesSlot = "argument",
+  site: RewriteSite = "render",
 ): AST.Expression {
-  return context.placeholders.expression(expressionCode(expression, context), slot);
+  return context.placeholders.expression(expressionCode(expression, context, site), slot);
 }
 
 /**
@@ -200,7 +237,7 @@ export function jsxChildren(nodes: readonly RenderNode[], context: JsxContext): 
 
 /**
  * What a conditional's branch renders, in expression position: `null` for nothing, the node
- * itself for one, and a fragment for several (design §4.2).
+ * itself for one, and a fragment for several.
  */
 export function jsxBranch(children: readonly RenderNode[], context: JsxContext): AST.Expression {
   const [only] = children;
@@ -237,7 +274,10 @@ export function ternaryChain(node: IfNode, context: JsxContext): AST.Expression 
  * The index parameter is left out when nothing printed reads it.
  */
 export function mapCall(node: ForNode, context: JsxContext): AST.Expression {
-  const key = js.jsxAttribute("key", js.jsxExpressionContainer(jsxExpression(node.key, context)));
+  const key = js.jsxAttribute(
+    "key",
+    js.jsxExpressionContainer(jsxExpression(node.key, context, "argument", "key")),
+  );
   const body = jsxElement(node.body, context, [key]);
   return js.callExpression(
     js.memberExpression(jsxExpression(node.source, context, "operand"), "map"),
@@ -297,6 +337,14 @@ export function jsxAttributes(node: ElementNode, context: JsxContext): AST.JSXAt
         return dialect.spreadAttribute
           ? dialect.spreadAttribute(attribute, node, context)
           : spreadJsxAttributes(attribute, node, context);
+      case "Event":
+        return dialect.eventAttribute
+          ? dialect.eventAttribute(attribute, node, context)
+          : eventJsxAttribute(attribute, node, context);
+      case "Ref":
+        return dialect.refAttribute
+          ? dialect.refAttribute(attribute, node, context)
+          : refJsxAttribute(attribute, node, context);
       default:
         return unreachable(attribute);
     }
@@ -486,6 +534,49 @@ export function spreadClassReads(element: ElementNode, context: JsxContext): AST
     const key = attribute.keys.find((entry) => entry.name === "class");
     return key ? [spreadRead(attribute, key, context)] : [];
   });
+}
+
+/**
+ * A listener as React writes one: `on` and the event's name with its first letter in upper case,
+ * `Capture` for the capture phase (`onClickCapture`), and the handler ({@link jsxHandler}). The
+ * name is the DOM's otherwise (`onKeydown`, where React writes `onKeyDown`): the event table is
+ * the target's (P6), which writes its own through `eventAttribute`. JSX has no spelling of its
+ * own for `once` or `passive`, so a listener with either throws here: its dialect prints it.
+ */
+export function eventJsxAttribute(
+  attribute: EventAttribute,
+  _element: ElementNode,
+  context: JsxContext,
+): AST.JSXAttributeItem[] {
+  const option = attribute.once ? "once" : attribute.passive ? "passive" : undefined;
+  if (option) {
+    throw new Error(
+      `JSX has no spelling for a ${option} \`${attribute.event}\` listener: the target's dialect prints it (eventAttribute).`,
+    );
+  }
+  const name = `on${attribute.event.charAt(0).toUpperCase()}${attribute.event.slice(1)}${attribute.capture ? "Capture" : ""}`;
+  return [js.jsxAttribute(name, js.jsxExpressionContainer(jsxHandler(attribute.handler, context)))];
+}
+
+/**
+ * A listener's handler in the AST, for the `client` site: a named handler's function, as the
+ * context's rules spell it, or an inline handler as an arrow (`functionText`), each a
+ * placeholder.
+ */
+export function jsxHandler(handler: Handler, context: JsxContext): AST.Expression {
+  return context.placeholders.expression(
+    handlerText(handler, context.component, context.rules, "client"),
+  );
+}
+
+/** A template ref, `ref={input}`: the binding by its name, which the target declares. */
+export function refJsxAttribute(
+  attribute: RefAttribute,
+  _element: ElementNode,
+  context: JsxContext,
+): AST.JSXAttributeItem[] {
+  const binding = jsxBinding(attribute.binding, context);
+  return [js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier(binding.name)))];
 }
 
 /**

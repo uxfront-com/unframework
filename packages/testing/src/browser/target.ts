@@ -1,10 +1,20 @@
 // The per-project mount adapter seam. A browser project's second setup file
 // (`@unframework/testing/<target>`) registers its target's adapter; the shared specs only call
 // `mount()`, which dispatches here.
-import type { MountAdapter } from "@unframework/codegen";
+import type { MountAdapter, MountEvent } from "@unframework/codegen";
 import { inject } from "vitest";
 
-interface Registration {
+/** What a registration may add to its adapter. */
+export interface TargetOptions {
+  /**
+   * The events a component declares, read from the component itself: for a stub target, whose
+   * components are not compiled. Without it, `mount` asks the project which events the case's
+   * compiled component declares (the `ufComponentEvents` command).
+   */
+  events?(component: unknown): readonly MountEvent[];
+}
+
+interface Registration extends TargetOptions {
   target: string;
   mount: MountAdapter;
 }
@@ -12,13 +22,17 @@ interface Registration {
 let registration: Registration | undefined;
 
 /** Registers the project's mount adapter. One adapter per project: a second target is a bug. */
-export function registerTarget(target: string, mount: MountAdapter): void {
+export function registerTarget(
+  target: string,
+  mount: MountAdapter,
+  options: TargetOptions = {},
+): void {
   if (registration && registration.target !== target) {
     throw new Error(
       `registerTarget("${target}"): this project already registered "${registration.target}". A browser project verifies one target.`,
     );
   }
-  registration = { target, mount };
+  registration = { ...options, target, mount };
 }
 
 /** The target this project verifies (`test.provide.target`). */

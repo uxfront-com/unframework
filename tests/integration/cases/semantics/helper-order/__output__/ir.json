@@ -1,0 +1,997 @@
+{
+  "irVersion": 1,
+  "file": "semantics/helper-order/NameSorter.uf.tsx",
+  "components": [
+    {
+      "name": "NameSorter",
+      "span": {
+        "start": 77,
+        "end": 1423
+      },
+      "props": [],
+      "types": [],
+      "emits": {
+        "binding": "emit@124",
+        "type": {
+          "code": "{\n    started: [text: string];\n    firstSeen: [text: string];\n    secondSeen: [count: number];\n    total: [letters: number];\n  }",
+          "span": {
+            "start": 143,
+            "end": 271
+          }
+        },
+        "events": [
+          {
+            "name": "started",
+            "parameters": [
+              {
+                "name": "text",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 165,
+                    "end": 171
+                  }
+                },
+                "span": {
+                  "start": 159,
+                  "end": 171
+                }
+              }
+            ],
+            "span": {
+              "start": 149,
+              "end": 172
+            }
+          },
+          {
+            "name": "firstSeen",
+            "parameters": [
+              {
+                "name": "text",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 196,
+                    "end": 202
+                  }
+                },
+                "span": {
+                  "start": 190,
+                  "end": 202
+                }
+              }
+            ],
+            "span": {
+              "start": 178,
+              "end": 203
+            }
+          },
+          {
+            "name": "secondSeen",
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 229,
+                    "end": 235
+                  }
+                },
+                "span": {
+                  "start": 222,
+                  "end": 235
+                }
+              }
+            ],
+            "span": {
+              "start": 209,
+              "end": 236
+            }
+          },
+          {
+            "name": "total",
+            "parameters": [
+              {
+                "name": "letters",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 259,
+                    "end": 265
+                  }
+                },
+                "span": {
+                  "start": 250,
+                  "end": 265
+                }
+              }
+            ],
+            "span": {
+              "start": 242,
+              "end": 266
+            }
+          }
+        ],
+        "span": {
+          "start": 118,
+          "end": 275
+        }
+      },
+      "bindings": [
+        {
+          "id": "emit@124",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 124,
+            "end": 128
+          }
+        },
+        {
+          "id": "names@285",
+          "name": "names",
+          "kind": "state",
+          "span": {
+            "start": 285,
+            "end": 290
+          }
+        },
+        {
+          "id": "count@354",
+          "name": "count",
+          "kind": "state",
+          "span": {
+            "start": 354,
+            "end": 359
+          }
+        },
+        {
+          "id": "doubled@639",
+          "name": "doubled",
+          "kind": "derived",
+          "span": {
+            "start": 639,
+            "end": 646
+          }
+        },
+        {
+          "id": "letters@690",
+          "name": "letters",
+          "kind": "derived",
+          "span": {
+            "start": 690,
+            "end": 697
+          }
+        },
+        {
+          "id": "compare@757",
+          "name": "compare",
+          "kind": "localFn",
+          "span": {
+            "start": 757,
+            "end": 764
+          }
+        },
+        {
+          "id": "describe@852",
+          "name": "describe",
+          "kind": "localFn",
+          "span": {
+            "start": 852,
+            "end": 860
+          }
+        },
+        {
+          "id": "add@928",
+          "name": "add",
+          "kind": "localFn",
+          "span": {
+            "start": 928,
+            "end": 931
+          }
+        },
+        {
+          "id": "report@1046",
+          "name": "report",
+          "kind": "localFn",
+          "span": {
+            "start": 1046,
+            "end": 1052
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "names@285",
+          "initial": {
+            "code": "[\"Cy\", \"Al\"].toSorted((a, b) => compare(a, b))",
+            "span": {
+              "start": 297,
+              "end": 343
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "compare@757",
+                "span": {
+                  "start": 329,
+                  "end": 336
+                },
+                "call": true
+              }
+            ]
+          },
+          "span": {
+            "start": 279,
+            "end": 345
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "count@354",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 366,
+              "end": 367
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 348,
+            "end": 369
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    emit(\"started\", `first ${describe()}`);\n  }",
+              "span": {
+                "start": 389,
+                "end": 438
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@124",
+                  "event": "started",
+                  "span": {
+                    "start": 395,
+                    "end": 433
+                  },
+                  "arguments": [
+                    {
+                      "start": 411,
+                      "end": 432
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "describe@852",
+                  "span": {
+                    "start": 420,
+                    "end": 428
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 383,
+              "end": 438
+            }
+          },
+          "span": {
+            "start": 373,
+            "end": 440
+          }
+        },
+        {
+          "kind": "Lifecycle",
+          "hook": "mounted",
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    emit(\"started\", \"second\");\n  }",
+              "span": {
+                "start": 460,
+                "end": 496
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@124",
+                  "event": "started",
+                  "span": {
+                    "start": 466,
+                    "end": 491
+                  },
+                  "arguments": [
+                    {
+                      "start": 482,
+                      "end": 490
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 454,
+              "end": 496
+            }
+          },
+          "span": {
+            "start": 444,
+            "end": 498
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "count@354",
+              "span": {
+                "start": 508,
+                "end": 513
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    emit(\"firstSeen\", describe());\n  }",
+              "span": {
+                "start": 521,
+                "end": 561
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@124",
+                  "event": "firstSeen",
+                  "span": {
+                    "start": 527,
+                    "end": 556
+                  },
+                  "arguments": [
+                    {
+                      "start": 545,
+                      "end": 555
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "describe@852",
+                  "span": {
+                    "start": 545,
+                    "end": 553
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 515,
+              "end": 561
+            }
+          },
+          "span": {
+            "start": 502,
+            "end": 563
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "count@354",
+              "span": {
+                "start": 573,
+                "end": 578
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 581,
+                  "end": 586
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"secondSeen\", value);\n  }",
+              "span": {
+                "start": 591,
+                "end": 627
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@124",
+                  "event": "secondSeen",
+                  "span": {
+                    "start": 597,
+                    "end": 622
+                  },
+                  "arguments": [
+                    {
+                      "start": 616,
+                      "end": 621
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 580,
+              "end": 627
+            }
+          },
+          "span": {
+            "start": 567,
+            "end": 629
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "doubled@639",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "count.value * 2",
+              "span": {
+                "start": 664,
+                "end": 679
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "count@354",
+                  "span": {
+                    "start": 664,
+                    "end": 675
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 658,
+              "end": 679
+            }
+          },
+          "span": {
+            "start": 633,
+            "end": 681
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "letters@690",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "names.value.join(\"\").length",
+              "span": {
+                "start": 715,
+                "end": 742
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "names@285",
+                  "span": {
+                    "start": 715,
+                    "end": 726
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 709,
+              "end": 742
+            }
+          },
+          "span": {
+            "start": 684,
+            "end": 744
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "compare@757",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "a",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 768,
+                    "end": 774
+                  }
+                },
+                "span": {
+                  "start": 765,
+                  "end": 774
+                }
+              },
+              {
+                "name": "b",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 779,
+                    "end": 785
+                  }
+                },
+                "span": {
+                  "start": 776,
+                  "end": 785
+                }
+              }
+            ],
+            "returnType": {
+              "code": "number",
+              "span": {
+                "start": 788,
+                "end": 794
+              }
+            },
+            "body": {
+              "code": "{\n    return a < b ? -1 : a > b ? 1 : 0;\n  }",
+              "span": {
+                "start": 795,
+                "end": 839
+              },
+              "refs": []
+            },
+            "span": {
+              "start": 764,
+              "end": 839
+            }
+          },
+          "span": {
+            "start": 748,
+            "end": 839
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "describe@852",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "returnType": {
+              "code": "string",
+              "span": {
+                "start": 864,
+                "end": 870
+              }
+            },
+            "body": {
+              "code": "{\n    return `doubled ${doubled.value}`;\n  }",
+              "span": {
+                "start": 871,
+                "end": 915
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "doubled@639",
+                  "span": {
+                    "start": 895,
+                    "end": 908
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 860,
+              "end": 915
+            }
+          },
+          "span": {
+            "start": 843,
+            "end": 915
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "add@928",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 938,
+                    "end": 944
+                  }
+                },
+                "span": {
+                  "start": 932,
+                  "end": 944
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    names.value = [...names.value, name].toSorted(compare);\n    count.value += 1;\n  }",
+              "span": {
+                "start": 946,
+                "end": 1033
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "names@285",
+                  "operator": "=",
+                  "span": {
+                    "start": 952,
+                    "end": 1006
+                  },
+                  "target": {
+                    "start": 952,
+                    "end": 963
+                  },
+                  "value": {
+                    "start": 966,
+                    "end": 1006
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "names@285",
+                  "span": {
+                    "start": 970,
+                    "end": 981
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "compare@757",
+                  "span": {
+                    "start": 998,
+                    "end": 1005
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "count@354",
+                  "operator": "+=",
+                  "span": {
+                    "start": 1012,
+                    "end": 1028
+                  },
+                  "target": {
+                    "start": 1012,
+                    "end": 1023
+                  },
+                  "value": {
+                    "start": 1027,
+                    "end": 1028
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 931,
+              "end": 1033
+            }
+          },
+          "span": {
+            "start": 919,
+            "end": 1033
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "report@1046",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    emit(\"total\", letters.value);\n  }",
+              "span": {
+                "start": 1055,
+                "end": 1094
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@124",
+                  "event": "total",
+                  "span": {
+                    "start": 1061,
+                    "end": 1089
+                  },
+                  "arguments": [
+                    {
+                      "start": 1075,
+                      "end": 1088
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "letters@690",
+                  "span": {
+                    "start": 1075,
+                    "end": 1088
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1052,
+              "end": 1094
+            }
+          },
+          "span": {
+            "start": 1037,
+            "end": 1094
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "name-sorter",
+            "span": {
+              "start": 1120,
+              "end": 1139
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Names",
+            "span": {
+              "start": 1140,
+              "end": 1158
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Names: ",
+                "span": {
+                  "start": 1169,
+                  "end": 1176
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "names.value.join(\", \")",
+                  "span": {
+                    "start": 1177,
+                    "end": 1199
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "names@285",
+                      "span": {
+                        "start": 1177,
+                        "end": 1188
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1176,
+                  "end": 1200
+                }
+              }
+            ],
+            "span": {
+              "start": 1166,
+              "end": 1204
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Added: ",
+                "span": {
+                  "start": 1214,
+                  "end": 1221
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "count.value",
+                  "span": {
+                    "start": 1222,
+                    "end": 1233
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "count@354",
+                      "span": {
+                        "start": 1222,
+                        "end": 1233
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 1221,
+                  "end": 1234
+                }
+              }
+            ],
+            "span": {
+              "start": 1211,
+              "end": 1238
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1253,
+                  "end": 1266
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "add(\"Bo\")",
+                      "span": {
+                        "start": 1282,
+                        "end": 1291
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "add@928",
+                          "span": {
+                            "start": 1282,
+                            "end": 1285
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 1276,
+                      "end": 1291
+                    }
+                  },
+                  "span": {
+                    "start": 1276,
+                    "end": 1291
+                  }
+                },
+                "span": {
+                  "start": 1267,
+                  "end": 1292
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add Bo",
+                "span": {
+                  "start": 1293,
+                  "end": 1315
+                }
+              }
+            ],
+            "span": {
+              "start": 1245,
+              "end": 1324
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 1339,
+                  "end": 1352
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "report@1046",
+                  "span": {
+                    "start": 1362,
+                    "end": 1368
+                  }
+                },
+                "span": {
+                  "start": 1353,
+                  "end": 1369
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Report",
+                "span": {
+                  "start": 1370,
+                  "end": 1392
+                }
+              }
+            ],
+            "span": {
+              "start": 1331,
+              "end": 1401
+            }
+          }
+        ],
+        "span": {
+          "start": 1111,
+          "end": 1416
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "NameSorter",
+      "span": {
+        "start": 77,
+        "end": 1423
+      }
+    }
+  ],
+  "types": []
+}

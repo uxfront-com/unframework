@@ -1,0 +1,7 @@
+{
+  "description": "Async client code: an async onMounted writing two watched refs after an await, an async function that declares a local then writes, an interval and a microtask writing two watched refs, an async watch callback, an async watchEffect reading before its first await, and a promise continuation that emits.",
+  "ssr": {
+    "inbox": { "props": { "folder": "Inbox" } }
+  },
+  "requires": "onMounted loads the folder once the component mounts, so every browser capture depends on client code; the server render (ssr.inbox.html) checks the state before the hook on every target."
+}

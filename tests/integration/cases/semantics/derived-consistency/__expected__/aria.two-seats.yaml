@@ -1,0 +1,4 @@
+- region "Seats":
+  - status: 2 seats for 80
+  - button "Add a seat"
+  - button "Add a group and a guide"

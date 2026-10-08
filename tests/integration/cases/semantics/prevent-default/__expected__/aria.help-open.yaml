@@ -1,0 +1,8 @@
+- form "Tags":
+  - text: New tag
+  - textbox "New tag"
+  - button "Add tag"
+  - link "How tags work":
+    - /url: /help/tags
+  - paragraph: "A tag is one word: commas are not allowed."
+  - list "Added tags"

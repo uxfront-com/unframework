@@ -1,0 +1,7 @@
+{
+  "description": "Computed values over a prop follow it, and a watcher over a getter of the prop runs on each rerender that changes it.",
+  "ssr": {
+    "mild": { "props": { "celsius": 20 } },
+    "hot": { "props": { "celsius": 35 } }
+  }
+}

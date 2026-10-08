@@ -1,0 +1,29 @@
+---
+export interface Contact {
+  id: string;
+  name: string;
+}
+
+export interface ContactListProps {
+  initial: Contact[];
+}
+
+type Props = ContactListProps;
+
+const { initial } = Astro.props;
+
+const contacts = initial;
+const chosen = undefined as string | undefined;
+---
+
+<section class="contact-list" aria-label="Contacts">
+  <ul>
+    {contacts.map((contact) => (
+      <li>
+        <button type="button" aria-pressed={chosen === contact.id}>{contact.name}</button>
+        <button type="button" aria-label={`Remove ${contact.name}`}>Remove</button>
+      </li>
+    ))}
+  </ul>
+  <p role="status">Chosen: {chosen ?? "nobody"}</p>
+</section>

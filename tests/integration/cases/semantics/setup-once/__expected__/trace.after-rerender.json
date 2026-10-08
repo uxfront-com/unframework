@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"name\":\"Grace\"}",
+      "dom": [
+        "<section aria-label=\"Welcome\" class=\"welcome-banner\">",
+        "  <h2>",
+        "    \"Welcome, Ada\"",
+        "  </h2>",
+        "  <p>",
+        "    \"Signed in as Grace\"",
+        "  </p>",
+        "  <ul>",
+        "    <li>",
+        "      \"Set up your profile\"",
+        "    </li>",
+        "    <li>",
+        "      \"Invite your team\"",
+        "    </li>",
+        "  </ul>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Welcome\":",
+        "  - heading \"Welcome, Ada\" [level=2]",
+        "  - paragraph: Signed in as Grace",
+        "  - list:",
+        "    - listitem: Set up your profile",
+        "    - listitem: Invite your team"
+      ],
+      "events": {}
+    }
+  ]
+}

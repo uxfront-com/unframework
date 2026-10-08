@@ -31,10 +31,31 @@ export function goldenFiles(): string[] {
   return filesUnder(casesDir).filter((path) => /\/__output__\/svelte\/[^/]+\.svelte$/.test(path));
 }
 
-/** Each corpus case's IR snapshot, with the directory its golden outputs live in. */
+/**
+ * Whether a case's committed diagnostics hold an error for this target: then `compile()` emits
+ * no Svelte output for it (the harness skips every layer past L2), though its IR snapshot exists.
+ */
+function hasErrors(caseDir: string): boolean {
+  const path = join(caseDir, "__expected__/diagnostics.json");
+  let diagnostics: { severity: string; target?: string }[];
+  try {
+    diagnostics = JSON.parse(readFileSync(path, "utf8")) as typeof diagnostics;
+  } catch {
+    return false;
+  }
+  return diagnostics.some(
+    ({ severity, target: name }) =>
+      severity === "error" && (name === undefined || name === "svelte"),
+  );
+}
+
+/**
+ * Each corpus case's IR snapshot, with the directory its golden outputs live in: the cases the
+ * compiler emits a Svelte output for.
+ */
 export function corpus(): { name: string; module: UfModule; outputDir: string }[] {
   return filesUnder(casesDir)
-    .filter((path) => path.endsWith("/__output__/ir.json"))
+    .filter((path) => path.endsWith("/__output__/ir.json") && !hasErrors(join(path, "../..")))
     .map((path) => ({
       name: path.slice(casesDir.length + 1, -"/__output__/ir.json".length),
       module: JSON.parse(readFileSync(path, "utf8")) as UfModule,

@@ -14,9 +14,11 @@
 // change only elements every render shows, with attributes each element takes (an `<svg>` has
 // no `hidden`), and replace what an element already sets rather than set it twice;
 // `canaries.unit.test.ts` runs each canary on every case of the corpus.
-import { relative, sep } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join, relative, sep } from "node:path";
 
 import type { OutputFile } from "@unframework/codegen";
+import { builtinTargets } from "@unframework/compiler";
 import type { CompilerPlugin, TargetName } from "@unframework/compiler";
 import type { Diagnostic } from "@unframework/diagnostics";
 import {
@@ -42,9 +44,10 @@ import type {
   StaticStyle,
   UfModule,
 } from "@unframework/ir";
+import { REQUIRES_SKIP } from "@unframework/testing/node";
 import type { LayerName, ProjectKind } from "@unframework/testing/node";
 
-import { errorState, expectedDiagnostics } from "./cases.ts";
+import { errorState, expectedDiagnostics, specTests } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
 import { ROOT } from "./paths.ts";
 import { REFERENCE } from "./targets.ts";
@@ -61,6 +64,18 @@ export interface CanaryCase {
   spec: string | undefined;
   /** Whether the case's expected diagnostics for a target carry a fix, which L1 applies. */
   hasFixes(target: string): boolean;
+  /**
+   * Whether a test of the spec runs on a target: it requires no capability the target lacks,
+   * so the browser project does not skip it. A browser project proves nothing on a case none
+   * of whose tests runs on its target.
+   */
+  runs(target: string): boolean;
+  /** Whether a test that runs on a target acts (`view.user.…`): its traces record actions. */
+  interacts(target: string): boolean;
+  /** Whether a test that runs on a target rerenders: its traces record rerenders. */
+  rerenders(target: string): boolean;
+  /** Whether the committed IR has an element listener (an `Event` attribute) to unwire. */
+  listens: boolean;
 }
 
 /** One canary. */
@@ -89,6 +104,11 @@ export interface Canary {
    * target shares can only be caught against committed baselines.
    */
   followersOnly?: boolean;
+  /**
+   * The targets it corrupts, when not every one: a corruption of one framework's own code. The
+   * runner runs only these targets' projects, and the verdict judges only these.
+   */
+  targets?: readonly TargetName[];
   /**
    * Leaves the golden guard on. Every other canary turns it off: it changes the output on
    * purpose, and the guard would fail every module before the canary's layer could.
@@ -160,6 +180,12 @@ const FRAMEWORK_RULES: Readonly<Record<TargetName, FrameworkRule>> = {
 
 /** How many compiles the L2-nondeterministic canary has numbered in this process. */
 let compiles = 0;
+
+/**
+ * The events at least one of which every action of `view.user` dispatches on the document: a
+ * click, a hover, a key, a field's input, a focus moving, a wheel.
+ */
+const ACTION_EVENTS = ["click", "pointerover", "keydown", "input", "focusin", "wheel"];
 
 /** Every canary: at least one per live layer, and one per sub-check a sibling could hide. */
 export const CANARIES: readonly Canary[] = [
@@ -418,15 +444,16 @@ export const CANARIES: readonly Canary[] = [
     id: "L8-render-nothing",
     layer: "L8",
     description:
-      "Replaces every component's render with an empty <div>, keeping only its prop bindings so the IR stays valid: every spec's assertions about what it rendered find nothing (ADR-0043).",
+      "Replaces every component's render with an empty <div> and drops its setup, keeping its props and its events (their bindings) so the IR stays valid and the outputs still declare what a mount listens to: every spec's assertions about what it rendered, and its first action, find nothing (ADR-0043, ADR-0050).",
     evidence: {
       // The first positive assertion of a spec, on a query of the view (`getByTestId` is the
       // mount root's locator): every spec makes one (the spec rules in the README). Vitest
       // 5.0.3 reports a locator that never matches with that locator, or, when the poll's own
-      // deadline comes first, with the poll's timeout.
+      // deadline comes first, with the poll's timeout. A spec whose first statement after its
+      // first expectParity acts fails with Playwright's action timeout, naming the locator.
       browser: {
         "spec assertions":
-          /^(?:VitestBrowserElementError: Cannot find element with locator: getByTestId\('uf-root-\d+'\)\.getBy[A-Za-z]+\(|Error: expect\.poll\(\) function didn't resolve in time\.$)/m,
+          /^(?:VitestBrowserElementError: Cannot find element with locator: getByTestId\('uf-root-\d+'\)\.getBy[A-Za-z]+\(|Error: expect\.poll\(\) function didn't resolve in time\.$|TimeoutError: locator\.[A-Za-z]+: Timeout \d+ms exceeded\.\nCall log:\n {2}- waiting for .*getByTestId\('uf-root-\d+'\)\.getBy[A-Za-z]+\()/m,
       },
     },
     plugin: () => ({
@@ -435,12 +462,44 @@ export const CANARIES: readonly Canary[] = [
         const copy = structuredClone(module);
         for (const component of copy.components) {
           component.render = createElement("div", [], [], component.render.span);
-          // A loop variable is bound by its list, which is gone.
-          component.bindings = component.bindings.filter(({ kind }) => kind === "prop");
+          // A loop variable is bound by its list, which is gone, and a setup binding by its
+          // setup. The events stay declared: Angular's adapter binds each to its output, which
+          // must exist, and Vue's would pass an undeclared listener on to the root.
+          component.setup = [];
+          component.bindings = component.bindings.filter(
+            ({ kind }) => kind === "prop" || kind === "emit",
+          );
         }
         return copy;
       },
     }),
+  },
+  {
+    id: "L9-unwired-handler",
+    layer: "L9",
+    description:
+      "Removes every element listener from every component on every target but the reference, on the cases whose specs act: each action's step differs from the trace in its DOM or its events.",
+    evidence: { browser: { trace: /__expected__\/trace\.[a-z0-9-]+\.json differs/ } },
+    // The reference keeps its handlers, as the trace every follower is compared with does.
+    followersOnly: true,
+    appliesTo: (info, target) => info.interacts(target) && info.listens,
+    plugin: () => ({
+      name: "uf-canary-L9-unwired",
+      ir: (module) => {
+        const copy = structuredClone(module);
+        for (const { render } of copy.components) unwire(render);
+        return copy;
+      },
+    }),
+  },
+  {
+    id: "L9-rerender-text",
+    layer: "L9",
+    description:
+      "Appends a marker to the text every render shows, on the cases whose specs rerender: each rerender's step differs from the trace, on the cases L9-unwired-handler cannot reach.",
+    evidence: { browser: { trace: /__expected__\/trace\.[a-z0-9-]+\.json differs/ } },
+    appliesTo: (info, target) => info.rerenders(target),
+    plugin: wrongText,
   },
   {
     id: "L10-root-hidden",
@@ -517,6 +576,37 @@ export const CANARIES: readonly Canary[] = [
         })),
     }),
   },
+  {
+    id: "L13-qwik-handler-throws",
+    layer: "L13",
+    description:
+      "Gives every Qwik component a document listener, for the events every action dispatches, that throws: nothing the component renders or does changes, and only Qwik's report of the error on the console (`QWIK ERROR`) shows it, on the cases whose specs act. Qwik's test mode (`qTest`) would silence the report.",
+    // Qwik's development build may also mark the component as errored, which L7 can see; the
+    // verdict asks L13 alone for its evidence.
+    evidence: {
+      browser: {
+        "page console":
+          /unexpected console message\(s\):(?:\n {2}.*)*?\n {2}console\.error: QWIK ERROR \[uf canary\] L13 /,
+      },
+    },
+    targets: ["qwik"],
+    appliesTo: (info, target) => info.interacts(target),
+    plugin: () => ({
+      name: "uf-canary-L13-qwik-handler",
+      output: (files, { target }) =>
+        target !== "qwik"
+          ? undefined
+          : files.map((file) => ({
+              ...file,
+              contents: injectScript(
+                { ...file, contents: withQwikImports(file, ["$", "useOnDocument"]) },
+                target,
+                `useOnDocument(${JSON.stringify(ACTION_EVENTS)}, $(() => { throw new Error("${MARKER} L13 in ${target}"); }));`,
+                "render",
+              ),
+            })),
+    }),
+  },
 ];
 
 /** The canary with an id; throws for an unknown one, so a typo never runs a clean suite. */
@@ -545,6 +635,7 @@ export function canaryPlugins(id: string | null, target?: string): CompilerPlugi
   if (!id) return [];
   const canary = findCanary(id);
   if (!canary.plugin) return [];
+  if (target !== undefined && !corrupts(canary, target)) return [];
   if (!canary.followersOnly) return [canary.plugin()];
   if (target === undefined) {
     throw new Error(
@@ -552,6 +643,11 @@ export function canaryPlugins(id: string | null, target?: string): CompilerPlugi
     );
   }
   return target === REFERENCE ? [] : [canary.plugin()];
+}
+
+/** Whether a canary corrupts a target: every one, unless it names its targets. */
+export function corrupts(canary: Canary, target: string): boolean {
+  return !canary.targets || (canary.targets as readonly string[]).includes(target);
 }
 
 /** A case's source as the compile project compiles it: corrupted by a source canary. */
@@ -588,6 +684,11 @@ export function guardsGoldens(id: string | null): boolean {
 
 /** A case of the corpus as canaries see it: what its committed artefacts say. */
 export function canaryCase(info: CaseInfo): CanaryCase {
+  const tests = info.spec ? specTests(readFileSync(info.spec, "utf8")) : [];
+  const ir = join(info.dir, "__output__", "ir.json");
+  /** The tests of the spec that run on a target, as the browser project's setup decides. */
+  const running = (target: string) =>
+    tests.filter((test) => test.requires.every((name) => supports(target, name)));
   return {
     id: info.id,
     hasOutput: (target) => errorState(info, target) === false,
@@ -598,7 +699,70 @@ export function canaryCase(info: CaseInfo): CanaryCase {
           (diagnostic.target === undefined || diagnostic.target === target) &&
           Boolean(diagnostic.fixes?.length),
       ),
+    runs: (target) => running(target).length > 0,
+    interacts: (target) => running(target).some((test) => test.acts),
+    rerenders: (target) => running(target).some((test) => test.rerenders),
+    listens: existsSync(ir) && listens(JSON.parse(readFileSync(ir, "utf8")) as UfModule),
   };
+}
+
+/**
+ * Whether a target supports a capability a test requires: the browser setup skips the test
+ * where the cell is unsupported (`requiredSkip` in `@unframework/testing`). Throws for a name
+ * that is no capability, as the setup does.
+ */
+function supports(target: string, capability: string): boolean {
+  const targets: Readonly<
+    Record<string, { capabilities: Readonly<Record<string, { support: string }>> } | undefined>
+  > = builtinTargets;
+  const cells: Readonly<Record<string, { support: string } | undefined>> =
+    targets[target]?.capabilities ?? {};
+  const cell = Object.hasOwn(cells, capability) ? cells[capability] : undefined;
+  if (!cell) throw new Error(`${MARKER} "${capability}" is not a capability of ${target}.`);
+  return cell.support !== "unsupported";
+}
+
+/** Whether a module's render trees have an element listener. */
+function listens(module: UfModule): boolean {
+  return module.components.some(({ render }) => elementsOf([render]).some(hasListener));
+}
+
+function hasListener(element: ElementNode): boolean {
+  return element.attributes.some((attribute) => attribute.kind === "Event");
+}
+
+/** Every element of a render tree, through branches and lists. */
+function elementsOf(nodes: readonly (RenderNode | FragmentNode)[]): ElementNode[] {
+  return nodes.flatMap((node): ElementNode[] => {
+    switch (node.kind) {
+      case "Element":
+        return [node, ...elementsOf(node.children)];
+      case "Fragment":
+        return elementsOf(node.children);
+      case "If":
+        return node.branches.flatMap((branch) => elementsOf(branch.children));
+      case "For":
+        return elementsOf([node.body]);
+      case "Text":
+      case "Interpolation":
+        return [];
+      default:
+        return unreachable(node);
+    }
+  });
+}
+
+/** Removes every element listener of a render tree, in place: its handlers never run. */
+function unwire(render: ElementNode | FragmentNode): void {
+  for (const element of elementsOf([render])) {
+    element.attributes = element.attributes.filter((attribute) => attribute.kind !== "Event");
+  }
+}
+
+/** Whether a cell is a skip by a capability the target lacks, which no canary can corrupt. */
+export function skippedByCapability(cell: string): boolean {
+  const reason = /^skip\((.*)\)$/s.exec(cell)?.[1];
+  return reason !== undefined && REQUIRES_SKIP.test(reason);
 }
 
 /** The idiom the L5-framework-rule canary writes for a target; throws for an unknown one. */
@@ -818,7 +982,9 @@ function templateRange(path: string, contents: string): { start: number; end: nu
   if (path.endsWith(".tsx")) {
     const body = componentBodyStart(contents);
     if (body === undefined) return undefined;
-    const returned = /\breturn\b/g;
+    // The component's own `return` gives JSX; a nested function's (`return new Promise<string>`)
+    // must not be taken for it, or its type argument would be taken for the root element.
+    const returned = /\breturn\s*(?:\(\s*)?(?=<[A-Za-z>])/g;
     returned.lastIndex = body;
     const start = endOf(returned.exec(contents));
     return start === undefined ? undefined : { start, end };
@@ -887,7 +1053,10 @@ export function injectScript(
   }
   if (where === "module") return `${contents.trimEnd()}\n\nexport ${statement}\n`;
   if (target === "angular") {
-    if (/\bconstructor\s*\(/.test(contents)) fail("constructor-free class");
+    // The constructor runs once per render: an existing one's body gets the statement first,
+    // before the effects and hooks it registers (M2's outputs have one).
+    const existing = insertAfter(contents, /\bconstructor\s*\([^)]*\)\s*\{/, `\n    ${statement}`);
+    if (existing !== undefined) return existing;
     // The class's members follow: a constructor before them still runs once per render.
     return (
       insertAfter(
@@ -902,6 +1071,25 @@ export function injectScript(
     return fail(target === "qwik" ? "component$ body" : "component function body");
   }
   return `${contents.slice(0, body)}\n  ${statement}${contents.slice(body)}`;
+}
+
+/**
+ * A Qwik output whose value import from `@qwik.dev/core` also names `names`: each one it lacks
+ * is added to it, so the canary's code can call it.
+ */
+export function withQwikImports(file: OutputFile, names: readonly string[]): string {
+  const { path, contents } = file;
+  const declaration = /^import \{([^}]*)\} from "@qwik\.dev\/core";$/m.exec(contents);
+  if (!declaration) {
+    throw new Error(`${MARKER} ${path} (qwik) has no value import from "@qwik.dev/core".`);
+  }
+  const specifiers = declaration[1]!
+    .split(",")
+    .map((specifier) => specifier.trim())
+    .filter(Boolean);
+  const imported = new Set(specifiers.map((specifier) => specifier.split(/\s+as\s+/).at(-1)));
+  const added = [...specifiers, ...names.filter((name) => !imported.has(name))];
+  return `${contents.slice(0, declaration.index)}import { ${added.join(", ")} } from "@qwik.dev/core";${contents.slice(declaration.index + declaration[0].length)}`;
 }
 
 /**

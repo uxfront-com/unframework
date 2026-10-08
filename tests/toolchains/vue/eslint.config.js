@@ -1,6 +1,6 @@
 // L5 (ADR-0042): ESLint with eslint-plugin-vue over every Vue output file, beside the oxlint
 // baseline (output.oxlintrc.json), which lints the script blocks. L5 judges the emitter's idiom,
-// not the author's code (design §6.1): each rule that is off says why.
+// not the author's code (ADR-0042): each rule that is off says why.
 import vue from "eslint-plugin-vue";
 import tseslint from "typescript-eslint";
 
@@ -26,7 +26,7 @@ export default [
       // ESLint's `noInlineConfig` does not reach the template's `<!-- eslint-disable -->`
       // comments, which this rule implements: an output must not silence its linter.
       "vue/comment-directive": "off",
-      // The shapes of design §5.2: `<script setup lang="ts">` with a type-based `defineProps`.
+      // The shapes of plan §6: `<script setup lang="ts">` with a type-based `defineProps`.
       "vue/block-lang": ["error", { script: { lang: "ts" } }],
       "vue/component-api-style": ["error", ["script-setup"]],
       "vue/define-props-declaration": ["error", "type-based"],

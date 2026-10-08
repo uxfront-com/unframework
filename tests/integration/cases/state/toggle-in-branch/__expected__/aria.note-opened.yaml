@@ -1,0 +1,6 @@
+- region "Filters":
+  - button "Show colours"
+  - paragraph: No colour
+  - text: Note
+  - textbox "Note"
+  - paragraph: "Draft: \"\""

@@ -1,7 +1,15 @@
 import { applyFixes } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { checkInvariants } from "@unframework/ir";
-import type { ElementNode, UfComponent, UfModule } from "@unframework/ir";
+import type {
+  BindingReference,
+  Code,
+  CodeReference,
+  ElementNode,
+  FunctionCode,
+  UfComponent,
+  UfModule,
+} from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
 
 import { analyze } from "../src/index.ts";
@@ -152,4 +160,79 @@ export function applyAndRecheck(source: string, diagnostics: readonly Diagnostic
     );
   }
   return fixed;
+}
+
+/** Every authoring API M2 lowers, imported as a component writes it. */
+export const API: string =
+  'import { computed, defineEmits, nextTick, onMounted, onUnmounted, ref, useId, useTemplateRef, watch, watchEffect } from "unframework";\n';
+
+/** A component with the API imported, the props and the setup given, returning `jsx`. */
+export function setupOf(
+  setup: string,
+  jsx = "<p />",
+  props?: string,
+): { source: string } & AnalyzeResult {
+  return component(jsx, { before: API, setup, ...(props === undefined ? {} : { props }) });
+}
+
+/** A piece of code as `text [refs]`, each reference by kind and the text it spans. */
+export function codeOf(source: string, code: Code): string {
+  return `${code.code} [${code.refs.map((ref) => referenceOf(source, ref)).join(", ")}]`;
+}
+
+/** A reference, compactly: its kind, what it names and the text it spans. */
+export function referenceOf(source: string, ref: CodeReference): string {
+  const at = (span: { start: number; end: number }) => source.slice(span.start, span.end);
+  switch (ref.kind) {
+    case "Binding":
+      return `${ref.binding.split("@")[0]}${ref.call ? "()" : ""}:${at(ref.span)}`;
+    case "Global":
+      return `global:${ref.name}`;
+    case "Write":
+      return `write ${ref.binding.split("@")[0]} ${ref.operator} ${at(ref.span)}${ref.arrowBody ? " (body)" : ""}`;
+    case "Emit":
+      return `emit ${ref.event}(${ref.arguments.map(at).join(", ")})`;
+    case "Api":
+      return `api:${ref.api}`;
+    case "Event":
+      return `event.${ref.member}${ref.call ? "()" : ""}`;
+  }
+}
+
+/** A function, compactly: its parameters and its body. */
+export function functionOf(source: string, fn: FunctionCode): string {
+  const parameters = fn.parameters.map(
+    (parameter) =>
+      `${parameter.rest ? "..." : ""}${parameter.name ?? parameter.pattern!.code}${parameter.optional ? "?" : ""}${parameter.type ? `: ${parameter.type.code}` : ""}${parameter.default ? ` = ${parameter.default.code}` : ""}${parameter.event ? ` <${parameter.event}>` : ""}`,
+  );
+  return `${fn.async ? "async " : ""}(${parameters.join(", ")})${fn.returnType ? `: ${fn.returnType.code}` : ""} => ${codeOf(source, fn.body)}`;
+}
+
+/**
+ * Every narrowed path of a module's reads (ADR-0046), in source order, as `text (scope)`: the
+ * text the path spans, and where the condition that narrows it is.
+ */
+export function narrowedPaths(source: string, module: UfModule | undefined): string[] {
+  const found: { start: number; end: number; text: string }[] = [];
+  const visit = (value: unknown): void => {
+    if (!value || typeof value !== "object") return;
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item);
+      return;
+    }
+    const node = value as Partial<BindingReference>;
+    if (node.kind === "Binding" && node.narrowed) {
+      for (const path of node.narrowed) {
+        const { start, end } = path.span;
+        found.push({ start, end, text: `${source.slice(start, end)} (${path.scope})` });
+      }
+    }
+    for (const item of Object.values(value)) visit(item);
+  };
+  visit(module);
+  // A reference is reached once from its code, and once more from a copy (a handler's code).
+  const unique = new Map(found.map((item) => [`${item.start}:${item.end}`, item]));
+  return [...unique.values()]
+    .toSorted((a, b) => a.start - b.start || a.end - b.end)
+    .map((item) => item.text);
 }

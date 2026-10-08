@@ -1,0 +1,3 @@
+- group "Tickets":
+  - status: "3"
+  - button "Increase Tickets": +

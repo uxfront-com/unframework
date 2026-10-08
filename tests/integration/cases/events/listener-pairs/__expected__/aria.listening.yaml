@@ -1,0 +1,9 @@
+- region "Draft":
+  - button "Options"
+  - button "Listen"
+  - button "Stop listening"
+  - button "Handle"
+  - button "Save"
+  - status: Options closed, draft
+  - list "Log":
+    - listitem: key a

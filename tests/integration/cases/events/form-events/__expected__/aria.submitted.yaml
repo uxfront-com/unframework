@@ -1,0 +1,13 @@
+- form "Sign up":
+  - text: Name
+  - textbox "Name"
+  - text: Email
+  - textbox "Email"
+  - text: Plan
+  - combobox "Plan":
+    - option "Free"
+    - option "Pro" [selected]
+  - checkbox "Send me the newsletter" [checked]
+  - text: Send me the newsletter
+  - status: "Name: ; email: ; plan: pro; newsletter: yes; focus: none"
+  - button "Sign up"

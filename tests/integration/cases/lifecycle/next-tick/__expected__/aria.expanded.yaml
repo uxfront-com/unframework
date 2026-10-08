@@ -1,0 +1,6 @@
+- region "Shipping":
+  - button "Shipping details" [expanded]
+  - list:
+    - listitem: Ships in two days
+    - listitem: Free returns
+    - listitem: Tracked delivery

@@ -1,0 +1,6 @@
+{
+  "description": "Handlers on their own element and a shared handler: a textarea's input listener sizes the textarea itself through event.currentTarget beside a meter whose style is bound, and a custom button's toggle takes a union of the events that call it (a click, and a key listener that passes its event on).",
+  "ssr": {
+    "initial": {}
+  }
+}

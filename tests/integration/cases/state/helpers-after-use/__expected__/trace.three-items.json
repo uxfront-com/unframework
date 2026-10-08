@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add one' })",
+      "dom": [
+        "<section aria-label=\"Price\" class=\"price-tag\">",
+        "  <p>",
+        "    \"Unit: EUR 2.50\"",
+        "  </p>",
+        "  <p role=\"status\">",
+        "    \"2 at EUR 2.50\"",
+        "  </p>",
+        "  <p>",
+        "    \"Total: EUR 5.00\"",
+        "  </p>",
+        "  <p>",
+        "    \"Last change: 2 at EUR 2.50\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add one\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Price two\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Price\":",
+        "  - paragraph: \"Unit: EUR 2.50\"",
+        "  - status: 2 at EUR 2.50",
+        "  - paragraph: \"Total: EUR 5.00\"",
+        "  - paragraph: \"Last change: 2 at EUR 2.50\"",
+        "  - button \"Add one\"",
+        "  - button \"Price two\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Add one' })",
+      "dom": [
+        "<section aria-label=\"Price\" class=\"price-tag\">",
+        "  <p>",
+        "    \"Unit: EUR 2.50\"",
+        "  </p>",
+        "  <p role=\"status\">",
+        "    \"3 at EUR 2.50\"",
+        "  </p>",
+        "  <p>",
+        "    \"Total: EUR 7.50\"",
+        "  </p>",
+        "  <p>",
+        "    \"Last change: 3 at EUR 2.50\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add one\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Price two\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Price\":",
+        "  - paragraph: \"Unit: EUR 2.50\"",
+        "  - status: 3 at EUR 2.50",
+        "  - paragraph: \"Total: EUR 7.50\"",
+        "  - paragraph: \"Last change: 3 at EUR 2.50\"",
+        "  - button \"Add one\"",
+        "  - button \"Price two\""
+      ],
+      "events": {}
+    }
+  ]
+}

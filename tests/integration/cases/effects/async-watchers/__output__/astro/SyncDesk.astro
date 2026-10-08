@@ -1,0 +1,47 @@
+---
+export interface SyncDeskProps {
+  files: string[];
+}
+
+export type Props = SyncDeskProps;
+
+const email = "ada@example.com" as string;
+const checking = false as boolean;
+const valid = true as boolean;
+const step = "idle" as string;
+const owner = "nobody" as string;
+const editor = "nobody" as string;
+const error = "" as string;
+const saving = "" as string;
+const status = "idle" as string;
+const imported = 0 as number;
+const note = "idle" as string;
+const sendBusy = false as boolean;
+const outcome = "" as string;
+const level = 4 as number;
+---
+
+<section class="sync-desk" aria-label="Sync desk">
+  <button type="button">Suggest</button>
+  <button type="button">Use this email</button>
+  <p>{email}: {checking ? "checking" : valid ? "valid" : "invalid"}</p>
+  <button type="button">Load</button>
+  <p>Step: {step}, owner {owner}, editor {editor}</p>
+  <label>Name<input name="name" /></label>
+  <button type="button">Save</button>
+  <p>{saving === "" ? error || "Not saving" : `Saving ${saving}`}</p>
+  <button type="button">Import</button>
+  <p>Import: {status}, {imported} imported</p>
+  <button type="button">Refresh</button>
+  <button type="button">Prefetch</button>
+  <p>Note: {note}</p>
+  <button type="button">Send</button>
+  <p>Send: {sendBusy ? "sending" : outcome === "" ? "not sent" : outcome}</p>
+  <button type="button">Louder</button>
+  <p>Level: {level}</p>
+  <div role="group" aria-label="Server">
+    <button type="button">Reply</button>
+    <button type="button">Decline</button>
+    <button type="button">Fail</button>
+  </div>
+</section>

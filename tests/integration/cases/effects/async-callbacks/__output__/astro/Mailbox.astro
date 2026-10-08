@@ -1,0 +1,21 @@
+---
+export interface MailboxProps {
+  folder: string;
+}
+
+export type Props = MailboxProps;
+
+const name = "Loading" as string;
+const status = "idle" as string;
+const summary = "No messages" as string;
+---
+
+<section class="mailbox" aria-label="Mailbox">
+  <h2>{name}</h2>
+  <p role="status">{summary}</p>
+  <p>Status: {status}</p>
+  <button type="button">Save</button>
+  <button type="button">Refresh every second</button>
+  <button type="button">Mark all read</button>
+  <button type="button">Note</button>
+</section>

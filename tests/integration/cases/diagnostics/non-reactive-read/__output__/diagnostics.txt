@@ -1,0 +1,8 @@
+error[UF2010]: `clicks` is a setup `let`, which is not reactive, read in a template expression: what reads it would never see it change.
+  --> diagnostics/non-reactive-read/ClickCounter.uf.tsx:12:16
+   |
+12 |       Clicked {clicks} times
+   |                ^^^^^^
+   |
+   = help: Hold a value a template, a getter or an effect reads in a `ref`.
+   = see: https://unframework.dev/diagnostics/UF2010

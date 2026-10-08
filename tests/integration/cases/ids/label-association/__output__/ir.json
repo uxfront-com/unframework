@@ -1,0 +1,364 @@
+{
+  "irVersion": 1,
+  "file": "ids/label-association/EmailField.uf.tsx",
+  "components": [
+    {
+      "name": "EmailField",
+      "span": {
+        "start": 109,
+        "end": 448
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 82,
+              "end": 88
+            }
+          },
+          "binding": "label@146",
+          "span": {
+            "start": 75,
+            "end": 89
+          }
+        },
+        {
+          "name": "hint",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 98,
+              "end": 104
+            }
+          },
+          "binding": "hint@153",
+          "span": {
+            "start": 92,
+            "end": 105
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "EmailFieldProps",
+          "span": {
+            "start": 161,
+            "end": 176
+          }
+        },
+        "span": {
+          "start": 144,
+          "end": 176
+        }
+      },
+      "types": [
+        "EmailFieldProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@146",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 146,
+            "end": 151
+          }
+        },
+        {
+          "id": "hint@153",
+          "name": "hint",
+          "kind": "prop",
+          "span": {
+            "start": 153,
+            "end": 157
+          }
+        },
+        {
+          "id": "inputId@188",
+          "name": "inputId",
+          "kind": "localConst",
+          "span": {
+            "start": 188,
+            "end": 195
+          }
+        },
+        {
+          "id": "hintId@215",
+          "name": "hintId",
+          "kind": "localConst",
+          "span": {
+            "start": 215,
+            "end": 221
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Id",
+          "binding": "inputId@188",
+          "span": {
+            "start": 182,
+            "end": 206
+          }
+        },
+        {
+          "kind": "Id",
+          "binding": "hintId@215",
+          "span": {
+            "start": 209,
+            "end": 232
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "email-field",
+            "span": {
+              "start": 254,
+              "end": 273
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "for",
+                "value": {
+                  "code": "inputId",
+                  "span": {
+                    "start": 293,
+                    "end": 300
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "inputId@188",
+                      "span": {
+                        "start": 293,
+                        "end": 300
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 288,
+                  "end": 301
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 303,
+                    "end": 308
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@146",
+                      "span": {
+                        "start": 303,
+                        "end": 308
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 302,
+                  "end": 309
+                }
+              }
+            ],
+            "span": {
+              "start": 281,
+              "end": 317
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "input",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "id",
+                "value": {
+                  "code": "inputId",
+                  "span": {
+                    "start": 335,
+                    "end": 342
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "inputId@188",
+                      "span": {
+                        "start": 335,
+                        "end": 342
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 331,
+                  "end": 343
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "name",
+                "value": "email",
+                "span": {
+                  "start": 344,
+                  "end": 356
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "email",
+                "span": {
+                  "start": 357,
+                  "end": 369
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-describedby",
+                "value": {
+                  "code": "hintId",
+                  "span": {
+                    "start": 388,
+                    "end": 394
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "hintId@215",
+                      "span": {
+                        "start": 388,
+                        "end": 394
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 370,
+                  "end": 395
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 324,
+              "end": 398
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Bound",
+                "name": "id",
+                "value": {
+                  "code": "hintId",
+                  "span": {
+                    "start": 412,
+                    "end": 418
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "hintId@215",
+                      "span": {
+                        "start": 412,
+                        "end": 418
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 408,
+                  "end": 419
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "hint",
+                  "span": {
+                    "start": 421,
+                    "end": 425
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "hint@153",
+                      "span": {
+                        "start": 421,
+                        "end": 425
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 420,
+                  "end": 426
+                }
+              }
+            ],
+            "span": {
+              "start": 405,
+              "end": 430
+            }
+          }
+        ],
+        "span": {
+          "start": 249,
+          "end": 441
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "EmailField",
+      "span": {
+        "start": 109,
+        "end": 448
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "EmailFieldProps",
+      "exported": true,
+      "code": "interface EmailFieldProps {\n  label: string;\n  hint: string;\n}",
+      "span": {
+        "start": 45,
+        "end": 107
+      }
+    }
+  ]
+}

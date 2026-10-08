@@ -1,0 +1,6 @@
+{
+  "description": "Setup code in source order: a constant table, a pure helper called from the template and a computed, handlers calling a local function, and an arrow constant.",
+  "ssr": {
+    "standard": { "props": { "subtotal": 4999 } }
+  }
+}

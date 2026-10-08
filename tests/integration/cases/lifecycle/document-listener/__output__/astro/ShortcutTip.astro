@@ -1,0 +1,11 @@
+---
+const open = true as boolean;
+const enabled = false as boolean;
+const count = 0 as number;
+---
+
+<section class="shortcut-tip" aria-label="Shortcuts">
+  <p>{open ? "Press Escape to hide this tip." : "Tip hidden."}</p>
+  <button type="button" aria-pressed={enabled}>Shortcut K</button>
+  <p role="status">Used: {count}</p>
+</section>

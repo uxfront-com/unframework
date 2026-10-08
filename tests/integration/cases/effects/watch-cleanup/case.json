@@ -1,0 +1,6 @@
+{
+  "description": "A watcher's onCleanup runs before its next callback and at unmount, and not at all when a write leaves the getter's value unchanged.",
+  "ssr": {
+    "initial": {}
+  }
+}

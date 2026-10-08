@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Auto-refresh' })",
+      "dom": [
+        "<section aria-label=\"Auto-refresh\" class=\"auto-refresh\">",
+        "  <button aria-pressed=\"true\" type=\"button\" uf:focused=\"\">",
+        "    \"Auto-refresh\"",
+        "  </button>",
+        "  <p role=\"status\">",
+        "    \"Refreshing\"",
+        "  </p>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Auto-refresh\":",
+        "  - button \"Auto-refresh\" [pressed]",
+        "  - status: Refreshing"
+      ],
+      "events": {}
+    }
+  ]
+}

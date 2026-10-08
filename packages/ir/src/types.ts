@@ -38,8 +38,9 @@ export interface UfModule {
   /** What the module exports, in source order. Targets keep the same export shape. */
   exports: UfExport[];
   /**
-   * The local type declarations the components' props use, in source order, each name once:
-   * the targets that print types copy them into the outputs of the components that use them.
+   * The local type declarations the components' props, events and setup code use, in source
+   * order, each name once: the targets that print types copy them into the outputs of the
+   * components that use them.
    */
   types: TypeDeclaration[];
 }
@@ -83,15 +84,25 @@ export interface UfComponent {
   propsParameter?: PropsParameter;
   /**
    * The names of the module's `types` this component's output declares: the declarations its
-   * props' types reach, in source order.
+   * props' types, its events' payloads and its setup code's annotations reach, in source order.
    */
   types: string[];
   /**
+   * The events the component declares with `const emit = defineEmits<{ … }>()` (ADR-0047).
+   * Absent when it declares none.
+   */
+  emits?: Emits;
+  /**
    * Every binding the component declares, by the start of its span: the props (each
-   * destructured prop, or every prop in the object form) and the loop variables. Expressions
-   * refer to them by id.
+   * destructured prop, or every prop in the object form), the setup's declarations, the `emit`
+   * function and the loop variables. Expressions and code refer to them by id.
    */
   bindings: Binding[];
+  /**
+   * The setup: what the component's body declares and runs before its return, in source order
+   * (plan §4.2, ADR-0045). Empty for a component whose body is only its return.
+   */
+  setup: SetupItem[];
   /** The returned JSX: one element, or several roots in a fragment. */
   render: ElementNode | FragmentNode;
 }
@@ -148,15 +159,37 @@ export interface Binding {
   /** The name as declared. */
   name: string;
   kind: BindingKind;
-  /** Where the binding is declared: the destructured name, the props member, or the parameter. */
+  /**
+   * Where the binding is declared: the destructured name, the props member, the parameter, or
+   * the identifier a setup declaration binds.
+   */
   span: Span;
 }
 
 /**
- * What declares a binding: a prop, or the item or index parameter of a list's callback. Only
- * the kinds the analyser lowers: the coverage gate requires a corpus case for each.
+ * What declares a binding. Only the kinds the analyser lowers: the coverage gate requires a
+ * corpus case for each.
+ * - `prop`: a prop, destructured or read through the props object;
+ * - `loopVar`: the item or index parameter of a list's callback;
+ * - `state`: `const count = ref(…)`, read and written through `count.value`;
+ * - `derived`: `const total = computed(() => …)`, read through `total.value`;
+ * - `templateRef`: `const input = useTemplateRef<HTMLInputElement>()`, read through
+ *   `input.value` in client code, and attached with `ref={input}`;
+ * - `localConst`: a setup `const` holding a value, `useId()`'s included;
+ * - `localFn`: a setup function, `function save() {…}` or `const save = () => …`;
+ * - `localVar`: a setup `let`, which holds what no template reads (a timer's id);
+ * - `emit`: the function `defineEmits` returns.
  */
-export type BindingKind = "prop" | "loopVar";
+export type BindingKind =
+  | "prop"
+  | "loopVar"
+  | "state"
+  | "derived"
+  | "templateRef"
+  | "localConst"
+  | "localFn"
+  | "localVar"
+  | "emit";
 
 /**
  * An expression the analyser accepted, with every identifier in it resolved (plan §5.4).
@@ -178,23 +211,442 @@ export interface BindingReference {
   kind: "Binding";
   binding: BindingId;
   /**
-   * What a target replaces with its own spelling of the binding: the identifier, or the whole
-   * `props.label` in the object form.
+   * What a target replaces with its own spelling of the binding: the identifier; the whole
+   * `props.label` in the object form; and the whole `count.value` for a `state`, `derived` or
+   * `templateRef` binding, whose value is the only thing code reads (ADR-0045).
    */
   span: Span;
   /** Set for a shorthand property (`{ label }`), which a rewrite must expand to `label: …`. */
   shorthand?: true;
+  /**
+   * Set where the reference is the callee of a call (`save()`, `format(total.value)`): only a
+   * `localFn` binding is called, and outside client code it is used only so; client code may
+   * also pass one as a call's argument (`setTimeout(tick, 100)`, ADR-0045). A target whose
+   * functions are asynchronous there (Qwik's QRLs) awaits the call.
+   */
+  call?: true;
+  /**
+   * The paths of the read that a condition around it narrows, where the read relies on it
+   * (ADR-0046): set on a read of a prop or of a ref's value only, shortest path first.
+   */
+  narrowed?: NarrowedPath[];
+  /**
+   * Set where the reference lies in client code that runs later than the code around it (ADR-0048):
+   * in a function that code hands to a call that runs it later or never (a timer's or an
+   * observer's callback, a promise's `then`, `addEventListener`, `onCleanup`), written in place
+   * or held in a local `const` that only such calls are given. No target tracks what it reads
+   * while the code around it runs: a `watchEffect` lists only the other reads as its
+   * dependencies (`summarizeTracked`).
+   */
+  later?: true;
 }
 
 /**
- * A read of a global every target can reach (`ALLOWED_GLOBALS`): Angular templates see only
- * the component's members, so its target declares one for each.
+ * A path of a read that a condition around it narrows (ADR-0046), and that the read then uses as
+ * narrowed: a member read through `.`, a call's argument, a local's initial value, an operand.
+ * The source's TypeScript narrows it there, and a target whose own spelling of the read it does
+ * not narrow (a call: `selected()`, `this.user()`; a property in a closure: `props.user`,
+ * `userRef.current`) asserts the path present (`selected()!`, `draft().email!`) or reads a
+ * narrowed value of its own. Only a template's condition around a handler may narrow a path to
+ * fewer kinds than its declared ones without `null` and `undefined` (`typeof`, a discriminant):
+ * the analyser rejects such a narrowing in code (UF3031), where no target keeps it.
+ */
+export interface NarrowedPath {
+  /**
+   * The path, from the reference's start: the reference itself (`selected.value`, `user`,
+   * `props.user`) or a member path off it written with `.` or a literal key (`draft.value.email`,
+   * `contact.email`, `rows.value[0]`), no `?.` in it.
+   */
+  span: Span;
+  /**
+   * Where the innermost condition that narrows the path is:
+   * - `local`: no function lies between it and the read (an `if`'s or a guard clause's test in
+   *   the read's function, or a `?:`, `&&` or `||` in the same expression), where TypeScript
+   *   narrows a property (`props.user`, `userRef.current`) too, and never a call;
+   * - `closure`: in a function of the setup around the read's: only a destructured prop's own
+   *   read, which TypeScript narrows in a closure as a parameter, and a property's not;
+   * - `template`: a conditional of the template around the read's handler, whose branch the
+   *   targets keep narrowed (UF3029 keeps the read to an argument of the handler's one call). It
+   *   may narrow kinds (`typeof`), where an assertion is not enough.
+   */
+  scope: "local" | "closure" | "template";
+}
+
+/**
+ * A read of a global every target can reach: in a template expression one of `ALLOWED_GLOBALS`
+ * (Angular templates see only the component's members, so its target declares one for each);
+ * in setup code one of `PURE_GLOBALS` or, in client code, `CLIENT_GLOBALS` (ADR-0045).
  */
 export interface GlobalReference {
   kind: "Global";
-  /** The global's name: one of `ALLOWED_GLOBALS`. */
+  /** The global's name: one of the globals its context may read. */
   name: string;
   /** The identifier. */
+  span: Span;
+}
+
+/**
+ * Code the setup runs (ADR-0045): an expression or a function's body, with every name in it
+ * resolved. Like an {@link Expression}, its code is exactly `source.slice(span.start,
+ * span.end)` and targets print it by splicing their own spelling of each reference; unlike
+ * one, it may write state, call `emit` and `nextTick`, and read what only client code may.
+ */
+export interface Code {
+  /** The source text, exactly `source.slice(span.start, span.end)`. */
+  code: string;
+  span: Span;
+  /**
+   * Each reference in source order, by the start of its span. A `Write`'s value and an
+   * `Emit`'s arguments hold references of their own, which follow it in the list; no other
+   * references overlap.
+   */
+  refs: CodeReference[];
+}
+
+/** A resolved name in setup code. */
+export type CodeReference =
+  | BindingReference
+  | GlobalReference
+  | WriteReference
+  | EmitReference
+  | ApiReference
+  | EventReference;
+
+/**
+ * A write of a `state` binding's value or of a `localVar`: `count.value = 1`, `count.value += step`,
+ * `count.value++`, `timer = setInterval(…)` (ADR-0045). A write is a statement of its own: the
+ * whole expression of an expression statement, or the whole body of an arrow function.
+ */
+export interface WriteReference {
+  kind: "Write";
+  /** A `state` or a `localVar` binding. */
+  binding: BindingId;
+  /**
+   * `=`, an arithmetic or logical compound assignment operator (`+=`, `??=`, …), or `++` or `--`.
+   * Bitwise and shift assignments are not accepted (UF1002).
+   * @pattern ^(?:=|\+=|-=|\*=|\/=|%=|\*\*=|&&=|\|\|=|\?\?=|\+\+|--)$
+   */
+  operator: string;
+  /**
+   * The whole assignment or update expression; for a write that is an arrow's expression body,
+   * the whole body, its parentheses included (`() => (open.value = !open.value)`).
+   */
+  span: Span;
+  /** What is written: `count.value`, or the variable. */
+  target: Span;
+  /** An assignment's value: its references follow this one in the list. Absent for `++`/`--`. */
+  value?: Span;
+  /** Set where the write is an arrow function's expression body (`() => count.value++`). */
+  arrowBody?: true;
+  /**
+   * The target, where the operator reads it (`+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `++`, `--`)
+   * and a condition around the write narrows it present
+   * (`if (count.value !== null) count.value += 1`, ADR-0046): one `local` path spanning `target`.
+   * A target that reads the written value through a call asserts it (`count()! + 1`).
+   */
+  narrowed?: NarrowedPath[];
+}
+
+/**
+ * A use of a handler's event parameter, `event.key` or `event.preventDefault()` (ADR-0047): a
+ * member every target's event object has (`PORTABLE_EVENT_MEMBERS`), read or called. The
+ * parameter is the one a {@link Parameter} marks with `event`.
+ */
+export interface EventReference {
+  kind: "Event";
+  /** The member: `key`, `currentTarget`, `preventDefault`, … */
+  member: string;
+  /** The member expression, `event.key`. */
+  span: Span;
+  /** Set where the member is called (`event.preventDefault()`). */
+  call?: true;
+}
+
+/**
+ * A `preventDefault()` or `stopPropagation()` call on a handler's event (ADR-0047): a statement at
+ * the top of the handler's body, or the only statement under an `if` there whose test reads only
+ * the event, with no statement before it that may leave the body but guard clauses whose tests
+ * read only the event (`if (event.key !== "Enter") return;`, which `handlerControls` of
+ * `@unframework/codegen` reads). Qwik runs these synchronously (`preventdefault:click`, `sync$`),
+ * apart from the lazily loaded handler.
+ */
+export interface EventControl {
+  method: "preventDefault" | "stopPropagation";
+  /** The `if`'s test when the call is conditional: code that reads only the event. */
+  condition?: Code;
+  /** The statement that makes the call: the expression statement, or the whole `if`. */
+  span: Span;
+}
+
+/**
+ * A call of the component's `emit`: `emit("change", count.value)` (ADR-0047). The event is a
+ * string literal naming one the component declares.
+ */
+export interface EmitReference {
+  kind: "Emit";
+  /** The `emit` binding. */
+  binding: BindingId;
+  /** The event's name, as `defineEmits` declares it. */
+  event: string;
+  /** The whole call, from `emit` to its closing parenthesis. */
+  span: Span;
+  /** The payload's arguments, in order: their references follow this one in the list. */
+  arguments: Span[];
+}
+
+/**
+ * A use of an authoring API inside setup code: only `nextTick` (ADR-0048). The macros and the
+ * other APIs are setup items, called at the top level of the body.
+ */
+export interface ApiReference {
+  kind: "Api";
+  /** The API: `nextTick`. */
+  api: "nextTick";
+  /** The identifier. */
+  span: Span;
+}
+
+/**
+ * A function the source writes: a setup function, a handler, a callback or a getter
+ * (ADR-0045). Targets print it from its parts: a hoisted handler (Angular's methods) needs them
+ * apart, and every other target prints them back as the author wrote them.
+ */
+export interface FunctionCode {
+  /** Set for an `async` function. */
+  async?: true;
+  /** The parameters, in order. */
+  parameters: Parameter[];
+  /** The return type annotation as written, without its colon. */
+  returnType?: TypeText;
+  /** The body: a block `{ … }`, or an arrow's expression. */
+  body: Code;
+  /** Set where the body is an arrow's expression rather than a block. */
+  expression?: true;
+  /**
+   * The leading `preventDefault()` and `stopPropagation()` calls of a handler's body (see
+   * {@link EventControl}), in source order: set on a function that handles an event (an inline
+   * handler, or a setup function a handler names) when it makes any. The body may make others
+   * while the event is dispatched (in an `if` block beside other statements, a `switch` case,
+   * after a guard on state), which every target runs in place and codegen's `handlerControls`
+   * reads from the body; never one after an `await` or in a function inside it (UF3033).
+   */
+  eventControls?: EventControl[];
+  /** The whole function, from `async` or its first parameter to the end of its body. */
+  span: Span;
+}
+
+/**
+ * A parameter of a function the source writes: an identifier or a destructuring pattern, with its
+ * type and default. A function's own names are not bindings: code refers to them as written.
+ */
+export interface Parameter {
+  /** The name of an identifier parameter. Absent for a pattern. */
+  name?: string;
+  /** A destructuring pattern (`[first, last]`, `{ id }`), as written. Absent for an identifier. */
+  pattern?: ParameterPattern;
+  /** The type annotation as written, without its colon. */
+  type?: TypeText;
+  /** Set for an optional parameter (`label?: string`). */
+  optional?: true;
+  /** A rest parameter (`...values`). */
+  rest?: true;
+  /** The default: a static value, which references nothing. */
+  default?: Expression;
+  /**
+   * Set on a handler's event parameter: the DOM interface of its event (`KeyboardEvent`), from
+   * its annotation or, unannotated, from the event's own (`DOM_EVENTS`). Code uses it only
+   * through {@link EventReference}s.
+   */
+  event?: string;
+  span: Span;
+}
+
+/** A destructuring pattern in a parameter: its code, and the names it declares, in order. */
+export interface ParameterPattern {
+  /** Exactly `source.slice(span.start, span.end)`: its defaults are static. */
+  code: string;
+  /** The names the pattern binds, each an identifier. */
+  names: string[];
+  span: Span;
+}
+
+/** What a component's setup declares or runs, in source order (ADR-0045). */
+export type SetupItem =
+  | StateItem
+  | DerivedItem
+  | TemplateRefItem
+  | IdItem
+  | ConstItem
+  | VariableItem
+  | FunctionItem
+  | WatchItem
+  | WatchEffectItem
+  | LifecycleItem;
+
+/** `const count = ref(initial)`: a `state` binding (ADR-0046). */
+export interface StateItem {
+  kind: "State";
+  binding: BindingId;
+  /** The type argument as written (`ref<Item[]>([])`). */
+  type?: TypeText;
+  /**
+   * The initial value: an expression the setup evaluates once, which may read props and the
+   * values declared before it. Absent for `ref()`, which starts `undefined`.
+   */
+  initial?: Code;
+  span: Span;
+}
+
+/** `const total = computed(() => …)`: a `derived` binding (ADR-0046). */
+export interface DerivedItem {
+  kind: "Derived";
+  binding: BindingId;
+  /** The type argument as written (`computed<number>(…)`). */
+  type?: TypeText;
+  /** The getter: a function without parameters, pure as a template expression is. */
+  getter: FunctionCode;
+  span: Span;
+}
+
+/** `const input = useTemplateRef<HTMLInputElement>()`: a `templateRef` binding (ADR-0049). */
+export interface TemplateRefItem {
+  kind: "TemplateRef";
+  binding: BindingId;
+  /** The element type as written (`HTMLInputElement`). */
+  type?: TypeText;
+  span: Span;
+}
+
+/** `const id = useId()`: a `localConst` binding holding an id unique to the instance (ADR-0049). */
+export interface IdItem {
+  kind: "Id";
+  binding: BindingId;
+  span: Span;
+}
+
+/** `const label = …`: a `localConst` binding, evaluated once when the setup runs (ADR-0045). */
+export interface ConstItem {
+  kind: "Const";
+  binding: BindingId;
+  /** The type annotation as written. */
+  type?: TypeText;
+  value: Code;
+  span: Span;
+}
+
+/**
+ * `let timer: number | undefined`: a `localVar` binding (ADR-0045), which client code writes and
+ * reads and no template, getter or watched source reads.
+ */
+export interface VariableItem {
+  kind: "Variable";
+  binding: BindingId;
+  /** The type annotation as written. */
+  type?: TypeText;
+  initial?: Code;
+  span: Span;
+}
+
+/** `function save() {…}` or `const save = () => …`: a `localFn` binding (ADR-0045). */
+export interface FunctionItem {
+  kind: "Function";
+  binding: BindingId;
+  /** How the source declares it: a function declaration, or a `const` holding an arrow. */
+  form: "declaration" | "arrow";
+  function: FunctionCode;
+  span: Span;
+}
+
+/**
+ * `watch(source, (value, previous, onCleanup) => …, options)` (ADR-0048): the callback runs in
+ * the browser after the sources change.
+ */
+export interface WatchItem {
+  kind: "Watch";
+  /** What it watches: one source, or each element of an array of sources. */
+  sources: WatchSource[];
+  /** Set for an array of sources (`watch([a, b], …)`): the callback gets arrays of values. */
+  array?: true;
+  /** The callback: its parameters are the value, the previous value and `onCleanup`. */
+  callback: FunctionCode;
+  /** `immediate: true`: the callback also runs once when the setup does. */
+  immediate?: true;
+  /** `flush: "post"`: the callback runs after the DOM has updated. */
+  post?: true;
+  span: Span;
+}
+
+/** What a watcher watches: a `state` or `derived` binding, or a getter. */
+export type WatchSource = RefSource | GetterSource;
+
+/** A `state` or `derived` binding, written as the ref itself: `watch(count, …)`. */
+export interface RefSource {
+  kind: "Ref";
+  binding: BindingId;
+  span: Span;
+}
+
+/** A getter, `watch(() => step, …)`: a function without parameters, pure as a getter is. */
+export interface GetterSource {
+  kind: "Getter";
+  getter: FunctionCode;
+  span: Span;
+}
+
+/**
+ * `watchEffect((onCleanup) => …)` (ADR-0048): runs in the browser after the component mounts,
+ * and again after any value it reads changes.
+ */
+export interface WatchEffectItem {
+  kind: "WatchEffect";
+  /** The effect: its one parameter, when it has one, is `onCleanup`. */
+  effect: FunctionCode;
+  span: Span;
+}
+
+/** `onMounted(…)` or `onUnmounted(…)` (ADR-0048): runs in the browser only. */
+export interface LifecycleItem {
+  kind: "Lifecycle";
+  hook: "mounted" | "unmounted";
+  /** The hook: a function without parameters. */
+  callback: FunctionCode;
+  span: Span;
+}
+
+/** The events a component declares: `const emit = defineEmits<{ change: [value: number] }>()`. */
+export interface Emits {
+  /** The `emit` binding. */
+  binding: BindingId;
+  /** The type argument as written: an object type literal, or a reference to a local type. */
+  type: TypeText;
+  /** The events, in member order, each name once. */
+  events: EventDeclaration[];
+  /** The declaration, from `const` to its end. */
+  span: Span;
+}
+
+/** An event a component declares (ADR-0047). */
+export interface EventDeclaration {
+  /**
+   * The name a consumer listens to (`onChange` in the source): camelCase ASCII, which every
+   * target spells its own way (ADR-0012).
+   * @pattern ^[a-z][A-Za-z0-9]*$
+   */
+  name: string;
+  /** The payload: the members of the event's named tuple, in order. */
+  parameters: EventParameter[];
+  /** The member that declares the event. */
+  span: Span;
+}
+
+/** A member of an event's named tuple: `value: number` in `change: [value: number]`. */
+export interface EventParameter {
+  /** The member's label. */
+  name: string;
+  /** Set for an optional member (`value?: number`). */
+  optional?: true;
+  /** The member's type as written. */
+  type: TypeText;
   span: Span;
 }
 
@@ -294,7 +746,57 @@ export type Attribute =
   | BoundAttribute
   | ClassAttribute
   | StyleAttribute
-  | SpreadAttribute;
+  | SpreadAttribute
+  | EventAttribute
+  | RefAttribute;
+
+/**
+ * An event listener, `onClick={save}` or `onKeydownCapture={(event) => …}` (ADR-0047): it renders
+ * no attribute, and runs in the browser only.
+ */
+export interface EventAttribute {
+  kind: "Event";
+  /**
+   * The DOM event's name, as `addEventListener` takes it: the source's name without `on` and
+   * its option suffix, in lower case (`onDblclick` → `dblclick`).
+   * @pattern ^[a-z][a-z0-9]*$
+   */
+  event: string;
+  /** `onClickCapture`: the listener runs in the capture phase. */
+  capture?: true;
+  /** `onClickOnce`: the listener runs once, then is removed. */
+  once?: true;
+  /** `onWheelPassive`: the listener is passive. */
+  passive?: true;
+  handler: Handler;
+  span: Span;
+}
+
+/** What an event runs: a setup function by name, or a function written in place. */
+export type Handler = FunctionHandler | InlineHandler;
+
+/** `onClick={save}`: a `localFn` binding, which runs with the event as its argument. */
+export interface FunctionHandler {
+  kind: "Function";
+  binding: BindingId;
+  /** The identifier. */
+  span: Span;
+}
+
+/** `onClick={() => count.value++}`: an arrow function, which runs with the event as its argument. */
+export interface InlineHandler {
+  kind: "Inline";
+  function: FunctionCode;
+  span: Span;
+}
+
+/** `ref={input}` (ADR-0049): attaches the element to a `templateRef` binding. It renders nothing. */
+export interface RefAttribute {
+  kind: "Ref";
+  /** The `templateRef` binding. */
+  binding: BindingId;
+  span: Span;
+}
 
 /** An attribute whose value is known at compile time: `class="card"`, `disabled`. */
 export interface StaticAttribute {

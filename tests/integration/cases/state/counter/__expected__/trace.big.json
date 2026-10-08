@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: '+3' })",
+      "dom": [
+        "<div class=\"counter\">",
+        "  <output>",
+        "    \"5\"",
+        "  </output>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"+3\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- status: \"5\"",
+        "- button \"+3\""
+      ],
+      "events": {
+        "change": [
+          [
+            5
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: '+3' })",
+      "dom": [
+        "<div class=\"counter\">",
+        "  <output>",
+        "    \"8\"",
+        "  </output>",
+        "  <span>",
+        "    \"Big\"",
+        "  </span>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"+3\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- status: \"8\"",
+        "- text: Big",
+        "- button \"+3\""
+      ],
+      "events": {
+        "change": [
+          [
+            8
+          ]
+        ]
+      }
+    }
+  ]
+}

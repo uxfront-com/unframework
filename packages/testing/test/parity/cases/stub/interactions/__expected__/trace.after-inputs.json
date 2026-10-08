@@ -1,0 +1,129 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "type getByLabel('Query') \"al\"",
+      "dom": [
+        "<label>",
+        "  \"Query \"",
+        "  <input type=\"text\" uf:focused=\"\" uf:value=\"al\">",
+        "</label>",
+        "<button type=\"button\">",
+        "  \"Press\"",
+        "</button>",
+        "<button type=\"button\">",
+        "  \"Count\"",
+        "</button>"
+      ],
+      "aria": [
+        "- text: Query",
+        "- textbox \"Query\": al",
+        "- button \"Press\"",
+        "- button \"Count\""
+      ],
+      "events": {
+        "asked": [
+          [
+            "a"
+          ],
+          [
+            "al"
+          ]
+        ]
+      }
+    },
+    {
+      "action": "keyboard \"{Shift}\"",
+      "dom": [
+        "<label>",
+        "  \"Query \"",
+        "  <input type=\"text\" uf:focused=\"\" uf:value=\"al\">",
+        "</label>",
+        "<button type=\"button\">",
+        "  \"Press\"",
+        "</button>",
+        "<button type=\"button\">",
+        "  \"Count\"",
+        "</button>"
+      ],
+      "aria": [
+        "- text: Query",
+        "- textbox \"Query\": al",
+        "- button \"Press\"",
+        "- button \"Count\""
+      ],
+      "events": {
+        "held": [
+          [
+            true
+          ],
+          [
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "action": "click getByRole('button', { name: 'Press' })",
+      "dom": [
+        "<label>",
+        "  \"Query \"",
+        "  <input type=\"text\" uf:value=\"al\">",
+        "</label>",
+        "<button type=\"button\" uf:focused=\"\">",
+        "  \"Press\"",
+        "</button>",
+        "<button type=\"button\">",
+        "  \"Count\"",
+        "</button>"
+      ],
+      "aria": [
+        "- text: Query",
+        "- textbox \"Query\": al",
+        "- button \"Press\"",
+        "- button \"Count\""
+      ],
+      "events": {
+        "phased": [
+          [
+            "down"
+          ],
+          [
+            "clicked"
+          ]
+        ]
+      }
+    },
+    {
+      "action": "dblClick getByRole('button', { name: 'Count' })",
+      "dom": [
+        "<label>",
+        "  \"Query \"",
+        "  <input type=\"text\" uf:value=\"al\">",
+        "</label>",
+        "<button type=\"button\">",
+        "  \"Press\"",
+        "</button>",
+        "<button type=\"button\" uf:focused=\"\">",
+        "  \"Count\"",
+        "</button>"
+      ],
+      "aria": [
+        "- text: Query",
+        "- textbox \"Query\": al",
+        "- button \"Press\"",
+        "- button \"Count\""
+      ],
+      "events": {
+        "counted": [
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ]
+      }
+    }
+  ]
+}

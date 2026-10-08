@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "semantics/nested-call-bubbling/Picker.uf.tsx",
+    "start": {
+      "line": 46,
+      "column": 48,
+      "offset": 1021
+    },
+    "end": {
+      "line": 46,
+      "column": 64,
+      "offset": 1037
+    },
+    "target": "astro"
+  }
+]

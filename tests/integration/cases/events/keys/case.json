@@ -1,0 +1,6 @@
+{
+  "description": "Keyboard handlers on text fields: arrow keys, Enter (prevented) and Escape, and an expression-bodied && handler that leaves typing alone.",
+  "ssr": {
+    "commands": { "props": { "commands": ["Deploy", "Roll back", "Open the logs"] } }
+  }
+}

@@ -1,0 +1,27 @@
+<section aria-label="Trip" class="city-picker">
+  <form aria-label="Destination" role="search">
+    <label>
+      "City"
+      <input aria-activedescendant="uf-id-1" aria-autocomplete="list" aria-controls="uf-id-2" aria-expanded="true" name="city" role="combobox" type="search" uf:focused="" uf:value="Ber">
+    </label>
+    <div aria-label="Cities" id="uf-id-2" role="listbox">
+      <button aria-selected="true" id="uf-id-1" role="option" tabindex="-1" type="button">
+        "Bern"
+      </button>
+      <button aria-selected="false" id="uf-id-3" role="option" tabindex="-1" type="button">
+        "Berlin"
+      </button>
+    </div>
+    <button type="submit">
+      "Search"
+    </button>
+  </form>
+  <p role="status">
+    "No city chosen"
+  </p>
+  <label>
+    "Note"
+    <textarea name="note" uf:value=""></textarea>
+  </label>
+  <ul aria-label="Notes"></ul>
+</section>

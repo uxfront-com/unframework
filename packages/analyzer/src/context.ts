@@ -11,7 +11,7 @@ export interface Located {
 }
 
 const SUPPORTED_SUBSET =
-  "This version of the compiler lowers exported components with typed props and static JSX: expressions, conditionals, lists, class and style bindings, spreads with known keys and SVG. Setup code, events and composition land in later milestones.";
+  "This version of the compiler lowers exported components with typed props, a setup (state, derived values, watchers, lifecycle hooks, local functions and constants, `defineEmits`, template refs and ids), element listeners and JSX: expressions, conditionals, lists, class and style bindings, spreads with known keys and SVG. Composition (child components, slots, `v-model`) lands in M3, styles in M4 and imports of modules in M5.";
 
 /** Collects the diagnostics of one file. */
 export class Reporter {

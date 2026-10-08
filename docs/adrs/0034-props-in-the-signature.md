@@ -1,6 +1,6 @@
 # ADR-0034: Props are a typed signature parameter with local types and static defaults
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0045 and ADR-0049
 - **Date:** 2026-10-05
 - **Plan:** §4.1, §4.2, §6 (signature props), §9 M1; P2, P3, P4, P6; R5, R6; ADR-0001, ADR-0007,
   ADR-0033; amends ADR-0032

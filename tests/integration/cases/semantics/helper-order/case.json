@@ -1,0 +1,6 @@
+{
+  "description": "Helpers declared after their use: a comparator an initial value calls and a handler passes as a value, two onMounted hooks and two watchers of one source, the first reading a later computed through a helper, and a computed only a handler reads.",
+  "ssr": {
+    "initial": {}
+  }
+}

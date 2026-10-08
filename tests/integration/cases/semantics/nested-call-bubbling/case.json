@@ -1,0 +1,6 @@
+{
+  "description": "Nested calls: a container's bubble listener reading what a button's listener wrote through a local function, on the first click, and an unawaited call of an async local function followed by a write.",
+  "ssr": {
+    "initial": {}
+  }
+}

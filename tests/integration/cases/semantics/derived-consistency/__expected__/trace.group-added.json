@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add a group and a guide' })",
+      "dom": [
+        "<section aria-label=\"Seats\" class=\"seat-picker\">",
+        "  <p role=\"status\">",
+        "    \"6 seats for 240\"",
+        "  </p>",
+        "  <button type=\"button\">",
+        "    \"Add a seat\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add a group and a guide\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Seats\":",
+        "  - status: 6 seats for 240",
+        "  - button \"Add a seat\"",
+        "  - button \"Add a group and a guide\""
+      ],
+      "events": {
+        "quote": [
+          [
+            6,
+            240,
+            "6 seats for 240, 200 without the guide"
+          ]
+        ]
+      }
+    }
+  ]
+}

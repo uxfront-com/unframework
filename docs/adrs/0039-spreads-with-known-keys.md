@@ -1,6 +1,6 @@
 # ADR-0039: An attribute spread renders exactly the keys its type declares
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0045
 - **Date:** 2026-10-05
 - **Plan:** §4.3, §6 (fallthrough), §9 M1, M3; P2, P3, P4, P6; R5; ADR-0010, ADR-0034, ADR-0037,
   ADR-0038; amends ADR-0032

@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add tag' })",
+      "dom": [
+        "<form aria-label=\"Tags\" class=\"tag-form\">",
+        "  <label>",
+        "    \"New tag\"",
+        "    <input name=\"tag\" uf:value=\"\">",
+        "  </label>",
+        "  <button type=\"submit\" uf:focused=\"\">",
+        "    \"Add tag\"",
+        "  </button>",
+        "  <a href=\"/help/tags\">",
+        "    \"How tags work\"",
+        "  </a>",
+        "  <ul aria-label=\"Added tags\">",
+        "    <li>",
+        "      \"designsystems\"",
+        "    </li>",
+        "  </ul>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Tags\":",
+        "  - text: New tag",
+        "  - textbox \"New tag\"",
+        "  - button \"Add tag\"",
+        "  - link \"How tags work\":",
+        "    - /url: /help/tags",
+        "  - list \"Added tags\":",
+        "    - listitem: designsystems"
+      ],
+      "events": {
+        "tagsChange": [
+          [
+            [
+              "designsystems"
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "action": "type getByLabel('New tag') \"ui\"",
+      "dom": [
+        "<form aria-label=\"Tags\" class=\"tag-form\">",
+        "  <label>",
+        "    \"New tag\"",
+        "    <input name=\"tag\" uf:focused=\"\" uf:value=\"ui\">",
+        "  </label>",
+        "  <button type=\"submit\">",
+        "    \"Add tag\"",
+        "  </button>",
+        "  <a href=\"/help/tags\">",
+        "    \"How tags work\"",
+        "  </a>",
+        "  <ul aria-label=\"Added tags\">",
+        "    <li>",
+        "      \"designsystems\"",
+        "    </li>",
+        "  </ul>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Tags\":",
+        "  - text: New tag",
+        "  - textbox \"New tag\": ui",
+        "  - button \"Add tag\"",
+        "  - link \"How tags work\":",
+        "    - /url: /help/tags",
+        "  - list \"Added tags\":",
+        "    - listitem: designsystems"
+      ],
+      "events": {}
+    },
+    {
+      "action": "keyboard \"{Enter}\"",
+      "dom": [
+        "<form aria-label=\"Tags\" class=\"tag-form\">",
+        "  <label>",
+        "    \"New tag\"",
+        "    <input name=\"tag\" uf:focused=\"\" uf:value=\"\">",
+        "  </label>",
+        "  <button type=\"submit\">",
+        "    \"Add tag\"",
+        "  </button>",
+        "  <a href=\"/help/tags\">",
+        "    \"How tags work\"",
+        "  </a>",
+        "  <ul aria-label=\"Added tags\">",
+        "    <li>",
+        "      \"designsystems\"",
+        "    </li>",
+        "    <li>",
+        "      \"ui\"",
+        "    </li>",
+        "  </ul>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Tags\":",
+        "  - text: New tag",
+        "  - textbox \"New tag\"",
+        "  - button \"Add tag\"",
+        "  - link \"How tags work\":",
+        "    - /url: /help/tags",
+        "  - list \"Added tags\":",
+        "    - listitem: designsystems",
+        "    - listitem: ui"
+      ],
+      "events": {
+        "tagsChange": [
+          [
+            [
+              "designsystems",
+              "ui"
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

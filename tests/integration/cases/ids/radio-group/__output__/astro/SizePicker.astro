@@ -1,0 +1,32 @@
+---
+export interface SizePickerProps {
+  legend: string;
+  sizes: string[];
+}
+
+type Props = SizePickerProps;
+
+const { legend, sizes } = Astro.props;
+
+function uniqueId(): string {
+  const locals = Astro.locals as { ufIdCount?: number };
+  locals.ufIdCount = (locals.ufIdCount ?? 0) + 1;
+  return `uf-id-${locals.ufIdCount}`;
+}
+
+const group = uniqueId();
+const hintId = uniqueId();
+const picked = "" as string;
+---
+
+<fieldset class="size-picker" aria-describedby={hintId}>
+  <legend>{legend}</legend>
+  <p id={hintId}>Pick one size.</p>
+  {sizes.map((size, index) => (
+    <div class="size">
+      <input type="radio" id={`${group}-${index}`} name={group} value={size} />
+      <label for={`${group}-${index}`}>{size}</label>
+    </div>
+  ))}
+  <output>{picked || "none"}</output>
+</fieldset>

@@ -1,0 +1,6 @@
+- region "Picker":
+  - button "Alpha"
+  - button "Beta"
+  - list "Log"
+  - status: loaded 2
+  - button "Start"

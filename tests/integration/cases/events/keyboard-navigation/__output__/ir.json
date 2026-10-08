@@ -1,0 +1,1965 @@
+{
+  "irVersion": 1,
+  "file": "events/keyboard-navigation/CityPicker.uf.tsx",
+  "components": [
+    {
+      "name": "CityPicker",
+      "span": {
+        "start": 124,
+        "end": 3578
+      },
+      "props": [
+        {
+          "name": "cities",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 111,
+              "end": 119
+            }
+          },
+          "binding": "cities@161",
+          "span": {
+            "start": 103,
+            "end": 120
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "CityPickerProps",
+          "span": {
+            "start": 171,
+            "end": 186
+          }
+        },
+        "span": {
+          "start": 159,
+          "end": 186
+        }
+      },
+      "types": [
+        "CityPickerProps"
+      ],
+      "emits": {
+        "binding": "emit@198",
+        "type": {
+          "code": "{ chose: [city: string]; noted: [text: string] }",
+          "span": {
+            "start": 217,
+            "end": 265
+          }
+        },
+        "events": [
+          {
+            "name": "chose",
+            "parameters": [
+              {
+                "name": "city",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 233,
+                    "end": 239
+                  }
+                },
+                "span": {
+                  "start": 227,
+                  "end": 239
+                }
+              }
+            ],
+            "span": {
+              "start": 219,
+              "end": 240
+            }
+          },
+          {
+            "name": "noted",
+            "parameters": [
+              {
+                "name": "text",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 256,
+                    "end": 262
+                  }
+                },
+                "span": {
+                  "start": 250,
+                  "end": 262
+                }
+              }
+            ],
+            "span": {
+              "start": 242,
+              "end": 263
+            }
+          }
+        ],
+        "span": {
+          "start": 192,
+          "end": 269
+        }
+      },
+      "bindings": [
+        {
+          "id": "cities@161",
+          "name": "cities",
+          "kind": "prop",
+          "span": {
+            "start": 161,
+            "end": 167
+          }
+        },
+        {
+          "id": "emit@198",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 198,
+            "end": 202
+          }
+        },
+        {
+          "id": "listId@279",
+          "name": "listId",
+          "kind": "localConst",
+          "span": {
+            "start": 279,
+            "end": 285
+          }
+        },
+        {
+          "id": "query@305",
+          "name": "query",
+          "kind": "state",
+          "span": {
+            "start": 305,
+            "end": 310
+          }
+        },
+        {
+          "id": "open@330",
+          "name": "open",
+          "kind": "state",
+          "span": {
+            "start": 330,
+            "end": 334
+          }
+        },
+        {
+          "id": "active@357",
+          "name": "active",
+          "kind": "state",
+          "span": {
+            "start": 357,
+            "end": 363
+          }
+        },
+        {
+          "id": "chosen@383",
+          "name": "chosen",
+          "kind": "state",
+          "span": {
+            "start": 383,
+            "end": 389
+          }
+        },
+        {
+          "id": "notes@409",
+          "name": "notes",
+          "kind": "state",
+          "span": {
+            "start": 409,
+            "end": 414
+          }
+        },
+        {
+          "id": "matches@445",
+          "name": "matches",
+          "kind": "derived",
+          "span": {
+            "start": 445,
+            "end": 452
+          }
+        },
+        {
+          "id": "choose@574",
+          "name": "choose",
+          "kind": "localFn",
+          "span": {
+            "start": 574,
+            "end": 580
+          }
+        },
+        {
+          "id": "onCityKeydown@710",
+          "name": "onCityKeydown",
+          "kind": "localFn",
+          "span": {
+            "start": 710,
+            "end": 723
+          }
+        },
+        {
+          "id": "onNoteKeydown@1403",
+          "name": "onNoteKeydown",
+          "kind": "localFn",
+          "span": {
+            "start": 1403,
+            "end": 1416
+          }
+        },
+        {
+          "id": "city@2687",
+          "name": "city",
+          "kind": "loopVar",
+          "span": {
+            "start": 2687,
+            "end": 2691
+          }
+        },
+        {
+          "id": "index@2693",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 2693,
+            "end": 2698
+          }
+        },
+        {
+          "id": "note@3477",
+          "name": "note",
+          "kind": "loopVar",
+          "span": {
+            "start": 3477,
+            "end": 3481
+          }
+        },
+        {
+          "id": "index@3483",
+          "name": "index",
+          "kind": "loopVar",
+          "span": {
+            "start": 3483,
+            "end": 3488
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Id",
+          "binding": "listId@279",
+          "span": {
+            "start": 273,
+            "end": 296
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "query@305",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 317,
+              "end": 319
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 299,
+            "end": 321
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "open@330",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 341,
+              "end": 346
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 324,
+            "end": 348
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "active@357",
+          "initial": {
+            "code": "-1",
+            "span": {
+              "start": 370,
+              "end": 372
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 351,
+            "end": 374
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "chosen@383",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 396,
+              "end": 398
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 377,
+            "end": 400
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "notes@409",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 421,
+              "end": 429
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 431,
+              "end": 433
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 403,
+            "end": 435
+          }
+        },
+        {
+          "kind": "Derived",
+          "binding": "matches@445",
+          "getter": {
+            "parameters": [],
+            "body": {
+              "code": "cities.filter((city) => city.toLowerCase().startsWith(query.value.toLowerCase()))",
+              "span": {
+                "start": 474,
+                "end": 555
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "cities@161",
+                  "span": {
+                    "start": 474,
+                    "end": 480
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "query@305",
+                  "span": {
+                    "start": 528,
+                    "end": 539
+                  }
+                }
+              ]
+            },
+            "expression": true,
+            "span": {
+              "start": 464,
+              "end": 555
+            }
+          },
+          "span": {
+            "start": 439,
+            "end": 561
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "choose@574",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "city",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 587,
+                    "end": 593
+                  }
+                },
+                "span": {
+                  "start": 581,
+                  "end": 593
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    chosen.value = city;\n    open.value = false;\n    active.value = -1;\n    emit(\"chose\", city);\n  }",
+              "span": {
+                "start": 595,
+                "end": 697
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "chosen@383",
+                  "operator": "=",
+                  "span": {
+                    "start": 601,
+                    "end": 620
+                  },
+                  "target": {
+                    "start": 601,
+                    "end": 613
+                  },
+                  "value": {
+                    "start": 616,
+                    "end": 620
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "open@330",
+                  "operator": "=",
+                  "span": {
+                    "start": 626,
+                    "end": 644
+                  },
+                  "target": {
+                    "start": 626,
+                    "end": 636
+                  },
+                  "value": {
+                    "start": 639,
+                    "end": 644
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "active@357",
+                  "operator": "=",
+                  "span": {
+                    "start": 650,
+                    "end": 667
+                  },
+                  "target": {
+                    "start": 650,
+                    "end": 662
+                  },
+                  "value": {
+                    "start": 665,
+                    "end": 667
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@198",
+                  "event": "chose",
+                  "span": {
+                    "start": 673,
+                    "end": 692
+                  },
+                  "arguments": [
+                    {
+                      "start": 687,
+                      "end": 691
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 580,
+              "end": 697
+            }
+          },
+          "span": {
+            "start": 565,
+            "end": 697
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "onCityKeydown@710",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 731,
+                    "end": 744
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 724,
+                  "end": 744
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    switch (event.key) {\n      case \"ArrowDown\":\n        event.preventDefault();\n        open.value = true;\n        active.value = Math.min(active.value + 1, matches.value.length - 1);\n        break;\n      case \"ArrowUp\":\n        event.preventDefault();\n        active.value = Math.max(active.value - 1, 0);\n        break;\n      case \"Enter\": {\n        event.preventDefault();\n        const city = matches.value[active.value];\n        if (open.value && city !== undefined) choose(city);\n        break;\n      }\n      case \"Escape\":\n        event.preventDefault();\n        open.value = false;\n        active.value = -1;\n        break;\n    }\n  }",
+              "span": {
+                "start": 746,
+                "end": 1390
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 760,
+                    "end": 769
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 805,
+                    "end": 825
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "open@330",
+                  "operator": "=",
+                  "span": {
+                    "start": 837,
+                    "end": 854
+                  },
+                  "target": {
+                    "start": 837,
+                    "end": 847
+                  },
+                  "value": {
+                    "start": 850,
+                    "end": 854
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "active@357",
+                  "operator": "=",
+                  "span": {
+                    "start": 864,
+                    "end": 931
+                  },
+                  "target": {
+                    "start": 864,
+                    "end": 876
+                  },
+                  "value": {
+                    "start": 879,
+                    "end": 931
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Math",
+                  "span": {
+                    "start": 879,
+                    "end": 883
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "active@357",
+                  "span": {
+                    "start": 888,
+                    "end": 900
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "matches@445",
+                  "span": {
+                    "start": 906,
+                    "end": 919
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 978,
+                    "end": 998
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "active@357",
+                  "operator": "=",
+                  "span": {
+                    "start": 1010,
+                    "end": 1054
+                  },
+                  "target": {
+                    "start": 1010,
+                    "end": 1022
+                  },
+                  "value": {
+                    "start": 1025,
+                    "end": 1054
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Math",
+                  "span": {
+                    "start": 1025,
+                    "end": 1029
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "active@357",
+                  "span": {
+                    "start": 1034,
+                    "end": 1046
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 1101,
+                    "end": 1121
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "matches@445",
+                  "span": {
+                    "start": 1146,
+                    "end": 1159
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "active@357",
+                  "span": {
+                    "start": 1160,
+                    "end": 1172
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "open@330",
+                  "span": {
+                    "start": 1187,
+                    "end": 1197
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "undefined",
+                  "span": {
+                    "start": 1210,
+                    "end": 1219
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "choose@574",
+                  "span": {
+                    "start": 1221,
+                    "end": 1227
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 1287,
+                    "end": 1307
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "open@330",
+                  "operator": "=",
+                  "span": {
+                    "start": 1319,
+                    "end": 1337
+                  },
+                  "target": {
+                    "start": 1319,
+                    "end": 1329
+                  },
+                  "value": {
+                    "start": 1332,
+                    "end": 1337
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "active@357",
+                  "operator": "=",
+                  "span": {
+                    "start": 1347,
+                    "end": 1364
+                  },
+                  "target": {
+                    "start": 1347,
+                    "end": 1359
+                  },
+                  "value": {
+                    "start": 1362,
+                    "end": 1364
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 723,
+              "end": 1390
+            }
+          },
+          "span": {
+            "start": 701,
+            "end": 1390
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "onNoteKeydown@1403",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "event",
+                "type": {
+                  "code": "KeyboardEvent",
+                  "span": {
+                    "start": 1424,
+                    "end": 1437
+                  }
+                },
+                "event": "KeyboardEvent",
+                "span": {
+                  "start": 1417,
+                  "end": 1437
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (event.key === \"Enter\" && !event.shiftKey) {\n      event.preventDefault();\n      const field = event.target as HTMLTextAreaElement;\n      notes.value = [...notes.value, field.value];\n      emit(\"noted\", field.value);\n      field.value = \"\";\n    }\n  }",
+              "span": {
+                "start": 1439,
+                "end": 1698
+              },
+              "refs": [
+                {
+                  "kind": "Event",
+                  "member": "key",
+                  "span": {
+                    "start": 1449,
+                    "end": 1458
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "shiftKey",
+                  "span": {
+                    "start": 1475,
+                    "end": 1489
+                  }
+                },
+                {
+                  "kind": "Event",
+                  "member": "preventDefault",
+                  "span": {
+                    "start": 1499,
+                    "end": 1519
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Event",
+                  "member": "target",
+                  "span": {
+                    "start": 1543,
+                    "end": 1555
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "notes@409",
+                  "operator": "=",
+                  "span": {
+                    "start": 1586,
+                    "end": 1629
+                  },
+                  "target": {
+                    "start": 1586,
+                    "end": 1597
+                  },
+                  "value": {
+                    "start": 1600,
+                    "end": 1629
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "notes@409",
+                  "span": {
+                    "start": 1604,
+                    "end": 1615
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@198",
+                  "event": "noted",
+                  "span": {
+                    "start": 1637,
+                    "end": 1663
+                  },
+                  "arguments": [
+                    {
+                      "start": 1651,
+                      "end": 1662
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 1416,
+              "end": 1698
+            }
+          },
+          "span": {
+            "start": 1394,
+            "end": 1698
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "city-picker",
+            "span": {
+              "start": 1724,
+              "end": 1743
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Trip",
+            "span": {
+              "start": 1744,
+              "end": 1761
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "form",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "search",
+                "span": {
+                  "start": 1775,
+                  "end": 1788
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Destination",
+                "span": {
+                  "start": 1789,
+                  "end": 1813
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "submit",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [
+                      {
+                        "name": "event",
+                        "event": "SubmitEvent",
+                        "span": {
+                          "start": 1825,
+                          "end": 1830
+                        }
+                      }
+                    ],
+                    "body": {
+                      "code": "event.preventDefault()",
+                      "span": {
+                        "start": 1835,
+                        "end": 1857
+                      },
+                      "refs": [
+                        {
+                          "kind": "Event",
+                          "member": "preventDefault",
+                          "span": {
+                            "start": 1835,
+                            "end": 1855
+                          },
+                          "call": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "eventControls": [
+                      {
+                        "method": "preventDefault",
+                        "span": {
+                          "start": 1835,
+                          "end": 1857
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 1824,
+                      "end": 1857
+                    }
+                  },
+                  "span": {
+                    "start": 1824,
+                    "end": 1857
+                  }
+                },
+                "span": {
+                  "start": 1814,
+                  "end": 1858
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "label",
+                "attributes": [],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "City",
+                    "span": {
+                      "start": 1875,
+                      "end": 1901
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "input",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "type",
+                        "value": "search",
+                        "span": {
+                          "start": 1920,
+                          "end": 1933
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "name",
+                        "value": "city",
+                        "span": {
+                          "start": 1946,
+                          "end": 1957
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "role",
+                        "value": "combobox",
+                        "span": {
+                          "start": 1970,
+                          "end": 1985
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "name": "aria-autocomplete",
+                        "value": "list",
+                        "span": {
+                          "start": 1998,
+                          "end": 2022
+                        }
+                      },
+                      {
+                        "kind": "Bound",
+                        "name": "aria-controls",
+                        "value": {
+                          "code": "open.value ? listId : undefined",
+                          "span": {
+                            "start": 2050,
+                            "end": 2081
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "open@330",
+                              "span": {
+                                "start": 2050,
+                                "end": 2060
+                              }
+                            },
+                            {
+                              "kind": "Binding",
+                              "binding": "listId@279",
+                              "span": {
+                                "start": 2063,
+                                "end": 2069
+                              }
+                            },
+                            {
+                              "kind": "Global",
+                              "name": "undefined",
+                              "span": {
+                                "start": 2072,
+                                "end": 2081
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 2035,
+                          "end": 2082
+                        }
+                      },
+                      {
+                        "kind": "Bound",
+                        "name": "aria-expanded",
+                        "value": {
+                          "code": "open.value",
+                          "span": {
+                            "start": 2110,
+                            "end": 2120
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "open@330",
+                              "span": {
+                                "start": 2110,
+                                "end": 2120
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 2095,
+                          "end": 2121
+                        }
+                      },
+                      {
+                        "kind": "Bound",
+                        "name": "aria-activedescendant",
+                        "value": {
+                          "code": "open.value && active.value >= 0 ? `${listId}-${active.value}` : undefined",
+                          "span": {
+                            "start": 2172,
+                            "end": 2245
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "open@330",
+                              "span": {
+                                "start": 2172,
+                                "end": 2182
+                              }
+                            },
+                            {
+                              "kind": "Binding",
+                              "binding": "active@357",
+                              "span": {
+                                "start": 2186,
+                                "end": 2198
+                              }
+                            },
+                            {
+                              "kind": "Binding",
+                              "binding": "listId@279",
+                              "span": {
+                                "start": 2209,
+                                "end": 2215
+                              }
+                            },
+                            {
+                              "kind": "Binding",
+                              "binding": "active@357",
+                              "span": {
+                                "start": 2219,
+                                "end": 2231
+                              }
+                            },
+                            {
+                              "kind": "Global",
+                              "name": "undefined",
+                              "span": {
+                                "start": 2236,
+                                "end": 2245
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 2134,
+                          "end": 2259
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "input",
+                        "handler": {
+                          "kind": "Inline",
+                          "function": {
+                            "parameters": [
+                              {
+                                "name": "event",
+                                "event": "InputEvent",
+                                "span": {
+                                  "start": 2282,
+                                  "end": 2287
+                                }
+                              }
+                            ],
+                            "body": {
+                              "code": "{\n              query.value = (event.currentTarget as HTMLInputElement).value;\n              open.value = true;\n              active.value = -1;\n            }",
+                              "span": {
+                                "start": 2292,
+                                "end": 2450
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Write",
+                                  "binding": "query@305",
+                                  "operator": "=",
+                                  "span": {
+                                    "start": 2308,
+                                    "end": 2369
+                                  },
+                                  "target": {
+                                    "start": 2308,
+                                    "end": 2319
+                                  },
+                                  "value": {
+                                    "start": 2322,
+                                    "end": 2369
+                                  }
+                                },
+                                {
+                                  "kind": "Event",
+                                  "member": "currentTarget",
+                                  "span": {
+                                    "start": 2323,
+                                    "end": 2342
+                                  }
+                                },
+                                {
+                                  "kind": "Write",
+                                  "binding": "open@330",
+                                  "operator": "=",
+                                  "span": {
+                                    "start": 2385,
+                                    "end": 2402
+                                  },
+                                  "target": {
+                                    "start": 2385,
+                                    "end": 2395
+                                  },
+                                  "value": {
+                                    "start": 2398,
+                                    "end": 2402
+                                  }
+                                },
+                                {
+                                  "kind": "Write",
+                                  "binding": "active@357",
+                                  "operator": "=",
+                                  "span": {
+                                    "start": 2418,
+                                    "end": 2435
+                                  },
+                                  "target": {
+                                    "start": 2418,
+                                    "end": 2430
+                                  },
+                                  "value": {
+                                    "start": 2433,
+                                    "end": 2435
+                                  }
+                                }
+                              ]
+                            },
+                            "span": {
+                              "start": 2281,
+                              "end": 2450
+                            }
+                          },
+                          "span": {
+                            "start": 2281,
+                            "end": 2450
+                          }
+                        },
+                        "span": {
+                          "start": 2272,
+                          "end": 2451
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "keydown",
+                        "handler": {
+                          "kind": "Function",
+                          "binding": "onCityKeydown@710",
+                          "span": {
+                            "start": 2475,
+                            "end": 2488
+                          }
+                        },
+                        "span": {
+                          "start": 2464,
+                          "end": 2489
+                        }
+                      },
+                      {
+                        "kind": "Event",
+                        "event": "blur",
+                        "handler": {
+                          "kind": "Inline",
+                          "function": {
+                            "parameters": [],
+                            "body": {
+                              "code": "(open.value = false)",
+                              "span": {
+                                "start": 2516,
+                                "end": 2536
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Write",
+                                  "binding": "open@330",
+                                  "operator": "=",
+                                  "span": {
+                                    "start": 2516,
+                                    "end": 2536
+                                  },
+                                  "target": {
+                                    "start": 2517,
+                                    "end": 2527
+                                  },
+                                  "value": {
+                                    "start": 2530,
+                                    "end": 2535
+                                  },
+                                  "arrowBody": true
+                                }
+                              ]
+                            },
+                            "expression": true,
+                            "span": {
+                              "start": 2510,
+                              "end": 2536
+                            }
+                          },
+                          "span": {
+                            "start": 2510,
+                            "end": 2536
+                          }
+                        },
+                        "span": {
+                          "start": 2502,
+                          "end": 2537
+                        }
+                      }
+                    ],
+                    "children": [],
+                    "span": {
+                      "start": 1901,
+                      "end": 2550
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 1868,
+                  "end": 2567
+                }
+              },
+              {
+                "kind": "If",
+                "branches": [
+                  {
+                    "condition": {
+                      "code": "open.value",
+                      "span": {
+                        "start": 2577,
+                        "end": 2587
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "open@330",
+                          "span": {
+                            "start": 2577,
+                            "end": 2587
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "kind": "Element",
+                        "tag": "div",
+                        "attributes": [
+                          {
+                            "kind": "Bound",
+                            "name": "id",
+                            "value": {
+                              "code": "listId",
+                              "span": {
+                                "start": 2611,
+                                "end": 2617
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Binding",
+                                  "binding": "listId@279",
+                                  "span": {
+                                    "start": 2611,
+                                    "end": 2617
+                                  }
+                                }
+                              ]
+                            },
+                            "span": {
+                              "start": 2607,
+                              "end": 2618
+                            }
+                          },
+                          {
+                            "kind": "Static",
+                            "name": "role",
+                            "value": "listbox",
+                            "span": {
+                              "start": 2619,
+                              "end": 2633
+                            }
+                          },
+                          {
+                            "kind": "Static",
+                            "name": "aria-label",
+                            "value": "Cities",
+                            "span": {
+                              "start": 2634,
+                              "end": 2653
+                            }
+                          }
+                        ],
+                        "children": [
+                          {
+                            "kind": "For",
+                            "source": {
+                              "code": "matches.value",
+                              "span": {
+                                "start": 2668,
+                                "end": 2681
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Binding",
+                                  "binding": "matches@445",
+                                  "span": {
+                                    "start": 2668,
+                                    "end": 2681
+                                  }
+                                }
+                              ]
+                            },
+                            "item": "city@2687",
+                            "index": "index@2693",
+                            "key": {
+                              "code": "city",
+                              "span": {
+                                "start": 2748,
+                                "end": 2752
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Binding",
+                                  "binding": "city@2687",
+                                  "span": {
+                                    "start": 2748,
+                                    "end": 2752
+                                  }
+                                }
+                              ]
+                            },
+                            "body": {
+                              "kind": "Element",
+                              "tag": "button",
+                              "attributes": [
+                                {
+                                  "kind": "Static",
+                                  "name": "type",
+                                  "value": "button",
+                                  "span": {
+                                    "start": 2770,
+                                    "end": 2783
+                                  }
+                                },
+                                {
+                                  "kind": "Bound",
+                                  "name": "id",
+                                  "value": {
+                                    "code": "`${listId}-${index}`",
+                                    "span": {
+                                      "start": 2804,
+                                      "end": 2824
+                                    },
+                                    "refs": [
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "listId@279",
+                                        "span": {
+                                          "start": 2807,
+                                          "end": 2813
+                                        }
+                                      },
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "index@2693",
+                                        "span": {
+                                          "start": 2817,
+                                          "end": 2822
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "span": {
+                                    "start": 2800,
+                                    "end": 2825
+                                  }
+                                },
+                                {
+                                  "kind": "Static",
+                                  "name": "role",
+                                  "value": "option",
+                                  "span": {
+                                    "start": 2842,
+                                    "end": 2855
+                                  }
+                                },
+                                {
+                                  "kind": "Static",
+                                  "name": "tabindex",
+                                  "value": "-1",
+                                  "span": {
+                                    "start": 2872,
+                                    "end": 2885
+                                  }
+                                },
+                                {
+                                  "kind": "Bound",
+                                  "name": "aria-selected",
+                                  "value": {
+                                    "code": "index === active.value",
+                                    "span": {
+                                      "start": 2917,
+                                      "end": 2939
+                                    },
+                                    "refs": [
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "index@2693",
+                                        "span": {
+                                          "start": 2917,
+                                          "end": 2922
+                                        }
+                                      },
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "active@357",
+                                        "span": {
+                                          "start": 2927,
+                                          "end": 2939
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "span": {
+                                    "start": 2902,
+                                    "end": 2940
+                                  }
+                                },
+                                {
+                                  "kind": "Event",
+                                  "event": "mousedown",
+                                  "handler": {
+                                    "kind": "Inline",
+                                    "function": {
+                                      "parameters": [
+                                        {
+                                          "name": "event",
+                                          "event": "MouseEvent",
+                                          "span": {
+                                            "start": 2971,
+                                            "end": 2976
+                                          }
+                                        }
+                                      ],
+                                      "body": {
+                                        "code": "event.preventDefault()",
+                                        "span": {
+                                          "start": 2981,
+                                          "end": 3003
+                                        },
+                                        "refs": [
+                                          {
+                                            "kind": "Event",
+                                            "member": "preventDefault",
+                                            "span": {
+                                              "start": 2981,
+                                              "end": 3001
+                                            },
+                                            "call": true
+                                          }
+                                        ]
+                                      },
+                                      "expression": true,
+                                      "eventControls": [
+                                        {
+                                          "method": "preventDefault",
+                                          "span": {
+                                            "start": 2981,
+                                            "end": 3003
+                                          }
+                                        }
+                                      ],
+                                      "span": {
+                                        "start": 2970,
+                                        "end": 3003
+                                      }
+                                    },
+                                    "span": {
+                                      "start": 2970,
+                                      "end": 3003
+                                    }
+                                  },
+                                  "span": {
+                                    "start": 2957,
+                                    "end": 3004
+                                  }
+                                },
+                                {
+                                  "kind": "Event",
+                                  "event": "click",
+                                  "handler": {
+                                    "kind": "Inline",
+                                    "function": {
+                                      "parameters": [],
+                                      "body": {
+                                        "code": "choose(city)",
+                                        "span": {
+                                          "start": 3036,
+                                          "end": 3048
+                                        },
+                                        "refs": [
+                                          {
+                                            "kind": "Binding",
+                                            "binding": "choose@574",
+                                            "span": {
+                                              "start": 3036,
+                                              "end": 3042
+                                            },
+                                            "call": true
+                                          },
+                                          {
+                                            "kind": "Binding",
+                                            "binding": "city@2687",
+                                            "span": {
+                                              "start": 3043,
+                                              "end": 3047
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      "expression": true,
+                                      "span": {
+                                        "start": 3030,
+                                        "end": 3048
+                                      }
+                                    },
+                                    "span": {
+                                      "start": 3030,
+                                      "end": 3048
+                                    }
+                                  },
+                                  "span": {
+                                    "start": 3021,
+                                    "end": 3049
+                                  }
+                                }
+                              ],
+                              "children": [
+                                {
+                                  "kind": "Interpolation",
+                                  "value": {
+                                    "code": "city",
+                                    "span": {
+                                      "start": 3083,
+                                      "end": 3087
+                                    },
+                                    "refs": [
+                                      {
+                                        "kind": "Binding",
+                                        "binding": "city@2687",
+                                        "span": {
+                                          "start": 3083,
+                                          "end": 3087
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "span": {
+                                    "start": 3082,
+                                    "end": 3088
+                                  }
+                                }
+                              ],
+                              "span": {
+                                "start": 2719,
+                                "end": 3112
+                              }
+                            },
+                            "span": {
+                              "start": 2668,
+                              "end": 3127
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 2602,
+                          "end": 3145
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 2577,
+                      "end": 3145
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 2577,
+                  "end": 3162
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "submit",
+                    "span": {
+                      "start": 3180,
+                      "end": 3193
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Search",
+                    "span": {
+                      "start": 3194,
+                      "end": 3200
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 3172,
+                  "end": 3209
+                }
+              }
+            ],
+            "span": {
+              "start": 1769,
+              "end": 3223
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 3233,
+                  "end": 3246
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "chosen.value === \"\" ? \"No city chosen\" : `Chosen: ${chosen.value}`",
+                  "span": {
+                    "start": 3248,
+                    "end": 3314
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "chosen@383",
+                      "span": {
+                        "start": 3248,
+                        "end": 3260
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "chosen@383",
+                      "span": {
+                        "start": 3300,
+                        "end": 3312
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 3247,
+                  "end": 3315
+                }
+              }
+            ],
+            "span": {
+              "start": 3230,
+              "end": 3319
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Note",
+                "span": {
+                  "start": 3333,
+                  "end": 3355
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "textarea",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "note",
+                    "span": {
+                      "start": 3365,
+                      "end": 3376
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "keydown",
+                    "handler": {
+                      "kind": "Function",
+                      "binding": "onNoteKeydown@1403",
+                      "span": {
+                        "start": 3388,
+                        "end": 3401
+                      }
+                    },
+                    "span": {
+                      "start": 3377,
+                      "end": 3402
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 3355,
+                  "end": 3405
+                }
+              }
+            ],
+            "span": {
+              "start": 3326,
+              "end": 3420
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "ul",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Notes",
+                "span": {
+                  "start": 3431,
+                  "end": 3449
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "For",
+                "source": {
+                  "code": "notes.value",
+                  "span": {
+                    "start": 3460,
+                    "end": 3471
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "notes@409",
+                      "span": {
+                        "start": 3460,
+                        "end": 3471
+                      }
+                    }
+                  ]
+                },
+                "item": "note@3477",
+                "index": "index@3483",
+                "key": {
+                  "code": "index",
+                  "span": {
+                    "start": 3514,
+                    "end": 3519
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "index@3483",
+                      "span": {
+                        "start": 3514,
+                        "end": 3519
+                      }
+                    }
+                  ]
+                },
+                "body": {
+                  "kind": "Element",
+                  "tag": "li",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "Interpolation",
+                      "value": {
+                        "code": "note",
+                        "span": {
+                          "start": 3522,
+                          "end": 3526
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "note@3477",
+                            "span": {
+                              "start": 3522,
+                              "end": 3526
+                            }
+                          }
+                        ]
+                      },
+                      "span": {
+                        "start": 3521,
+                        "end": 3527
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 3505,
+                    "end": 3532
+                  }
+                },
+                "span": {
+                  "start": 3460,
+                  "end": 3543
+                }
+              }
+            ],
+            "span": {
+              "start": 3427,
+              "end": 3556
+            }
+          }
+        ],
+        "span": {
+          "start": 1715,
+          "end": 3571
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "CityPicker",
+      "span": {
+        "start": 124,
+        "end": 3578
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "CityPickerProps",
+      "exported": true,
+      "code": "interface CityPickerProps {\n  cities: string[];\n}",
+      "span": {
+        "start": 73,
+        "end": 122
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+- region "Contacts":
+  - list:
+    - listitem:
+      - button "Ada Lovelace"
+      - button "Remove Ada Lovelace": Remove
+    - listitem:
+      - button "Grace Hopper"
+      - button "Remove Grace Hopper": Remove
+    - listitem:
+      - button "Alan Turing"
+      - button "Remove Alan Turing": Remove
+  - status: "Chosen: nobody"

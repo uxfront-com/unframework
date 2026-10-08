@@ -1,0 +1,6 @@
+{
+  "description": "A computed read right after a write of its dependency is consistent, through a chain and between two writes in one handler.",
+  "ssr": {
+    "initial": { "props": { "pricePerSeat": 40 } }
+  }
+}

@@ -1,5 +1,5 @@
 // How the markup dialects write expression code: the token scan, the escapes each template
-// scanner needs, and the literal re-printing Angular's lexer needs (design §4.3). Whether each
+// scanner needs, and the literal re-printing Angular's lexer needs (ADR-0035). Whether each
 // framework reads the result back as written is decided by the markup targets' markup-semantics
 // tests, which render the same spellings (codegen/test/markup-cases.ts).
 import { describe, expect, it } from "vitest";
@@ -37,6 +37,26 @@ describe("codeTokens", () => {
       { kind: "template", cooked: "B" },
       { kind: "template", cooked: "" },
     ]);
+  });
+
+  it("reads statements as well as expressions", () => {
+    const code = 'if (a) b("c"); // d\nreturn { e: 1 };';
+    expect(
+      codeTokens(code, "statements").map((token) => [
+        token.kind,
+        code.slice(token.start, token.end),
+      ]),
+    ).toEqual([
+      ["string", '"c"'],
+      ["comment", "// d"],
+      ["number", "1"],
+    ]);
+    // `{ a: "b" }` is a block holding a label as statements, and an object as an expression.
+    expect(codeTokens('{ a: "b" }', "statements")).toMatchObject([{ kind: "string" }]);
+    expect(() => codeTokens("a; b")).toThrow("Cannot parse");
+    expect(mapCode('a(); b("c")', { string: (raw) => raw.toUpperCase() }, "statements")).toBe(
+      'a(); b("C")',
+    );
   });
 
   it("maps tokens and the code between them", () => {
@@ -93,6 +113,13 @@ describe("Vue expression code", () => {
     );
     expect(vueAttributeCode("a ? `x${b}` : '&lt'")).toBe("a ? `x${b}` : '&amp;lt'");
   });
+
+  it("writes a listener's statements as an attribute's code", () => {
+    expect(vueAttributeCode('count++; emit("change", "a&b")', "statements")).toBe(
+      "count++; emit('change', 'a&amp;b')",
+    );
+    expect(vueAttributeCode('() => { emit("x"); }')).toBe("() => { emit('x'); }");
+  });
 });
 
 describe("Angular expression code", () => {
@@ -107,6 +134,13 @@ describe("Angular expression code", () => {
 
   it("writes strings in single quotes in an attribute, and escapes what HTML decodes there", () => {
     expect(angularCode('a + "b" + `"`', "attribute")).toBe(`a + 'b' + '&quot;'`);
+  });
+
+  it("writes a listener's template statement as an attribute's, its statements apart", () => {
+    expect(angularCode('save($event); note(`${n} "x" & y`)', "event")).toBe(
+      "save($event); note(n + ' &quot;x&quot; \\u0026 y')",
+    );
+    expect(withoutTemplateLiterals("a(`${b}c`); d()", "statements")).toBe('a(b + "c"); d()');
   });
 
   it("keeps `}}` and tags out of an interpolation, and leaves block parameters undecoded", () => {

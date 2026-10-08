@@ -1,0 +1,9 @@
+error[UF2011]: A setup function whose expression body writes `on.value` returns the written value, which the targets that write state through a setter do not have.
+ --> diagnostics/invalid-write/NotificationToggle.uf.tsx:8:23
+  |
+8 |   const flip = () => (on.value = !on.value);
+  |                       ^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: Give the function a block body, so that the write is a statement of its own.
+  = fix (safe): Give the function a block body
+  = see: https://unframework.dev/diagnostics/UF2011

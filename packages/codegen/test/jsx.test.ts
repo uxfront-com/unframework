@@ -7,12 +7,18 @@ import {
   createComponent,
   createDynamicClass,
   createElement,
+  createEventAttribute,
   createFor,
+  createFunctionCode,
+  createFunctionHandler,
+  createInlineHandler,
   createFragment,
   createIf,
   createInterpolation,
+  createParameter,
   createProp,
   createPropsParameter,
+  createRefAttribute,
   createSpreadAttribute,
   createSpreadKey,
   createStaticAttribute,
@@ -34,14 +40,16 @@ import {
   js,
   jsxChildren,
   jsxContext,
+  jsxHandler,
   jsxNode,
   printExpression,
   styleKey,
   styleObject,
+  writtenValue,
 } from "../src/index.ts";
-import type { JsxContextOptions, JsxDialect, RewriteRules } from "../src/index.ts";
-import { expressionAt } from "./expressions.ts";
-import type { ReferenceTarget } from "./expressions.ts";
+import type { JsxContextOptions, JsxDialect, RewriteRules, RewriteSite } from "../src/index.ts";
+import { codeAt, expressionAt } from "./expressions.ts";
+import type { CodeTarget, ReferenceTarget } from "./expressions.ts";
 
 const at = span(0, 0);
 let offset = 1000;
@@ -58,7 +66,10 @@ const attrs = createBinding("attrs", "prop", span(23, 28));
 const items = createBinding("items", "prop", span(30, 35));
 const item = createBinding("item", "loopVar", span(60, 64));
 const index = createBinding("index", "loopVar", span(66, 71));
-const bindings: Binding[] = [label, tone, attrs, items, item, index];
+const count = createBinding("count", "state", span(80, 85));
+const save = createBinding("save", "localFn", span(90, 94));
+const input = createBinding("input", "templateRef", span(100, 105));
+const bindings: Binding[] = [label, tone, attrs, items, item, index, count, save, input];
 const type = createTypeText("string", at);
 
 /** A component over `render`, whose props are the four props above (`attrs` optional). */
@@ -543,6 +554,203 @@ describe("dialect hooks", () => {
     ]);
     expect(print(el("p", [], render, show("tone", ["tone", tone])), { dialect })).toBe(
       "<p><input bool:disabled={String(label)} />{String(tone)}</p>",
+    );
+  });
+});
+
+describe("listeners and template refs", () => {
+  /** Setup code at a fresh offset. */
+  const code = (text: string, ...targets: CodeTarget[]) => {
+    const found = codeAt(offset, text, ...targets);
+    offset += text.length + 10;
+    return found;
+  };
+  /** An inline handler, `() => body`, with the event as its parameter when `event` is set. */
+  const inline = (body: string, targets: CodeTarget[], event?: string) =>
+    createInlineHandler(
+      createFunctionCode(
+        event ? [createParameter("event", at, { event })] : [],
+        code(body, ...targets),
+        at,
+        { expression: true },
+      ),
+      at,
+    );
+  const increment = () =>
+    inline("count.value++", [
+      {
+        write: "count.value++",
+        binding: count,
+        operator: "++",
+        target: "count.value",
+        arrowBody: true,
+      },
+    ]);
+  /** Solid's spelling: a signal's value is its call, a write its setter's. */
+  const solid: RewriteRules = {
+    binding: (_, binding, written) => (binding.kind === "state" ? `${binding.name}()` : written),
+    write: (write, binding, parts) =>
+      `set${binding.name[0]!.toUpperCase()}${binding.name.slice(1)}(${writtenValue(write, parts)})`,
+  };
+
+  it("prints a listener and a template ref React's way by default", () => {
+    const button = el(
+      "button",
+      [
+        createEventAttribute("click", createFunctionHandler(save.id, at), at),
+        createEventAttribute(
+          "keydown",
+          inline("save()", [{ call: "save", binding: save }], "KeyboardEvent"),
+          at,
+          { capture: true },
+        ),
+        createRefAttribute(input.id, at),
+      ],
+      text("Save"),
+    );
+    expect(print(button)).toBe(
+      "<button onClick={save} onKeydownCapture={(event: KeyboardEvent) => save()} ref={input}>Save</button>".replace(
+        "(event: KeyboardEvent)",
+        "(event)",
+      ),
+    );
+  });
+
+  it("prints a handler's code with the rules, for the client site", () => {
+    const sites: RewriteSite[] = [];
+    const rules: RewriteRules = {
+      ...solid,
+      binding: (reference, binding, written, site) => {
+        sites.push(site);
+        return solid.binding(reference, binding, written, site);
+      },
+    };
+    expect(print(el("button", [createEventAttribute("click", increment(), at)]), { rules })).toBe(
+      "<button onClick={() => setCount(count() + 1)} />",
+    );
+    expect(sites).toEqual(["client"]);
+  });
+
+  it("throws for an option JSX cannot spell, which the dialect prints", () => {
+    for (const option of [{ once: true }, { passive: true }]) {
+      const listener = createEventAttribute(
+        "wheel",
+        createFunctionHandler(save.id, at),
+        at,
+        option,
+      );
+      expect(() => print(el("div", [listener]))).toThrow("the target's dialect prints it");
+    }
+  });
+
+  it("lets a dialect write listeners and template refs", () => {
+    const dialect: JsxDialect = {
+      eventAttribute: (attribute, _, context) => [
+        js.jsxAttribute(
+          `on:${attribute.event}`,
+          js.jsxExpressionContainer(
+            js.objectExpression([
+              ["handleEvent", jsxHandler(attribute.handler, context)],
+              ["once", js.booleanLiteral(attribute.once === true)],
+            ]),
+          ),
+        ),
+      ],
+      refAttribute: () => [
+        js.jsxAttribute("ref", js.jsxExpressionContainer(js.identifier("setInput"))),
+      ],
+    };
+    const div = el("div", [
+      createEventAttribute("click", increment(), at, { once: true }),
+      createRefAttribute(input.id, at),
+    ]);
+    expect(print(div, { dialect, rules: solid })).toBe(
+      "<div on:click={{\n  handleEvent: () => setCount(count() + 1),\n  once: true\n}} ref={setInput} />",
+    );
+  });
+
+  it("keeps a list's index that only a handler reads, where handlers are printed", () => {
+    const list = createFor(
+      expr("items", ["items", items]),
+      item.id,
+      expr("item", ["item", item]),
+      el(
+        "li",
+        [],
+        el("button", [
+          createEventAttribute(
+            "click",
+            inline("save(index)", [{ call: "save", binding: save }, ["index", index]]),
+            at,
+          ),
+        ]),
+      ),
+      at,
+      index.id,
+    );
+    const root = el("ul", [], list);
+    expect(print(root)).toBe(
+      "<ul>{items.map((item, index) => <li key={item}><button onClick={() => save(index)} /></li>)}</ul>",
+    );
+    expect(print(root, { includeClient: false })).toContain("items.map((item) =>");
+  });
+
+  it("spells a list's key for the key site", () => {
+    const sites: string[] = [];
+    const rules: RewriteRules = {
+      binding: (_, __, written, site) => {
+        sites.push(`${written}:${site}`);
+        return written;
+      },
+    };
+    const list = createFor(
+      expr("items", ["items", items]),
+      item.id,
+      expr("item.id", ["item", item]),
+      el("li", [], show("item.name", ["item", item])),
+      at,
+    );
+    print(el("ul", [], list), { rules });
+    expect(sites.toSorted()).toEqual(["item:key", "item:render", "items:render"]);
+  });
+
+  it("prints listeners and refs as TSX that parses and formats", async () => {
+    const form = el(
+      "form",
+      [
+        createEventAttribute(
+          "submit",
+          createInlineHandler(
+            createFunctionCode(
+              [createParameter("event", at, { event: "SubmitEvent" })],
+              code(
+                "{\n  event.preventDefault();\n  save();\n}",
+                { member: "preventDefault", text: "event.preventDefault", call: true },
+                { call: "save", binding: save },
+              ),
+              at,
+              { async: true },
+            ),
+            at,
+          ),
+          at,
+        ),
+      ],
+      el("input", [createRefAttribute(input.id, at)]),
+    );
+    const printed = print(form);
+    expect(parses(printed)).toEqual([]);
+    expect(await formatted(form)).toBe(
+      [
+        "<form",
+        "  onSubmit={async (event) => {",
+        "    event.preventDefault();",
+        "    save();",
+        "  }}",
+        ">",
+        "  <input ref={input} />",
+        "</form>",
+      ].join("\n"),
     );
   });
 });

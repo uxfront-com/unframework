@@ -1,0 +1,553 @@
+{
+  "irVersion": 1,
+  "file": "effects/async-loop/ImportQueue.uf.tsx",
+  "components": [
+    {
+      "name": "ImportQueue",
+      "span": {
+        "start": 124,
+        "end": 927
+      },
+      "props": [
+        {
+          "name": "files",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 111,
+              "end": 119
+            }
+          },
+          "binding": "files@162",
+          "span": {
+            "start": 104,
+            "end": 120
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "ImportQueueProps",
+          "span": {
+            "start": 171,
+            "end": 187
+          }
+        },
+        "span": {
+          "start": 160,
+          "end": 187
+        }
+      },
+      "types": [
+        "ImportQueueProps"
+      ],
+      "emits": {
+        "binding": "emit@199",
+        "type": {
+          "code": "{ progress: [status: string, attempts: number] }",
+          "span": {
+            "start": 218,
+            "end": 266
+          }
+        },
+        "events": [
+          {
+            "name": "progress",
+            "parameters": [
+              {
+                "name": "status",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 239,
+                    "end": 245
+                  }
+                },
+                "span": {
+                  "start": 231,
+                  "end": 245
+                }
+              },
+              {
+                "name": "attempts",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 257,
+                    "end": 263
+                  }
+                },
+                "span": {
+                  "start": 247,
+                  "end": 263
+                }
+              }
+            ],
+            "span": {
+              "start": 220,
+              "end": 264
+            }
+          }
+        ],
+        "span": {
+          "start": 193,
+          "end": 270
+        }
+      },
+      "bindings": [
+        {
+          "id": "files@162",
+          "name": "files",
+          "kind": "prop",
+          "span": {
+            "start": 162,
+            "end": 167
+          }
+        },
+        {
+          "id": "emit@199",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 199,
+            "end": 203
+          }
+        },
+        {
+          "id": "status@280",
+          "name": "status",
+          "kind": "state",
+          "span": {
+            "start": 280,
+            "end": 286
+          }
+        },
+        {
+          "id": "attempts@310",
+          "name": "attempts",
+          "kind": "state",
+          "span": {
+            "start": 310,
+            "end": 318
+          }
+        },
+        {
+          "id": "importAll@464",
+          "name": "importAll",
+          "kind": "localFn",
+          "span": {
+            "start": 464,
+            "end": 473
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "status@280",
+          "initial": {
+            "code": "\"idle\"",
+            "span": {
+              "start": 293,
+              "end": 299
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 274,
+            "end": 301
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "attempts@310",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 325,
+              "end": 326
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 304,
+            "end": 328
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "status@280",
+              "span": {
+                "start": 339,
+                "end": 345
+              }
+            },
+            {
+              "kind": "Ref",
+              "binding": "attempts@310",
+              "span": {
+                "start": 347,
+                "end": 355
+              }
+            }
+          ],
+          "array": true,
+          "callback": {
+            "parameters": [
+              {
+                "pattern": {
+                  "code": "[nextStatus, nextAttempts]",
+                  "names": [
+                    "nextStatus",
+                    "nextAttempts"
+                  ],
+                  "span": {
+                    "start": 359,
+                    "end": 385
+                  }
+                },
+                "span": {
+                  "start": 359,
+                  "end": 385
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"progress\", nextStatus, nextAttempts);\n  }",
+              "span": {
+                "start": 390,
+                "end": 443
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@199",
+                  "event": "progress",
+                  "span": {
+                    "start": 396,
+                    "end": 438
+                  },
+                  "arguments": [
+                    {
+                      "start": 413,
+                      "end": 423
+                    },
+                    {
+                      "start": 425,
+                      "end": 437
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 358,
+              "end": 443
+            }
+          },
+          "span": {
+            "start": 332,
+            "end": 445
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "importAll@464",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    status.value = \"starting\";\n    for (const file of files) {\n      attempts.value += 1;\n      await nextTick();\n      status.value = `imported ${file}`;\n    }\n    status.value = \"done\";\n  }",
+              "span": {
+                "start": 476,
+                "end": 669
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "status@280",
+                  "operator": "=",
+                  "span": {
+                    "start": 482,
+                    "end": 507
+                  },
+                  "target": {
+                    "start": 482,
+                    "end": 494
+                  },
+                  "value": {
+                    "start": 497,
+                    "end": 507
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "files@162",
+                  "span": {
+                    "start": 532,
+                    "end": 537
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "attempts@310",
+                  "operator": "+=",
+                  "span": {
+                    "start": 547,
+                    "end": 566
+                  },
+                  "target": {
+                    "start": 547,
+                    "end": 561
+                  },
+                  "value": {
+                    "start": 565,
+                    "end": 566
+                  }
+                },
+                {
+                  "kind": "Api",
+                  "api": "nextTick",
+                  "span": {
+                    "start": 580,
+                    "end": 588
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "status@280",
+                  "operator": "=",
+                  "span": {
+                    "start": 598,
+                    "end": 631
+                  },
+                  "target": {
+                    "start": 598,
+                    "end": 610
+                  },
+                  "value": {
+                    "start": 613,
+                    "end": 631
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "status@280",
+                  "operator": "=",
+                  "span": {
+                    "start": 643,
+                    "end": 664
+                  },
+                  "target": {
+                    "start": 643,
+                    "end": 655
+                  },
+                  "value": {
+                    "start": 658,
+                    "end": 664
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 473,
+              "end": 669
+            }
+          },
+          "span": {
+            "start": 449,
+            "end": 669
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "import-queue",
+            "span": {
+              "start": 695,
+              "end": 715
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Import",
+            "span": {
+              "start": 716,
+              "end": 735
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 751,
+                  "end": 764
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "importAll@464",
+                  "span": {
+                    "start": 774,
+                    "end": 783
+                  }
+                },
+                "span": {
+                  "start": 765,
+                  "end": 784
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Import all",
+                "span": {
+                  "start": 785,
+                  "end": 811
+                }
+              }
+            ],
+            "span": {
+              "start": 743,
+              "end": 820
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "status",
+                "span": {
+                  "start": 830,
+                  "end": 843
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "status.value",
+                  "span": {
+                    "start": 854,
+                    "end": 866
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "status@280",
+                      "span": {
+                        "start": 854,
+                        "end": 866
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 853,
+                  "end": 867
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ", ",
+                "span": {
+                  "start": 867,
+                  "end": 869
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "attempts.value",
+                  "span": {
+                    "start": 870,
+                    "end": 884
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "attempts@310",
+                      "span": {
+                        "start": 870,
+                        "end": 884
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 869,
+                  "end": 885
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " attempts",
+                "span": {
+                  "start": 885,
+                  "end": 901
+                }
+              }
+            ],
+            "span": {
+              "start": 827,
+              "end": 905
+            }
+          }
+        ],
+        "span": {
+          "start": 686,
+          "end": 920
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ImportQueue",
+      "span": {
+        "start": 124,
+        "end": 927
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ImportQueueProps",
+      "exported": true,
+      "code": "interface ImportQueueProps {\n  files: string[];\n}",
+      "span": {
+        "start": 73,
+        "end": 122
+      }
+    }
+  ]
+}

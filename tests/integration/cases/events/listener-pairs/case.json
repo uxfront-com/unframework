@@ -1,0 +1,6 @@
+{
+  "description": "Listeners that client code adds and removes: one local function added by one handler and removed by another, an Escape listener that removes itself through the helper it calls, a native click listener on a template ref kept in a setup let typed T | null for the teardown, and onUnmounted(() => stop()) removing them all; events named like the function and the state that emit them.",
+  "ssr": {
+    "initial": {}
+  }
+}

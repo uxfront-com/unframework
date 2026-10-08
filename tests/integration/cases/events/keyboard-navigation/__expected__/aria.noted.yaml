@@ -1,0 +1,10 @@
+- region "Trip":
+  - search "Destination":
+    - text: City
+    - combobox "City"
+    - button "Search"
+  - status: No city chosen
+  - text: Note
+  - textbox "Note"
+  - list "Notes":
+    - listitem: Pack light

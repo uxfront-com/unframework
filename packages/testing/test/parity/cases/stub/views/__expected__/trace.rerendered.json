@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "rerender {\"name\":\"Bo\"}",
+      "dom": [
+        "<p class=\"info\">",
+        "  \"Hello, Bo!\"",
+        "</p>"
+      ],
+      "aria": [
+        "- paragraph: Hello, Bo!"
+      ],
+      "events": {}
+    },
+    {
+      "action": "rerender {}",
+      "dom": [
+        "<p class=\"info\">",
+        "  \"Hello, world!\"",
+        "</p>"
+      ],
+      "aria": [
+        "- paragraph: Hello, world!"
+      ],
+      "events": {}
+    }
+  ]
+}

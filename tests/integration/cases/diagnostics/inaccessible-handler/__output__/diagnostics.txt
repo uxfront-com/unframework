@@ -1,0 +1,17 @@
+error[UF3030]: <div> has a click handler and no `keydown`, `keyup` or `keypress` handler: a keyboard user cannot activate it (Svelte's `a11y_click_events_have_key_events`).
+ --> diagnostics/inaccessible-handler/ShippingCard.uf.tsx:9:6
+  |
+9 |     <div class="shipping-card" onClick={() => (expanded.value = !expanded.value)}>
+  |      ^^^
+  |
+  = help: Put the handler on a `<button>` or a form control, which every user can reach and activate; or give the element a role and the key handling and focus that role takes.
+  = see: https://unframework.dev/diagnostics/UF3030
+
+error[UF3030]: <div> has a handler for `click` and no role: neither a screen reader nor a keyboard user can tell it is interactive (Svelte's `a11y_no_static_element_interactions`).
+ --> diagnostics/inaccessible-handler/ShippingCard.uf.tsx:9:6
+  |
+9 |     <div class="shipping-card" onClick={() => (expanded.value = !expanded.value)}>
+  |      ^^^
+  |
+  = help: Put the handler on a `<button>` or a form control, which every user can reach and activate; or give the element a role and the key handling and focus that role takes.
+  = see: https://unframework.dev/diagnostics/UF3030

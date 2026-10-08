@@ -1,0 +1,4057 @@
+{
+  "irVersion": 1,
+  "file": "effects/async-watchers/SyncDesk.uf.tsx",
+  "components": [
+    {
+      "name": "SyncDesk",
+      "span": {
+        "start": 242,
+        "end": 7010
+      },
+      "props": [
+        {
+          "name": "files",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 229,
+              "end": 237
+            }
+          },
+          "binding": "files@277",
+          "span": {
+            "start": 222,
+            "end": 238
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "SyncDeskProps",
+          "span": {
+            "start": 286,
+            "end": 299
+          }
+        },
+        "span": {
+          "start": 275,
+          "end": 299
+        }
+      },
+      "types": [
+        "Waiting",
+        "SyncDeskProps"
+      ],
+      "emits": {
+        "binding": "emit@311",
+        "type": {
+          "code": "{\n    checked: [email: string];\n    summary: [text: string];\n    focused: [name: string];\n    progress: [step: string, owner: string];\n    saveState: [error: string, name: string];\n    savedName: [name: string];\n    importState: [status: string, count: number];\n    settled: [note: string];\n    sending: [busy: boolean, outcome: string];\n    sent: [count: number];\n    clamped: [level: number];\n  }",
+          "span": {
+            "start": 330,
+            "end": 728
+          }
+        },
+        "events": [
+          {
+            "name": "checked",
+            "parameters": [
+              {
+                "name": "email",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 353,
+                    "end": 359
+                  }
+                },
+                "span": {
+                  "start": 346,
+                  "end": 359
+                }
+              }
+            ],
+            "span": {
+              "start": 336,
+              "end": 360
+            }
+          },
+          {
+            "name": "summary",
+            "parameters": [
+              {
+                "name": "text",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 382,
+                    "end": 388
+                  }
+                },
+                "span": {
+                  "start": 376,
+                  "end": 388
+                }
+              }
+            ],
+            "span": {
+              "start": 366,
+              "end": 389
+            }
+          },
+          {
+            "name": "focused",
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 411,
+                    "end": 417
+                  }
+                },
+                "span": {
+                  "start": 405,
+                  "end": 417
+                }
+              }
+            ],
+            "span": {
+              "start": 395,
+              "end": 418
+            }
+          },
+          {
+            "name": "progress",
+            "parameters": [
+              {
+                "name": "step",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 441,
+                    "end": 447
+                  }
+                },
+                "span": {
+                  "start": 435,
+                  "end": 447
+                }
+              },
+              {
+                "name": "owner",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 456,
+                    "end": 462
+                  }
+                },
+                "span": {
+                  "start": 449,
+                  "end": 462
+                }
+              }
+            ],
+            "span": {
+              "start": 424,
+              "end": 463
+            }
+          },
+          {
+            "name": "saveState",
+            "parameters": [
+              {
+                "name": "error",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 488,
+                    "end": 494
+                  }
+                },
+                "span": {
+                  "start": 481,
+                  "end": 494
+                }
+              },
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 502,
+                    "end": 508
+                  }
+                },
+                "span": {
+                  "start": 496,
+                  "end": 508
+                }
+              }
+            ],
+            "span": {
+              "start": 469,
+              "end": 509
+            }
+          },
+          {
+            "name": "savedName",
+            "parameters": [
+              {
+                "name": "name",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 533,
+                    "end": 539
+                  }
+                },
+                "span": {
+                  "start": 527,
+                  "end": 539
+                }
+              }
+            ],
+            "span": {
+              "start": 515,
+              "end": 540
+            }
+          },
+          {
+            "name": "importState",
+            "parameters": [
+              {
+                "name": "status",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 568,
+                    "end": 574
+                  }
+                },
+                "span": {
+                  "start": 560,
+                  "end": 574
+                }
+              },
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 583,
+                    "end": 589
+                  }
+                },
+                "span": {
+                  "start": 576,
+                  "end": 589
+                }
+              }
+            ],
+            "span": {
+              "start": 546,
+              "end": 590
+            }
+          },
+          {
+            "name": "settled",
+            "parameters": [
+              {
+                "name": "note",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 612,
+                    "end": 618
+                  }
+                },
+                "span": {
+                  "start": 606,
+                  "end": 618
+                }
+              }
+            ],
+            "span": {
+              "start": 596,
+              "end": 619
+            }
+          },
+          {
+            "name": "sending",
+            "parameters": [
+              {
+                "name": "busy",
+                "type": {
+                  "code": "boolean",
+                  "span": {
+                    "start": 641,
+                    "end": 648
+                  }
+                },
+                "span": {
+                  "start": 635,
+                  "end": 648
+                }
+              },
+              {
+                "name": "outcome",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 659,
+                    "end": 665
+                  }
+                },
+                "span": {
+                  "start": 650,
+                  "end": 665
+                }
+              }
+            ],
+            "span": {
+              "start": 625,
+              "end": 666
+            }
+          },
+          {
+            "name": "sent",
+            "parameters": [
+              {
+                "name": "count",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 686,
+                    "end": 692
+                  }
+                },
+                "span": {
+                  "start": 679,
+                  "end": 692
+                }
+              }
+            ],
+            "span": {
+              "start": 672,
+              "end": 693
+            }
+          },
+          {
+            "name": "clamped",
+            "parameters": [
+              {
+                "name": "level",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 716,
+                    "end": 722
+                  }
+                },
+                "span": {
+                  "start": 709,
+                  "end": 722
+                }
+              }
+            ],
+            "span": {
+              "start": 699,
+              "end": 723
+            }
+          }
+        ],
+        "span": {
+          "start": 305,
+          "end": 732
+        }
+      },
+      "bindings": [
+        {
+          "id": "files@277",
+          "name": "files",
+          "kind": "prop",
+          "span": {
+            "start": 277,
+            "end": 282
+          }
+        },
+        {
+          "id": "emit@311",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 311,
+            "end": 315
+          }
+        },
+        {
+          "id": "waiting@740",
+          "name": "waiting",
+          "kind": "localVar",
+          "span": {
+            "start": 740,
+            "end": 747
+          }
+        },
+        {
+          "id": "ask@777",
+          "name": "ask",
+          "kind": "localFn",
+          "span": {
+            "start": 777,
+            "end": 780
+          }
+        },
+        {
+          "id": "answer@931",
+          "name": "answer",
+          "kind": "localFn",
+          "span": {
+            "start": 931,
+            "end": 937
+          }
+        },
+        {
+          "id": "fail@1054",
+          "name": "fail",
+          "kind": "localFn",
+          "span": {
+            "start": 1054,
+            "end": 1058
+          }
+        },
+        {
+          "id": "email@1341",
+          "name": "email",
+          "kind": "state",
+          "span": {
+            "start": 1341,
+            "end": 1346
+          }
+        },
+        {
+          "id": "checking@1381",
+          "name": "checking",
+          "kind": "state",
+          "span": {
+            "start": 1381,
+            "end": 1389
+          }
+        },
+        {
+          "id": "valid@1412",
+          "name": "valid",
+          "kind": "state",
+          "span": {
+            "start": 1412,
+            "end": 1417
+          }
+        },
+        {
+          "id": "confirm@1439",
+          "name": "confirm",
+          "kind": "templateRef",
+          "span": {
+            "start": 1439,
+            "end": 1446
+          }
+        },
+        {
+          "id": "validate@1504",
+          "name": "validate",
+          "kind": "localFn",
+          "span": {
+            "start": 1504,
+            "end": 1512
+          }
+        },
+        {
+          "id": "suggest@1969",
+          "name": "suggest",
+          "kind": "localFn",
+          "span": {
+            "start": 1969,
+            "end": 1976
+          }
+        },
+        {
+          "id": "step@2196",
+          "name": "step",
+          "kind": "state",
+          "span": {
+            "start": 2196,
+            "end": 2200
+          }
+        },
+        {
+          "id": "owner@2224",
+          "name": "owner",
+          "kind": "state",
+          "span": {
+            "start": 2224,
+            "end": 2229
+          }
+        },
+        {
+          "id": "editor@2255",
+          "name": "editor",
+          "kind": "state",
+          "span": {
+            "start": 2255,
+            "end": 2261
+          }
+        },
+        {
+          "id": "load@2385",
+          "name": "load",
+          "kind": "localFn",
+          "span": {
+            "start": 2385,
+            "end": 2389
+          }
+        },
+        {
+          "id": "name@2644",
+          "name": "name",
+          "kind": "state",
+          "span": {
+            "start": 2644,
+            "end": 2648
+          }
+        },
+        {
+          "id": "error@2668",
+          "name": "error",
+          "kind": "state",
+          "span": {
+            "start": 2668,
+            "end": 2673
+          }
+        },
+        {
+          "id": "saving@2693",
+          "name": "saving",
+          "kind": "state",
+          "span": {
+            "start": 2693,
+            "end": 2699
+          }
+        },
+        {
+          "id": "persist@2828",
+          "name": "persist",
+          "kind": "localFn",
+          "span": {
+            "start": 2828,
+            "end": 2835
+          }
+        },
+        {
+          "id": "save@2941",
+          "name": "save",
+          "kind": "localFn",
+          "span": {
+            "start": 2941,
+            "end": 2945
+          }
+        },
+        {
+          "id": "status@3186",
+          "name": "status",
+          "kind": "state",
+          "span": {
+            "start": 3186,
+            "end": 3192
+          }
+        },
+        {
+          "id": "imported@3216",
+          "name": "imported",
+          "kind": "state",
+          "span": {
+            "start": 3216,
+            "end": 3224
+          }
+        },
+        {
+          "id": "importAll@3347",
+          "name": "importAll",
+          "kind": "localFn",
+          "span": {
+            "start": 3347,
+            "end": 3356
+          }
+        },
+        {
+          "id": "note@3674",
+          "name": "note",
+          "kind": "state",
+          "span": {
+            "start": 3674,
+            "end": 3678
+          }
+        },
+        {
+          "id": "refresh@3706",
+          "name": "refresh",
+          "kind": "localFn",
+          "span": {
+            "start": 3706,
+            "end": 3713
+          }
+        },
+        {
+          "id": "prefetch@3934",
+          "name": "prefetch",
+          "kind": "localFn",
+          "span": {
+            "start": 3934,
+            "end": 3942
+          }
+        },
+        {
+          "id": "sendBusy@4164",
+          "name": "sendBusy",
+          "kind": "state",
+          "span": {
+            "start": 4164,
+            "end": 4172
+          }
+        },
+        {
+          "id": "outcome@4195",
+          "name": "outcome",
+          "kind": "state",
+          "span": {
+            "start": 4195,
+            "end": 4202
+          }
+        },
+        {
+          "id": "total@4222",
+          "name": "total",
+          "kind": "state",
+          "span": {
+            "start": 4222,
+            "end": 4227
+          }
+        },
+        {
+          "id": "send@4357",
+          "name": "send",
+          "kind": "localFn",
+          "span": {
+            "start": 4357,
+            "end": 4361
+          }
+        },
+        {
+          "id": "volume@4936",
+          "name": "volume",
+          "kind": "state",
+          "span": {
+            "start": 4936,
+            "end": 4942
+          }
+        },
+        {
+          "id": "level@4961",
+          "name": "level",
+          "kind": "state",
+          "span": {
+            "start": 4961,
+            "end": 4966
+          }
+        },
+        {
+          "id": "apply@4989",
+          "name": "apply",
+          "kind": "localFn",
+          "span": {
+            "start": 4989,
+            "end": 4994
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Variable",
+          "binding": "waiting@740",
+          "type": {
+            "code": "Waiting[]",
+            "span": {
+              "start": 749,
+              "end": 758
+            }
+          },
+          "initial": {
+            "code": "[]",
+            "span": {
+              "start": 761,
+              "end": 763
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 736,
+            "end": 764
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "ask@777",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "returnType": {
+              "code": "Promise<string>",
+              "span": {
+                "start": 784,
+                "end": 799
+              }
+            },
+            "body": {
+              "code": "{\n    return new Promise<string>((resolve, reject) => {\n      waiting = [...waiting, { resolve, reject }];\n    });\n  }",
+              "span": {
+                "start": 800,
+                "end": 918
+              },
+              "refs": [
+                {
+                  "kind": "Global",
+                  "name": "Promise",
+                  "span": {
+                    "start": 817,
+                    "end": 824
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "waiting@740",
+                  "operator": "=",
+                  "span": {
+                    "start": 862,
+                    "end": 905
+                  },
+                  "target": {
+                    "start": 862,
+                    "end": 869
+                  },
+                  "value": {
+                    "start": 872,
+                    "end": 905
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "waiting@740",
+                  "span": {
+                    "start": 876,
+                    "end": 883
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 780,
+              "end": 918
+            }
+          },
+          "span": {
+            "start": 768,
+            "end": 918
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "answer@931",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "text",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 944,
+                    "end": 950
+                  }
+                },
+                "span": {
+                  "start": 938,
+                  "end": 950
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    const [first, ...rest] = waiting;\n    waiting = rest;\n    first?.resolve(text);\n  }",
+              "span": {
+                "start": 952,
+                "end": 1041
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "waiting@740",
+                  "span": {
+                    "start": 983,
+                    "end": 990
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "waiting@740",
+                  "operator": "=",
+                  "span": {
+                    "start": 996,
+                    "end": 1010
+                  },
+                  "target": {
+                    "start": 996,
+                    "end": 1003
+                  },
+                  "value": {
+                    "start": 1006,
+                    "end": 1010
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 937,
+              "end": 1041
+            }
+          },
+          "span": {
+            "start": 922,
+            "end": 1041
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "fail@1054",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    const [first, ...rest] = waiting;\n    waiting = rest;\n    first?.reject(new Error(\"offline\"));\n  }",
+              "span": {
+                "start": 1061,
+                "end": 1165
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "waiting@740",
+                  "span": {
+                    "start": 1092,
+                    "end": 1099
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "waiting@740",
+                  "operator": "=",
+                  "span": {
+                    "start": 1105,
+                    "end": 1119
+                  },
+                  "target": {
+                    "start": 1105,
+                    "end": 1112
+                  },
+                  "value": {
+                    "start": 1115,
+                    "end": 1119
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Error",
+                  "span": {
+                    "start": 1143,
+                    "end": 1148
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1058,
+              "end": 1165
+            }
+          },
+          "span": {
+            "start": 1045,
+            "end": 1165
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "email@1341",
+          "initial": {
+            "code": "\"ada@example.com\"",
+            "span": {
+              "start": 1353,
+              "end": 1370
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 1335,
+            "end": 1372
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "checking@1381",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 1396,
+              "end": 1401
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 1375,
+            "end": 1403
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "valid@1412",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 1424,
+              "end": 1428
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 1406,
+            "end": 1430
+          }
+        },
+        {
+          "kind": "TemplateRef",
+          "binding": "confirm@1439",
+          "type": {
+            "code": "HTMLButtonElement",
+            "span": {
+              "start": 1464,
+              "end": 1481
+            }
+          },
+          "span": {
+            "start": 1433,
+            "end": 1485
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "validate@1504",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [
+              {
+                "name": "value",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 1520,
+                    "end": 1526
+                  }
+                },
+                "span": {
+                  "start": 1513,
+                  "end": 1526
+                }
+              }
+            ],
+            "returnType": {
+              "code": "Promise<boolean>",
+              "span": {
+                "start": 1529,
+                "end": 1545
+              }
+            },
+            "body": {
+              "code": "{\n    return value.includes(\"@\");\n  }",
+              "span": {
+                "start": 1546,
+                "end": 1583
+              },
+              "refs": []
+            },
+            "span": {
+              "start": 1512,
+              "end": 1583
+            }
+          },
+          "span": {
+            "start": 1489,
+            "end": 1583
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "email@1341",
+              "span": {
+                "start": 1593,
+                "end": 1598
+              }
+            }
+          ],
+          "callback": {
+            "async": true,
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 1607,
+                  "end": 1612
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    checking.value = true;\n    const ok = await validate(value);\n    checking.value = false;\n    valid.value = ok;\n  }",
+              "span": {
+                "start": 1617,
+                "end": 1737
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "checking@1381",
+                  "operator": "=",
+                  "span": {
+                    "start": 1623,
+                    "end": 1644
+                  },
+                  "target": {
+                    "start": 1623,
+                    "end": 1637
+                  },
+                  "value": {
+                    "start": 1640,
+                    "end": 1644
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "validate@1504",
+                  "span": {
+                    "start": 1667,
+                    "end": 1675
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "checking@1381",
+                  "operator": "=",
+                  "span": {
+                    "start": 1688,
+                    "end": 1710
+                  },
+                  "target": {
+                    "start": 1688,
+                    "end": 1702
+                  },
+                  "value": {
+                    "start": 1705,
+                    "end": 1710
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "valid@1412",
+                  "operator": "=",
+                  "span": {
+                    "start": 1716,
+                    "end": 1732
+                  },
+                  "target": {
+                    "start": 1716,
+                    "end": 1727
+                  },
+                  "value": {
+                    "start": 1730,
+                    "end": 1732
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1600,
+              "end": 1737
+            }
+          },
+          "span": {
+            "start": 1587,
+            "end": 1739
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "email@1341",
+              "span": {
+                "start": 1754,
+                "end": 1759
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "value",
+                "span": {
+                  "start": 1766,
+                  "end": 1771
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n      emit(\"checked\", value);\n    }",
+              "span": {
+                "start": 1776,
+                "end": 1813
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@311",
+                  "event": "checked",
+                  "span": {
+                    "start": 1784,
+                    "end": 1806
+                  },
+                  "arguments": [
+                    {
+                      "start": 1800,
+                      "end": 1805
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 1765,
+              "end": 1813
+            }
+          },
+          "post": true,
+          "span": {
+            "start": 1743,
+            "end": 1842
+          }
+        },
+        {
+          "kind": "WatchEffect",
+          "effect": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    emit(\"summary\", `${email.value} is ${valid.value ? \"valid\" : \"invalid\"}`);\n  }",
+              "span": {
+                "start": 1864,
+                "end": 1948
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@311",
+                  "event": "summary",
+                  "span": {
+                    "start": 1870,
+                    "end": 1943
+                  },
+                  "arguments": [
+                    {
+                      "start": 1886,
+                      "end": 1942
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "email@1341",
+                  "span": {
+                    "start": 1889,
+                    "end": 1900
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "valid@1412",
+                  "span": {
+                    "start": 1907,
+                    "end": 1918
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1858,
+              "end": 1948
+            }
+          },
+          "span": {
+            "start": 1846,
+            "end": 1950
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "suggest@1969",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    email.value = \"ada@lovelace.dev\";\n    await nextTick();\n    confirm.value?.focus();\n    emit(\"focused\", document.activeElement?.textContent ?? \"none\");\n  }",
+              "span": {
+                "start": 1979,
+                "end": 2140
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "email@1341",
+                  "operator": "=",
+                  "span": {
+                    "start": 1985,
+                    "end": 2017
+                  },
+                  "target": {
+                    "start": 1985,
+                    "end": 1996
+                  },
+                  "value": {
+                    "start": 1999,
+                    "end": 2017
+                  }
+                },
+                {
+                  "kind": "Api",
+                  "api": "nextTick",
+                  "span": {
+                    "start": 2029,
+                    "end": 2037
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "confirm@1439",
+                  "span": {
+                    "start": 2045,
+                    "end": 2058
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@311",
+                  "event": "focused",
+                  "span": {
+                    "start": 2073,
+                    "end": 2135
+                  },
+                  "arguments": [
+                    {
+                      "start": 2089,
+                      "end": 2134
+                    }
+                  ]
+                },
+                {
+                  "kind": "Global",
+                  "name": "document",
+                  "span": {
+                    "start": 2089,
+                    "end": 2097
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 1976,
+              "end": 2140
+            }
+          },
+          "span": {
+            "start": 1954,
+            "end": 2140
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "step@2196",
+          "initial": {
+            "code": "\"idle\"",
+            "span": {
+              "start": 2207,
+              "end": 2213
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 2190,
+            "end": 2215
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "owner@2224",
+          "initial": {
+            "code": "\"nobody\"",
+            "span": {
+              "start": 2236,
+              "end": 2244
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 2218,
+            "end": 2246
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "editor@2255",
+          "initial": {
+            "code": "\"nobody\"",
+            "span": {
+              "start": 2268,
+              "end": 2276
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 2249,
+            "end": 2278
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "step@2196",
+              "span": {
+                "start": 2289,
+                "end": 2293
+              }
+            },
+            {
+              "kind": "Ref",
+              "binding": "owner@2224",
+              "span": {
+                "start": 2295,
+                "end": 2300
+              }
+            }
+          ],
+          "array": true,
+          "callback": {
+            "parameters": [
+              {
+                "pattern": {
+                  "code": "[current, who]",
+                  "names": [
+                    "current",
+                    "who"
+                  ],
+                  "span": {
+                    "start": 2304,
+                    "end": 2318
+                  }
+                },
+                "span": {
+                  "start": 2304,
+                  "end": 2318
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"progress\", current, who);\n  }",
+              "span": {
+                "start": 2323,
+                "end": 2364
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@311",
+                  "event": "progress",
+                  "span": {
+                    "start": 2329,
+                    "end": 2359
+                  },
+                  "arguments": [
+                    {
+                      "start": 2346,
+                      "end": 2353
+                    },
+                    {
+                      "start": 2355,
+                      "end": 2358
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 2303,
+              "end": 2364
+            }
+          },
+          "span": {
+            "start": 2282,
+            "end": 2366
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "load@2385",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    step.value = \"owner\";\n    owner.value = await ask();\n    step.value = \"editor\";\n    editor.value = await ask();\n    step.value = \"done\";\n  }",
+              "span": {
+                "start": 2392,
+                "end": 2538
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "step@2196",
+                  "operator": "=",
+                  "span": {
+                    "start": 2398,
+                    "end": 2418
+                  },
+                  "target": {
+                    "start": 2398,
+                    "end": 2408
+                  },
+                  "value": {
+                    "start": 2411,
+                    "end": 2418
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "owner@2224",
+                  "operator": "=",
+                  "span": {
+                    "start": 2424,
+                    "end": 2449
+                  },
+                  "target": {
+                    "start": 2424,
+                    "end": 2435
+                  },
+                  "value": {
+                    "start": 2438,
+                    "end": 2449
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "ask@777",
+                  "span": {
+                    "start": 2444,
+                    "end": 2447
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "step@2196",
+                  "operator": "=",
+                  "span": {
+                    "start": 2455,
+                    "end": 2476
+                  },
+                  "target": {
+                    "start": 2455,
+                    "end": 2465
+                  },
+                  "value": {
+                    "start": 2468,
+                    "end": 2476
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "editor@2255",
+                  "operator": "=",
+                  "span": {
+                    "start": 2482,
+                    "end": 2508
+                  },
+                  "target": {
+                    "start": 2482,
+                    "end": 2494
+                  },
+                  "value": {
+                    "start": 2497,
+                    "end": 2508
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "ask@777",
+                  "span": {
+                    "start": 2503,
+                    "end": 2506
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "step@2196",
+                  "operator": "=",
+                  "span": {
+                    "start": 2514,
+                    "end": 2533
+                  },
+                  "target": {
+                    "start": 2514,
+                    "end": 2524
+                  },
+                  "value": {
+                    "start": 2527,
+                    "end": 2533
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 2389,
+              "end": 2538
+            }
+          },
+          "span": {
+            "start": 2370,
+            "end": 2538
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "name@2644",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 2655,
+              "end": 2657
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 2638,
+            "end": 2659
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "error@2668",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 2680,
+              "end": 2682
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 2662,
+            "end": 2684
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "saving@2693",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 2706,
+              "end": 2708
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 2687,
+            "end": 2710
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "error@2668",
+              "span": {
+                "start": 2721,
+                "end": 2726
+              }
+            },
+            {
+              "kind": "Ref",
+              "binding": "saving@2693",
+              "span": {
+                "start": 2728,
+                "end": 2734
+              }
+            }
+          ],
+          "array": true,
+          "callback": {
+            "parameters": [
+              {
+                "pattern": {
+                  "code": "[message, current]",
+                  "names": [
+                    "message",
+                    "current"
+                  ],
+                  "span": {
+                    "start": 2738,
+                    "end": 2756
+                  }
+                },
+                "span": {
+                  "start": 2738,
+                  "end": 2756
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"saveState\", message, current);\n  }",
+              "span": {
+                "start": 2761,
+                "end": 2807
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@311",
+                  "event": "saveState",
+                  "span": {
+                    "start": 2767,
+                    "end": 2802
+                  },
+                  "arguments": [
+                    {
+                      "start": 2785,
+                      "end": 2792
+                    },
+                    {
+                      "start": 2794,
+                      "end": 2801
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 2737,
+              "end": 2807
+            }
+          },
+          "span": {
+            "start": 2714,
+            "end": 2809
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "persist@2828",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [
+              {
+                "name": "value",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 2843,
+                    "end": 2849
+                  }
+                },
+                "span": {
+                  "start": 2836,
+                  "end": 2849
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    saving.value = value;\n    await ask();\n    saving.value = \"\";\n  }",
+              "span": {
+                "start": 2851,
+                "end": 2922
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "saving@2693",
+                  "operator": "=",
+                  "span": {
+                    "start": 2857,
+                    "end": 2877
+                  },
+                  "target": {
+                    "start": 2857,
+                    "end": 2869
+                  },
+                  "value": {
+                    "start": 2872,
+                    "end": 2877
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "ask@777",
+                  "span": {
+                    "start": 2889,
+                    "end": 2892
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "saving@2693",
+                  "operator": "=",
+                  "span": {
+                    "start": 2900,
+                    "end": 2917
+                  },
+                  "target": {
+                    "start": 2900,
+                    "end": 2912
+                  },
+                  "value": {
+                    "start": 2915,
+                    "end": 2917
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 2835,
+              "end": 2922
+            }
+          },
+          "span": {
+            "start": 2813,
+            "end": 2922
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "save@2941",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    error.value = \"\";\n    const payload = name.value.trim();\n    if (!payload) {\n      error.value = \"Name required\";\n      return;\n    }\n    await persist(payload);\n    emit(\"savedName\", payload);\n  }",
+              "span": {
+                "start": 2948,
+                "end": 3151
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "error@2668",
+                  "operator": "=",
+                  "span": {
+                    "start": 2954,
+                    "end": 2970
+                  },
+                  "target": {
+                    "start": 2954,
+                    "end": 2965
+                  },
+                  "value": {
+                    "start": 2968,
+                    "end": 2970
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "name@2644",
+                  "span": {
+                    "start": 2992,
+                    "end": 3002
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "error@2668",
+                  "operator": "=",
+                  "span": {
+                    "start": 3037,
+                    "end": 3066
+                  },
+                  "target": {
+                    "start": 3037,
+                    "end": 3048
+                  },
+                  "value": {
+                    "start": 3051,
+                    "end": 3066
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "persist@2828",
+                  "span": {
+                    "start": 3098,
+                    "end": 3105
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@311",
+                  "event": "savedName",
+                  "span": {
+                    "start": 3120,
+                    "end": 3146
+                  },
+                  "arguments": [
+                    {
+                      "start": 3138,
+                      "end": 3145
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 2945,
+              "end": 3151
+            }
+          },
+          "span": {
+            "start": 2926,
+            "end": 3151
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "status@3186",
+          "initial": {
+            "code": "\"idle\"",
+            "span": {
+              "start": 3199,
+              "end": 3205
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 3180,
+            "end": 3207
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "imported@3216",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 3231,
+              "end": 3232
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 3210,
+            "end": 3234
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "status@3186",
+              "span": {
+                "start": 3245,
+                "end": 3251
+              }
+            },
+            {
+              "kind": "Ref",
+              "binding": "imported@3216",
+              "span": {
+                "start": 3253,
+                "end": 3261
+              }
+            }
+          ],
+          "array": true,
+          "callback": {
+            "parameters": [
+              {
+                "pattern": {
+                  "code": "[text, count]",
+                  "names": [
+                    "text",
+                    "count"
+                  ],
+                  "span": {
+                    "start": 3265,
+                    "end": 3278
+                  }
+                },
+                "span": {
+                  "start": 3265,
+                  "end": 3278
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"importState\", text, count);\n  }",
+              "span": {
+                "start": 3283,
+                "end": 3326
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@311",
+                  "event": "importState",
+                  "span": {
+                    "start": 3289,
+                    "end": 3321
+                  },
+                  "arguments": [
+                    {
+                      "start": 3309,
+                      "end": 3313
+                    },
+                    {
+                      "start": 3315,
+                      "end": 3320
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 3264,
+              "end": 3326
+            }
+          },
+          "span": {
+            "start": 3238,
+            "end": 3328
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "importAll@3347",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    imported.value = 0;\n    status.value = \"starting\";\n    for (const file of files) {\n      status.value = `importing ${file}`;\n      await ask();\n      imported.value += 1;\n    }\n    status.value = \"done\";\n  }",
+              "span": {
+                "start": 3359,
+                "end": 3572
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "imported@3216",
+                  "operator": "=",
+                  "span": {
+                    "start": 3365,
+                    "end": 3383
+                  },
+                  "target": {
+                    "start": 3365,
+                    "end": 3379
+                  },
+                  "value": {
+                    "start": 3382,
+                    "end": 3383
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "status@3186",
+                  "operator": "=",
+                  "span": {
+                    "start": 3389,
+                    "end": 3414
+                  },
+                  "target": {
+                    "start": 3389,
+                    "end": 3401
+                  },
+                  "value": {
+                    "start": 3404,
+                    "end": 3414
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "files@277",
+                  "span": {
+                    "start": 3439,
+                    "end": 3444
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "status@3186",
+                  "operator": "=",
+                  "span": {
+                    "start": 3454,
+                    "end": 3488
+                  },
+                  "target": {
+                    "start": 3454,
+                    "end": 3466
+                  },
+                  "value": {
+                    "start": 3469,
+                    "end": 3488
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "ask@777",
+                  "span": {
+                    "start": 3502,
+                    "end": 3505
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "imported@3216",
+                  "operator": "+=",
+                  "span": {
+                    "start": 3515,
+                    "end": 3534
+                  },
+                  "target": {
+                    "start": 3515,
+                    "end": 3529
+                  },
+                  "value": {
+                    "start": 3533,
+                    "end": 3534
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "status@3186",
+                  "operator": "=",
+                  "span": {
+                    "start": 3546,
+                    "end": 3567
+                  },
+                  "target": {
+                    "start": 3546,
+                    "end": 3558
+                  },
+                  "value": {
+                    "start": 3561,
+                    "end": 3567
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 3356,
+              "end": 3572
+            }
+          },
+          "span": {
+            "start": 3332,
+            "end": 3572
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "note@3674",
+          "initial": {
+            "code": "\"idle\"",
+            "span": {
+              "start": 3685,
+              "end": 3691
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 3668,
+            "end": 3693
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "refresh@3706",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    note.value = \"refreshing\";\n    void ask()\n      .then((text) => {\n        note.value = `refreshed by ${text}`;\n      })\n      .finally(() => {\n        emit(\"settled\", note.value);\n      });\n  }",
+              "span": {
+                "start": 3716,
+                "end": 3915
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "note@3674",
+                  "operator": "=",
+                  "span": {
+                    "start": 3722,
+                    "end": 3747
+                  },
+                  "target": {
+                    "start": 3722,
+                    "end": 3732
+                  },
+                  "value": {
+                    "start": 3735,
+                    "end": 3747
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "ask@777",
+                  "span": {
+                    "start": 3758,
+                    "end": 3761
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "note@3674",
+                  "operator": "=",
+                  "span": {
+                    "start": 3796,
+                    "end": 3831
+                  },
+                  "target": {
+                    "start": 3796,
+                    "end": 3806
+                  },
+                  "value": {
+                    "start": 3809,
+                    "end": 3831
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@311",
+                  "event": "settled",
+                  "span": {
+                    "start": 3873,
+                    "end": 3900
+                  },
+                  "arguments": [
+                    {
+                      "start": 3889,
+                      "end": 3899
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "note@3674",
+                  "span": {
+                    "start": 3889,
+                    "end": 3899
+                  },
+                  "later": true
+                }
+              ]
+            },
+            "span": {
+              "start": 3713,
+              "end": 3915
+            }
+          },
+          "span": {
+            "start": 3697,
+            "end": 3915
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "prefetch@3934",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    const pending = ask();\n    note.value = \"waiting\";\n    const text = await pending;\n    note.value = `prefetched by ${text}`;\n  }",
+              "span": {
+                "start": 3945,
+                "end": 4079
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "ask@777",
+                  "span": {
+                    "start": 3967,
+                    "end": 3970
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "note@3674",
+                  "operator": "=",
+                  "span": {
+                    "start": 3978,
+                    "end": 4000
+                  },
+                  "target": {
+                    "start": 3978,
+                    "end": 3988
+                  },
+                  "value": {
+                    "start": 3991,
+                    "end": 4000
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "note@3674",
+                  "operator": "=",
+                  "span": {
+                    "start": 4038,
+                    "end": 4074
+                  },
+                  "target": {
+                    "start": 4038,
+                    "end": 4048
+                  },
+                  "value": {
+                    "start": 4051,
+                    "end": 4074
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 3942,
+              "end": 4079
+            }
+          },
+          "span": {
+            "start": 3919,
+            "end": 4079
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "sendBusy@4164",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 4179,
+              "end": 4184
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 4158,
+            "end": 4186
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "outcome@4195",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 4209,
+              "end": 4211
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 4189,
+            "end": 4213
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "total@4222",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 4234,
+              "end": 4235
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 4216,
+            "end": 4237
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "sendBusy@4164",
+              "span": {
+                "start": 4248,
+                "end": 4256
+              }
+            },
+            {
+              "kind": "Ref",
+              "binding": "outcome@4195",
+              "span": {
+                "start": 4258,
+                "end": 4265
+              }
+            }
+          ],
+          "array": true,
+          "callback": {
+            "parameters": [
+              {
+                "pattern": {
+                  "code": "[sendingNow, text]",
+                  "names": [
+                    "sendingNow",
+                    "text"
+                  ],
+                  "span": {
+                    "start": 4269,
+                    "end": 4287
+                  }
+                },
+                "span": {
+                  "start": 4269,
+                  "end": 4287
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    emit(\"sending\", sendingNow, text);\n  }",
+              "span": {
+                "start": 4292,
+                "end": 4336
+              },
+              "refs": [
+                {
+                  "kind": "Emit",
+                  "binding": "emit@311",
+                  "event": "sending",
+                  "span": {
+                    "start": 4298,
+                    "end": 4331
+                  },
+                  "arguments": [
+                    {
+                      "start": 4314,
+                      "end": 4324
+                    },
+                    {
+                      "start": 4326,
+                      "end": 4330
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 4268,
+              "end": 4336
+            }
+          },
+          "span": {
+            "start": 4241,
+            "end": 4338
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "send@4357",
+          "form": "declaration",
+          "function": {
+            "async": true,
+            "parameters": [],
+            "body": {
+              "code": "{\n    sendBusy.value = true;\n    outcome.value = \"\";\n    try {\n      const reply = await ask();\n      if (reply === \"\") {\n        outcome.value = \"Declined\";\n        sendBusy.value = false;\n        return;\n      }\n      total.value += 1;\n    } catch (failure) {\n      outcome.value = failure instanceof Error ? failure.message : \"Failed\";\n      sendBusy.value = false;\n      return;\n    }\n    sendBusy.value = false;\n    outcome.value = `Sent ${total.value}`;\n    emit(\"sent\", total.value);\n  }",
+              "span": {
+                "start": 4364,
+                "end": 4858
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "sendBusy@4164",
+                  "operator": "=",
+                  "span": {
+                    "start": 4370,
+                    "end": 4391
+                  },
+                  "target": {
+                    "start": 4370,
+                    "end": 4384
+                  },
+                  "value": {
+                    "start": 4387,
+                    "end": 4391
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "outcome@4195",
+                  "operator": "=",
+                  "span": {
+                    "start": 4397,
+                    "end": 4415
+                  },
+                  "target": {
+                    "start": 4397,
+                    "end": 4410
+                  },
+                  "value": {
+                    "start": 4413,
+                    "end": 4415
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "ask@777",
+                  "span": {
+                    "start": 4453,
+                    "end": 4456
+                  },
+                  "call": true
+                },
+                {
+                  "kind": "Write",
+                  "binding": "outcome@4195",
+                  "operator": "=",
+                  "span": {
+                    "start": 4494,
+                    "end": 4520
+                  },
+                  "target": {
+                    "start": 4494,
+                    "end": 4507
+                  },
+                  "value": {
+                    "start": 4510,
+                    "end": 4520
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "sendBusy@4164",
+                  "operator": "=",
+                  "span": {
+                    "start": 4530,
+                    "end": 4552
+                  },
+                  "target": {
+                    "start": 4530,
+                    "end": 4544
+                  },
+                  "value": {
+                    "start": 4547,
+                    "end": 4552
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "total@4222",
+                  "operator": "+=",
+                  "span": {
+                    "start": 4584,
+                    "end": 4600
+                  },
+                  "target": {
+                    "start": 4584,
+                    "end": 4595
+                  },
+                  "value": {
+                    "start": 4599,
+                    "end": 4600
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "outcome@4195",
+                  "operator": "=",
+                  "span": {
+                    "start": 4632,
+                    "end": 4701
+                  },
+                  "target": {
+                    "start": 4632,
+                    "end": 4645
+                  },
+                  "value": {
+                    "start": 4648,
+                    "end": 4701
+                  }
+                },
+                {
+                  "kind": "Global",
+                  "name": "Error",
+                  "span": {
+                    "start": 4667,
+                    "end": 4672
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "sendBusy@4164",
+                  "operator": "=",
+                  "span": {
+                    "start": 4709,
+                    "end": 4731
+                  },
+                  "target": {
+                    "start": 4709,
+                    "end": 4723
+                  },
+                  "value": {
+                    "start": 4726,
+                    "end": 4731
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "sendBusy@4164",
+                  "operator": "=",
+                  "span": {
+                    "start": 4757,
+                    "end": 4779
+                  },
+                  "target": {
+                    "start": 4757,
+                    "end": 4771
+                  },
+                  "value": {
+                    "start": 4774,
+                    "end": 4779
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "outcome@4195",
+                  "operator": "=",
+                  "span": {
+                    "start": 4785,
+                    "end": 4822
+                  },
+                  "target": {
+                    "start": 4785,
+                    "end": 4798
+                  },
+                  "value": {
+                    "start": 4801,
+                    "end": 4822
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "total@4222",
+                  "span": {
+                    "start": 4809,
+                    "end": 4820
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@311",
+                  "event": "sent",
+                  "span": {
+                    "start": 4828,
+                    "end": 4853
+                  },
+                  "arguments": [
+                    {
+                      "start": 4841,
+                      "end": 4852
+                    }
+                  ]
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "total@4222",
+                  "span": {
+                    "start": 4841,
+                    "end": 4852
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 4361,
+              "end": 4858
+            }
+          },
+          "span": {
+            "start": 4342,
+            "end": 4858
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "volume@4936",
+          "initial": {
+            "code": "4",
+            "span": {
+              "start": 4949,
+              "end": 4950
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 4930,
+            "end": 4952
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "level@4961",
+          "initial": {
+            "code": "4",
+            "span": {
+              "start": 4973,
+              "end": 4974
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 4955,
+            "end": 4976
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "apply@4989",
+          "form": "declaration",
+          "function": {
+            "parameters": [
+              {
+                "name": "value",
+                "type": {
+                  "code": "number",
+                  "span": {
+                    "start": 5002,
+                    "end": 5008
+                  }
+                },
+                "span": {
+                  "start": 4995,
+                  "end": 5008
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    if (value > 10) value = 10;\n    level.value = value;\n    emit(\"clamped\", value);\n  }",
+              "span": {
+                "start": 5010,
+                "end": 5100
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "level@4961",
+                  "operator": "=",
+                  "span": {
+                    "start": 5048,
+                    "end": 5067
+                  },
+                  "target": {
+                    "start": 5048,
+                    "end": 5059
+                  },
+                  "value": {
+                    "start": 5062,
+                    "end": 5067
+                  }
+                },
+                {
+                  "kind": "Emit",
+                  "binding": "emit@311",
+                  "event": "clamped",
+                  "span": {
+                    "start": 5073,
+                    "end": 5095
+                  },
+                  "arguments": [
+                    {
+                      "start": 5089,
+                      "end": 5094
+                    }
+                  ]
+                }
+              ]
+            },
+            "span": {
+              "start": 4994,
+              "end": 5100
+            }
+          },
+          "span": {
+            "start": 4980,
+            "end": 5100
+          }
+        },
+        {
+          "kind": "Watch",
+          "sources": [
+            {
+              "kind": "Ref",
+              "binding": "volume@4936",
+              "span": {
+                "start": 5110,
+                "end": 5116
+              }
+            }
+          ],
+          "callback": {
+            "parameters": [
+              {
+                "name": "next",
+                "span": {
+                  "start": 5119,
+                  "end": 5123
+                }
+              }
+            ],
+            "body": {
+              "code": "{\n    apply(next * 2);\n  }",
+              "span": {
+                "start": 5128,
+                "end": 5154
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "apply@4989",
+                  "span": {
+                    "start": 5134,
+                    "end": 5139
+                  },
+                  "call": true
+                }
+              ]
+            },
+            "span": {
+              "start": 5118,
+              "end": 5154
+            }
+          },
+          "span": {
+            "start": 5104,
+            "end": 5156
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "sync-desk",
+            "span": {
+              "start": 5182,
+              "end": 5199
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Sync desk",
+            "span": {
+              "start": 5200,
+              "end": 5222
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 5238,
+                  "end": 5251
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "suggest@1969",
+                  "span": {
+                    "start": 5261,
+                    "end": 5268
+                  }
+                },
+                "span": {
+                  "start": 5252,
+                  "end": 5269
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Suggest",
+                "span": {
+                  "start": 5270,
+                  "end": 5293
+                }
+              }
+            ],
+            "span": {
+              "start": 5230,
+              "end": 5302
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 5317,
+                  "end": 5330
+                }
+              },
+              {
+                "kind": "Ref",
+                "binding": "confirm@1439",
+                "span": {
+                  "start": 5331,
+                  "end": 5344
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Use this email",
+                "span": {
+                  "start": 5345,
+                  "end": 5375
+                }
+              }
+            ],
+            "span": {
+              "start": 5309,
+              "end": 5384
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "email.value",
+                  "span": {
+                    "start": 5404,
+                    "end": 5415
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "email@1341",
+                      "span": {
+                        "start": 5404,
+                        "end": 5415
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 5403,
+                  "end": 5416
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ": ",
+                "span": {
+                  "start": 5416,
+                  "end": 5418
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "checking.value ? \"checking\" : valid.value ? \"valid\" : \"invalid\"",
+                  "span": {
+                    "start": 5419,
+                    "end": 5482
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "checking@1381",
+                      "span": {
+                        "start": 5419,
+                        "end": 5433
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "valid@1412",
+                      "span": {
+                        "start": 5449,
+                        "end": 5460
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 5418,
+                  "end": 5483
+                }
+              }
+            ],
+            "span": {
+              "start": 5391,
+              "end": 5494
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 5509,
+                  "end": 5522
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "load@2385",
+                  "span": {
+                    "start": 5532,
+                    "end": 5536
+                  }
+                },
+                "span": {
+                  "start": 5523,
+                  "end": 5537
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Load",
+                "span": {
+                  "start": 5538,
+                  "end": 5558
+                }
+              }
+            ],
+            "span": {
+              "start": 5501,
+              "end": 5567
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Step: ",
+                "span": {
+                  "start": 5577,
+                  "end": 5592
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "step.value",
+                  "span": {
+                    "start": 5593,
+                    "end": 5603
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "step@2196",
+                      "span": {
+                        "start": 5593,
+                        "end": 5603
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 5592,
+                  "end": 5604
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ", owner ",
+                "span": {
+                  "start": 5604,
+                  "end": 5612
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "owner.value",
+                  "span": {
+                    "start": 5613,
+                    "end": 5624
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "owner@2224",
+                      "span": {
+                        "start": 5613,
+                        "end": 5624
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 5612,
+                  "end": 5625
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ", editor ",
+                "span": {
+                  "start": 5625,
+                  "end": 5634
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "editor.value",
+                  "span": {
+                    "start": 5635,
+                    "end": 5647
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "editor@2255",
+                      "span": {
+                        "start": 5635,
+                        "end": 5647
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 5634,
+                  "end": 5648
+                }
+              }
+            ],
+            "span": {
+              "start": 5574,
+              "end": 5659
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Name",
+                "span": {
+                  "start": 5673,
+                  "end": 5695
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "name",
+                    "span": {
+                      "start": 5712,
+                      "end": 5723
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "input",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [
+                          {
+                            "name": "event",
+                            "event": "InputEvent",
+                            "span": {
+                              "start": 5744,
+                              "end": 5749
+                            }
+                          }
+                        ],
+                        "body": {
+                          "code": "(name.value = (event.currentTarget as HTMLInputElement).value)",
+                          "span": {
+                            "start": 5754,
+                            "end": 5816
+                          },
+                          "refs": [
+                            {
+                              "kind": "Write",
+                              "binding": "name@2644",
+                              "operator": "=",
+                              "span": {
+                                "start": 5754,
+                                "end": 5816
+                              },
+                              "target": {
+                                "start": 5755,
+                                "end": 5765
+                              },
+                              "value": {
+                                "start": 5768,
+                                "end": 5815
+                              },
+                              "arrowBody": true
+                            },
+                            {
+                              "kind": "Event",
+                              "member": "currentTarget",
+                              "span": {
+                                "start": 5769,
+                                "end": 5788
+                              }
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 5743,
+                          "end": 5816
+                        }
+                      },
+                      "span": {
+                        "start": 5743,
+                        "end": 5816
+                      }
+                    },
+                    "span": {
+                      "start": 5734,
+                      "end": 5817
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 5695,
+                  "end": 5828
+                }
+              }
+            ],
+            "span": {
+              "start": 5666,
+              "end": 5843
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 5858,
+                  "end": 5871
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "save@2941",
+                  "span": {
+                    "start": 5881,
+                    "end": 5885
+                  }
+                },
+                "span": {
+                  "start": 5872,
+                  "end": 5886
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Save",
+                "span": {
+                  "start": 5887,
+                  "end": 5907
+                }
+              }
+            ],
+            "span": {
+              "start": 5850,
+              "end": 5916
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "saving.value === \"\" ? error.value || \"Not saving\" : `Saving ${saving.value}`",
+                  "span": {
+                    "start": 5927,
+                    "end": 6003
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "saving@2693",
+                      "span": {
+                        "start": 5927,
+                        "end": 5939
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "error@2668",
+                      "span": {
+                        "start": 5949,
+                        "end": 5960
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "saving@2693",
+                      "span": {
+                        "start": 5989,
+                        "end": 6001
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 5926,
+                  "end": 6004
+                }
+              }
+            ],
+            "span": {
+              "start": 5923,
+              "end": 6008
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 6023,
+                  "end": 6036
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "importAll@3347",
+                  "span": {
+                    "start": 6046,
+                    "end": 6055
+                  }
+                },
+                "span": {
+                  "start": 6037,
+                  "end": 6056
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Import",
+                "span": {
+                  "start": 6057,
+                  "end": 6079
+                }
+              }
+            ],
+            "span": {
+              "start": 6015,
+              "end": 6088
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Import: ",
+                "span": {
+                  "start": 6098,
+                  "end": 6115
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "status.value",
+                  "span": {
+                    "start": 6116,
+                    "end": 6128
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "status@3186",
+                      "span": {
+                        "start": 6116,
+                        "end": 6128
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 6115,
+                  "end": 6129
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ", ",
+                "span": {
+                  "start": 6129,
+                  "end": 6131
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "imported.value",
+                  "span": {
+                    "start": 6132,
+                    "end": 6146
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "imported@3216",
+                      "span": {
+                        "start": 6132,
+                        "end": 6146
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 6131,
+                  "end": 6147
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " imported",
+                "span": {
+                  "start": 6147,
+                  "end": 6163
+                }
+              }
+            ],
+            "span": {
+              "start": 6095,
+              "end": 6167
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 6182,
+                  "end": 6195
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "refresh@3706",
+                  "span": {
+                    "start": 6205,
+                    "end": 6212
+                  }
+                },
+                "span": {
+                  "start": 6196,
+                  "end": 6213
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Refresh",
+                "span": {
+                  "start": 6214,
+                  "end": 6237
+                }
+              }
+            ],
+            "span": {
+              "start": 6174,
+              "end": 6246
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 6261,
+                  "end": 6274
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "prefetch@3934",
+                  "span": {
+                    "start": 6284,
+                    "end": 6292
+                  }
+                },
+                "span": {
+                  "start": 6275,
+                  "end": 6293
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Prefetch",
+                "span": {
+                  "start": 6294,
+                  "end": 6318
+                }
+              }
+            ],
+            "span": {
+              "start": 6253,
+              "end": 6327
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Note: ",
+                "span": {
+                  "start": 6337,
+                  "end": 6343
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "note.value",
+                  "span": {
+                    "start": 6344,
+                    "end": 6354
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "note@3674",
+                      "span": {
+                        "start": 6344,
+                        "end": 6354
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 6343,
+                  "end": 6355
+                }
+              }
+            ],
+            "span": {
+              "start": 6334,
+              "end": 6359
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 6374,
+                  "end": 6387
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "send@4357",
+                  "span": {
+                    "start": 6397,
+                    "end": 6401
+                  }
+                },
+                "span": {
+                  "start": 6388,
+                  "end": 6402
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Send",
+                "span": {
+                  "start": 6403,
+                  "end": 6423
+                }
+              }
+            ],
+            "span": {
+              "start": 6366,
+              "end": 6432
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Send: ",
+                "span": {
+                  "start": 6442,
+                  "end": 6448
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "sendBusy.value ? \"sending\" : outcome.value === \"\" ? \"not sent\" : outcome.value",
+                  "span": {
+                    "start": 6449,
+                    "end": 6527
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "sendBusy@4164",
+                      "span": {
+                        "start": 6449,
+                        "end": 6463
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "outcome@4195",
+                      "span": {
+                        "start": 6478,
+                        "end": 6491
+                      }
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "outcome@4195",
+                      "span": {
+                        "start": 6514,
+                        "end": 6527
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 6448,
+                  "end": 6528
+                }
+              }
+            ],
+            "span": {
+              "start": 6439,
+              "end": 6532
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 6547,
+                  "end": 6560
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(volume.value += 3)",
+                      "span": {
+                        "start": 6576,
+                        "end": 6595
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "volume@4936",
+                          "operator": "+=",
+                          "span": {
+                            "start": 6576,
+                            "end": 6595
+                          },
+                          "target": {
+                            "start": 6577,
+                            "end": 6589
+                          },
+                          "value": {
+                            "start": 6593,
+                            "end": 6594
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 6570,
+                      "end": 6595
+                    }
+                  },
+                  "span": {
+                    "start": 6570,
+                    "end": 6595
+                  }
+                },
+                "span": {
+                  "start": 6561,
+                  "end": 6596
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Louder",
+                "span": {
+                  "start": 6597,
+                  "end": 6619
+                }
+              }
+            ],
+            "span": {
+              "start": 6539,
+              "end": 6628
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Level: ",
+                "span": {
+                  "start": 6638,
+                  "end": 6645
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "level.value",
+                  "span": {
+                    "start": 6646,
+                    "end": 6657
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "level@4961",
+                      "span": {
+                        "start": 6646,
+                        "end": 6657
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 6645,
+                  "end": 6658
+                }
+              }
+            ],
+            "span": {
+              "start": 6635,
+              "end": 6662
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "role",
+                "value": "group",
+                "span": {
+                  "start": 6674,
+                  "end": 6686
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Server",
+                "span": {
+                  "start": 6687,
+                  "end": 6706
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 6724,
+                      "end": 6737
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "answer(\"Ada\")",
+                          "span": {
+                            "start": 6753,
+                            "end": 6766
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "answer@931",
+                              "span": {
+                                "start": 6753,
+                                "end": 6759
+                              },
+                              "call": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 6747,
+                          "end": 6766
+                        }
+                      },
+                      "span": {
+                        "start": 6747,
+                        "end": 6766
+                      }
+                    },
+                    "span": {
+                      "start": 6738,
+                      "end": 6767
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Reply",
+                    "span": {
+                      "start": 6768,
+                      "end": 6793
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 6716,
+                  "end": 6802
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 6819,
+                      "end": 6832
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Inline",
+                      "function": {
+                        "parameters": [],
+                        "body": {
+                          "code": "answer(\"\")",
+                          "span": {
+                            "start": 6848,
+                            "end": 6858
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "answer@931",
+                              "span": {
+                                "start": 6848,
+                                "end": 6854
+                              },
+                              "call": true
+                            }
+                          ]
+                        },
+                        "expression": true,
+                        "span": {
+                          "start": 6842,
+                          "end": 6858
+                        }
+                      },
+                      "span": {
+                        "start": 6842,
+                        "end": 6858
+                      }
+                    },
+                    "span": {
+                      "start": 6833,
+                      "end": 6859
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Decline",
+                    "span": {
+                      "start": 6860,
+                      "end": 6887
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 6811,
+                  "end": 6896
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "button",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "button",
+                    "span": {
+                      "start": 6913,
+                      "end": 6926
+                    }
+                  },
+                  {
+                    "kind": "Event",
+                    "event": "click",
+                    "handler": {
+                      "kind": "Function",
+                      "binding": "fail@1054",
+                      "span": {
+                        "start": 6936,
+                        "end": 6940
+                      }
+                    },
+                    "span": {
+                      "start": 6927,
+                      "end": 6941
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Fail",
+                    "span": {
+                      "start": 6942,
+                      "end": 6966
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 6905,
+                  "end": 6975
+                }
+              }
+            ],
+            "span": {
+              "start": 6669,
+              "end": 6988
+            }
+          }
+        ],
+        "span": {
+          "start": 5173,
+          "end": 7003
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SyncDesk",
+      "span": {
+        "start": 242,
+        "end": 7010
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Waiting",
+      "exported": false,
+      "code": "interface Waiting {\n  resolve: (text: string) => void;\n  reject: (error: Error) => void;\n}",
+      "span": {
+        "start": 95,
+        "end": 185
+      }
+    },
+    {
+      "name": "SyncDeskProps",
+      "exported": true,
+      "code": "interface SyncDeskProps {\n  files: string[];\n}",
+      "span": {
+        "start": 194,
+        "end": 240
+      }
+    }
+  ]
+}
