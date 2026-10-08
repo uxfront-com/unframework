@@ -55,6 +55,8 @@ export function spellingOf(component: UfComponent, module: UfModule): Spelling {
               ? written
               : `${propsObject}${written.slice(parameter!.name!.length)}`;
           case "loopVar":
+          case "slotScope":
+          case "component":
             return written;
           case "state":
           case "derived":
@@ -63,6 +65,9 @@ export function spellingOf(component: UfComponent, module: UfModule): Spelling {
           case "localFn":
           case "localVar":
           case "emit":
+          case "model":
+          case "slots":
+          case "context":
             return name(binding.id);
           default:
             return unreachable(binding.kind);
@@ -80,6 +85,8 @@ function declaredBySetup(binding: Binding): boolean {
   switch (binding.kind) {
     case "prop":
     case "loopVar":
+    case "slotScope":
+    case "component":
       return false;
     case "state":
     case "derived":
@@ -88,6 +95,9 @@ function declaredBySetup(binding: Binding): boolean {
     case "localFn":
     case "localVar":
     case "emit":
+    case "model":
+    case "slots":
+    case "context":
       return true;
     default:
       return unreachable(binding.kind);

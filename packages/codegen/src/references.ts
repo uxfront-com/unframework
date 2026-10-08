@@ -158,6 +158,9 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
         case "Lifecycle":
           readFunction(item.callback);
           break;
+        case "Provide":
+          read(item.value);
+          break;
         case "State":
         case "Derived":
         case "TemplateRef":
@@ -165,6 +168,8 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
         case "Const":
         case "Variable":
         case "Function":
+        case "Model":
+        case "Inject":
           break;
         default:
           unreachable(item);
@@ -188,11 +193,16 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
       case "Function":
         readFunction(item.function);
         break;
+      case "Inject":
+        read(item.fallback);
+        break;
       case "TemplateRef":
       case "Id":
       case "Watch":
       case "WatchEffect":
       case "Lifecycle":
+      case "Model":
+      case "Provide":
         break;
       default:
         unreachable(item);
@@ -273,8 +283,15 @@ export function liveTypes(
       case "Lifecycle":
         fn(item.callback);
         break;
+      case "Provide":
+        code(item.value);
+        break;
+      case "Inject":
+        if (item.fallback) code(item.fallback);
+        break;
       case "TemplateRef":
       case "Id":
+      case "Model":
         break;
       default:
         unreachable(item);
@@ -324,6 +341,7 @@ function readsOf(code: Expression | Code, found: Set<BindingId>): void {
       case "Global":
       case "Event":
       case "Api":
+      case "Slot":
         break;
       default:
         unreachable(reference);
@@ -345,12 +363,17 @@ function serverCode(item: SetupItem): Code[] {
       return [item.value];
     case "Derived":
       return [item.getter.body];
+    case "Provide":
+      return [item.value];
+    case "Inject":
+      return item.fallback ? [item.fallback] : [];
     case "TemplateRef":
     case "Id":
     case "Function":
     case "Watch":
     case "WatchEffect":
     case "Lifecycle":
+    case "Model":
       return [];
     default:
       return unreachable(item);

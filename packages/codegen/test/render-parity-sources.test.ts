@@ -167,7 +167,9 @@ function features(cases: readonly ParityCase[]): Set<string> {
         if (node.kind === "For") {
           found.add("a list");
           if (node.index) found.add("an indexed list");
-          if (node.body.children.some(holdsList)) found.add("a nested list");
+          if (node.body.kind === "Element" && node.body.children.some(holdsList)) {
+            found.add("a nested list");
+          }
         }
         if (node.kind !== "Element") return;
         if (node.tag === "svg") found.add("an svg");

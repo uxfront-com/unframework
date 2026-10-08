@@ -159,6 +159,11 @@ class Evaluator {
           }
           return;
         }
+        // Composition (ADR-0055) renders through its lanes in M3, not here yet.
+        case "Component":
+        case "SlotOutlet":
+        case "Dynamic":
+          throw new Error(`a ${node.kind} node is not rendered yet`);
         default:
           throw new Error(`unknown node ${(node satisfies never as RenderNode).kind}`);
       }
@@ -224,6 +229,8 @@ class Evaluator {
         case "Event":
         case "Ref":
           break;
+        case "Model":
+          throw new Error("a v-model is not rendered yet (ADR-0055)");
         default:
           throw new Error(`unknown attribute ${(attribute satisfies never as Attribute).kind}`);
       }

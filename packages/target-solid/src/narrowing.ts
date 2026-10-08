@@ -190,6 +190,9 @@ function expressionsIn(nodes: readonly RenderNode[]): (Expression | Code)[] {
               break;
             case "Ref":
               break;
+            // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+            case "Model":
+              break;
             default:
               attribute satisfies never;
           }
@@ -210,6 +213,10 @@ function expressionsIn(nodes: readonly RenderNode[]): (Expression | Code)[] {
       case "For":
         found.push(node.source);
         visit(node.body);
+        return;
+      case "Component":
+      case "SlotOutlet":
+      case "Dynamic":
         return;
       default:
         node satisfies never;
@@ -1287,6 +1294,7 @@ function replaced(
       case "Global":
       case "Event":
       case "Api":
+      case "Slot":
         return [{ ...ref, span: moved(ref.span) }];
       default:
         return ref satisfies never;
@@ -1313,6 +1321,12 @@ function printedAsName(kind: BindingKind): "loopVar" | "accessor" | undefined {
     case "localFn":
     case "localVar":
     case "emit":
+      return undefined;
+    case "model":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
       return undefined;
     default:
       return kind satisfies never;

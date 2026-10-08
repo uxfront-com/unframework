@@ -80,7 +80,9 @@ function factsOf(refs: readonly CodeReference[]): Facts {
       case "Api":
         facts.api = true;
         break;
+      // A slot's presence reads no binding: the parent's fill is the slot's.
       case "Event":
+      case "Slot":
         break;
       default:
         unreachable(ref);

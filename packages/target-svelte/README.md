@@ -67,6 +67,10 @@ A component is that line, an instance script when it takes props or has a setup,
   and takes the nearest interface they all extend where one does not (`src/handlers.ts`,
   `src/events.ts`). Every capability is native but `event-once`, emulated by
   `once`: `event-capture`, `event-passive`, `event-semantics`, `use-id`, `next-tick` included.
+  Of composition's cells, `model-modifiers` (`modelText`) and `reactive-context` (`refObject`)
+  are emulated, and the others native. Composition's cells (ADR-0055) are declared before Svelte
+  emits composition: until M3's lane for Svelte lands, `emit` reports UF1002 where a component first
+  uses it, and emits nothing for that component.
 - **Markup** (`svelteDialect` in `@unframework/codegen`). `{expr}`, `{#if}{:else if}{:else}{/if}`,
   `{#each source as item, index (key)}…{/each}` (the index only when an expression reads it),
   `name={expr}`, and Svelte's shorthands where the value is the variable of the same name

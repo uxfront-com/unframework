@@ -308,6 +308,7 @@ function slotsOf(reference: CodeReference): readonly Span[] {
     case "Global":
     case "Event":
     case "Api":
+    case "Slot":
       return [];
     default:
       return unreachable(reference);
@@ -380,6 +381,9 @@ function spell(node: ReferenceNode, written: string, context: Context): string {
       return spellWrite(reference, node.slots, written, context);
     case "Emit":
       return spellEmit(reference, node.slots, written, context);
+    // A slot's presence is not spelt yet (ADR-0055): each target's `emit` reports UF1002 for it.
+    case "Slot":
+      return written;
     default:
       return unreachable(reference);
   }

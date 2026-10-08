@@ -141,9 +141,16 @@ describe("requiredCapabilities over setup code and listeners", () => {
     for (const capability of BEHAVIOURAL_CAPABILITIES) {
       expect(CAPABILITY_NAMES).toContain(capability);
     }
+    // Each refines `interactivity` and is behavioural, but reactive context, which refines
+    // `context` and changes what renders (ADR-0055).
     for (const [capability, prerequisite] of Object.entries(CAPABILITY_PREREQUISITES)) {
-      expect(BEHAVIOURAL_CAPABILITIES.has(capability as never)).toBe(true);
-      expect(prerequisite).toBe("interactivity");
+      if (capability === "reactive-context") {
+        expect(prerequisite).toBe("context");
+        expect(BEHAVIOURAL_CAPABILITIES.has(capability)).toBe(false);
+      } else {
+        expect(BEHAVIOURAL_CAPABILITIES.has(capability as never)).toBe(true);
+        expect(prerequisite).toBe("interactivity");
+      }
     }
     expect(BEHAVIOURAL_CAPABILITIES.has("use-id")).toBe(false);
   });

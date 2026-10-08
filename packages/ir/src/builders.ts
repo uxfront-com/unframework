@@ -15,9 +15,13 @@ import type {
   ClassItem,
   Code,
   CodeReference,
+  ComponentAttribute,
+  ComponentNode,
   ConstItem,
   DerivedItem,
+  DynamicCandidate,
   DynamicClass,
+  DynamicNode,
   ElementNode,
   EmitReference,
   Emits,
@@ -26,6 +30,7 @@ import type {
   EventDeclaration,
   EventParameter,
   EventReference,
+  Exposes,
   Expression,
   ForNode,
   FragmentNode,
@@ -38,19 +43,35 @@ import type {
   IdItem,
   IfBranch,
   IfNode,
+  ImportedName,
+  InjectionKeyDeclaration,
+  InjectItem,
   InlineHandler,
   InterpolationNode,
   LifecycleItem,
+  ListenerAttribute,
+  ModelAttribute,
+  ModelBindingAttribute,
+  ModelItem,
+  ModuleApi,
+  ModuleImport,
   NarrowedPath,
   Parameter,
   ParameterPattern,
   Prop,
+  PropAttribute,
   PropsParameter,
+  ProvideItem,
   RefAttribute,
   Reference,
   RefSource,
   RenderNode,
   SetupItem,
+  SlotDeclaration,
+  SlotFill,
+  SlotOutletNode,
+  SlotReference,
+  Slots,
   Span,
   SpreadAttribute,
   SpreadKey,
@@ -81,14 +102,55 @@ export function span(start: number, end: number): Span {
   return { start, end };
 }
 
-/** Builds a module. */
+/** Builds a module: without imports or injection keys unless given. */
 export function createModule(
   file: string,
   components: UfComponent[] = [],
   exports: UfExport[] = [],
   types: TypeDeclaration[] = [],
+  imports: ModuleImport[] = [],
+  keys: InjectionKeyDeclaration[] = [],
 ): UfModule {
-  return { irVersion: IR_VERSION, file, components, exports, types };
+  return {
+    irVersion: IR_VERSION,
+    file,
+    components,
+    exports,
+    types,
+    ...(imports.length ? { imports } : {}),
+    ...(keys.length ? { keys } : {}),
+  };
+}
+
+/** Builds an import of another `.uf.tsx` module, with the API the resolver gave for it. */
+export function createModuleImport(
+  specifier: string,
+  file: string,
+  api: ModuleApi,
+  names: ImportedName[],
+  at: Span,
+): ModuleImport {
+  return { specifier, file, api, names, span: at };
+}
+
+/** Builds a name an import binds: `imported` is `default` for a default import. */
+export function createImportedName(
+  kind: ImportedName["kind"],
+  imported: string,
+  local: string,
+  at: Span,
+): ImportedName {
+  return { kind, imported, local, span: at };
+}
+
+/** Builds an injection key a module declares. */
+export function createInjectionKeyDeclaration(
+  name: string,
+  description: string,
+  type: TypeText,
+  at: Span,
+): InjectionKeyDeclaration {
+  return { name, description, type, span: at };
 }
 
 /** Builds a type declaration. */
@@ -101,7 +163,14 @@ export function createTypeDeclaration(
   return { name, exported, code, span: at };
 }
 
-/** Builds a component: without props, types, bindings, setup or events unless given. */
+/** What a component declares for composition (ADR-0054): each set only when given. */
+export interface ComponentOptions {
+  slots?: Slots;
+  exposes?: Exposes;
+  inheritAttrs?: false;
+}
+
+/** Builds a component: without props, types, bindings, setup, events or slots unless given. */
 export function createComponent(
   name: string,
   render: ElementNode | FragmentNode,
@@ -112,7 +181,9 @@ export function createComponent(
   bindings: Binding[] = [],
   setup: SetupItem[] = [],
   emits?: Emits,
+  options: ComponentOptions = {},
 ): UfComponent {
+  const { slots, exposes } = options;
   return {
     name,
     span: at,
@@ -120,10 +191,38 @@ export function createComponent(
     ...(propsParameter ? { propsParameter } : {}),
     types,
     ...(emits ? { emits } : {}),
+    ...(slots ? { slots } : {}),
+    ...(exposes ? { exposes } : {}),
+    ...(options.inheritAttrs === false ? { inheritAttrs: false as const } : {}),
     bindings,
     setup,
     render,
   };
+}
+
+/** Builds the slots a component declares with `defineSlots`. */
+export function createSlots(
+  binding: BindingId,
+  type: TypeText,
+  slots: SlotDeclaration[],
+  at: Span,
+): Slots {
+  return { binding, type, slots, span: at };
+}
+
+/** Builds a slot a component declares: `props` for a scoped slot. */
+export function createSlotDeclaration(
+  name: string,
+  optional: boolean,
+  at: Span,
+  props?: TypeText,
+): SlotDeclaration {
+  return { name, optional, ...(props ? { props } : {}), span: at };
+}
+
+/** Builds what a component exposes with `defineExpose`. */
+export function createExposes(functions: BindingId[], at: Span): Exposes {
+  return { functions, span: at };
 }
 
 /** Builds a props parameter: `name` is the parameter's in the object form only. */
@@ -199,6 +298,11 @@ export function createBindingReference(
 /** Builds a narrowed path of a read (see {@link NarrowedPath}). */
 export function createNarrowedPath(at: Span, scope: NarrowedPath["scope"]): NarrowedPath {
   return { span: at, scope };
+}
+
+/** Builds a test of a slot's presence, `slots.title`. */
+export function createSlotReference(slot: string, at: Span): SlotReference {
+  return { kind: "Slot", slot, span: at };
 }
 
 /** Builds a reference to an allowed global. */
@@ -457,6 +561,47 @@ export function createLifecycleItem(
   return { kind: "Lifecycle", hook, callback, span: at };
 }
 
+/** What a model is besides its binding and name: each set only when given. */
+export interface ModelOptions {
+  type?: TypeText;
+  default?: Expression;
+  required?: boolean;
+}
+
+/** Builds `const open = defineModel<boolean>("open", options)`. */
+export function createModelItem(
+  binding: BindingId,
+  name: string,
+  at: Span,
+  options: ModelOptions = {},
+): ModelItem {
+  const { type } = options;
+  return {
+    kind: "Model",
+    binding,
+    name,
+    ...(type ? { type } : {}),
+    ...(options.default ? { default: options.default } : {}),
+    ...(options.required ? { required: true as const } : {}),
+    span: at,
+  };
+}
+
+/** Builds `provide(key, value)`. */
+export function createProvideItem(key: string, value: Code, at: Span): ProvideItem {
+  return { kind: "Provide", key, value, span: at };
+}
+
+/** Builds `const value = inject(key, fallback)`: no `fallback` for `inject(key)`. */
+export function createInjectItem(
+  binding: BindingId,
+  key: string,
+  at: Span,
+  fallback?: Code,
+): InjectItem {
+  return { kind: "Inject", binding, key, ...(fallback ? { fallback } : {}), span: at };
+}
+
 /** Builds the events a component declares with `defineEmits`. */
 export function createEmits(
   binding: BindingId,
@@ -560,12 +705,75 @@ export function createBranch(
   return { ...(condition ? { condition } : {}), children, span: at };
 }
 
+/** Builds a component element. */
+export function createComponentNode(
+  component: string,
+  attributes: ComponentAttribute[],
+  fills: SlotFill[],
+  at: Span,
+): ComponentNode {
+  return { kind: "Component", component, attributes, fills, span: at };
+}
+
+/** Builds a slot outlet: `props` for a scoped slot. */
+export function createSlotOutlet(
+  slot: string,
+  fallback: RenderNode[],
+  at: Span,
+  props?: Expression,
+): SlotOutletNode {
+  return { kind: "SlotOutlet", slot, ...(props ? { props } : {}), fallback, span: at };
+}
+
+/** Builds `<component is>`: `fills` for component candidates only. */
+export function createDynamicNode(
+  is: Expression,
+  candidates: DynamicCandidate[],
+  attributes: (Attribute | ComponentAttribute)[],
+  children: RenderNode[],
+  at: Span,
+  fills?: SlotFill[],
+): DynamicNode {
+  return {
+    kind: "Dynamic",
+    is,
+    candidates,
+    attributes,
+    children,
+    ...(fills ? { fills } : {}),
+    span: at,
+  };
+}
+
+/** What a fill is besides its slot and children: each set only when given. */
+export interface SlotFillOptions {
+  parameter?: Parameter;
+  forward?: string;
+}
+
+/** Builds what fills a child's slot: `forward` names the parent's slot it passes on. */
+export function createSlotFill(
+  slot: string,
+  children: RenderNode[],
+  at: Span,
+  options: SlotFillOptions = {},
+): SlotFill {
+  const { parameter, forward } = options;
+  return {
+    slot,
+    ...(parameter ? { parameter } : {}),
+    children,
+    ...(forward === undefined ? {} : { forward }),
+    span: at,
+  };
+}
+
 /** Builds a list. */
 export function createFor(
   source: Expression,
   item: BindingId,
   key: Expression,
-  body: ElementNode,
+  body: ElementNode | ComponentNode,
   at: Span,
   index?: BindingId,
 ): ForNode {
@@ -642,6 +850,54 @@ export function createSpreadAttribute(
   at: Span,
 ): SpreadAttribute {
   return { kind: "Spread", value, keys, nullish, span: at };
+}
+
+/** Builds a prop passed to a component. */
+export function createPropAttribute(name: string, value: Expression, at: Span): PropAttribute {
+  return { kind: "Prop", name, value, span: at };
+}
+
+/** Builds a listener of an event a child declares: `onClear={reset}`. */
+export function createListenerAttribute(
+  event: string,
+  handler: Handler,
+  at: Span,
+): ListenerAttribute {
+  return { kind: "Listener", event, handler, span: at };
+}
+
+/** Builds `v-model:open={open.value}` on a component. */
+export function createModelBindingAttribute(
+  model: string,
+  value: Expression,
+  at: Span,
+): ModelBindingAttribute {
+  return { kind: "ModelBinding", model, value, span: at };
+}
+
+/** What an element's `v-model` is besides its value and control: each modifier set when true. */
+export interface ModelModifiers {
+  trim?: boolean;
+  lazy?: boolean;
+  number?: boolean;
+}
+
+/** Builds `v-model={text.value}` on a form control. */
+export function createModelAttribute(
+  value: Expression,
+  control: ModelAttribute["control"],
+  at: Span,
+  modifiers: ModelModifiers = {},
+): ModelAttribute {
+  return {
+    kind: "Model",
+    value,
+    control,
+    ...(modifiers.trim ? { trim: true as const } : {}),
+    ...(modifiers.lazy ? { lazy: true as const } : {}),
+    ...(modifiers.number ? { number: true as const } : {}),
+    span: at,
+  };
 }
 
 /** Builds a key a spread renders. */

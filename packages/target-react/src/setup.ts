@@ -420,6 +420,11 @@ function printItem(plan: ReactPlan, code: ReactCode, item: SetupItem): Printed {
       return printWatchEffect(plan, code, item);
     case "Lifecycle":
       return printLifecycle(plan, code, item);
+    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+    case "Model":
+    case "Provide":
+    case "Inject":
+      return [];
     default:
       return item satisfies never;
   }
@@ -877,6 +882,11 @@ function renderRead(plan: ReactPlan, id: BindingId): string {
     case "localFn":
     case "localVar":
     case "emit":
+    case "model":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
       return binding.name;
     default:
       return binding.kind satisfies never;
@@ -915,6 +925,11 @@ function dependencies(plan: ReactPlan, body: Code): string[] {
       case "templateRef":
       case "localVar":
       case "emit":
+      case "model":
+      case "slots":
+      case "slotScope":
+      case "context":
+      case "component":
         break;
       default:
         binding.kind satisfies never;

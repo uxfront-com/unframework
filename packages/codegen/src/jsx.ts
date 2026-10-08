@@ -205,6 +205,12 @@ export function jsxNode(node: RenderNode | FragmentNode, context: JsxContext): A
       return dialect.conditional ? dialect.conditional(node, context) : ternaryChain(node, context);
     case "For":
       return dialect.list ? dialect.list(node, context) : mapCall(node, context);
+    // Composition (ADR-0055) is not printed yet: each target's `emit` reports UF1002 for it
+    // before printing (`compositionUse`), until M3's lanes print it.
+    case "Component":
+    case "SlotOutlet":
+    case "Dynamic":
+      return js.nullLiteral();
     default:
       return unreachable(node);
   }
@@ -229,6 +235,11 @@ export function jsxChildren(nodes: readonly RenderNode[], context: JsxContext): 
           ? expression
           : js.jsxExpressionContainer(expression);
       }
+      // Not printed yet (`jsxNode`).
+      case "Component":
+      case "SlotOutlet":
+      case "Dynamic":
+        return js.jsxExpressionContainer(js.nullLiteral());
       default:
         return unreachable(node);
     }
@@ -278,7 +289,9 @@ export function mapCall(node: ForNode, context: JsxContext): AST.Expression {
     "key",
     js.jsxExpressionContainer(jsxExpression(node.key, context, "argument", "key")),
   );
-  const body = jsxElement(node.body, context, [key]);
+  // A component as the body is not printed yet (`jsxNode`).
+  const body =
+    node.body.kind === "Element" ? jsxElement(node.body, context, [key]) : js.nullLiteral();
   return js.callExpression(
     js.memberExpression(jsxExpression(node.source, context, "operand"), "map"),
     [js.arrowFunction(listParameters(node, context), body)],
@@ -345,6 +358,9 @@ export function jsxAttributes(node: ElementNode, context: JsxContext): AST.JSXAt
         return dialect.refAttribute
           ? dialect.refAttribute(attribute, node, context)
           : refJsxAttribute(attribute, node, context);
+      // Not printed yet (`jsxNode`).
+      case "Model":
+        return [];
       default:
         return unreachable(attribute);
     }

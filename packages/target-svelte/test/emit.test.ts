@@ -58,36 +58,59 @@ const svelteFile = (...blocks: string[]) => `${[OPTIONS, ...blocks].join("\n\n")
 const script = (...lines: string[]) => `<script lang="ts">\n${lines.join("\n")}\n</script>`;
 
 describe("svelte target", () => {
-  it("declares every capability, natively but for once listeners", () => {
+  it("declares every capability, natively but for once listeners, model modifiers and reactive context", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
       "attribute-spread",
       "bound-attribute",
       "class-binding",
+      "component",
+      "component-event",
       "conditional",
       "conditional-event-control",
+      "context",
+      "contextual-root",
+      "default-slot",
+      "default-slot-presence",
+      "dynamic-component",
       "element",
       "event-capture",
       "event-once",
       "event-passive",
       "event-semantics",
+      "expose",
+      "fallthrough",
       "fragment",
       "interactivity",
       "interpolation",
       "late-prop",
       "list",
       "listbox",
+      "model",
+      "model-array",
+      "model-modifiers",
+      "named-slot",
       "next-tick",
       "props",
+      "reactive-context",
+      "scoped-slot",
+      "slot-fallback",
+      "slot-forwarding",
       "static-attribute",
       "style-binding",
       "svg",
       "text",
+      "two-way-binding",
       "use-id",
     ]);
+    const helpers: Readonly<Record<string, string>> = {
+      "event-once": "once",
+      "model-modifiers": "modelText",
+      "reactive-context": "refObject",
+    };
     for (const [name, cell] of Object.entries(target.capabilities)) {
-      if (name === "event-once") {
-        expect(cell).toMatchObject({ support: "emulated", helper: "once" });
-      } else expect(cell).toEqual({ support: "native" });
+      const helper = helpers[name];
+      if (helper) expect(cell).toMatchObject({ support: "emulated", helper });
+      else expect(cell).toEqual({ support: "native" });
     }
   });
 

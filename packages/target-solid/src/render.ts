@@ -100,6 +100,8 @@ export function forSolid(
           ];
         }
         case "For":
+          // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+          if (node.body.kind !== "Element") return [node];
           return [{ ...node, body: element(node.body) }];
         case "Interpolation":
           // The `<Show>` an interpolation may become renders it as a component's content,
@@ -116,6 +118,10 @@ export function forSolid(
               : child,
           );
         case "Text":
+          return [node];
+        case "Component":
+        case "SlotOutlet":
+        case "Dynamic":
           return [node];
         default:
           return node satisfies never;

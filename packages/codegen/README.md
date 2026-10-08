@@ -12,7 +12,11 @@ framework-specific.
   `event-once`, `event-passive`), DOM semantics (`event-semantics`), an event control that runs
   on more than the event (`conditional-event-control`), `use-id`, `next-tick`, a prop the
   parent passes only after the component mounted, which a derived value or a watcher reads
-  (`late-prop`).
+  (`late-prop`), and composition's (ADR-0055): components and their events, the slot forms,
+  models and `v-model`, fallthrough, `expose`, context and dynamic components, and a root
+  element HTML ties to its parent (`contextual-root`, which a component without composition
+  may need). `compositionUse` finds where a component first uses composition, in source order:
+  until a target's M3 lane lands, its `emit` reports UF1002 there and emits nothing for it.
   Each cell is `native`, `emulated` with the name of the inline helper the target prints (React's
   `cx` for `class-binding`), or `unsupported` with a portability diagnostic: a target declares in
   its matrix what it cannot render exactly (P4, ADR-0033). `requiredCapabilities` derives what a

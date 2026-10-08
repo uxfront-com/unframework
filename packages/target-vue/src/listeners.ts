@@ -203,6 +203,7 @@ function templateReads(reference: CodeReference, component: UfComponent): boolea
       return VUE_TEMPLATE_GLOBALS.has(reference.name);
     case "Emit":
     case "Event":
+    case "Slot":
       return true;
     case "Api":
       return false;
@@ -225,6 +226,11 @@ function templateReadsBinding(kind: BindingKind): boolean {
     case "localConst":
     case "localFn":
     case "emit":
+    case "model":
+    case "slots":
+    case "slotScope":
+    case "context":
+    case "component":
       return true;
     case "localVar":
       return false;

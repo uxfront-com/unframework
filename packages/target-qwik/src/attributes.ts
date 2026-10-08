@@ -176,6 +176,11 @@ export function elementNamespaces(root: ElementNode | FragmentNode): Map<Element
       case "Text":
       case "Interpolation":
         return;
+      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+      case "Component":
+      case "SlotOutlet":
+      case "Dynamic":
+        return;
       default:
         return node satisfies never;
     }

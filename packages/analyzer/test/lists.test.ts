@@ -61,7 +61,7 @@ describe("lists", () => {
     const { list } = listOf(
       "{items.map((item) => <li key={item.id}><ol>{tags.map((tag) => <li key={tag}>{item.name}{tag}</li>)}</ol></li>)}",
     );
-    const inner = list.body.children[0];
+    const inner = list.body.kind === "Element" ? list.body.children[0] : undefined;
     expect(inner?.kind === "Element" && inner.children[0]?.kind).toBe("For");
   });
 

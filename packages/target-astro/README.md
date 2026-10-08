@@ -72,8 +72,13 @@ The capabilities (`src/index.ts`): `interactivity`, `event-capture`, `event-once
 `event-passive`, `event-semantics` and `next-tick` are unsupported (UF4001, for information):
 components render on the server only and each render is a new instance, so handlers, template
 refs, watchers and hooks never run and state keeps its initial value; the compiler reports only
-`interactivity`, once per module. `use-id` is emulated (`uniqueId`). Every other capability is
-native.
+`interactivity`, once per module. Composition's `component-event`, `two-way-binding`,
+`model-array`, `model-modifiers` and `expose` refine `interactivity` and are unsupported in the
+same way; `context` and `reactive-context` are unsupported (UF4001, warnings: `inject` gives its
+fallback, and a provided ref reaches no descendant). `use-id` is emulated (`uniqueId`), and so is
+`scoped-slot` (a render prop named as the slot). Every other capability is native. Composition's
+cells (ADR-0055) are declared before Astro emits composition: until M3's lane for Astro lands,
+`emit` reports UF1002 where a component first uses it, and emits nothing for that component.
 
 Its toolchain, for tests and tooling (the target's main entry never loads it):
 

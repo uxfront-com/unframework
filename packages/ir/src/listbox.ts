@@ -80,6 +80,11 @@ function hasSelectableOption(parent: ElementNode, children: readonly RenderNode[
       case "Text":
       case "Interpolation":
         return false;
+      // What a component or a slot renders is the run time's: taken to be an option.
+      case "Component":
+      case "SlotOutlet":
+      case "Dynamic":
+        return true;
       default:
         return unreachable(child);
     }

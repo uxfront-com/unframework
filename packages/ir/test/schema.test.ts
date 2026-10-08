@@ -75,7 +75,9 @@ describe("the kind lists", () => {
   });
 
   it("name every attribute kind in the schema", () => {
-    expect([...ATTRIBUTE_KINDS].sort()).toEqual(kindsOf("Attribute").sort());
+    expect([...ATTRIBUTE_KINDS].sort()).toEqual(
+      [...new Set([...kindsOf("Attribute"), ...kindsOf("ComponentAttribute")])].sort(),
+    );
   });
 
   it("name every setup item, handler, watch source and code reference kind in the schema", () => {
@@ -203,7 +205,8 @@ describe("validateModule", () => {
     expect(validateModule(module)).toEqual([
       {
         path: "/components/0/render/children/2",
-        message: "must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode",
+        message:
+          "must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode, ComponentNode, SlotOutletNode, DynamicNode",
       },
     ]);
   });
@@ -483,7 +486,7 @@ describe("validateModule", () => {
     const errors = validateModule(module);
     expect(errors).toHaveLength(1);
     expect(errors[0]!.message).toBe(
-      "must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode",
+      "must match one of ElementNode, TextNode, InterpolationNode, IfNode, ForNode, ComponentNode, SlotOutletNode, DynamicNode",
     );
   });
 

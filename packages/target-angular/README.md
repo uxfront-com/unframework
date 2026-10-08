@@ -188,8 +188,14 @@ written; listeners keep DOM semantics (`change` on commit, `focus` and `blur` wi
 ### Capabilities
 
 Native: everything but `event-capture`, `event-once` and `event-passive` (emulated, the directives
-above, helper `uf<Event><Option>`), `use-id` (emulated, `nextId`) and `next-tick` (emulated,
-`nextTick`).
+above, helper `uf<Event><Option>`), `use-id` (emulated, `nextId`), `next-tick` (emulated,
+`nextTick`) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
+`slot-forwarding` (emulated, the slot directives `uf<Component><Slot>`), `model-array`
+(`toggle`), `model-modifiers` (`modelText`), `fallthrough` (`fallthrough`), `reactive-context`
+(`refObject`) and `dynamic-component` (`@switch`), all emulated, and `default-slot-presence` and
+`contextual-root`, unsupported (UF4001, errors). Composition's cells (ADR-0055) are declared before
+Angular emits composition: until M3's lane for Angular lands, `emit` reports UF1002 where a
+component first uses it, and emits nothing for that component.
 
 ## Toolchain
 

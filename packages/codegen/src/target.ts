@@ -83,7 +83,49 @@ export type CapabilityName =
   /** A spread of an object whose keys its type declares (`SpreadAttribute`). */
   | "attribute-spread"
   /** SVG: an `<svg>` element and the SVG inside it. */
-  | "svg";
+  | "svg"
+  /** A component element (`ComponentNode`): an imported or a local component (ADR-0053). */
+  | "component"
+  /**
+   * A listener of an event a child declares (`ListenerAttribute`): refines `interactivity`, as
+   * the handler runs in the browser.
+   */
+  | "component-event"
+  /** The default slot: its outlet, `{slots.default?.()}`, or the children a parent fills it with. */
+  | "default-slot"
+  /** A named slot without props: its outlet or its fill. */
+  | "named-slot"
+  /** A slot with props, `{slots.item?.({ item })}`: its outlet or its scoped fill. */
+  | "scoped-slot"
+  /** A slot outlet with fallback content, rendered when the parent leaves the slot empty. */
+  | "slot-fallback"
+  /** `slots.default` as a condition, or the default slot forwarded, which keeps its presence. */
+  | "default-slot-presence"
+  /** A fill that passes on the parent's own slot, `{{ title: slots.title }}` (`SlotFill.forward`). */
+  | "slot-forwarding"
+  /** `defineModel` (`ModelItem`), and a component's `v-model:name` (`ModelBindingAttribute`). */
+  | "model"
+  /** An element's `v-model` (`ModelAttribute`): refines `interactivity`. */
+  | "two-way-binding"
+  /** A `v-model` of a `checkbox-group` or a `select-multiple`, whose value is an array. */
+  | "model-array"
+  /** A `v-model` that is `trim`, `lazy` or `number`, or of a `number` control. */
+  | "model-modifiers"
+  /** A `class` or a `style` on a component, which falls through to its root (ADR-0054). */
+  | "fallthrough"
+  /**
+   * A component whose root element HTML or ARIA ties to its parent (`CONTEXTUAL_ROOT_ELEMENTS`):
+   * a host element between them breaks the parent's content model (ADR-0056).
+   */
+  | "contextual-root"
+  /** `defineExpose`, and a `ref` on a component, which holds what it exposes. */
+  | "expose"
+  /** `provide` and `inject` (`ProvideItem`, `InjectItem`) with an injection key. */
+  | "context"
+  /** A provided `state`, `derived` or `model` binding, which descendants read as it changes. */
+  | "reactive-context"
+  /** `<component is>` over a statically known set (`DynamicNode`). */
+  | "dynamic-component";
 
 /** Every capability name, in a stable order. */
 export const CAPABILITY_NAMES: readonly CapabilityName[] = [
@@ -110,6 +152,24 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "style-binding",
   "attribute-spread",
   "svg",
+  "component",
+  "component-event",
+  "default-slot",
+  "named-slot",
+  "scoped-slot",
+  "slot-fallback",
+  "default-slot-presence",
+  "slot-forwarding",
+  "model",
+  "two-way-binding",
+  "model-array",
+  "model-modifiers",
+  "fallthrough",
+  "contextual-root",
+  "expose",
+  "context",
+  "reactive-context",
+  "dynamic-component",
 ];
 
 /**
@@ -127,12 +187,18 @@ export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Cap
   "conditional-event-control",
   "next-tick",
   "late-prop",
+  "component-event",
+  "expose",
+  "two-way-binding",
+  "model-array",
+  "model-modifiers",
 ]);
 
 /**
- * The capability each refining one needs: a listener's options and semantics and `nextTick` mean
- * nothing on a target without `interactivity`. The capability
- * check reports only the one they refine there, once, rather than each at the same listener.
+ * The capability each refining one needs: a listener's options and semantics, `nextTick`, a
+ * component's listeners and refs and an element's `v-model` mean nothing on a target without
+ * `interactivity`, and reactive context nothing without `context` (ADR-0055). The capability
+ * check reports only the one they refine there, once, rather than each at the same use.
  */
 export const CAPABILITY_PREREQUISITES: Readonly<Partial<Record<CapabilityName, CapabilityName>>> = {
   "event-capture": "interactivity",
@@ -141,6 +207,12 @@ export const CAPABILITY_PREREQUISITES: Readonly<Partial<Record<CapabilityName, C
   "event-semantics": "interactivity",
   "conditional-event-control": "interactivity",
   "next-tick": "interactivity",
+  "component-event": "interactivity",
+  expose: "interactivity",
+  "two-way-binding": "interactivity",
+  "model-array": "interactivity",
+  "model-modifiers": "interactivity",
+  "reactive-context": "context",
 };
 
 /** How a target supports a capability (plan §5.7). */

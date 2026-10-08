@@ -57,9 +57,14 @@ export function qwikTitles(
           })),
         };
       case "For":
-        return { ...node, body: element(node.body) };
+        return node.body.kind === "Element" ? { ...node, body: element(node.body) } : node;
       case "Text":
       case "Interpolation":
+        return node;
+      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+      case "Component":
+      case "SlotOutlet":
+      case "Dynamic":
         return node;
       default:
         return node satisfies never;
@@ -171,6 +176,10 @@ function templatePart(
       throw new Error(
         `An SVG <title> holds only text, and the IR's invariants rule out an ${node.kind} in one.`,
       );
+    case "Component":
+    case "SlotOutlet":
+    case "Dynamic":
+      return undefined;
     default:
       return node satisfies never;
   }

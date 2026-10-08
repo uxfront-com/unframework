@@ -99,6 +99,9 @@ export function assertedSetup(component: UfComponent): UfComponent {
           return { ...item, callback: fn(item.callback) };
         case "TemplateRef":
         case "Id":
+        case "Model":
+        case "Provide":
+        case "Inject":
           return item;
         default:
           return unreachable(item);
@@ -139,6 +142,7 @@ function movedReference(reference: CodeReference, moved: (span: Span) => Span): 
     case "Global":
     case "Event":
     case "Api":
+    case "Slot":
       return { ...reference, span: moved(reference.span) };
     default:
       return unreachable(reference);

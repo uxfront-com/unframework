@@ -106,7 +106,11 @@ the component opts out of it: its body starts with a comment naming the shape an
 The capabilities: `interactivity`, `event-capture`, `event-passive`, `conditional-event-control`
 and `use-id` are native;
 `event-once` (`useOnce`), `event-semantics` (`listen`) and `next-tick` (`useNextTick`) are
-emulated with inline helpers, and `class-binding` with `cx`.
+emulated with inline helpers, and `class-binding` with `cx`. Of composition's cells,
+`model-array` (`toggle`), `model-modifiers` (`modelText`) and `reactive-context` (`refObject`)
+are emulated, and the others native. Composition's cells (ADR-0055) are declared before React emits
+composition: until M3's lane for React lands, `emit` reports UF1002 where a component first uses it,
+and emits nothing for that component.
 
 Every name the output introduces (`cx`, `setCount`, `countRef`, `CounterEvents`, `listen`,
 `CSSProperties`, `_props`) is claimed around the source's own names, so none captures another.

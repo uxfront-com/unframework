@@ -27,19 +27,38 @@ import {
   createApiReference,
   createCode,
   createDerivedItem,
+  createDynamicNode,
   createEventAttribute,
+  createExposes,
   createFunctionCode,
   createFunctionHandler,
   createGetterSource,
   createIdItem,
   createInlineHandler,
   createLifecycleItem,
+  createParameter,
+  createRefAttribute,
+  createSlotFill,
+  createSlotReference,
+  createStaticClass,
+  createStaticStyle,
   createWatchEffectItem,
   createWatchItem,
 } from "@unframework/ir";
+import type {
+  ComponentNode,
+  ElementNode,
+  IfNode,
+  ModelAttribute,
+  ProvideItem,
+  SlotOutletNode,
+  UfModule,
+} from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
-import { CAPABILITY_NAMES, requiredCapabilities } from "../src/index.ts";
+import { composition, find } from "../../ir/test/composition-fixture.ts";
+import { everyKind } from "../../ir/test/fixtures.ts";
+import { CAPABILITY_NAMES, compositionUse, requiredCapabilities } from "../src/index.ts";
 
 const at = (start: number) => ({ start, end: start + 1 });
 
@@ -304,5 +323,166 @@ describe("requiredCapabilities", () => {
 
   it("names each capability once", () => {
     expect(new Set(CAPABILITY_NAMES).size).toBe(CAPABILITY_NAMES.length);
+  });
+});
+
+// Composition (ADR-0055): each kind's capability where it is first used, and `interactivity`
+// beside a component's model, listener and ref and an element's `v-model`.
+describe("requiredCapabilities over composition", () => {
+  it("derives composition's capabilities, each where it is first used", () => {
+    const field = find("<Field").start;
+    expect([...requiredCapabilities(composition())]).toEqual([
+      ["props", find("{ label }: { label: string }")],
+      ["model", find('const open = defineModel<boolean>("open");')],
+      ["context", find("const theme = inject(ThemeKey);")],
+      ["named-slot", find("slots.title")],
+      ["element", { start: find("<div>").start, end: find("</div>").end }],
+      ["conditional", find("{slots.title && <h2>{theme}</h2>}")],
+      ["interpolation", find("{theme}")],
+      ["component", { start: field, end: find("</Field>").end }],
+      ["interactivity", find("v-model:value={text.value}")],
+      ["component-event", find("onClear={() => (open.value = false)}")],
+      ["default-slot", find("{label}", 0, find(">{label}").start)],
+      ["two-way-binding", find("v-model={text.value}", 0, find("<input").start)],
+      ["slot-fallback", find("{slots.default?.() ?? label}")],
+    ]);
+  });
+
+  it("derives reactive context, a contextual root, exposes and a v-model's array and modifiers", () => {
+    const module = composition();
+    const form = module.components[0]!;
+    const provide = form.setup[3] as ProvideItem;
+    const value = find("text.value");
+    provide.value = createCode("text.value", value, [
+      createBindingReference(form.bindings[2]!.id, value),
+    ]);
+    form.exposes = createExposes([], find("const slots"));
+    const input = (form.render as ElementNode).children[2] as ElementNode;
+    const model = input.attributes[0] as ModelAttribute;
+    model.control = "checkbox-group";
+    model.trim = true;
+    const required = requiredCapabilities(module);
+    expect(required.get("reactive-context")).toEqual(provide.span);
+    expect(required.get("expose")).toEqual(find("const slots"));
+    expect(required.get("model-array")).toEqual(model.span);
+    expect(required.get("model-modifiers")).toEqual(model.span);
+    form.render = createElement("li", [], [], find("<div>"));
+    expect(requiredCapabilities(module).get("contextual-root")).toEqual(find("<div>"));
+  });
+});
+
+describe("compositionUse", () => {
+  it("finds where a component first uses composition, in source order", () => {
+    const module = composition();
+    const form = module.components[0]!;
+    expect(compositionUse(module, form)).toEqual({
+      what: "an injection key",
+      span: module.keys![0]!.span,
+    });
+    delete module.keys;
+    expect(compositionUse(module, form)).toEqual({
+      what: "`defineSlots`",
+      span: form.slots!.span,
+    });
+    delete form.slots;
+    expect(compositionUse(module, form)).toEqual({
+      what: "model",
+      span: find('const open = defineModel<boolean>("open");'),
+    });
+  });
+
+  it("finds `defineOptions`, which no capability covers", () => {
+    const module = composition();
+    const form = module.components[0]!;
+    delete module.keys;
+    delete form.slots;
+    form.setup = [];
+    form.bindings = form.bindings.filter(({ kind }) => kind === "prop");
+    form.render = createElement("div", [], [], find("<div>"));
+    expect(compositionUse(module, form)).toBeUndefined();
+    form.inheritAttrs = false;
+    expect(compositionUse(module, form)).toEqual({ what: "`defineOptions`", span: form.span });
+  });
+
+  it("finds nothing in a component without composition", () => {
+    const module = everyKind();
+    for (const each of module.components) expect(compositionUse(module, each)).toBeUndefined();
+  });
+});
+
+describe("requiredCapabilities over a component's attributes, slots and `<component is>`", () => {
+  const field = (module: UfModule) =>
+    (module.components[0]!.render as ElementNode).children[1] as ComponentNode;
+
+  it("derives fallthrough at a component's class and style, and expose at its ref", () => {
+    const module = composition();
+    const at = find("label={label}");
+    field(module).attributes.push(
+      createClassAttribute([createStaticClass("wide", at)], at),
+      createStyleAttribute([createStaticStyle("color", "red", at)], at),
+      createRefAttribute("text@0", at),
+    );
+    const required = requiredCapabilities(module);
+    expect(required.get("fallthrough")).toEqual(at);
+    expect(required.get("expose")).toEqual(at);
+    expect(required.has("class-binding")).toBe(false);
+    expect(required.has("style-binding")).toBe(false);
+  });
+
+  it("derives a scoped slot at a fill with a parameter and an outlet with props", () => {
+    const module = composition();
+    const [fill] = field(module).fills;
+    const parameter = createParameter("props", fill!.span);
+    field(module).fills = [createSlotFill("default", fill!.children, fill!.span, { parameter })];
+    expect(requiredCapabilities(module).get("scoped-slot")).toEqual(fill!.span);
+    const scoped = composition();
+    field(scoped).fills = [];
+    const outlet = (scoped.components[0]!.render as ElementNode).children[3] as SlotOutletNode;
+    outlet.props = createExpression("label", find("label", 0, find("?? label").start));
+    expect(requiredCapabilities(scoped).get("scoped-slot")).toEqual(outlet.span);
+  });
+
+  it("derives default-slot presence at a test of it and at its forward, with slot forwarding", () => {
+    const module = composition();
+    const presence = find("slots.title");
+    const branch = ((module.components[0]!.render as ElementNode).children[0] as IfNode)
+      .branches[0]!;
+    branch.condition = createExpression("slots.title", presence, [
+      createSlotReference("default", presence),
+    ]);
+    expect(requiredCapabilities(module).get("default-slot-presence")).toEqual(presence);
+    const forwarded = composition();
+    const [fill] = field(forwarded).fills;
+    field(forwarded).fills = [createSlotFill("default", [], fill!.span, { forward: "default" })];
+    const required = requiredCapabilities(forwarded);
+    expect(required.get("slot-forwarding")).toEqual(fill!.span);
+    expect(required.get("default-slot-presence")).toEqual(fill!.span);
+  });
+
+  it("derives dynamic-component, and an element's capabilities for tag candidates", () => {
+    const module = composition();
+    const at = find("</div>");
+    const is = createExpression("label", find("label", 0, find("<Field").end));
+    (module.components[0]!.render as ElementNode).children.push(
+      createDynamicNode(
+        is,
+        [{ kind: "Tag", tag: "a" }],
+        [createClassAttribute([createStaticClass("link", at)], at)],
+        [],
+        at,
+      ),
+    );
+    const required = requiredCapabilities(module);
+    expect(required.get("dynamic-component")).toEqual(at);
+    expect(required.get("class-binding")).toEqual(at);
+    expect(required.has("fallthrough")).toBe(false);
+  });
+
+  it("derives a contextual root outside composition, which compositionUse leaves alone", () => {
+    const at = find("<div>");
+    const item = createComponent("Item", createElement("li", [], [createText("One", at)], at), at);
+    const module = createModule("Item.uf.tsx", [item]);
+    expect(requiredCapabilities(module).get("contextual-root")).toEqual(at);
+    expect(compositionUse(module, item)).toBeUndefined();
   });
 });

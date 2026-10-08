@@ -83,6 +83,8 @@ function describeAttribute(attribute: Attribute): string {
       return `on:${attribute.event}`;
     case "Ref":
       return `ref:${attribute.binding}`;
+    case "Model":
+      return `v-model:${attribute.control}={${attribute.value.code}}`;
   }
 }
 

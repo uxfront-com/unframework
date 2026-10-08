@@ -20,6 +20,8 @@ invalid options (an unknown target name, two targets with one name): every other
 diagnostic, including a plugin or a target that throws, or returns or reports something malformed. Hooks and
 targets receive the IR frozen, a target's missing capability cell counts as unsupported, and two
 output files whose paths differ only in case are reported, since they collide on macOS and Windows.
+The `resolve` option will give an imported `.uf.tsx` module's public API (ADR-0053); nothing reads
+it until M3's core lane lowers imports.
 A capability that refines one the target cannot support (a listener's options and semantics, and
 `nextTick`, refine `interactivity`: codegen's `CAPABILITY_PREREQUISITES`) is not reported again, so
 Astro reports one inert listener once.

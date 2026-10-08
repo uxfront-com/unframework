@@ -90,6 +90,11 @@ function part(
       throw new Error(
         `An SVG <title> holds only text, and the IR's invariants rule out an ${node.kind} in one.`,
       );
+    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+    case "Component":
+    case "SlotOutlet":
+    case "Dynamic":
+      return undefined;
     default:
       return node satisfies never;
   }

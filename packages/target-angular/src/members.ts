@@ -347,6 +347,11 @@ export function classMembers(context: MemberContext): {
       case "Lifecycle":
         effect(constructorCode, lifecycleCode(item, plan, context.rules, names), true);
         break;
+      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+      case "Model":
+      case "Provide":
+      case "Inject":
+        break;
       default:
         unreachable(item);
     }

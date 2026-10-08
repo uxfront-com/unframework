@@ -439,6 +439,8 @@ function fallbackAttribute(children: readonly RenderNode[], context: JsxContext)
  * when the index is not read either.
  */
 function list(node: ForNode, context: JsxContext, imports: ImportSet): AstExpression {
+  // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+  if (node.body.kind !== "Element") return js.nullLiteral();
   const item = jsxBinding(node.item, context);
   const index = node.index === undefined ? undefined : jsxBinding(node.index, context);
   const parameters = [];
@@ -493,6 +495,8 @@ function hasTypedProps(element: ElementNode): boolean {
       case "Event":
       case "Ref":
         return true;
+      case "Model":
+        return false;
       default:
         return attribute satisfies never;
     }

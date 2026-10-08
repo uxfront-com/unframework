@@ -16,6 +16,14 @@ plain, versioned, schema-validated JSON (plan §5.3).
   global; setup `Code` also resolves writes, emits, `nextTick` and a handler's event members, and
   a `FunctionCode` keeps a function's parameters, flags and body apart, for the targets that print
   it from its parts. A ref's value is read as `count.value`, which its reference spans.
+- **Composition (ADR-0055):** a module's `imports` of other `.uf.tsx` modules, each with the
+  `ModuleApi` the compiler's resolver returned (ADR-0053), and its injection `keys`; a
+  component's `slots`, `exposes` and `inheritAttrs`; the render nodes `Component`, `SlotOutlet`
+  and `Dynamic` (`<component is>`), a list's body that is a component, a component's attributes
+  (`Prop`, `Listener`, `ModelBinding`, `Class`, `Style`, `Ref`) and fills, an element's `v-model`
+  (`Model`), the setup items `Model`, `Provide` and `Inject`, the binding kinds `model`, `slots`,
+  `slotScope`, `context` and `component`, and a slot's presence (`Slot` references). The analyser
+  lowers none of it yet: M3's lanes do.
 - **Builders:** one per type (`createModule`, `createComponent`, `createElement`, `createFor`,
   `createExpression`, `createCode`, `createWriteReference`, `createFunctionCode`,
   `createStateItem`, `createEventAttribute`, …). They write keys in the order of the types, which
@@ -56,18 +64,26 @@ plain, versioned, schema-validated JSON (plan §5.3).
   named apart from the component's other names and from what the targets reserve; code that runs
   where it may (templates and what the setup evaluates write, emit and await nothing, read no
   template ref or setup `let`, call only pure local functions, a getter only those that read
-  static values, and read only what is declared before them); writes of a `state` or a `let`,
+  static values, and read only what is declared before them); writes of a `state`, a `model` or a `let`,
   emits of a declared event with as many arguments as it takes, in client code only; an immediate
   watcher safe on the server, and DOM reads only after the DOM updates; functions with the
   parameters their role takes; listeners of an event of the vocabulary, with one option at most,
   whose handlers use only the event members every target's event carries and list their leading
   `preventDefault()` and `stopPropagation()` calls; and each template ref attached by one element
-  outside any list and Angular's literal region. The compiler emits from no module that breaks
-  one, a plugin's included, and checks itself that a plugin's code is the analyser's.
+  outside any list and Angular's literal region. For composition (ADR-0055): a component element
+  names exactly one imported or local component, and each prop, listener, model and fill a
+  declaration of its API; a slot outlet, a slot's presence and a forwarded fill name a declared
+  slot; a model's binding is a `state`'s or a `model`'s `.value`; an injected value is never
+  written; a `Dynamic` node's candidates are all tags, whose attributes and children each tag
+  keeps as an element, or all components; slots, exposed functions and models are declared once,
+  a model named apart from the props; `provide` and `inject` name a key the module declares or
+  imports; and a `v-model`'s control is one its element has. The compiler emits from no module
+  that breaks one, a plugin's included, and checks itself that a plugin's code is the analyser's.
 - **Portability facts:** what the targets render differently from the same markup
   (`portability.ts`): elements Vue does not know, template syntax, attributes a framework acts on
   or sets as state, `contenteditable` with children, empty URLs React drops, whitespace Svelte
-  drops, attributes Angular cannot bind, text the parser moves or drops. The analyser reports each
+  drops, attributes Angular cannot bind, text the parser moves or drops, and the root elements
+  tied to their parent that Angular's host breaks (`CONTEXTUAL_ROOT_ELEMENTS`). The analyser reports each
   at its source, and the invariants reject them in any IR; but for a bound `value` that may be
   nullish where some targets set the property (`NULLISH_VALUE_ELEMENTS`), which the analyser
   alone can tell: the IR holds no kinds.

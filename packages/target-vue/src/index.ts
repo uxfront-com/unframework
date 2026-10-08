@@ -1,4 +1,4 @@
-import { defineTarget, printMarkup, vueDialect } from "@unframework/codegen";
+import { compositionUse, defineTarget, printMarkup, vueDialect } from "@unframework/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
@@ -52,8 +52,38 @@ export const vue: Target = defineTarget({
     "style-binding": { support: "native" },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
+    component: { support: "native" },
+    "component-event": { support: "native" },
+    "default-slot": { support: "native" },
+    "named-slot": { support: "native" },
+    "scoped-slot": { support: "native" },
+    "slot-fallback": { support: "native" },
+    "default-slot-presence": { support: "native" },
+    "slot-forwarding": { support: "native" },
+    model: { support: "native" },
+    "two-way-binding": { support: "native" },
+    "model-array": { support: "native" },
+    "model-modifiers": { support: "native" },
+    fallthrough: { support: "native" },
+    "contextual-root": { support: "native" },
+    expose: { support: "native" },
+    context: { support: "native" },
+    "reactive-context": { support: "native" },
+    "dynamic-component": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    // Composition's cells are declared before this target emits it (ADR-0055): until M3's lane
+    // for Vue lands, a component that uses it is reported, never emitted without it (P2).
+    const composition = compositionUse(context.module, component);
+    if (composition) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message: `The vue target does not emit ${composition.what} yet: composition lands in M3.`,
+        span: composition.span,
+      });
+      return [];
+    }
     const { block, rewrite, listeners } = scriptSetup(component, context.module);
     // The component resolves the names of loop variables.
     const template = printMarkup(component.render, vueDialect, {

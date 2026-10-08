@@ -4,7 +4,7 @@ import type { OutputFile, Target } from "@unframework/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 import { checkInvariants, validateModule } from "@unframework/ir";
-import type { IrValidationError, UfComponent, UfModule } from "@unframework/ir";
+import type { IrValidationError, ModuleApi, UfComponent, UfModule } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
 
 import { checkCapabilities } from "./capabilities.ts";
@@ -50,6 +50,14 @@ export interface CompileOptions {
   plugins?: readonly CompilerPlugin[];
   /** Each target's options, by target name. */
   targetOptions?: Readonly<Record<string, unknown>>;
+  /**
+   * Resolves an imported `.uf.tsx` module to its public API (ADR-0053). `importer` is
+   * `filename`. It is pure and deterministic (P8): it analyses the child's declarations, never
+   * compiles it, so the output depends only on the source, the options and what it returns.
+   * Without it, or when it returns nothing, the import is UF1202. Not read yet: M3's core lane
+   * lowers imports through it.
+   */
+  resolve?: (request: { specifier: string; importer: string }) => Promise<ModuleApi | undefined>;
 }
 
 /** The result of {@link compile}. */

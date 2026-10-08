@@ -34,6 +34,20 @@
             "$ref": "#/definitions/TypeDeclaration"
           },
           "description": "The local type declarations the components' props, events and setup code use, in source order, each name once: the targets that print types copy them into the outputs of the components that use them."
+        },
+        "imports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ModuleImport"
+          },
+          "description": "The module's imports of other `.uf.tsx` modules, in source order, each with the API the resolver gave for it (ADR-0053). Absent when it imports none."
+        },
+        "keys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/InjectionKeyDeclaration"
+          },
+          "description": "The injection keys the module declares and exports, in source order (ADR-0054)."
         }
       },
       "required": [
@@ -77,6 +91,19 @@
         "emits": {
           "$ref": "#/definitions/Emits",
           "description": "The events the component declares with `const emit = defineEmits<{ … }>()` (ADR-0047). Absent when it declares none."
+        },
+        "slots": {
+          "$ref": "#/definitions/Slots",
+          "description": "The slots the component declares with `const slots = defineSlots<{ … }>()` (ADR-0054)."
+        },
+        "exposes": {
+          "$ref": "#/definitions/Exposes",
+          "description": "The local functions the component exposes with `defineExpose({ … })` (ADR-0054)."
+        },
+        "inheritAttrs": {
+          "type": "boolean",
+          "const": false,
+          "description": "Set by `defineOptions({ inheritAttrs: false })`: no `class` or `style` falls through."
         },
         "bindings": {
           "type": "array",
@@ -219,6 +246,9 @@
         },
         {
           "$ref": "#/definitions/GlobalReference"
+        },
+        {
+          "$ref": "#/definitions/SlotReference"
         }
       ],
       "description": "A resolved identifier in an expression."
@@ -320,6 +350,30 @@
       ],
       "additionalProperties": false,
       "description": "A read of a global every target can reach: in a template expression one of `ALLOWED_GLOBALS` (Angular templates see only the component's members, so its target declares one for each); in setup code one of `PURE_GLOBALS` or, in client code, `CLIENT_GLOBALS` (ADR-0045)."
+    },
+    "SlotReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Slot"
+        },
+        "slot": {
+          "type": "string",
+          "description": "The slot's name, as `defineSlots` declares it."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The member expression, `slots.title`."
+        }
+      },
+      "required": [
+        "kind",
+        "slot",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`slots.title` as a condition (ADR-0054): whether the parent filled the slot. Only a render expression holds one, never setup code; rendering a slot is a  {@link  SlotOutletNode } ."
     },
     "PropsParameter": {
       "type": "object",
@@ -440,6 +494,87 @@
       "additionalProperties": false,
       "description": "A member of an event's named tuple: `value: number` in `change: [value: number]`."
     },
+    "Slots": {
+      "type": "object",
+      "properties": {
+        "binding": {
+          "$ref": "#/definitions/BindingId",
+          "description": "The `slots` binding."
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The type argument as written."
+        },
+        "slots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SlotDeclaration"
+          },
+          "description": "The slots, in member order, each name once."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The declaration, from `const` to its end."
+        }
+      },
+      "required": [
+        "binding",
+        "type",
+        "slots",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "The slots a component declares: `const slots = defineSlots<{ title?: () => any }>()`."
+    },
+    "SlotDeclaration": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "`default`, or the name of a named slot."
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Whether the member is optional: every slot is (UF2029), so a parent may leave it empty."
+        },
+        "props": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The props a scoped slot passes, as written: the type of the member's parameter."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "name",
+        "optional",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A slot a component declares (ADR-0054)."
+    },
+    "Exposes": {
+      "type": "object",
+      "properties": {
+        "functions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BindingId"
+          },
+          "description": "The exposed `localFn` bindings, in source order."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The call."
+        }
+      },
+      "required": [
+        "functions",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "What a component exposes with `defineExpose({ focus, clear })` (ADR-0054)."
+    },
     "Binding": {
       "type": "object",
       "properties": {
@@ -479,9 +614,14 @@
         "localConst",
         "localFn",
         "localVar",
-        "emit"
+        "emit",
+        "model",
+        "slots",
+        "slotScope",
+        "context",
+        "component"
       ],
-      "description": "What declares a binding. Only the kinds the analyser lowers: the coverage gate requires a corpus case for each.\n- `prop`: a prop, destructured or read through the props object;\n- `loopVar`: the item or index parameter of a list's callback;\n- `state`: `const count = ref(…)`, read and written through `count.value`;\n- `derived`: `const total = computed(() => …)`, read through `total.value`;\n- `templateRef`: `const input = useTemplateRef<HTMLInputElement>()`, read through   `input.value` in client code, and attached with `ref={input}`;\n- `localConst`: a setup `const` holding a value, `useId()`'s included;\n- `localFn`: a setup function, `function save() {…}` or `const save = () => …`;\n- `localVar`: a setup `let`, which holds what no template reads (a timer's id);\n- `emit`: the function `defineEmits` returns."
+      "description": "What declares a binding. Only the kinds the analyser lowers: the coverage gate requires a corpus case for each.\n- `prop`: a prop, destructured or read through the props object;\n- `loopVar`: the item or index parameter of a list's callback;\n- `state`: `const count = ref(…)`, read and written through `count.value`;\n- `derived`: `const total = computed(() => …)`, read through `total.value`;\n- `templateRef`: `const input = useTemplateRef<HTMLInputElement>()`, read through   `input.value` in client code, and attached with `ref={input}`;\n- `localConst`: a setup `const` holding a value, `useId()`'s included;\n- `localFn`: a setup function, `function save() {…}` or `const save = () => …`;\n- `localVar`: a setup `let`, which holds what no template reads (a timer's id);\n- `emit`: the function `defineEmits` returns;\n- `model`: `const open = defineModel<boolean>(\"open\")`, read and written as `open.value`, as   state is (ADR-0054);\n- `slots`: the object `defineSlots` returns;\n- `slotScope`: a scoped fill's parameter, or a name its pattern binds;\n- `context`: `const theme = inject(ThemeKey)`, an injected value, read-only;\n- `component`: a component named in `<component is>`'s set."
     },
     "SetupItem": {
       "anyOf": [
@@ -514,6 +654,15 @@
         },
         {
           "$ref": "#/definitions/LifecycleItem"
+        },
+        {
+          "$ref": "#/definitions/ModelItem"
+        },
+        {
+          "$ref": "#/definitions/ProvideItem"
+        },
+        {
+          "$ref": "#/definitions/InjectItem"
         }
       ],
       "description": "What a component's setup declares or runs, in source order (ADR-0045)."
@@ -593,6 +742,9 @@
         },
         {
           "$ref": "#/definitions/EventReference"
+        },
+        {
+          "$ref": "#/definitions/SlotReference"
         }
       ],
       "description": "A resolved name in setup code."
@@ -606,7 +758,7 @@
         },
         "binding": {
           "$ref": "#/definitions/BindingId",
-          "description": "A `state` or a `localVar` binding."
+          "description": "A `state`, a `model` or a `localVar` binding."
         },
         "operator": {
           "type": "string",
@@ -646,7 +798,7 @@
         "target"
       ],
       "additionalProperties": false,
-      "description": "A write of a `state` binding's value or of a `localVar`: `count.value = 1`, `count.value += step`, `count.value++`, `timer = setInterval(…)` (ADR-0045). A write is a statement of its own: the whole expression of an expression statement, or the whole body of an arrow function."
+      "description": "A write of a `state` or `model` binding's value or of a `localVar`: `count.value = 1`, `count.value += step`, `count.value++`, `timer = setInterval(…)` (ADR-0045). A write is a statement of its own: the whole expression of an expression statement, or the whole body of an arrow function."
     },
     "EmitReference": {
       "type": "object",
@@ -1210,6 +1362,105 @@
       "additionalProperties": false,
       "description": "`onMounted(…)` or `onUnmounted(…)` (ADR-0048): runs in the browser only."
     },
+    "ModelItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Model"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "name": {
+          "type": "string",
+          "description": "The model's name, the string literal `defineModel` takes."
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The type argument as written."
+        },
+        "default": {
+          "$ref": "#/definitions/Expression",
+          "description": "The `default` option: a static value, as a prop's default is."
+        },
+        "required": {
+          "type": "boolean",
+          "const": true,
+          "description": "`required: true`."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "name",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`const open = defineModel<boolean>(\"open\", { default: false })`: a `model` binding (ADR-0054), a prop the parent may bind two ways."
+    },
+    "ProvideItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Provide"
+        },
+        "key": {
+          "type": "string",
+          "description": "The local name of the module's key or of an imported one."
+        },
+        "value": {
+          "$ref": "#/definitions/Code",
+          "description": "The provided value."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "key",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`provide(ThemeKey, theme)` (ADR-0054): a value the component's descendants inject."
+    },
+    "InjectItem": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Inject"
+        },
+        "binding": {
+          "$ref": "#/definitions/BindingId"
+        },
+        "key": {
+          "type": "string",
+          "description": "The local name of the module's key or of an imported one."
+        },
+        "fallback": {
+          "$ref": "#/definitions/Code",
+          "description": "What `inject` gives where no ancestor provides the key."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "binding",
+        "key",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`const theme = inject(ThemeKey, fallback)`: a `context` binding (ADR-0054)."
+    },
     "ElementNode": {
       "type": "object",
       "properties": {
@@ -1272,6 +1523,9 @@
         },
         {
           "$ref": "#/definitions/RefAttribute"
+        },
+        {
+          "$ref": "#/definitions/ModelAttribute"
         }
       ],
       "description": "An attribute on an element."
@@ -1721,6 +1975,59 @@
       "additionalProperties": false,
       "description": "`ref={input}` (ADR-0049): attaches the element to a `templateRef` binding. It renders nothing."
     },
+    "ModelAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Model"
+        },
+        "value": {
+          "$ref": "#/definitions/Expression",
+          "description": "A `state` or `model` binding's `.value`."
+        },
+        "control": {
+          "type": "string",
+          "enum": [
+            "text",
+            "number",
+            "textarea",
+            "select",
+            "select-multiple",
+            "checkbox",
+            "checkbox-group",
+            "radio"
+          ],
+          "description": "The control, from its tag and its `type`."
+        },
+        "trim": {
+          "type": "boolean",
+          "const": true,
+          "description": "`v-model_trim`: the value is trimmed."
+        },
+        "lazy": {
+          "type": "boolean",
+          "const": true,
+          "description": "`v-model_lazy`: the value is written on `change`, not on `input`."
+        },
+        "number": {
+          "type": "boolean",
+          "const": true,
+          "description": "`v-model_number`: the value is parsed as a number."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "value",
+        "control",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`v-model={text.value}` on a form control (ADR-0054): binds the control's value, or its checked state, two ways."
+    },
     "RenderNode": {
       "anyOf": [
         {
@@ -1737,6 +2044,15 @@
         },
         {
           "$ref": "#/definitions/ForNode"
+        },
+        {
+          "$ref": "#/definitions/ComponentNode"
+        },
+        {
+          "$ref": "#/definitions/SlotOutletNode"
+        },
+        {
+          "$ref": "#/definitions/DynamicNode"
         }
       ],
       "description": "A node of the render tree."
@@ -1861,8 +2177,15 @@
           "description": "The `key` of the callback's root, lifted off the element: `key` is no attribute."
         },
         "body": {
-          "$ref": "#/definitions/ElementNode",
-          "description": "The callback's root element, without its `key`."
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ElementNode"
+            },
+            {
+              "$ref": "#/definitions/ComponentNode"
+            }
+          ],
+          "description": "The callback's root element or component, without its `key` (ADR-0053)."
         },
         "span": {
           "$ref": "#/definitions/Span"
@@ -1878,6 +2201,328 @@
       ],
       "additionalProperties": false,
       "description": "A list, `source.map((item, index) => <li key={…}>…</li>)` (ADR-0036)."
+    },
+    "ComponentNode": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Component"
+        },
+        "component": {
+          "type": "string",
+          "description": "The local name of an imported component, or the name of one of the module's own."
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ComponentAttribute"
+          },
+          "description": "Each attribute, each name set once."
+        },
+        "fills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SlotFill"
+          },
+          "description": "What fills the child's slots: the children as the default slot's, then the named ones."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "component",
+        "attributes",
+        "fills",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A component element, `<Field label=\"Name\" onClear={reset} />` (ADR-0053): an imported component, one of the module's own, or the component itself."
+    },
+    "ComponentAttribute": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/PropAttribute"
+        },
+        {
+          "$ref": "#/definitions/ListenerAttribute"
+        },
+        {
+          "$ref": "#/definitions/ModelBindingAttribute"
+        },
+        {
+          "$ref": "#/definitions/ClassAttribute"
+        },
+        {
+          "$ref": "#/definitions/StyleAttribute"
+        },
+        {
+          "$ref": "#/definitions/RefAttribute"
+        }
+      ],
+      "description": "An attribute on a component (ADR-0053, ADR-0054): a prop, a listener of an event the child declares, a model's binding, or a `class`, a `style` (fallthrough) or a `ref` (what it exposes)."
+    },
+    "PropAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Prop"
+        },
+        "name": {
+          "type": "string",
+          "description": "A prop the child declares."
+        },
+        "value": {
+          "$ref": "#/definitions/Expression"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A prop passed to a component, `label=\"Name\"` or `label={name}`: a static value is a literal."
+    },
+    "ListenerAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Listener"
+        },
+        "event": {
+          "type": "string",
+          "description": "The event's name, as the child's `defineEmits` declares it."
+        },
+        "handler": {
+          "$ref": "#/definitions/Handler"
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "event",
+        "handler",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A listener of an event a child declares, `onClear={reset}` (ADR-0053): its handler's parameters are the event's payload, never a DOM event."
+    },
+    "ModelBindingAttribute": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "ModelBinding"
+        },
+        "model": {
+          "type": "string",
+          "description": "The child's model."
+        },
+        "value": {
+          "$ref": "#/definitions/Expression",
+          "description": "A `state` or `model` binding's `.value`."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "model",
+        "value",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`v-model:open={open.value}` on a component: binds a model the child declares (ADR-0054)."
+    },
+    "SlotFill": {
+      "type": "object",
+      "properties": {
+        "slot": {
+          "type": "string",
+          "description": "The child's slot: `default`, or a named slot."
+        },
+        "parameter": {
+          "$ref": "#/definitions/Parameter",
+          "description": "A scoped fill's parameter, whose names are `slotScope` bindings."
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RenderNode"
+          },
+          "description": "What fills the slot: none for a forwarded one."
+        },
+        "forward": {
+          "type": "string",
+          "description": "The parent's own slot this fill passes on, `{{ title: slots.title }}`, with no children."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "slot",
+        "children",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "What fills a child's slot (ADR-0054): the children for the default slot, an arrow function in the slot object for a named one, with its parameter for a scoped one, or the parent's own slot passed on."
+    },
+    "SlotOutletNode": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "SlotOutlet"
+        },
+        "slot": {
+          "type": "string",
+          "description": "The slot's name, as `defineSlots` declares it."
+        },
+        "props": {
+          "$ref": "#/definitions/Expression",
+          "description": "The object a scoped slot is called with."
+        },
+        "fallback": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RenderNode"
+          },
+          "description": "What renders when the parent leaves the slot empty: nothing when empty."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "slot",
+        "fallback",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "Where a component renders a slot, `{slots.title?.()}` or `{slots.item?.({ item })}`, with the fallback after `??` (ADR-0054)."
+    },
+    "DynamicNode": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Dynamic"
+        },
+        "is": {
+          "$ref": "#/definitions/Expression",
+          "description": "What chooses the candidate: an expression whose value is one of `candidates`."
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DynamicCandidate"
+          },
+          "description": "The set it chooses from, in source order."
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/Attribute"
+              },
+              {
+                "$ref": "#/definitions/ComponentAttribute"
+              }
+            ]
+          }
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RenderNode"
+          },
+          "description": "The children of a tag candidate: none for components, whose content is `fills`."
+        },
+        "fills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SlotFill"
+          },
+          "description": "The fills of component candidates."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "is",
+        "candidates",
+        "attributes",
+        "children",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`<component is={…} />` over a statically known set (ADR-0054): all tags, or all components. Tag candidates take element attributes and children; component candidates take component attributes and fills, each declared by every candidate."
+    },
+    "DynamicCandidate": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TagCandidate"
+        },
+        {
+          "$ref": "#/definitions/ComponentCandidate"
+        }
+      ],
+      "description": "A candidate of `<component is>`: a tag, or a component by its local name."
+    },
+    "TagCandidate": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Tag"
+        },
+        "tag": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*$"
+        }
+      },
+      "required": [
+        "kind",
+        "tag"
+      ],
+      "additionalProperties": false,
+      "description": "A tag `<component is>` may render: an HTML element's name."
+    },
+    "ComponentCandidate": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Component"
+        },
+        "component": {
+          "type": "string",
+          "description": "The local name of an imported component, or the name of one of the module's own."
+        }
+      },
+      "required": [
+        "kind",
+        "component"
+      ],
+      "additionalProperties": false,
+      "description": "A component `<component is>` may render: a `component` binding's component."
     },
     "FragmentNode": {
       "type": "object",
@@ -1964,6 +2609,319 @@
       ],
       "additionalProperties": false,
       "description": "A top-level `interface` or `type` declaration that a component's props use (ADR-0034)."
+    },
+    "ModuleImport": {
+      "type": "object",
+      "properties": {
+        "specifier": {
+          "type": "string",
+          "description": "The specifier as written, which ends in `.uf.tsx`."
+        },
+        "file": {
+          "type": "string",
+          "description": "The resolved `.uf.tsx`, relative to the importer, with forward slashes."
+        },
+        "api": {
+          "$ref": "#/definitions/ModuleApi",
+          "description": "What the resolver returned for the module."
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ImportedName"
+          },
+          "description": "The names the import binds, in source order."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The import declaration."
+        }
+      },
+      "required": [
+        "specifier",
+        "file",
+        "api",
+        "names",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An import of another `.uf.tsx` module: `import Field from \"./Field.uf.tsx\"` (ADR-0053). The analyser records the API it resolved, so every target emits from the IR alone (P5, P6)."
+    },
+    "ModuleApi": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "The module's file, relative to the importer, with forward slashes."
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ComponentApi"
+          },
+          "description": "The module's components, in source order, its non-exported ones included."
+        },
+        "keys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyApi"
+          },
+          "description": "The injection keys the module exports, in source order."
+        }
+      },
+      "required": [
+        "file",
+        "components",
+        "keys"
+      ],
+      "additionalProperties": false,
+      "description": "The public API of a `.uf.tsx` module, as the resolver returns it (ADR-0053): what a parent reads of its children. It points into another file, so it holds types as text and no spans."
+    },
+    "ComponentApi": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "export": {
+          "type": "string",
+          "enum": [
+            "default",
+            "named",
+            "local"
+          ],
+          "description": "How the module exports it: as the default, by name, or not at all (a sibling file)."
+        },
+        "props": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ApiMember"
+          },
+          "description": "The props, in member order."
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ApiEvent"
+          },
+          "description": "The events `defineEmits` declares, in member order."
+        },
+        "models": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ApiMember"
+          },
+          "description": "The models `defineModel` declares, in source order."
+        },
+        "slots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ApiSlot"
+          },
+          "description": "The slots `defineSlots` declares, in member order."
+        },
+        "exposes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The names `defineExpose` exposes, in source order."
+        },
+        "inheritAttrs": {
+          "type": "boolean",
+          "description": "`false` where `defineOptions({ inheritAttrs: false })` turns fallthrough off."
+        },
+        "root": {
+          "type": "string",
+          "enum": [
+            "element",
+            "component",
+            "other"
+          ],
+          "description": "What the component's render root is: one element, one component, or anything else (a fragment, a conditional, a slot outlet). Fallthrough and Angular's host need it (ADR-0056)."
+        },
+        "rootTag": {
+          "type": "string",
+          "description": "The root element's tag, when the root is an element."
+        }
+      },
+      "required": [
+        "name",
+        "export",
+        "props",
+        "events",
+        "models",
+        "slots",
+        "exposes",
+        "inheritAttrs",
+        "root"
+      ],
+      "additionalProperties": false,
+      "description": "What a parent reads of a child component (ADR-0053, ADR-0055)."
+    },
+    "ApiMember": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "optional",
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "A prop or a model of a child's API: its name, its optionality and its type as written."
+    },
+    "ApiEvent": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9]*$"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ApiEventParameter"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "parameters"
+      ],
+      "additionalProperties": false,
+      "description": "An event of a child's API: its name and its payload's members, which a target's listener spreads (Angular's tuple payload rule, ADR-0047)."
+    },
+    "ApiEventParameter": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean",
+          "const": true
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "A member of an event's payload in a child's API."
+    },
+    "ApiSlot": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "props": {
+          "type": "string",
+          "description": "The slot's props' type, for a scoped slot."
+        }
+      },
+      "required": [
+        "name",
+        "optional"
+      ],
+      "additionalProperties": false,
+      "description": "A slot of a child's API: its name, its optionality and its props' type as written."
+    },
+    "KeyApi": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "An injection key of a child module's API."
+    },
+    "ImportedName": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "Component",
+            "Key"
+          ]
+        },
+        "imported": {
+          "type": "string",
+          "description": "The imported name: `default` for a default import."
+        },
+        "local": {
+          "type": "string",
+          "description": "The local name the module uses."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "kind",
+        "imported",
+        "local",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A name an import binds: a component, or an injection key."
+    },
+    "InjectionKeyDeclaration": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The exported `const`'s name."
+        },
+        "description": {
+          "type": "string",
+          "description": "The `Symbol`'s description: a string literal's value."
+        },
+        "type": {
+          "$ref": "#/definitions/TypeText",
+          "description": "The value's type, `Theme` in `InjectionKey<Theme>`, as written."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "type",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "`export const ThemeKey: InjectionKey<Theme> = Symbol(\"theme\")` (ADR-0054): a key `provide` and `inject` name, declared in the providing `.uf.tsx`."
     }
   },
   "$id": "https://unframework.dev/schemas/ir-v1.json"

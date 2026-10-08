@@ -1,6 +1,7 @@
 import {
   codeNames,
   codeKind,
+  compositionUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
@@ -84,8 +85,82 @@ export const angular: Target = defineTarget({
     "style-binding": { support: "native" },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
+    component: { support: "native" },
+    "component-event": { support: "native" },
+    "default-slot": { support: "native" },
+    "named-slot": {
+      support: "emulated",
+      helper: "uf<Component><Slot>",
+      note: "Each named slot is a directive the component's file exports, `ng-template[uf<Component><Slot>]`, read with `contentChild` and rendered with `ngTemplateOutlet` (ADR-0056).",
+    },
+    "scoped-slot": {
+      support: "emulated",
+      helper: "uf<Component><Slot>",
+      note: "A scoped slot is a slot directive with `ngTemplateContextGuard`, so strict templates type the consumer's `let-` variables (ADR-0056).",
+    },
+    "slot-fallback": { support: "native" },
+    "default-slot-presence": {
+      support: "unsupported",
+      code: "UF4001",
+      severity: "error",
+      reason:
+        "Angular has no API for whether `<ng-content>` received content, and forwarding the default slot would re-project `<ng-content />`, which always counts as content (ADR-0056).",
+    },
+    "slot-forwarding": {
+      support: "emulated",
+      helper: "uf<Component><Slot>",
+      note: "A forwarded named slot re-declares the child's slot template under `@if`, with the parent's template as its content (ADR-0056).",
+    },
+    model: { support: "native" },
+    "two-way-binding": { support: "native" },
+    "model-array": {
+      support: "emulated",
+      helper: "toggle",
+      note: "A checkbox group's array goes through an inline helper, `toggle`, and a multiple select's through `selectedValues`, as Vue's `vModelCheckbox` and `vModelSelect` do (ADR-0054).",
+    },
+    "model-modifiers": {
+      support: "emulated",
+      helper: "modelText",
+      note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
+    },
+    fallthrough: {
+      support: "emulated",
+      helper: "fallthrough",
+      note: "A component that inherits `class` and `style` declares them as inputs, merges them into its root element and clears them from its host, which keeps only `display: contents` (ADR-0056).",
+    },
+    "contextual-root": {
+      support: "unsupported",
+      code: "UF4001",
+      severity: "error",
+      reason:
+        "A root element HTML or ARIA ties to its parent (`li`, `tr`, `option`, …) renders inside Angular's host element, which breaks the parent's content model: axe reports `list` and `listitem`, and the HTML parser moves a host out of a table (ADR-0056).",
+    },
+    expose: { support: "native" },
+    context: { support: "native" },
+    "reactive-context": {
+      support: "emulated",
+      helper: "refObject",
+      note: "A provided ref is passed as an object with a `value` getter, `refObject`, which descendants read as it changes (ADR-0054).",
+    },
+    "dynamic-component": {
+      support: "emulated",
+      helper: "@switch",
+      note: "Angular has no `<component is>` over a known set in a strict template: an `@switch` renders each candidate (ADR-0054).",
+    },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    // Composition's cells are declared before this target emits it (ADR-0055): until M3's lane
+    // for Angular lands, a component that uses it is reported, never emitted without it (P2).
+    const composition = compositionUse(context.module, component);
+    if (composition) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message: `The angular target does not emit ${composition.what} yet: composition lands in M3.`,
+        span: composition.span,
+      });
+      return [];
+    }
     return [emitComponent(component, context.module)];
   },
 });
