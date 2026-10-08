@@ -18,9 +18,11 @@ import type { AngularCompiler, CompilerOptions, Diagnostic, NgtscProgram } from 
 const VIRTUAL_ID = /\.uf\.tsx(?:\.[^/?]+)?\.ts$/;
 /**
  * A relative import or re-export in generated code, of a child's output (`./field`, ADR-0053)
- * or of a file on disk: its specifier is the first group.
+ * or of a file on disk: `import … from "./x"`, `export … from "./x"` or `import "./x"`. Its
+ * specifier is the first group.
  */
-const RELATIVE_IMPORT = /^\s*(?:import|export)\b[^"';]*?["'](\.\.?\/[^"']+)["']/gm;
+const RELATIVE_IMPORT =
+  /^\s*(?:(?:import|export)\b[^"';]*?\bfrom\s*|import\s*)["'](\.\.?\/[^"']+)["']/gm;
 /** An import of another component in generated code: `./Child.uf.tsx`. */
 const COMPONENT_IMPORT = /^\.\.?\/.*\.uf\.tsx$/;
 

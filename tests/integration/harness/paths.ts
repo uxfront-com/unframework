@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 /** The integration package: the Vitest root of every project. */
 export const ROOT: string = realpathSync(fileURLToPath(new URL("..", import.meta.url)));
 
-/** The corpus: a case is a directory `cases/<area>/<name>/` holding one `.uf.tsx`. */
+/** The corpus: a case is a directory `cases/<area>/<name>/` holding its `.uf.tsx` inputs. */
 export const CASES_DIR: string = join(ROOT, "cases");
 
 /** The partial parity matrices (`parity-matrix.<run>.json`) and the merged summary. */

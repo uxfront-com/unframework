@@ -29,7 +29,8 @@ export function caseDiagnostics(compiles: readonly SourceCompile[]): Diagnostic[
 /**
  * One target's output files of every source, by path in `__output__/<target>/`, and the paths
  * two sources both produce: each file is named by its component (ADR-0053), so two components
- * of a case may not share a name on any target.
+ * of a case may not share a name on any target. Paths that differ only in case collide too, as
+ * UF1104's names do: a case-insensitive file system (macOS) holds one file for both.
  */
 export function caseOutputs(
   compiles: readonly SourceCompile[],
@@ -40,14 +41,15 @@ export function caseOutputs(
   const problems: string[] = [];
   for (const { source, result } of compiles) {
     for (const file of result.outputs[target] ?? []) {
-      const other = producer.get(file.path);
+      const key = file.path.toLowerCase();
+      const other = producer.get(key);
       if (other !== undefined) {
         problems.push(
           `${other} and ${source.filename} both produce ${target}/${file.path}: the components of a case need names of their own on every target.`,
         );
         continue;
       }
-      producer.set(file.path, source.filename);
+      producer.set(key, source.filename);
       files.set(file.path, file.contents);
     }
   }
