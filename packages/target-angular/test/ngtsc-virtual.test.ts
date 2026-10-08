@@ -164,11 +164,17 @@ describe("ngtscVirtual", () => {
           `export default class ${name} {}`,
           "",
         ].join("\n");
-      const sources = { [id("Ping")]: cyclic("Ping", "Pong"), [id("Pong")]: cyclic("Pong", "Ping") };
+      const sources = {
+        [id("Ping")]: cyclic("Ping", "Pong"),
+        [id("Pong")]: cyclic("Pong", "Ping"),
+      };
       const { transform, loaded } = await ngtscPlugin(sources, "server", {
         lazy: true,
         resolve: (specifier) =>
-          ({ "./ping": id("Ping"), "./pong": id("Pong") })[specifier as "./ping"],
+          new Map([
+            ["./ping", id("Ping")],
+            ["./pong", id("Pong")],
+          ]).get(specifier),
       });
       await expect(transform(id("Ping"))).resolves.toMatchObject({
         code: expect.stringContaining("ɵɵdefineComponent"),

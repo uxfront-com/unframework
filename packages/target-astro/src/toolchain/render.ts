@@ -2,7 +2,9 @@
 // adapter asks the `ufAstroRender` browser command for the server HTML. The command renders
 // through a dedicated Vite server built from Astro's own pipeline (`astroViteConfig`), with
 // the Container API loaded through that server's SSR runner, so the container and the component
-// share one copy of the Astro runtime (Astro's config inlines the `astro` package).
+// share one copy of the Astro runtime (Astro's config inlines the `astro` package). A child that
+// a component imports (`./Field.astro`, ADR-0053) is resolved and compiled by the browser
+// project's own pipeline, as the component was (ADR-0057).
 import { AsyncLocalStorage } from "node:async_hooks";
 import { join } from "node:path";
 import { formatWithOptions } from "node:util";
@@ -14,7 +16,7 @@ import type {
 } from "@unframework/codegen";
 import type * as AstroContainerModule from "astro/container";
 import type { experimental_AstroContainer as AstroContainer } from "astro/container";
-import type { Plugin, RunnableDevEnvironment, ViteDevServer } from "vite";
+import type { DevEnvironment, Plugin, RunnableDevEnvironment, ViteDevServer } from "vite";
 
 import { astroViteConfig } from "./config.ts";
 import { ASTRO_VIRTUAL_ID, isAstroComponentFactory, splitQuery } from "./protocol.ts";
@@ -31,13 +33,51 @@ interface RenderServer {
 
 const servers = new Map<string, Promise<RenderServer>>();
 
+/**
+ * The browser project's pipeline, for the children a rendered component imports: the browser
+ * itself imports only the component a spec mounts, so no browser project compiles its children
+ * until the render server asks.
+ */
+export interface ChildModules {
+  /** The virtual id an import of a compiled module names, as the browser project resolves it. */
+  resolve(specifier: string, importer: string): Promise<string | undefined>;
+  /** Compiles a virtual id in the browser project, which records its Astro source. */
+  load(id: string): Promise<void>;
+}
+
+/** The children of the render running now: renders run one at a time. */
+let children: ChildModules | undefined;
+
 /** Astro's sub-requests (`?astro&type=style&index=0…`), served by Astro from its compile cache. */
 const ASTRO_SUB_REQUEST = /[?&]astro(?:[&=]|$)/;
 
 /** The `ufAstroRender` browser command for a project. */
 export function createAstroRenderCommand(context: ToolchainContext): ToolchainCommand {
-  return (_browser: unknown, request: AstroRenderRequest) =>
-    renderAstroComponent(context.root, request);
+  return (browser: unknown, request: AstroRenderRequest) =>
+    renderAstroComponent(context.root, request, browserChildModules(browser));
+}
+
+/**
+ * The child modules of the browser project a command runs in (Vitest's command context,
+ * `project.browser.vite`): its client environment resolves an import as a browser import would,
+ * and loads and transforms a child as Vite's `this.load` does, through the unframework plugin
+ * (with its golden guard and any canary) and the ref plugin that records the source.
+ */
+function browserChildModules(browser: unknown): ChildModules | undefined {
+  const vite = (browser as { project?: { browser?: { vite?: ViteDevServer } } } | undefined)
+    ?.project?.browser?.vite;
+  const client: DevEnvironment | undefined = vite?.environments.client;
+  if (!client) return undefined;
+  return {
+    async resolve(specifier, importer) {
+      return (await client.pluginContainer.resolveId(specifier, importer))?.id;
+    },
+    async load(id) {
+      const loaded = await client.pluginContainer.load(id);
+      const code = typeof loaded === "object" ? loaded?.code : loaded;
+      if (code != null) await client.pluginContainer.transform(code, id);
+    },
+  };
 }
 
 // Renders run one at a time: the console capture patches the process-wide console, and a
@@ -52,8 +92,16 @@ let queue: Promise<unknown> = Promise.resolve();
 export function renderAstroComponent(
   root: string,
   request: AstroRenderRequest,
+  childModules?: ChildModules,
 ): Promise<AstroRenderResult> {
-  const run = () => render(root, request);
+  const run = async () => {
+    children = childModules;
+    try {
+      return await render(root, request);
+    } finally {
+      children = undefined;
+    }
+  };
   const result = queue.then(run, run);
   queue = result.then(
     () => undefined,
@@ -73,8 +121,10 @@ async function render(root: string, { id, props }: AstroRenderRequest): Promise<
     );
   }
   const server = await renderServer(root);
-  const previous = server.served.get(id);
-  if (previous !== undefined && previous !== source) invalidate(server.ssr, id);
+  // The component, or a child it imports, may have been compiled again since it was served.
+  for (const [served, previous] of server.served) {
+    if (compiledAstroSource(served) !== previous) invalidate(server.ssr, served);
+  }
 
   const module: { default?: unknown } = await server.ssr.runner.import(`${id}?container`);
   const component = module.default;
@@ -139,15 +189,23 @@ async function startRenderServer(root: string): Promise<RenderServer> {
 
 /**
  * Serves each virtual id the source the browser project compiled, in place of the unframework
- * plugin: the render server must not compile again, or it could render different code.
+ * plugin: the render server must not compile again, or it could render different code. A
+ * relative import of a served module names a child: the browser project resolves it, and
+ * compiles it unless it has already.
  */
 function compiledSourceLoader(served: Map<string, string>): Plugin {
   return {
     name: "unframework:astro-render-source",
     enforce: "pre",
-    resolveId: {
-      filter: { id: ASTRO_VIRTUAL_ID },
-      handler: (id) => id,
+    async resolveId(id, importer) {
+      if (ASTRO_VIRTUAL_ID.test(id)) return id;
+      const [parent] = splitQuery(importer ?? "");
+      if (!children || !/^\.\.?\//.test(id) || !ASTRO_VIRTUAL_ID.test(parent)) return null;
+      const child = await children.resolve(id, parent);
+      if (child === undefined || !ASTRO_VIRTUAL_ID.test(child)) return null;
+      const [path] = splitQuery(child);
+      if (compiledAstroSource(path) === undefined) await children.load(path);
+      return path;
     },
     load: {
       filter: { id: ASTRO_VIRTUAL_ID },

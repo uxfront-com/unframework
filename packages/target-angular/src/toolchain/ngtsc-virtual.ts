@@ -16,8 +16,11 @@ import type { AngularCompiler, CompilerOptions, Diagnostic, NgtscProgram } from 
  * ADR-0053).
  */
 const VIRTUAL_ID = /\.uf\.tsx(?:\.[^/?]+)?\.ts$/;
-/** A relative import: of a child's output (`./field`, ADR-0053), or of a file on disk. */
-const RELATIVE_IMPORT = /^\.\.?\//;
+/**
+ * A relative import or re-export in generated code, of a child's output (`./field`, ADR-0053)
+ * or of a file on disk: its specifier is the first group.
+ */
+const RELATIVE_IMPORT = /^\s*(?:import|export)\b[^"';]*?["'](\.\.?\/[^"']+)["']/gm;
 /** An import of another component in generated code: `./Child.uf.tsx`. */
 const COMPONENT_IMPORT = /^\.\.?\/.*\.uf\.tsx$/;
 
@@ -163,8 +166,8 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
         // and load the virtual modules it names before this module compiles (ADR-0053). A child
         // whose source the plugin holds is loaded, or being loaded, already: that also ends a
         // cycle of imports.
-        for (const { fileName } of compiler.ts.preProcessFile(code, true, true).importedFiles) {
-          if (!RELATIVE_IMPORT.test(fileName) || COMPONENT_IMPORT.test(fileName)) continue;
+        for (const [, fileName = ""] of code.matchAll(RELATIVE_IMPORT)) {
+          if (COMPONENT_IMPORT.test(fileName)) continue;
           const resolved = await this.resolve(fileName, id);
           const child = resolved?.id.split("?")[0];
           if (!resolved || !child || !VIRTUAL_ID.test(child)) continue;

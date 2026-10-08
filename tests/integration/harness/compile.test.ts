@@ -87,12 +87,7 @@ function compiled(info: CaseInfo): Promise<CompiledSource[]> {
       info.sources.map(async (source) => {
         const text = canarySource(harness.canary, readFileSync(source.source, "utf8"));
         const once = () =>
-          compileSource(
-            source,
-            text,
-            canaryPlugins(harness.canary),
-            canaryFormats(harness.canary),
-          );
+          compileSource(source, text, canaryPlugins(harness.canary), canaryFormats(harness.canary));
         const [first, second] = await Promise.all([once(), once()]);
         return { source, text, first, second };
       }),

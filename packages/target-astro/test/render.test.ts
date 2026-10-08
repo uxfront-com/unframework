@@ -117,6 +117,95 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
     );
   });
 
+  // ADR-0057: the browser imports only the component a spec mounts; its children are resolved
+  // and compiled by the browser project's pipeline when the render server meets their import.
+  describe("a component that imports a child", () => {
+    const parent = (name: string, child = "Field") =>
+      `---\nimport ${child} from "./${child}.astro";\n---\n\n<form aria-label="${name}"><${child} label="Name" /></form>\n`;
+    const field = '---\nconst { label } = Astro.props;\n---\n\n<p class="field">{label}</p>\n';
+
+    it("renders the child the browser project resolves and compiles on request", async () => {
+      compileInBrowserProject("Form", parent("Form"));
+      const asked: string[] = [];
+      const children = {
+        resolve: (specifier: string, importer: string) => {
+          asked.push(`resolve ${specifier} from ${importer}`);
+          return Promise.resolve(specifier === "./Field.astro" ? idOf("Field") : undefined);
+        },
+        load: (id: string) => {
+          asked.push(`load ${id}`);
+          compileInBrowserProject("Field", field);
+          return Promise.resolve();
+        },
+      };
+      const result = await renderAstroComponent(root, { id: idOf("Form"), props: {} }, children);
+      expect(result).toEqual({
+        html: '<form aria-label="Form"><p class="field">Name</p></form>',
+        console: [],
+      });
+      expect(asked).toEqual([
+        `resolve ./Field.astro from ${idOf("Form")}`,
+        `load ${idOf("Field")}`,
+      ]);
+    });
+
+    it("renders a child the browser project compiled again", async () => {
+      compileInBrowserProject("Form", parent("Again"));
+      compileInBrowserProject("Field", field.replace("field", "changed"));
+      const children = {
+        resolve: () => Promise.resolve(idOf("Field")),
+        load: () => Promise.reject(new Error("already compiled")),
+      };
+      const { html } = await renderAstroComponent(root, { id: idOf("Form"), props: {} }, children);
+      expect(html).toBe('<form aria-label="Again"><p class="changed">Name</p></form>');
+    });
+
+    it("asks the browser project the command runs in (its client environment)", async () => {
+      compileInBrowserProject("Survey", parent("Survey", "Answer"));
+      const calls: string[] = [];
+      const pluginContainer = {
+        resolveId: (specifier: string, importer: string) => {
+          calls.push(`resolveId ${specifier}`);
+          return Promise.resolve(
+            specifier === "./Answer.astro" && importer === idOf("Survey")
+              ? { id: idOf("Answer") }
+              : null,
+          );
+        },
+        load: (id: string) => {
+          calls.push(`load ${id}`);
+          return Promise.resolve({ code: "compiled by the unframework plugin" });
+        },
+        transform: (code: string, id: string) => {
+          calls.push(`transform ${id}: ${code}`);
+          compileInBrowserProject("Answer", field.replace("field", "answer"));
+          return Promise.resolve({ code });
+        },
+      };
+      const browser = {
+        project: { browser: { vite: { environments: { client: { pluginContainer } } } } },
+      };
+      const render = toolchain.browserCommands!({ toolchainDir: root, root }).ufAstroRender as (
+        context: unknown,
+        request: { id: string; props: Record<string, unknown> },
+      ) => Promise<{ html: string }>;
+      const { html } = await render(browser, { id: idOf("Survey"), props: {} });
+      expect(html).toBe('<form aria-label="Survey"><p class="answer">Name</p></form>');
+      expect(calls).toEqual([
+        "resolveId ./Answer.astro",
+        `load ${idOf("Answer")}`,
+        `transform ${idOf("Answer")}: compiled by the unframework plugin`,
+      ]);
+    });
+
+    it("fails when nothing resolves the child", async () => {
+      compileInBrowserProject("Lonely", parent("Lonely"));
+      await expect(renderAstroComponent(root, { id: idOf("Lonely"), props: {} })).rejects.toThrow(
+        /Field\.astro/,
+      );
+    });
+  });
+
   it("rejects with Astro's compile error", async () => {
     compileInBrowserProject("Broken", "<div><p>Hello</span></div>\n");
     await expect(renderAstroComponent(root, { id: idOf("Broken"), props: {} })).rejects.toThrow(
