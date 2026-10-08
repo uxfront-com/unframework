@@ -1,12 +1,53 @@
 // The quarantine (plan §7.7): known failures, each tied to an issue. A quarantined
 // (case, target, layer) still runs and must still fail; it is recorded as quarantined(issue)
 // instead of failing the test. Once it passes, the entry is stale and fails the test until it
-// is removed (`settleOutcome` in @unframework/testing), so this list only shrinks.
+// is removed (`settleOutcome` in @unframework/testing), so this list only shrinks. Each target
+// keeps its entries in its own file, `quarantine/<target>.ts`, so target lanes never edit the
+// same list (ADR-0057); this module joins them.
+import type { TargetName } from "@unframework/compiler";
 import { LAYERS } from "@unframework/testing/node";
 import type { LayerName, QuarantineEntry } from "@unframework/testing/node";
 
-/** Empty: every live layer is green on every target. */
-export const QUARANTINE: readonly QuarantineEntry[] = [];
+import { QUARANTINE as ANGULAR } from "./quarantine/angular.ts";
+import { QUARANTINE as ASTRO } from "./quarantine/astro.ts";
+import { QUARANTINE as QWIK } from "./quarantine/qwik.ts";
+import { QUARANTINE as REACT } from "./quarantine/react.ts";
+import { QUARANTINE as SOLID } from "./quarantine/solid.ts";
+import { QUARANTINE as SVELTE } from "./quarantine/svelte.ts";
+import { QUARANTINE as VUE } from "./quarantine/vue.ts";
+
+/** Each target's file of entries, by target. */
+export const QUARANTINE_FILES: Readonly<Record<TargetName, readonly QuarantineEntry[]>> = {
+  react: REACT,
+  vue: VUE,
+  svelte: SVELTE,
+  solid: SOLID,
+  angular: ANGULAR,
+  qwik: QWIK,
+  astro: ASTRO,
+};
+
+/**
+ * Every target's entries, in one list. Throws when a file holds an entry of another target: a
+ * lane that empties its own file must see every entry it owns.
+ */
+export function joinQuarantine(
+  files: Readonly<Record<string, readonly QuarantineEntry[]>>,
+): QuarantineEntry[] {
+  const misfiled = Object.entries(files).flatMap(([target, entries]) =>
+    entries
+      .filter((entry) => entry.target !== target)
+      .map(
+        (entry) =>
+          `${entry.case} › ${entry.target} › ${entry.layer} is in quarantine/${target}.ts: move it to quarantine/${entry.target}.ts.`,
+      ),
+  );
+  if (misfiled.length) throw new Error(`[uf] Misfiled quarantine entries:\n  ${misfiled.join("\n  ")}`);
+  return Object.values(files).flat();
+}
+
+/** Every known failure, from every target's file. */
+export const QUARANTINE: readonly QuarantineEntry[] = joinQuarantine(QUARANTINE_FILES);
 
 /**
  * The layers a quarantine entry may name: the live ones, where a failure can occur. M1 made L5

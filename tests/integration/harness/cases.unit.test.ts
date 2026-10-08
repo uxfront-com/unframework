@@ -53,6 +53,54 @@ describe("listCases", () => {
     ]);
   });
 
+  it("lists a case's sources, the main one named in case.json, each with its IR snapshot", () => {
+    const dir = makeCorpus({
+      "forms/form/Form.uf.tsx": input,
+      "forms/form/Field.uf.tsx": input,
+      "forms/form/form.test.ts": spec('"initial"'),
+      "forms/form/case.json": '{ "main": "Form.uf.tsx" }',
+      "basics/plain/Plain.uf.tsx": input,
+      "basics/plain/case.json": '{ "main": "Plain.uf.tsx" }',
+    });
+    const [plain, form] = listCases(dir);
+    expect(form).toMatchObject({
+      source: join(dir, "forms/form/Form.uf.tsx"),
+      filename: "forms/form/Form.uf.tsx",
+      sources: [
+        {
+          source: join(dir, "forms/form/Field.uf.tsx"),
+          filename: "forms/form/Field.uf.tsx",
+          ir: "ir.Field.json",
+        },
+        {
+          source: join(dir, "forms/form/Form.uf.tsx"),
+          filename: "forms/form/Form.uf.tsx",
+          ir: "ir.json",
+        },
+      ],
+    });
+    expect(plain!.sources).toEqual([
+      { source: plain!.source, filename: "basics/plain/Plain.uf.tsx", ir: "ir.json" },
+    ]);
+  });
+
+  it("refuses a case of several sources that does not name its main one", () => {
+    const files = { "forms/form/Form.uf.tsx": input, "forms/form/Field.uf.tsx": input };
+    expect(() => listCases(makeCorpus(files))).toThrow(
+      'Case forms/form holds Field.uf.tsx, Form.uf.tsx: name the one the spec mounts in case.json, "main": "Field.uf.tsx".',
+    );
+    expect(() =>
+      listCases(makeCorpus({ ...files, "forms/form/case.json": '{ "main": "Missing.uf.tsx" }' })),
+    ).toThrow(
+      'Case forms/form: case.json\'s "main" names "Missing.uf.tsx", which is not one of its inputs (Field.uf.tsx, Form.uf.tsx).',
+    );
+    expect(() =>
+      listCases(makeCorpus({ ...files, "forms/form/case.json": '{ "main": 1 }' })),
+    ).toThrow(
+      'Case forms/form: case.json has "main" must be the file name of one of the case\'s .uf.tsx inputs.',
+    );
+  });
+
   it("refuses a malformed corpus, loudly", () => {
     expect(() => listCases(makeCorpus({ "basics/.keep": "" }))).toThrow(/No cases under/);
     expect(() => listCases(makeCorpus({ "basics/Card/Card.uf.tsx": input }))).toThrow(
@@ -62,7 +110,7 @@ describe("listCases", () => {
       /kebab-case/,
     );
     expect(() => listCases(makeCorpus({ "basics/card/notes.md": "" }))).toThrow(
-      "Case basics/card must hold exactly one .uf.tsx input, found none.",
+      "Case basics/card must hold a .uf.tsx input, found none.",
     );
     expect(() =>
       listCases(

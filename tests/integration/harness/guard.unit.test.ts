@@ -52,4 +52,26 @@ describe("goldenGuard", () => {
     );
     expect(guard("react", [])).toBeUndefined();
   });
+
+  it("judges a compile of a case with several sources on the files it produced", () => {
+    const formDir = join(root, "cases", "area", "form");
+    mkdirSync(join(formDir, "__output__", "vue"), { recursive: true });
+    const form = join(formDir, "Form.uf.tsx");
+    writeFileSync(form, "");
+    writeFileSync(join(formDir, "Field.uf.tsx"), "");
+    writeFileSync(join(formDir, "__output__", "vue", "Form.vue"), golden);
+    writeFileSync(join(formDir, "__output__", "vue", "Field.vue"), golden);
+    expect(guard("vue", [{ path: "Form.vue", contents: golden }], form)).toBeUndefined();
+    const message = guard(
+      "vue",
+      [
+        { path: "Form.vue", contents: golden.replace("Hello", "Goodbye") },
+        { path: "Other.vue", contents: "" },
+      ],
+      form,
+    );
+    expect(message).toContain("cases/area/form/__output__/vue/Form.vue differs");
+    expect(message).toContain("cases/area/form/__output__/vue/Other.vue is missing.");
+    expect(message).not.toContain("Field.vue");
+  });
 });

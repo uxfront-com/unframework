@@ -14,6 +14,12 @@ export interface SsrScenario {
 /** A case's optional `case.json` (plan §7.1). */
 export interface CaseConfig {
   description?: string;
+  /**
+   * The input the spec and the SSR scenarios render, by file name (`"Form.uf.tsx"`), when the
+   * case holds several: the others are its children or its harness parents (ADR-0057). A case
+   * with one input needs none.
+   */
+  main?: string;
   /** L6 scenarios by name; a case without any renders `default` with no props. */
   ssr?: Record<string, SsrScenario>;
   /** The axe rule ids L11 expects to fail on this case, exactly; none by default. */

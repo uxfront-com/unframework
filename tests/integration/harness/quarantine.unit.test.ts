@@ -3,7 +3,7 @@ import type { QuarantineEntry } from "@unframework/testing/node";
 import { describe, expect, it } from "vitest";
 
 import { listCases } from "./cases.ts";
-import { QUARANTINE, validateQuarantine } from "./quarantine.ts";
+import { joinQuarantine, QUARANTINE, QUARANTINE_FILES, validateQuarantine } from "./quarantine.ts";
 import { selectTargets } from "./targets.ts";
 
 // A corpus of its own: the rules do not depend on which cases exist.
@@ -20,6 +20,22 @@ describe("the quarantine", () => {
   it("is valid against the corpus and the targets", () => {
     const corpus = { cases: listCases().map((info) => info.id), targets: selectTargets(undefined) };
     expect(validateQuarantine(QUARANTINE, corpus)).toEqual([]);
+  });
+
+  it("keeps one file per target, each holding only its own target's entries", () => {
+    expect(Object.keys(QUARANTINE_FILES).toSorted()).toEqual(selectTargets(undefined).toSorted());
+    for (const [target, entries] of Object.entries(QUARANTINE_FILES)) {
+      expect(entries.filter((each) => each.target !== target)).toEqual([]);
+    }
+    expect(QUARANTINE).toEqual(Object.values(QUARANTINE_FILES).flat());
+  });
+
+  it("joins the targets' files, and refuses an entry filed under another target", () => {
+    const vue = { ...entry, target: "vue" };
+    expect(joinQuarantine({ react: [entry], vue: [vue] })).toEqual([entry, vue]);
+    expect(() => joinQuarantine({ react: [entry], vue: [entry] })).toThrow(
+      "basics/hello › react › L7 is in quarantine/vue.ts: move it to quarantine/react.ts.",
+    );
   });
 
   it("accepts an entry for a live layer of a known case and target", () => {
