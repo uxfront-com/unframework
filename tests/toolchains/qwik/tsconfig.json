@@ -2,8 +2,9 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   // L4 for Qwik: tsgo over every case's Qwik output, as a strict Qwik 2 project would check it,
   // with the type strictness every target's checker shares (the strictest of the seven
-  // frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). Types resolve from each file's
-  // own location (tests/integration holds @qwik.dev/core), never from this directory.
+  // frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). Types resolve from
+  // tests/integration, which holds @qwik.dev/core: the outputs' by their own location, the
+  // consumer fixtures' through `paths`.
   // `@unframework/target-qwik/toolchain` extends this file with a temporary config that lists
   // the files to check.
   "compilerOptions": {

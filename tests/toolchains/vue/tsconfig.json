@@ -20,7 +20,10 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
-    "types": []
+    "types": [],
+    // Consumer fixtures (ADR-0059) sit here, outside tests/integration, where nothing resolves
+    // `vue`: map it to the copy the outputs resolve, so both sides see one declaration.
+    "paths": { "vue": ["../../integration/node_modules/vue"] }
   },
   // Unknown components, props and events in templates are errors, as in a strict TSX target.
   // `data-*` attributes are allowed on every element, as in HTML and every other target's types:

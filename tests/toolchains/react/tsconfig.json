@@ -2,8 +2,8 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   // L4 for React: tsgo over every case's React output, as a strict React 19 project would check
   // it, with the type strictness every target's checker shares (the strictest of the seven
-  // frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). Types resolve from each file's own location (tests/integration holds react and
-  // @types/react), never from this directory. `@unframework/target-react/toolchain` extends
+  // frameworks' project defaults; harness/toolchain-strictness.unit.test.ts). Types resolve from tests/integration, which holds react and
+  // @types/react: the outputs' by their own location, the consumer fixtures' through `paths`. `@unframework/target-react/toolchain` extends
   // this file with a temporary config that lists the files to check.
   "compilerOptions": {
     "target": "es2024",

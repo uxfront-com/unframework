@@ -71,8 +71,13 @@ describe("readExpectations", () => {
       "// @uf-expect FileRow.prop:path",
       "// @uf-expect TS2322 FileRow.attribute:path",
       "// @uf-expect TS2322 fileRow.prop:path",
+      "// @uf-expect TS2322 FileRow.prop:path TS2345",
+      "<!-- @uf-expect TS2322 FileRow.prop:path --><!-- @uf-expect TS2322 FileRow.prop:size -->",
     ].join("\n");
-    expect(readExpectations(contents)).toEqual({ expectations: [], malformed: [1, 2, 3] });
+    expect(readExpectations(contents)).toEqual({
+      expectations: [],
+      malformed: [1, 2, 3, 4, 5],
+    });
   });
 });
 

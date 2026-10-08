@@ -565,6 +565,42 @@ describe("canaries", () => {
     ]);
   });
 
+  it("L4-consumer types each target's events `any` too, on a case whose consumers misuse one", async () => {
+    // The canary's evidence needs one unmet directive per cell, which the prop fixtures give
+    // alone: only this test proves the events are widened.
+    const info = listCases().find(({ id }) => id === "events/emit-payloads")!;
+    const lines = async (target: TargetName) => {
+      const { outputs } = await compile(readFileSync(info.source, "utf8"), {
+        filename: info.filename,
+        targets: [target],
+        plugins: canaryPlugins("L4-consumer", target),
+      });
+      return outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
+    };
+    expect(await lines("react")).toEqual([
+      "export default function FileRow({ path, size, onRefresh, onOpen, onMove, onPick, onShare }: any) {",
+    ]);
+    expect(await lines("solid")).toEqual(["export default function FileRow(props: any) {"]);
+    expect(await lines("qwik")).toEqual(["export default component$<any>("]);
+    expect(await lines("vue")).toEqual([
+      "const { path, size } = defineProps<Record<string, any>>();",
+      "const emit = defineEmits<Record<string, any[]>>();",
+    ]);
+    expect(await lines("svelte")).toEqual([
+      "  let { path, size, onrefresh, onopen, onmove, onpick, onshare }: any = $props();",
+    ]);
+    expect(await lines("astro")).toEqual(["type Props = any;"]);
+    expect(await lines("angular")).toEqual([
+      "  readonly path = input.required<any>();",
+      "  readonly size = input.required<any>();",
+      "  readonly refresh = output<any>();",
+      "  readonly open = output<any>();",
+      "  readonly move = output<any>();",
+      "  readonly pick = output<any>();",
+      "  readonly share = output<any>();",
+    ]);
+  });
+
   it("L4-consumer applies to the cases with consumer fixtures, on each target that has them", () => {
     const canary = findCanary("L4-consumer");
     const [withFixtures, without] = ["events/emit-payloads", "basics/hello"].map((id) =>

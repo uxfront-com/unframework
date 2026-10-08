@@ -42,8 +42,9 @@ export const CONSUMER_GAPS: Readonly<Record<string, Partial<Record<ConsumerKind,
   astro: { event: "Astro has no events: its `interactivity` cell is unsupported" },
 };
 
+/** A whole directive line: nothing may follow it but the end of an HTML comment. */
 const DIRECTIVE =
-  /@uf-expect\s+((?:TS|NG)\d+)\s+([A-Z][A-Za-z0-9]*)\.(prop|event|model|slot):([A-Za-z][A-Za-z0-9]*)(?=\s|-->|$)/;
+  /@uf-expect\s+((?:TS|NG)\d+)\s+([A-Z][A-Za-z0-9]*)\.(prop|event|model|slot):([A-Za-z][A-Za-z0-9]*)\s*(?:-->)?\s*$/;
 
 /** A target's consumer fixtures: `tests/toolchains/<target>/consumers`. */
 export function consumersDir(target: string): string {
@@ -94,7 +95,8 @@ export function readExpectations(contents: string): {
   const malformed: number[] = [];
   contents.split(/\r?\n/).forEach((text, index) => {
     if (!text.includes("@uf-expect")) return;
-    const match = DIRECTIVE.exec(text);
+    // One directive a line: a second would claim the same misuse line.
+    const match = text.split("@uf-expect").length === 2 ? DIRECTIVE.exec(text) : null;
     if (!match) {
       malformed.push(index + 1);
       return;

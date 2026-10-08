@@ -54,9 +54,7 @@ them, and every directive must then go unmet (`pnpm test:canaries L4-consumer`).
 
 **Notes per checker.**
 
-- React, Solid and Qwik check with tsgo, which resolves a fixture's imports from this directory.
-  Their tsconfigs map the framework's types to `tests/integration`'s copy with `paths`, the copy
-  the outputs resolve.
-- vue-tsc does not check a handler passed by name (`@open="open"`) against the event's payload.
-  Write the misuse as an inline arrow function.
+- Nothing resolves React, Solid, Qwik or Vue from this directory, where the fixtures sit. Those
+  four tsconfigs map the framework with `paths` to `tests/integration`'s copy, the one the outputs
+  resolve. Without it, vue-tsc checks a handler passed by name (`@open="open"`) against nothing.
 - Angular reports a mistyped handler argument as TS2345, not TS2322.
