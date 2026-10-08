@@ -58,8 +58,9 @@ export function corpusSources(): { name: string; file: string; source: string }[
 }
 
 /**
- * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane emits
- * composition: `harness/quarantine/angular.ts` lists them, and the lane brings them back here.
+ * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane
+ * (UXF-318) emits composition: `harness/quarantine/angular.ts` lists them, and the lane brings
+ * them back here.
  */
 const COMPOSITION = /^(?:components|slots|fallthrough|expose)\//;
 

@@ -10,6 +10,7 @@ import type {
   BindingId,
   BoundAttribute,
   ClassAttribute,
+  ComponentNode,
   ElementNode,
   EventAttribute,
   Expression,
@@ -17,8 +18,12 @@ import type {
   FragmentNode,
   Handler,
   IfNode,
+  ListenerAttribute,
+  PropAttribute,
   RefAttribute,
   RenderNode,
+  SlotFill,
+  SlotOutletNode,
   SpreadAttribute,
   SpreadKey,
   StaticAttribute,
@@ -106,6 +111,44 @@ export interface JsxDialect {
     element: ElementNode,
     context: JsxContext,
   ): AST.JSXAttributeItem[];
+  /**
+   * The tag a component element is written with (ADR-0053): by default its local name. A
+   * component's `class`, `style` and `ref` go through the element hooks above, with an element
+   * of this tag and no attributes.
+   */
+  componentTag?(node: ComponentNode, context: JsxContext): string;
+  /** A prop passed to a component: by default `label="Name"` or `tone={tone}`. */
+  propAttribute?(
+    attribute: PropAttribute,
+    node: ComponentNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
+  /**
+   * A listener of a child's event: by default `onClear={handler}`, React's and Solid's spelling
+   * (Qwik's is `onClear$`), the handler taking the event's payload.
+   */
+  componentEvent?(
+    attribute: ListenerAttribute,
+    node: ComponentNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
+  /**
+   * A fill of a child's slot as a prop (ADR-0054): by default `title={<h2 />}`, a scoped one
+   * `item={({ item }) => …}`, and a forwarded one `title={…}` with {@link slotValue}'s value.
+   * The default slot's fill without a parameter is the children instead, never this.
+   */
+  fillAttribute?(fill: SlotFill, node: ComponentNode, context: JsxContext): AST.JSXAttributeItem[];
+  /**
+   * One of the component's own slots as a value, which a forwarded fill passes on (React's
+   * `title`, Solid's `props.title`, Qwik's `title$`). No default: each target names its slots.
+   */
+  slotValue?(slot: string, context: JsxContext): AST.Expression;
+  /**
+   * Where the component renders one of its slots, with its props and fallback (ADR-0054). No
+   * default: each target renders a slot its own way ({@link jsxSlotProps} and {@link jsxBranch}
+   * give the parts).
+   */
+  slotOutlet?(node: SlotOutletNode, context: JsxContext): AST.Expression;
 }
 
 /** What a JSX printer prints one component with. */
@@ -205,10 +248,12 @@ export function jsxNode(node: RenderNode | FragmentNode, context: JsxContext): A
       return dialect.conditional ? dialect.conditional(node, context) : ternaryChain(node, context);
     case "For":
       return dialect.list ? dialect.list(node, context) : mapCall(node, context);
-    // Composition (ADR-0055) is not printed yet: each target's `emit` reports UF1002 for it
-    // before printing (`compositionUse`), until M3's lanes print it.
     case "Component":
+      return jsxComponent(node, context);
     case "SlotOutlet":
+      return hook(context, "slotOutlet")(node, context);
+    // `<component is>` is not printed yet (ADR-0055): each target's `emit` reports UF1002 for it
+    // before printing.
     case "Dynamic":
       return js.nullLiteral();
     default:
@@ -227,17 +272,18 @@ export function jsxChildren(nodes: readonly RenderNode[], context: JsxContext): 
         return jsxElement(node, context);
       case "Text":
         return jsxText(node.value);
+      case "Component":
+        return jsxComponent(node, context);
       case "Interpolation":
       case "If":
-      case "For": {
+      case "For":
+      case "SlotOutlet": {
         const expression = jsxNode(node, context);
         return expression.type === "JSXElement" || expression.type === "JSXFragment"
           ? expression
           : js.jsxExpressionContainer(expression);
       }
       // Not printed yet (`jsxNode`).
-      case "Component":
-      case "SlotOutlet":
       case "Dynamic":
         return js.jsxExpressionContainer(js.nullLiteral());
       default:
@@ -289,9 +335,10 @@ export function mapCall(node: ForNode, context: JsxContext): AST.Expression {
     "key",
     js.jsxExpressionContainer(jsxExpression(node.key, context, "argument", "key")),
   );
-  // A component as the body is not printed yet (`jsxNode`).
   const body =
-    node.body.kind === "Element" ? jsxElement(node.body, context, [key]) : js.nullLiteral();
+    node.body.kind === "Element"
+      ? jsxElement(node.body, context, [key])
+      : jsxComponent(node.body, context, [key]);
   return js.callExpression(
     js.memberExpression(jsxExpression(node.source, context, "operand"), "map"),
     [js.arrowFunction(listParameters(node, context), body)],
@@ -323,6 +370,140 @@ export function jsxElement(
     [...leading, ...jsxAttributes(node, context)],
     jsxChildren(node.children, context),
   );
+}
+
+/**
+ * A component element (ADR-0053), self-closing without content; `leading` attributes (a list
+ * body's `key`) come first. Its attributes go through the dialect's hooks in source order, then
+ * its fills: the default slot's (without a parameter) as the children, any other as a prop.
+ */
+export function jsxComponent(
+  node: ComponentNode,
+  context: JsxContext,
+  leading: readonly AST.JSXAttributeItem[] = [],
+): AST.JSXElement {
+  const { dialect } = context;
+  const tag = dialect.componentTag?.(node, context) ?? node.component;
+  // The element-shaped context the class, style and ref hooks take: the component's tag.
+  const element: ElementNode = {
+    kind: "Element",
+    tag,
+    attributes: [],
+    children: [],
+    span: node.span,
+  };
+  const attributes = node.attributes.flatMap((attribute): AST.JSXAttributeItem[] => {
+    switch (attribute.kind) {
+      case "Prop":
+        return dialect.propAttribute
+          ? dialect.propAttribute(attribute, node, context)
+          : propJsxAttribute(attribute, node, context);
+      case "Listener":
+        return dialect.componentEvent
+          ? dialect.componentEvent(attribute, node, context)
+          : listenerJsxAttribute(attribute, node, context);
+      case "Class":
+        return dialect.classAttribute
+          ? dialect.classAttribute(attribute, element, context)
+          : classJsxAttribute(attribute, element, context);
+      case "Style":
+        return dialect.styleAttribute
+          ? dialect.styleAttribute(attribute, element, context)
+          : styleJsxAttribute(attribute, element, context);
+      case "Ref":
+        return dialect.refAttribute
+          ? dialect.refAttribute(attribute, element, context)
+          : refJsxAttribute(attribute, element, context);
+      // A component model is not printed yet (ADR-0055): each target's `emit` reports UF1002
+      // for it before printing.
+      case "ModelBinding":
+        return [];
+      default:
+        return unreachable(attribute);
+    }
+  });
+  const children: AST.JSXChild[] = [];
+  for (const fill of node.fills) {
+    if (fill.slot === "default" && fill.forward === undefined && !fill.parameter) {
+      children.push(...jsxChildren(fill.children, context));
+    } else {
+      attributes.push(
+        ...(dialect.fillAttribute
+          ? dialect.fillAttribute(fill, node, context)
+          : fillJsxAttribute(fill, node, context)),
+      );
+    }
+  }
+  return js.jsxElement(tag, [...leading, ...attributes], children);
+}
+
+/** A prop, `label="Name"` for a string literal (as written), and `tone={tone}` otherwise. */
+export function propJsxAttribute(
+  attribute: PropAttribute,
+  _node: ComponentNode,
+  context: JsxContext,
+): AST.JSXAttributeItem[] {
+  const literal = /^"[^"\\&\n\r]*"$/.test(attribute.value.code) ? attribute.value.code : undefined;
+  return [
+    js.jsxAttribute(
+      attribute.name,
+      literal === undefined
+        ? js.jsxExpressionContainer(jsxExpression(attribute.value, context))
+        : literal.slice(1, -1),
+    ),
+  ];
+}
+
+/** A listener of a child's event, `onClear={handler}`. */
+export function listenerJsxAttribute(
+  attribute: ListenerAttribute,
+  _node: ComponentNode,
+  context: JsxContext,
+): AST.JSXAttributeItem[] {
+  const name = `on${attribute.event.charAt(0).toUpperCase()}${attribute.event.slice(1)}`;
+  return [js.jsxAttribute(name, js.jsxExpressionContainer(jsxHandler(attribute.handler, context)))];
+}
+
+/**
+ * A fill as a prop named like its slot: what it renders, a function of its parameter for a
+ * scoped one, or the parent's own slot for a forwarded one ({@link jsxFillValue}).
+ */
+export function fillJsxAttribute(
+  fill: SlotFill,
+  _node: ComponentNode,
+  context: JsxContext,
+): AST.JSXAttributeItem[] {
+  return [js.jsxAttribute(fill.slot, js.jsxExpressionContainer(jsxFillValue(fill, context)))];
+}
+
+/**
+ * What a fill passes: the parent's own slot where it forwards one ({@link JsxDialect.slotValue}),
+ * `({ item }) => …` for a scoped one, its parameter as written, and what it renders otherwise.
+ */
+export function jsxFillValue(fill: SlotFill, context: JsxContext): AST.Expression {
+  if (fill.forward !== undefined) return hook(context, "slotValue")(fill.forward, context);
+  const body = jsxBranch(fill.children, context);
+  if (!fill.parameter) return body;
+  const parameter = fill.parameter.name ?? fill.parameter.pattern!.code;
+  return js.arrowFunction([context.placeholders.parameter(parameter)], body);
+}
+
+/** The object a slot outlet passes its slot, `{ item }`, or nothing for one without props. */
+export function jsxSlotProps(
+  node: SlotOutletNode,
+  context: JsxContext,
+): AST.Expression | undefined {
+  return node.props && jsxExpression(node.props, context);
+}
+
+/** A composition hook a dialect that meets its construct must have (ADR-0055). */
+function hook<K extends "slotValue" | "slotOutlet">(
+  context: JsxContext,
+  name: K,
+): NonNullable<JsxDialect[K]> {
+  const found = context.dialect[name];
+  if (!found) throw new Error(`The JSX dialect does not print composition yet (${name}).`);
+  return found.bind(context.dialect) as NonNullable<JsxDialect[K]>;
 }
 
 /** An element's attributes, in source order, each through its dialect hook. */

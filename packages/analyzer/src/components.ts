@@ -31,6 +31,7 @@ import type {
 } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
 
+import { typeMembers } from "./api.ts";
 import { keyCase, lowerAttributes, misplacedKey } from "./attributes.ts";
 import { checkPlacement } from "./elements.ts";
 import { checkExpression, shadowing, span } from "./expressions.ts";
@@ -68,23 +69,46 @@ export function lowerComponent(
     // A name an unresolved import binds is reported where it is imported (UF1202).
     if (info === undefined) unknownComponent(node, name, render);
     // Its content is still checked, as an element's is once its tag is reported.
-    lowerChildren(node.children, { ...place, ancestors: [] }, render);
+    lowerChildren(node.children, FILL, render);
     return { node: undefined, key: undefined };
   }
   const { api } = info;
   // Its root element is checked where the component sits, as the element would be there
   // (ADR-0054): a root that lives only inside a given parent (`<li>`, `<tr>`) is checked against
-  // the element around the component, which only the parent's compile knows.
-  if (api.rootTag !== undefined && place.ancestors.length) {
-    checkPlacement(api.rootTag, name, place.ancestors, reporter);
+  // the element around the component, which only the parent's compile knows. With no element
+  // around it (a slot's fill, this component's own root), nothing places such a root.
+  if (api.rootTag !== undefined) {
+    checkPlacement(api.rootTag, name, place.ancestors, reporter, false);
   }
   const attributes: ComponentAttribute[] = [];
   const fallthrough: AST.JSXAttribute[] = [];
   let key: AST.JSXAttribute | undefined;
   let after = name.end;
+  /** Each name set so far: a component takes each once, as an element does (UF3007). */
+  const seen = new Map<string, AST.JSXAttribute>();
   for (const item of node.openingElement.attributes) {
     const previous = after;
     after = item.end;
+    if (item.type === "JSXAttribute") {
+      const written =
+        item.name.type === "JSXIdentifier"
+          ? item.name.name
+          : `${item.name.namespace.name}:${item.name.name.name}`;
+      const first = seen.get(written);
+      if (first) {
+        reporter.report(
+          "UF3007",
+          item.name,
+          `\`${written}\` is set twice on this <${info.name}>.`,
+          {
+            help: "Keep one: the targets disagree about which value wins.",
+            related: [{ span: span(first.name), message: "First set here" }],
+          },
+        );
+        continue;
+      }
+      seen.set(written, item);
+    }
     if (item.type === "JSXSpreadAttribute") {
       reporter.unsupported(
         item,
@@ -114,19 +138,9 @@ export function lowerComponent(
     }
     if (attribute === "ref") {
       const ref = lowerRef(item, item.name, { tag: info.name, render }, render.attached);
-      if (!ref) continue;
-      if (!api.exposes.length) {
-        reporter.report(
-          "UF3046",
-          item,
-          `\`${info.name}\` exposes nothing, so a ref on it holds nothing a parent can call.`,
-          {
-            help: `Expose the functions a parent calls from ${info.name} with \`defineExpose({ … })\`, or remove the ref.`,
-          },
-        );
-        continue;
-      }
-      attributes.push(ref as ComponentAttribute);
+      if (!ref || ref.kind !== "Ref") continue;
+      if (componentRefProblem(item, ref.binding, api, info, render)) continue;
+      attributes.push(ref);
       continue;
     }
     if (attribute === "class" || attribute === "style") {
@@ -152,6 +166,70 @@ export function lowerComponent(
   const fills = lowerFills(node, api, info, render);
   if (!fills || reporter.hasErrorsSince(mark)) return { node: undefined, key };
   return { node: createComponentNode(info.name, attributes, fills, span(node)), key };
+}
+
+/**
+ * Whether a ref on a component is reported (UF3046, ADR-0054): the component exposes nothing, or
+ * the template ref's type is not an object type of what it exposes (`useTemplateRef<{ focus():
+ * void }>()`), so a call through it could reach a member the component does not have.
+ */
+function componentRefProblem(
+  item: AST.JSXAttribute,
+  binding: string,
+  api: ComponentApi,
+  info: ComponentInfo,
+  render: RenderContext,
+): boolean {
+  const report = (message: string, help: string) => {
+    render.reporter.report("UF3046", item, message, { help });
+    return true;
+  };
+  if (!api.exposes.length) {
+    return report(
+      `\`${info.name}\` exposes nothing, so a ref on it holds nothing a parent can call.`,
+      `Expose the functions a parent calls from ${info.name} with \`defineExpose({ … })\`, or remove the ref.`,
+    );
+  }
+  const exposed = api.exposes.map((name) => `\`${name}\``).join(", ");
+  const type = templateRefType(binding, render);
+  const members = type ? typeMembers(type, render.types) : undefined;
+  if (!members) {
+    return report(
+      `The template ref on \`${info.name}\` is not typed as an object type of what it exposes (${exposed}): a call through it could name anything.`,
+      `Type it with what ${info.name} exposes: \`useTemplateRef<{ ${api.exposes[0]}(): void }>()\`.`,
+    );
+  }
+  for (const member of members) {
+    const name =
+      (member.type === "TSPropertySignature" || member.type === "TSMethodSignature") &&
+      !member.computed &&
+      member.key.type === "Identifier"
+        ? member.key.name
+        : undefined;
+    if (name !== undefined && api.exposes.includes(name)) continue;
+    return report(
+      `The template ref's type names ${name === undefined ? "a member" : `\`${name}\``}, which \`${info.name}\` does not expose: it exposes ${exposed}.`,
+      `Type the ref with what ${info.name} exposes, or expose ${name === undefined ? "the member" : `\`${name}\``} from it.`,
+    );
+  }
+  return false;
+}
+
+/** The type argument of the `useTemplateRef` call that declares a template ref, if it has one. */
+function templateRefType(binding: string, render: RenderContext): AST.TSType | undefined {
+  const declaration = [...render.setup.bindings.values()].find(
+    (each) => each.id === binding,
+  )?.declaration;
+  const body = render.component.body;
+  if (!declaration || body?.type !== "BlockStatement") return undefined;
+  for (const statement of body.body) {
+    if (statement.type !== "VariableDeclaration") continue;
+    for (const declarator of statement.declarations) {
+      if (declarator.id !== declaration || declarator.init?.type !== "CallExpression") continue;
+      return declarator.init.typeArguments?.params[0];
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -422,7 +500,7 @@ function lowerFills(
   render: RenderContext,
 ): SlotFill[] | undefined {
   const { reporter } = render;
-  const content = node.children.filter((child) => child.type !== "JSXText" || hasContent([child]));
+  const content = node.children.filter((child) => hasContent([child]));
   if (!content.length) return [];
   const [only] = content;
   const object =
@@ -477,11 +555,21 @@ function forwardedDefault(content: readonly AST.JSXChild[], render: RenderContex
   if (content.length !== 1 || only?.type !== "JSXExpressionContainer") return false;
   if (only.expression.type === "JSXEmptyExpression") return false;
   const call = slotCall(only.expression, render);
-  return call?.slot === "default" && !call.node.arguments.length && call.optional;
+  if (call?.slot !== "default" || call.node.arguments.length || !call.optional) return false;
+  // Forwarding the default slot needs one to forward, as a slot object's `slots.default` does.
+  if (!render.slots?.slots.some((each) => each.name === "default")) {
+    render.reporter.report(
+      "UF3041",
+      call.node,
+      "`default` is no slot of this component, so there is nothing to forward.",
+      { help: "Declare a default slot with `defineSlots`, or pass children of its own." },
+    );
+  }
+  return true;
 }
 
 /** Where a fill's content is lowered: inside a component, whose DOM parent the child decides. */
-const FILL: Place = { ancestors: [], namespace: "html" };
+const FILL: Place = { ancestors: [], namespace: "html", fill: true };
 
 /** The fills a slot object writes (ADR-0054). */
 function lowerSlotObject(
@@ -499,6 +587,8 @@ function lowerSlotObject(
     });
     valid = false;
   };
+  /** Each slot filled so far, by the key that fills it: a slot is filled once (UF3007). */
+  const filled = new Map<string, AST.PropertyKey>();
   for (const property of object.properties) {
     if (property.type !== "Property" || property.computed || property.kind !== "init") {
       invalid(property, "A slot object's member is a slot's name and an arrow function.");
@@ -514,6 +604,16 @@ function lowerSlotObject(
       invalid(property.key, "A slot object's key is a slot's name.");
       continue;
     }
+    const first = filled.get(slot);
+    if (first) {
+      reporter.report("UF3007", property.key, `The slot \`${slot}\` is filled twice.`, {
+        help: "Keep one: the targets disagree about which fill wins.",
+        related: [{ span: span(first), message: "First filled here" }],
+      });
+      valid = false;
+      continue;
+    }
+    filled.set(slot, property.key);
     if (!declares(api, slot)) {
       const meant = closest(
         slot,

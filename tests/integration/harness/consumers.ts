@@ -36,10 +36,10 @@ export interface Fixture {
 
 /**
  * What a target's checker cannot check: a kind of declaration, or a finer part of one
- * (ADR-0059's feasibility table) — a slot without props (`named-slot`), or the setter a model
- * binds (`model-setter`).
+ * (ADR-0059's feasibility table), a slot without props (`named-slot`). Models' setters join with
+ * models.
  */
-export type ConsumerGap = ConsumerKind | "named-slot" | "model-setter";
+export type ConsumerGap = ConsumerKind | "named-slot";
 
 /**
  * The declarations a target's checker cannot check, with the reason (ADR-0059's feasibility
@@ -50,7 +50,6 @@ export const CONSUMER_GAPS: Readonly<Record<string, Partial<Record<ConsumerGap, 
     event: "Astro has no events: its `interactivity` cell is unsupported",
     "named-slot": "Astro does not type a named slot without props, which renders through `<slot>`",
   },
-  solid: { "model-setter": "Solid's checker does not check the setter a model's callback takes" },
 };
 
 /** A whole directive line: nothing may follow it but the end of an HTML comment. */

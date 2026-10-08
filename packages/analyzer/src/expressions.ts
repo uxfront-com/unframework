@@ -1379,14 +1379,23 @@ class Walk {
       !node.computed && node.property.type === "Identifier" ? node.property.name : undefined;
     const declared =
       slot !== undefined && this.#context.slots?.slots.some((each) => each.name === slot);
-    if (this.#mode !== "render" || !declared || node.optional || node.object.start !== node.start) {
+    const condition = this.#context.presence === true;
+    if (
+      this.#mode !== "render" ||
+      !condition ||
+      !declared ||
+      node.optional ||
+      node.object.start !== node.start
+    ) {
       this.#slotUse(
         node,
         this.#mode !== "render"
           ? `\`${binding.name}\` is read in setup code, which runs where no template is`
-          : declared
-            ? `\`${this.#context.source.slice(node.start, node.end)}\` is no plain read of a slot`
-            : `\`${slot ?? "this"}\` is no slot of this component`,
+          : !condition
+            ? `\`${this.#context.source.slice(node.start, node.end)}\` is read outside a conditional's condition`
+            : declared
+              ? `\`${this.#context.source.slice(node.start, node.end)}\` is no plain read of a slot`
+              : `\`${slot ?? "this"}\` is no slot of this component`,
       );
       if (node.computed) this.value(node.property, "value", false);
       return UNKNOWN;

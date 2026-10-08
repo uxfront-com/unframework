@@ -167,6 +167,11 @@ export interface RenderContext {
   readonly components: ReadonlyMap<object, ComponentInfo | undefined>;
   /** The slots the component declares with `defineSlots` (ADR-0054). */
   readonly slots: Slots | undefined;
+  /**
+   * Set while a conditional's condition is checked: the one place a slot's presence,
+   * `slots.title`, is read (ADR-0054).
+   */
+  readonly presence?: true;
 }
 
 /** The setup binding an identifier reads, where the component's setup declares it. */

@@ -57,6 +57,11 @@ export interface Place {
   readonly namespace: Namespace;
   /** Whether the nodes here start a conditional's branch, which Solid creates on its own. */
   readonly branch?: boolean;
+  /**
+   * Whether the nodes here fill a child's slot (ADR-0054): their parent is the child's, which
+   * this compile does not know, and they are no component's root.
+   */
+  readonly fill?: boolean;
 }
 
 /** The place at a component's root. */
@@ -110,7 +115,7 @@ export function lowerElement(
   }
   const tag = check.as;
   const namespace = elementNamespace(tag, place.namespace);
-  checkPlacement(tag, name, place.ancestors, reporter);
+  checkPlacement(tag, name, place.ancestors, reporter, !place.fill);
   if (namespace === "svg" && tag === "title" && (listBody || place.branch)) {
     // dom-expressions creates a branch's or a list's element from a template of its own, in SVG
     // only for the tags it knows as SVG's, and leaves out `title`, which HTML has too.
@@ -587,13 +592,13 @@ function lowerIf(
   let current: AST.Expression = node;
   for (;;) {
     if (current.type === "LogicalExpression" && current.operator === "&&") {
-      const condition = checkExpression(current.left, render);
+      const condition = checkExpression(current.left, { ...render, presence: true });
       const children = lowerBranch(current.right, place, render);
       branches.push(createBranch(condition.expression, children, span(current)));
       break;
     }
     if (current.type !== "ConditionalExpression") break;
-    const condition = checkExpression(current.test, render);
+    const condition = checkExpression(current.test, { ...render, presence: true });
     const children = lowerBranch(current.consequent, place, render);
     branches.push(
       createBranch(condition.expression, children, {

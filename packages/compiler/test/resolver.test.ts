@@ -54,12 +54,26 @@ describe("createFileResolver", () => {
     });
   });
 
-  it("resolves nothing that is missing, not relative, or outside the root", async () => {
+  it("resolves nothing that is missing or not relative", async () => {
     const { resolve, reads } = memoryResolver({});
     expect(await resolve({ specifier: "./Missing.uf.tsx", importer: "A.uf.tsx" })).toBeUndefined();
     expect(await resolve({ specifier: "pkg/X.uf.tsx", importer: "A.uf.tsx" })).toBeUndefined();
-    expect(await resolve({ specifier: "../X.uf.tsx", importer: "A.uf.tsx" })).toBeUndefined();
     expect(reads).toEqual(["/project/Missing.uf.tsx"]);
+  });
+
+  // The unplugin names a file outside Vite's root by a path that leaves it (`../admin/A.uf.tsx`).
+  it("joins a specifier to an importer outside the root, never cancelling its `..`", async () => {
+    const { resolve, reads } = memoryResolver({
+      "/project/../../packages/ui/B.uf.tsx": FIELD,
+      "/project/packages/ui/B.uf.tsx": "export default function Decoy() { return <p />; }",
+    });
+    const api = await resolve({
+      specifier: "../../packages/ui/B.uf.tsx",
+      importer: "../admin/A.uf.tsx",
+    });
+    expect(reads).toEqual(["/project/../../packages/ui/B.uf.tsx"]);
+    expect(api?.file).toBe("../../packages/ui/B.uf.tsx");
+    expect(api?.components[0]?.name).toBe("Field");
   });
 
   it("analyses a file again only when its contents change", async () => {

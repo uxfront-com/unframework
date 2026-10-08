@@ -1,0 +1,4 @@
+{
+  "description": "A child component named like a framework's built-in component renders itself, not the built-in.",
+  "main": "Wizard.uf.tsx"
+}

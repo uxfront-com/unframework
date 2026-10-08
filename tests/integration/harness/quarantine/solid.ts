@@ -9,7 +9,9 @@ import type { QuarantineEntry } from "@unframework/testing/node";
  * layer has no output to check, and is skipped.
  */
 const COMPOSITION: readonly string[] = [
+  "components/acronym-names",
   "components/branch-content",
+  "components/framework-names",
   "components/list-item-root",
   "components/list-rows",
   "components/local-sibling",
@@ -30,7 +32,9 @@ const COMPOSITION: readonly string[] = [
   "slots/in-list",
   "slots/named",
   "slots/presence",
+  "slots/prop-names",
   "slots/scoped",
+  "slots/scoped-default",
 ];
 
 export const QUARANTINE: readonly QuarantineEntry[] = COMPOSITION.map((id) => ({

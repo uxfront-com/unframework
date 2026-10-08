@@ -170,6 +170,7 @@ export function analyzeModule(
     resolved: options.imports ?? new Map(),
     imports,
     components,
+    outputs: new Map(candidates.map((candidate) => [candidate.name.toLowerCase(), candidate.name])),
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
@@ -310,6 +311,11 @@ interface ModuleContext {
   resolved: ReadonlyMap<string, ModuleApi | undefined>;
   /** The module's imports of `.uf.tsx` modules, collected in source order. */
   imports: ModuleImport[];
+  /**
+   * The output files in the module's own directory and the ones its imports name, by the path
+   * an output imports each by, in lower case: the component that writes each.
+   */
+  outputs: Map<string, string>;
   /**
    * The components templates may render, by the identifier that declares each: `undefined` for
    * a name an unresolved import binds, reported once, where it is imported.
@@ -601,6 +607,23 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
       );
       continue;
     }
+    // Each output imports a child by its output file, beside the module's own (ADR-0053): two
+    // components of one directory named alike without case would be one file (UF1104).
+    const directory = api.file.includes("/")
+      ? api.file.slice(0, api.file.lastIndexOf("/") + 1)
+      : "";
+    const output = `${directory}${component.name}`.toLowerCase();
+    const owner = context.outputs.get(output);
+    if (owner !== undefined && owner !== `${api.file}#${component.name}`) {
+      reporter.report(
+        "UF1104",
+        item,
+        `${component.name} from "${specifier}" and ${owner.includes("#") ? `${owner.slice(owner.indexOf("#") + 1)} from "./${owner.slice(0, owner.indexOf("#"))}"` : `this module's ${owner}`} write one output file, which each output imports by its name.`,
+        { help: "Rename one of the components." },
+      );
+      continue;
+    }
+    context.outputs.set(output, `${api.file}#${component.name}`);
     names.push(
       createImportedName("Component", imported, item.local.name, {
         start: item.start,

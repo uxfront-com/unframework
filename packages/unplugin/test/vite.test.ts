@@ -394,6 +394,23 @@ describe("load", () => {
     }
   });
 
+  // A suffix of several extensions reads as a component id too (ADR-0053): the module id wins.
+  it("loads a module id whose suffix holds several extensions", async () => {
+    const expected = await compile(HELLO, { filename: "Hello.uf.tsx", targets: ["vue"] });
+    await withServer(
+      unframework({ target: "vue", extension: ".client.vue" }),
+      async ({ client }) => {
+        const id = `${file("Hello.uf.tsx")}.client.vue`;
+        expect(codeOf(await client.pluginContainer.load(id))).toBe(
+          expected.outputs.vue![0]!.contents,
+        );
+        expect(await client.pluginContainer.resolveId("./Hello.uf.tsx", importer())).toMatchObject({
+          id,
+        });
+      },
+    );
+  });
+
   it("explains a module id whose extension the target never emits", async () => {
     await withServer(unframework({ target: "astro", extension: ".js" }), async ({ client }) => {
       await expect(client.pluginContainer.load(`${file("Hello.uf.tsx")}.js`)).rejects.toThrow(

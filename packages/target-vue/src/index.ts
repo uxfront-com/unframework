@@ -85,7 +85,7 @@ export const vue: Target = defineTarget({
       });
       return [];
     }
-    const { block, rewrite, listeners } = scriptSetup(component, context.module);
+    const { block, rewrite, listeners, components } = scriptSetup(component, context.module);
     // The component resolves the names of loop variables.
     const template = printMarkup(component.render, vueDialect, {
       level: 1,
@@ -93,6 +93,7 @@ export const vue: Target = defineTarget({
       rewrite,
       attribute: (attribute) =>
         attribute.kind === "Event" ? listeners.attributes.get(attribute) : undefined,
+      componentTag: (name) => components.get(name),
     });
     const parts = [...(block === undefined ? [] : [block]), `<template>\n${template}\n</template>`];
     return [{ path: `${component.name}.vue`, contents: `${parts.join("\n\n")}\n` }];

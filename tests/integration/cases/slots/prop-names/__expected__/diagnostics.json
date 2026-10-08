@@ -1,0 +1,206 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit component yet: composition lands in M3.",
+    "file": "slots/prop-names/Directory.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 5,
+      "offset": 181
+    },
+    "end": {
+      "line": 18,
+      "column": 13,
+      "offset": 371
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "file": "slots/prop-names/Directory.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 5,
+      "offset": 181
+    },
+    "end": {
+      "line": 18,
+      "column": 13,
+      "offset": 371
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
+    "file": "slots/prop-names/Directory.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 5,
+      "offset": 181
+    },
+    "end": {
+      "line": 18,
+      "column": 13,
+      "offset": 371
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit component yet: composition lands in M3.",
+    "file": "slots/prop-names/Directory.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 5,
+      "offset": 181
+    },
+    "end": {
+      "line": 18,
+      "column": 13,
+      "offset": 371
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit component yet: composition lands in M3.",
+    "file": "slots/prop-names/Directory.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 5,
+      "offset": 181
+    },
+    "end": {
+      "line": 18,
+      "column": 13,
+      "offset": 371
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit component yet: composition lands in M3.",
+    "file": "slots/prop-names/Directory.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 5,
+      "offset": 181
+    },
+    "end": {
+      "line": 18,
+      "column": 13,
+      "offset": 371
+    },
+    "target": "svelte"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/prop-names/Table.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 3,
+      "offset": 215
+    },
+    "end": {
+      "line": 12,
+      "column": 8,
+      "offset": 328
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/prop-names/Table.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 3,
+      "offset": 215
+    },
+    "end": {
+      "line": 12,
+      "column": 8,
+      "offset": 328
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/prop-names/Table.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 3,
+      "offset": 215
+    },
+    "end": {
+      "line": 12,
+      "column": 8,
+      "offset": 328
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/prop-names/Table.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 3,
+      "offset": 215
+    },
+    "end": {
+      "line": 12,
+      "column": 8,
+      "offset": 328
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/prop-names/Table.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 3,
+      "offset": 215
+    },
+    "end": {
+      "line": 12,
+      "column": 8,
+      "offset": 328
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/prop-names/Table.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 3,
+      "offset": 215
+    },
+    "end": {
+      "line": 12,
+      "column": 8,
+      "offset": 328
+    },
+    "target": "svelte"
+  }
+]

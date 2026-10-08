@@ -386,3 +386,98 @@ export function Hint() { return <small />; }`,
     expect(diagnostics[0]!.message).toContain("exports no component named `Hint`");
   });
 });
+
+describe("misuse the first review found (UXF-313)", () => {
+  it.each([
+    ['<Field label="a" label="b" />', ["UF3007 label"]],
+    ["<Field label='a' onClear={() => {}} onClear={() => {}} />", ["UF3007 onClear"]],
+    ["<Field label='a'>{{ hint: () => <i />, hint: () => <b /> }}</Field>", ["UF3007 hint"]],
+  ])("reports %s as set twice", (jsx, expected) => {
+    const { source, diagnostics } = parent(jsx);
+    expect(problems(source, diagnostics)).toEqual(expected);
+  });
+
+  it("reports two refs and two keys", () => {
+    const refs = parent(
+      "<Field ref={a} ref={b} label='x' />",
+      "const a = useTemplateRef<{ focus(): void }>();\n  const b = useTemplateRef<{ focus(): void }>();",
+    );
+    expect(codes(refs.diagnostics)).toContain("UF3007");
+    const keys = parent(
+      "<ul>{items.map((item) => <Field key={item} key={item} label={item} />)}</ul>",
+    );
+    expect(codes(keys.diagnostics)).toContain("UF3007");
+  });
+
+  it("reports forwarding a default slot the parent does not declare", () => {
+    const source = `${CHILD}
+export function Outer() {
+  const slots = defineSlots<{ title?(): Element }>();
+  return <div>{slots.title ? <i /> : null}<Field label="a">{slots.default?.()}</Field></div>;
+}`;
+    expect(codes(run(source).diagnostics)).toEqual(["UF3041"]);
+  });
+
+  it.each([
+    ["HTMLInputElement", "UF3046"],
+    ["{ focus(): void; clear(): void }", "UF3046"],
+    ["{ focus(): void }", undefined],
+  ])("checks a component ref typed %s against what it exposes", (type, code) => {
+    const { diagnostics } = parent(
+      "<Field ref={field} label='x' />",
+      `const field = useTemplateRef<${type}>();`,
+    );
+    expect(codes(diagnostics)).toEqual(code ? [code] : []);
+  });
+
+  it('reads `"inheritAttrs": false` as the setup accepts it', () => {
+    const source = `${API}function Child() { defineOptions({ "inheritAttrs": false }); return <p />; }
+export function A() { return <div><Child class="x" /></div>; }`;
+    expect(codes(run(source).diagnostics)).toEqual(["UF3045"]);
+  });
+
+  it.each([["<section><Box><tr><td>a</td></tr></Box></section>", "UF3003"]])(
+    "checks an element that needs a parent inside a fill: %s",
+    (jsx, code) => {
+      const source = `${API}function Box() { const slots = defineSlots<{ default?(): Element }>(); return <div>{slots.default?.()}</div>; }
+export function A() { return ${jsx}; }`;
+      expect(codes(run(source).diagnostics)).toContain(code);
+    },
+  );
+
+  it("checks a root component whose own root needs a parent", () => {
+    const source = `function Row() { return <tr><td>a</td></tr>; }
+function Wrap() { return <Row />; }
+export function A() { return <table><tbody><Row /></tbody></table>; }`;
+    expect(problems(source, run(source).diagnostics)).toEqual(["UF3003 Row"]);
+  });
+
+  it("reads a slot's presence in a conditional's condition only", () => {
+    const source = `${API}function C({ flag }: { flag: boolean }) { return <p>{flag ? "y" : "n"}</p>; }
+export function A() {
+  const slots = defineSlots<{ title?(): Element }>();
+  return <div><C flag={slots.title} /></div>;
+}`;
+    expect(codes(run(source).diagnostics)).toContain("UF3041");
+  });
+
+  it("reads a JSX comment as no content", () => {
+    const source = `${CHILD}\nfunction Plain() { return <p />; }
+export function A() { return <div><Plain>{/* note */}</Plain><Field label="a">{/* note */}{{ hint: () => <i /> }}</Field></div>; }`;
+    expect(run(source).diagnostics).toEqual([]);
+  });
+
+  it("reports an imported child whose output file is a local component's", () => {
+    const parsed = parseModule(
+      "Form.uf.tsx",
+      'import Glyph from "./Icon.uf.tsx";\nfunction Icon() { return <i />; }\nexport default function Form() { return <p><Glyph /><Icon /></p>; }',
+    );
+    const api = analyze(
+      parseModule("Icon.uf.tsx", "export default function Icon() { return <b />; }"),
+    ).api!;
+    const { diagnostics } = analyze(parsed, {
+      imports: new Map([["./Icon.uf.tsx", { ...api, file: "Icon.uf.tsx" }]]),
+    });
+    expect(codes(diagnostics)).toContain("UF1104");
+  });
+});

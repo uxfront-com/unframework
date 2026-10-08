@@ -921,5 +921,46 @@ export default function Form() {
         ),
       );
     });
+
+    // The first review's inputs (UXF-313): each rendered wrong without a diagnostic.
+    it("writes a scoped default fill, slot props Vue would misread, acronyms and built-in names", async () => {
+      const files = await emitAll(`
+import { defineEmits, defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+function Transition({ imageURL }: { imageURL: string }) {
+  const slots = defineSlots<{ default?(props: { name: string; "data-id": string }): Element }>();
+  const emit = defineEmits<{ pickedURL: [url: string] }>();
+  return (
+    <div onClick={() => emit("pickedURL", imageURL)} role="presentation">
+      {slots.default?.({ name: imageURL, "data-id": imageURL })}
+    </div>
+  );
+}
+
+export default function Page() {
+  function pick(url: string) {
+    console.info(url);
+  }
+  return (
+    <Transition imageURL="/a.png" onPickedURL={pick}>
+      {{ default: ({ name }) => <b>{name}</b> }}
+    </Transition>
+  );
+}`);
+      expect(files["Transition.vue"]).toContain(
+        `<slot v-bind="{ name: imageURL, 'data-id': imageURL }" />`,
+      );
+      expect(files["Page.vue"]).toContain('import TransitionComponent from "./Transition.vue";');
+      expect(files["Page.vue"]).toContain(
+        [
+          '  <TransitionComponent image-u-r-l="/a.png" @picked-u-r-l="pick">',
+          '    <template #default="{ name }">',
+          "      <b>{{ name }}</b>",
+          "    </template>",
+          "  </TransitionComponent>",
+        ].join("\n"),
+      );
+    });
   });
 });

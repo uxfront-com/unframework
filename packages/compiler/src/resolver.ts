@@ -16,8 +16,9 @@ export type Resolver = (request: ResolveRequest) => Promise<ModuleApi | undefine
 /** Options for {@link createFileResolver}. */
 export interface FileResolverOptions {
   /**
-   * The directory the importers' file names are relative to, as `compile()`'s `filename` is: an
-   * import that leaves it resolves to nothing.
+   * The directory the importers' file names are relative to, as `compile()`'s `filename` is. A
+   * file name or an import may leave it (`../packages/ui/B.uf.tsx`): `readFile` decides what may
+   * be read.
    */
   root: string;
   /**
@@ -59,17 +60,15 @@ function directoryOf(path: string): string {
 
 /**
  * `specifier` joined to `directory`, normalised with forward slashes, or `undefined` when it is
- * not relative or leaves the root.
+ * not relative. A `..` that leaves the root stays (`../b`), and one after it adds another.
  */
 function joinPath(directory: string, specifier: string): string | undefined {
   if (!specifier.startsWith("./") && !specifier.startsWith("../")) return undefined;
   const parts = directory ? directory.split("/") : [];
   for (const part of specifier.split("/")) {
     if (part === "." || part === "") continue;
-    if (part === "..") {
-      if (!parts.length) return undefined;
-      parts.pop();
-    } else parts.push(part);
+    if (part === ".." && parts.length && parts.at(-1) !== "..") parts.pop();
+    else parts.push(part);
   }
   return parts.join("/");
 }

@@ -30,9 +30,9 @@ Passes P2 (analyse) and P3 (lower) of the Unframework compiler (plan §5.1):
 Components with typed props, a setup, listeners and JSX (plan §9 M1 and M2, ADR-0034 to ADR-0040,
 ADR-0045 onwards), and the composition of M3's core lane (ADR-0053 to ADR-0055): components that
 render each other, slots, fallthrough and `defineExpose`. A module exports at least one component;
-one it does not export is lowered too, and each output writes it as a sibling file. A component is a function declaration; one written as a value
-(`export const Card = (props) => …`) is UF1102, checked as the declaration its likely fix writes
-(`analyze.ts`).
+one it does not export is lowered too, and each output writes it as a sibling file. A component
+is a function declaration; one written as a value (`export const Card = (props) => …`) is UF1102,
+checked as the declaration its likely fix writes (`analyze.ts`).
 
 - **Props** (`props.ts`, `declarations.ts`): the one parameter, destructured with static defaults
   or kept as one object read as `props.x`, typed by an object type literal or a local `interface`

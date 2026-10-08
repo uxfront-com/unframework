@@ -164,6 +164,13 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
   /** The file name diagnostics use: relative to the root, with forward slashes. */
   const filenameOf = (file: string) => relative(root, file).split(sep).join("/");
 
+  /**
+   * A component id taken apart, unless the id is a module id: a suffix of several extensions
+   * (`.client.vue`) reads as a component id too, and a module id wins.
+   */
+  const componentRequest = (id: string) =>
+    parseModuleId(id, suffix) ? undefined : parseComponentId(id);
+
   /** Whether the files a compile's resolver read still hold what it read. */
   const unchanged = async (reads: ReadonlyMap<string, string | undefined>) => {
     for (const [path, text] of reads) {
@@ -299,15 +306,15 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
           const path = index === -1 ? source : source.slice(0, index);
           const query = index === -1 ? "" : source.slice(index);
           // A component id coming back: from a framework plugin's sub-request, absolute.
-          const component = parseComponentId(path);
+          const component = componentRequest(path);
           if (component) {
             const id = moduleIdCandidates(path, root, importer).find((candidate) =>
-              existsSync(parseComponentId(candidate)!.file),
+              existsSync(componentRequest(candidate)!.file),
             );
             return id === undefined ? null : `${id}${query}`;
           }
           // An output's import of another output (ADR-0053): `./Field.vue` from a module of ours.
-          const from = importer && (parseModuleId(importer, suffix) ?? parseComponentId(importer));
+          const from = importer && (parseModuleId(importer, suffix) ?? componentRequest(importer));
           if (
             from &&
             isAbsolute(from.file) &&
@@ -345,7 +352,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
           // no `.uf.tsx` file but these: its own, and its children's (ADR-0053).
           if (
             importer !== undefined &&
-            (parseModuleId(importer, suffix) ?? parseComponentId(importer))
+            (parseModuleId(importer, suffix) ?? componentRequest(importer))
           ) {
             return file;
           }
@@ -355,7 +362,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
       load: {
         filter: { id: loadIds },
         async handler(id) {
-          const component = parseComponentId(id);
+          const component = componentRequest(id);
           const request = component ?? parseModuleId(id, suffix);
           if (!request) {
             const authored = parseModuleId(id, "")!;
@@ -433,9 +440,10 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
           // output depends on (ADR-0053). They are added here rather than in `load`: Vite keeps
           // the files a load adds only when the module is already in its graph, which a cold
           // request's is not, while a transform always runs on a module the graph holds.
-          const request = parseComponentId(id) ?? parseModuleId(id, suffix);
+          const component = componentRequest(id);
+          const request = component ?? parseModuleId(id, suffix);
           if (!request || !isAbsolute(request.file)) return null;
-          if (suffix || parseComponentId(id)) this.addWatchFile(request.file);
+          if (suffix || component) this.addWatchFile(request.file);
           for (const child of await childFiles(request.file)) this.addWatchFile(child);
           return null;
         },

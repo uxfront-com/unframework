@@ -1,0 +1,308 @@
+{
+  "irVersion": 1,
+  "file": "components/acronym-names/Avatar.uf.tsx",
+  "components": [
+    {
+      "name": "Avatar",
+      "span": {
+        "start": 44,
+        "end": 350
+      },
+      "props": [
+        {
+          "name": "imageURL",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 109,
+              "end": 115
+            }
+          },
+          "binding": "imageURL@77",
+          "span": {
+            "start": 99,
+            "end": 116
+          }
+        },
+        {
+          "name": "userID",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 125,
+              "end": 131
+            }
+          },
+          "binding": "userID@87",
+          "span": {
+            "start": 117,
+            "end": 131
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ imageURL: string; userID: number }",
+          "span": {
+            "start": 97,
+            "end": 133
+          }
+        },
+        "span": {
+          "start": 75,
+          "end": 133
+        }
+      },
+      "types": [],
+      "emits": {
+        "binding": "emit@145",
+        "type": {
+          "code": "{ pickedURL: [url: string] }",
+          "span": {
+            "start": 164,
+            "end": 192
+          }
+        },
+        "events": [
+          {
+            "name": "pickedURL",
+            "parameters": [
+              {
+                "name": "url",
+                "type": {
+                  "code": "string",
+                  "span": {
+                    "start": 183,
+                    "end": 189
+                  }
+                },
+                "span": {
+                  "start": 178,
+                  "end": 189
+                }
+              }
+            ],
+            "span": {
+              "start": 166,
+              "end": 190
+            }
+          }
+        ],
+        "span": {
+          "start": 139,
+          "end": 196
+        }
+      },
+      "bindings": [
+        {
+          "id": "imageURL@77",
+          "name": "imageURL",
+          "kind": "prop",
+          "span": {
+            "start": 77,
+            "end": 85
+          }
+        },
+        {
+          "id": "userID@87",
+          "name": "userID",
+          "kind": "prop",
+          "span": {
+            "start": 87,
+            "end": 93
+          }
+        },
+        {
+          "id": "emit@145",
+          "name": "emit",
+          "kind": "emit",
+          "span": {
+            "start": 145,
+            "end": 149
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "button",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "type",
+            "value": "button",
+            "span": {
+              "start": 220,
+              "end": 233
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "data-user",
+            "value": {
+              "code": "userID",
+              "span": {
+                "start": 245,
+                "end": 251
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "userID@87",
+                  "span": {
+                    "start": 245,
+                    "end": 251
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 234,
+              "end": 252
+            }
+          },
+          {
+            "kind": "Event",
+            "event": "click",
+            "handler": {
+              "kind": "Inline",
+              "function": {
+                "parameters": [],
+                "body": {
+                  "code": "emit(\"pickedURL\", imageURL)",
+                  "span": {
+                    "start": 268,
+                    "end": 295
+                  },
+                  "refs": [
+                    {
+                      "kind": "Emit",
+                      "binding": "emit@145",
+                      "event": "pickedURL",
+                      "span": {
+                        "start": 268,
+                        "end": 295
+                      },
+                      "arguments": [
+                        {
+                          "start": 286,
+                          "end": 294
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "Binding",
+                      "binding": "imageURL@77",
+                      "span": {
+                        "start": 286,
+                        "end": 294
+                      }
+                    }
+                  ]
+                },
+                "expression": true,
+                "span": {
+                  "start": 262,
+                  "end": 295
+                }
+              },
+              "span": {
+                "start": 262,
+                "end": 295
+              }
+            },
+            "span": {
+              "start": 253,
+              "end": 296
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "User ",
+            "span": {
+              "start": 297,
+              "end": 309
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "userID",
+              "span": {
+                "start": 310,
+                "end": 316
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "userID@87",
+                  "span": {
+                    "start": 310,
+                    "end": 316
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 309,
+              "end": 317
+            }
+          },
+          {
+            "kind": "Text",
+            "value": ": ",
+            "span": {
+              "start": 317,
+              "end": 319
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "imageURL",
+              "span": {
+                "start": 320,
+                "end": 328
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "imageURL@77",
+                  "span": {
+                    "start": 320,
+                    "end": 328
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 319,
+              "end": 329
+            }
+          }
+        ],
+        "span": {
+          "start": 212,
+          "end": 343
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Avatar",
+      "span": {
+        "start": 44,
+        "end": 350
+      }
+    }
+  ],
+  "types": []
+}

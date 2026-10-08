@@ -354,6 +354,12 @@ export interface MarkupOptions {
    */
   component?: UfComponent;
   /**
+   * The tag a component element is written with, where the target declares the component under
+   * another name than its own (Vue's alias for a child named like one of its built-ins), or
+   * `undefined` to leave it to the dialect (`MarkupDialect.componentTag`).
+   */
+  componentTag?(name: string): string | undefined;
+  /**
    * How the target spells references (Angular's `label()`), for each site: `render` for the
    * template's expressions, `key` for a list's key, `client` for a handler. Code is printed as
    * written without it. Needs `component`.
@@ -752,7 +758,10 @@ export function printMarkup(
     directives: readonly PrintedAttribute[],
     at: Scope,
   ): ElementItem {
-    const tag = at.dialect.componentTag?.(node.component) ?? node.component;
+    const tag =
+      options.componentTag?.(node.component) ??
+      at.dialect.componentTag?.(node.component) ??
+      node.component;
     const context: ComponentContext = { component: node, tag, namespace: at.namespace };
     const content = hook(at.dialect, "fills")(node.fills.map(fillParts), context);
     const children = content.flatMap((piece) => pieceItems(piece, at));

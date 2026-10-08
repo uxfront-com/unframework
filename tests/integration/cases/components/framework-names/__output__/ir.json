@@ -1,0 +1,122 @@
+{
+  "irVersion": 1,
+  "file": "components/framework-names/Wizard.uf.tsx",
+  "components": [
+    {
+      "name": "Wizard",
+      "span": {
+        "start": 47,
+        "end": 184
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Wizard",
+            "span": {
+              "start": 106,
+              "end": 125
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Transition",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "step",
+                "value": {
+                  "code": "\"details\"",
+                  "span": {
+                    "start": 150,
+                    "end": 159
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 145,
+                  "end": 159
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 133,
+              "end": 162
+            }
+          }
+        ],
+        "span": {
+          "start": 97,
+          "end": 177
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Wizard",
+      "span": {
+        "start": 47,
+        "end": 184
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Transition.uf.tsx",
+      "file": "Transition.uf.tsx",
+      "api": {
+        "file": "Transition.uf.tsx",
+        "components": [
+          {
+            "name": "Transition",
+            "export": "default",
+            "props": [
+              {
+                "name": "step",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "p"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Transition",
+          "span": {
+            "start": 7,
+            "end": 17
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 45
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "description": "A scoped slot whose props are named `name` and `data-id`, which a template language could read as the slot's own name or rename.",
+  "main": "Directory.uf.tsx",
+  "ssr": {
+    "two": {
+      "props": {
+        "people": [
+          {
+            "id": "a1",
+            "name": "Ada"
+          },
+          {
+            "id": "g2",
+            "name": "Grace"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button')",
+      "dom": [
+        "<div>",
+        "  <button data-user=\"7\" type=\"button\" uf:focused=\"\">",
+        "    \"User 7: /a.png\"",
+        "  </button>",
+        "  <output>",
+        "    \"Picked: /a.png\"",
+        "  </output>",
+        "</div>"
+      ],
+      "aria": [
+        "- 'button \"User 7: /a.png\"'",
+        "- status: \"Picked: /a.png\""
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -2,7 +2,6 @@
 // element they control (or on a `<template>` around content that is not one element), `@event`
 // listeners with their modifiers, `ref` attributes, and attributes in `vue/attributes-order`.
 // Vue is the reference target (ADR-0014): whatever it renders becomes every target's expectation.
-import { kebabCase } from "../names.ts";
 import type { CodeKind } from "../parse.ts";
 import {
   camelCaseProperty,
@@ -264,9 +263,9 @@ export const vueDialect: MarkupDialect = {
       .toSorted((a, b) => vueRank(a.attribute) - vueRank(b.attribute) || a.index - b.index)
       .map(({ attribute }) => attribute),
   // A component's props and events are hyphenated in a template, as `vue/attribute-hyphenation`
-  // and `vue/v-on-event-hyphenation` ask: Vue camelizes them back (ADR-0053).
+  // and `vue/v-on-event-hyphenation` ask, the way Vue camelizes them back (ADR-0053).
   propAttribute: ({ name, code, literal }) => {
-    const attribute = kebabCase(name);
+    const attribute = hyphenate(name);
     return [
       {
         name: attribute,
@@ -278,12 +277,17 @@ export const vueDialect: MarkupDialect = {
     ];
   },
   componentEvent: (listener) => {
-    const name = `@${kebabCase(listener.attribute.event)}`;
+    const name = `@${hyphenate(listener.attribute.event)}`;
     return [{ name, text: `${name}="${vueAttributeCode(listener.handler)}"` }];
   },
   fills: (fills) => {
     const [only] = fills;
-    if (fills.length === 1 && only!.fill.slot === "default" && only!.fill.forward === undefined) {
+    if (
+      fills.length === 1 &&
+      only!.fill.slot === "default" &&
+      only!.fill.forward === undefined &&
+      only!.parameter === undefined
+    ) {
       return [{ kind: "nodes", nodes: only!.fill.children, container: only!.fill }];
     }
     return fills.map(slotTemplate);
@@ -343,7 +347,9 @@ function slotElement({ node, props }: PrintedSlotOutlet): MarkupPiece {
   if (node.slot !== "default") {
     attributes.push({ name: "name", text: quotedAttribute("name", node.slot) });
   }
-  if (props?.entries) {
+  // Key by key where Vue passes each as written: `name` names the slot, and Vue camelizes a
+  // hyphenated key (`data-id` reaches the fill as `dataId`). Otherwise as one object.
+  if (props?.entries?.every(({ key }) => key !== "name" && camelize(key) === key)) {
     for (const { key, value } of props.entries) {
       attributes.push({ name: key, text: `:${key}="${vueAttributeCode(value)}"` });
     }
@@ -363,4 +369,18 @@ function slotElement({ node, props }: PrintedSlotOutlet): MarkupPiece {
 /** Whether text sits at an edge of the root, where the target's own line breaks meet it. */
 function atRootEdge(position: TextPosition): boolean {
   return isRoot(position.container) && (position.first || position.last);
+}
+
+/**
+ * Vue's own hyphenation of a prop's or an event's name (`hyphenate` in `@vue/shared`): a
+ * capital after any character starts a part, so `imageURL` is `image-u-r-l`, which Vue
+ * camelizes back to `imageURL`.
+ */
+function hyphenate(name: string): string {
+  return name.replace(/\B([A-Z])/g, "-$1").toLowerCase();
+}
+
+/** Vue's camelization of a hyphenated name (`camelize` in `@vue/shared`). */
+function camelize(name: string): string {
+  return name.replace(/-(\w)/g, (_, character: string) => character.toUpperCase());
 }

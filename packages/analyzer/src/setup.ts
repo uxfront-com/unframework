@@ -49,6 +49,7 @@ import type {
 import type { AST } from "@unframework/parser";
 import { visitorKeys } from "@unframework/parser";
 
+import { inheritAttrsOption } from "./api.ts";
 import type { AuthoringApi } from "./authoring.ts";
 import { Reporter } from "./context.ts";
 import { checkCopiedText, checkMembers, checkType, closure } from "./declarations.ts";
@@ -961,15 +962,8 @@ export function declareSetup(context: SetupContext): Setup {
       return;
     }
     const [only, ...more] = object.properties;
-    const inherit =
-      only?.type === "Property" &&
-      !only.computed &&
-      only.kind === "init" &&
-      !only.method &&
-      ((only.key.type === "Identifier" && only.key.name === "inheritAttrs") ||
-        (only.key.type === "Literal" && only.key.value === "inheritAttrs"))
-        ? only
-        : undefined;
+    const option = inheritAttrsOption(object);
+    const inherit = option === only ? option : undefined;
     if (!inherit || more.length) {
       invalid(
         more[0] ?? only ?? object,

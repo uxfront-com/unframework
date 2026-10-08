@@ -1,0 +1,10 @@
+---
+interface Props {
+  imageURL: string;
+  userID: number;
+}
+
+const { imageURL, userID } = Astro.props;
+---
+
+<button type="button" data-user={userID}>User {userID}: {imageURL}</button>

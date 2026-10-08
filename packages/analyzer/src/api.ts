@@ -204,17 +204,24 @@ function exposedOf(call: AST.CallExpression): string[] {
 /** Whether `defineOptions` turns fallthrough off: `{ inheritAttrs: false }`. */
 function inheritsNothing(call: AST.CallExpression): boolean {
   const [object] = call.arguments;
-  return (
-    object?.type === "ObjectExpression" &&
-    object.properties.some(
-      (property) =>
-        property.type === "Property" &&
-        !property.computed &&
-        property.key.type === "Identifier" &&
-        property.key.name === "inheritAttrs" &&
-        property.value.type === "Literal" &&
-        property.value.value === false,
-    )
+  const option = object?.type === "ObjectExpression" ? inheritAttrsOption(object) : undefined;
+  return option?.value.type === "Literal" && option.value.value === false;
+}
+
+/**
+ * The `inheritAttrs` member of `defineOptions`'s object, `inheritAttrs` or `"inheritAttrs"`:
+ * the setup checks it (UF2031) and the API reads it by this one rule, so a parent's fallthrough
+ * is judged by what the child's compile accepts.
+ */
+export function inheritAttrsOption(object: AST.ObjectExpression): AST.ObjectProperty | undefined {
+  return object.properties.find(
+    (property): property is AST.ObjectProperty =>
+      property.type === "Property" &&
+      !property.computed &&
+      property.kind === "init" &&
+      !property.method &&
+      ((property.key.type === "Identifier" && property.key.name === "inheritAttrs") ||
+        (property.key.type === "Literal" && property.key.value === "inheritAttrs")),
   );
 }
 

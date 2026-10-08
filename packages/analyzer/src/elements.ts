@@ -233,12 +233,13 @@ export function checkPlacement(
   name: AST.JSXIdentifier,
   ancestors: readonly OpenElement[],
   reporter: Reporter,
+  atRoot = true,
 ): void {
   const parent = ancestors.at(-1);
   const problem =
     parent?.namespace === "svg"
       ? svgPlacementProblem(tag, parent)
-      : placementProblem(tag, ancestors);
+      : placementProblem(tag, ancestors, atRoot);
   if (problem) report(reporter, name, problem);
 }
 
@@ -255,11 +256,24 @@ function svgPlacementProblem(tag: string, parent: OpenElement): Problem | undefi
   };
 }
 
-function placementProblem(tag: string, ancestors: readonly OpenElement[]): Problem | undefined {
+function placementProblem(
+  tag: string,
+  ancestors: readonly OpenElement[],
+  atRoot: boolean,
+): Problem | undefined {
   const parent = ancestors.at(-1);
   const parents = REQUIRED_PARENTS.get(tag);
-  // A component's root: the parent's compile checks it where the component sits (ADR-0054).
-  if (!parent) return undefined;
+  if (!parent) {
+    // A component's own root: the parent's compile checks it where the component sits
+    // (ADR-0054). Anywhere else without a parent here (a slot's fill, a root component's root)
+    // nothing places it where it belongs.
+    if (atRoot || !parents) return undefined;
+    return {
+      code: "UF3003",
+      message: `<${tag}> belongs inside ${list(tags(parents), "or")}, and nothing here places it there: only a component's own root element leaves its parent to the component that renders it.`,
+      help: `Render it inside ${list(tags(parents), "or")}, or make it the root element of a component of its own.`,
+    };
+  }
   const opened = (element: OpenElement, message: string): RelatedInformation[] => [
     { span: element.name, message },
   ];

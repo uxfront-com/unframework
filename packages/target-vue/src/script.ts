@@ -48,7 +48,24 @@ export interface ScriptSetup {
   rewrite: RewriteRules;
   /** Each listener's attribute, as the template writes it. */
   listeners: Listeners;
+  /** The name the script imports a child under, where it is not the child's own. */
+  components: ReadonlyMap<string, string>;
 }
+
+/**
+ * The components Vue's template compiler resolves by name before any binding (`isCoreComponent`
+ * and runtime-dom's transitions, and `Component`, its dynamic component): a child named so is
+ * imported, and written, under a name of its own.
+ */
+const VUE_BUILT_INS: ReadonlySet<string> = new Set([
+  "BaseTransition",
+  "Component",
+  "KeepAlive",
+  "Suspense",
+  "Teleport",
+  "Transition",
+  "TransitionGroup",
+]);
 
 /** A statement of the script, and how it sits beside its neighbours. */
 interface Statement {
@@ -94,8 +111,12 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   // included. A component that renders itself names itself instead: a virtual module's file name
   // is not its name (ADR-0021), and importing its own file fails `import/no-self-import` (L5).
   const children = childImports(component, module, (name) => `${name}.vue`);
+  const components = new Map<string, string>();
   for (const child of children) {
-    if (!child.self) imports.addDefault(child.specifier, child.local, { exact: true });
+    if (child.self) continue;
+    if (VUE_BUILT_INS.has(child.local)) {
+      components.set(child.local, imports.addDefault(child.specifier, `${child.local}Component`));
+    } else imports.addDefault(child.specifier, child.local, { exact: true });
   }
   const recursive = children.some((child) => child.self);
   const statements: Statement[] = [];
@@ -152,7 +173,9 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     });
     statements.push({ code: `defineExpose({ ${exposed.join(", ")} });`, layout: "block" });
   }
-  if (statements.length === 0 && imports.size === 0) return { rewrite: template, listeners };
+  if (statements.length === 0 && imports.size === 0) {
+    return { rewrite: template, listeners, components };
+  }
   const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
   const types = componentTypes(component, module).map(typeDeclarationCode);
   const code = [
@@ -164,6 +187,7 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     block: `<script setup lang="ts">\n${escapeScriptEnd(code)}\n</script>`,
     rewrite: template,
     listeners,
+    components,
   };
 }
 
