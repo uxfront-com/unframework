@@ -1,7 +1,8 @@
 // Real ngtsc AOT for virtual modules. Analog compiles only the files of its tsconfig program on
 // disk, and an Angular module from the unframework plugin exists only through `load`, so this
 // plugin compiles it with `NgtscProgram` over an in-memory host, before Analog sees it. Analog
-// then finds no decorators left and passes the module through (the Angular+Qwik ADR).
+// then finds no decorators left and passes the module through (the Angular+Qwik ADR). A child
+// that a module imports is a virtual module too, so it is resolved and loaded first (ADR-0053).
 import { dirname, resolve } from "node:path";
 
 import type { Plugin } from "vite";
@@ -9,8 +10,14 @@ import type { Plugin } from "vite";
 import { createHost, diagnosticCode, formatDiagnostics, strictOptions } from "./ngtsc.ts";
 import type { AngularCompiler, CompilerOptions, Diagnostic, NgtscProgram } from "./tools.ts";
 
-/** The Angular id scheme of the unframework plugin: `<abs>/X.uf.tsx.ts`, not on disk. */
-const VIRTUAL_ID = /\.uf\.tsx\.ts$/;
+/**
+ * The Angular id scheme of the unframework plugin, not on disk: `<abs>/X.uf.tsx.ts` for a file's
+ * main component, and `<abs>/X.uf.tsx.<output file>` for any other (`Card.uf.tsx.card-icon.ts`,
+ * ADR-0053).
+ */
+const VIRTUAL_ID = /\.uf\.tsx(?:\.[^/?]+)?\.ts$/;
+/** A relative import: of a child's output (`./field`, ADR-0053), or of a file on disk. */
+const RELATIVE_IMPORT = /^\.\.?\//;
 /** An import of another component in generated code: `./Child.uf.tsx`. */
 const COMPONENT_IMPORT = /^\.\.?\/.*\.uf\.tsx$/;
 
@@ -48,6 +55,8 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
   };
   let api: UnframeworkApi | undefined;
   let previous: NgtscProgram | undefined;
+  /** The virtual module each relative import of a virtual module resolved to, by importer. */
+  const children = new Map<string, string>();
   // NgtscProgram reuse is sequential: a program can be the previous one of a single successor.
   let queue: Promise<unknown> = Promise.resolve();
 
@@ -59,21 +68,26 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
     // `./Child.uf.tsx` in generated code means the child's generated Angular source, which is
     // the virtual `<abs>/Child.uf.tsx.ts`, not the unframework source on disk. TypeScript asks
     // `resolveModuleNameLiterals`; ngtsc's own module resolver asks `resolveModuleNames`.
+    // A child's output (`./field`) means the virtual module Vite resolved it to (ADR-0053).
     const resolveOne = (
       name: string,
       containingFile: string,
       settings: CompilerOptions,
       redirect: unknown,
-    ) =>
-      COMPONENT_IMPORT.test(name)
+    ) => {
+      const child = COMPONENT_IMPORT.test(name)
+        ? `${resolve(dirname(containingFile), name)}.ts`
+        : children.get(childKey(containingFile, name));
+      return child
         ? {
             resolvedModule: {
-              resolvedFileName: `${resolve(dirname(containingFile), name)}.ts`,
+              resolvedFileName: child,
               extension: ts.Extension.Ts,
               isExternalLibraryImport: false,
             },
           }
         : ts.resolveModuleName(name, containingFile, settings, host, undefined, redirect);
+    };
     host.resolveModuleNameLiterals = (literals, containingFile, redirect, settings) =>
       literals.map(({ text }) => resolveOne(text, containingFile, settings, redirect));
     host.resolveModuleNames = (names, containingFile, _reused, redirect, settings) =>
@@ -141,9 +155,22 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
       api = candidate as UnframeworkApi;
     },
     transform: {
-      filter: { id: /\.uf\.tsx\.ts(?:\?|$)/ },
+      filter: { id: /\.uf\.tsx(?:\.[^/?]+)?\.ts(?:\?|$)/ },
       async handler(code, rawId) {
         const id = rawId.split("?")[0]!;
+        // ngtsc reads a child's source from the unframework plugin, which has it only once Vite
+        // has loaded the child (ADR-0027's negative): resolve each relative import with Vite
+        // and load the virtual modules it names before this module compiles (ADR-0053). A child
+        // whose source the plugin holds is loaded, or being loaded, already: that also ends a
+        // cycle of imports.
+        for (const { fileName } of compiler.ts.preProcessFile(code, true, true).importedFiles) {
+          if (!RELATIVE_IMPORT.test(fileName) || COMPONENT_IMPORT.test(fileName)) continue;
+          const resolved = await this.resolve(fileName, id);
+          const child = resolved?.id.split("?")[0];
+          if (!resolved || !child || !VIRTUAL_ID.test(child)) continue;
+          children.set(childKey(id, fileName), child);
+          if (api!.getCompiled(child) === undefined) await this.load({ id: resolved.id });
+        }
         const run = queue.then(() => compile(id, code));
         // The queue only orders compiles; each caller still gets its own outcome or error.
         queue = run.then(
@@ -169,6 +196,11 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
       },
     },
   };
+}
+
+/** The key of an import in `children`: the importing file and the specifier. */
+function childKey(importer: string, specifier: string): string {
+  return `${importer}\0${specifier}`;
 }
 
 /**

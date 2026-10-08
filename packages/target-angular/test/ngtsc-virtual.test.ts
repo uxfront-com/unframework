@@ -100,6 +100,89 @@ describe("ngtscVirtual", () => {
     await expect(transform(id("Parent"), parent("[lable]"))).rejects.toThrow(/NG8002/);
   });
 
+  // ADR-0053: an output imports a child's output (`./field`), a virtual module the unframework
+  // plugin serves only once Vite has loaded it.
+  describe("a child's output", () => {
+    const field = component(
+      "Field",
+      "<em>{{ label() }}</em>",
+      "\n  readonly label = input.required<string>();\n",
+    );
+    /** A parent that imports `Field` from `specifier` and binds `binding` on it. */
+    const form = (specifier: string, binding: string) =>
+      [
+        'import { Component } from "@angular/core";',
+        `import Field from "${specifier}";`,
+        "",
+        "@Component({",
+        '  selector: "uf-form",',
+        "  imports: [Field],",
+        `  template: \`<uf-field ${binding}="'x'" />\`,`,
+        "})",
+        "export default class Form {}",
+        "",
+      ].join("\n");
+
+    it("is resolved through Vite and loaded before the parent compiles", async () => {
+      const { transform, loaded } = await ngtscPlugin({ [id("Field")]: field }, "server", {
+        lazy: true,
+        resolve: (specifier, importer) =>
+          specifier === "./field" && importer === id("Form") ? id("Field") : undefined,
+      });
+      await expect(transform(id("Form"), form("./field", "[label]"))).resolves.toMatchObject({
+        code: expect.stringContaining("dependencies: [Field]"),
+      });
+      expect(loaded).toEqual([id("Field")]);
+      // Checked against the child's inputs: a misspelt one fails strict templates.
+      await expect(transform(id("Form"), form("./field", "[lable]"))).rejects.toThrow(/NG8002/);
+      expect(loaded).toEqual([id("Field")]);
+    });
+
+    it("may be a file's other component (`X.uf.tsx.<output file>`)", async () => {
+      const other = join(directory, "Fields.uf.tsx.field.ts");
+      const { transform, loaded } = await ngtscPlugin({ [other]: field }, "server", {
+        lazy: true,
+        resolve: (specifier) => (specifier === "./field" ? other : undefined),
+      });
+      await expect(transform(id("Form"), form("./field", "[label]"))).resolves.toMatchObject({
+        code: expect.stringContaining("dependencies: [Field]"),
+      });
+      expect(loaded).toEqual([other]);
+    });
+
+    it("is loaded once along a cycle of imports", async () => {
+      const cyclic = (name: string, other: string) =>
+        [
+          'import { Component, forwardRef } from "@angular/core";',
+          `import ${other} from "./${other.toLowerCase()}";`,
+          "",
+          "@Component({",
+          `  selector: "uf-${name.toLowerCase()}",`,
+          `  imports: [forwardRef(() => ${other})],`,
+          "  template: `<p>" + name + "</p>`,",
+          "})",
+          `export default class ${name} {}`,
+          "",
+        ].join("\n");
+      const sources = { [id("Ping")]: cyclic("Ping", "Pong"), [id("Pong")]: cyclic("Pong", "Ping") };
+      const { transform, loaded } = await ngtscPlugin(sources, "server", {
+        lazy: true,
+        resolve: (specifier) =>
+          ({ "./ping": id("Ping"), "./pong": id("Pong") })[specifier as "./ping"],
+      });
+      await expect(transform(id("Ping"))).resolves.toMatchObject({
+        code: expect.stringContaining("ɵɵdefineComponent"),
+      });
+      expect(loaded).toEqual([id("Pong")]);
+    });
+
+    it("fails the parent when Vite cannot resolve it", async () => {
+      const { transform, loaded } = await ngtscPlugin({}, "server", { lazy: true });
+      await expect(transform(id("Form"), form("./field", "[label]"))).rejects.toThrow(/TS2307/);
+      expect(loaded).toEqual([]);
+    });
+  });
+
   it("fails the module when an imported component was never compiled", async () => {
     const { transform } = await ngtscPlugin();
     const code = [

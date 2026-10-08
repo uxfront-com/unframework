@@ -165,6 +165,8 @@ type TransformHandler = (
     environment: { mode: string; config: { consumer: string }; logger: { error(m: string): void } };
     warn(message: string): void;
     error(message: string): never;
+    resolve(specifier: string, importer: string): Promise<{ id: string } | null>;
+    load(options: { id: string }): Promise<unknown>;
   },
   code: string,
   id: string,
@@ -175,25 +177,49 @@ export interface NgtscHarness {
   plugin: Plugin;
   warnings: string[];
   logged: string[];
+  /** The ids the plugin asked Vite to load (`this.load`), in order. */
+  loaded: string[];
   transform: (id: string, code?: string) => Promise<{ code: string; map: string | null }>;
+}
+
+/** How the harness's Vite answers the plugin's `this.resolve` and `this.load`. */
+export interface NgtscVite {
+  /** Resolves a specifier from an importer to a module id, or to nothing (the default). */
+  resolve?: (specifier: string, importer: string) => string | undefined;
+  /**
+   * Serves a module's source only once Vite has loaded it (`this.load`, or the transform of the
+   * module itself), as the unframework plugin does; by default it serves every source.
+   */
+  lazy?: boolean;
 }
 
 /**
  * The ngtsc plugin, set up as Vite sets it up beside an unframework plugin that serves
  * `sources` (generated Angular code by virtual id), in a dev server's `consumer` environment.
- * `transform` runs its transform hook.
+ * `transform` runs its transform hook; `this.load` loads a module and runs the hook on it.
  */
 export async function ngtscPlugin(
   sources: Record<string, string> = {},
   consumer: "client" | "server" = "server",
+  vite: NgtscVite = {},
 ): Promise<NgtscHarness> {
   const plugin = ngtscVirtual(await loadCompiler(context.toolchainDir));
-  const unframework = { name: "unframework", api: { getCompiled: (id: string) => sources[id] } };
+  const served = new Set<string>(vite.lazy ? [] : Object.keys(sources));
+  const unframework = {
+    name: "unframework",
+    api: { getCompiled: (id: string) => (served.has(id) ? sources[id] : undefined) },
+  };
   (plugin.configResolved as (config: ResolvedConfig) => void)({
     plugins: [unframework as Plugin, plugin],
   } as unknown as ResolvedConfig);
   const warnings: string[] = [];
   const logged: string[] = [];
+  const loaded: string[] = [];
+  const { handler } = plugin.transform as { handler: TransformHandler };
+  const transform = (id: string, code = sources[id]!) => {
+    served.add(id);
+    return handler.call(pluginContext, code, id);
+  };
   const pluginContext = {
     environment: {
       mode: "dev",
@@ -204,12 +230,14 @@ export async function ngtscPlugin(
     error: (message: string): never => {
       throw new Error(message);
     },
+    resolve: (specifier: string, importer: string) => {
+      const id = vite.resolve?.(specifier, importer);
+      return Promise.resolve(id === undefined ? null : { id });
+    },
+    load: async ({ id }: { id: string }) => {
+      loaded.push(id);
+      return transform(id);
+    },
   };
-  const { handler } = plugin.transform as { handler: TransformHandler };
-  return {
-    plugin,
-    warnings,
-    logged,
-    transform: (id: string, code = sources[id]!) => handler.call(pluginContext, code, id),
-  };
+  return { plugin, warnings, logged, loaded, transform };
 }
