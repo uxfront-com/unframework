@@ -93,7 +93,10 @@ target):
 
 Single-selection list boxes are declared unsupported (`listbox`): Vue's client selects their
 first option, where HTML and the other targets select none (ADR-0033). Every other capability is
-native: the listeners' options and DOM semantics, `useId` and `nextTick` are Vue's own.
+native: the listeners' options and DOM semantics, `useId` and `nextTick` are Vue's own, and so is
+all of composition. Composition's cells (ADR-0055) are declared before Vue emits composition: until
+M3's lane for Vue lands, `emit` reports UF1002 where a component first uses it, and emits nothing
+for that component.
 
 ## The toolchain
 

@@ -124,8 +124,9 @@ const OPTION_CAPABILITIES = {
  * ties to its parent (`CONTEXTUAL_ROOT_ELEMENTS`), and a slot's presence (`named-slot`, or
  * `default-slot-presence` for the default slot's) where an expression tests it;
  * then its render tree: the node and attribute kinds (a listener, a template ref, an element's
- * `v-model`, a component's model, listener and `ref` need `interactivity`; a component's
- * attribute its own kind's, `componentAttribute`), a slot outlet's and a fill's slot form
+ * `v-model`, a component's model, listener and `ref` need `interactivity`; on a component a
+ * prop needs `component`, a listener `component-event`, a model `model`, a `class` or a `style`
+ * `fallthrough` and a `ref` `expose`, `componentAttribute`), a slot outlet's and a fill's slot form
  * (`default-slot`, `named-slot`, `scoped-slot`, with `slot-fallback` for fallback content and
  * `slot-forwarding` for a forwarded slot, the default one's needing `default-slot-presence`
  * too), `model-array` and `model-modifiers` at an element's `v-model` that
@@ -212,7 +213,10 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
         }
         use(NODE_CAPABILITIES[node.kind], node.span);
         if (node.kind === "Component" || node.kind === "Dynamic") {
-          for (const attribute of node.attributes) componentAttribute(attribute, use);
+          const onComponent =
+            node.kind === "Component" ||
+            node.candidates.every((candidate) => candidate.kind === "Component");
+          for (const attribute of node.attributes) componentAttribute(attribute, onComponent, use);
           fills(node.kind === "Component" ? node.fills : (node.fills ?? []));
           return;
         }
@@ -261,7 +265,11 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
   return required;
 }
 
-/** The capabilities composition adds (ADR-0055), which no target emits before M3's lanes. */
+/**
+ * The capabilities composition adds (ADR-0055), which no target emits before M3's lanes:
+ * `contextual-root` aside, which a component without composition needs (an `<li>` root), and
+ * which only Angular leaves unsupported.
+ */
 const COMPOSITION_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "component",
   "component-event",
@@ -276,7 +284,6 @@ const COMPOSITION_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Capability
   "model-array",
   "model-modifiers",
   "fallthrough",
-  "contextual-root",
   "expose",
   "context",
   "reactive-context",
@@ -284,25 +291,30 @@ const COMPOSITION_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Capability
 ]);
 
 /**
- * Where a component first uses composition (ADR-0055), with what it uses, or `undefined`: a
- * capability of composition, its `defineSlots` or `defineOptions`, or, for the module's first
- * component, the module's injection keys. The cells are declared before the targets emit them,
- * so until a target's M3 lane lands, its `emit` reports UF1002 there and emits nothing (P2):
- * nothing composition declares is dropped silently.
+ * Where a component first uses composition in source order (ADR-0055), with what it uses, or
+ * `undefined`: a capability of composition, its `defineSlots` or `defineOptions`, or, for the
+ * module's first component, the module's injection keys. The cells are declared before the
+ * targets emit them, so until a target's M3 lane lands, its `emit` reports UF1002 there and
+ * emits nothing (P2): nothing composition declares is dropped silently.
  */
 export function compositionUse(
   module: UfModule,
   component: UfComponent,
 ): { what: string; span: Span } | undefined {
+  const uses: { what: string; span: Span }[] = [];
   for (const [capability, span] of requiredCapabilities({ ...module, components: [component] })) {
-    if (COMPOSITION_CAPABILITIES.has(capability)) return { what: capability, span };
+    if (COMPOSITION_CAPABILITIES.has(capability)) uses.push({ what: capability, span });
   }
-  if (component.slots) return { what: "`defineSlots`", span: component.slots.span };
-  if (component.inheritAttrs === false) return { what: "`defineOptions`", span: component.span };
+  if (component.slots) uses.push({ what: "`defineSlots`", span: component.slots.span });
+  if (component.inheritAttrs === false)
+    uses.push({ what: "`defineOptions`", span: component.span });
   const [key] = module.keys ?? [];
   if (key && module.components[0] === component)
-    return { what: "an injection key", span: key.span };
-  return undefined;
+    uses.push({ what: "an injection key", span: key.span });
+  return uses.reduce<{ what: string; span: Span } | undefined>(
+    (first, use) => (first && first.span.start <= use.span.start ? first : use),
+    undefined,
+  );
 }
 
 /** The capability of a slot's form: the default slot, a named one, or one with props. */
@@ -312,11 +324,14 @@ function slotCapability(slot: string, scoped: boolean): CapabilityName {
 }
 
 /**
- * What a component's attribute needs, or a `Dynamic` node's: its kind's capability, an element
- * attribute's for a tag candidate, and `interactivity` where it runs in the browser.
+ * What an attribute of a component or of a `Dynamic` node needs. On a component (or a `Dynamic`
+ * node's component candidates) a kind takes its component meaning (`componentAttribute`): a
+ * `class` or a `style` falls through, a `ref` holds what the child exposes, and a model, a
+ * listener and a `ref` need `interactivity`. On tag candidates an attribute is an element's.
  */
 function componentAttribute(
   attribute: Attribute | ComponentAttribute,
+  onComponent: boolean,
   use: (capability: CapabilityName, span: Span) => void,
 ): void {
   switch (attribute.kind) {
@@ -325,16 +340,31 @@ function componentAttribute(
     case "ModelBinding":
       use(COMPONENT_ATTRIBUTE_CAPABILITIES[attribute.kind], attribute.span);
       break;
-    case "Static":
-    case "Bound":
     case "Class":
     case "Style":
-    case "Spread":
-    case "Event":
     case "Ref":
-    case "Model":
+      use(
+        onComponent
+          ? COMPONENT_ATTRIBUTE_CAPABILITIES[attribute.kind]
+          : ATTRIBUTE_CAPABILITIES[attribute.kind],
+        attribute.span,
+      );
+      break;
+    case "Static":
+    case "Bound":
+    case "Spread":
       use(ATTRIBUTE_CAPABILITIES[attribute.kind], attribute.span);
-      if (attribute.kind === "Model") modelCapabilities(attribute, use);
+      break;
+    case "Event":
+      use(ATTRIBUTE_CAPABILITIES.Event, attribute.span);
+      use("event-semantics", attribute.span);
+      for (const option of ["capture", "once", "passive"] as const) {
+        if (attribute[option]) use(OPTION_CAPABILITIES[option], attribute.span);
+      }
+      break;
+    case "Model":
+      use(ATTRIBUTE_CAPABILITIES.Model, attribute.span);
+      modelCapabilities(attribute, use);
       break;
     default:
       unreachable(attribute);

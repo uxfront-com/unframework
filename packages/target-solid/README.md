@@ -289,7 +289,14 @@ what Solid cannot render as the other targets do is the analyser's to reject (AD
 | `use-id`                                       | native: `createUniqueId`                                                                                     |
 | `next-tick`                                    | emulated: `nextTick`                                                                                         |
 | `class-binding`                                | emulated: `cx`                                                                                               |
+| `model-array`                                  | emulated: `toggle`, and `selectedValues` for a multiple select                                               |
+| `model-modifiers`                              | emulated: `modelText`                                                                                        |
+| `reactive-context`                             | emulated: `refObject`                                                                                        |
 | everything else                                | native                                                                                                       |
+
+Composition's cells (ADR-0055) are declared before Solid emits composition: until M3's lane for
+Solid lands, `emit` reports UF1002 where a component first uses it, and emits nothing for that
+component.
 
 ## Toolchain
 

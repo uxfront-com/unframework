@@ -10,11 +10,21 @@ import {
   CODE_REFERENCE_KINDS,
   codeOf,
   collectFeatures,
+  createBinding,
   createBindingReference,
+  createCode,
   createDynamicNode,
+  createExposes,
   createExpression,
+  createFunctionHandler,
+  createImportedName,
+  createModelAttribute,
+  createParameter,
+  createPropAttribute,
   createSlotFill,
   createSlotReference,
+  createStaticAttribute,
+  createText,
   expressionsOf,
   functionsOf,
   RENDER_NODE_KINDS,
@@ -25,14 +35,22 @@ import {
   walk,
 } from "../src/index.ts";
 import type {
+  Attribute,
+  ComponentAttribute,
   ComponentNode,
+  DynamicCandidate,
   ElementNode,
   Expression,
+  IfNode,
   InlineHandler,
   ListenerAttribute,
   ModelAttribute,
   ModelBindingAttribute,
+  ModelItem,
   PropAttribute,
+  ProvideItem,
+  RenderNode,
+  SlotFill,
   UfModule,
   WriteReference,
 } from "../src/index.ts";
@@ -292,5 +310,230 @@ describe("checkInvariants on composition", () => {
       "/imports/0/names/0/imported",
       'must name a component "./Field.uf.tsx" exports',
     );
+  });
+});
+
+/** The fixture with a `Dynamic` node after the `<div>`'s children: `/render/children/4`. */
+function withDynamic(
+  candidates: DynamicCandidate[],
+  attributes: (Attribute | ComponentAttribute)[] = [],
+  children: RenderNode[] = [],
+  fills?: SlotFill[],
+): UfModule {
+  const module = composition();
+  const is = expression(find("label", 0, find("<Field").end), [["label", ids.label]]);
+  root(module).children.push(
+    createDynamicNode(is, candidates, attributes, children, find("</div>"), fills),
+  );
+  return module;
+}
+
+/** `label`, the prop, read in the `<Field>`'s `label={label}`. */
+const labelRead = () => expression(find("label", 0, find("<Field").end), [["label", ids.label]]);
+
+describe("checkInvariants on `<component is>`", () => {
+  const at = "/render/children/4";
+
+  it("reports a node with no candidate", () => {
+    reports(withDynamic([]), `${at}/candidates`, "must hold a candidate");
+  });
+
+  it("reports a tag candidate that is no HTML element", () => {
+    reports(
+      withDynamic([{ kind: "Tag", tag: "foo" }]),
+      `${at}/candidates/0/tag`,
+      "must be an HTML element",
+    );
+  });
+
+  it("reports fills and a component's attribute for tag candidates", () => {
+    reports(
+      withDynamic([{ kind: "Tag", tag: "a" }], [], [], []),
+      `${at}/fills`,
+      "must be absent for tag candidates",
+    );
+    reports(
+      withDynamic(
+        [{ kind: "Tag", tag: "a" }],
+        [createPropAttribute("label", labelRead(), find("label={label}"))],
+      ),
+      `${at}/attributes/0`,
+      "must be an element attribute for tag candidates",
+    );
+  });
+
+  it("checks a tag candidate's attributes and children as its element's", () => {
+    const model = createModelAttribute(labelRead(), "text", find("v-model={text.value}"));
+    reports(
+      withDynamic([{ kind: "Tag", tag: "input" }], [model]),
+      `${at}/attributes/0/value`,
+      "must be a state's or a model's `.value`",
+    );
+    const value = createStaticAttribute("href", "/", find("label={label}"));
+    reports(
+      withDynamic([{ kind: "Tag", tag: "input" }], [value]),
+      `${at}/attributes/0/name`,
+      "must be an attribute of <input>",
+    );
+    const text = createText("x", find("theme", 0, find("<h2>").start));
+    reports(
+      withDynamic([{ kind: "Tag", tag: "input" }], [], [text]),
+      `${at}/children`,
+      "is a void element",
+    );
+  });
+
+  it("reports an element's attribute and children for component candidates", () => {
+    const field: DynamicCandidate[] = [{ kind: "Component", component: "Field" }];
+    reports(
+      withDynamic(field, [createStaticAttribute("title", "x", find("label={label}"))]),
+      `${at}/attributes/0`,
+      "must be a component attribute for component candidates",
+    );
+    reports(
+      withDynamic(field, [], [createText("x", find("theme", 0, find("<h2>").start))]),
+      `${at}/children`,
+      "must be empty for component candidates",
+    );
+  });
+});
+
+describe("checkInvariants on components, fills and slots", () => {
+  it("reports an imported name that another component of the module takes", () => {
+    const module = composition();
+    module.imports![0]!.names[0]!.local = "Form";
+    reports(module, "/imports/0/names/0/local", "must differ from every other component's name");
+  });
+
+  it("reports a prop set twice", () => {
+    const module = composition();
+    fieldOf(module).attributes.push(
+      createPropAttribute("label", labelRead(), find("label={label}")),
+    );
+    reports(module, "/attributes/3/name", 'must set "label" once');
+  });
+
+  it("reports a listener whose handler is no local function, or takes a DOM event", () => {
+    const module = composition();
+    const listener = fieldOf(module).attributes[2] as ListenerAttribute;
+    const handler = listener.handler;
+    listener.handler = createFunctionHandler(ids.text, find("text", 0, find("<Field").start));
+    reports(module, "/attributes/2/handler/binding", "must name a local function");
+    const inline = handler as InlineHandler;
+    inline.function.parameters = [
+      createParameter("event", find("open", 0, find("onClear").start), { event: "MouseEvent" }),
+    ];
+    listener.handler = inline;
+    reports(module, "/attributes/2/handler/function/parameters", "never a DOM event");
+  });
+
+  it("reports a slot filled twice", () => {
+    const module = composition();
+    const field = fieldOf(module);
+    field.fills.push(createSlotFill("default", [], field.fills[0]!.span));
+    reports(module, "/fills/1/slot", 'must fill "default" once');
+  });
+
+  it("reports a forward of a slot the component does not declare, and one with children", () => {
+    const module = composition();
+    const field = fieldOf(module);
+    const [fill] = field.fills;
+    field.fills = [createSlotFill("default", [], fill!.span, { forward: "footer" })];
+    reports(module, "/fills/0/forward", 'must name a slot of the component, and "footer"');
+    field.fills = [createSlotFill("default", fill!.children, fill!.span, { forward: "title" })];
+    reports(module, "/render/children/1/fills/0", "must have no children or parameter");
+  });
+
+  it("reports a slot's presence that does not span `slots.<slot>`, and a read of `slots`", () => {
+    const presence = find("slots.title");
+    const short = span(presence.start, presence.start + 5);
+    const condition = (module: UfModule) => (root(module).children[0] as IfNode).branches[0]!;
+    const module = composition();
+    condition(module).condition = createExpression("slots.title", presence, [
+      createSlotReference("title", short),
+    ]);
+    reports(module, "/condition/refs/0/span", 'must span "slots.title"');
+    const read = composition();
+    condition(read).condition = createExpression("slots.title", presence, [
+      createBindingReference(ids.slots, short),
+    ]);
+    reports(read, "/condition/refs/0/binding", "a slot is rendered, tested or forwarded");
+  });
+
+  it("reports a component binding read outside a template", () => {
+    const module = composition();
+    const where = find("label", 0, find("<Field").end);
+    form(module).bindings.push(createBinding("label", "component", where));
+    const provide = form(module).setup[3] as ProvideItem;
+    const value = find("label", 0, find("provide(").start);
+    provide.value = createCode("label", value, [
+      createBindingReference(`label@${where.start}`, value),
+    ]);
+    reports(module, "/setup/3/value/refs/0/binding", "must not read the component");
+  });
+
+  it("reports a model's default that reads a binding", () => {
+    const module = composition();
+    const model = form(module).setup[1] as ModelItem;
+    model.default = expression(find("label", 0, find("provide(").start), [["label", ids.label]]);
+    reports(module, "/setup/1/default/refs", "a model's default is static");
+  });
+});
+
+describe("checkInvariants on slots, exposes, keys and models", () => {
+  it("reports a slot declared twice, and a slots binding the declaration does not declare", () => {
+    const module = composition();
+    const { slots } = form(module);
+    slots!.slots[1]!.name = "default";
+    reports(module, "/slots/slots/1/name", 'must declare "default" once');
+    const other = composition();
+    other.components[0]!.slots!.binding = ids.text;
+    reports(other, "/slots/binding", "must name the slots binding the declaration declares");
+    reports(other, "/bindings/1", "must be the binding `slots` declares");
+  });
+
+  it("reports an exposed name that is no local function", () => {
+    const module = composition();
+    form(module).exposes = createExposes([ids.text], find("const slots"));
+    reports(module, "/exposes/functions/0", "must name a local function");
+  });
+
+  it("reports a key that the module neither declares nor imports, and an imported one it lacks", () => {
+    const module = composition();
+    (form(module).setup[3] as ProvideItem).key = "ColourKey";
+    reports(
+      module,
+      "/setup/3/key",
+      'must name an injection key the module declares or imports, and "ColourKey"',
+    );
+    const imported = composition();
+    imported.imports![0]!.names.push(
+      createImportedName("Key", "FieldKey", "FieldKey", find("Field")),
+    );
+    reports(
+      imported,
+      "/imports/0/names/1/imported",
+      'must name an injection key "./Field.uf.tsx" exports',
+    );
+  });
+
+  it("reports a model named as a prop, or twice", () => {
+    const module = composition();
+    (form(module).setup[1] as ModelItem).name = "label";
+    reports(module, "/setup/1/name", 'must differ from every prop\'s name, and "label"');
+    const twice = composition();
+    const model = twice.components[0]!.setup[1] as ModelItem;
+    twice.components[0]!.setup.splice(2, 0, {
+      ...model,
+      span: find("const theme = inject(ThemeKey);"),
+    });
+    reports(twice, "/setup/1/name", 'must declare the model "open" once');
+  });
+
+  it("reports a v-model control of another element", () => {
+    const module = composition();
+    const input = root(module).children[2] as ElementNode;
+    (input.attributes[0] as ModelAttribute).control = "select";
+    reports(module, "/render/children/2/attributes/0/control", "must be a control of <input>");
   });
 });

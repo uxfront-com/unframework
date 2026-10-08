@@ -101,7 +101,10 @@ binding declared after it).
 | `onWheelPassive`                                            | `passive:wheel`; non-passive (its `preventDefault()` left out) where the component also listens to the event otherwise: Qwik's loader runs passive and other handlers in two passes over the path                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `onClickOnce`                                               | a module-level `WeakSet` per listener, checked first in its handler, which also takes the element's `preventdefault:`/`stoppropagation:` off after its first run, unless another listener of the element still needs it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
-Capabilities: every cell is native but `event-once` (emulated: the `WeakSet` guard),
+Capabilities: every cell is native but `event-once` (emulated: the `WeakSet` guard), composition's
+`named-slot` and `scoped-slot` (emulated: the QRL render prop `<slot>$`), `model-array`
+(`toggle`), `model-modifiers` (`modelText`) and `expose` (`exposeRef`), all emulated,
+`default-slot-presence` (unsupported, an error: `<Slot />` has no presence API),
 `next-tick` (emulated: the `nextTick` helper), `conditional-event-control` (unsupported, an
 error: a control anywhere but at the top of a template listener, after a test that reads what a
 control changes (`event.defaultPrevented`), a `once` listener's control under a condition or on
@@ -111,6 +114,9 @@ state and that client code hands to `addEventListener` or calls outside a templa
 `useComputed$` or a task only to the keys the props hold, so a derived value or a watcher misses
 an optional prop a parent's spread adds after the mount; `test/behaviour.browser.test.ts` pins
 it).
+
+Composition's cells (ADR-0055) are declared before Qwik emits composition: until M3's lane for Qwik
+lands, `emit` reports UF1002 where a component first uses it, and emits nothing for that component.
 
 ## Toolchain
 

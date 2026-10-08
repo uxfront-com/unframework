@@ -74,9 +74,11 @@ plain, versioned, schema-validated JSON (plan §5.3).
   names exactly one imported or local component, and each prop, listener, model and fill a
   declaration of its API; a slot outlet, a slot's presence and a forwarded fill name a declared
   slot; a model's binding is a `state`'s or a `model`'s `.value`; an injected value is never
-  written; and a `Dynamic` node's candidates are all tags or all components. The compiler emits
-  from no module that breaks one, a plugin's included, and checks itself that a plugin's code is
-  the analyser's.
+  written; a `Dynamic` node's candidates are all tags, whose attributes and children each tag
+  keeps as an element, or all components; slots, exposed functions and models are declared once,
+  a model named apart from the props; `provide` and `inject` name a key the module declares or
+  imports; and a `v-model`'s control is one of its element. The compiler emits from no module
+  that breaks one, a plugin's included, and checks itself that a plugin's code is the analyser's.
 - **Portability facts:** what the targets render differently from the same markup
   (`portability.ts`): elements Vue does not know, template syntax, attributes a framework acts on
   or sets as state, `contenteditable` with children, empty URLs React drops, whitespace Svelte

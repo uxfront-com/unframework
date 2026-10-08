@@ -95,6 +95,7 @@ import type {
   FunctionItem,
   Handler,
   IfNode,
+  ModelAttribute,
   Parameter,
   RefAttribute,
   RenderNode,
@@ -202,6 +203,13 @@ export function checkInvariants(module: UfModule): IrValidationError[] {
   const errors: IrValidationError[] = [];
   const types = checkTypeDeclarations(module, errors);
   const apis = componentApis(module, errors);
+  // The keys `provide` and `inject` may name: the module's own, and the imported ones.
+  const keys = new Set([
+    ...(module.keys ?? []).map(({ name }) => name),
+    ...(module.imports ?? []).flatMap((entry) =>
+      entry.names.flatMap(({ kind, local }) => (kind === "Key" ? [local] : [])),
+    ),
+  ]);
   const components = new Set<string>();
   // Each name names a file, and case-insensitive file systems merge two that differ in case.
   const byFile = new Map<string, string>();
@@ -227,7 +235,7 @@ export function checkInvariants(module: UfModule): IrValidationError[] {
       byFile.set(name.toLowerCase(), name);
     }
     components.add(name);
-    checkComponent(component, path, types, apis, errors);
+    checkComponent(component, path, types, apis, keys, errors);
   }
   const exported = new Set<string>();
   for (const [index, entry] of module.exports.entries()) {
@@ -292,7 +300,15 @@ function componentApis(
   for (const [index, entry] of (module.imports ?? []).entries()) {
     for (const [position, imported] of entry.names.entries()) {
       const at = `/imports/${index}/names/${position}`;
-      if (imported.kind !== "Component") continue;
+      if (imported.kind === "Key") {
+        if (!entry.api.keys.some(({ name }) => name === imported.imported)) {
+          errors.push({
+            path: `${at}/imported`,
+            message: `must name an injection key "${entry.specifier}" exports, and "${imported.imported}" is not one`,
+          });
+        }
+        continue;
+      }
       const api = entry.api.components.find((component) =>
         imported.imported === "default"
           ? component.export === "default"
@@ -403,6 +419,8 @@ interface Walk {
   readonly staticConsts: ReadonlySet<BindingId>;
   /** The components a component element may name, by local name, with what they declare. */
   readonly apis: ReadonlyMap<string, Declared>;
+  /** The injection keys `provide` and `inject` may name, by local name. */
+  readonly keys: ReadonlySet<string>;
 }
 
 /** Where a node sits: what the walk carries down the tree. */
@@ -455,6 +473,7 @@ function checkComponent(
   path: string,
   types: ReadonlyMap<string, number>,
   apis: ReadonlyMap<string, Declared>,
+  keys: ReadonlySet<string>,
   errors: IrValidationError[],
 ): void {
   const bindings = checkBindings(component, path, errors);
@@ -481,6 +500,7 @@ function checkComponent(
       ),
     ),
     apis,
+    keys,
   };
   checkComponentTypes(component, path, types, errors);
   checkProps(component, path, walk);
@@ -493,6 +513,8 @@ function checkComponent(
   );
   checkSetup(component, path, scope, walk);
   checkEmits(component, path, walk);
+  checkSlots(component, path, walk);
+  checkExposes(component, path, walk);
   const root: Place = {
     path: `${path}/render`,
     element: undefined,
@@ -911,6 +933,82 @@ function checkComponentListener(handler: Handler, path: string, place: Place, wa
   }
 }
 
+/** The element each control of a `v-model` binds (ADR-0054). */
+const MODEL_CONTROLS: Readonly<Record<ModelAttribute["control"], string>> = {
+  text: "input",
+  number: "input",
+  textarea: "textarea",
+  select: "select",
+  "select-multiple": "select",
+  checkbox: "input",
+  "checkbox-group": "input",
+  radio: "input",
+};
+
+/** Checks that `provide` or `inject` names an injection key of the module or an imported one. */
+function checkKeyName(key: string, path: string, walk: Walk): void {
+  if (!walk.keys.has(key)) {
+    walk.errors.push({
+      path,
+      message: `must name an injection key the module declares or imports, and "${key}" is not one`,
+    });
+  }
+}
+
+/**
+ * Checks the slots a component declares (ADR-0054), as `checkEmits` does its events: each name
+ * once, and the `slots` binding the one the declaration declares.
+ */
+function checkSlots(component: UfComponent, path: string, walk: Walk): void {
+  const { errors, bindings } = walk;
+  const { slots } = component;
+  for (const [index, binding] of component.bindings.entries()) {
+    if (binding.kind === "slots" && binding.id !== slots?.binding) {
+      errors.push({
+        path: `${path}/bindings/${index}`,
+        message: `must be the binding \`slots\` declares, and "${binding.id}" is not`,
+      });
+    }
+  }
+  if (!slots) return;
+  const at = `${path}/slots`;
+  const binding = bindings.get(slots.binding);
+  if (binding?.kind !== "slots" || !inside(binding.span, slots.span)) {
+    errors.push({
+      path: `${at}/binding`,
+      message: `must name the slots binding the declaration declares, and "${slots.binding}" is not one`,
+    });
+  }
+  const names = new Set<string>();
+  for (const [index, slot] of slots.slots.entries()) {
+    if (names.has(slot.name)) {
+      errors.push({
+        path: `${at}/slots/${index}/name`,
+        message: `must declare "${slot.name}" once`,
+      });
+    }
+    names.add(slot.name);
+    if (slot.props) checkSourceText(slot.props, `${at}/slots/${index}/props`, errors);
+  }
+  checkSourceText(slots.type, `${at}/type`, errors);
+}
+
+/** Checks what a component exposes (ADR-0054): its local functions, each once. */
+function checkExposes(component: UfComponent, path: string, walk: Walk): void {
+  const { exposes } = component;
+  if (!exposes) return;
+  const seen = new Set<BindingId>();
+  for (const [index, id] of exposes.functions.entries()) {
+    const at = `${path}/exposes/functions/${index}`;
+    if (walk.bindings.get(id)?.kind !== "localFn") {
+      walk.errors.push({ path: at, message: `must name a local function, and "${id}" is not one` });
+    } else if (seen.has(id)) {
+      walk.errors.push({ path: at, message: `must expose "${id}" once` });
+    }
+    seen.add(id);
+  }
+}
+
 /** Checks that a model's binding is a `state` or `model` binding's `.value` (ADR-0055). */
 function checkModelValue(value: Expression, path: string, place: Place, walk: Walk): void {
   checkExpression(value, path, place.scope, walk);
@@ -1000,6 +1098,54 @@ function checkSlotOutlet(node: SlotOutletNode, place: Place, walk: Walk): void {
 }
 
 /**
+ * Checks a `Dynamic` node's element attributes and children as each tag candidate's (ADR-0055):
+ * every rule an element of that tag keeps, a `v-model`'s value included. Each candidate is
+ * checked apart and a problem reported once, and a template ref counts as one attachment.
+ */
+function checkTagCandidates(node: DynamicNode, place: Place, walk: Walk): void {
+  const attributes: Attribute[] = [];
+  for (const attribute of node.attributes) {
+    // A component's attribute is reported already, and the paths are by index.
+    if (
+      attribute.kind === "Prop" ||
+      attribute.kind === "Listener" ||
+      attribute.kind === "ModelBinding"
+    ) {
+      return;
+    }
+    attributes.push(attribute);
+  }
+  const reported = new Set<string>();
+  let attachments: Map<BindingId, number> | undefined;
+  for (const candidate of node.candidates) {
+    if (candidate.kind !== "Tag") continue;
+    const element: ElementNode = {
+      kind: "Element",
+      tag: candidate.tag,
+      attributes,
+      children: node.children,
+      span: node.span,
+    };
+    const errors: IrValidationError[] = [];
+    const own: Walk = { ...walk, errors, attachments: new Map(walk.attachments) };
+    checkAttributes(element, "html", place, own);
+    if (isVoidElement(candidate.tag) && node.children.length) {
+      errors.push({
+        path: `${place.path}/children`,
+        message: `must be empty: <${candidate.tag}> is a void element`,
+      });
+    }
+    attachments ??= own.attachments;
+    for (const error of errors) {
+      const key = `${error.path} ${error.message}`;
+      if (!reported.has(key)) walk.errors.push(error);
+      reported.add(key);
+    }
+  }
+  for (const [id, count] of attachments ?? []) walk.attachments.set(id, count);
+}
+
+/**
  * Checks `<component is>` (ADR-0055): its candidates are all tags, with element attributes and
  * children, or all components, with component attributes and fills that each declares.
  */
@@ -1042,20 +1188,7 @@ function checkDynamic(node: DynamicNode, place: Place, walk: Walk): void {
         });
       }
     }
-    for (const [index, attribute] of node.attributes.entries()) {
-      const at = `${place.path}/attributes/${index}`;
-      if (attribute.kind === "Bound" || attribute.kind === "Spread") {
-        checkExpression(attribute.value, `${at}/value`, place.scope, walk);
-      } else if (attribute.kind === "Class") {
-        checkClass(attribute, at, place, walk);
-      } else if (attribute.kind === "Style") {
-        checkStyle(attribute, at, place, walk);
-      } else if (attribute.kind === "Ref") {
-        checkRef(attribute, at, place, walk);
-      } else if (attribute.kind === "Event") {
-        checkListener(attribute, at, place, walk);
-      }
-    }
+    checkTagCandidates(node, place, walk);
     // The candidate chosen at run time is the children's parent.
     checkChildren(
       node.children,
@@ -1505,6 +1638,12 @@ function checkAttributes(
         checkRef(attribute, at, place, walk);
         break;
       case "Model":
+        if (MODEL_CONTROLS[attribute.control] !== tag) {
+          errors.push({
+            path: `${at}/control`,
+            message: `must be a control of <${tag}>: "${attribute.control}" binds a <${MODEL_CONTROLS[attribute.control]}>`,
+          });
+        }
         checkModelValue(attribute.value, `${at}/value`, place, walk);
         break;
       default:
@@ -2735,6 +2874,21 @@ function checkItem(item: SetupItem, path: string, scope: ReadonlySet<BindingId>,
       checkFunction(item.callback, `${path}/callback`, scope, "lifecycle", walk);
       return;
     case "Model":
+      if (component.props.some(({ name }) => name === item.name)) {
+        errors.push({
+          path: `${path}/name`,
+          message: `must differ from every prop's name, and "${item.name}" is a prop's`,
+        });
+      } else if (
+        component.setup.some(
+          (other) => other !== item && other.kind === "Model" && other.name === item.name,
+        )
+      ) {
+        errors.push({
+          path: `${path}/name`,
+          message: `must declare the model "${item.name}" once`,
+        });
+      }
       if (item.default) {
         if (item.default.refs.length) {
           errors.push({
@@ -2746,10 +2900,12 @@ function checkItem(item: SetupItem, path: string, scope: ReadonlySet<BindingId>,
       }
       return;
     case "Provide":
+      checkKeyName(item.key, `${path}/key`, walk);
       checkCode(item.value, `${path}/value`, scope, "initial", walk);
       declaredBefore(summarizeCode(item.value, component), item, `${path}/value`, walk);
       return;
     case "Inject":
+      checkKeyName(item.key, `${path}/key`, walk);
       if (item.fallback) {
         checkCode(item.fallback, `${path}/fallback`, scope, "initial", walk);
         declaredBefore(summarizeCode(item.fallback, component), item, `${path}/fallback`, walk);
