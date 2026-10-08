@@ -107,6 +107,8 @@ describe("frameworkCompile (L3, the Qwik optimizer)", () => {
     expect(warnings.map((warning) => warning.code)).toEqual(["preventdefault-passive-check"]);
   });
 
+  // It compiles every committed golden output too: 124 ms alone on a laptop, as the first test,
+  // so its time grows with the corpus in the same way.
   it("keeps every file's result separate: a broken file never hides or taints the others", async () => {
     const clean = component("Clean", `  return <p>Hello</p>;`);
     const broken = component("Broken", `  return <p>Hello</span>;`);
@@ -115,7 +117,7 @@ describe("frameworkCompile (L3, the Qwik optimizer)", () => {
     // One from the strict TSX parse, one from the optimizer.
     expect(results.get(broken.path)!.errors).toHaveLength(2);
     expect(results.size).toBe(goldens.length + 2);
-  });
+  }, 60_000);
 
   it("rejects a compile over no files", async () => {
     await expect(toolchain.frameworkCompile([], context)).rejects.toThrow(
