@@ -148,9 +148,9 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   dialect's hooks, which a dialect that meets one without it throws for: `propAttribute`,
   `componentEvent`, `fills` (the component's content from its fills, with a scoped fill's
   parameter as written and a forwarded slot's presence as the rules spell it,
-  `RewriteRules.slot`), `slotOutlet` (its props key by key when they are an object literal) and
-  `componentTag`; `MarkupOptions.componentTag` lets a target write a component under a name of its
-  own. A dialect may return a `component` piece (Vue's `v-for` and `v-if` on the component itself)
+  `RewriteRules.slot`) and `slotOutlet` (its props key by key when they are an object literal).
+  The optional `componentTag` hook, and `MarkupOptions.componentTag` before it, let a dialect or a
+  target write a component under a name of its own. A dialect may return a `component` piece (Vue's `v-for` and `v-if` on the component itself)
   and a `tag` piece (`<slot name="title">`, `<template #title>`), which closes itself without
   content.
   Vue's and Angular's compilers parse a static `style` again: Vue's dialect binds a declaration its

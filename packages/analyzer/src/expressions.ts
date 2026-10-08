@@ -572,6 +572,11 @@ class Walk {
    */
   #synchronous = 0;
   /**
+   * Set while a ternary's test or the left of an `&&` is walked in a template: where a slot's
+   * presence, `slots.title`, may be read (ADR-0054), as it may in a conditional's condition.
+   */
+  #presence = false;
+  /**
    * The member expressions whose object the walk is reading, outermost first: the member paths
    * off a read of a prop or a ref's value (`draft.value.email`), which narrowing judges.
    */
@@ -637,11 +642,8 @@ class Walk {
       case "LogicalExpression":
         return this.#logical(node);
       case "ConditionalExpression":
-        this.value(node.test, "value", false);
-        return union(
-          this.value(node.consequent, "value", false),
-          this.value(node.alternate, "value", false),
-        );
+        this.#test(node.test, true);
+        return union(this.#test(node.consequent, false), this.#test(node.alternate, false));
       case "ParenthesizedExpression":
         return this.value(node.expression, position, shorthand);
       case "NewExpression":
@@ -1379,7 +1381,7 @@ class Walk {
       !node.computed && node.property.type === "Identifier" ? node.property.name : undefined;
     const declared =
       slot !== undefined && this.#context.slots?.slots.some((each) => each.name === slot);
-    const condition = this.#context.presence === true;
+    const condition = this.#context.presence === true || this.#presence;
     if (
       this.#mode !== "render" ||
       !condition ||
@@ -5125,8 +5127,22 @@ class Walk {
     return left.primitives.has("unknown") || right.primitives.has("unknown") ? UNKNOWN : NUMBER;
   }
 
+  /**
+   * Walks an operand, with a slot's presence readable where `test` is set. A ternary's test and
+   * the left of an `&&` are tests, and its branches are not. The other operands are tests only
+   * inside a test: on its own, `slots.title || "none"` gives a function, which no template
+   * renders.
+   */
+  #test(node: AST.Expression, test: boolean): Kinds {
+    const outer = this.#presence;
+    this.#presence = test && this.#mode === "render";
+    const result = this.value(node, "value", false);
+    this.#presence = outer;
+    return result;
+  }
+
   #logical(node: AST.LogicalExpression): Kinds {
-    const left = this.value(node.left, "value", false);
+    const left = this.#test(node.left, node.operator === "&&" || this.#presence);
     if (node.operator === "??") {
       const { reporter, source } = this.#context;
       const mark = reporter.diagnostics.length;
@@ -5173,7 +5189,7 @@ class Walk {
       // Never nullish, the left side is the value: the right side is never read.
       return left;
     }
-    const right = this.value(node.right, "value", false);
+    const right = this.#test(node.right, this.#presence);
     if (node.operator === "||") return union(without(left, "null", "undefined"), right);
     return union(falsyPart(left), right);
   }

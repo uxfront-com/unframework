@@ -110,15 +110,24 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   // Each child's output, by the name the template uses (ADR-0053), a component of the same file
   // included. A component that renders itself names itself instead: a virtual module's file name
   // is not its name (ADR-0021), and importing its own file fails `import/no-self-import` (L5).
+  // A name Vue keeps for a built-in is claimed last, so it never takes a child's own name.
   const children = childImports(component, module, (name) => `${name}.vue`);
   const components = new Map<string, string>();
   for (const child of children) {
-    if (child.self) continue;
-    if (VUE_BUILT_INS.has(child.local)) {
-      components.set(child.local, imports.addDefault(child.specifier, `${child.local}Component`));
-    } else imports.addDefault(child.specifier, child.local, { exact: true });
+    if (!child.self && !VUE_BUILT_INS.has(child.local)) {
+      imports.addDefault(child.specifier, child.local, { exact: true });
+    }
   }
-  const recursive = children.some((child) => child.self);
+  for (const child of children) {
+    if (!VUE_BUILT_INS.has(child.local)) continue;
+    const local = `${child.local}Component`;
+    components.set(
+      child.local,
+      child.self ? names.scope.claim(local) : imports.addDefault(child.specifier, local),
+    );
+  }
+  const self = children.find((child) => child.self);
+  const recursive = self && (components.get(self.local) ?? self.local);
   const statements: Statement[] = [];
   const parameter = component.propsParameter;
   if (parameter) {
@@ -153,7 +162,7 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     });
   }
   const options = [
-    ...(recursive ? [`name: ${JSON.stringify(component.name)}`] : []),
+    ...(recursive ? [`name: ${JSON.stringify(recursive)}`] : []),
     ...(component.inheritAttrs === false ? ["inheritAttrs: false"] : []),
   ];
   if (options.length) {

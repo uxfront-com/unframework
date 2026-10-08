@@ -163,7 +163,8 @@ function isNothing(node: AST.Expression): boolean {
 /** `cond && "a b"` toggles each name; `cond && expr` is written `cond ? expr : undefined`. */
 function collectToggle(node: AST.LogicalExpression, parts: Part[], context: RenderContext): void {
   const { reporter, source } = context;
-  const condition = checkExpression(node.left, context);
+  // A condition, where a slot's presence may be read (ADR-0054).
+  const condition = checkExpression(node.left, { ...context, presence: true });
   if (isStaticString(node.right)) {
     const names = namesOf(node.right, context);
     if (names.length) {
@@ -266,7 +267,7 @@ function collectObject(node: AST.ObjectExpression, parts: Part[], context: Rende
     }
     const value = property.value;
     if (value.type === "Literal" && value.value === false) continue;
-    const condition = checkExpression(value, context);
+    const condition = checkExpression(value, { ...context, presence: true });
     const always = value.type === "Literal" && value.value === true;
     parts.push({ kind: "toggle", names, condition, static: always, at: span(property) });
   }

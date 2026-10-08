@@ -962,5 +962,36 @@ export default function Page() {
         ].join("\n"),
       );
     });
+
+    // The second review's inputs (UXF-313).
+    it("names a component that renders itself and is named like a built-in under its alias", async () => {
+      expect(
+        await emitSource(
+          "export default function KeepAlive({ depth }: { depth: number }) { return <div>{depth > 0 ? <KeepAlive depth={depth - 1} /> : null}</div>; }",
+        ),
+      ).toBe(
+        sfc(
+          [
+            "const { depth } = defineProps<{ depth: number }>();",
+            'defineOptions({ name: "KeepAliveComponent" });',
+          ],
+          ["<div>", '  <KeepAliveComponent v-if="depth > 0" :depth="depth - 1" />', "</div>"],
+        ),
+      );
+    });
+
+    it.each([
+      ["Transition", "TransitionComponent"],
+      ["TransitionComponent", "Transition"],
+    ])("keeps a child named %s apart from one named %s", async (first, second) => {
+      const files = await emitAll(`
+function Transition() { return <i />; }
+function TransitionComponent() { return <b />; }
+export default function Page() { return <p><${first} /><${second} /></p>; }`);
+      expect(files["Page.vue"]).toContain(
+        'import TransitionComponent from "./TransitionComponent.vue";',
+      );
+      expect(files["Page.vue"]).toContain('import TransitionComponent_1 from "./Transition.vue";');
+    });
   });
 });

@@ -31,7 +31,7 @@ import type {
 } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
 
-import { typeMembers } from "./api.ts";
+import { keyName, typeMembers } from "./api.ts";
 import { keyCase, lowerAttributes, misplacedKey } from "./attributes.ts";
 import { checkPlacement } from "./elements.ts";
 import { checkExpression, shadowing, span } from "./expressions.ts";
@@ -200,12 +200,7 @@ function componentRefProblem(
     );
   }
   for (const member of members) {
-    const name =
-      (member.type === "TSPropertySignature" || member.type === "TSMethodSignature") &&
-      !member.computed &&
-      member.key.type === "Identifier"
-        ? member.key.name
-        : undefined;
+    const name = keyName(member);
     if (name !== undefined && api.exposes.includes(name)) continue;
     return report(
       `The template ref's type names ${name === undefined ? "a member" : `\`${name}\``}, which \`${info.name}\` does not expose: it exposes ${exposed}.`,

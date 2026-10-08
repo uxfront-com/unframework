@@ -113,7 +113,7 @@ export function typeMembers(
 }
 
 /** A member's name: an identifier's, or a string literal's. */
-function keyName(member: AST.TSSignature): string | undefined {
+export function keyName(member: AST.TSSignature): string | undefined {
   if (
     (member.type !== "TSPropertySignature" && member.type !== "TSMethodSignature") ||
     member.computed

@@ -271,7 +271,7 @@ function placementProblem(
     return {
       code: "UF3003",
       message: `<${tag}> belongs inside ${list(tags(parents), "or")}, and nothing here places it there: only a component's own root element leaves its parent to the component that renders it.`,
-      help: `Render it inside ${list(tags(parents), "or")}, or make it the root element of a component of its own.`,
+      help: `Write the ${list(tags(parents), "or")} it belongs in around it, in this template.`,
     };
   }
   const opened = (element: OpenElement, message: string): RelatedInformation[] => [

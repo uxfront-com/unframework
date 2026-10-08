@@ -263,7 +263,7 @@ export const vueDialect: MarkupDialect = {
       .toSorted((a, b) => vueRank(a.attribute) - vueRank(b.attribute) || a.index - b.index)
       .map(({ attribute }) => attribute),
   // A component's props and events are hyphenated in a template, as `vue/attribute-hyphenation`
-  // and `vue/v-on-event-hyphenation` ask, the way Vue camelizes them back (ADR-0053).
+  // and `vue/v-on-event-hyphenation` ask, the way Vue camelises them back (ADR-0053).
   propAttribute: ({ name, code, literal }) => {
     const attribute = hyphenate(name);
     return [
@@ -347,7 +347,7 @@ function slotElement({ node, props }: PrintedSlotOutlet): MarkupPiece {
   if (node.slot !== "default") {
     attributes.push({ name: "name", text: quotedAttribute("name", node.slot) });
   }
-  // Key by key where Vue passes each as written: `name` names the slot, and Vue camelizes a
+  // Key by key where Vue passes each as written: `name` names the slot, and Vue camelises a
   // hyphenated key (`data-id` reaches the fill as `dataId`). Otherwise as one object.
   if (props?.entries?.every(({ key }) => key !== "name" && camelize(key) === key)) {
     for (const { key, value } of props.entries) {
@@ -374,13 +374,13 @@ function atRootEdge(position: TextPosition): boolean {
 /**
  * Vue's own hyphenation of a prop's or an event's name (`hyphenate` in `@vue/shared`): a
  * capital after any character starts a part, so `imageURL` is `image-u-r-l`, which Vue
- * camelizes back to `imageURL`.
+ * camelises back to `imageURL`.
  */
 function hyphenate(name: string): string {
   return name.replace(/\B([A-Z])/g, "-$1").toLowerCase();
 }
 
-/** Vue's camelization of a hyphenated name (`camelize` in `@vue/shared`). */
+/** Vue's camelisation of a hyphenated name (`camelize` in `@vue/shared`). */
 function camelize(name: string): string {
   return name.replace(/-(\w)/g, (_, character: string) => character.toUpperCase());
 }

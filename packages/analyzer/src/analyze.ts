@@ -8,6 +8,7 @@ import {
   createModuleImport,
   createTypeDeclaration,
   isExportName,
+  walk,
 } from "@unframework/ir";
 import type {
   ComponentApi,
@@ -209,6 +210,8 @@ export function analyzeModule(
       exports.push({ ...createExport(entry.kind, candidate.name, entry.span), name: entry.name });
     }
   }
+  dropFailedRenders(lowered, candidates);
+  const kept = new Set(lowered.map((component) => component.name));
   if (moduleErrors) return { module: undefined, diagnostics: reporter.diagnostics, api };
   if (!candidates.some((candidate) => candidate.exports.length)) {
     reporter.report("UF1101", { start: 0, end: 0 }, "This file exports no component.", {
@@ -221,13 +224,37 @@ export function analyzeModule(
     module: createModule(
       parsed.file,
       lowered,
-      exports,
+      exports.filter((entry) => kept.has(entry.local)),
       moduleTypes(lowered, types, parsed.source),
       imports,
     ),
     diagnostics: reporter.diagnostics,
     api,
   };
+}
+
+/**
+ * Drops each lowered component that renders one of the module's components that failed to
+ * lower, until none does: its error is reported, and the IR names only components it holds
+ * (ADR-0053).
+ */
+function dropFailedRenders(lowered: UfComponent[], candidates: readonly Candidate[]): void {
+  const local = new Set(candidates.map((candidate) => candidate.name));
+  for (;;) {
+    const kept = new Set(lowered.map((component) => component.name));
+    const index = lowered.findIndex((component) => {
+      let failed = false;
+      walk(component.render, {
+        enter(node) {
+          if (node.kind === "Component" && local.has(node.component) && !kept.has(node.component))
+            failed = true;
+        },
+      });
+      return failed;
+    });
+    if (index === -1) return;
+    lowered.splice(index, 1);
+  }
 }
 
 /**

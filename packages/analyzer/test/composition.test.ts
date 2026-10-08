@@ -481,3 +481,54 @@ export function A() { return <div><Plain>{/* note */}</Plain><Field label="a">{/
     expect(codes(diagnostics)).toContain("UF1104");
   });
 });
+
+describe("misuse the second review found (UXF-313)", () => {
+  const titled = (jsx: string) => `${API}export function A() {
+  const slots = defineSlots<{ title?(): Element }>();
+  return ${jsx};
+}`;
+
+  it.each([
+    '<div>{slots.title ? "has" : "none"}</div>',
+    '<div class={slots.title ? "a" : "b"} />',
+    '<div class={slots.title && "a"} />',
+    "<div class={{ titled: slots.title }} />",
+    '<div>{!slots.title || slots.title ? "a" : "b"}</div>',
+  ])("reads a slot's presence in an expression's test: %s", (jsx) => {
+    expect(run(titled(jsx)).diagnostics).toEqual([]);
+  });
+
+  it.each(['<div>{slots.title || "none"}</div>', '<div>{slots.title ? slots.title : "b"}</div>'])(
+    "reports a slot's presence read as a value: %s",
+    (jsx) => {
+      expect(codes(run(titled(jsx)).diagnostics)).toEqual(["UF3041"]);
+    },
+  );
+
+  it("reports a sibling that fails to lower once, and drops what renders it", () => {
+    const source = `function Box() { return <div class="a" class="b">x</div>; }
+function Frame() { return <section><Box /></section>; }
+export default function A() { return <Frame />; }`;
+    const result = run(source);
+    expect(codes(result.diagnostics)).toEqual(["UF3007"]);
+    expect(result.module?.components ?? []).toEqual([]);
+  });
+
+  it('reads a string key, `{ "focus"(): void }`, in a component ref\'s type', () => {
+    const { diagnostics } = parent(
+      "<Field ref={field} label='x' />",
+      'const field = useTemplateRef<{ "focus"(): void }>();',
+    );
+    expect(diagnostics).toEqual([]);
+  });
+
+  it("helps an element that needs a parent in a fill to its parent, never to a component", () => {
+    const source = `${API}function Box() { const slots = defineSlots<{ default?(): Element }>(); return <div>{slots.default?.()}</div>; }
+export function A() { return <Box><tr><td>a</td></tr></Box>; }`;
+    const [problem] = run(source).diagnostics;
+    expect(problem!.code).toBe("UF3003");
+    expect(problem!.help).toBe(
+      "Write the <thead>, <tbody> or <tfoot> it belongs in around it, in this template.",
+    );
+  });
+});
