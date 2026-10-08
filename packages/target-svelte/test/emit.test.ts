@@ -111,16 +111,20 @@ describe("svelte target", () => {
     expect(emit("named").files).toEqual(emit("default").files);
   });
 
-  // Without the declaration, Svelte compiles a component that uses no runes in legacy mode.
-  it("compiles in runes mode, for the corpus too", async () => {
-    const cases = corpus();
+  const cases = corpus();
+
+  it("has corpus cases to check", () => {
     expect(cases.length).toBeGreaterThan(0);
-    for (const { name, module } of cases) {
-      for (const file of await emitFormatted(module)) {
-        const { metadata, js } = compile(file.contents, { filename: file.path });
-        expect(metadata.runes, name).toBe(true);
-        expect(js.code, name).not.toContain("svelte/internal/flags/legacy");
-      }
+  });
+
+  // Without the declaration, Svelte compiles a component that uses no runes in legacy mode.
+  // One test per case, so no test's time grows with the corpus. As one test over the cases M2
+  // left, it took 0.6 s alone on a laptop and overran Vitest's 5 s default in CI's Unit tests.
+  it.each(cases)("compiles $name in runes mode", async ({ name, module }) => {
+    for (const file of await emitFormatted(module)) {
+      const { metadata, js } = compile(file.contents, { filename: file.path });
+      expect(metadata.runes, name).toBe(true);
+      expect(js.code, name).not.toContain("svelte/internal/flags/legacy");
     }
   });
 
