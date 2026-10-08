@@ -18,6 +18,7 @@ import type {
   EventReference,
   Expression,
   GlobalReference,
+  SlotReference,
   Span,
   UfComponent,
   WriteReference,
@@ -94,6 +95,11 @@ export interface RewriteRules {
   event?(reference: EventReference, site: RewriteSite): string;
   /** The code that replaces a use of an authoring API (`nextTick`): as written when absent. */
   api?(reference: ApiReference, site: RewriteSite): string;
+  /**
+   * The code that replaces a slot's presence, `slots.title` (ADR-0054): whether the parent filled
+   * it, as the target tests it (`title != null`, `title()`). As written when absent.
+   */
+  slot?(reference: SlotReference, site: RewriteSite): string;
   /**
    * The code that replaces a whole write (`count.value += step` → `setCount(count + step)`),
    * given its parts already rewritten: an expression, which stands as a statement or as an
@@ -381,9 +387,8 @@ function spell(node: ReferenceNode, written: string, context: Context): string {
       return spellWrite(reference, node.slots, written, context);
     case "Emit":
       return spellEmit(reference, node.slots, written, context);
-    // A slot's presence is not spelt yet (ADR-0055): each target's `emit` reports UF1002 for it.
     case "Slot":
-      return written;
+      return rules.slot?.(reference, site) ?? written;
     default:
       return unreachable(reference);
   }

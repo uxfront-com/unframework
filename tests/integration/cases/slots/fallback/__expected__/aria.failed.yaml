@@ -1,0 +1,8 @@
+- note "Build":
+  - paragraph: "Build #42 failed."
+  - link "See the logs":
+    - /url: "#logs"
+- note "Deploy":
+  - paragraph:
+    - emphasis: Nothing to report.
+  - text: No action

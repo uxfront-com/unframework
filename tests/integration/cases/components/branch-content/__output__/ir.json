@@ -1,0 +1,392 @@
+{
+  "irVersion": 1,
+  "file": "components/branch-content/Inbox.uf.tsx",
+  "components": [
+    {
+      "name": "Inbox",
+      "span": {
+        "start": 75,
+        "end": 479
+      },
+      "props": [
+        {
+          "name": "unread",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 127,
+              "end": 133
+            }
+          },
+          "binding": "unread@107",
+          "span": {
+            "start": 119,
+            "end": 133
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ unread: number }",
+          "span": {
+            "start": 117,
+            "end": 135
+          }
+        },
+        "span": {
+          "start": 105,
+          "end": 135
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "unread@107",
+          "name": "unread",
+          "kind": "prop",
+          "span": {
+            "start": 107,
+            "end": 113
+          }
+        },
+        {
+          "id": "count@147",
+          "name": "count",
+          "kind": "state",
+          "span": {
+            "start": 147,
+            "end": 152
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "count@147",
+          "initial": {
+            "code": "unread",
+            "span": {
+              "start": 159,
+              "end": 165
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "unread@107",
+                "span": {
+                  "start": 159,
+                  "end": 165
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 141,
+            "end": 167
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "inbox",
+            "span": {
+              "start": 188,
+              "end": 201
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "count.value > 0",
+                  "span": {
+                    "start": 210,
+                    "end": 225
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "count@147",
+                      "span": {
+                        "start": 210,
+                        "end": 221
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Component",
+                    "component": "Notice",
+                    "attributes": [
+                      {
+                        "kind": "Prop",
+                        "name": "text",
+                        "value": {
+                          "code": "`${count.value} unread`",
+                          "span": {
+                            "start": 252,
+                            "end": 275
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "count@147",
+                              "span": {
+                                "start": 255,
+                                "end": 266
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 246,
+                          "end": 276
+                        }
+                      },
+                      {
+                        "kind": "Prop",
+                        "name": "tone",
+                        "value": {
+                          "code": "\"info\"",
+                          "span": {
+                            "start": 282,
+                            "end": 288
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 277,
+                          "end": 288
+                        }
+                      }
+                    ],
+                    "fills": [],
+                    "span": {
+                      "start": 238,
+                      "end": 291
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 210,
+                  "end": 291
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Component",
+                    "component": "Notice",
+                    "attributes": [
+                      {
+                        "kind": "Prop",
+                        "name": "text",
+                        "value": {
+                          "code": "\"All read\"",
+                          "span": {
+                            "start": 325,
+                            "end": 335
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 320,
+                          "end": 335
+                        }
+                      },
+                      {
+                        "kind": "Prop",
+                        "name": "tone",
+                        "value": {
+                          "code": "\"quiet\"",
+                          "span": {
+                            "start": 341,
+                            "end": 348
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 336,
+                          "end": 348
+                        }
+                      }
+                    ],
+                    "fills": [],
+                    "span": {
+                      "start": 312,
+                      "end": 351
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 312,
+                  "end": 351
+                }
+              }
+            ],
+            "span": {
+              "start": 210,
+              "end": 359
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 375,
+                  "end": 388
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(count.value = 0)",
+                      "span": {
+                        "start": 404,
+                        "end": 421
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "count@147",
+                          "operator": "=",
+                          "span": {
+                            "start": 404,
+                            "end": 421
+                          },
+                          "target": {
+                            "start": 405,
+                            "end": 416
+                          },
+                          "value": {
+                            "start": 419,
+                            "end": 420
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 398,
+                      "end": 421
+                    }
+                  },
+                  "span": {
+                    "start": 398,
+                    "end": 421
+                  }
+                },
+                "span": {
+                  "start": 389,
+                  "end": 422
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Mark all read",
+                "span": {
+                  "start": 423,
+                  "end": 452
+                }
+              }
+            ],
+            "span": {
+              "start": 367,
+              "end": 461
+            }
+          }
+        ],
+        "span": {
+          "start": 183,
+          "end": 472
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Inbox",
+      "span": {
+        "start": 75,
+        "end": 479
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Notice.uf.tsx",
+      "file": "Notice.uf.tsx",
+      "api": {
+        "file": "Notice.uf.tsx",
+        "components": [
+          {
+            "name": "Notice",
+            "export": "default",
+            "props": [
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "tone",
+                "optional": false,
+                "type": "\"info\" | \"quiet\""
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "p"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Notice",
+          "span": {
+            "start": 43,
+            "end": 49
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 73
+      }
+    }
+  ]
+}

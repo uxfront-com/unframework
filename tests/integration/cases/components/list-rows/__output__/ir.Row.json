@@ -1,0 +1,206 @@
+{
+  "irVersion": 1,
+  "file": "components/list-rows/Row.uf.tsx",
+  "components": [
+    {
+      "name": "Row",
+      "span": {
+        "start": 0,
+        "end": 202
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 52,
+              "end": 58
+            }
+          },
+          "binding": "name@30",
+          "span": {
+            "start": 46,
+            "end": 59
+          }
+        },
+        {
+          "name": "done",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 66,
+              "end": 73
+            }
+          },
+          "binding": "done@36",
+          "span": {
+            "start": 60,
+            "end": 73
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ name: string; done: boolean }",
+          "span": {
+            "start": 44,
+            "end": 75
+          }
+        },
+        "span": {
+          "start": 28,
+          "end": 75
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "name@30",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 30,
+            "end": 34
+          }
+        },
+        {
+          "id": "done@36",
+          "name": "done",
+          "kind": "prop",
+          "span": {
+            "start": 36,
+            "end": 40
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "listitem",
+            "span": {
+              "start": 99,
+              "end": 114
+            }
+          },
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Static",
+                "value": "row",
+                "span": {
+                  "start": 123,
+                  "end": 128
+                }
+              },
+              {
+                "kind": "Toggle",
+                "name": "done",
+                "condition": {
+                  "code": "done",
+                  "span": {
+                    "start": 132,
+                    "end": 136
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "done@36",
+                      "span": {
+                        "start": 132,
+                        "end": 136
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 132,
+                  "end": 136
+                }
+              }
+            ],
+            "span": {
+              "start": 115,
+              "end": 140
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "name",
+              "span": {
+                "start": 149,
+                "end": 153
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "name@30",
+                  "span": {
+                    "start": 149,
+                    "end": 153
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 148,
+              "end": 154
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "done ? \" (done)\" : \"\"",
+              "span": {
+                "start": 162,
+                "end": 183
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "done@36",
+                  "span": {
+                    "start": 162,
+                    "end": 166
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 161,
+              "end": 184
+            }
+          }
+        ],
+        "span": {
+          "start": 94,
+          "end": 195
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Row",
+      "span": {
+        "start": 0,
+        "end": 202
+      }
+    }
+  ],
+  "types": []
+}

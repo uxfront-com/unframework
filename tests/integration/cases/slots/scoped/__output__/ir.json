@@ -1,0 +1,425 @@
+{
+  "irVersion": 1,
+  "file": "slots/scoped/Ranking.uf.tsx",
+  "components": [
+    {
+      "name": "Ranking",
+      "span": {
+        "start": 35,
+        "end": 470
+      },
+      "props": [
+        {
+          "name": "names",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 87,
+              "end": 95
+            }
+          },
+          "binding": "names@69",
+          "span": {
+            "start": 80,
+            "end": 95
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ names: string[] }",
+          "span": {
+            "start": 78,
+            "end": 97
+          }
+        },
+        "span": {
+          "start": 67,
+          "end": 97
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "names@69",
+          "name": "names",
+          "kind": "prop",
+          "span": {
+            "start": 69,
+            "end": 74
+          }
+        },
+        {
+          "id": "item@194",
+          "name": "item",
+          "kind": "slotScope",
+          "span": {
+            "start": 194,
+            "end": 198
+          }
+        },
+        {
+          "id": "index@200",
+          "name": "index",
+          "kind": "slotScope",
+          "span": {
+            "start": 200,
+            "end": 205
+          }
+        },
+        {
+          "id": "entry@394",
+          "name": "entry",
+          "kind": "slotScope",
+          "span": {
+            "start": 394,
+            "end": 399
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "List",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "items",
+                "value": {
+                  "code": "names",
+                  "span": {
+                    "start": 141,
+                    "end": 146
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "names@69",
+                      "span": {
+                        "start": 141,
+                        "end": 146
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 134,
+                  "end": 147
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Podium\"",
+                  "span": {
+                    "start": 154,
+                    "end": 162
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 148,
+                  "end": 162
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "item",
+                "parameter": {
+                  "pattern": {
+                    "code": "{ item, index }",
+                    "names": [
+                      "item",
+                      "index"
+                    ],
+                    "span": {
+                      "start": 192,
+                      "end": 207
+                    }
+                  },
+                  "span": {
+                    "start": 192,
+                    "end": 207
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "index + 1",
+                          "span": {
+                            "start": 248,
+                            "end": 257
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "index@200",
+                              "span": {
+                                "start": 248,
+                                "end": 253
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 247,
+                          "end": 258
+                        }
+                      },
+                      {
+                        "kind": "Text",
+                        "value": ". ",
+                        "span": {
+                          "start": 258,
+                          "end": 260
+                        }
+                      },
+                      {
+                        "kind": "Element",
+                        "tag": "b",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "kind": "Interpolation",
+                            "value": {
+                              "code": "item",
+                              "span": {
+                                "start": 264,
+                                "end": 268
+                              },
+                              "refs": [
+                                {
+                                  "kind": "Binding",
+                                  "binding": "item@194",
+                                  "span": {
+                                    "start": 264,
+                                    "end": 268
+                                  }
+                                }
+                              ]
+                            },
+                            "span": {
+                              "start": 263,
+                              "end": 269
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 260,
+                          "end": 273
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 226,
+                      "end": 293
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 185,
+                  "end": 305
+                }
+              }
+            ],
+            "span": {
+              "start": 128,
+              "end": 331
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "List",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "items",
+                "value": {
+                  "code": "names",
+                  "span": {
+                    "start": 351,
+                    "end": 356
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "names@69",
+                      "span": {
+                        "start": 351,
+                        "end": 356
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 344,
+                  "end": 357
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Initials\"",
+                  "span": {
+                    "start": 364,
+                    "end": 374
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 358,
+                  "end": 374
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "item",
+                "parameter": {
+                  "name": "entry",
+                  "span": {
+                    "start": 394,
+                    "end": 399
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "i",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "entry.item.slice(0, 1)",
+                          "span": {
+                            "start": 408,
+                            "end": 430
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "entry@394",
+                              "span": {
+                                "start": 408,
+                                "end": 413
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 407,
+                          "end": 431
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 404,
+                      "end": 435
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 387,
+                  "end": 435
+                }
+              }
+            ],
+            "span": {
+              "start": 338,
+              "end": 452
+            }
+          }
+        ],
+        "span": {
+          "start": 116,
+          "end": 463
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Ranking",
+      "span": {
+        "start": 35,
+        "end": 470
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./List.uf.tsx",
+      "file": "List.uf.tsx",
+      "api": {
+        "file": "List.uf.tsx",
+        "components": [
+          {
+            "name": "List",
+            "export": "default",
+            "props": [
+              {
+                "name": "items",
+                "optional": false,
+                "type": "string[]"
+              },
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "item",
+                "optional": true,
+                "props": "{ item: string; index: number }"
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "ul"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "List",
+          "span": {
+            "start": 7,
+            "end": 11
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 33
+      }
+    }
+  ]
+}

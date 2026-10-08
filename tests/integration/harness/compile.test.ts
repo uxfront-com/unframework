@@ -14,6 +14,7 @@ import type { Diagnostic, JsonDiagnostic } from "@unframework/diagnostics";
 import { irSchema } from "@unframework/ir";
 import {
   checkLayers,
+  diffLines,
   NO_OUTPUT_SKIP,
   settleArtefact,
   settleArtefactDirectory,
@@ -34,7 +35,7 @@ import {
 } from "./compile-checks.ts";
 import { coverageProblems } from "./coverage.ts";
 import { ROOT } from "./paths.ts";
-import { caseDiagnostics, caseOutputs, sourceTexts } from "./sources.ts";
+import { caseDiagnostics, caseOutputs, caseResolver, sourceTexts } from "./sources.ts";
 import type { SourceCompile } from "./sources.ts";
 import { selectTargets } from "./targets.ts";
 
@@ -59,14 +60,24 @@ const NO_OUTPUT_LAYERS: readonly LayerName[] = [
 
 const validateIr = new Ajv({ allErrors: true, strict: true }).compile(irSchema);
 
-/** One compile of a source to every target; each compiles twice per run (determinism). */
+/**
+ * One compile of a source to every target, its children resolved in its case (ADR-0057); each
+ * compiles twice per run (determinism).
+ */
 function compileSource(
+  info: CaseInfo,
   source: CaseSource,
   text: string,
   plugins: readonly CompilerPlugin[],
   format = true,
 ): Promise<CompileResult> {
-  return compile(text, { filename: source.filename, targets: TARGET_NAMES, plugins, format });
+  return compile(text, {
+    filename: source.filename,
+    targets: TARGET_NAMES,
+    plugins,
+    format,
+    resolve: caseResolver(info, harness.casesDir),
+  });
 }
 
 /** A source of a case and its two compiles. */
@@ -87,7 +98,13 @@ function compiled(info: CaseInfo): Promise<CompiledSource[]> {
       info.sources.map(async (source) => {
         const text = canarySource(harness.canary, readFileSync(source.source, "utf8"));
         const once = () =>
-          compileSource(source, text, canaryPlugins(harness.canary), canaryFormats(harness.canary));
+          compileSource(
+            info,
+            source,
+            text,
+            canaryPlugins(harness.canary),
+            canaryFormats(harness.canary),
+          );
         const [first, second] = await Promise.all([once(), once()]);
         return { source, text, first, second };
       }),
@@ -137,7 +154,7 @@ describe("compile", () => {
     const results = await Promise.all(
       cases.flatMap((info) =>
         info.sources.map((source) =>
-          compileSource(source, readFileSync(source.source, "utf8"), []),
+          compileSource(info, source, readFileSync(source.source, "utf8"), []),
         ),
       ),
     );
@@ -180,10 +197,16 @@ async function checkDiagnostics(
   const outcome = settleArtefact(path, `${JSON.stringify(actual, null, 2)}\n`, owner);
   if (!outcome.pass) {
     if (outcome.status !== "mismatch") throw new Error(outcome.message);
-    // The file is target-independent: fail the targets whose own diagnostics differ.
+    // The file is target-independent: fail the targets whose own diagnostics differ, with the
+    // difference in theirs, which every other target's would bury in a case of several.
     const expected = JSON.parse(readFileSync(path, "utf8")) as Omit<JsonDiagnostic, "url">[];
-    if (JSON.stringify(forTarget(expected, target)) !== JSON.stringify(forTarget(actual, target))) {
-      throw new Error(outcome.message);
+    const own = (list: readonly Omit<JsonDiagnostic, "url">[]) =>
+      `${JSON.stringify(forTarget(list, target), null, 2)}\n`;
+    if (own(expected) !== own(actual)) {
+      const file = relative(ROOT, path).split(sep).join("/");
+      throw new Error(
+        `${file} differs from this run's output on ${target}:\n${diffLines(own(expected), own(actual))}\n\nRun \`pnpm test:update\` and review the diff if the change is intended.`,
+      );
     }
   }
 
@@ -197,7 +220,7 @@ async function checkDiagnostics(
       text,
       canaryFixes(harness.canary, canaryCase(info), target, text, first.diagnostics),
       target,
-      async (fixed) => (await compileSource(source, fixed, [])).diagnostics,
+      async (fixed) => (await compileSource(info, source, fixed, [])).diagnostics,
     );
   }
 }

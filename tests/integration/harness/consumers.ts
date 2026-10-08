@@ -35,11 +35,22 @@ export interface Fixture {
 }
 
 /**
- * The kinds a target's checker cannot check, with the reason (ADR-0059's feasibility table). A
- * directive of such a kind fails: a gap is declared, never filled with a weaker check.
+ * What a target's checker cannot check: a kind of declaration, or a finer part of one
+ * (ADR-0059's feasibility table) — a slot without props (`named-slot`), or the setter a model
+ * binds (`model-setter`).
  */
-export const CONSUMER_GAPS: Readonly<Record<string, Partial<Record<ConsumerKind, string>>>> = {
-  astro: { event: "Astro has no events: its `interactivity` cell is unsupported" },
+export type ConsumerGap = ConsumerKind | "named-slot" | "model-setter";
+
+/**
+ * The declarations a target's checker cannot check, with the reason (ADR-0059's feasibility
+ * table). A directive that names one fails: a gap is declared, never filled with a weaker check.
+ */
+export const CONSUMER_GAPS: Readonly<Record<string, Partial<Record<ConsumerGap, string>>>> = {
+  astro: {
+    event: "Astro has no events: its `interactivity` cell is unsupported",
+    "named-slot": "Astro does not type a named slot without props, which renders through `<slot>`",
+  },
+  solid: { "model-setter": "Solid's checker does not check the setter a model's callback takes" },
 };
 
 /** A whole directive line: nothing may follow it but the end of an HTML comment. */
@@ -135,10 +146,15 @@ export function consumerProblems(
         `${shown}:${line}: a directive reads \`@uf-expect <code> <Component>.<prop|event|model|slot>:<name>\`.`,
     );
     for (const { line, code, declaration, kind } of expectations) {
-      const gap = CONSUMER_GAPS[target]?.[kind];
-      const source = declarations.get(declaration);
+      const found = declarations.get(declaration);
+      const source = found?.at;
+      const gaps = CONSUMER_GAPS[target] ?? {};
+      const part = found?.part;
+      const gap = gaps[kind] ?? (part === undefined ? undefined : gaps[part]);
       if (gap) {
-        problems.push(`${shown}:${line}: ${target} cannot check a component's ${kind}s (${gap}).`);
+        problems.push(
+          `${shown}:${line}: ${target} cannot check a component's ${gaps[kind] ? kind : part}s (${gap}).`,
+        );
       } else if (!source) {
         problems.push(`${shown}:${line}: ${declaration} is not declared in ${info.id}'s IR.`);
       } else if (!messages.some((message) => message.code === code && message.line === line)) {
@@ -161,11 +177,14 @@ export function consumerProblems(
 /**
  * Every declaration a directive can name in a case's IR (`ir.json`, and `ir.<Stem>.json` for a
  * case of several sources, ADR-0057), with its `.uf.tsx` line: `FileRow.prop:path` →
- * `FileRow.uf.tsx:9`. Models and slots join when the IR has them (ADR-0055).
+ * `FileRow.uf.tsx:9`, and the finer part a gap may name (a slot without props). Models join when
+ * the IR has them (ADR-0055).
  */
-function caseDeclarations(info: CaseInfo): Map<string, string> {
+function caseDeclarations(
+  info: CaseInfo,
+): Map<string, { at: string; part?: Exclude<ConsumerGap, ConsumerKind> }> {
   const directory = join(info.dir, "__output__");
-  const declarations = new Map<string, string>();
+  const declarations = new Map<string, { at: string; part?: Exclude<ConsumerGap, ConsumerKind> }>();
   const snapshots = existsSync(directory)
     ? readdirSync(directory).filter((entry) => /^ir(?:\.[^.]+)?\.json$/.test(entry))
     : [];
@@ -176,10 +195,16 @@ function caseDeclarations(info: CaseInfo): Map<string, string> {
     const at = (offset: number) => `${file}:${source.slice(0, offset).split("\n").length}`;
     for (const component of module.components) {
       for (const prop of component.props) {
-        declarations.set(`${component.name}.prop:${prop.name}`, at(prop.span.start));
+        declarations.set(`${component.name}.prop:${prop.name}`, { at: at(prop.span.start) });
       }
       for (const event of component.emits?.events ?? []) {
-        declarations.set(`${component.name}.event:${event.name}`, at(event.span.start));
+        declarations.set(`${component.name}.event:${event.name}`, { at: at(event.span.start) });
+      }
+      for (const slot of component.slots?.slots ?? []) {
+        declarations.set(`${component.name}.slot:${slot.name}`, {
+          at: at(slot.span.start),
+          ...(slot.props ? {} : { part: "named-slot" as const }),
+        });
       }
     }
   }

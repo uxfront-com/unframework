@@ -1,0 +1,11 @@
+{
+  "description": "A component whose root is an <li>, rendered in a <ul> by a list: a root that lives only inside a given parent.",
+  "main": "Menu.uf.tsx",
+  "ssr": {
+    "three": {
+      "props": {
+        "entries": ["Home", "Docs", "Blog"]
+      }
+    }
+  }
+}

@@ -1,0 +1,250 @@
+{
+  "irVersion": 1,
+  "file": "slots/named/Post.uf.tsx",
+  "components": [
+    {
+      "name": "Post",
+      "span": {
+        "start": 35,
+        "end": 303
+      },
+      "props": [
+        {
+          "name": "author",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 86,
+              "end": 92
+            }
+          },
+          "binding": "author@66",
+          "span": {
+            "start": 78,
+            "end": 92
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ author: string }",
+          "span": {
+            "start": 76,
+            "end": 94
+          }
+        },
+        "span": {
+          "start": 64,
+          "end": 94
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "author@66",
+          "name": "author",
+          "kind": "prop",
+          "span": {
+            "start": 66,
+            "end": 72
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Card",
+            "attributes": [],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Slots arrive in M3.",
+                        "span": {
+                          "start": 201,
+                          "end": 220
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 198,
+                      "end": 224
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 183,
+                  "end": 224
+                }
+              },
+              {
+                "slot": "header",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "h2",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Release notes",
+                        "span": {
+                          "start": 155,
+                          "end": 168
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 151,
+                      "end": 173
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 137,
+                  "end": 173
+                }
+              },
+              {
+                "slot": "footer",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "small",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "By ",
+                        "span": {
+                          "start": 255,
+                          "end": 258
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "author",
+                          "span": {
+                            "start": 259,
+                            "end": 265
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "author@66",
+                              "span": {
+                                "start": 259,
+                                "end": 265
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 258,
+                          "end": 266
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 248,
+                      "end": 274
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 234,
+                  "end": 274
+                }
+              }
+            ],
+            "span": {
+              "start": 113,
+              "end": 296
+            }
+          }
+        ],
+        "span": {
+          "start": 113,
+          "end": 296
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Post",
+      "span": {
+        "start": 35,
+        "end": 303
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Card.uf.tsx",
+      "file": "Card.uf.tsx",
+      "api": {
+        "file": "Card.uf.tsx",
+        "components": [
+          {
+            "name": "Card",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "header",
+                "optional": true
+              },
+              {
+                "name": "default",
+                "optional": true
+              },
+              {
+                "name": "footer",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "article"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Card",
+          "span": {
+            "start": 7,
+            "end": 11
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 33
+      }
+    }
+  ]
+}

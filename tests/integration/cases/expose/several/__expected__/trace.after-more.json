@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'More' })",
+      "dom": [
+        "<div class=\"controls\">",
+        "  <output class=\"count\">",
+        "    \"11\"",
+        "  </output>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"More\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Reset\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- status: \"11\"",
+        "- button \"More\"",
+        "- button \"Reset\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'More' })",
+      "dom": [
+        "<div class=\"controls\">",
+        "  <output class=\"count\">",
+        "    \"12\"",
+        "  </output>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"More\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Reset\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- status: \"12\"",
+        "- button \"More\"",
+        "- button \"Reset\""
+      ],
+      "events": {}
+    }
+  ]
+}

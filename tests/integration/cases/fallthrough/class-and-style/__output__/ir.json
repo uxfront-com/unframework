@@ -1,0 +1,409 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/class-and-style/Tags.uf.tsx",
+  "components": [
+    {
+      "name": "Tags",
+      "span": {
+        "start": 69,
+        "end": 550
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "active@110",
+          "name": "active",
+          "kind": "state",
+          "span": {
+            "start": 110,
+            "end": 116
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "active@110",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 123,
+              "end": 128
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 104,
+            "end": 130
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "tags",
+            "span": {
+              "start": 151,
+              "end": 163
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Tag",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"plain\"",
+                  "span": {
+                    "start": 182,
+                    "end": 189
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 176,
+                  "end": 189
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 171,
+              "end": 192
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Tag",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"wide\"",
+                  "span": {
+                    "start": 210,
+                    "end": 216
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 204,
+                  "end": 216
+                }
+              },
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Static",
+                    "value": "wide",
+                    "span": {
+                      "start": 217,
+                      "end": 229
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 217,
+                  "end": 229
+                }
+              },
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Static",
+                    "property": "margin-left",
+                    "value": "8px",
+                    "span": {
+                      "start": 237,
+                      "end": 253
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 230,
+                  "end": 254
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 199,
+              "end": 257
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Tag",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"toggled\"",
+                  "span": {
+                    "start": 283,
+                    "end": 292
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 277,
+                  "end": 292
+                }
+              },
+              {
+                "kind": "Class",
+                "items": [
+                  {
+                    "kind": "Static",
+                    "value": "picked",
+                    "span": {
+                      "start": 309,
+                      "end": 317
+                    }
+                  },
+                  {
+                    "kind": "Toggle",
+                    "name": "active",
+                    "condition": {
+                      "code": "active.value",
+                      "span": {
+                        "start": 329,
+                        "end": 341
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "active@110",
+                          "span": {
+                            "start": 329,
+                            "end": 341
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 321,
+                      "end": 341
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 301,
+                  "end": 345
+                }
+              },
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Bound",
+                    "property": "color",
+                    "value": {
+                      "code": "active.value ? \"rgb(200, 0, 0)\" : undefined",
+                      "span": {
+                        "start": 370,
+                        "end": 413
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "active@110",
+                          "span": {
+                            "start": 370,
+                            "end": 382
+                          }
+                        },
+                        {
+                          "kind": "Global",
+                          "name": "undefined",
+                          "span": {
+                            "start": 404,
+                            "end": 413
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 363,
+                      "end": 413
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 354,
+                  "end": 416
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 264,
+              "end": 425
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 440,
+                  "end": 453
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(active.value = !active.value)",
+                      "span": {
+                        "start": 469,
+                        "end": 499
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "active@110",
+                          "operator": "=",
+                          "span": {
+                            "start": 469,
+                            "end": 499
+                          },
+                          "target": {
+                            "start": 470,
+                            "end": 482
+                          },
+                          "value": {
+                            "start": 485,
+                            "end": 498
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "active@110",
+                          "span": {
+                            "start": 486,
+                            "end": 498
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 463,
+                      "end": 499
+                    }
+                  },
+                  "span": {
+                    "start": 463,
+                    "end": 499
+                  }
+                },
+                "span": {
+                  "start": 454,
+                  "end": 500
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Toggle",
+                "span": {
+                  "start": 501,
+                  "end": 523
+                }
+              }
+            ],
+            "span": {
+              "start": 432,
+              "end": 532
+            }
+          }
+        ],
+        "span": {
+          "start": 146,
+          "end": 543
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Tags",
+      "span": {
+        "start": 69,
+        "end": 550
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Tag.uf.tsx",
+      "file": "Tag.uf.tsx",
+      "api": {
+        "file": "Tag.uf.tsx",
+        "components": [
+          {
+            "name": "Tag",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "span"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Tag",
+          "span": {
+            "start": 43,
+            "end": 46
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 67
+      }
+    }
+  ]
+}

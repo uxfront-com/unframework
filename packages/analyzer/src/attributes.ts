@@ -38,6 +38,7 @@ import {
   isTargetStringAttribute,
   MUTED_REASON,
   nameProblem,
+  reservedSpreadKey,
   unsupported,
 } from "./attribute-names.ts";
 import type { Problem } from "./attribute-names.ts";
@@ -284,7 +285,7 @@ function checkHandlers(
 }
 
 /** `key` outside a list's element (UF3014): it does nothing there, and the fix removes it. */
-function misplacedKey(item: AST.JSXAttribute, after: number, reporter: Reporter): void {
+export function misplacedKey(item: AST.JSXAttribute, after: number, reporter: Reporter): void {
   reporter.report(
     "UF3014",
     item.name,
@@ -306,7 +307,7 @@ function misplacedKey(item: AST.JSXAttribute, after: number, reporter: Reporter)
  * A list's key written in another case (`KEY={item.id}`, UF3004). A key in braces gets the
  * rename; any other is a constant key, whose fix (UF3014) writes the whole attribute.
  */
-function keyCase(
+export function keyCase(
   item: AST.JSXAttribute,
   nameNode: AST.JSXIdentifier | AST.JSXNamespacedName,
   reporter: Reporter,
@@ -357,7 +358,7 @@ function readForm(item: AST.JSXAttribute, name: string, element: ElementContext)
       "UF3012",
       value,
       "JSX cannot be an attribute's value: only a child, a branch of a conditional child or the element a list's `.map` renders.",
-      { help: "Write the JSX as a child, or extract a component (composition lands in M3)." },
+      { help: "Write the JSX as a child, pass it in a slot, or extract a component." },
     );
     return undefined;
   }
@@ -580,7 +581,7 @@ function readSpread(
   ) {
     reporter.unsupported(
       item,
-      "Spreads of the setup's values are not supported yet: they land with fallthrough (M3).",
+      "Spreads of the setup's values are not supported yet: a setup value's type is mostly inferred, which M5's type oracle reads.",
       { help: "Spread a prop or a list's item, or write the attributes." },
     );
     return { node: item, binds: true, attribute: undefined, keys: [] };
@@ -588,9 +589,10 @@ function readSpread(
   const shape = declaredShapeOf(checked.kinds);
   if (!shape) {
     if (checked.clean) {
-      reporter.unsupported(
+      reporter.report(
+        "UF3048",
         item,
-        "Spreads of objects whose keys the compiler cannot see are not supported yet: they land with fallthrough (M3).",
+        "This spread's keys are not known: a spread renders exactly the keys its type declares, and no target can render keys only the run time knows (ADR-0054).",
         {
           help: "Spread a prop or a list's item typed by an interface or an object type the module declares, or write the attributes.",
         },
@@ -647,8 +649,8 @@ function readSpread(
     const name = canonicalName(tag, namespace, authored);
     const problem: Problem | undefined =
       name === "key" || name === "ref" || name === "children"
-        ? unsupported(
-            `A spread's \`${name}\` key is not supported yet: the frameworks read \`${name}\` themselves, which lands with composition (M3).`,
+        ? reservedSpreadKey(
+            `A spread's \`${name}\` key is not rendered: \`${name}\` has its own channel, and a spread renders attributes.`,
           )
         : name === "style"
           ? unsupported("A spread's `style` key is not supported yet: it lands in M4.")

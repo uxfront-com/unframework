@@ -105,21 +105,39 @@ export function kindProblems(
   return problems;
 }
 
-/** The native or emulated capability cells no case covers and no exemption excuses. */
+/**
+ * The native or emulated capability cells no case covers and no exemption excuses. An exemption
+ * excuses a capability on every target, or on the targets it names (ADR-0057's lanes: a cell a
+ * case covers on one target and a lane has still to emit on another).
+ */
 function capabilityProblems(cells: ReadonlySet<string>): string[] {
   const problems: string[] = [];
   const names: readonly string[] = CAPABILITY_NAMES;
+  const targets: readonly string[] = TARGET_NAMES;
   for (const [capability, reason] of Object.entries(EXEMPT_CAPABILITIES)) {
     if (!names.includes(capability)) {
-      problems.push(`The exemption for "${capability}" names no capability (${reason}).`);
+      problems.push(
+        `The exemption for "${capability}" names no capability (${JSON.stringify(reason)}).`,
+      );
+    }
+    for (const target of typeof reason === "object" ? Object.keys(reason) : []) {
+      if (!targets.includes(target)) {
+        problems.push(`The exemption for "${capability}" names no target "${target}".`);
+      }
     }
   }
   for (const target of TARGET_NAMES) {
     for (const capability of CAPABILITY_NAMES) {
       const cell = builtinTargets[target].capabilities[capability];
-      if (cell.support === "unsupported") continue;
+      const entry = EXEMPT_CAPABILITIES[capability];
+      const exempt = typeof entry === "object" ? entry[target] : entry;
+      if (cell.support === "unsupported") {
+        if (typeof entry === "object" && exempt !== undefined) {
+          problems.push(`${target} › ${capability} is unsupported: remove its coverage exemption.`);
+        }
+        continue;
+      }
       const covered = cells.has(`${target}:${capability}`);
-      const exempt = EXEMPT_CAPABILITIES[capability];
       if (covered && exempt) {
         problems.push(`${target} › ${capability} has a case now: remove its coverage exemption.`);
       } else if (!covered && !exempt) {

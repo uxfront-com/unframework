@@ -1,0 +1,7 @@
+{
+  "description": "A child component imported from a file of its own: a static and a bound prop, a prop left to its default, and a listener of the child's event, by name and in place.",
+  "main": "Form.uf.tsx",
+  "ssr": {
+    "lisbon": { "props": { "city": "Lisbon" } }
+  }
+}

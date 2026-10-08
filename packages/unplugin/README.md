@@ -49,9 +49,12 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   plugins skip.
 - An id loads the target's output file with the id's extension (`Hello.vue`, `hello.ts`, and
   `Hello.tsx` for a `.uf.tsx` id). A file with several components emits one such file each:
-  `.tsx` and `.ts` files are joined into one module (an import an earlier file already made is
-  written once, and any other name two files declare or export is an error), and markup targets
-  refuse the file until M3.
+  `.tsx` and `.ts` files are joined into one module (an import of a file of the join is left out,
+  an import an earlier file already made is written once, and any other name two files declare
+  or export is an error). On a markup target the module id loads the file's main component (its
+  default export, or its only exported component), and each other component loads under a
+  component id, `<abs>/X.uf.tsx.<output file>` (`/src/Card.uf.tsx.CardIcon.vue`, ADR-0053),
+  which ends in the extension the framework's plugin claims.
 - Until M5, that error stops two components that share a type declaration: each output declares
   the types its props reach, so `joinModules` reports the type as "declared by A.tsx and B.tsx"
   (ADR-0034). Two outputs that print the same inline helper, such as React's `cx`, clash the same
@@ -59,10 +62,16 @@ A module id is the absolute path of the `.uf.tsx` file plus the target's suffix 
   `Component` beside `input`, Solid's `Show` beside `For`): only an identical import is written
   once. Give each such component its own `.uf.tsx` file.
 - A script module keeps the `.uf.tsx` file's exports. A `.vue`, `.svelte` or `.astro` module has
-  only a default export, so markup targets refuse a component exported by name
-  (`export function Hello`) until M3, rather than load a module where `import { Hello }` finds
-  nothing.
-- `moduleId`, `parseModuleId` and `idSuffix` build and take these ids apart.
+  only a default export, so markup targets refuse a main component exported by name
+  (`export function Hello`), rather than load a module where `import { Hello }` finds nothing.
+- `moduleId`, `parseModuleId`, `componentId`, `parseComponentId` and `idSuffix` build and take
+  these ids apart.
+- **Children** (ADR-0053). A file compiles with `createFileResolver` rooted at Vite's root, so a
+  parent lowers its children by their APIs. An output imports a child's output by its file
+  (`./Field.vue`): such a relative import from one of the plugin's modules is looked up in the
+  importer's compile and resolves to the child's module id, or its component id on a markup
+  target where it is not its file's main component. A compile is reused while its file and every
+  file its resolver read hold what they held.
 
 How `resolveId` answers:
 
@@ -85,7 +94,9 @@ How `resolveId` answers:
   every id but a `.tsx` one. Vite resolves that file with the module as its importer, and the
   plugin answers with the real file, so the module graph holds the file as an import of the
   module: editing it invalidates the module and reruns `vitest --watch`. (In `load`, Vite would
-  drop the file when a cold request's module is not in its graph yet.)
+  drop the file when a cold request's module is not in its graph yet.) It adds an edge to each
+  child the compile resolved too, whose API the output depends on, so an edit to `Field.uf.tsx`
+  invalidates `Form`'s module.
 
 How `load` answers a query is decided by the query alone, never by what the process resolved
 before: a parameter named after the id's extension (`?vue&type=style&index=0&lang.css`,

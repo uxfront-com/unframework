@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Search' })",
+      "dom": [
+        "<header class=\"header\">",
+        "  <label class=\"search\">",
+        "    \"Find\"",
+        "    <input type=\"search\" uf:focused=\"\" uf:value=\"\">",
+        "  </label>",
+        "  <button type=\"button\">",
+        "    \"Search\"",
+        "  </button>",
+        "</header>"
+      ],
+      "aria": [
+        "- banner:",
+        "  - text: Find",
+        "  - searchbox \"Find\"",
+        "  - button \"Search\""
+      ],
+      "events": {}
+    }
+  ]
+}

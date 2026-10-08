@@ -1,0 +1,6 @@
+- region "Filled":
+  - heading "Sunset" [level=3]
+  - paragraph: Taken at dusk.
+- region "Empty":
+  - heading "Untitled" [level=3]
+  - paragraph: No content

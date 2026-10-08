@@ -1,0 +1,22 @@
+{
+  "description": "A component as the element a list's .map renders, keyed: rows appear and update as the list changes.",
+  "main": "Tasks.uf.tsx",
+  "ssr": {
+    "two": {
+      "props": {
+        "initial": [
+          {
+            "id": 1,
+            "name": "Read mail",
+            "done": false
+          },
+          {
+            "id": 2,
+            "name": "Plan trip",
+            "done": true
+          }
+        ]
+      }
+    }
+  }
+}

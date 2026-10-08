@@ -138,10 +138,12 @@ describe("qwik target", () => {
     expect(contents).toMatch(/\nexport \{ Hello as Greeting, Hello, Hello as default \};\n$/);
   });
 
-  it("declares a component the module does not export without exporting it", async () => {
+  // A component the module does not export is a sibling file, which the module's other
+  // components import by its name (ADR-0053).
+  it("exports a component the module does not export by its name", async () => {
     const contents = await emitted(greeting, []);
-    expect(contents).toContain(`\nconst Hello = component$(() => {`);
-    expect(contents).not.toContain("export");
+    expect(contents).toContain(`\nexport const Hello = component$(() => {`);
+    expect(contents).not.toContain("export default");
   });
 
   it("writes the attribute names Qwik's JSX types declare on HTML elements", async () => {

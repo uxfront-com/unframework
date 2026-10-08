@@ -4,8 +4,14 @@
 // read the IR's own visitors (`expressionsOf`, `codeOf`), so a kind added to the IR is seen here.
 import { codeOf, expressionsOf, walk } from "@unframework/ir";
 import type {
+  Attribute,
   BindingId,
   Code,
+  ComponentAttribute,
+  EventAttribute,
+  FragmentNode,
+  ListenerAttribute,
+  RefAttribute,
   Expression,
   FunctionCode,
   RenderNode,
@@ -70,16 +76,28 @@ export function referencedBindings(
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
-      for (const attribute of node.attributes) {
+      for (const attribute of clientAttributes(node)) {
         if (attribute.kind === "Ref") found.add(attribute.binding);
-        else if (attribute.kind === "Event" && attribute.handler.kind === "Function") {
-          found.add(attribute.handler.binding);
-        }
+        else if (attribute.handler.kind === "Function") found.add(attribute.handler.binding);
       }
     },
   });
   return found;
+}
+
+/**
+ * The attributes of a render node that only the browser runs: an element's listeners and template
+ * ref, and a component's listeners and ref (ADR-0053).
+ */
+function clientAttributes(
+  node: RenderNode | FragmentNode,
+): (RefAttribute | EventAttribute | ListenerAttribute)[] {
+  if (node.kind !== "Element" && node.kind !== "Component") return [];
+  const attributes: readonly (Attribute | ComponentAttribute)[] = node.attributes;
+  return attributes.filter(
+    (attribute): attribute is RefAttribute | EventAttribute | ListenerAttribute =>
+      attribute.kind === "Ref" || attribute.kind === "Event" || attribute.kind === "Listener",
+  );
 }
 
 /** What {@link liveBindings} and {@link liveTypes} start from besides the template. */
@@ -133,13 +151,10 @@ export function liveBindings(component: UfComponent, options: LiveOptions): Set<
   if (options.client) {
     walk(component.render, {
       enter(node) {
-        if (node.kind !== "Element") return;
-        for (const attribute of node.attributes) {
+        for (const attribute of clientAttributes(node)) {
           if (attribute.kind === "Ref") reach(attribute.binding);
-          else if (attribute.kind === "Event") {
-            if (attribute.handler.kind === "Function") reach(attribute.handler.binding);
-            else readFunction(attribute.handler.function);
-          }
+          else if (attribute.handler.kind === "Function") reach(attribute.handler.binding);
+          else readFunction(attribute.handler.function);
         }
       },
     });
@@ -251,6 +266,8 @@ export function liveTypes(
   };
   if (component.propsParameter) type(component.propsParameter.type);
   for (const prop of component.props) type(prop.type);
+  // A slot's props are its public type, as a prop's is (ADR-0054).
+  for (const slot of component.slots?.slots ?? []) type(slot.props);
   for (const declaration of declared.values()) {
     if (declaration.exported) reach([declaration.name]);
   }
@@ -306,9 +323,8 @@ export function liveTypes(
     }
     walk(component.render, {
       enter(node) {
-        if (node.kind !== "Element") return;
-        for (const attribute of node.attributes) {
-          if (attribute.kind === "Event" && attribute.handler.kind === "Inline") {
+        for (const attribute of clientAttributes(node)) {
+          if (attribute.kind !== "Ref" && attribute.handler.kind === "Inline") {
             fn(attribute.handler.function);
           }
         }

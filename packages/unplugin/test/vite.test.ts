@@ -116,7 +116,7 @@ describe.each(TARGET_NAMES)("the %s target", (target) => {
 
   it(
     MARKUP_TARGETS.includes(target)
-      ? "refuses a component exported by name, naming M3"
+      ? "refuses a main component exported by name"
       : "loads a component exported by name, keeping its name",
     async () => {
       const expected = await compile(NAMED, { filename: "Named.uf.tsx", targets: [target] });
@@ -131,7 +131,7 @@ describe.each(TARGET_NAMES)("the %s target", (target) => {
           return;
         }
         await expect(loading).rejects.toThrow(
-          `Named.uf.tsx exports \`Hello\` by name, and the module of a .${target} file has only a default export, so \`import { Hello }\` would find nothing on the ${target} target. Named exports of components on markup targets come with composition (M3)`,
+          `Named.uf.tsx exports \`Hello\` by name, and the module of a .${target} file has only a default export, so \`import { Hello }\` would find nothing on the ${target} target. Export the file's main component as the default`,
         );
       });
     },
@@ -450,12 +450,74 @@ describe("files with several components", () => {
     },
   );
 
-  it("fail a markup target's module, naming M3", async () => {
+  it("load a markup target's main component under the module id, and each other under its own", async () => {
+    const compiled = await compile(MULTI, { filename: "Multi.uf.tsx", targets: ["svelte"] });
+    const [card, badge] = compiled.outputs.svelte!;
     await withServer(unframework({ target: "svelte" }), async ({ client }) => {
-      await expect(client.pluginContainer.load(`${file("Multi.uf.tsx")}.svelte`)).rejects.toThrow(
-        "Multi.uf.tsx compiles to 2 svelte components (Card.svelte, Badge.svelte), and a .svelte file holds one",
-      );
+      const main = `${file("Multi.uf.tsx")}.svelte`;
+      expect(codeOf(await client.pluginContainer.load(main))).toBe(card!.contents);
+      // A component id (ADR-0053): the file, then the output file of the component.
+      const component = `${file("Multi.uf.tsx")}.Badge.svelte`;
+      expect(codeOf(await client.pluginContainer.load(component))).toBe(badge!.contents);
+      expect(await client.pluginContainer.resolveId(component, main)).toMatchObject({
+        id: component,
+      });
     });
+  });
+});
+
+describe("children (ADR-0053)", () => {
+  const FIELD =
+    'export default function Field({ label }: { label: string }) {\n  return <span class="field">{label}</span>;\n}\n';
+  const FORM =
+    'import Field from "./Field.uf.tsx";\n\nfunction Note() {\n  return <p>Note</p>;\n}\n\nexport default function Form() {\n  return (\n    <form>\n      <Field label="Name" />\n      <Note />\n    </form>\n  );\n}\n';
+
+  it("compiles a parent with its children's APIs, and resolves its imports of their outputs", async () => {
+    const children = createProject({ "Field.uf.tsx": FIELD, "Form.uf.tsx": FORM });
+    try {
+      const server = await startServer(children.root, unframework({ target: "vue" }));
+      try {
+        const { client } = server;
+        const form = `${join(children.root, "Form.uf.tsx")}.vue`;
+        const code = codeOf(await client.pluginContainer.load(form));
+        expect(code).toContain('import Field from "./Field.vue";');
+        expect(code).toContain('import Note from "./Note.vue";');
+        // A child's main component loads under its module id, a local one under a component id.
+        expect(await client.pluginContainer.resolveId("./Field.vue", form)).toMatchObject({
+          id: `${join(children.root, "Field.uf.tsx")}.vue`,
+        });
+        expect(await client.pluginContainer.resolveId("./Note.vue", form)).toMatchObject({
+          id: `${join(children.root, "Form.uf.tsx")}.Note.vue`,
+        });
+        expect(await client.pluginContainer.resolveId("./Missing.vue", form)).toBeNull();
+      } finally {
+        await server.close();
+      }
+    } finally {
+      children.remove();
+    }
+  });
+
+  it("recompiles a parent when a child's API changes, and watches the child", async () => {
+    const children = createProject({ "Field.uf.tsx": FIELD, "Form.uf.tsx": FORM });
+    try {
+      const server = await startServer(children.root, [...unframework({ target: "vue" }), fakeVue]);
+      try {
+        const { client } = server;
+        const form = `${join(children.root, "Form.uf.tsx")}.vue`;
+        await client.transformRequest(form);
+        const module = await client.moduleGraph.getModuleByUrl(form);
+        const watched = [...(module?.importedModules ?? [])].map((each) => each.file);
+        expect(watched).toContain(join(children.root, "Field.uf.tsx"));
+        // A prop the child no longer declares: the cached compile is stale.
+        children.write("Field.uf.tsx", FIELD.replaceAll("label", "title"));
+        await expect(client.pluginContainer.load(form)).rejects.toThrow("UF3035");
+      } finally {
+        await server.close();
+      }
+    } finally {
+      children.remove();
+    }
   });
 });
 

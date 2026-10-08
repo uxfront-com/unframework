@@ -148,6 +148,33 @@ describe("consumerProblems", () => {
   });
 });
 
+describe("the finer gaps (ADR-0059)", () => {
+  // `Card` declares a named slot without props, `header`, which Astro does not type.
+  const card = listCases().find(({ id }) => id === "slots/named")!;
+  const list = listCases().find(({ id }) => id === "slots/scoped")!;
+
+  it("fails a directive for a slot without props on Astro, and checks one with props", () => {
+    const named = fixture(
+      "MisuseSlot.astro",
+      "<!-- @uf-expect TS2322 Card.slot:header -->\n<Card />\n",
+    );
+    const astro = consumerProblems("astro", card, [named], results([[named, [mismatch(2)]]]));
+    expect(astro).toHaveLength(1);
+    expect(astro[0]).toMatch(
+      /MisuseSlot\.astro:2: astro cannot check a component's named-slots \(Astro does not type .+\)\.$/,
+    );
+    // Another target types it: the directive is met.
+    expect(consumerProblems("vue", card, [named], results([[named, [mismatch(2)]]]))).toEqual([]);
+    const scoped = fixture(
+      "MisuseScoped.astro",
+      "<!-- @uf-expect TS2322 List.slot:item -->\n<List />\n",
+    );
+    expect(consumerProblems("astro", list, [scoped], results([[scoped, [mismatch(2)]]]))).toEqual(
+      [],
+    );
+  });
+});
+
 describe("copyFixtures", () => {
   it("copies a case's fixtures beside a canary's compile, importing it on the same lines", () => {
     const root = join(scratch, ".canary", "L4-consumer", "vue");

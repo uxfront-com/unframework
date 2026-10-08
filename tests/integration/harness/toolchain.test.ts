@@ -24,6 +24,7 @@ import type { CaseInfo } from "./cases.ts";
 import { consumerFixtures, consumerProblems, copyFixtures } from "./consumers.ts";
 import type { Fixture } from "./consumers.ts";
 import { CANARY_DIR, ROOT, toolchainDir } from "./paths.ts";
+import { caseResolver } from "./sources.ts";
 import { loadToolchain } from "./targets.ts";
 import {
   display,
@@ -170,18 +171,24 @@ async function outputFiles(): Promise<Map<string, string[]>> {
   const root = join(CANARY_DIR, canary, target);
   rmSync(root, { recursive: true, force: true });
   for (const info of checked) {
-    const result = await compile(readFileSync(info.source, "utf8"), {
-      filename: info.filename,
-      targets: [target as TargetName],
-      plugins: canaryPlugins(canary, target),
-    });
+    // Every source of the case, as the compile project writes them into one tree (ADR-0057):
+    // a parent's output imports its children's.
     const directory = join(root, "cases", info.id, "__output__", target);
-    const paths = (result.outputs[target] ?? []).map((file) => {
-      const path = join(directory, file.path);
-      writeIfChanged(path, file.contents);
-      return path;
-    });
-    files.set(info.id, paths);
+    const paths: string[] = [];
+    for (const source of info.sources) {
+      const result = await compile(readFileSync(source.source, "utf8"), {
+        filename: source.filename,
+        targets: [target as TargetName],
+        plugins: canaryPlugins(canary, target),
+        resolve: caseResolver(info, harness.casesDir),
+      });
+      for (const file of result.outputs[target] ?? []) {
+        const path = join(directory, file.path);
+        writeIfChanged(path, file.contents);
+        paths.push(path);
+      }
+    }
+    files.set(info.id, paths.sort());
   }
   return files;
 }

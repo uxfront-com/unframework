@@ -1,0 +1,4 @@
+{
+  "description": "A child exposes two functions, one declared and one an arrow, and its parent calls each through the child's ref.",
+  "main": "Controls.uf.tsx"
+}

@@ -1,0 +1,221 @@
+{
+  "irVersion": 1,
+  "file": "components/named-import/Badges.uf.tsx",
+  "components": [
+    {
+      "name": "Badge",
+      "span": {
+        "start": 0,
+        "end": 97
+      },
+      "props": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 40,
+              "end": 46
+            }
+          },
+          "binding": "text@24",
+          "span": {
+            "start": 34,
+            "end": 46
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ text: string }",
+          "span": {
+            "start": 32,
+            "end": 48
+          }
+        },
+        "span": {
+          "start": 22,
+          "end": 48
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "text@24",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 24,
+            "end": 28
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "badge",
+            "span": {
+              "start": 67,
+              "end": 80
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "text",
+              "span": {
+                "start": 82,
+                "end": 86
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "text@24",
+                  "span": {
+                    "start": 82,
+                    "end": 86
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 81,
+              "end": 87
+            }
+          }
+        ],
+        "span": {
+          "start": 61,
+          "end": 94
+        }
+      }
+    },
+    {
+      "name": "Pill",
+      "span": {
+        "start": 99,
+        "end": 194
+      },
+      "props": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 138,
+              "end": 144
+            }
+          },
+          "binding": "text@122",
+          "span": {
+            "start": 132,
+            "end": 144
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ text: string }",
+          "span": {
+            "start": 130,
+            "end": 146
+          }
+        },
+        "span": {
+          "start": 120,
+          "end": 146
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "text@122",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 122,
+            "end": 126
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "pill",
+            "span": {
+              "start": 165,
+              "end": 177
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "text",
+              "span": {
+                "start": 179,
+                "end": 183
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "text@122",
+                  "span": {
+                    "start": 179,
+                    "end": 183
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 178,
+              "end": 184
+            }
+          }
+        ],
+        "span": {
+          "start": 159,
+          "end": 191
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "named",
+      "name": "Badge",
+      "local": "Badge",
+      "span": {
+        "start": 0,
+        "end": 97
+      }
+    },
+    {
+      "kind": "named",
+      "name": "Pill",
+      "local": "Pill",
+      "span": {
+        "start": 99,
+        "end": 194
+      }
+    }
+  ],
+  "types": []
+}

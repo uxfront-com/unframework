@@ -1,0 +1,10 @@
+{
+  "description": "A component that renders itself, one level less each time, until a condition ends the recursion.",
+  "ssr": {
+    "three": {
+      "props": {
+        "from": 3
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+error[UF2030]: `volume` is not a local function: a component exposes the functions its setup declares.
+ --> diagnostics/invalid-expose/Player.uf.tsx:9:24
+  |
+9 |   defineExpose({ play, volume });
+  |                        ^^^^^^
+  |
+  = help: Expose the component's local functions by name: `defineExpose({ focus, clear })`.
+  = see: https://unframework.dev/diagnostics/UF2030

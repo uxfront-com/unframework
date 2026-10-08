@@ -1,0 +1,215 @@
+{
+  "irVersion": 1,
+  "file": "slots/presence/Cards.uf.tsx",
+  "components": [
+    {
+      "name": "Cards",
+      "span": {
+        "start": 35,
+        "end": 267
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "cards",
+            "span": {
+              "start": 89,
+              "end": 102
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Card",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Full\"",
+                  "span": {
+                    "start": 122,
+                    "end": 128
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 116,
+                  "end": 128
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Sunny, 21°",
+                        "span": {
+                          "start": 190,
+                          "end": 200
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 187,
+                      "end": 204
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 172,
+                  "end": 204
+                }
+              },
+              {
+                "slot": "title",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "h3",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Weather",
+                        "span": {
+                          "start": 158,
+                          "end": 165
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 154,
+                      "end": 170
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 141,
+                  "end": 170
+                }
+              }
+            ],
+            "span": {
+              "start": 110,
+              "end": 221
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Card",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Bare\"",
+                  "span": {
+                    "start": 240,
+                    "end": 246
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 234,
+                  "end": 246
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 228,
+              "end": 249
+            }
+          }
+        ],
+        "span": {
+          "start": 84,
+          "end": 260
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Cards",
+      "span": {
+        "start": 35,
+        "end": 267
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Card.uf.tsx",
+      "file": "Card.uf.tsx",
+      "api": {
+        "file": "Card.uf.tsx",
+        "components": [
+          {
+            "name": "Card",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "title",
+                "optional": true
+              },
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "section"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Card",
+          "span": {
+            "start": 7,
+            "end": 11
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 33
+      }
+    }
+  ]
+}

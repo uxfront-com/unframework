@@ -1,0 +1,11 @@
+{
+  "description": "A slot's fallback renders where the parent leaves the slot empty, and the parent's fill replaces it.",
+  "main": "Board.uf.tsx",
+  "ssr": {
+    "failed": {
+      "props": {
+        "build": "#42"
+      }
+    }
+  }
+}

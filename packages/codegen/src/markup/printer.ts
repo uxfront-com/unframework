@@ -11,6 +11,8 @@ import {
 } from "@unframework/ir";
 import type {
   Attribute,
+  ComponentAttribute,
+  ComponentNode,
   ElementNode,
   EventAttribute,
   Expression,
@@ -18,9 +20,13 @@ import type {
   FragmentNode,
   Handler,
   IfBranch,
+  ListenerAttribute,
   Namespace,
   RefAttribute,
   RenderNode,
+  SlotFill,
+  SlotOutletNode,
+  SlotReference,
   UfComponent,
 } from "@unframework/ir";
 
@@ -32,8 +38,11 @@ import type { RewriteRules, RewriteSite } from "../rewrite.ts";
 import { codeTokens, isIdentifierName } from "./escape.ts";
 import type { CodeToken } from "./escape.ts";
 
-/** What holds a child list: an element, a branch of an `If`, a `For` (its body) or the root. */
-export type Container = ElementNode | FragmentNode | IfBranch | ForNode;
+/**
+ * What holds a child list: an element, a branch of an `If`, a `For` (its body), the root, a
+ * fill of a child's slot, or a slot outlet (its fallback).
+ */
+export type Container = ElementNode | FragmentNode | IfBranch | ForNode | SlotFill | SlotOutletNode;
 
 /** Where a text or an interpolation sits, for the compilers that treat edges differently. */
 export interface TextPosition {
@@ -102,6 +111,47 @@ export interface PrintedRef {
   name: string;
 }
 
+/** Where a component element's attributes and fills are printed (ADR-0053). */
+export interface ComponentContext {
+  component: ComponentNode;
+  /** The tag the component is written with. */
+  tag: string;
+  namespace: Namespace;
+}
+
+/** A prop passed to a component, as code: `literal` is the string a static prop holds. */
+export interface PrintedProp {
+  name: string;
+  code: string;
+  literal?: string;
+}
+
+/** A listener of a child's event, with its handler as code for the `client` site. */
+export interface PrintedListener {
+  attribute: ListenerAttribute;
+  readonly handler: string;
+}
+
+/**
+ * A fill of a child's slot (ADR-0054): its parameter as written, or the parent's own slot it
+ * forwards, with that slot's presence as the target tests it.
+ */
+export interface PrintedFill {
+  fill: SlotFill;
+  /** A scoped fill's parameter: a name, or a destructuring pattern, as written. */
+  parameter?: string;
+  /** Whether the parent's own slot it forwards takes props. */
+  forwardsProps?: boolean;
+  /** The forwarded slot's presence, `slots.title`, as the rules spell it. */
+  presence?: string;
+}
+
+/** A slot outlet, with its props as code, and key by key when they are an object literal. */
+export interface PrintedSlotOutlet {
+  node: SlotOutletNode;
+  props?: { code: string; entries?: { key: string; value: string }[] };
+}
+
 /** A branch of a conditional, with its condition as code: absent on the final else. */
 export interface ConditionalBranch {
   condition?: string;
@@ -126,7 +176,10 @@ export interface ListParts {
  * - `wrapper`: an element the dialect adds around content (`<template v-if>`), or a fragment
  *   (`<>…</>`) when `tag` is empty;
  * - `block`: segments of content after an opening each (`{#if c}`, `{:else}`), then a closing;
- * - `code`: code that hugs its neighbours like text.
+ * - `code`: code that hugs its neighbours like text;
+ * - `component`: a component element with directives before its own attributes (Vue's `v-for`);
+ * - `tag`: a tag the dialect writes with its attributes (`<slot name="title">`, `<template
+ *   #title>`), closing itself without content.
  */
 export type MarkupPiece =
   | { kind: "nodes"; nodes: readonly RenderNode[]; container: Container }
@@ -138,7 +191,15 @@ export type MarkupPiece =
       content: MarkupPiece;
     }
   | { kind: "block"; segments: readonly BlockSegment[]; close: string }
-  | { kind: "code"; code: string };
+  | { kind: "code"; code: string }
+  | { kind: "component"; component: ComponentNode; directives: readonly PrintedAttribute[] }
+  | {
+      kind: "tag";
+      tag: string;
+      attributes: readonly PrintedAttribute[];
+      /** Its content: none for a tag that closes itself. */
+      content?: readonly MarkupPiece[];
+    };
 
 /** A segment of a block: what opens it, and what it holds. */
 export interface BlockSegment {
@@ -232,6 +293,25 @@ export interface MarkupDialect {
   inert?: boolean;
   /** Orders an element's printed attributes, when the language's lint rules want an order. */
   orderAttributes?(attributes: readonly PrintedAttribute[]): PrintedAttribute[];
+  /**
+   * The tag a component element is written with (ADR-0053): its local name when absent
+   * (`<Field>`), or the language's own (Angular's `<uf-field>`).
+   */
+  componentTag?(name: string): string;
+  /** Writes a prop passed to a component (ADR-0053). */
+  propAttribute?(prop: PrintedProp, context: ComponentContext): PrintedAttribute[];
+  /**
+   * Writes a listener of a child's event (ADR-0053): the handler runs with the event's payload
+   * each time the child emits it.
+   */
+  componentEvent?(listener: PrintedListener, context: ComponentContext): PrintedAttribute[];
+  /**
+   * Writes a component element's content from its fills (ADR-0054): the default slot's
+   * children, the named slots' templates, and the forwarded slots. None closes the tag.
+   */
+  fills?(fills: readonly PrintedFill[], context: ComponentContext): MarkupPiece[];
+  /** Writes a slot outlet (ADR-0054): what the parent filled the slot with, or the fallback. */
+  slotOutlet?(outlet: PrintedSlotOutlet): MarkupPiece[];
 }
 
 /**
@@ -555,10 +635,12 @@ export function printMarkup(
               );
         case "For":
           return piecesItems(at.dialect.list(listParts(node)), at);
-        // Composition (ADR-0055) is not printed yet: each target's `emit` reports UF1002 for it
-        // before printing (`compositionUse`), until M3's lanes print it.
         case "Component":
+          return [componentItem(node, [], at)];
         case "SlotOutlet":
+          return piecesItems(hook(at.dialect, "slotOutlet")(slotOutletParts(node)), at);
+        // `<component is>` is not printed yet (ADR-0055): each target's `emit` reports UF1002
+        // for it before printing.
         case "Dynamic":
           return [];
         default:
@@ -637,9 +719,183 @@ export function printMarkup(
         ];
       case "code":
         return [inline(piece.code)];
+      case "component":
+        return [componentItem(piece.component, piece.directives, at)];
+      case "tag": {
+        const children = (piece.content ?? []).flatMap((each) => pieceItems(each, at));
+        const closes = piece.content === undefined;
+        return [
+          {
+            kind: "element",
+            tag: piece.tag,
+            attributes: piece.attributes.map(({ text }) => ({ text, code: true })),
+            end: closes ? " />" : ">",
+            children,
+            close: closes ? "" : `</${piece.tag}>`,
+            inlineOnly: at.preformatted,
+            blockLevel: false,
+          },
+        ];
+      }
       default:
         return unreachable(piece);
     }
+  }
+
+  /**
+   * A component element (ADR-0053), with directives before its own attributes: its props,
+   * listeners, fallthrough `class` and `style` and ref through the dialect's hooks, then its
+   * fills as its content. It closes itself without content.
+   */
+  function componentItem(
+    node: ComponentNode,
+    directives: readonly PrintedAttribute[],
+    at: Scope,
+  ): ElementItem {
+    const tag = at.dialect.componentTag?.(node.component) ?? node.component;
+    const context: ComponentContext = { component: node, tag, namespace: at.namespace };
+    const content = hook(at.dialect, "fills")(node.fills.map(fillParts), context);
+    const children = content.flatMap((piece) => pieceItems(piece, at));
+    const empty = content.length === 0;
+    return {
+      kind: "element",
+      tag,
+      attributes: componentAttributesOf(node, directives, at.dialect, context),
+      end: empty ? " />" : ">",
+      children,
+      close: empty ? "" : `</${tag}>`,
+      inlineOnly: at.preformatted,
+      blockLevel: false,
+    };
+  }
+
+  /** A component's attributes as its dialect writes them, `class` parts merged as an element's. */
+  function componentAttributesOf(
+    node: ComponentNode,
+    directives: readonly PrintedAttribute[],
+    of: MarkupDialect,
+    context: ComponentContext,
+  ): AttributeText[] {
+    // The element-shaped context the class, style and ref hooks take: the component's tag.
+    const element: ElementNode = {
+      kind: "Element",
+      tag: context.tag,
+      attributes: [],
+      children: [],
+      span: node.span,
+    };
+    const attributeContext: AttributeContext = { element, namespace: context.namespace };
+    const printed: PrintedAttribute[] = [...directives];
+    for (const attribute of node.attributes as readonly ComponentAttribute[]) {
+      switch (attribute.kind) {
+        case "Prop": {
+          const value = code(attribute.value);
+          const literal = stringLiteralValue(attribute.value.code);
+          printed.push(
+            ...hook(of, "propAttribute")(
+              { name: attribute.name, code: value, ...(literal === undefined ? {} : { literal }) },
+              context,
+            ),
+          );
+          break;
+        }
+        case "Listener":
+          printed.push(
+            ...hook(of, "componentEvent")(
+              {
+                attribute,
+                get handler() {
+                  return handlerCode(attribute.handler);
+                },
+              },
+              context,
+            ),
+          );
+          break;
+        case "Class":
+          printed.push(
+            ...of.classAttribute(
+              attribute.items.map((item): ClassPart =>
+                item.kind === "Static"
+                  ? { kind: "Static", value: item.value }
+                  : item.kind === "Toggle"
+                    ? { kind: "Toggle", name: item.name, condition: code(item.condition) }
+                    : { kind: "Dynamic", value: code(item.value) },
+              ),
+              attributeContext,
+            ),
+          );
+          break;
+        case "Style":
+          printed.push(
+            ...of.styleAttribute(
+              attribute.declarations.map((declaration): StylePart =>
+                declaration.kind === "Static"
+                  ? { kind: "Static", property: declaration.property, value: declaration.value }
+                  : {
+                      kind: "Bound",
+                      property: declaration.property,
+                      value: code(declaration.value),
+                    },
+              ),
+              attributeContext,
+            ),
+          );
+          break;
+        case "Ref":
+          printed.push(
+            ...of.refAttribute(
+              { attribute, name: bindingName(attribute.binding) },
+              attributeContext,
+            ),
+          );
+          break;
+        // A component model is not printed yet (ADR-0055): each target's `emit` reports UF1002
+        // for it before printing.
+        case "ModelBinding":
+          break;
+        default:
+          unreachable(attribute);
+      }
+    }
+    return (of.orderAttributes?.(printed) ?? printed).map((each) => ({
+      text: each.text,
+      code: true,
+    }));
+  }
+
+  /** A fill, with its parameter as written and a forwarded slot's presence. */
+  function fillParts(fill: SlotFill): PrintedFill {
+    const parameter = fill.parameter?.name ?? fill.parameter?.pattern?.code;
+    if (fill.forward === undefined) return { fill, ...(parameter ? { parameter } : {}) };
+    const declared = component?.slots?.slots.find((each) => each.name === fill.forward);
+    return {
+      fill,
+      forwardsProps: declared?.props !== undefined,
+      presence: slotPresence(fill.forward),
+    };
+  }
+
+  /** A slot's presence as the rules spell it: `slots.title` as written by default. */
+  function slotPresence(slot: string): string {
+    const slots = component?.slots;
+    const written = `${slots ? bindingName(slots.binding) : "slots"}.${slot}`;
+    const reference: SlotReference = {
+      kind: "Slot",
+      slot,
+      span: slots?.span ?? { start: 0, end: 0 },
+    };
+    return rewrite?.slot?.(reference, "render") ?? written;
+  }
+
+  /** A slot outlet, with its props as code, key by key when they are an object literal. */
+  function slotOutletParts(node: SlotOutletNode): PrintedSlotOutlet {
+    if (!node.props) return { node };
+    const entries = objectEntries(node.props)?.map(({ key, value }) => ({
+      key,
+      value: code(value),
+    }));
+    return { node, props: { code: code(node.props), ...(entries ? { entries } : {}) } };
   }
 
   function elementItem(
@@ -1074,6 +1330,69 @@ function decodeReferences(code: string): string {
         ? String.fromCodePoint(Number(decimal))
         : (named[(name as string).toLowerCase()] ?? reference),
   );
+}
+
+/** A dialect's optional hook, which a dialect that meets its construct must have. */
+function hook<K extends "propAttribute" | "componentEvent" | "fills" | "slotOutlet">(
+  dialect: MarkupDialect,
+  name: K,
+): NonNullable<MarkupDialect[K]> {
+  const found = dialect[name];
+  if (!found) {
+    throw new Error(`The ${dialect.name} dialect does not print composition yet (${name}).`);
+  }
+  return found.bind(dialect) as NonNullable<MarkupDialect[K]>;
+}
+
+/** The string a string literal's code holds, or `undefined` for any other code. */
+function stringLiteralValue(code: string): string | undefined {
+  const expression = parseExpression(code);
+  return expression.type === "Literal" && typeof expression.value === "string"
+    ? expression.value
+    : undefined;
+}
+
+/**
+ * The entries of an object literal's code, `{ item, count: count.value }`, each value an
+ * expression of its own with the references inside it, or `undefined` for one with a spread, a
+ * computed or a method member. A shorthand value is its name, read as the expression it is.
+ */
+export function objectEntries(
+  expression: Expression,
+): { key: string; value: Expression }[] | undefined {
+  const parsed = parseExpression(expression.code);
+  if (parsed.type !== "ObjectExpression") return undefined;
+  const entries: { key: string; value: Expression }[] = [];
+  for (const property of parsed.properties) {
+    if (property.type !== "Property" || property.computed || property.kind !== "init") {
+      return undefined;
+    }
+    if (property.method) return undefined;
+    const key =
+      property.key.type === "Identifier"
+        ? property.key.name
+        : property.key.type === "Literal" && typeof property.key.value === "string"
+          ? property.key.value
+          : undefined;
+    if (key === undefined) return undefined;
+    const start = expression.span.start + property.value.start;
+    const end = expression.span.start + property.value.end;
+    entries.push({
+      key,
+      value: {
+        code: expression.code.slice(property.value.start, property.value.end),
+        span: { start, end },
+        refs: expression.refs
+          .filter((ref) => ref.span.start >= start && ref.span.end <= end)
+          .map((ref) => {
+            if (ref.kind !== "Binding" || !ref.shorthand) return ref;
+            const { shorthand: _shorthand, ...rest } = ref;
+            return rest;
+          }),
+      },
+    });
+  }
+  return entries;
 }
 
 /** An item's one-line form. */

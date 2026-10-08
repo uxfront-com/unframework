@@ -1,0 +1,11 @@
+{
+  "description": "Three levels of components, each imported from its own file: a page renders sections, which render headings.",
+  "main": "Page.uf.tsx",
+  "ssr": {
+    "ada": {
+      "props": {
+        "name": "Ada"
+      }
+    }
+  }
+}

@@ -3,11 +3,22 @@ import {
   createComponent,
   createExport,
   createFragment,
+  createImportedName,
   createModule,
+  createModuleImport,
   createTypeDeclaration,
   isExportName,
 } from "@unframework/ir";
-import type { TypeDeclaration, UfComponent, UfExport, UfModule } from "@unframework/ir";
+import type {
+  ComponentApi,
+  ImportedName,
+  ModuleApi,
+  ModuleImport,
+  TypeDeclaration,
+  UfComponent,
+  UfExport,
+  UfModule,
+} from "@unframework/ir";
 import {
   exportName,
   findComponents,
@@ -17,6 +28,8 @@ import {
 } from "@unframework/parser";
 import type { AST, ComponentExport, ParsedModule } from "@unframework/parser";
 
+import { componentApi } from "./api.ts";
+import type { ApiContext } from "./api.ts";
 import { authoringBindings, checkAuthoringImport } from "./authoring.ts";
 import type { AuthoringApi } from "./authoring.ts";
 import { Reporter } from "./context.ts";
@@ -25,7 +38,7 @@ import type { ModuleTypes } from "./declarations.ts";
 import { frameworkOf, isAuthoringModule } from "./frameworks.ts";
 import { containsJsx, lowerElement, lowerRootChildren, ROOT } from "./lower.ts";
 import { analyzeProps } from "./props.ts";
-import type { ComponentFunction, RenderContext, SetupBinding } from "./render.ts";
+import type { ComponentFunction, ComponentInfo, RenderContext, SetupBinding } from "./render.ts";
 import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
 import { checkDirective, declareSetup, isDirective } from "./setup.ts";
@@ -39,6 +52,42 @@ export interface AnalyzeResult {
    */
   module: UfModule | undefined;
   diagnostics: Diagnostic[];
+  /**
+   * The module's public API, read from its declarations (ADR-0053): what a parent that imports
+   * it reads, known whatever its templates hold. `undefined` when it does not parse. Its `file`
+   * is the module's, which a resolver rewrites relative to each importer.
+   */
+  api: ModuleApi | undefined;
+}
+
+/** What analysing a module needs besides its source (ADR-0053). */
+export interface AnalyzeOptions {
+  /**
+   * The API of each `.uf.tsx` module the source imports, by the import's specifier, as the
+   * compiler's resolver gave it: `undefined` for one it could not resolve (UF1202).
+   */
+  imports?: ReadonlyMap<string, ModuleApi | undefined>;
+}
+
+/** The specifier of an import of a component module ends in `.uf.tsx` (ADR-0053). */
+export const COMPONENT_SPECIFIER: RegExp = /\.uf\.tsx$/;
+
+/**
+ * The specifiers of the `.uf.tsx` modules a parsed module imports as values, in source order,
+ * each once: what `compile()` asks its resolver for before the module is analysed.
+ */
+export function componentImports(parsed: ParsedModule): string[] {
+  const found = new Set<string>();
+  for (const statement of parsed.program.body) {
+    if (
+      statement.type === "ImportDeclaration" &&
+      statement.importKind !== "type" &&
+      COMPONENT_SPECIFIER.test(statement.source.value)
+    ) {
+      found.add(statement.source.value);
+    }
+  }
+  return [...found];
 }
 
 /**
@@ -58,8 +107,8 @@ interface Candidate {
 }
 
 /** Analyses a parsed `.uf.tsx` module and lowers its components into IR (passes P2 and P3). */
-export function analyze(parsed: ParsedModule): AnalyzeResult {
-  return analyzeModule(parsed);
+export function analyze(parsed: ParsedModule, options: AnalyzeOptions = {}): AnalyzeResult {
+  return analyzeModule(parsed, undefined, options);
 }
 
 /**
@@ -69,7 +118,11 @@ export function analyze(parsed: ParsedModule): AnalyzeResult {
 export type SetupObserver = (component: string, bindings: readonly SetupBinding[]) => void;
 
 /** `analyze`, with an observer of each component's setup, for the tests. */
-export function analyzeModule(parsed: ParsedModule, observe?: SetupObserver): AnalyzeResult {
+export function analyzeModule(
+  parsed: ParsedModule,
+  observe?: SetupObserver,
+  options: AnalyzeOptions = {},
+): AnalyzeResult {
   const reporter = new Reporter(parsed.file);
   for (const error of parsed.errors) {
     const { span, message, help, fixes } = syntaxError(error, parsed);
@@ -82,7 +135,9 @@ export function analyzeModule(parsed: ParsedModule, observe?: SetupObserver): An
         .map((label) => ({ span: label.span, message: label.message! })),
     });
   }
-  if (parsed.errors.length) return { module: undefined, diagnostics: reporter.diagnostics };
+  if (parsed.errors.length) {
+    return { module: undefined, diagnostics: reporter.diagnostics, api: undefined };
+  }
 
   const candidates: Candidate[] = [
     ...findComponents(parsed.program),
@@ -91,6 +146,20 @@ export function analyzeModule(parsed: ParsedModule, observe?: SetupObserver): An
   const componentStatements = new Set(candidates.map((candidate) => candidate.span.start));
   const declarations = findTypeDeclarations(parsed.program);
   const types = collectTypes(declarations, candidates);
+  const scopes = new Scopes(parsed.program);
+  const authoring = authoringBindings(parsed.program);
+  // Every component's API, read from its declarations before any is lowered: they render each
+  // other, and themselves (ADR-0053).
+  const apiContext: ApiContext = { source: parsed.source, scopes, types: types.table, authoring };
+  const apis = new Map<Candidate, ComponentApi>();
+  for (const candidate of candidates) {
+    if (!candidate.value) apis.set(candidate, componentApi(candidate, apiContext));
+  }
+  const imports: ModuleImport[] = [];
+  const components = new Map<object, ComponentInfo | undefined>();
+  for (const [candidate, api] of apis) {
+    if (candidate.node.id) components.set(candidate.node.id, { name: candidate.name, api });
+  }
   const context: ModuleContext = {
     source: parsed.source,
     candidates,
@@ -98,6 +167,9 @@ export function analyzeModule(parsed: ParsedModule, observe?: SetupObserver): An
     reporter,
     types,
     comments: parsed.comments,
+    resolved: options.imports ?? new Map(),
+    imports,
+    components,
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
@@ -107,18 +179,18 @@ export function analyzeModule(parsed: ParsedModule, observe?: SetupObserver): An
   // A module-level error drops every component, but they are still checked: fixing it must
   // reveal nothing new (the harness's L1).
   const moduleErrors = reporter.hasErrorsSince(moduleMark);
+  const api: ModuleApi = { file: parsed.file, components: [...apis.values()], keys: [] };
 
-  const scopes = new Scopes(parsed.program);
-  const authoring = authoringBindings(parsed.program);
   const module: ComponentModule = {
     parsed,
     types,
     scopes,
     authoring,
     reporter,
+    components,
     ...(observe ? { observe } : {}),
   };
-  const components: UfComponent[] = [];
+  const lowered: UfComponent[] = [];
   const exports: UfExport[] = [];
   const names = new Map<string, Candidate>();
   for (const candidate of candidates) {
@@ -131,27 +203,29 @@ export function analyzeModule(parsed: ParsedModule, observe?: SetupObserver): An
     }
     const component = analyzeComponent(candidate, module);
     if (!component) continue;
-    components.push(component);
+    lowered.push(component);
     for (const entry of candidate.exports) {
       exports.push({ ...createExport(entry.kind, candidate.name, entry.span), name: entry.name });
     }
   }
-  if (moduleErrors) return { module: undefined, diagnostics: reporter.diagnostics };
+  if (moduleErrors) return { module: undefined, diagnostics: reporter.diagnostics, api };
   if (!candidates.some((candidate) => candidate.exports.length)) {
     reporter.report("UF1101", { start: 0, end: 0 }, "This file exports no component.", {
       help: "A component is an exported PascalCase function whose last statement returns JSX.",
     });
-    return { module: undefined, diagnostics: reporter.diagnostics };
+    return { module: undefined, diagnostics: reporter.diagnostics, api };
   }
   exports.sort((a, b) => a.span.start - b.span.start);
   return {
     module: createModule(
       parsed.file,
-      components,
+      lowered,
       exports,
-      moduleTypes(components, types, parsed.source),
+      moduleTypes(lowered, types, parsed.source),
+      imports,
     ),
     diagnostics: reporter.diagnostics,
+    api,
   };
 }
 
@@ -188,7 +262,6 @@ function checkComponentExports(
   names: Map<string, Candidate>,
   reporter: Reporter,
 ): boolean {
-  if (!candidate.exports.length) return true;
   const mark = reporter.diagnostics.length;
   for (const entry of candidate.exports) {
     if (isExportName(entry.name)) continue;
@@ -233,6 +306,15 @@ interface ModuleContext {
   types: ModuleTypes;
   /** The module's comments: lint directives must not reach an output. */
   comments: readonly AST.Comment[];
+  /** The API of each imported `.uf.tsx` module, by specifier, as the resolver gave it. */
+  resolved: ReadonlyMap<string, ModuleApi | undefined>;
+  /** The module's imports of `.uf.tsx` modules, collected in source order. */
+  imports: ModuleImport[];
+  /**
+   * The components templates may render, by the identifier that declares each: `undefined` for
+   * a name an unresolved import binds, reported once, where it is imported.
+   */
+  components: Map<object, ComponentInfo | undefined>;
 }
 
 /** The local names a module exports as values in `export { name }` and `export default name`. */
@@ -262,8 +344,9 @@ function exportedNames(program: AST.Program): Set<string> {
 /** Checks a top-level statement that does not declare a component. */
 function checkTopLevelStatement(
   statement: AST.Directive | AST.Statement,
-  { source, candidates, exported, reporter, types, comments }: ModuleContext,
+  context: ModuleContext,
 ): void {
+  const { source, candidates, exported, reporter, types, comments } = context;
   if (isDirective(statement)) {
     checkDirective(statement, reporter);
     return;
@@ -300,6 +383,10 @@ function checkTopLevelStatement(
     case "EmptyStatement":
       return;
     case "ImportDeclaration":
+      if (COMPONENT_SPECIFIER.test(statement.source.value) && statement.importKind !== "type") {
+        componentImport(statement, context);
+        return;
+      }
       checkImport(statement, reporter);
       return;
     case "ExportNamedDeclaration": {
@@ -454,6 +541,83 @@ function occurrences(source: string, identifier: string): number {
   return source.match(pattern)?.length ?? 0;
 }
 
+/**
+ * An import of a component module (ADR-0053): each name it binds is a component the module
+ * exports, by the API the resolver gave (UF1202 otherwise). A type-only import is M5's, as any
+ * other module's types are.
+ */
+function componentImport(statement: AST.ImportDeclaration, context: ModuleContext): void {
+  const { reporter, resolved } = context;
+  const specifier = statement.source.value;
+  const api = resolved.get(specifier);
+  if (!api) {
+    for (const item of statement.specifiers) context.components.set(item.local, undefined);
+    reporter.report(
+      "UF1202",
+      statement.source,
+      `"${specifier}" cannot be resolved: the compiler finds no component module there.`,
+      {
+        help: "Import a `.uf.tsx` file of the project by its relative path, as in `./Field.uf.tsx`.",
+      },
+    );
+    return;
+  }
+  const names: ImportedName[] = [];
+  for (const item of statement.specifiers) {
+    if (item.type === "ImportSpecifier" && item.importKind === "type") {
+      reporter.unsupported(
+        item,
+        "Importing types from other modules is not supported yet: types from other modules land in M5.",
+        { help: "Declare the type in this module." },
+      );
+      continue;
+    }
+    if (item.type === "ImportNamespaceSpecifier") {
+      reporter.unsupported(
+        item,
+        "A namespace import of a component module is not supported: a component is imported by name, or as the default.",
+        { help: `Import the component itself, as in \`import Field from "${specifier}";\`.` },
+      );
+      continue;
+    }
+    const imported = item.type === "ImportDefaultSpecifier" ? "default" : exportName(item.imported);
+    const component = api.components.find((entry) =>
+      imported === "default"
+        ? entry.export === "default"
+        : entry.export === "named" && entry.name === imported,
+    );
+    if (!component) {
+      const exported = api.components
+        .filter((entry) => entry.export !== "local")
+        .map((entry) => (entry.export === "default" ? "a default export" : `\`${entry.name}\``));
+      context.components.set(item.local, undefined);
+      reporter.report(
+        "UF1202",
+        item,
+        imported === "default"
+          ? `"${specifier}" has no default export: it exports ${exported.join(", ") || "no component"}.`
+          : `"${specifier}" exports no component named \`${imported}\`: it exports ${exported.join(", ") || "no component"}.`,
+        { help: "Import a component the module exports." },
+      );
+      continue;
+    }
+    names.push(
+      createImportedName("Component", imported, item.local.name, {
+        start: item.start,
+        end: item.end,
+      }),
+    );
+    context.components.set(item.local, { name: item.local.name, api: component });
+  }
+  if (!names.length) return;
+  context.imports.push(
+    createModuleImport(specifier, api.file, api, names, {
+      start: statement.start,
+      end: statement.end,
+    }),
+  );
+}
+
 function checkImport(statement: AST.ImportDeclaration, reporter: Reporter): void {
   const specifier = statement.source.value;
   const framework = frameworkOf(specifier);
@@ -495,6 +659,8 @@ interface ComponentModule {
   /** The module's authoring imports, by the identifier that declares each (ADR-0006). */
   authoring: ReadonlyMap<object, AuthoringApi | undefined>;
   reporter: Reporter;
+  /** The components templates may render, by the identifier that declares each. */
+  components: ReadonlyMap<object, ComponentInfo | undefined>;
   observe?: SetupObserver;
 }
 
@@ -504,10 +670,6 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
   const mark = reporter.diagnostics.length;
   const fn = candidate.node;
   const name = fn.id ?? candidate.span;
-  if (!candidate.exports.length) {
-    reporter.unsupported(name, `Local components such as ${candidate.name} are not supported yet.`);
-    return undefined;
-  }
   if (fn.generator) {
     reporter.report(
       "UF1102",
@@ -560,6 +722,8 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     bindings: [...props.bindings, ...setup.bindings],
     comments: parsed.comments,
     facts: { nestedCalls: [], getterKinds: new Map(), tickCallbacks: [], passed: new Map() },
+    components: module.components,
+    slots: setup.slots,
   };
   setup.lower(render);
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {
@@ -592,7 +756,9 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     }
     root = children.length ? createFragment(children, spanOf(returned)) : undefined;
   } else {
-    root = lowerElement(returned, ROOT, render).element;
+    // A component at the root renders as the root's one child (ADR-0053).
+    const element = lowerElement(returned, ROOT, render).element;
+    root = element?.kind === "Component" ? createFragment([element], spanOf(returned)) : element;
   }
   setup.finish(render);
   // The rules that need every function's summary (ADR-0045), once everything is lowered.
@@ -623,6 +789,11 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     render.bindings.toSorted((a, b) => a.span.start - b.span.start),
     setup.items,
     setup.emits,
+    {
+      ...(setup.slots ? { slots: setup.slots } : {}),
+      ...(setup.exposes ? { exposes: setup.exposes } : {}),
+      ...(setup.inheritAttrs ? {} : { inheritAttrs: false as const }),
+    },
   );
 }
 

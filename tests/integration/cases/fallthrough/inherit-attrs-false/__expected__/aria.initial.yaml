@@ -1,0 +1,5 @@
+- form "Sign up":
+  - text: Email
+  - textbox "Email"
+  - text: Name
+  - textbox "Name"

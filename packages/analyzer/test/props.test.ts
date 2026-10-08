@@ -192,10 +192,10 @@ describe("props", () => {
     },
   );
 
-  it("reports a rest element as fallthrough, which lands in M3", () => {
+  it("reports a rest element, since fallthrough is `class` and `style` alone (ADR-0054)", () => {
     const source =
       "export function A({ a, ...rest }: { a: string; b: string }) { return <p>{a}</p>; }";
-    expect(problems(source, run(source).diagnostics)).toEqual(["UF1002 ...rest"]);
+    expect(problems(source, run(source).diagnostics)).toEqual(["UF2001 ...rest"]);
   });
 
   it.each([

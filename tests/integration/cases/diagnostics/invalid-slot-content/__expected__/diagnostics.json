@@ -1,0 +1,121 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 249
+    },
+    "end": {
+      "line": 7,
+      "column": 75,
+      "offset": 321
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 249
+    },
+    "end": {
+      "line": 7,
+      "column": 75,
+      "offset": 321
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 249
+    },
+    "end": {
+      "line": 7,
+      "column": 75,
+      "offset": 321
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 249
+    },
+    "end": {
+      "line": 7,
+      "column": 75,
+      "offset": 321
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 249
+    },
+    "end": {
+      "line": 7,
+      "column": 75,
+      "offset": 321
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 249
+    },
+    "end": {
+      "line": 7,
+      "column": 75,
+      "offset": 321
+    },
+    "target": "svelte"
+  },
+  {
+    "code": "UF3040",
+    "severity": "error",
+    "message": "The slot `title`'s fill is an arrow function whose body is the JSX it renders, or the parent's own slot (`slots.title`).",
+    "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
+    "start": {
+      "line": 17,
+      "column": 28,
+      "offset": 483
+    },
+    "end": {
+      "line": 17,
+      "column": 34,
+      "offset": 489
+    },
+    "help": "Write each member as a slot's name and an arrow function that returns JSX: `{{ title: () => <h2>Title</h2>, item: ({ item }) => <b>{item.label}</b> }}`."
+  }
+]

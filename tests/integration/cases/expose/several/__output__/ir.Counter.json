@@ -1,0 +1,266 @@
+{
+  "irVersion": 1,
+  "file": "expose/several/Counter.uf.tsx",
+  "components": [
+    {
+      "name": "Counter",
+      "span": {
+        "start": 50,
+        "end": 338
+      },
+      "props": [
+        {
+          "name": "start",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 102,
+              "end": 108
+            }
+          },
+          "binding": "start@84",
+          "span": {
+            "start": 95,
+            "end": 108
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ start: number }",
+          "span": {
+            "start": 93,
+            "end": 110
+          }
+        },
+        "span": {
+          "start": 82,
+          "end": 110
+        }
+      },
+      "types": [],
+      "exposes": {
+        "functions": [
+          "increment@153",
+          "reset@198"
+        ],
+        "span": {
+          "start": 246,
+          "end": 280
+        }
+      },
+      "bindings": [
+        {
+          "id": "start@84",
+          "name": "start",
+          "kind": "prop",
+          "span": {
+            "start": 84,
+            "end": 89
+          }
+        },
+        {
+          "id": "count@122",
+          "name": "count",
+          "kind": "state",
+          "span": {
+            "start": 122,
+            "end": 127
+          }
+        },
+        {
+          "id": "increment@153",
+          "name": "increment",
+          "kind": "localFn",
+          "span": {
+            "start": 153,
+            "end": 162
+          }
+        },
+        {
+          "id": "reset@198",
+          "name": "reset",
+          "kind": "localFn",
+          "span": {
+            "start": 198,
+            "end": 203
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "count@122",
+          "initial": {
+            "code": "start",
+            "span": {
+              "start": 134,
+              "end": 139
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "start@84",
+                "span": {
+                  "start": 134,
+                  "end": 139
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 116,
+            "end": 141
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "increment@153",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    count.value++;\n  }",
+              "span": {
+                "start": 165,
+                "end": 189
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "count@122",
+                  "operator": "++",
+                  "span": {
+                    "start": 171,
+                    "end": 184
+                  },
+                  "target": {
+                    "start": 171,
+                    "end": 182
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 162,
+              "end": 189
+            }
+          },
+          "span": {
+            "start": 144,
+            "end": 189
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "reset@198",
+          "form": "arrow",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    count.value = start;\n  }",
+              "span": {
+                "start": 212,
+                "end": 242
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "count@122",
+                  "operator": "=",
+                  "span": {
+                    "start": 218,
+                    "end": 237
+                  },
+                  "target": {
+                    "start": 218,
+                    "end": 229
+                  },
+                  "value": {
+                    "start": 232,
+                    "end": 237
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "start@84",
+                  "span": {
+                    "start": 232,
+                    "end": 237
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 206,
+              "end": 242
+            }
+          },
+          "span": {
+            "start": 192,
+            "end": 243
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "output",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "count",
+            "span": {
+              "start": 299,
+              "end": 312
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "count.value",
+              "span": {
+                "start": 314,
+                "end": 325
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "count@122",
+                  "span": {
+                    "start": 314,
+                    "end": 325
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 313,
+              "end": 326
+            }
+          }
+        ],
+        "span": {
+          "start": 291,
+          "end": 335
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Counter",
+      "span": {
+        "start": 50,
+        "end": 338
+      }
+    }
+  ],
+  "types": []
+}

@@ -1,0 +1,8 @@
+error[UF1202]: "./Avatar.uf.tsx" cannot be resolved: the compiler finds no component module there.
+ --> diagnostics/unresolved-import/Profile.uf.tsx:3:20
+  |
+3 | import Avatar from "./Avatar.uf.tsx";
+  |                    ^^^^^^^^^^^^^^^^^
+  |
+  = help: Import a `.uf.tsx` file of the project by its relative path, as in `./Field.uf.tsx`.
+  = see: https://unframework.dev/diagnostics/UF1202

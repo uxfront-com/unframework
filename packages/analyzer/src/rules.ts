@@ -843,6 +843,7 @@ class Rules {
       }
     }
     if (!erased.size) return;
+    const slots = render.slots?.type.span;
     const found: { reference: AST.TSTypeReference; annotation: AST.Node | undefined }[] = [];
     const visit = (node: unknown, annotation: AST.Node | undefined): void => {
       if (!node || typeof node !== "object") return;
@@ -852,6 +853,17 @@ class Rules {
       }
       const typed = node as AST.Node;
       if (typeof typed.type !== "string") return;
+      // What a slot returns is the slot's content, which no output copies: each writes its own
+      // type for it (ADR-0054). Its props are copied.
+      if (
+        (typed.type === "TSMethodSignature" || typed.type === "TSFunctionType") &&
+        slots &&
+        typed.start >= slots.start &&
+        typed.end <= slots.end
+      ) {
+        visit(typed.params, annotation);
+        return;
+      }
       if (typed.type === "TSTypeReference" && typed.typeName.type === "Identifier") {
         const resolution = render.scopes.resolve(
           typed.typeName as unknown as AST.IdentifierReference,

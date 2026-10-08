@@ -142,3 +142,34 @@ export function moduleIdCandidates(
   if (path.startsWith("/")) return [posix.join(root, path), path];
   return DRIVE_PATH.test(path) ? [path] : [];
 }
+
+/**
+ * A component id (ADR-0053): `<abs>/X.uf.tsx.<output file>`, such as `/src/Card.uf.tsx.CardIcon.vue`,
+ * which loads a component of the file other than its main one, under the extension its
+ * framework's plugin claims. A main id's suffix is an extension alone (`.vue`), with no dot in it.
+ */
+const COMPONENT_ID = /\.uf\.tsx\.([^/?]+\.[^/.?]+)(?:\?.*)?$/;
+
+/** What `resolveId` and `load` look at for component ids, with any query. */
+export const COMPONENT_ID_FILTER: RegExp = COMPONENT_ID;
+
+/** The component id of `output`, a file the target emits for a component of `file`. */
+export function componentId(file: string, output: string, query = ""): string {
+  return `${file}.${output}${query}`;
+}
+
+/** A component id taken apart, or `undefined` when the id is not one. */
+export function parseComponentId(
+  id: string,
+): { file: string; output: string; query: string } | undefined {
+  const match = COMPONENT_ID.exec(id);
+  if (!match) return undefined;
+  const index = id.indexOf("?");
+  const path = index === -1 ? id : id.slice(0, index);
+  const output = match[1]!;
+  return {
+    file: path.slice(0, path.length - output.length - 1),
+    output,
+    query: index === -1 ? "" : id.slice(index),
+  };
+}

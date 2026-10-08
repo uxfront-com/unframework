@@ -94,9 +94,27 @@ target):
 Single-selection list boxes are declared unsupported (`listbox`): Vue's client selects their
 first option, where HTML and the other targets select none (ADR-0033). Every other capability is
 native: the listeners' options and DOM semantics, `useId` and `nextTick` are Vue's own, and so is
-all of composition. Composition's cells (ADR-0055) are declared before Vue emits composition: until
-M3's lane for Vue lands, `emit` reports UF1002 where a component first uses it, and emits nothing
+all of composition. Models, context and `<component is>` (ADR-0055) are declared before Vue emits
+them: until they land, `emit` reports UF1002 where a component first uses one, and emits nothing
 for that component.
+
+## Composition
+
+Components, slots, fallthrough and `defineExpose` (ADR-0053, ADR-0054) are Vue's own:
+
+- a child is imported by its output file, `import Field from "./Field.vue"`, a component of the
+  same file included; a component that renders itself names itself with
+  `defineOptions({ name: "Tree" })` instead of importing its own file, which
+  `import/no-self-import` rejects, and which Vue resolves as a self-reference;
+- a component's props and events are hyphenated in the template (`:item-label`, `@level-change`),
+  as `vue/attribute-hyphenation` and `vue/v-on-event-hyphenation` ask;
+- `defineSlots<{ default?(): unknown; item?(props: P): unknown }>()`, bound as `slots` only where
+  the template tests or forwards a slot; slots render as `<slot>`, a scoped slot's props key by
+  key, the fallback as its content; fills are the children, or `<template #title>` and
+  `<template #item="{ item }">`, and a forwarded slot is the parent's own `<slot>` in a template
+  under its presence, `<template v-if="slots.title" #title>`;
+- `class` and `style` fall through as Vue makes them, `defineOptions({ inheritAttrs: false })`
+  turns it off, and `defineExpose({ … })` comes last, once every function it names is declared.
 
 ## The toolchain
 

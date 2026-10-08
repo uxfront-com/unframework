@@ -2,11 +2,15 @@
 // every target, and the case's artefacts join the results: one `diagnostics.json` and one
 // `diagnostics.txt` for every source, and one `__output__/<target>/` tree that every source's
 // files share. Plain functions, so `sources.unit.test.ts` proves them on a fixture of its own.
-import type { CompileResult } from "@unframework/compiler";
+import { readFile } from "node:fs/promises";
+import { dirname, join, relative, sep } from "node:path";
+
+import { createFileResolver } from "@unframework/compiler";
+import type { CompileResult, Resolver } from "@unframework/compiler";
 import { sortDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
 
-import type { CaseSource } from "./cases.ts";
+import type { CaseInfo, CaseSource } from "./cases.ts";
 
 /** One source of a case and its compile to every target. */
 export interface SourceCompile {
@@ -54,4 +58,20 @@ export function caseOutputs(
     }
   }
   return { files, problems };
+}
+
+/**
+ * The resolver a case's sources compile with (ADR-0057): `createFileResolver` over the cases
+ * directory, which finds only the files of the case itself, so each case stays self-contained.
+ * An import of anything else is unresolved (UF1202), which fails the compile project.
+ */
+export function caseResolver(info: Pick<CaseInfo, "dir">, casesDir: string): Resolver {
+  return createFileResolver({
+    root: casesDir.split(sep).join("/"),
+    readFile: async (path) => {
+      const file = join(path);
+      if (relative(info.dir, dirname(file)) !== "") return undefined;
+      return readFile(file, "utf8").catch(() => undefined);
+    },
+  });
 }

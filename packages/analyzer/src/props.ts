@@ -281,9 +281,10 @@ function destructured(
   const properties = new Map<string, AST.BindingProperty>();
   for (const property of pattern.properties) {
     if (property.type === "RestElement") {
-      reporter.unsupported(
+      reporter.report(
+        "UF2001",
         property,
-        "Rest props (`...rest`) are fallthrough attributes, which land in M3.",
+        "Rest props (`...rest`) are not props: a component's fallthrough is its `class` and `style`, which merge into its root (ADR-0054).",
         { help: "Destructure each prop by its name." },
       );
       continue;

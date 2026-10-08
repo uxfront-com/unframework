@@ -171,22 +171,36 @@ describe("diagnostics", () => {
     expect(codes(run("export {};").diagnostics)).toEqual(["UF1101"]);
   });
 
-  it("reports local components, statements the setup would run and async functions as not supported yet", () => {
+  it("reports statements the setup would run and async functions as not supported yet", () => {
     const source = [
-      "function Local() { return <p />; }",
       "export function Setup() { console.log(1); return <p />; }",
       "export async function Async() { return <p />; }",
       "export function Ok() { const a = 1; return <p>{a}</p>; }",
     ].join("\n");
     const { module, diagnostics } = run(source);
-    expect(codes(diagnostics)).toEqual(["UF1002", "UF1002", "UF1002"]);
-    expect(slices(source, diagnostics)).toEqual(["Local", "console.log(1);", "Async"]);
-    expect(diagnostics[1]!.message).toBe(
+    expect(codes(diagnostics)).toEqual(["UF1002", "UF1002"]);
+    expect(slices(source, diagnostics)).toEqual(["console.log(1);", "Async"]);
+    expect(diagnostics[0]!.message).toBe(
       "Statements other than declarations are not supported in the setup: the setup runs once, and declares what the component holds.",
     );
     // An error in one component never stops its siblings.
     expect(module!.components.map((component) => component.name)).toEqual(["Ok"]);
     expect(module!.exports.map((entry) => entry.local)).toEqual(["Ok"]);
+  });
+
+  it("lowers a local component, which its siblings render and the exports leave out", () => {
+    const source = [
+      "function Local() { return <p />; }",
+      "export function Ok() { return <div><Local /></div>; }",
+    ].join("\n");
+    const { module, diagnostics, api } = run(source);
+    expect(diagnostics).toEqual([]);
+    expect(module!.components.map((component) => component.name)).toEqual(["Local", "Ok"]);
+    expect(module!.exports.map((entry) => entry.local)).toEqual(["Ok"]);
+    expect(api!.components.map(({ name, export: kind }) => [name, kind])).toEqual([
+      ["Local", "local"],
+      ["Ok", "named"],
+    ]);
   });
 
   it("reports a component that does not end by returning JSX as UF1102", () => {
@@ -281,7 +295,7 @@ describe("diagnostics", () => {
       "UF1002 v-model",
       "UF1002 v-model:open",
       "UF3029 go",
-      "UF1002 Child",
+      "UF3047 Child",
       "UF1002 svg:rect",
       "UF1002 a.b",
       "UF1002 {...children}",
@@ -490,8 +504,8 @@ describe("the module's statements", () => {
     const { module, diagnostics } = run(source);
     expect(module).toBeUndefined();
     // The component is still checked: it is local, since a type-only export exports no value.
-    expect(codes(diagnostics)).toEqual(["UF1002", "UF1002"]);
-    expect(slices(source, diagnostics)).toEqual([at, "A"]);
+    expect(codes(diagnostics)).toEqual(["UF1002"]);
+    expect(slices(source, diagnostics)).toEqual([at]);
     expect(diagnostics[0]!.message).toBe("Type-only exports are not supported yet.");
   });
 });

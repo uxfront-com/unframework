@@ -1,0 +1,286 @@
+{
+  "irVersion": 1,
+  "file": "components/local-sibling/Card.uf.tsx",
+  "components": [
+    {
+      "name": "CardIcon",
+      "span": {
+        "start": 92,
+        "end": 231
+      },
+      "props": [
+        {
+          "name": "symbol",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 132,
+              "end": 138
+            }
+          },
+          "binding": "symbol@112",
+          "span": {
+            "start": 124,
+            "end": 138
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ symbol: string }",
+          "span": {
+            "start": 122,
+            "end": 140
+          }
+        },
+        "span": {
+          "start": 110,
+          "end": 140
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "symbol@112",
+          "name": "symbol",
+          "kind": "prop",
+          "span": {
+            "start": 112,
+            "end": 118
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "icon",
+            "span": {
+              "start": 165,
+              "end": 177
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-hidden",
+            "value": "true",
+            "span": {
+              "start": 178,
+              "end": 196
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "symbol",
+              "span": {
+                "start": 205,
+                "end": 211
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "symbol@112",
+                  "span": {
+                    "start": 205,
+                    "end": 211
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 204,
+              "end": 212
+            }
+          }
+        ],
+        "span": {
+          "start": 159,
+          "end": 224
+        }
+      }
+    },
+    {
+      "name": "Card",
+      "span": {
+        "start": 233,
+        "end": 428
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 282,
+              "end": 288
+            }
+          },
+          "binding": "title@264",
+          "span": {
+            "start": 275,
+            "end": 288
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ title: string }",
+          "span": {
+            "start": 273,
+            "end": 290
+          }
+        },
+        "span": {
+          "start": 262,
+          "end": 290
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "title@264",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 264,
+            "end": 269
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "card",
+            "span": {
+              "start": 314,
+              "end": 326
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "CardIcon",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "symbol",
+                "value": {
+                  "code": "\"+\"",
+                  "span": {
+                    "start": 351,
+                    "end": 354
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 344,
+                  "end": 354
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 334,
+              "end": 357
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "h3",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "title",
+                  "span": {
+                    "start": 369,
+                    "end": 374
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@264",
+                      "span": {
+                        "start": 369,
+                        "end": 374
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 368,
+                  "end": 375
+                }
+              }
+            ],
+            "span": {
+              "start": 364,
+              "end": 380
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "CardIcon",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "symbol",
+                "value": {
+                  "code": "\"-\"",
+                  "span": {
+                    "start": 404,
+                    "end": 407
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 397,
+                  "end": 407
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 387,
+              "end": 410
+            }
+          }
+        ],
+        "span": {
+          "start": 309,
+          "end": 421
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Card",
+      "span": {
+        "start": 233,
+        "end": 428
+      }
+    }
+  ],
+  "types": []
+}

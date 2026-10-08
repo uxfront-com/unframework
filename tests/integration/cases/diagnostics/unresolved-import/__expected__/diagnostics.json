@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF1202",
+    "severity": "error",
+    "message": "\"./Avatar.uf.tsx\" cannot be resolved: the compiler finds no component module there.",
+    "file": "diagnostics/unresolved-import/Profile.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 20,
+      "offset": 169
+    },
+    "end": {
+      "line": 3,
+      "column": 37,
+      "offset": 186
+    },
+    "help": "Import a `.uf.tsx` file of the project by its relative path, as in `./Field.uf.tsx`."
+  }
+]

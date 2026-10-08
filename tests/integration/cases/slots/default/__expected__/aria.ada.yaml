@@ -1,0 +1,7 @@
+- region "Welcome":
+  - heading "Welcome" [level=2]
+  - paragraph:
+    - text: Hello,
+    - strong: Ada
+    - text: "!"
+  - paragraph: Your children render in the panel.

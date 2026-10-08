@@ -1,4 +1,4 @@
-import { analyze } from "@unframework/analyzer";
+import { analyze, componentImports } from "@unframework/analyzer";
 import { formatOutput } from "@unframework/codegen";
 import type { OutputFile, Target } from "@unframework/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework/diagnostics";
@@ -9,6 +9,7 @@ import { parseModule } from "@unframework/parser";
 
 import { checkCapabilities } from "./capabilities.ts";
 import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";
+import type { Resolver } from "./resolver.ts";
 import { resolveTarget } from "./targets.ts";
 import type { TargetName } from "./targets.ts";
 
@@ -51,13 +52,13 @@ export interface CompileOptions {
   /** Each target's options, by target name. */
   targetOptions?: Readonly<Record<string, unknown>>;
   /**
-   * Resolves an imported `.uf.tsx` module to its public API (ADR-0053). `importer` is
-   * `filename`. It is pure and deterministic (P8): it analyses the child's declarations, never
-   * compiles it, so the output depends only on the source, the options and what it returns.
-   * Without it, or when it returns nothing, the import is UF1202. Not read yet: M3's core lane
-   * lowers imports through it.
+   * Resolves an imported `.uf.tsx` module to its public API (ADR-0053): `createFileResolver`
+   * reads files. `importer` is `filename`. It is pure and deterministic (P8): it analyses the
+   * child's declarations, never compiles it, so the output depends only on the source, the
+   * options and what it returns. Without it, or when it returns nothing, the import is UF1202;
+   * a resolver that throws is UF9001 as well.
    */
-  resolve?: (request: { specifier: string; importer: string }) => Promise<ModuleApi | undefined>;
+  resolve?: Resolver;
 }
 
 /** The result of {@link compile}. */
@@ -69,6 +70,11 @@ export interface CompileResult {
   diagnostics: Diagnostic[];
   /** Each target's files, by target name, in the order of `targets`. */
   outputs: Record<string, OutputFile[]>;
+  /**
+   * The component each output file is written for, by target name, then by the file's path:
+   * the unplugin loads a file's components under ids of their own (ADR-0053).
+   */
+  owners: Record<string, Record<string, string>>;
 }
 
 /**
@@ -83,18 +89,30 @@ export async function compile(source: string, options: CompileOptions): Promise<
   const diagnostics: Diagnostic[] = [];
   const targets = options.targets.map(resolveTarget);
   const outputs: Record<string, OutputFile[]> = {};
+  const owners: Record<string, Record<string, string>> = {};
   for (const target of targets) {
     if (Object.hasOwn(outputs, target.name)) {
       throw new TypeError(`Two targets are named "${target.name}".`);
     }
     outputs[target.name] = [];
+    owners[target.name] = {};
   }
 
   // The analyser's module, frozen: every plugin's module is compared with it, whatever the
   // plugins before it returned.
   let analysed: UfModule | undefined;
   try {
-    const analysis = analyze(parseModule(file, source));
+    const parsed = parseModule(file, source);
+    const imports = new Map<string, ModuleApi | undefined>();
+    for (const specifier of options.resolve ? componentImports(parsed) : []) {
+      try {
+        imports.set(specifier, await options.resolve!({ specifier, importer: file }));
+      } catch (error) {
+        imports.set(specifier, undefined);
+        diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
+      }
+    }
+    const analysis = analyze(parsed, { imports });
     diagnostics.push(...analysis.diagnostics);
     // The analyser keeps the IR's invariants by construction; a module that breaks one is a
     // compiler bug, and no target may emit from it.
@@ -133,14 +151,22 @@ export async function compile(source: string, options: CompileOptions): Promise<
   if (module) {
     for (const target of targets) {
       try {
-        outputs[target.name] = await emitTarget(target, module, source, options, diagnostics);
+        const emitted = await emitTarget(target, module, source, options, diagnostics);
+        outputs[target.name] = emitted.files;
+        owners[target.name] = emitted.owners;
       } catch (error) {
         diagnostics.push(internal(file, error, `The ${target.name} target failed`, target.name));
       }
     }
   }
 
-  return { filename: file, ir: module, diagnostics: sortDiagnostics(diagnostics), outputs };
+  return {
+    filename: file,
+    ir: module,
+    diagnostics: sortDiagnostics(diagnostics),
+    outputs,
+    owners,
+  };
 }
 
 /**
@@ -154,7 +180,7 @@ async function emitTarget(
   source: string,
   options: CompileOptions,
   diagnostics: Diagnostic[],
-): Promise<OutputFile[]> {
+): Promise<{ files: OutputFile[]; owners: Record<string, string> }> {
   const file = options.filename;
   diagnostics.push(...checkCapabilities(module, target));
   const written: OutputFile[] = [];
@@ -225,7 +251,12 @@ async function emitTarget(
       written.push(output);
     }
   }
-  return written;
+  return {
+    files: written,
+    owners: Object.fromEntries(
+      [...owners.values()].map(({ path, component }) => [path, component]),
+    ),
+  };
 }
 
 /**

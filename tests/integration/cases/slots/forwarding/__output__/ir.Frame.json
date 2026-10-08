@@ -1,0 +1,234 @@
+{
+  "irVersion": 1,
+  "file": "slots/forwarding/Frame.uf.tsx",
+  "components": [
+    {
+      "name": "Frame",
+      "span": {
+        "start": 121,
+        "end": 403
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 171,
+              "end": 177
+            }
+          },
+          "binding": "label@153",
+          "span": {
+            "start": 164,
+            "end": 177
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 162,
+            "end": 179
+          }
+        },
+        "span": {
+          "start": 151,
+          "end": 179
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@191",
+        "type": {
+          "code": "{ title?(): Element; default?(): Element }",
+          "span": {
+            "start": 211,
+            "end": 253
+          }
+        },
+        "slots": [
+          {
+            "name": "title",
+            "optional": true,
+            "span": {
+              "start": 213,
+              "end": 231
+            }
+          },
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 232,
+              "end": 251
+            }
+          }
+        ],
+        "span": {
+          "start": 185,
+          "end": 257
+        }
+      },
+      "bindings": [
+        {
+          "id": "label@153",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 153,
+            "end": 158
+          }
+        },
+        {
+          "id": "slots@191",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 191,
+            "end": 196
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "frame",
+            "span": {
+              "start": 282,
+              "end": 295
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 308,
+                "end": 313
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@153",
+                  "span": {
+                    "start": 308,
+                    "end": 313
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 296,
+              "end": 314
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Box",
+            "attributes": [],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [],
+                "forward": "default",
+                "span": {
+                  "start": 350,
+                  "end": 372
+                }
+              },
+              {
+                "slot": "title",
+                "children": [],
+                "forward": "title",
+                "span": {
+                  "start": 330,
+                  "end": 348
+                }
+              }
+            ],
+            "span": {
+              "start": 322,
+              "end": 381
+            }
+          }
+        ],
+        "span": {
+          "start": 273,
+          "end": 396
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Frame",
+      "span": {
+        "start": 121,
+        "end": 403
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Box.uf.tsx",
+      "file": "Box.uf.tsx",
+      "api": {
+        "file": "Box.uf.tsx",
+        "components": [
+          {
+            "name": "Box",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "title",
+                "optional": true
+              },
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Box",
+          "span": {
+            "start": 95,
+            "end": 98
+          }
+        }
+      ],
+      "span": {
+        "start": 88,
+        "end": 119
+      }
+    }
+  ]
+}

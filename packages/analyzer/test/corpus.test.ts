@@ -6,10 +6,11 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { catalogue } from "@unframework/diagnostics";
+import type { ModuleApi } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
 import { describe, expect, it } from "vitest";
 
-import { analyze } from "../src/index.ts";
+import { analyze, componentImports } from "../src/index.ts";
 
 const CASES = new URL("../../../tests/integration/cases/", import.meta.url).pathname;
 
@@ -41,6 +42,29 @@ const WARNINGS: Readonly<Record<string, readonly string[]>> = {
 
 const codesByName = new Map([...catalogue.values()].map((entry) => [entry.name, entry.code]));
 
+/**
+ * A case source analysed with the APIs of the files it imports in its case, as the compiler's
+ * file resolver gives them (ADR-0053).
+ */
+function analyzeCase(file: string) {
+  const parsed = parseModule(file, readFileSync(join(CASES, file), "utf8"));
+  const directory = file.slice(0, file.lastIndexOf("/"));
+  const imports = new Map<string, ModuleApi | undefined>();
+  for (const specifier of componentImports(parsed)) {
+    const child = join(directory, specifier);
+    let source: string;
+    try {
+      source = readFileSync(join(CASES, child), "utf8");
+    } catch {
+      imports.set(specifier, undefined);
+      continue;
+    }
+    const api = analyze(parseModule(child, source)).api;
+    imports.set(specifier, api && { ...api, file: specifier.slice(2) });
+  }
+  return analyze(parsed, { imports });
+}
+
 describe("the corpus", () => {
   const all = sources(CASES);
 
@@ -50,7 +74,7 @@ describe("the corpus", () => {
       const name = file.split("/")[1]!;
       const code = NAMED_OTHERWISE[name] ?? codesByName.get(name);
       expect(code, `no code is named ${name}`).toBeDefined();
-      const { diagnostics } = analyze(parseModule(file, readFileSync(join(CASES, file), "utf8")));
+      const { diagnostics } = analyzeCase(file);
       expect(diagnostics.length).toBeGreaterThan(0);
       expect(new Set(diagnostics.map((diagnostic) => diagnostic.code))).toEqual(new Set([code]));
     },
@@ -59,9 +83,7 @@ describe("the corpus", () => {
   it.each(all.filter((file) => !file.startsWith("diagnostics/")))(
     "%s compiles with no error, and only its own warnings",
     (file) => {
-      const { module, diagnostics } = analyze(
-        parseModule(file, readFileSync(join(CASES, file), "utf8")),
-      );
+      const { module, diagnostics } = analyzeCase(file);
       expect(module).toBeDefined();
       expect(diagnostics.map((diagnostic) => diagnostic.code)).toEqual(WARNINGS[file] ?? []);
     },

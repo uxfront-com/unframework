@@ -1,0 +1,245 @@
+{
+  "irVersion": 1,
+  "file": "components/three-levels/Page.uf.tsx",
+  "components": [
+    {
+      "name": "Page",
+      "span": {
+        "start": 41,
+        "end": 300
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 88,
+              "end": 94
+            }
+          },
+          "binding": "name@72",
+          "span": {
+            "start": 82,
+            "end": 94
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ name: string }",
+          "span": {
+            "start": 80,
+            "end": 96
+          }
+        },
+        "span": {
+          "start": 70,
+          "end": 96
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "name@72",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 72,
+            "end": 76
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Profile",
+            "span": {
+              "start": 124,
+              "end": 144
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Section",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "title",
+                "value": {
+                  "code": "`About ${name}`",
+                  "span": {
+                    "start": 168,
+                    "end": 183
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@72",
+                      "span": {
+                        "start": 177,
+                        "end": 181
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 161,
+                  "end": 184
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "body",
+                "value": {
+                  "code": "\"Three components deep.\"",
+                  "span": {
+                    "start": 190,
+                    "end": 214
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 185,
+                  "end": 214
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 152,
+              "end": 217
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Section",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "title",
+                "value": {
+                  "code": "\"Contact\"",
+                  "span": {
+                    "start": 239,
+                    "end": 248
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 233,
+                  "end": 248
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "body",
+                "value": {
+                  "code": "`Write to ${name}.`",
+                  "span": {
+                    "start": 255,
+                    "end": 274
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@72",
+                      "span": {
+                        "start": 267,
+                        "end": 271
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 249,
+                  "end": 275
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 224,
+              "end": 278
+            }
+          }
+        ],
+        "span": {
+          "start": 115,
+          "end": 293
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Page",
+      "span": {
+        "start": 41,
+        "end": 300
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Section.uf.tsx",
+      "file": "Section.uf.tsx",
+      "api": {
+        "file": "Section.uf.tsx",
+        "components": [
+          {
+            "name": "Section",
+            "export": "default",
+            "props": [
+              {
+                "name": "title",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "body",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "section"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Section",
+          "span": {
+            "start": 7,
+            "end": 14
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 39
+      }
+    }
+  ]
+}

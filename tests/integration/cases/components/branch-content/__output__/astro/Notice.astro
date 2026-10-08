@@ -1,0 +1,10 @@
+---
+interface Props {
+  text: string;
+  tone: "info" | "quiet";
+}
+
+const { text, tone } = Astro.props;
+---
+
+<p role="status" class:list={["notice", tone]}>{text}</p>

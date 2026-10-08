@@ -1,0 +1,101 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
+  "components": [
+    {
+      "name": "Layout",
+      "span": {
+        "start": 227,
+        "end": 421
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@255",
+        "type": {
+          "code": "{ title?(): Element; default?(): Element }",
+          "span": {
+            "start": 275,
+            "end": 317
+          }
+        },
+        "slots": [
+          {
+            "name": "title",
+            "optional": true,
+            "span": {
+              "start": 277,
+              "end": 295
+            }
+          },
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 296,
+              "end": 315
+            }
+          }
+        ],
+        "span": {
+          "start": 249,
+          "end": 321
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@255",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 255,
+            "end": 260
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "main",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h1",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "SlotOutlet",
+                "slot": "title",
+                "fallback": [],
+                "span": {
+                  "start": 354,
+                  "end": 371
+                }
+              }
+            ],
+            "span": {
+              "start": 350,
+              "end": 376
+            }
+          },
+          {
+            "kind": "SlotOutlet",
+            "slot": "default",
+            "fallback": [],
+            "span": {
+              "start": 383,
+              "end": 402
+            }
+          }
+        ],
+        "span": {
+          "start": 337,
+          "end": 414
+        }
+      }
+    }
+  ],
+  "exports": [],
+  "types": []
+}

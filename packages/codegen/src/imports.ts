@@ -1,4 +1,6 @@
 import type * as AST from "@oxc-project/types";
+import { walk } from "@unframework/ir";
+import type { UfComponent, UfModule } from "@unframework/ir";
 
 import { importDeclaration, importDefaultSpecifier, importSpecifier } from "./js/builders.ts";
 import { NameScope } from "./names.ts";
@@ -68,10 +70,15 @@ export class ImportSet {
     return local;
   }
 
-  /** Imports a default binding: `import local from "source"`. Returns the local name. */
-  addDefault(source: string, local: string): string {
+  /**
+   * Imports a default binding: `import local from "source"`. Returns the local name. `exact`
+   * keeps a name the source declares itself (a child component's local name, ADR-0053), which
+   * the scope reserves already.
+   */
+  addDefault(source: string, local: string, options: { exact?: boolean } = {}): string {
     const entry = this.#module(source);
-    entry.defaultName ??= this.scope.claim(local);
+    if (options.exact) this.scope.reserve(local);
+    entry.defaultName ??= options.exact ? local : this.scope.claim(local);
     return entry.defaultName;
   }
 
@@ -101,4 +108,82 @@ export class ImportSet {
       return importDeclaration(source, specifiers, allTypes ? "type" : "value");
     });
   }
+}
+
+/**
+ * A component a component's template renders, and how its output imports the child's output
+ * (ADR-0053): by the specifier of the child's output file, in the same output tree at the same
+ * relative path as the sources, as the default or by name.
+ */
+export interface ChildImport {
+  /** The name the template uses: the import's local name, or a component's own. */
+  local: string;
+  /** The child's own name, which names its output file. */
+  name: string;
+  /** `./Field.vue`, `../shared/field`: the child's output file as `file` names it. */
+  specifier: string;
+  /** How the child's output exports it: a script target keeps the source's export kind. */
+  export: "default" | "named";
+  /** Whether the component renders itself (recursion). */
+  self: boolean;
+}
+
+/**
+ * The components a component's template renders, each once, in the order the template first
+ * names them, with the specifier of each one's output file: `file(name)` is the output file a
+ * target names a component's by, without `./` (`Field.vue`, `field`). A child of the same module
+ * is a sibling file; the module's non-exported ones are exported by name from it, so their
+ * siblings can import them (ADR-0053).
+ */
+export function childImports(
+  component: UfComponent,
+  module: UfModule,
+  file: (name: string) => string,
+): ChildImport[] {
+  const used: string[] = [];
+  walk(component.render, {
+    enter(node) {
+      const names =
+        node.kind === "Component"
+          ? [node.component]
+          : node.kind === "Dynamic"
+            ? node.candidates.flatMap((each) => (each.kind === "Component" ? [each.component] : []))
+            : [];
+      for (const name of names) if (!used.includes(name)) used.push(name);
+    },
+  });
+  return used.map((local): ChildImport => {
+    for (const entry of module.imports ?? []) {
+      const imported = entry.names.find(
+        (name) => name.kind === "Component" && name.local === local,
+      );
+      if (!imported) continue;
+      const api = entry.api.components.find((each) =>
+        imported.imported === "default"
+          ? each.export === "default"
+          : each.export === "named" && each.name === imported.imported,
+      )!;
+      const directory = entry.file.includes("/")
+        ? entry.file.slice(0, entry.file.lastIndexOf("/"))
+        : "";
+      const path = `${directory ? `${directory}/` : ""}${file(api.name)}`;
+      return {
+        local,
+        name: api.name,
+        specifier: path.startsWith("../") ? path : `./${path}`,
+        export: api.export === "default" ? "default" : "named",
+        self: false,
+      };
+    }
+    const exported = module.exports.some(
+      (entry) => entry.local === local && entry.kind === "default",
+    );
+    return {
+      local,
+      name: local,
+      specifier: `./${file(local)}`,
+      export: exported ? "default" : "named",
+      self: local === component.name,
+    };
+  });
 }

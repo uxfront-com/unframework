@@ -131,16 +131,16 @@ export function nameProblem(
 ): Problem | undefined {
   const lower = name.toLowerCase();
   if (lower === "ref") {
-    return unsupported(
-      `A spread's \`${authored}\` key is not supported: a template ref is attached by the element's own \`ref={input}\`.`,
+    return reservedSpreadKey(
+      `A spread's \`${authored}\` key is not rendered: a template ref is attached by the element's own \`ref={input}\`.`,
     );
   }
   if (lower.startsWith("v-")) {
     return unsupported(`The \`${authored}\` directive is not supported yet.`);
   }
   if (lower.startsWith("on") && (/^on[A-Z]/.test(authored) || isEventName(lower.slice(2)))) {
-    return unsupported(
-      `Listeners in a spread, such as \`${authored}\`, are not supported yet: they land with fallthrough (M3). An element's own listener is written on it: \`onClick={save}\`.`,
+    return reservedSpreadKey(
+      `A spread's \`${authored}\` key is a listener, and a spread renders attributes: an element's own listener is written on it, \`onClick={save}\`.`,
     );
   }
   if (lower === "innerhtml") {
@@ -282,6 +282,18 @@ export const MUTED_REASON =
 
 export function unsupported(message: string, help?: string): Problem {
   return { code: "UF1002", message, ...(help ? { help } : {}) };
+}
+
+/**
+ * A spread's key that is no attribute (UF3049, ADR-0054): listeners, keys, refs and children each
+ * have their own channel, and a spread renders attributes only.
+ */
+export function reservedSpreadKey(message: string): Problem {
+  return {
+    code: "UF3049",
+    message,
+    help: "Leave the key out of the spread's type, and write it on the element itself.",
+  };
 }
 
 /** `a`, `a and b`, `a, b and c` (or `or`, for alternatives). */

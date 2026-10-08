@@ -1,0 +1,142 @@
+{
+  "irVersion": 1,
+  "file": "fallthrough/class-and-style/Tag.uf.tsx",
+  "components": [
+    {
+      "name": "Tag",
+      "span": {
+        "start": 0,
+        "end": 175
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 48,
+              "end": 54
+            }
+          },
+          "binding": "label@30",
+          "span": {
+            "start": 41,
+            "end": 54
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 39,
+            "end": 56
+          }
+        },
+        "span": {
+          "start": 28,
+          "end": 56
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@30",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 30,
+            "end": 35
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "tag",
+            "span": {
+              "start": 81,
+              "end": 92
+            }
+          },
+          {
+            "kind": "Style",
+            "declarations": [
+              {
+                "kind": "Static",
+                "property": "padding",
+                "value": "2px 6px",
+                "span": {
+                  "start": 100,
+                  "end": 116
+                }
+              },
+              {
+                "kind": "Static",
+                "property": "color",
+                "value": "rgb(30, 30, 30)",
+                "span": {
+                  "start": 118,
+                  "end": 140
+                }
+              }
+            ],
+            "span": {
+              "start": 93,
+              "end": 141
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 150,
+                "end": 155
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@30",
+                  "span": {
+                    "start": 150,
+                    "end": 155
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 149,
+              "end": 156
+            }
+          }
+        ],
+        "span": {
+          "start": 75,
+          "end": 168
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Tag",
+      "span": {
+        "start": 0,
+        "end": 175
+      }
+    }
+  ],
+  "types": []
+}

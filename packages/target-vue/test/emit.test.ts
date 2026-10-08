@@ -803,4 +803,123 @@ export default function Silent() {
     // lib.dom has `ErrorEvent`; `@vue/runtime-dom` types `onError` with `Event`.
     expect(vueEventInterface("error")).toBe("Event");
   });
+
+  describe("composition (ADR-0053, ADR-0054)", () => {
+    /** Every file a source emits, by path. */
+    async function emitAll(source: string): Promise<Record<string, string>> {
+      const files = await emitFormatted(lower(source));
+      return Object.fromEntries(files.map((file) => [file.path, file.contents]));
+    }
+
+    it("imports a component of the same file, binds slots it tests, and exposes last", async () => {
+      const files = await emitAll(`
+import { defineExpose, defineOptions, defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+function Icon({ name }: { name: string }) {
+  return <i class="icon">{name}</i>;
+}
+
+export default function Card({ title }: { title: string }) {
+  const slots = defineSlots<{ default?(): Element; meta?(props: { size: number }): Element }>();
+  defineOptions({ inheritAttrs: false });
+  function open() {}
+  defineExpose({ open });
+  return (
+    <section>
+      <Icon name="star" />
+      {slots.meta ? <small>{slots.meta?.({ size: title.length })}</small> : null}
+      {slots.default?.() ?? title}
+    </section>
+  );
+}`);
+      expect(Object.keys(files)).toEqual(["Icon.vue", "Card.vue"]);
+      expect(files["Card.vue"]).toBe(
+        [
+          '<script setup lang="ts">',
+          'import Icon from "./Icon.vue";',
+          "",
+          "const { title } = defineProps<{ title: string }>();",
+          "const slots = defineSlots<{ default?(): unknown; meta?(props: { size: number }): unknown }>();",
+          "defineOptions({ inheritAttrs: false });",
+          "",
+          "function open() {}",
+          "",
+          "defineExpose({ open });",
+          "</script>",
+          "",
+          "<template>",
+          "  <section>",
+          '    <Icon name="star" />',
+          '    <small v-if="slots.meta">',
+          '      <slot name="meta" :size="title.length" />',
+          "    </small>",
+          "    <slot>{{ title }}</slot>",
+          "  </section>",
+          "</template>",
+          "",
+        ].join("\n"),
+      );
+    });
+
+    it("writes props, events and fills in Vue's spelling, and forwards a slot under its presence", async () => {
+      const files = await emitAll(`
+import { defineEmits, defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+function Field({ itemLabel }: { itemLabel: string }) {
+  const slots = defineSlots<{ default?(): Element; hint?(props: { size: number }): Element }>();
+  const emit = defineEmits<{ levelChange: [level: number] }>();
+  return (
+    <div onClick={() => emit("levelChange", 1)} role="presentation">
+      {itemLabel}
+      {slots.hint?.({ size: 1 })}
+      {slots.default?.()}
+    </div>
+  );
+}
+
+export default function Form() {
+  const slots = defineSlots<{ default?(): Element }>();
+  function change(level: number) {
+    console.info(level);
+  }
+  return (
+    <Field itemLabel="Name" onLevelChange={change}>
+      {{ hint: ({ size }) => <b>{size}</b>, default: slots.default }}
+    </Field>
+  );
+}`);
+      expect(files["Form.vue"]).toContain(
+        [
+          "<template>",
+          '  <Field item-label="Name" @level-change="change">',
+          '    <template v-if="slots.default" #default>',
+          "      <slot />",
+          "    </template>",
+          '    <template #hint="{ size }">',
+          "      <b>{{ size }}</b>",
+          "    </template>",
+          "  </Field>",
+          "</template>",
+        ].join("\n"),
+      );
+    });
+
+    it("names a component that renders itself, rather than importing its own file", async () => {
+      expect(
+        await emitSource(
+          "export default function Tree({ depth }: { depth: number }) { return <div>{depth > 0 ? <Tree depth={depth - 1} /> : null}</div>; }",
+        ),
+      ).toBe(
+        sfc(
+          [
+            "const { depth } = defineProps<{ depth: number }>();",
+            'defineOptions({ name: "Tree" });',
+          ],
+          ["<div>", '  <Tree v-if="depth > 0" :depth="depth - 1" />', "</div>"],
+        ),
+      );
+    });
+  });
 });

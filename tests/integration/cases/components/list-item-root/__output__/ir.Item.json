@@ -1,0 +1,115 @@
+{
+  "irVersion": 1,
+  "file": "components/list-item-root/Item.uf.tsx",
+  "components": [
+    {
+      "name": "Item",
+      "span": {
+        "start": 92,
+        "end": 194
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 141,
+              "end": 147
+            }
+          },
+          "binding": "label@123",
+          "span": {
+            "start": 134,
+            "end": 147
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 132,
+            "end": 149
+          }
+        },
+        "span": {
+          "start": 121,
+          "end": 149
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@123",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 123,
+            "end": 128
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "li",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "item",
+            "span": {
+              "start": 166,
+              "end": 178
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 180,
+                "end": 185
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@123",
+                  "span": {
+                    "start": 180,
+                    "end": 185
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 179,
+              "end": 186
+            }
+          }
+        ],
+        "span": {
+          "start": 162,
+          "end": 191
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Item",
+      "span": {
+        "start": 92,
+        "end": 194
+      }
+    }
+  ],
+  "types": []
+}

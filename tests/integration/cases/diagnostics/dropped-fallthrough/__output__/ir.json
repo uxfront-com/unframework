@@ -1,0 +1,66 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/dropped-fallthrough/Page.uf.tsx",
+  "components": [
+    {
+      "name": "Stack",
+      "span": {
+        "start": 122,
+        "end": 212
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "First",
+                "span": {
+                  "start": 168,
+                  "end": 173
+                }
+              }
+            ],
+            "span": {
+              "start": 165,
+              "end": 177
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Second",
+                "span": {
+                  "start": 187,
+                  "end": 193
+                }
+              }
+            ],
+            "span": {
+              "start": 184,
+              "end": 197
+            }
+          }
+        ],
+        "span": {
+          "start": 156,
+          "end": 205
+        }
+      }
+    }
+  ],
+  "exports": [],
+  "types": []
+}

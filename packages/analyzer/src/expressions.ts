@@ -26,6 +26,7 @@ import {
   createExpression,
   createFunctionCode,
   createGlobalReference,
+  createSlotReference,
   createNarrowedPath,
   createParameter,
   createParameterPattern,
@@ -698,7 +699,7 @@ class Walk {
           node,
           "JSX cannot be a value: only a child, a branch of a conditional child or the element a list's `.map` renders.",
           {
-            help: "Write the JSX as a child, or extract a component (composition lands in M3).",
+            help: "Write the JSX as a child, pass it in a slot, or extract a component.",
           },
         );
         this.#skip(node);
@@ -1106,9 +1107,11 @@ class Walk {
         }
         this.refs.push(createBindingReference(binding.id, span(node), shorthand));
         return FUNCTION;
-      // Composition's bindings (ADR-0055): the analyser declares none before M3 lowers them.
-      case "model":
       case "slots":
+        this.#slotUse(node, `\`${name}\` is used whole`);
+        return UNKNOWN;
+      // Composition's bindings (ADR-0055) the analyser does not declare in the setup yet.
+      case "model":
       case "slotScope":
       case "context":
       case "component":
@@ -1308,6 +1311,7 @@ class Walk {
       }
       const binding = setupBindingOf(object, context);
       if (binding && isRef(binding)) return this.#refValue(node, object, binding);
+      if (binding?.kind === "slots") return this.#slotPresence(node, binding);
       if (this.#isEvent(object)) return this.#eventMember(node, false);
     }
     this.#memberChain.push(node);
@@ -1363,6 +1367,41 @@ class Walk {
     return this.#narrowed(
       node,
       node.optional && mayBeNullish(receiver) ? union(result, UNDEFINED) : result,
+    );
+  }
+
+  /**
+   * `slots.title`, whether the parent filled the slot (ADR-0054): a template reads it, as a
+   * condition, and nothing else reads `slots` but a slot's call or its forwarding (UF3041).
+   */
+  #slotPresence(node: AST.MemberExpression, binding: SetupBinding): Kinds {
+    const slot =
+      !node.computed && node.property.type === "Identifier" ? node.property.name : undefined;
+    const declared =
+      slot !== undefined && this.#context.slots?.slots.some((each) => each.name === slot);
+    if (this.#mode !== "render" || !declared || node.optional || node.object.start !== node.start) {
+      this.#slotUse(
+        node,
+        this.#mode !== "render"
+          ? `\`${binding.name}\` is read in setup code, which runs where no template is`
+          : declared
+            ? `\`${this.#context.source.slice(node.start, node.end)}\` is no plain read of a slot`
+            : `\`${slot ?? "this"}\` is no slot of this component`,
+      );
+      if (node.computed) this.value(node.property, "value", false);
+      return UNKNOWN;
+    }
+    this.refs.push(createSlotReference(slot!, span(node)));
+    return union(FUNCTION, UNDEFINED);
+  }
+
+  /** A use of `slots` other than rendering, testing or forwarding a slot (UF3041). */
+  #slotUse(node: { start: number; end: number }, what: string): void {
+    this.#context.reporter.report(
+      "UF3041",
+      node,
+      `${what}: a slot is rendered (\`{slots.title?.()}\`), tested in a template (\`slots.title ? … : …\`) or forwarded (\`{{ title: slots.title }}\`), and nothing else.`,
+      { help: "Render, test or forward a slot `defineSlots` declares." },
     );
   }
 

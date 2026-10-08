@@ -1,0 +1,11 @@
+{
+  "description": "A slot object fills a child's named slots and its default one, each rendered where the child places it.",
+  "main": "Post.uf.tsx",
+  "ssr": {
+    "grace": {
+      "props": {
+        "author": "Grace"
+      }
+    }
+  }
+}

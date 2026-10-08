@@ -1,0 +1,223 @@
+{
+  "irVersion": 1,
+  "file": "components/list-item-root/Menu.uf.tsx",
+  "components": [
+    {
+      "name": "Menu",
+      "span": {
+        "start": 35,
+        "end": 241
+      },
+      "props": [
+        {
+          "name": "entries",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 88,
+              "end": 96
+            }
+          },
+          "binding": "entries@66",
+          "span": {
+            "start": 79,
+            "end": 96
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ entries: string[] }",
+          "span": {
+            "start": 77,
+            "end": 98
+          }
+        },
+        "span": {
+          "start": 64,
+          "end": 98
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "entries@66",
+          "name": "entries",
+          "kind": "prop",
+          "span": {
+            "start": 66,
+            "end": 73
+          }
+        },
+        {
+          "id": "entry@160",
+          "name": "entry",
+          "kind": "loopVar",
+          "span": {
+            "start": 160,
+            "end": 165
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "ul",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Menu",
+            "span": {
+              "start": 121,
+              "end": 138
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "For",
+            "source": {
+              "code": "entries",
+              "span": {
+                "start": 147,
+                "end": 154
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "entries@66",
+                  "span": {
+                    "start": 147,
+                    "end": 154
+                  }
+                }
+              ]
+            },
+            "item": "entry@160",
+            "key": {
+              "code": "entry",
+              "span": {
+                "start": 191,
+                "end": 196
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "entry@160",
+                  "span": {
+                    "start": 191,
+                    "end": 196
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Component",
+              "component": "Item",
+              "attributes": [
+                {
+                  "kind": "Prop",
+                  "name": "label",
+                  "value": {
+                    "code": "entry",
+                    "span": {
+                      "start": 205,
+                      "end": 210
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "entry@160",
+                        "span": {
+                          "start": 205,
+                          "end": 210
+                        }
+                      }
+                    ]
+                  },
+                  "span": {
+                    "start": 198,
+                    "end": 211
+                  }
+                }
+              ],
+              "fills": [],
+              "span": {
+                "start": 180,
+                "end": 214
+              }
+            },
+            "span": {
+              "start": 147,
+              "end": 223
+            }
+          }
+        ],
+        "span": {
+          "start": 117,
+          "end": 234
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Menu",
+      "span": {
+        "start": 35,
+        "end": 241
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Item.uf.tsx",
+      "file": "Item.uf.tsx",
+      "api": {
+        "file": "Item.uf.tsx",
+        "components": [
+          {
+            "name": "Item",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "li"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Item",
+          "span": {
+            "start": 7,
+            "end": 11
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 33
+      }
+    }
+  ]
+}

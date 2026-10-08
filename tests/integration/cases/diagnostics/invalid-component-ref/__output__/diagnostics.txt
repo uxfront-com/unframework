@@ -1,0 +1,8 @@
+error[UF3046]: `Hint` exposes nothing, so a ref on it holds nothing a parent can call.
+  --> diagnostics/invalid-component-ref/Form.uf.tsx:13:13
+   |
+13 |       <Hint ref={hint} text="Use your work email." />
+   |             ^^^^^^^^^^
+   |
+   = help: Expose the functions a parent calls from Hint with `defineExpose({ … })`, or remove the ref.
+   = see: https://unframework.dev/diagnostics/UF3046

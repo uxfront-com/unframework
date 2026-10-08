@@ -1,4 +1,6 @@
 export { compile } from "./compile.ts";
+export { createFileResolver } from "./resolver.ts";
+export type { FileResolverOptions, ResolveRequest, Resolver } from "./resolver.ts";
 export type {
   CompileOptions,
   CompileResult,

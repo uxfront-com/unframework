@@ -23,6 +23,7 @@ import {
   WHITESPACE_DROPPING_ELEMENTS,
 } from "@unframework/ir";
 import type {
+  ComponentNode,
   ElementNode,
   IfBranch,
   IfNode,
@@ -36,6 +37,7 @@ import { visitorKeys } from "@unframework/parser";
 
 import { lowerAttributes } from "./attributes.ts";
 import { unportableCharacters } from "./characters.ts";
+import { lowerComponent, lowerSlotOutlet } from "./components.ts";
 import { reportCharacter, reportDivergence, reportHtmlOnlyReference } from "./context.ts";
 import { checkPlacement, checkTag } from "./elements.ts";
 import type { OpenElement } from "./elements.ts";
@@ -62,7 +64,8 @@ export const ROOT: Place = { ancestors: [], namespace: "html" };
 
 /** An element lowered, and the `key` a list lifts off it. */
 export interface LoweredElement {
-  element: ElementNode | undefined;
+  /** The element, or a component element (ADR-0053). */
+  element: ElementNode | ComponentNode | undefined;
   key: AST.JSXAttribute | undefined;
   /**
    * Whether the element or anything inside it binds (a binding, an expression, a conditional,
@@ -93,8 +96,8 @@ export function lowerElement(
     return { element: undefined, key: undefined, binds: true };
   }
   if (/^[A-Z]/.test(name.name)) {
-    reporter.unsupported(name, `Child components such as <${name.name}> are not supported yet.`);
-    return { element: undefined, key: undefined, binds: true };
+    const lowered = lowerComponent(node, name, place, render, listBody);
+    return { element: lowered.node, key: lowered.key, binds: true };
   }
   const check = checkTag(node, name, place.namespace, place.ancestors.length === 0, reporter);
   if (!check.as) {
@@ -277,6 +280,20 @@ class Children {
   }
 }
 
+/**
+ * Lowers an expression as content of its own: what a fill or a slot's fallback renders
+ * (ADR-0054), as a branch of a conditional is lowered.
+ */
+export function lowerContent(
+  expression: AST.Expression,
+  place: Place,
+  render: RenderContext,
+): RenderNode[] {
+  const children = new Children(place, render);
+  lowerChild(expression, span(expression), children, place, render);
+  return children.finish();
+}
+
 /** Lowers JSX children in a place. */
 export function lowerChildren(
   items: readonly AST.JSXChild[],
@@ -367,6 +384,14 @@ function lowerChild(
     (expression.type === "Literal" && expression.value === null) ||
     (expression.type === "Identifier" && expression.name === "undefined")
   ) {
+    return;
+  }
+  // A slot of the component, rendered with its fallback (ADR-0054).
+  const outlet = lowerSlotOutlet(expression, at, place, render);
+  if (outlet) {
+    children.flush();
+    children.binds = true;
+    children.node(outlet.node);
     return;
   }
   if (expression.type === "Literal" && typeof expression.value === "boolean") {

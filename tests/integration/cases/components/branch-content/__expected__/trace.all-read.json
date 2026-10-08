@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Mark all read' })",
+      "dom": [
+        "<div class=\"inbox\">",
+        "  <p class=\"notice quiet\" role=\"status\">",
+        "    \"All read\"",
+        "  </p>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Mark all read\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- status: All read",
+        "- button \"Mark all read\""
+      ],
+      "events": {}
+    }
+  ]
+}

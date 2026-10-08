@@ -1,0 +1,219 @@
+{
+  "irVersion": 1,
+  "file": "expose/focus/SearchField.uf.tsx",
+  "components": [
+    {
+      "name": "SearchField",
+      "span": {
+        "start": 61,
+        "end": 372
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 117,
+              "end": 123
+            }
+          },
+          "binding": "label@99",
+          "span": {
+            "start": 110,
+            "end": 123
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 108,
+            "end": 125
+          }
+        },
+        "span": {
+          "start": 97,
+          "end": 125
+        }
+      },
+      "types": [],
+      "exposes": {
+        "functions": [
+          "focus@192"
+        ],
+        "span": {
+          "start": 234,
+          "end": 257
+        }
+      },
+      "bindings": [
+        {
+          "id": "label@99",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 99,
+            "end": 104
+          }
+        },
+        {
+          "id": "input@137",
+          "name": "input",
+          "kind": "templateRef",
+          "span": {
+            "start": 137,
+            "end": 142
+          }
+        },
+        {
+          "id": "focus@192",
+          "name": "focus",
+          "kind": "localFn",
+          "span": {
+            "start": 192,
+            "end": 197
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "TemplateRef",
+          "binding": "input@137",
+          "type": {
+            "code": "HTMLInputElement",
+            "span": {
+              "start": 160,
+              "end": 176
+            }
+          },
+          "span": {
+            "start": 131,
+            "end": 180
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "focus@192",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    input.value?.focus();\n  }",
+              "span": {
+                "start": 200,
+                "end": 231
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "input@137",
+                  "span": {
+                    "start": 206,
+                    "end": 217
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 197,
+              "end": 231
+            }
+          },
+          "span": {
+            "start": 183,
+            "end": 231
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "label",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "search",
+            "span": {
+              "start": 281,
+              "end": 295
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 304,
+                "end": 309
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@99",
+                  "span": {
+                    "start": 304,
+                    "end": 309
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 303,
+              "end": 310
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "input",
+            "attributes": [
+              {
+                "kind": "Ref",
+                "binding": "input@137",
+                "span": {
+                  "start": 324,
+                  "end": 335
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "search",
+                "span": {
+                  "start": 336,
+                  "end": 349
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 317,
+              "end": 352
+            }
+          }
+        ],
+        "span": {
+          "start": 274,
+          "end": 365
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SearchField",
+      "span": {
+        "start": 61,
+        "end": 372
+      }
+    }
+  ],
+  "types": []
+}

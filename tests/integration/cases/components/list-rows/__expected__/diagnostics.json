@@ -1,0 +1,121 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit component yet: composition lands in M3.",
+    "file": "components/list-rows/Tasks.uf.tsx",
+    "start": {
+      "line": 26,
+      "column": 11,
+      "offset": 627
+    },
+    "end": {
+      "line": 26,
+      "column": 66,
+      "offset": 682
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "file": "components/list-rows/Tasks.uf.tsx",
+    "start": {
+      "line": 26,
+      "column": 11,
+      "offset": 627
+    },
+    "end": {
+      "line": 26,
+      "column": 66,
+      "offset": 682
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
+    "file": "components/list-rows/Tasks.uf.tsx",
+    "start": {
+      "line": 26,
+      "column": 11,
+      "offset": 627
+    },
+    "end": {
+      "line": 26,
+      "column": 66,
+      "offset": 682
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit component yet: composition lands in M3.",
+    "file": "components/list-rows/Tasks.uf.tsx",
+    "start": {
+      "line": 26,
+      "column": 11,
+      "offset": 627
+    },
+    "end": {
+      "line": 26,
+      "column": 66,
+      "offset": 682
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit component yet: composition lands in M3.",
+    "file": "components/list-rows/Tasks.uf.tsx",
+    "start": {
+      "line": 26,
+      "column": 11,
+      "offset": 627
+    },
+    "end": {
+      "line": 26,
+      "column": 66,
+      "offset": 682
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit component yet: composition lands in M3.",
+    "file": "components/list-rows/Tasks.uf.tsx",
+    "start": {
+      "line": 26,
+      "column": 11,
+      "offset": 627
+    },
+    "end": {
+      "line": 26,
+      "column": 66,
+      "offset": 682
+    },
+    "target": "svelte"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "components/list-rows/Tasks.uf.tsx",
+    "start": {
+      "line": 29,
+      "column": 29,
+      "offset": 736
+    },
+    "end": {
+      "line": 29,
+      "column": 42,
+      "offset": 749
+    },
+    "target": "astro"
+  }
+]

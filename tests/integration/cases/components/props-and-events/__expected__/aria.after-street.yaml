@@ -1,0 +1,6 @@
+- region "Address":
+  - text: Street
+  - button "Clear Street"
+  - text: Lisbon
+  - button "Clear Lisbon"
+  - status: "Cleared: Street"

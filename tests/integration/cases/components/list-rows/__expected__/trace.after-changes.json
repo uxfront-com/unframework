@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Add a task' })",
+      "dom": [
+        "<div>",
+        "  <div aria-label=\"Tasks\" role=\"list\">",
+        "    <div class=\"row\" role=\"listitem\">",
+        "      \"Read mail\"",
+        "    </div>",
+        "    <div class=\"done row\" role=\"listitem\">",
+        "      \"Plan trip (done)\"",
+        "    </div>",
+        "    <div class=\"row\" role=\"listitem\">",
+        "      \"Water plants\"",
+        "    </div>",
+        "  </div>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Add a task\"",
+        "  </button>",
+        "  <button type=\"button\">",
+        "    \"Finish the first\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- list \"Tasks\":",
+        "  - listitem: Read mail",
+        "  - listitem: Plan trip (done)",
+        "  - listitem: Water plants",
+        "- button \"Add a task\"",
+        "- button \"Finish the first\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "click getByRole('button', { name: 'Finish the first' })",
+      "dom": [
+        "<div>",
+        "  <div aria-label=\"Tasks\" role=\"list\">",
+        "    <div class=\"done row\" role=\"listitem\">",
+        "      \"Read mail (done)\"",
+        "    </div>",
+        "    <div class=\"done row\" role=\"listitem\">",
+        "      \"Plan trip (done)\"",
+        "    </div>",
+        "    <div class=\"row\" role=\"listitem\">",
+        "      \"Water plants\"",
+        "    </div>",
+        "  </div>",
+        "  <button type=\"button\">",
+        "    \"Add a task\"",
+        "  </button>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Finish the first\"",
+        "  </button>",
+        "</div>"
+      ],
+      "aria": [
+        "- list \"Tasks\":",
+        "  - listitem: Read mail (done)",
+        "  - listitem: Plan trip (done)",
+        "  - listitem: Water plants",
+        "- button \"Add a task\"",
+        "- button \"Finish the first\""
+      ],
+      "events": {}
+    }
+  ]
+}

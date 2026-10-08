@@ -155,11 +155,12 @@ function tagProblem(node: AST.JSXElement, tag: string, root: boolean): Problem |
     };
   }
   if (isSvgElement(tag)) {
-    // A component's root decides its parent's namespace, which composition (M3) brings.
+    // A component's root takes its namespace from its parent, which Vue's templates cannot
+    // declare (ADR-0054): it lands with M8.
     return root
       ? {
           code: "UF1002",
-          message: `A component whose root is an SVG <${tag}> is not supported yet: it lands with composition (M3).`,
+          message: `A component whose root is an SVG <${tag}> is not supported yet: its namespace comes from its parent, which lands in M8.`,
           help: "Make the <svg> the root.",
         }
       : {
@@ -257,16 +258,8 @@ function svgPlacementProblem(tag: string, parent: OpenElement): Problem | undefi
 function placementProblem(tag: string, ancestors: readonly OpenElement[]): Problem | undefined {
   const parent = ancestors.at(-1);
   const parents = REQUIRED_PARENTS.get(tag);
-  if (!parent) {
-    // A component's root: it cannot know its parent yet, so it cannot need a particular one.
-    // Composition (M3) can lift this for a row or a cell component rendered in its table.
-    return parents
-      ? {
-          code: "UF3003",
-          message: `<${tag}> cannot be a component's root: it belongs inside ${list(tags(parents), "or")}, and a component does not know its parent.`,
-        }
-      : undefined;
-  }
+  // A component's root: the parent's compile checks it where the component sits (ADR-0054).
+  if (!parent) return undefined;
   const opened = (element: OpenElement, message: string): RelatedInformation[] => [
     { span: element.name, message },
   ];

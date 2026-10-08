@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Clear Street' })",
+      "dom": [
+        "<section aria-label=\"Address\">",
+        "  <div class=\"field info\">",
+        "    <span>",
+        "      \"Street\"",
+        "    </span>",
+        "    <button type=\"button\" uf:focused=\"\">",
+        "      \"Clear Street\"",
+        "    </button>",
+        "  </div>",
+        "  <div class=\"field warn\">",
+        "    <span>",
+        "      \"Lisbon\"",
+        "    </span>",
+        "    <button type=\"button\">",
+        "      \"Clear Lisbon\"",
+        "    </button>",
+        "  </div>",
+        "  <output>",
+        "    \"Cleared: Street\"",
+        "  </output>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Address\":",
+        "  - text: Street",
+        "  - button \"Clear Street\"",
+        "  - text: Lisbon",
+        "  - button \"Clear Lisbon\"",
+        "  - status: \"Cleared: Street\""
+      ],
+      "events": {}
+    }
+  ]
+}

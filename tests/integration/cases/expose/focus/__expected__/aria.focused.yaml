@@ -1,0 +1,4 @@
+- banner:
+  - text: Find
+  - searchbox "Find"
+  - button "Search"

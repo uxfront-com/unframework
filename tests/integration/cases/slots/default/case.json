@@ -1,0 +1,11 @@
+{
+  "description": "A component's children fill its default slot, which it renders after its own heading.",
+  "main": "Greeting.uf.tsx",
+  "ssr": {
+    "ada": {
+      "props": {
+        "name": "Ada"
+      }
+    }
+  }
+}

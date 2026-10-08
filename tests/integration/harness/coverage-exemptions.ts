@@ -2,6 +2,7 @@
 // from the corpus; an entry here that the corpus covers fails the gate, so the lists only
 // shrink as cases arrive.
 import type { CapabilityName } from "@unframework/codegen";
+import type { TargetName } from "@unframework/compiler";
 
 /** The families of IR kinds the gate requires a case for (`KIND_RECORDS` in `coverage.ts`). */
 export type KindFamily =
@@ -15,9 +16,30 @@ export type KindFamily =
 
 // Composition's contract lands before its lowering (ADR-0055): each entry names the M3 lane
 // whose case removes it (the M3 plan's lanes).
-const COMPONENTS = "M3's E1 lane (components, slots, fallthrough and expose) adds its first case.";
 const MODELS = "M3's E2 lane (models, context and `<component is>`) adds its first case.";
 const LAYER_2 = "M3's G lane (layer-2 cross-component checks) adds its first case.";
+
+/**
+ * Each target's M3 lane, which emits composition: until it lands, the target reports a case's
+ * composition as UF1002 (its quarantine lists the cases), so its cells have no case yet.
+ */
+const LANES: Readonly<Record<Exclude<TargetName, "vue">, string>> = {
+  react: "React's M3 lane (UXF-315) emits composition, and its cases cover the cell.",
+  svelte: "Svelte's M3 lane (UXF-316) emits composition, and its cases cover the cell.",
+  solid: "Solid's M3 lane (UXF-317) emits composition, and its cases cover the cell.",
+  angular: "Angular's M3 lane (UXF-318) emits composition, and its cases cover the cell.",
+  qwik: "Qwik's M3 lane (UXF-319) emits composition, and its cases cover the cell.",
+  astro: "Astro's M3 lane (UXF-320) emits composition, and its cases cover the cell.",
+};
+
+/** The lanes of every target but those whose cell is unsupported. */
+function lanesBut(
+  ...unsupported: Exclude<TargetName, "vue">[]
+): Partial<Record<TargetName, string>> {
+  return Object.fromEntries(
+    Object.entries(LANES).filter(([target]) => !unsupported.includes(target as never)),
+  );
+}
 
 /**
  * IR kinds that no case has yet, by family, and why none can: a kind a milestone adds before
@@ -26,20 +48,14 @@ const LAYER_2 = "M3's G lane (layer-2 cross-component checks) adds its first cas
 export const EXEMPT_KINDS: Readonly<Partial<Record<KindFamily, Readonly<Record<string, string>>>>> =
   {
     node: {
-      Component: COMPONENTS,
-      SlotOutlet: COMPONENTS,
       Dynamic: MODELS,
     },
     attribute: {
       Model: MODELS,
-      Prop: COMPONENTS,
-      Listener: COMPONENTS,
       ModelBinding: MODELS,
     },
     binding: {
       model: MODELS,
-      slots: COMPONENTS,
-      slotScope: COMPONENTS,
       context: MODELS,
       component: MODELS,
     },
@@ -47,9 +63,6 @@ export const EXEMPT_KINDS: Readonly<Partial<Record<KindFamily, Readonly<Record<s
       Model: MODELS,
       Provide: MODELS,
       Inject: MODELS,
-    },
-    "code reference": {
-      Slot: COMPONENTS,
     },
   };
 
@@ -59,11 +72,7 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
     "Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
   UF9001:
     "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
-  UF1202: COMPONENTS,
   UF2028: MODELS,
-  UF2029: COMPONENTS,
-  UF2030: COMPONENTS,
-  UF2031: COMPONENTS,
   UF2032: MODELS,
   UF2033: MODELS,
   UF2034: MODELS,
@@ -72,37 +81,33 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
   UF3037: LAYER_2,
   UF3038: LAYER_2,
   UF3039: LAYER_2,
-  UF3040: COMPONENTS,
-  UF3041: COMPONENTS,
   UF3042: MODELS,
-  UF3043: COMPONENTS,
   UF3044: MODELS,
-  UF3045: COMPONENTS,
-  UF3046: COMPONENTS,
-  UF3047: COMPONENTS,
-  UF3048: COMPONENTS,
-  UF3049: COMPONENTS,
 };
 
-/** Capabilities that no case uses yet, on any target that supports them. */
-export const EXEMPT_CAPABILITIES: Readonly<Partial<Record<CapabilityName, string>>> = {
+/**
+ * Capabilities that no case uses yet, on every target that supports them, or on the targets an
+ * entry names.
+ */
+export const EXEMPT_CAPABILITIES: Readonly<
+  Partial<Record<CapabilityName, string | Partial<Record<TargetName, string>>>>
+> = {
   listbox:
     "Vue, the reference target, cannot render a single-selection list box on its client (ADR-0033), so no case can hold one while Vue writes the shared expectations. M3's form cases add one, with `requires` to skip Vue and another reviewed source of expectations.",
-  component: COMPONENTS,
-  "component-event": COMPONENTS,
-  "default-slot": COMPONENTS,
-  "named-slot": COMPONENTS,
-  "scoped-slot": COMPONENTS,
-  "slot-fallback": COMPONENTS,
-  "default-slot-presence": COMPONENTS,
-  "slot-forwarding": COMPONENTS,
+  component: lanesBut(),
+  "component-event": lanesBut("astro"),
+  "default-slot": lanesBut(),
+  "named-slot": lanesBut(),
+  "scoped-slot": lanesBut(),
+  "slot-fallback": lanesBut(),
+  "default-slot-presence": lanesBut("angular", "qwik"),
+  "slot-forwarding": lanesBut(),
   model: MODELS,
   "two-way-binding": MODELS,
   "model-array": MODELS,
   "model-modifiers": MODELS,
-  fallthrough: COMPONENTS,
-  "contextual-root": COMPONENTS,
-  expose: COMPONENTS,
+  fallthrough: lanesBut(),
+  expose: lanesBut("astro"),
   context: MODELS,
   "reactive-context": MODELS,
   "dynamic-component": MODELS,

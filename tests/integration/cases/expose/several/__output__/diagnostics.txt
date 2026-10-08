@@ -1,0 +1,111 @@
+error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
+ --> expose/several/Controls.uf.tsx:9:7
+  |
+9 |       <Counter ref={counter} start={10} />
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (astro): The astro target does not emit component yet: composition lands in M3.
+ --> expose/several/Controls.uf.tsx:9:7
+  |
+9 |       <Counter ref={counter} start={10} />
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
+ --> expose/several/Controls.uf.tsx:9:7
+  |
+9 |       <Counter ref={counter} start={10} />
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
+ --> expose/several/Controls.uf.tsx:9:7
+  |
+9 |       <Counter ref={counter} start={10} />
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (solid): The solid target does not emit component yet: composition lands in M3.
+ --> expose/several/Controls.uf.tsx:9:7
+  |
+9 |       <Counter ref={counter} start={10} />
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (svelte): The svelte target does not emit component yet: composition lands in M3.
+ --> expose/several/Controls.uf.tsx:9:7
+  |
+9 |       <Counter ref={counter} start={10} />
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+ --> expose/several/Controls.uf.tsx:9:16
+  |
+9 |       <Counter ref={counter} start={10} />
+  |                ^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF1002] (angular): The angular target does not emit expose yet: composition lands in M3.
+  --> expose/several/Counter.uf.tsx:11:3
+   |
+11 |   defineExpose({ increment, reset });
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (astro): The astro target does not emit expose yet: composition lands in M3.
+  --> expose/several/Counter.uf.tsx:11:3
+   |
+11 |   defineExpose({ increment, reset });
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF1002
+
+info[UF4001] (astro): The astro target does not support expose: What a component exposes is never called on Astro: components render on the server only, and nothing runs in the browser.
+  --> expose/several/Counter.uf.tsx:11:3
+   |
+11 |   defineExpose({ increment, reset });
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF1002] (qwik): The qwik target does not emit expose yet: composition lands in M3.
+  --> expose/several/Counter.uf.tsx:11:3
+   |
+11 |   defineExpose({ increment, reset });
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (react): The react target does not emit expose yet: composition lands in M3.
+  --> expose/several/Counter.uf.tsx:11:3
+   |
+11 |   defineExpose({ increment, reset });
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (solid): The solid target does not emit expose yet: composition lands in M3.
+  --> expose/several/Counter.uf.tsx:11:3
+   |
+11 |   defineExpose({ increment, reset });
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (svelte): The svelte target does not emit expose yet: composition lands in M3.
+  --> expose/several/Counter.uf.tsx:11:3
+   |
+11 |   defineExpose({ increment, reset });
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = see: https://unframework.dev/diagnostics/UF1002

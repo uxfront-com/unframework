@@ -1,0 +1,223 @@
+{
+  "irVersion": 1,
+  "file": "components/recursion/Countdown.uf.tsx",
+  "components": [
+    {
+      "name": "Countdown",
+      "span": {
+        "start": 90,
+        "end": 308
+      },
+      "props": [
+        {
+          "name": "from",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 142,
+              "end": 148
+            }
+          },
+          "binding": "from@126",
+          "span": {
+            "start": 136,
+            "end": 148
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ from: number }",
+          "span": {
+            "start": 134,
+            "end": 150
+          }
+        },
+        "span": {
+          "start": 124,
+          "end": 150
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "from@126",
+          "name": "from",
+          "kind": "prop",
+          "span": {
+            "start": 126,
+            "end": 130
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "level",
+            "span": {
+              "start": 174,
+              "end": 187
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "span",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "from",
+                  "span": {
+                    "start": 202,
+                    "end": 206
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "from@126",
+                      "span": {
+                        "start": 202,
+                        "end": 206
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 201,
+                  "end": 207
+                }
+              }
+            ],
+            "span": {
+              "start": 195,
+              "end": 214
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "from > 0",
+                  "span": {
+                    "start": 222,
+                    "end": 230
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "from@126",
+                      "span": {
+                        "start": 222,
+                        "end": 226
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Component",
+                    "component": "Countdown",
+                    "attributes": [
+                      {
+                        "kind": "Prop",
+                        "name": "from",
+                        "value": {
+                          "code": "from - 1",
+                          "span": {
+                            "start": 250,
+                            "end": 258
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "from@126",
+                              "span": {
+                                "start": 250,
+                                "end": 254
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 244,
+                          "end": 259
+                        }
+                      }
+                    ],
+                    "fills": [],
+                    "span": {
+                      "start": 233,
+                      "end": 262
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 222,
+                  "end": 262
+                }
+              },
+              {
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "strong",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Liftoff",
+                        "span": {
+                          "start": 273,
+                          "end": 280
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 265,
+                      "end": 289
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 265,
+                  "end": 289
+                }
+              }
+            ],
+            "span": {
+              "start": 222,
+              "end": 289
+            }
+          }
+        ],
+        "span": {
+          "start": 169,
+          "end": 301
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Countdown",
+      "span": {
+        "start": 90,
+        "end": 308
+      }
+    }
+  ],
+  "types": []
+}
