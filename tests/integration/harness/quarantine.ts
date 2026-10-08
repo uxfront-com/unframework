@@ -42,7 +42,8 @@ export function joinQuarantine(
           `${entry.case} › ${entry.target} › ${entry.layer} is in quarantine/${target}.ts: move it to quarantine/${entry.target}.ts.`,
       ),
   );
-  if (misfiled.length) throw new Error(`[uf] Misfiled quarantine entries:\n  ${misfiled.join("\n  ")}`);
+  if (misfiled.length)
+    throw new Error(`[uf] Misfiled quarantine entries:\n  ${misfiled.join("\n  ")}`);
   return Object.values(files).flat();
 }
 

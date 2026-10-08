@@ -363,7 +363,9 @@ describe("ufComponentEvents", () => {
     );
     expect(() =>
       ufComponentEvents(project("vue", cases({ main: "Missing.uf.tsx" })), { case: "forms/form" }),
-    ).toThrow("[uf] Case forms/form names Missing.uf.tsx as its main input, which it does not hold.");
+    ).toThrow(
+      "[uf] Case forms/form names Missing.uf.tsx as its main input, which it does not hold.",
+    );
   });
 
   it("refuses a module whose components declare different events", () => {
