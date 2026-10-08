@@ -320,7 +320,7 @@ These are the hard cells (plan §6). Each one has, or will have, its own `semant
   `feat(web): …` or `fix(analyzer): …`. PRs follow `.github/PULL_REQUEST_TEMPLATE.md`. Every
   package is private at `0.0.0` until its first release. After that, a change to a published
   package needs `pnpm changeset`.
-  
+
   <!-- BEGIN:turborepo-agent-rules -->
 
 # This is NOT the Turborepo you know
