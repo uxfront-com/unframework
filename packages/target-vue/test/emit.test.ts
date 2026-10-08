@@ -68,17 +68,23 @@ describe("vue target", () => {
     expect(emit("named").files).toEqual(emit("default").files);
   });
 
-  // The reference target (D10): its committed goldens are exactly what it emits today.
-  it("emits the corpus's committed golden outputs", async () => {
-    const cases = corpus();
+  const cases = corpus();
+
+  it("has corpus cases to check", () => {
     expect(cases.length).toBeGreaterThan(0);
-    for (const { name, module, outputDir } of cases) {
+  });
+
+  // The reference target (D10): its committed goldens are exactly what it emits today.
+  // One test per case, so no test's time grows with the corpus (0.2 s alone on a laptop as one).
+  it.each(cases)(
+    "emits the committed golden outputs of $name",
+    async ({ name, module, outputDir }) => {
       for (const file of await emitFormatted(module)) {
         const golden = readFileSync(join(outputDir, file.path), "utf8");
         expect(file.contents, name).toBe(golden);
       }
-    }
-  });
+    },
+  );
 });
 
 /** A component's file, with `script` and `template` in the shape this target prints them. */

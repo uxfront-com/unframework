@@ -14,19 +14,26 @@ async function compileOne(contents: string, path = "/virtual/Component.svelte") 
 }
 
 describe("svelte frameworkCompile", () => {
-  // What the target emits now, not the committed goldens, which change only with `test:update`.
-  it("accepts what the target emits for the corpus without a warning", async () => {
-    const cases = corpus();
+  const cases = corpus();
+
+  it("has corpus cases to check", () => {
     expect(cases.length).toBeGreaterThan(0);
-    for (const { name, module } of cases) {
+  });
+
+  // What the target emits now, not the committed goldens, which change only with `test:update`.
+  // One test per case, so no test's time grows with the corpus. As one test over the cases M2
+  // left, it took 0.6 s alone on a laptop and overran Vitest's 5 s default in CI's Unit tests.
+  it.each(cases)(
+    "accepts what the target emits for $name without a warning",
+    async ({ name, module }) => {
       for (const file of await emitFormatted(module)) {
         expect(await compileOne(file.contents, `/virtual/${name}/${file.path}`), name).toEqual({
           errors: [],
           warnings: [],
         });
       }
-    }
-  });
+    },
+  );
 
   it("reports a mismatched closing tag as an error, where it is", async () => {
     expect(await compileOne(`${RUNES}<p class="greeting">Hello</span>\n`)).toEqual({

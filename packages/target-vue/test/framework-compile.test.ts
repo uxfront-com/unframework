@@ -33,14 +33,14 @@ describe("vue frameworkCompile", () => {
     for (const path of paths) expect(results.get(path), path).toEqual({ errors: [], warnings: [] });
   }, 60_000);
 
-  it("accepts what the target emits for the corpus today", async () => {
-    for (const { name, module } of corpus()) {
-      for (const file of await emitFormatted(module)) {
-        expect(await compileOne(file.contents, `/virtual/${name}/${file.path}`), name).toEqual({
-          errors: [],
-          warnings: [],
-        });
-      }
+  // One test per case, so no test's time grows with the corpus. As one test over the 172 cases
+  // M2 left, it took 0.4 s alone on a laptop and overran Vitest's 5 s default in CI's Unit tests.
+  it.each(corpus())("accepts what the target emits today for $name", async ({ name, module }) => {
+    for (const file of await emitFormatted(module)) {
+      expect(await compileOne(file.contents, `/virtual/${name}/${file.path}`), name).toEqual({
+        errors: [],
+        warnings: [],
+      });
     }
   });
 
