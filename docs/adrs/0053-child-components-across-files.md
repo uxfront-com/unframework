@@ -33,11 +33,12 @@ Promise<ModuleApi | undefined>`. `importer` is the compiling file's `filename`. 
   public API of the imported module: its file (relative to the importer, forward slashes), each
   component's API and each injection key it declares (ADR-0055 gives the shape).
 - **It is pure and deterministic (P8).** `compile()`'s output depends only on the source, the
-  options and what `resolve` returns. A resolver returns the same API for the same file contents.
+  options and what `resolve` returns. A resolver analyses a file the same way for the same
+  contents, and computes the API's `file` per request, relative to that importer.
   It returns APIs, never compiled code, so analysing a child never resolves the child's own
   children, and a cycle cannot make it loop.
 - `@unframework/compiler` exports `createFileResolver({ root, readFile })`. It reads the child,
-  parses and analyses it up to its declarations (no emit), and caches by content. The unplugin and
+  parses and analyses it up to its declarations (no emit), and caches that analysis by content. The unplugin and
   the harness use it. M5's project graph (§5.10) replaces it behind the same option.
 - Without a resolver, or when the file is missing or does not export the imported name, the import
   is UF1202 (`unresolved-import`, ADR-0055). The analyser records the resolved API in the IR
@@ -52,15 +53,15 @@ did-you-mean.
 **How an output imports a child.** Each output imports the child's output file in the same output
 tree, at the same relative path as the sources, by the file name its target gives that component:
 
-| Target  | Import                                                 | Output file    |
-| ------- | ------------------------------------------------------ | -------------- |
-| React   | `import Field from "./Field";`                         | `Field.tsx`    |
-| Vue     | `import Field from "./Field.vue";`                     | `Field.vue`    |
-| Svelte  | `import Field from "./Field.svelte";`                  | `Field.svelte` |
-| Solid   | `import Field from "./Field";`                         | `Field.tsx`    |
-| Angular | `import Field from "./field";`, and `imports: [Field]` | `field.ts`     |
-| Qwik    | `import Field from "./Field";`                         | `Field.tsx`    |
-| Astro   | `import Field from "./Field.astro";`                   | `Field.astro`  |
+| Target  | Import                                                               | Output file    |
+| ------- | -------------------------------------------------------------------- | -------------- |
+| React   | `import Field from "./Field";`                                       | `Field.tsx`    |
+| Vue     | `import Field from "./Field.vue";`                                   | `Field.vue`    |
+| Svelte  | `import Field from "./Field.svelte";`                                | `Field.svelte` |
+| Solid   | `import Field from "./Field";`                                       | `Field.tsx`    |
+| Angular | `import Field from "./field";`, `imports: [forwardRef(() => Field)]` | `field.ts`     |
+| Qwik    | `import Field from "./Field";`                                       | `Field.tsx`    |
+| Astro   | `import Field from "./Field.astro";`                                 | `Field.astro`  |
 
 - That is what `unframework build` writes (§8.4), what the golden trees hold, and what every L3 and
   L4 checker resolves with no extra configuration.
@@ -74,8 +75,10 @@ tree, at the same relative path as the sources, by the file name its target give
   file name is not the component's name (ADR-0021); Angular uses its own selector, which ngtsc
   accepts without `imports` (ADR-0056); Astro uses `Astro.self`. Termination is the author's: a
   recursion renders under a condition. Two modules that render each other work through ES module
-  cycles; on Angular the lane emits `forwardRef(() => Child)` where the child's API shows that it
-  imports its importer, and longer cycles wait for M5's graph.
+  cycles. Angular lists every imported component through `forwardRef` (`imports: [forwardRef(() =>
+Field)]`): standalone components that import each other without it fail when they load
+  (`ReferenceError: Cannot access 'A' before initialization`), and the API carries no imports to
+  tell a cycle apart, so every import takes the form that survives one, of any length.
 
 **Components as list items and branch content.** `ForNode.body` widens to
 `ElementNode | ComponentNode`: `items.map((item) => <Item key={item.id} label={item.label} />)`.
@@ -147,7 +150,7 @@ as its event naming says (ADR-0012), and Angular renames an output named like a 
   their descriptor caches by the path without the query, so two components of one file would
   share a cache entry.
 - **The whole project graph now (§5.10).** Incremental invalidation and type dependencies are M5's
-  (the PLAN's non-goals); the resolver is the part M3 needs, behind the option M5 keeps.
+  (plan §5.10, §9 M5); the resolver is the part M3 needs, behind the option M5 keeps.
 - **The child's full IR as the resolver's result.** It ties the parent's compile to every detail of
   the child's setup and grows each `ir.json`; the API is what a parent reads.
 

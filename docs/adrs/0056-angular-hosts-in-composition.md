@@ -27,7 +27,7 @@ answered each with Angular 22.2.1 under ngtsc's strict templates (ADR-0053's Evi
   the server HTML does not survive parsing.
 - A component used as a list's item keeps the `<li>` in the parent and renders its content:
   `items.map((item) => <li key={item.id}><Item item={item} /></li>)` works on every target.
-- Attribute selectors (`tr[ufRow]`) remain deferred (ADR-0010; the PLAN's non-goal). They would
+- Attribute selectors (`tr[ufRow]`) remain deferred (ADR-0010; M3 does not add them). They would
   lift the limit; the probe below shows what they cost. A record that adds them makes
   `contextual-root` native.
 

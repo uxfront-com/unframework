@@ -3,15 +3,16 @@
 - **Status:** Proposed
 - **Date:** 2026-10-08
 - **Plan:** §5.3, §5.6 (layer 2), §5.7, §5.9, §7.7 (coverage gate), §9 M3; P2, P4, P5; ADR-0032,
-  ADR-0033, ADR-0053, ADR-0054, ADR-0056
+  ADR-0033, ADR-0053, ADR-0054, ADR-0056; amends ADR-0032 (its invariants)
 
 ## Context
 
-ADR-0053 and ADR-0054 decide what composition means and how each target writes it. The stages
-after this one build it in parallel: the contract slice adds the IR kinds, the capabilities and the
-codes; the core lowers into them; seven target lanes emit them; and the layer-2 checks report
-against them. Each of those surfaces is one file that only one slice may change per stage (the
-IR's `types.ts`, `CapabilityName`, `catalogue.ts`). So the contract is fixed here, before any code,
+ADR-0053 and ADR-0054 decide what composition means and how each target writes it. Plan §9
+builds a milestone in lanes that run in parallel: a core lane (the IR, the analyser), seven target
+lanes and a harness lane. Here a contract change adds the IR kinds, the capabilities and the
+codes; the core lowers into them; the target lanes emit them; and the layer-2 checks report
+against them. Each of those surfaces is one file that two lanes cannot change at once (the IR's
+`types.ts`, `CapabilityName`, `catalogue.ts`). So the contract is fixed here, before any code,
 with every cell and every code number.
 
 The rules it builds on: every node carries a span, and a field exists only when a consumer reads
@@ -25,10 +26,10 @@ numbers are UF1202, UF2028 and UF3035.
 invariants, `portability.ts` and the schema):
 
 - **Module.**
-  - `UfModule.imports: ModuleImport[]`: `{ specifier, file, api: ModuleApi, names: ImportedName[],
+  - `UfModule.imports?: ModuleImport[]`, absent when empty, as `emits` is: `{ specifier, file, api: ModuleApi, names: ImportedName[],
 span }`. `file` is the resolved `.uf.tsx`, relative to the importer, with forward slashes.
     `ImportedName` is `{ kind: "Component" | "Key", imported, local, span }`.
-  - `UfModule.keys: InjectionKeyDeclaration[]`: `{ name, description, type: TypeText, span }`, each
+  - `UfModule.keys?: InjectionKeyDeclaration[]`, absent when empty: `{ name, description, type: TypeText, span }`, each
     exported.
   - `ModuleApi` is what the resolver returns (ADR-0053): `{ file, components: ComponentApi[], keys:
 KeyApi[] }`. `ComponentApi` is `{ name, export: "default" | "named" | "local", props, events,
@@ -52,7 +53,9 @@ BindingId[], span }` and `UfComponent.inheritAttrs?: false`.
     `component` is the local name of an imported component or of one of the module's own;
   - `SlotOutlet { slot, props?: Expression, fallback: RenderNode[], span }`;
   - `Dynamic { is: Expression, candidates: ({ kind: "Tag", tag } | { kind: "Component", component
-})[], attributes: Attribute[], children: RenderNode[], span }`.
+})[], attributes: (Attribute | ComponentAttribute)[], children: RenderNode[], fills?: SlotFill[],
+span }`. Tag candidates take element attributes and children; component candidates take
+    component attributes and fills, each declared by every candidate (UF3044 otherwise).
 
   `ForNode.body` becomes `ElementNode | ComponentNode`.
 
@@ -84,10 +87,10 @@ needed: each unsupported cell reports UF4001 with its reason, as every cell does
 | `slot-fallback`         | an outlet with fallback content                                                  | native                | native | native                | native                               | native                               | native                               | native                                        |
 | `default-slot-presence` | `slots.default` as a condition, or the default slot forwarded                    | native                | native | native                | native                               | UF4001 (error)                       | UF4001 (error)                       | native                                        |
 | `slot-forwarding`       | a fill with `forward`                                                            | native                | native | native                | native                               | emulated: `uf<Component><Slot>`      | native                               | native                                        |
-| `model`                 | `defineModel` (a `Model` item), and a `ModelBinding`                             | native                | native | native                | native                               | native                               | native                               | native                                        |
-| `two-way-binding`       | an element's `Model`                                                             | native                | native | native                | native                               | native                               | native                               | native                                        |
-| `model-array`           | a `Model` of a `checkbox-group` or a `select-multiple`                           | emulated: `toggle`    | native | native                | emulated: `toggle`, `selectedValues` | emulated: `toggle`, `selectedValues` | emulated: `toggle`, `selectedValues` | native                                        |
-| `model-modifiers`       | a `Model` that is `trim`, `lazy` or `number`, or of a `number` control           | emulated: `modelText` | native | emulated: `modelText` | emulated: `modelText`                | emulated: `modelText`                | emulated: `modelText`                | native                                        |
+| `model`                 | `defineModel` (a `Model` item), and a `ModelBinding`                             | native                | native | native                | native                               | native                               | native                               | UF4001 (info): inert                          |
+| `two-way-binding`       | an element's `Model`                                                             | native                | native | native                | native                               | native                               | native                               | UF4001 (info): inert                          |
+| `model-array`           | a `Model` of a `checkbox-group` or a `select-multiple`                           | emulated: `toggle`    | native | native                | emulated: `toggle`, `selectedValues` | emulated: `toggle`, `selectedValues` | emulated: `toggle`, `selectedValues` | UF4001 (info): inert                          |
+| `model-modifiers`       | a `Model` that is `trim`, `lazy` or `number`, or of a `number` control           | emulated: `modelText` | native | emulated: `modelText` | emulated: `modelText`                | emulated: `modelText`                | emulated: `modelText`                | UF4001 (info): inert                          |
 | `fallthrough`           | a `class` or `style` on a component                                              | native                | native | native                | native                               | emulated: `fallthrough`              | native                               | native                                        |
 | `contextual-root`       | a component whose root element lives only inside a given parent (ADR-0056)       | native                | native | native                | native                               | UF4001 (error)                       | native                               | native                                        |
 | `expose`                | `defineExpose`, and a `Ref` on a component; refines `interactivity`, behavioural | native                | native | native                | native                               | native                               | emulated: `exposeRef`                | UF4001 (info): inert                          |
@@ -95,13 +98,15 @@ needed: each unsupported cell reports UF4001 with its reason, as every cell does
 | `reactive-context`      | a provided `state`, `derived` or `model` binding; refines `context`              | emulated: `refObject` | native | emulated: `refObject` | emulated: `refObject`                | emulated: `refObject`                | native                               | UF4001 (warning)                              |
 | `dynamic-component`     | a `Dynamic` node                                                                 | native                | native | native                | native                               | emulated: `@switch`                  | native                               | native                                        |
 
-- `CAPABILITY_PREREQUISITES` gains `component-event` and `expose` under `interactivity`, and
-  `reactive-context` under `context`. `BEHAVIOURAL_CAPABILITIES` gains `component-event` and
-  `expose`.
+- `CAPABILITY_PREREQUISITES` gains `component-event`, `expose`, `model`, `two-way-binding`,
+  `model-array` and `model-modifiers` under `interactivity`, and `reactive-context` under
+  `context`: an Astro module that binds a model reports `interactivity` once, as one with a
+  listener does. `BEHAVIOURAL_CAPABILITIES` gains those six: a static render is the same without
+  them.
 - `capabilities.ts` maps `Component`, `SlotOutlet` and `Dynamic` in `NODE_CAPABILITIES`, the new
   attribute kinds in `ATTRIBUTE_CAPABILITIES`, and `Model`, `Provide` and `Inject` in
   `SETUP_ITEM_CAPABILITIES`; `requiredCapabilities` derives the rest at the span named above.
-- `3.reference/1.targets.md` gets a row and a note per capability (stage 2).
+- `3.reference/1.targets.md` gets a row and a note per capability, with the contract change.
 
 **Diagnostic codes.** In order, every one an error unless noted. Each is reported at the exact
 span; the fixes are applied and recompiled by L1.
@@ -109,11 +114,11 @@ span; the fixes are applied and recompiled by L1.
 | Code   | Name                        | Band | Title                                                                         | Fix                                          |
 | ------ | --------------------------- | ---- | ----------------------------------------------------------------------------- | -------------------------------------------- |
 | UF1202 | `unresolved-import`         | UF1  | The imported component module cannot be resolved                              | none                                         |
-| UF2028 | `invalid-model`             | UF2  | `defineModel` takes a name and static options, and is bound                   | safe: name a nameless model `"value"`        |
+| UF2028 | `invalid-model`             | UF2  | `defineModel` takes a name and static options                                 | safe: name a nameless model `"value"`        |
 | UF2029 | `invalid-slots`             | UF2  | `defineSlots` declares optional slots, named apart from props and events      | none                                         |
 | UF2030 | `invalid-expose`            | UF2  | `defineExpose` takes an object of the component's local functions             | none                                         |
 | UF2031 | `invalid-options`           | UF2  | `defineOptions` takes a static `{ inheritAttrs: false }`                      | none                                         |
-| UF2032 | `invalid-context`           | UF2  | `provide` and `inject` take an injection key, at the top level                | none                                         |
+| UF2032 | `invalid-context`           | UF2  | `provide` and `inject` take an injection key, `inject` first                  | none                                         |
 | UF2033 | `invalid-injection-key`     | UF2  | An injection key is an exported `InjectionKey` `Symbol` of a `.uf.tsx` module | none                                         |
 | UF2034 | `context-write`             | UF2  | An injected value is read-only                                                | none                                         |
 | UF3035 | `unknown-prop`              | UF3  | The component declares no such prop (layer 2)                                 | likely: the prop it meant                    |
@@ -133,27 +138,30 @@ span; the fixes are applied and recompiled by L1.
 - UF3035 to UF3039 are layer 2 of §5.6. Each says "did you mean `…`?" when a declared name is close.
   UF3038 covers a slot-object key the child does not declare and children given to a child with no
   default slot; UF3035 an attribute that is no prop, model, slot, `class`, `style`, `key` or `ref`.
-- The PLAN allocated UF2028, UF3035 and UF4002 onwards. This record adds UF1202, because an import
-  that cannot be resolved belongs with UF1201's imports, and uses no UF4xxx code.
-- Each code's catalogue entry and its section in `3.reference/2.diagnostics.md` come in stage 2,
-  with an `EXEMPT_CODES` entry naming the slice whose case removes it.
+- The next free codes were UF2028, UF3035 and UF4002. This record also takes UF1202, because an
+  import that cannot be resolved belongs with UF1201's imports, and needs no UF4xxx code.
+- A new macro or API that is not bound, or not called at the top level, reports UF2006 and UF2005
+  as the M2 macros do. UF2028 to UF2033 cover only their arguments, options and keys, so no misuse
+  gets two codes.
+- Each code's catalogue entry and its section in `3.reference/2.diagnostics.md` come with the
+  contract change, with an `EXEMPT_CODES` entry naming the lane whose case removes it.
 
 ## Consequences
 
 **Positive:**
 
-- Every slice of stages 2 to 5 works against one declared contract, and the collision surfaces are
-  each touched once (stage 2).
+- Every lane of M3 works against one declared contract, and the shared files are each changed
+  once, by the contract change.
 - The coverage gate (§7.7) can require a case for every new kind, capability and code from the day
-  they land, exempted by name until their slice.
+  they land, exempted by name until their lane.
 
 **Negative:**
 
 - The IR grows by three render nodes, four attribute kinds, three setup items, five binding kinds
   and one reference kind; `walk`, the invariants, `portability.ts` and every emitter's exhaustive
-  switch change in one stage.
-- A cell the lanes find wrong is a contract change: it needs an amendment here and blocks the
-  lane (the PLAN's rule).
+  switch change at once.
+- A cell the lanes find wrong is a contract change: it needs an amendment here before the lane
+  emits otherwise.
 
 ## Alternatives considered
 

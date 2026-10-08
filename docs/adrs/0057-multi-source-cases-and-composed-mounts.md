@@ -3,7 +3,8 @@
 - **Status:** Proposed
 - **Date:** 2026-10-08
 - **Plan:** §7.1, §7.3, §7.4, §7.7, §9 M3; P1, P2, P8; ADR-0014, ADR-0018, ADR-0021, ADR-0027,
-  ADR-0029, ADR-0033, ADR-0043, ADR-0050, ADR-0053; amends plan §7.3's mount options
+  ADR-0029, ADR-0033, ADR-0043, ADR-0050, ADR-0053; amends ADR-0014 and plan §7.4 (a case may name
+  its own reference target) and plan §7.3's mount options
 
 ## Context
 
@@ -65,7 +66,9 @@ expectations".
   today it compiles only the module a spec imports, so a parent's import of `./Field.astro` fails.
 - Angular's `ngtscVirtual` resolves and loads children first (ADR-0053, ADR-0056).
 
-**The list box's expectations.** A case whose expectations Vue cannot write sets
+**The list box's expectations.** This puts ADR-0033's "another reviewed source of expectations"
+into practice, and amends plan §7.4's one reference target for such cases. A case whose
+expectations Vue cannot write sets
 `"reference": "<target>"` in `case.json`. It is allowed only when the case requires a capability
 whose Vue cell is unsupported (`listbox`), names a target whose cell is native, and keeps the
 review rule: the files it writes are reviewed as Vue's are. `pnpm test:update` writes such cases

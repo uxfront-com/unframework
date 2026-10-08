@@ -5,13 +5,28 @@
 - **Plan:** §4.1, §4.2 (Models, Slots, Expose, Options, Context), §4.3 (Two-way binding, Slots,
   Composition), §4.5, §4.6, §6, §7.8 (M3), §9 M3; P2, P3, P4, P6, P7; R1, R5, R6, R13; ADR-0007,
   ADR-0012, ADR-0033, ADR-0034, ADR-0039, ADR-0045, ADR-0046, ADR-0047, ADR-0048, ADR-0049,
-  ADR-0053; amends ADR-0034
+  ADR-0053; amends ADR-0034, ADR-0039 and ADR-0047 (their deferrals to M3's
+  fallthrough) and plan §6's starting mapping
 
 ## Context
 
 Plan §6 gives a starting mapping for composition, and plan §4.2 and §4.3 the source forms. The M3
 spikes (ADR-0053's Evidence) wrote a parent and a child by hand on every target and ran them
-through the toolchain, SSR and browser projects. They changed four of §6's cells:
+through the toolchain, SSR and browser projects. This record changes these rows of §6's
+starting mapping, and the plan is updated from this list when M3 accepts it:
+
+- **Fallthrough attributes:** `class` and `style` only, merged into the root, instead of `...rest`
+  (React, Svelte, Qwik, Astro), `splitProps` (Solid) and the host or a helper directive (Angular).
+- **`v-model`:** React writes `value` with `onChange`, not `onInput`; Qwik reads the value in
+  render with `onInput$`, never `bind:value` (ADR-0058).
+- **`slots.title` (presence):** native on Angular (a content query) and Qwik (a QRL prop), not
+  emulated.
+- **`slots.item?.({ item })`:** emulated on Angular (a slot directive) and Astro (a render prop)
+  as well as Qwik, and React's render prop is named `render<Slot>`.
+- **`provide` / `inject`:** unsupported on Astro, where §6 says "fallback only", because a
+  rendering that differs from the other targets' must be declared (ADR-0033).
+
+The spikes found why:
 
 - **React** rejects a render prop named like a slot: oxlint's `react/no-unstable-nested-components`
   flags `hint={({ length }) => …}` in the parent (L5) and exempts props named `render…`.
@@ -40,7 +55,9 @@ item?(props: { item: Item }): Element }>()`, bound to a `const` (UF2029 otherwis
   on any target (UF2029), because React, Solid, Qwik and Astro spell slots as props.
 - It renders a slot as a child: `{slots.title?.()}`, `{slots.item?.({ item })}`, with fallback
   content after `??`, and tests presence with `slots.title` as a condition. Forwarding passes the
-  slot itself in a slot object: `{{ title: slots.title }}`. Any other use is UF3041.
+  slot itself in a slot object: `{{ title: slots.title }}`. Rendering `{slots.default?.()}` as
+  another component's children forwards the default slot too, and lowers to the same fill, so it
+  needs default-slot presence as well. Any other use is UF3041.
 - A consumer passes the default slot as children, and every other slot in a slot object whose
   members are arrow functions returning JSX: `{{ default: () => …, item: ({ item }) => … }}`
   (UF3040 otherwise). A scoped slot's parameter is a destructuring pattern or an identifier; its
@@ -62,12 +79,16 @@ item?(props: { item: Item }): Element }>()`, bound to a `const` (UF2029 otherwis
   Solid and Qwik decide by `value === undefined`, so a model bound to `undefined` acts unbound
   there: outside the contract.
 - **`v-model` on a native control** binds the control's state: the value of a text-like `<input>`
-  (text, search, email, url, tel, password), a `<textarea>` and a `<select>`; the checked state of
+  (no `type`, or text, search, email, url, tel, password, date, time, datetime-local, month, week
+  or color, which Vue binds as text), a `<textarea>` and a `<select>`; the checked state of
   a checkbox (a boolean, or an array with the box's `value`) and a radio (the radio's `value`); an
   array for `<select multiple>`. A number or range input casts with Vue's `looseToNumber`, as
   `v-model_number` does; `v-model_trim` and `v-model_lazy` follow Vue's `vModelText`. Anything
   else (a file, button or hidden input, a value that is not `ref.value` or `model.value`, a
-  modifier on a control that has no text) is UF3042. A text field updates on `input` events;
+  modifier on a control that has no text) is UF3042. On Astro every model and `v-model` renders
+  its initial state and is inert, so `model`, `two-way-binding`, `model-array` and
+  `model-modifiers` are UF4001 (info) there, refining `interactivity` (ADR-0055). A text field
+  updates on `input` events;
   Vue waits for an IME composition to end, which no other target does: outside the contract.
 
 **Fallthrough.**
@@ -75,8 +96,13 @@ item?(props: { item: Item }): Element }>()`, bound to a `const` (UF2029 otherwis
 - Only `class` and `style` fall through, as the JSX types say: a consumer's `class` and `style`
   merge into the child's root element (the union of the class tokens; the consumer's declaration
   wins for a property both set), or pass on to its root component. Any other attribute a child
-  does not declare is UF3035 (`unknown-prop`, layer 2). A rest element in the props pattern stays
-  UF2001: there is one channel for fallthrough (ADR-0034's open item).
+  does not declare is UF3035 (`unknown-prop`, layer 2). A rest element in the props pattern
+  becomes UF2001 (UF1002 until M3, ADR-0034's open item): there is one channel for fallthrough.
+- **This departs from plan §6**, whose fallthrough row passes every undeclared attribute
+  (`...rest`), and closes what ADR-0039 and ADR-0047 deferred to "M3 fallthrough": a spread's
+  key the type does not declare, and a spread's `onX` key, stay rejected on elements, now with
+  UF3035 on a component and UF1002 on an element's spread. A native listener does not fall
+  through to a component's root (UF3036, ADR-0053).
 - `defineOptions({ inheritAttrs: false })` (a static object literal, UF2031 otherwise) makes a
   component take neither; a consumer that passes them is UF3045, as is one that passes them to a
   component whose root is a fragment, a conditional or a list.
@@ -97,7 +123,9 @@ expose, is UF3046.
   copies `.ts` modules unchanged. Each target writes the key into the output file of the module's
   main component. M5's `.uf.ts` modules may host keys later.
 - `provide(TabsKey, value)` and `inject(TabsKey, fallback)` are setup items at the top level
-  (UF2032 otherwise). An injected value is read-only: a write through it is UF2034. Provide a
+  (UF2005 otherwise). A component that injects and provides one key reads its parent's value, as
+  Vue does: its `inject` comes before its `provide` (UF2032 otherwise), and Angular injects with
+  `skipSelf`, since its own `providers` would answer first. An injected value is read-only: a write through it is UF2034. Provide a
   function to let consumers change state. A provided ref or computed stays reactive.
 - The Qwik context id is the key's description: two keys with one description in one application
   collide, so descriptions should be namespaced (`Symbol("acme.tabs")`).
@@ -119,7 +147,7 @@ The last rows point to the records of the constructs M1 and M2 built, unchanged 
 
 | Construct (source)                                         | React                                                                                      | Vue                                                                        | Svelte                                                         | Solid                                                              | Angular                                                                                                                       | Qwik                                                                 | Astro                                                  |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------ |
-| Child import, `<Field />` (ADR-0053)                       | `import Field from "./Field"`                                                              | `"./Field.vue"`                                                            | `"./Field.svelte"`                                             | `"./Field"`                                                        | `"./field"`, `imports: [Field]`, `<uf-field>`                                                                                 | `"./Field"`                                                          | `"./Field.astro"`                                      |
+| Child import, `<Field />` (ADR-0053)                       | `import Field from "./Field"`                                                              | `"./Field.vue"`                                                            | `"./Field.svelte"`                                             | `"./Field"`                                                        | `"./field"`, `imports: [forwardRef(() => Field)]`, `<uf-field>`                                                               | `"./Field"`                                                          | `"./Field.astro"`                                      |
 | Static prop, `label="Name"`                                | `label="Name"`                                                                             | `label="Name"`                                                             | `label="Name"`                                                 | `label="Name"`                                                     | `[label]="'Name'"`, so the host keeps no attribute                                                                            | `label="Name"`                                                       | `label="Name"`                                         |
 | Bound prop, `tone={tone.value}`                            | `tone={tone}`                                                                              | `:tone="tone"`                                                             | `{tone}`                                                       | `tone={tone()}`                                                    | `[tone]="tone()"`                                                                                                             | `tone={tone.value}`                                                  | `tone={tone}`                                          |
 | Component event, `onClear={clear}`                         | `onClear={clear}`                                                                          | `@clear="clear"`                                                           | `onclear={clear}`                                              | `onClear={clear}`                                                  | `(clear)="clear($event)"`; `(ufChange)` for a DOM event's name (ADR-0056)                                                     | `onClear$={clear}`                                                   | dropped: `interactivity`, UF4001 (info)                |
@@ -160,7 +188,7 @@ The last rows point to the records of the constructs M1 and M2 built, unchanged 
 | A provided ref or computed                                 | helper `refObject`, a `.value` getter over the state; the provider rerenders its consumers | native                                                                     | helper `refObject`, a getter over `$state`                     | helper `refObject`, a getter over the signal                       | helper `refObject`, a getter over the signal                                                                                  | the signal itself                                                    | UF4001 (warning)                                       |
 | Nested providers                                           | the inner one wins                                                                         | the inner one wins                                                         | the inner one wins                                             | the inner one wins                                                 | the inner element injector wins                                                                                               | the inner one wins                                                   | UF4001 (warning)                                       |
 | `<component is={href ? "a" : "button"}>`                   | `const Tag = …; <Tag>`                                                                     | `<component :is>`                                                          | `<svelte:element this={…}>`                                    | `<Dynamic component={…}>`                                          | `@switch`, one branch per tag, the children in one `ng-template`: helper `@switch`                                            | `const Tag = …; <Tag>`                                               | `const Tag = …; <Tag>`                                 |
-| `<component is={…}>` over components                       | `const Tag = cond ? A : B`                                                                 | `<component :is>`                                                          | `{@const C = …}<C />`                                          | `<Dynamic component={…}>`                                          | `@switch` over the components: helper `@switch`                                                                               | `const Tag = …`                                                      | `const Tag = …`                                        |
+| `<component is={…}>` over components                       | `const Tag = cond ? A : B`                                                                 | `<component :is>`                                                          | `const C = $derived(…)`, `<C />`                               | `<Dynamic component={…}>`                                          | `@switch` over the components: helper `@switch`                                                                               | `const Tag = …`                                                      | `const Tag = …`                                        |
 | Fragments, `<>…</>`                                        | as M1 (ADR-0036)                                                                           | as M1                                                                      | as M1                                                          | as M1                                                              | as M1                                                                                                                         | as M1                                                                | as M1                                                  |
 | Signature props (§4.2)                                     | ADR-0034                                                                                   | ADR-0034                                                                   | ADR-0034                                                       | ADR-0034                                                           | ADR-0034                                                                                                                      | ADR-0034                                                             | ADR-0034                                               |
 | `defineEmits`, element events and their options            | ADR-0047                                                                                   | ADR-0047                                                                   | ADR-0047                                                       | ADR-0047                                                           | ADR-0047                                                                                                                      | ADR-0047                                                             | ADR-0047                                               |
@@ -172,8 +200,9 @@ The last rows point to the records of the constructs M1 and M2 built, unchanged 
 | Conditionals, lists, JSX whitespace                        | ADR-0030, ADR-0036                                                                         | ADR-0030, ADR-0036                                                         | ADR-0030, ADR-0036                                             | ADR-0030, ADR-0036                                                 | ADR-0030, ADR-0036                                                                                                            | ADR-0030, ADR-0036                                                   | ADR-0030, ADR-0036                                     |
 | `<Transition>`, `<Teleport>`, `innerHTML` (§4.3, later)    | M8                                                                                         | M8                                                                         | M8                                                             | M8                                                                 | M8                                                                                                                            | M8                                                                   | M8                                                     |
 
-Names follow ADR-0012: a React or Solid scoped slot is `render<Slot>`, a Qwik callback ends in `$`,
-a Svelte event is lower case, and Angular renames an output named like a DOM event (ADR-0056).
+Event and model names follow ADR-0012: a Qwik callback ends in `$`, a Svelte event is lower case,
+and Angular renames an output named like a DOM event (ADR-0056). A React scoped slot is
+`render<Slot>` because of the lint above; Solid, Qwik and Astro keep the slot's name.
 Where a cell names a helper, the helper is inline in the output (P7), and ADR-0055 declares it.
 
 ## Consequences
@@ -199,7 +228,7 @@ Where a cell names a helper, the helper is inline in the output (P7), and ADR-00
 **Open:**
 
 - The lanes confirm each cell with cases; a cell a case disproves is amended in this record before
-  stage 6 accepts it, with the case as evidence.
+  M3 accepts it, with the case as evidence.
 
 ## Alternatives considered
 

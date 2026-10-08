@@ -146,6 +146,6 @@ replaced it.
 **0053 onwards** record M3's design, composition (§9), proposed before it is built. Spikes in a
 scratch project back each record: hand-written outputs for all seven targets, run through every
 framework's Vite plugin, checker and linter and the SSR and browser projects. The `## Evidence`
-sections give the commands, messages and versions, as the M0 spike records do. M3's last stage
-accepts them as built, amended where the build differed, and then sets the status of the records
-they amend.
+sections give the commands, messages and versions, as the M0 spike records do. When M3 is done,
+they are accepted as built, amended where the build differed, and the records they amend get
+their new status.

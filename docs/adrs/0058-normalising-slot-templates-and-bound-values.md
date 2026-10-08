@@ -38,7 +38,7 @@ itself compares on every target.
   compare equal before anyone types.
 - **The default value of a bound control is outside the contract.** It is what `form.reset()`
   restores and what a `[value="…"]` selector matches: Vue's is the server's `value` or nothing,
-  React's follows the value. The semantics page says so (stage 6).
+  React's follows the value. The semantics page says so once M3 accepts this record.
 - Each rule gets its unit test and a negative test in `@unframework/testing` (ADR-0031): a
   `q:template` on another target stays, and so does a `value` attribute that differs from the
   value, or one on an element with no `uf:value`.
@@ -53,7 +53,7 @@ itself compares on every target.
 **Negative:**
 
 - Every existing expectation with a static `value` equal to the field's value loses the attribute
-  in its `dom.*` and `trace.*` files: the slice that lands the rule regenerates them.
+  in its `dom.*` and `trace.*` files: the change that lands the rule regenerates them.
 - A target that wrote a wrong default value equal to the current one would pass. Only
   `form.reset()` can tell, and the contract leaves it out.
 

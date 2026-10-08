@@ -12,7 +12,7 @@ prop, event, model or slot must fail on every typed target". M3's exit criterion
 to `.uf.tsx`". L4 today runs one checker per target over every case's golden output (tsgo for
 React, Solid and Qwik; vue-tsc, svelte-check, ngc and `astro check` on TypeScript 6, ADR-0022), and
 fails on any error. A consumer test inverts that: the error must be there. Source maps, which
-would map an error to the `.uf.tsx` line, are M6's (L14); the PLAN asked for `.uf.tsx`-keyed
+would map an error to the `.uf.tsx` line, are M6's (L14); M3 meets the exit criterion with `.uf.tsx`-keyed
 expectations until then.
 
 A misuse cannot come from the compiler: a `.uf.tsx` consumer that misuses a child is rejected by
@@ -27,10 +27,14 @@ test, in that target's toolchain directory:
 `tests/toolchains/<target>/consumers/<area>/<case>/<Fixture>.<ext>`. A fixture imports the case's
 golden outputs by relative path (`../../../../../integration/cases/<area>/<case>/__output__/vue/Field.vue`)
 and uses them as a consumer would. Each target's checker includes its `consumers/` tree: its
-tsconfig's `include`, or the file list the harness gives `astro check` (ADR-0028). Each case with
+tsconfig's `include`, or the file list the harness gives `astro check` (ADR-0028). A fixture
+outside the integration package cannot find the framework's types by Node resolution, so each
+checker's tsconfig maps them with `paths` (`"react"`, `"react/*"`), as Angular's maps
+`@angular/*` today; a correct React consumer there fails with `TS2307: Cannot find module 'react'`
+without it. Each case with
 fixtures has, per target, one correct consumer, which must check clean, and one fixture per
 misuse kind the case's components declare: a prop, an event, a model, a slot. Lanes own their
-target's tree, so no two slices write one fixture.
+target's tree, so no two lanes write one fixture.
 
 **Expectations.** An expectation is a comment on the line before the misuse:
 
@@ -78,7 +82,7 @@ never filled with a weaker check.
 | Vue     | yes                      | yes                                        | yes, both directions                               | yes                                                                                      |
 | Svelte  | yes                      | yes                                        | yes, the value                                     | yes (`Snippet<[…]>`)                                                                     |
 | Solid   | yes                      | yes                                        | the value; `onValueChange`'s setter is not checked | yes                                                                                      |
-| Angular | yes                      | yes                                        | yes                                                | yes, through the slot directive's context guard (ADR-0056)                               |
+| Angular | yes                      | yes                                        | the value                                          | yes, through the slot directive's context guard (ADR-0056)                               |
 | Qwik    | yes                      | yes                                        | yes, both directions                               | yes (`item$`)                                                                            |
 | Astro   | yes                      | gap: Astro has no events (`interactivity`) | yes, as a prop                                     | scoped slots yes (render prop); named slots without props: gap, Astro does not type them |
 
@@ -117,7 +121,7 @@ canaries whose browser specs run), and `canaries.unit.test.ts` covers it.
   comment moves with its line.
 - **Fixtures in the case directory.** The case directory holds target-independent sources and
   generated files; per-target hand-written fixtures there would put every lane in every case
-  directory, which the stage plan keeps apart.
+  directory, which plan §9's lanes keep apart.
 - **Consumers generated from a `.uf.tsx` with layer 2 turned off.** It would test the compiler's
   consumer output, not a framework user's, and need a mode that emits code the compiler rejects.
 
