@@ -51,24 +51,27 @@ export interface HarnessSetup {
   /** `--project` patterns from the command line; unselected projects load no toolchain. */
   projectFilter?: readonly string[] | undefined;
   /**
-   * The targets the run leaves out that some case names as its own reference (ADR-0057), each
-   * with those cases: their `ssr:` and `browser:` projects run on those cases alone, so the
-   * other targets have the case's expectations and pixels to compare with.
+   * The targets some case names as its own reference (ADR-0057), each with those cases: their
+   * `ssr:` and `browser:` projects run on those cases alone. A target the run leaves out joins
+   * with them, so the other targets have the case's expectations and pixels to compare with.
    */
   referencesOnly?: Readonly<Record<string, readonly string[]>>;
 }
 
 /**
  * The targets `targets` leaves out that some case names as its own reference, each with those
- * cases (`HarnessSetup.referencesOnly`).
+ * cases (`HarnessSetup.referencesOnly`). The baseline script's reference pass
+ * (`scripts/references.ts`) sets UF_REFERENCE_PASS=1, which keeps every such target to those
+ * cases, and leaves the caller's filters and options to Vitest.
  */
 export function referencesOnly(
   cases: Readonly<Record<string, { reference?: string }>>,
   targets: readonly string[],
+  pass: boolean = process.env.UF_REFERENCE_PASS === "1",
 ): Record<string, string[]> {
   const only: Record<string, string[]> = {};
   for (const [id, config] of Object.entries(cases)) {
-    if (config.reference === undefined || targets.includes(config.reference)) continue;
+    if (config.reference === undefined || (!pass && targets.includes(config.reference))) continue;
     (only[config.reference] ??= []).push(id);
   }
   return only;
@@ -114,10 +117,12 @@ export function harnessProjects(setup: HarnessSetup): TestProjectConfiguration[]
     ),
     ...setup.targets.map((target) => lazyProject(setup, "ssr", target, ssrProject)),
     ...setup.targets.map((target) => lazyProject(setup, "browser", target, browserProject)),
-    ...Object.keys(setup.referencesOnly ?? {}).flatMap((target) => [
-      lazyProject(setup, "ssr", target, ssrProject),
-      lazyProject(setup, "browser", target, browserProject),
-    ]),
+    ...Object.keys(setup.referencesOnly ?? {})
+      .filter((target) => !setup.targets.includes(target))
+      .flatMap((target) => [
+        lazyProject(setup, "ssr", target, ssrProject),
+        lazyProject(setup, "browser", target, browserProject),
+      ]),
   ];
 }
 

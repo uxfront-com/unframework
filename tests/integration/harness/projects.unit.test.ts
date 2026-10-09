@@ -202,4 +202,19 @@ describe("a case's own reference outside UF_TARGETS (ADR-0057)", () => {
     const full = harnessProjects({ harness, mode, targets: ["react", "vue"] });
     expect(full).toHaveLength(8);
   });
+
+  it("keeps the reference to those cases in the baseline script's pass (UF_REFERENCE_PASS)", async () => {
+    const only = referencesOnly(configs, ["react", "vue"], true);
+    expect(only).toEqual({ react: ["semantics/listbox"] });
+    const projects = harnessProjects({
+      harness,
+      mode,
+      targets: ["react", "vue"],
+      referencesOnly: only,
+    });
+    expect(projects).toHaveLength(8);
+    const browser = await (projects[6] as () => Promise<UserWorkspaceConfig>)();
+    expect(browser.test?.name).toBe("browser:react");
+    expect(browser.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);
+  });
 });

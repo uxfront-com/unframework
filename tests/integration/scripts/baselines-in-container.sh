@@ -52,8 +52,8 @@ case "$MODE" in
       "${WORKERS[@]}" "$@" \
       || status=$?
     # A case that names its own reference (ADR-0057) takes its baselines from that target's
-    # browser project, on its cases alone, with the caller's options and file filters
-    # (`referencePasses` in harness/references.ts).
+    # browser project, kept to its cases by UF_REFERENCE_PASS, with the caller's arguments for
+    # Vitest to apply (`referencePasses` in harness/references.ts).
     env -u CI UF_UPDATE=1 UF_PIXELS=baseline node scripts/references.ts "${WORKERS[@]}" "$@" \
       || status=$?
     cd /work
