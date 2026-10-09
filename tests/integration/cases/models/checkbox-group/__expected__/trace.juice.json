@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Only juice' })",
+      "dom": [
+        "<fieldset>",
+        "  <legend>",
+        "    \"Drinks\"",
+        "  </legend>",
+        "  <label>",
+        "    <input type=\"checkbox\" uf:checked=\"false\" uf:indeterminate=\"false\" value=\"tea\">",
+        "    \" Tea\"",
+        "  </label>",
+        "  <label>",
+        "    <input type=\"checkbox\" uf:checked=\"false\" uf:indeterminate=\"false\" value=\"coffee\">",
+        "    \" Coffee\"",
+        "  </label>",
+        "  <label>",
+        "    <input type=\"checkbox\" uf:checked=\"true\" uf:indeterminate=\"false\" value=\"juice\">",
+        "    \" Juice\"",
+        "  </label>",
+        "  <output>",
+        "    \"Ordered: juice\"",
+        "  </output>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Only juice\"",
+        "  </button>",
+        "</fieldset>"
+      ],
+      "aria": [
+        "- group \"Drinks\":",
+        "  - text: Drinks",
+        "  - checkbox \"Tea\"",
+        "  - text: Tea",
+        "  - checkbox \"Coffee\"",
+        "  - text: Coffee",
+        "  - checkbox \"Juice\" [checked]",
+        "  - text: Juice",
+        "  - status: \"Ordered: juice\"",
+        "  - button \"Only juice\""
+      ],
+      "events": {}
+    }
+  ]
+}

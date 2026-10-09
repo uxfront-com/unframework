@@ -1,0 +1,6 @@
+{
+  "description": "`<component is>` chooses between two tags by a condition: the element renders as one heading level or the other, with its attribute and children on either.",
+  "ssr": {
+    "intro": { "props": { "title": "Introduction" } }
+  }
+}

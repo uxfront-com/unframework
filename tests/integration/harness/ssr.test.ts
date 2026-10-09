@@ -18,6 +18,7 @@ import { isNormalizeTarget, normalizeHtml } from "@unframework/testing/normalize
 import { beforeAll, describe, inject, it } from "vitest";
 
 import { errorState, listCases } from "./cases.ts";
+import { onlyCases } from "./references.ts";
 import "./context.ts";
 
 const target = inject("target");
@@ -29,7 +30,9 @@ if (!isNormalizeTarget(target)) {
 }
 const harness = inject("ufHarness");
 const server = inject("ufServer");
-const cases = listCases(harness.casesDir);
+// A project the run adds as some case's reference renders those cases alone (ADR-0057).
+const only = inject("ufOnly");
+const cases = onlyCases(listCases(harness.casesDir), only);
 const components = import.meta.glob<{ default: unknown }>("../cases/**/*.uf.tsx");
 
 let renderer: Promise<SsrRenderer> | undefined;
@@ -110,7 +113,7 @@ describe(`ssr:${target}`, () => {
               const outcome = settleArtefact(
                 join(info.dir, "__expected__", `ssr.${scenario}.html`),
                 html,
-                sharedArtefactContext(harness, target),
+                sharedArtefactContext(harness, target, info.id),
               );
               if (!outcome.pass) throw new Error(outcome.message);
             },

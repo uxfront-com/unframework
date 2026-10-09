@@ -1,0 +1,4 @@
+{
+  "description": "A parent provides a ref under a key of a ref, and the child that injects it renders each change of the ref's value.",
+  "main": "Counter.uf.tsx"
+}

@@ -155,6 +155,10 @@ class Rules {
     return this.#bindings.get(id)?.kind;
   }
 
+  #refValue(id: BindingId): boolean {
+    return refValue(id, this.#bindings, this.#input);
+  }
+
   /**
    * What makes a local function's result depend on time, chance or the machine, itself or
    * through the functions it calls (UF3019), or `undefined`.
@@ -181,7 +185,7 @@ class Rules {
   #impurity(summary: CodeSummary): string | undefined {
     const [write] = summary.writes;
     if (write !== undefined) {
-      return `it writes \`${this.#name(write)}${this.#kind(write) === "state" ? ".value" : ""}\``;
+      return `it writes \`${this.#name(write)}${this.#kind(write) === "state" || this.#kind(write) === "model" ? ".value" : ""}\``;
     }
     const [event] = summary.emits;
     if (event !== undefined) return `it emits "${event}"`;
@@ -254,7 +258,7 @@ class Rules {
             ref.span,
             `A getter calls \`${name}\`, which reads \`${this.#name(read)}\`: a getter calls only functions that read nothing but constants that read nothing themselves, which Qwik hoists with them out of the component, where its getter's closure can reach them.`,
             {
-              help: `Pass what \`${name}\` reads as its arguments (\`${name}(${this.#name(read)}${this.#kind(read) === "state" || this.#kind(read) === "derived" ? ".value" : ""})\`), or compute it in the getter.`,
+              help: `Pass what \`${name}\` reads as its arguments (\`${name}(${this.#name(read)}${this.#kind(read) === "state" || this.#kind(read) === "derived" || this.#kind(read) === "model" ? ".value" : ""})\`), or compute it in the getter.`,
             },
           );
         }
@@ -344,7 +348,7 @@ class Rules {
     for (const ref of callback.body.refs) {
       switch (ref.kind) {
         case "Write":
-          if (this.#kind(ref.binding) === "state") {
+          if (this.#kind(ref.binding) === "state" || this.#kind(ref.binding) === "model") {
             report(ref.span, `writes \`${this.#name(ref.binding)}.value\``);
           }
           break;
@@ -379,7 +383,9 @@ class Rules {
 
   /** What a local function does that an immediate watcher's callback may not (UF2013). */
   #serverProblem(summary: CodeSummary): string | undefined {
-    const state = [...summary.writes].find((id) => this.#kind(id) === "state");
+    const state = [...summary.writes].find(
+      (id) => this.#kind(id) === "state" || this.#kind(id) === "model",
+    );
     if (state !== undefined) return `writes \`${this.#name(state)}.value\``;
     if (summary.readsTemplateRef) return "reads a template ref";
     const global = [...summary.clientGlobals].find(
@@ -517,6 +523,13 @@ class Rules {
             else this.#declaredBefore(source.binding, source.span, start, undefined);
           }
           if (item.immediate) codes.push(item.callback.body);
+          break;
+        // What a key is provided, or an injection falls back to, is read as the setup runs.
+        case "Provide":
+          codes.push(item.value);
+          break;
+        case "Inject":
+          if (item.fallback) codes.push(item.fallback);
           break;
         default:
           break;
@@ -717,10 +730,9 @@ class Rules {
     for (const item of this.#component.setup) {
       if (item.kind !== "Const") continue;
       const summary = summarizeCode(item.value, this.#component);
-      const read = [...summary.reads].find((id) => {
-        const kind = this.#kind(id);
-        return kind === "prop" || kind === "state" || kind === "derived" || once.has(id);
-      });
+      const read = [...summary.reads].find(
+        (id) => this.#kind(id) === "prop" || this.#refValue(id) || once.has(id),
+      );
       if (read === undefined) continue;
       once.add(item.binding);
       const kind = this.#kind(read);
@@ -729,7 +741,7 @@ class Rules {
         item.binding,
         kind === "prop"
           ? `the prop \`${name}\``
-          : kind === "state"
+          : kind === "state" || kind === "model" || kind === "context"
             ? `the ref \`${name}\`'s value`
             : kind === "derived"
               ? `the computed value \`${name}\``
@@ -1017,10 +1029,9 @@ class ConditionalReads {
         continue;
       }
       if (!region || !this.#reactive(ref.binding)) continue;
-      const kind = this.#bindings.get(ref.binding)?.kind;
       problems.push({
         span: ref.span,
-        what: `\`${name}${kind === "state" || kind === "derived" ? ".value" : ""}\``,
+        what: `\`${name}${refValue(ref.binding, this.#bindings, this.#input) ? ".value" : ""}\``,
         why: region.why,
       });
     }
@@ -1028,8 +1039,7 @@ class ConditionalReads {
   }
 
   #reactive(id: BindingId): boolean {
-    const kind = this.#bindings.get(id)?.kind;
-    return kind === "prop" || kind === "state" || kind === "derived";
+    return this.#bindings.get(id)?.kind === "prop" || refValue(id, this.#bindings, this.#input);
   }
 
   /** Whether a local function reads a reactive value while it runs, itself or through a call. */
@@ -1061,6 +1071,23 @@ class ConditionalReads {
     this.#conditional.set(id, result);
     return result;
   }
+}
+
+/**
+ * Whether a binding is a ref whose value code reads as `x.value`, which stays reactive: state, a
+ * computed value, a model, or an injected ref (ADR-0054).
+ */
+function refValue(
+  id: BindingId,
+  bindings: ReadonlyMap<BindingId, Binding>,
+  input: RulesInput,
+): boolean {
+  const kind = bindings.get(id)?.kind;
+  if (kind === "state" || kind === "derived" || kind === "model") return true;
+  return (
+    kind === "context" &&
+    [...input.render.setup.bindings.values()].some((each) => each.id === id && each.ref === true)
+  );
 }
 
 /** Whether a value may be an object or an array, whose identity React compares (UF2015). */

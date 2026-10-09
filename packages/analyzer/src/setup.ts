@@ -9,16 +9,22 @@
 import type { Fix } from "@unframework/diagnostics";
 import {
   createBinding,
+  createBindingReference,
+  createCode,
   createConstItem,
   createDerivedItem,
   createEmits,
   createEventDeclaration,
   createEventParameter,
   createExposes,
+  createExpression,
   createFunctionItem,
   createGetterSource,
   createIdItem,
+  createInjectItem,
   createLifecycleItem,
+  createModelItem,
+  createProvideItem,
   createRefSource,
   createSlotDeclaration,
   createSlots,
@@ -37,9 +43,11 @@ import {
 } from "@unframework/ir";
 import type {
   Binding,
+  Code,
   Emits,
   EventDeclaration,
   Exposes,
+  RefType,
   SetupItem,
   SlotDeclaration,
   Slots,
@@ -56,6 +64,7 @@ import { checkCopiedText, checkMembers, checkType, closure } from "./declaration
 import type { ModuleTypes } from "./declarations.ts";
 import { checkCode, checkDirectives, lowerFunction, span } from "./expressions.ts";
 import { annotatedInterface, listenerName } from "./listeners.ts";
+import { isStatic } from "./props.ts";
 import type { PropsAnalysis } from "./props.ts";
 import type {
   ComponentFunction,
@@ -95,6 +104,8 @@ export interface SetupContext {
   readonly statements: readonly (AST.Directive | AST.Statement)[];
   /** The JSX the component returns, whose handlers decide which parameters take an event. */
   readonly returned: AST.Expression | undefined;
+  /** The injection keys the module declares or imports, by the identifier that declares each. */
+  readonly keys: ReadonlyMap<object, InjectionKeyInfo>;
 }
 
 /** A component's setup, declared: its bindings, and what lowers its items. */
@@ -147,7 +158,41 @@ type Declared =
       statement: AST.Statement;
       call: AST.CallExpression;
       hook: "mounted" | "unmounted";
-    };
+    }
+  | {
+      kind: "model";
+      statement: AST.Statement;
+      call: AST.CallExpression;
+      binding: SetupBinding;
+      name: string;
+      options: ModelOptions;
+    }
+  | {
+      kind: "inject";
+      statement: AST.Statement;
+      call: AST.CallExpression;
+      binding: SetupBinding;
+      key: InjectionKeyInfo;
+    }
+  | { kind: "provide"; statement: AST.Statement; call: AST.CallExpression; key: InjectionKeyInfo };
+
+/** What `defineModel`'s options object holds, once checked (UF2028). */
+interface ModelOptions {
+  default?: AST.Expression;
+  required?: true;
+}
+
+/**
+ * An injection key `provide` and `inject` may name (ADR-0054): one the module declares, or one it
+ * imports from another `.uf.tsx` module, by its local name, with its value's type: the node for
+ * the module's own, the text the resolver gave for an imported one.
+ */
+export interface InjectionKeyInfo {
+  readonly name: string;
+  readonly type: AST.TSType | string;
+  /** The authoring type of the ref the key holds, read from its declaration's AST. */
+  readonly ref?: RefType;
+}
 
 /** The macros whose result is bound (plan §4.2): their results are the setup's bindings. */
 const BOUND_MACROS: ReadonlySet<AuthoringApi> = new Set([
@@ -157,6 +202,8 @@ const BOUND_MACROS: ReadonlySet<AuthoringApi> = new Set([
   "useId",
   "defineEmits",
   "defineSlots",
+  "defineModel",
+  "inject",
 ]);
 
 /**
@@ -180,6 +227,11 @@ export function declareSetup(context: SetupContext): Setup {
   let exposes: Exposes | undefined;
   let optionsCall: AST.CallExpression | undefined;
   let inheritAttrs = true;
+  /** Each model's name, with the argument that names it (UF2028). */
+  const models = new Map<string, AST.Expression>();
+  /** The keys the component injects and provides, by name, with the call that names each. */
+  const injected = new Map<string, AST.CallExpression>();
+  const provided = new Map<string, AST.CallExpression>();
   /** The slots' names, with the key that declares each, checked against the events at the end. */
   const slotKeys: { name: string; key: AST.PropertyKey }[] = [];
   /** The identifier the `emit` binding is declared by, once its events are read. */
@@ -257,6 +309,7 @@ export function declareSetup(context: SetupContext): Setup {
           });
         } else if (api === "defineExpose") defineExpose(call);
         else if (api === "defineOptions") defineOptions(call);
+        else if (api === "provide") provide(statement, call);
         else if (BOUND_MACROS.has(api)) unbound(call, api, "statement");
         else misplacedNextTick(call.callee as AST.IdentifierReference);
         continue;
@@ -478,8 +531,15 @@ export function declareSetup(context: SetupContext): Setup {
       case "defineSlots":
         defineSlots(statement, id, call);
         return;
+      case "defineModel":
+        defineModel(statement, id, call);
+        return;
+      case "inject":
+        inject(statement, id, call);
+        return;
       case "defineExpose":
       case "defineOptions":
+      case "provide":
         reporter.report(
           "UF2005",
           call.callee,
@@ -862,6 +922,7 @@ export function declareSetup(context: SetupContext): Setup {
   /** What else a slot's name names: a prop, or an event's callback (`onClose`). */
   function slotNameTaken(name: string): string | undefined {
     if (context.props.byName.has(name)) return `the prop \`${name}\``;
+    if (models.has(name)) return `the model \`${name}\``;
     const event = /^on[A-Z]/.test(name)
       ? `${name.charAt(2).toLowerCase()}${name.slice(3)}`
       : undefined;
@@ -979,6 +1040,251 @@ export function declareSetup(context: SetupContext): Setup {
       return;
     }
     inheritAttrs = false;
+  }
+
+  /**
+   * `const value = defineModel<string>("value", { default: "" })` (ADR-0054): a name, a string
+   * literal in camelCase that no prop or other model takes, and static options, `default` and
+   * `required` (UF2028). A nameless model gets the safe fix to `"value"`.
+   */
+  function defineModel(
+    statement: AST.VariableDeclaration,
+    id: AST.BindingIdentifier,
+    call: AST.CallExpression,
+  ): void {
+    const invalid = (at: { start: number; end: number }, message: string, fixes?: Fix[]) => {
+      reporter.report("UF2028", at, message, {
+        help: 'Name the model and give it static options: `defineModel<string>("value", { default: "" })`.',
+        ...(fixes ? { fixes } : {}),
+      });
+    };
+    const binding = declare(id, "model");
+    const [name, options, ...extra] = call.arguments;
+    const spread = call.arguments.find((argument) => argument.type === "SpreadElement");
+    const params = call.typeArguments?.params ?? [];
+    if (spread || extra.length || params.length > 1) {
+      invalid(
+        spread ?? extra[0] ?? call.typeArguments!,
+        "`defineModel` takes a name and its options, none spread, and one type argument at most.",
+      );
+      return;
+    }
+    if (!name || name.type === "ObjectExpression") {
+      const at = name ? name.start : call.end - 1;
+      invalid(
+        call,
+        "`defineModel` is called without a name: every target names a model's prop after it (`value`, React's `onValueChange`), so the name is written out.",
+        [
+          {
+            title: 'Name the model `"value"`',
+            confidence: "safe",
+            edits: [{ span: { start: at, end: at }, text: name ? '"value", ' : '"value"' }],
+          },
+        ],
+      );
+      return;
+    }
+    if (name.type !== "Literal" || typeof name.value !== "string") {
+      invalid(name, 'A model\'s name is a string literal: `defineModel<string>("value")`.');
+      return;
+    }
+    const model = name.value;
+    if (!/^[a-z][A-Za-z0-9]*$/.test(model)) {
+      invalid(
+        name,
+        `\`"${model}"\` is not camelCase in ASCII letters and digits: every target spells a model's name in a prop.`,
+      );
+      return;
+    }
+    if (models.has(model)) {
+      invalid(
+        name,
+        `The model \`${model}\` is declared twice: a component declares each model once.`,
+      );
+      return;
+    }
+    models.set(model, name);
+    if (context.props.byName.has(model)) {
+      invalid(
+        name,
+        `The model \`${model}\` is named like a prop: every target passes a model as a prop of its name, so the two would collide.`,
+      );
+      return;
+    }
+    const checked = options ? modelOptions(options as AST.Expression) : {};
+    if (!checked) return;
+    const [type] = params;
+    binding.kinds = type
+      ? checked.default || checked.required
+        ? context.types.kindsOf(type)
+        : union(context.types.kindsOf(type), UNDEFINED)
+      : UNKNOWN;
+    declared.push({ kind: "model", statement, call, binding, name: model, options: checked });
+  }
+
+  /** `defineModel`'s options: an object literal of a static `default` and `required` (UF2028). */
+  function modelOptions(options: AST.Expression): ModelOptions | undefined {
+    const invalid = (at: { start: number; end: number }, message: string) => {
+      reporter.report("UF2028", at, message, {
+        help: 'Write the options as a static object: `{ default: "" }` or `{ required: true }`.',
+      });
+      return undefined;
+    };
+    if (options.type !== "ObjectExpression") {
+      return invalid(options, "`defineModel`'s options are an object literal.");
+    }
+    const checked: ModelOptions = {};
+    const seen = new Set<string>();
+    for (const property of options.properties) {
+      const key =
+        property.type === "Property" && !property.computed && property.kind === "init"
+          ? property.key.type === "Identifier"
+            ? property.key.name
+            : property.key.type === "Literal" && typeof property.key.value === "string"
+              ? property.key.value
+              : undefined
+          : undefined;
+      if (
+        property.type !== "Property" ||
+        property.method ||
+        property.shorthand ||
+        (key !== "default" && key !== "required") ||
+        seen.has(key)
+      ) {
+        return invalid(
+          property,
+          "`defineModel` takes two options, each once: a static `default`, and `required`. The others are Vue's, which the other targets have no counterpart for.",
+        );
+      }
+      seen.add(key);
+      const value = property.value as AST.Expression;
+      if (key === "required") {
+        if (value.type !== "Literal" || typeof value.value !== "boolean") {
+          return invalid(value, "`required` is `true` or `false`, as a literal.");
+        }
+        if (value.value) checked.required = true;
+        continue;
+      }
+      if (!isStatic(value)) {
+        return invalid(
+          value,
+          "A model's default must be a static value, as a prop's is: Vue hoists defaults out of the component, and Angular reads them before any input is set.",
+        );
+      }
+      checked.default = value;
+    }
+    return checked;
+  }
+
+  /** The injection key a call names: an identifier that reads a key of the module (UF2032). */
+  function keyOf(
+    call: AST.CallExpression,
+    node: AST.Expression | AST.SpreadElement | undefined,
+  ): InjectionKeyInfo | undefined {
+    const api = (call.callee as AST.IdentifierReference).name;
+    if (node?.type === "Identifier") {
+      const resolution = context.scopes.resolve(node);
+      const declaration =
+        resolution.kind === "import" || resolution.kind === "variable"
+          ? resolution.declaration
+          : undefined;
+      const key = declaration ? context.keys.get(declaration) : undefined;
+      if (key) return key;
+    }
+    reporter.report(
+      "UF2032",
+      node ?? call,
+      `\`${api}\` takes an injection key: an exported \`InjectionKey\` of this module, or one imported from another \`.uf.tsx\` module.`,
+      {
+        help: 'Declare the key in the module that provides it: `export const ThemeKey: InjectionKey<Theme> = Symbol("theme");`.',
+      },
+    );
+    return undefined;
+  }
+
+  /**
+   * `const theme = inject(ThemeKey, fallback)` (ADR-0054): a key, and the value to read where no
+   * ancestor provides it; before any `provide` of the same key, which would answer it first on
+   * Angular (UF2032).
+   */
+  function inject(
+    statement: AST.VariableDeclaration,
+    id: AST.BindingIdentifier,
+    call: AST.CallExpression,
+  ): void {
+    const [node, fallback, ...extra] = call.arguments;
+    const binding = declare(id, "context");
+    if (call.typeArguments || extra.length || fallback?.type === "SpreadElement") {
+      reporter.report(
+        "UF2032",
+        call.typeArguments ?? extra[0] ?? fallback!,
+        "`inject` takes a key and a fallback, none spread, and no type arguments: the key types it.",
+        { help: "Write `inject(ThemeKey)` or `inject(ThemeKey, fallback)`." },
+      );
+      return;
+    }
+    const key = keyOf(call, node);
+    if (!key) return;
+    const first = provided.get(key.name);
+    if (first) {
+      reporter.report(
+        "UF2032",
+        call,
+        `\`${key.name}\` is injected after the component provides it: a component that provides a key and injects it reads its parent's value, so \`inject\` comes first.`,
+        {
+          help: "Move the `inject` above the `provide`.",
+          related: [{ span: span(first), message: "Provided here" }],
+        },
+      );
+      return;
+    }
+    const holdsRef = key.ref !== undefined;
+    if (holdsRef && !fallback) {
+      reporter.report(
+        "UF2032",
+        call,
+        `\`${key.name}\` holds a ref, which code reads as \`${id.name}.value\`: \`inject\` takes a fallback ref, read where no ancestor provides one.`,
+        { help: `Pass a ref of the setup: \`inject(${key.name}, fallback)\`.` },
+      );
+      return;
+    }
+    injected.set(key.name, call);
+    const value = valueType(key);
+    const kinds = value ? context.types.kindsOf(value) : UNKNOWN;
+    binding.kinds = fallback ? kinds : union(kinds, UNDEFINED);
+    if (holdsRef) binding.ref = true;
+    declared.push({ kind: "inject", statement, call, binding, key });
+  }
+
+  /** `provide(ThemeKey, theme)` (ADR-0054): a key, once, and the value its descendants read. */
+  function provide(statement: AST.Statement, call: AST.CallExpression): void {
+    const [node, value, ...extra] = call.arguments;
+    if (call.typeArguments || extra.length || !value || value.type === "SpreadElement") {
+      reporter.report(
+        "UF2032",
+        call.typeArguments ?? extra[0] ?? value ?? call,
+        "`provide` takes a key and a value, none spread, and no type arguments: the key types it.",
+        { help: "Write `provide(ThemeKey, theme)`." },
+      );
+      return;
+    }
+    const key = keyOf(call, node);
+    if (!key) return;
+    const first = provided.get(key.name);
+    if (first) {
+      reporter.report(
+        "UF2032",
+        call,
+        `\`${key.name}\` is provided twice: a component provides each key once.`,
+        {
+          help: "Provide one value for the key.",
+          related: [{ span: span(first), message: "First provided here" }],
+        },
+      );
+      return;
+    }
+    provided.set(key.name, call);
+    declared.push({ kind: "provide", statement, call, key });
   }
 
   /**
@@ -1206,6 +1512,25 @@ export function declareSetup(context: SetupContext): Setup {
 
   checkEventNames();
   checkSlotNames();
+  checkModelNames();
+
+  /**
+   * Checks the models' names against the events (UF2028), once every event is declared: React,
+   * Solid and Qwik write a model's change as a callback prop (`onValueChange`), which an event
+   * named `valueChange` would also be.
+   */
+  function checkModelNames(): void {
+    for (const [name, node] of models) {
+      const event = `${name}Change`;
+      if (!events?.has(event)) continue;
+      reporter.report(
+        "UF2028",
+        node,
+        `The model \`${name}\` and the event \`${event}\` collide: React, Solid and Qwik write a model's change as the callback \`on${name.charAt(0).toUpperCase()}${name.slice(1)}Change\`, which is also the event's.`,
+        { help: "Rename the model or the event." },
+      );
+    }
+  }
   if (exposeCall) checkExpose(exposeCall);
 
   /**
@@ -1401,6 +1726,27 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
       if (!flags) return undefined;
       return createWatchEffectItem(lowered.function, at);
     }
+    case "model": {
+      const [type] = item.call.typeArguments?.params ?? [];
+      const value = item.options.default;
+      return createModelItem(item.binding.id, item.name, at, {
+        ...(type ? { type: typeText(type)! } : {}),
+        ...(value
+          ? { default: createExpression(source.slice(value.start, value.end), span(value)) }
+          : {}),
+        ...(item.options.required ? { required: true } : {}),
+      });
+    }
+    case "inject": {
+      const fallback = item.call.arguments[1] as AST.Expression | undefined;
+      const code = fallback ? contextValue(fallback, item.key, render) : undefined;
+      if (fallback && !code) return undefined;
+      return createInjectItem(item.binding.id, item.key.name, at, code);
+    }
+    case "provide": {
+      const code = contextValue(item.call.arguments[1] as AST.Expression, item.key, render);
+      return code && createProvideItem(item.key.name, code, at);
+    }
     case "lifecycle": {
       const [hook, ...extra] = item.call.arguments;
       const name = (item.call.callee as AST.IdentifierReference).name;
@@ -1414,6 +1760,70 @@ function lowerItem(item: Declared, render: RenderContext): SetupItem | undefined
     default:
       return unreachable(item);
   }
+}
+
+/**
+ * What `provide` gives a key, or what `inject` falls back to (ADR-0054): for a key of a ref, the
+ * ref itself, a `state`, `derived` or `model` binding by its name, which stays reactive; for any
+ * other key, code that runs as the setup does.
+ */
+function contextValue(
+  node: AST.Expression,
+  key: InjectionKeyInfo,
+  render: RenderContext,
+): Code | undefined {
+  if (!key.ref) return checkCode(node, render).code;
+  // A `ComputedRef` takes a `computed`, a `ModelRef` a model; a `Ref` any of them, whose types
+  // each target's `Ref` accepts.
+  const accepted = REF_BINDINGS[key.ref];
+  const binding = node.type === "Identifier" ? setupBindingOf(node, render) : undefined;
+  if (binding && (accepted as readonly string[]).includes(binding.kind)) {
+    return createCode(binding.name, span(node), [createBindingReference(binding.id, span(node))]);
+  }
+  const what = { state: "a `ref`", derived: "a `computed`", model: "a model" };
+  render.reporter.report(
+    "UF2032",
+    node,
+    `\`${key.name}\` holds a \`${key.ref}\`, so it takes ${accepted
+      .map((kind) => what[kind])
+      .join(", ")
+      .replace(/, ([^,]*)$/, " or $1")} by its name, which stays reactive where it is injected.`,
+    { help: "Pass the ref itself: `provide(CountKey, count)`." },
+  );
+  return undefined;
+}
+
+/** The bindings a key of each kind of ref takes whole. */
+const REF_BINDINGS: Readonly<Record<RefType, readonly ("state" | "derived" | "model")[]>> = {
+  Ref: ["state", "derived", "model"],
+  ComputedRef: ["derived"],
+  ModelRef: ["model"],
+};
+
+/** The authoring types of a ref, which a key may hold: code reads its value (ADR-0054). */
+const REF_TYPES: ReadonlySet<string> = new Set(["Ref", "ComputedRef", "ModelRef"]);
+
+/**
+ * The ref a key's value type is (`InjectionKey<Ref<number>>`), read from its AST: what it
+ * provides stays reactive, and an injection reads it as `x.value`.
+ */
+export function refTypeOf(type: AST.TSType | undefined): RefType | undefined {
+  return type?.type === "TSTypeReference" &&
+    type.typeName.type === "Identifier" &&
+    REF_TYPES.has(type.typeName.name) &&
+    type.typeArguments?.params.length === 1
+    ? (type.typeName.name as RefType)
+    : undefined;
+}
+
+/**
+ * The type of what reading a key's injection gives: a ref's value's, for a key of a ref. An
+ * imported key's type is text, which the model does not read.
+ */
+function valueType(key: InjectionKeyInfo): AST.TSType | undefined {
+  const { type } = key;
+  if (typeof type === "string") return undefined;
+  return key.ref ? (type as AST.TSTypeReference).typeArguments!.params[0] : type;
 }
 
 /** The parameters each API passes its callback, as the wrapper of UF2022's fix names them. */
@@ -1696,6 +2106,15 @@ function unwatchable(
       fix = getterFix(node, text);
     } else if (binding?.kind === "templateRef") {
       what = `\`${node.name}\` is a template ref, which is never a reactive dependency on every target`;
+    } else if (binding?.kind === "model" || (binding?.kind === "context" && binding.ref)) {
+      // A watcher's ref sources are state and computed values (ADR-0048): a model or an injected
+      // ref is watched through a getter of its value.
+      what = `\`${node.name}\` is ${binding.kind === "model" ? "a model" : "an injected ref"}, which a watcher reads through a getter`;
+      fix = {
+        title: `Watch \`() => ${node.name}.value\``,
+        confidence: "safe",
+        edits: [{ span: span(node), text: `() => ${node.name}.value` }],
+      };
     } else if (binding) {
       what = `\`${node.name}\` is ${binding.kind === "localVar" ? "a setup `let`" : binding.kind === "emit" ? "the component's `emit`" : "a constant"}, which nothing can watch`;
     }
@@ -1714,6 +2133,21 @@ function unwatchable(
         title: `Watch \`${binding.name}\``,
         confidence: "safe",
         edits: [{ span: span(node), text: binding.name }],
+      };
+    } else if (
+      (binding?.kind === "model" || (binding?.kind === "context" && binding.ref)) &&
+      !node.computed &&
+      !node.optional &&
+      node.property.type === "Identifier" &&
+      node.property.name === "value" &&
+      node.object.start === node.start
+    ) {
+      // A model or an injected ref is watched through a getter of its value (ADR-0048).
+      what = `\`${binding.name}.value\` is ${binding.kind === "model" ? "a model's" : "an injected ref's"} value as the setup runs, which nothing can watch`;
+      fix = {
+        title: `Watch \`() => ${binding.name}.value\``,
+        confidence: "safe",
+        edits: [{ span: span(node), text: `() => ${binding.name}.value` }],
       };
     } else {
       const resolution = render.scopes.resolve(node.object);

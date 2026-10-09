@@ -56,6 +56,11 @@ export interface SetupBinding {
   /** A local function's code. */
   readonly function?: SetupFunction;
   /**
+   * Set on a `context` binding whose key holds a ref (`InjectionKey<Ref<number>>`): code reads
+   * its value as `x.value`, as a `state` binding's (ADR-0054).
+   */
+  ref?: true;
+  /**
    * What makes a local function's result depend on time, chance or the machine itself, outside
    * the globals its summary lists (`Math.random`, a locale method): UF3019 where a template, a
    * getter or an initial value calls it. Set as its body is walked.

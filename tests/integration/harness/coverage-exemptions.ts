@@ -16,7 +16,6 @@ export type KindFamily =
 
 // Composition's contract lands before its lowering (ADR-0055): each entry names the M3 lane
 // whose case removes it (the M3 plan's lanes).
-const MODELS = "M3's E2 lane (models, context and `<component is>`) adds its first case.";
 const LAYER_2 = "M3's G lane (layer-2 cross-component checks) adds its first case.";
 
 /**
@@ -46,25 +45,7 @@ function lanesBut(
  * its corpus case.
  */
 export const EXEMPT_KINDS: Readonly<Partial<Record<KindFamily, Readonly<Record<string, string>>>>> =
-  {
-    node: {
-      Dynamic: MODELS,
-    },
-    attribute: {
-      Model: MODELS,
-      ModelBinding: MODELS,
-    },
-    binding: {
-      model: MODELS,
-      context: MODELS,
-      component: MODELS,
-    },
-    "setup item": {
-      Model: MODELS,
-      Provide: MODELS,
-      Inject: MODELS,
-    },
-  };
+  {};
 
 /** Catalogued diagnostic codes that no case triggers, and why none can. */
 export const EXEMPT_CODES: Readonly<Record<string, string>> = {
@@ -72,17 +53,11 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
     "Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
   UF9001:
     "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
-  UF2028: MODELS,
-  UF2032: MODELS,
-  UF2033: MODELS,
-  UF2034: MODELS,
   UF3035: LAYER_2,
   UF3036: LAYER_2,
   UF3037: LAYER_2,
   UF3038: LAYER_2,
   UF3039: LAYER_2,
-  UF3042: MODELS,
-  UF3044: MODELS,
 };
 
 /**
@@ -92,8 +67,6 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
 export const EXEMPT_CAPABILITIES: Readonly<
   Partial<Record<CapabilityName, string | Partial<Record<TargetName, string>>>>
 > = {
-  listbox:
-    "Vue, the reference target, cannot render a single-selection list box on its client (ADR-0033), so no case can hold one while Vue writes the shared expectations. M3's form cases add one, with `requires` to skip Vue and another reviewed source of expectations.",
   component: lanesBut(),
   "component-event": lanesBut("astro"),
   "default-slot": lanesBut(),
@@ -102,13 +75,13 @@ export const EXEMPT_CAPABILITIES: Readonly<
   "slot-fallback": lanesBut(),
   "default-slot-presence": lanesBut("angular", "qwik"),
   "slot-forwarding": lanesBut(),
-  model: MODELS,
-  "two-way-binding": MODELS,
-  "model-array": MODELS,
-  "model-modifiers": MODELS,
+  model: lanesBut(),
+  "two-way-binding": lanesBut("astro"),
+  "model-array": lanesBut("astro"),
+  "model-modifiers": lanesBut("astro"),
   fallthrough: lanesBut(),
   expose: lanesBut("astro"),
-  context: MODELS,
-  "reactive-context": MODELS,
-  "dynamic-component": MODELS,
+  context: lanesBut("astro"),
+  "reactive-context": lanesBut("astro"),
+  "dynamic-component": lanesBut(),
 };

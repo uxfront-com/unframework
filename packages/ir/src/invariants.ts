@@ -203,11 +203,21 @@ export function checkInvariants(module: UfModule): IrValidationError[] {
   const errors: IrValidationError[] = [];
   const types = checkTypeDeclarations(module, errors);
   const apis = componentApis(module, errors);
-  // The keys `provide` and `inject` may name: the module's own, and the imported ones.
-  const keys = new Set([
-    ...(module.keys ?? []).map(({ name }) => name),
+  // The keys `provide` and `inject` may name: the module's own, and the imported ones, each with
+  // whether it holds a ref.
+  const keys = new Map<string, boolean>([
+    ...(module.keys ?? []).map(({ name, ref }) => [name, ref !== undefined] as const),
     ...(module.imports ?? []).flatMap((entry) =>
-      entry.names.flatMap(({ kind, local }) => (kind === "Key" ? [local] : [])),
+      entry.names.flatMap(({ kind, imported, local }) =>
+        kind === "Key"
+          ? [
+              [
+                local,
+                entry.api.keys.find((key) => key.name === imported)?.ref !== undefined,
+              ] as const,
+            ]
+          : [],
+      ),
     ),
   ]);
   const components = new Set<string>();
@@ -419,8 +429,11 @@ interface Walk {
   readonly staticConsts: ReadonlySet<BindingId>;
   /** The components a component element may name, by local name, with what they declare. */
   readonly apis: ReadonlyMap<string, Declared>;
-  /** The injection keys `provide` and `inject` may name, by local name. */
-  readonly keys: ReadonlySet<string>;
+  /**
+   * The injection keys `provide` and `inject` may name, by local name, with whether each holds a
+   * ref (`InjectionKey<Ref<number>>`), which is provided whole and injected as a ref.
+   */
+  readonly keys: ReadonlyMap<string, boolean>;
 }
 
 /** Where a node sits: what the walk carries down the tree. */
@@ -473,7 +486,7 @@ function checkComponent(
   path: string,
   types: ReadonlyMap<string, number>,
   apis: ReadonlyMap<string, Declared>,
-  keys: ReadonlySet<string>,
+  keys: ReadonlyMap<string, boolean>,
   errors: IrValidationError[],
 ): void {
   const bindings = checkBindings(component, path, errors);
@@ -2196,11 +2209,43 @@ function referenceText(
     binding.kind === "state" ||
     binding.kind === "derived" ||
     binding.kind === "templateRef" ||
-    binding.kind === "model"
+    binding.kind === "model" ||
+    (binding.kind === "context" && injectsRef(binding, walk))
   ) {
     return { text: `${binding.name}.value`, object: binding.name, member: "value" };
   }
   return { text: binding.name, object: binding.name };
+}
+
+/** Whether a `context` binding injects a key that holds a ref, which is read as `x.value`. */
+function injectsRef(binding: Binding, walk: Walk): boolean {
+  const item = walk.component.setup.find(
+    (each) => each.kind === "Inject" && each.binding === binding.id,
+  );
+  return item?.kind === "Inject" && walk.keys.get(item.key) === true;
+}
+
+/**
+ * Checks what `provide` gives, or `inject` falls back to, for a key that holds a ref (ADR-0054):
+ * the ref itself, a `state`, `derived` or `model` binding by its name, which stays reactive.
+ */
+function checkProvidedRef(code: Code, path: string, walk: Walk): void {
+  const [ref, ...more] = code.refs;
+  const binding = ref?.kind === "Binding" ? walk.bindings.get(ref.binding) : undefined;
+  if (
+    more.length ||
+    !binding ||
+    (binding.kind !== "state" && binding.kind !== "derived" && binding.kind !== "model") ||
+    code.code !== binding.name ||
+    ref!.span.start !== code.span.start ||
+    ref!.span.end !== code.span.end
+  ) {
+    walk.errors.push({
+      path,
+      message:
+        "must be a `state`, `derived` or `model` binding by its name: a key of a ref takes the ref itself",
+    });
+  }
 }
 
 /**
@@ -2904,13 +2949,15 @@ function checkItem(item: SetupItem, path: string, scope: ReadonlySet<BindingId>,
       return;
     case "Provide":
       checkKeyName(item.key, `${path}/key`, walk);
-      checkCode(item.value, `${path}/value`, scope, "initial", walk);
+      if (walk.keys.get(item.key)) checkProvidedRef(item.value, `${path}/value`, walk);
+      else checkCode(item.value, `${path}/value`, scope, "initial", walk);
       declaredBefore(summarizeCode(item.value, component), item, `${path}/value`, walk);
       return;
     case "Inject":
       checkKeyName(item.key, `${path}/key`, walk);
       if (item.fallback) {
-        checkCode(item.fallback, `${path}/fallback`, scope, "initial", walk);
+        if (walk.keys.get(item.key)) checkProvidedRef(item.fallback, `${path}/fallback`, walk);
+        else checkCode(item.fallback, `${path}/fallback`, scope, "initial", walk);
         declaredBefore(summarizeCode(item.fallback, component), item, `${path}/fallback`, walk);
       }
       return;

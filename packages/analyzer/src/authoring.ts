@@ -11,7 +11,8 @@ import { isAuthoringModule } from "./frameworks.ts";
 
 /**
  * The APIs the analyser lowers: M2's macros, reactive APIs and `nextTick` (ADR-0045), and M3's
- * `defineSlots`, `defineExpose` and `defineOptions` (ADR-0054).
+ * `defineSlots`, `defineExpose`, `defineOptions`, `defineModel`, `provide` and `inject`
+ * (ADR-0054).
  */
 export type AuthoringApi =
   | "ref"
@@ -26,7 +27,10 @@ export type AuthoringApi =
   | "useId"
   | "defineSlots"
   | "defineExpose"
-  | "defineOptions";
+  | "defineOptions"
+  | "defineModel"
+  | "provide"
+  | "inject";
 
 /** The APIs the analyser lowers. */
 export const AUTHORING_APIS: ReadonlySet<AuthoringApi> = new Set<AuthoringApi>([
@@ -43,14 +47,13 @@ export const AUTHORING_APIS: ReadonlySet<AuthoringApi> = new Set<AuthoringApi>([
   "defineSlots",
   "defineExpose",
   "defineOptions",
+  "defineModel",
+  "provide",
+  "inject",
 ]);
 
 /** The APIs the package exports that a later milestone lowers, and what each brings (UF1002). */
-export const LATER_APIS: ReadonlyMap<string, string> = new Map([
-  ["defineModel", "two-way bindings (`defineModel` and `v-model`) land in M3"],
-  ["provide", "`provide` and `inject` land in M3"],
-  ["inject", "`provide` and `inject` land in M3"],
-]);
+export const LATER_APIS: ReadonlyMap<string, string> = new Map<string, string>();
 
 /**
  * The types the package exports: a component imports them for its annotations, which the

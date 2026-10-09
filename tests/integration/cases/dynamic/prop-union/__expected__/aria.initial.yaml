@@ -1,0 +1,4 @@
+- main:
+  - heading "Guide" [level=1]
+  - heading "Setup" [level=2]
+  - heading "Requirements" [level=3]

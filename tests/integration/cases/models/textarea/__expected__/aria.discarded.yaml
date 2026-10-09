@@ -1,0 +1,4 @@
+- region "Note":
+  - textbox "Text"
+  - status: 0 characters
+  - button "Discard"

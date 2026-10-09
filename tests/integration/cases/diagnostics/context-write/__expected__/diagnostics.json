@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2034",
+    "severity": "error",
+    "message": "`mode` is injected, and an injected value is read-only: the component that provides it owns it.",
+    "file": "diagnostics/context-write/Toolbar.uf.tsx",
+    "start": {
+      "line": 12,
+      "column": 43,
+      "offset": 474
+    },
+    "end": {
+      "line": 12,
+      "column": 53,
+      "offset": 484
+    },
+    "help": "Change it in the component that provides it: a child asks for the change with an event its parent listens to, or binds a model the provider owns."
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('checkbox', { name: 'I agree' })",
+      "dom": [
+        "<section aria-label=\"Terms\">",
+        "  <label>",
+        "    <input type=\"checkbox\" uf:checked=\"true\" uf:focused=\"\" uf:indeterminate=\"false\">",
+        "    \" I agree\"",
+        "  </label>",
+        "  <output>",
+        "    \"Agreed\"",
+        "  </output>",
+        "  <button type=\"button\">",
+        "    \"Toggle\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Terms\":",
+        "  - checkbox \"I agree\" [checked]",
+        "  - text: I agree",
+        "  - status: Agreed",
+        "  - button \"Toggle\""
+      ],
+      "events": {}
+    }
+  ]
+}

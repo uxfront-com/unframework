@@ -1,0 +1,371 @@
+{
+  "irVersion": 1,
+  "file": "models/several/PriceRange.uf.tsx",
+  "components": [
+    {
+      "name": "PriceRange",
+      "span": {
+        "start": 44,
+        "end": 511
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 99,
+              "end": 105
+            }
+          },
+          "binding": "label@81",
+          "span": {
+            "start": 92,
+            "end": 105
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 90,
+            "end": 107
+          }
+        },
+        "span": {
+          "start": 79,
+          "end": 107
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@81",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 81,
+            "end": 86
+          }
+        },
+        {
+          "id": "min@119",
+          "name": "min",
+          "kind": "model",
+          "span": {
+            "start": 119,
+            "end": 122
+          }
+        },
+        {
+          "id": "max@177",
+          "name": "max",
+          "kind": "model",
+          "span": {
+            "start": 177,
+            "end": 180
+          }
+        },
+        {
+          "id": "widen@240",
+          "name": "widen",
+          "kind": "localFn",
+          "span": {
+            "start": 240,
+            "end": 245
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Model",
+          "binding": "min@119",
+          "name": "min",
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 137,
+              "end": 143
+            }
+          },
+          "default": {
+            "code": "0",
+            "span": {
+              "start": 163,
+              "end": 164
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 113,
+            "end": 168
+          }
+        },
+        {
+          "kind": "Model",
+          "binding": "max@177",
+          "name": "max",
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 195,
+              "end": 201
+            }
+          },
+          "default": {
+            "code": "100",
+            "span": {
+              "start": 221,
+              "end": 224
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 171,
+            "end": 228
+          }
+        },
+        {
+          "kind": "Function",
+          "binding": "widen@240",
+          "form": "declaration",
+          "function": {
+            "parameters": [],
+            "body": {
+              "code": "{\n    min.value -= 10;\n    max.value += 10;\n  }",
+              "span": {
+                "start": 248,
+                "end": 295
+              },
+              "refs": [
+                {
+                  "kind": "Write",
+                  "binding": "min@119",
+                  "operator": "-=",
+                  "span": {
+                    "start": 254,
+                    "end": 269
+                  },
+                  "target": {
+                    "start": 254,
+                    "end": 263
+                  },
+                  "value": {
+                    "start": 267,
+                    "end": 269
+                  }
+                },
+                {
+                  "kind": "Write",
+                  "binding": "max@177",
+                  "operator": "+=",
+                  "span": {
+                    "start": 275,
+                    "end": 290
+                  },
+                  "target": {
+                    "start": 275,
+                    "end": 284
+                  },
+                  "value": {
+                    "start": 288,
+                    "end": 290
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 245,
+              "end": 295
+            }
+          },
+          "span": {
+            "start": 231,
+            "end": 295
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "fieldset",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "legend",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 337,
+                    "end": 342
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@81",
+                      "span": {
+                        "start": 337,
+                        "end": 342
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 336,
+                  "end": 343
+                }
+              }
+            ],
+            "span": {
+              "start": 328,
+              "end": 352
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "From ",
+                "span": {
+                  "start": 362,
+                  "end": 376
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "min.value",
+                  "span": {
+                    "start": 377,
+                    "end": 386
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "min@119",
+                      "span": {
+                        "start": 377,
+                        "end": 386
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 376,
+                  "end": 387
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " to ",
+                "span": {
+                  "start": 387,
+                  "end": 391
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "max.value",
+                  "span": {
+                    "start": 392,
+                    "end": 401
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "max@177",
+                      "span": {
+                        "start": 392,
+                        "end": 401
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 391,
+                  "end": 402
+                }
+              }
+            ],
+            "span": {
+              "start": 359,
+              "end": 413
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 428,
+                  "end": 441
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Function",
+                  "binding": "widen@240",
+                  "span": {
+                    "start": 451,
+                    "end": 456
+                  }
+                },
+                "span": {
+                  "start": 442,
+                  "end": 457
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Widen",
+                "span": {
+                  "start": 458,
+                  "end": 479
+                }
+              }
+            ],
+            "span": {
+              "start": 420,
+              "end": 488
+            }
+          }
+        ],
+        "span": {
+          "start": 311,
+          "end": 504
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "PriceRange",
+      "span": {
+        "start": 44,
+        "end": 511
+      }
+    }
+  ],
+  "types": []
+}

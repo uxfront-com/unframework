@@ -1,0 +1,180 @@
+{
+  "irVersion": 1,
+  "file": "context/reactive/Display.uf.tsx",
+  "components": [
+    {
+      "name": "Display",
+      "span": {
+        "start": 90,
+        "end": 238
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "none@134",
+          "name": "none",
+          "kind": "state",
+          "span": {
+            "start": 134,
+            "end": 138
+          }
+        },
+        {
+          "id": "count@157",
+          "name": "count",
+          "kind": "context",
+          "span": {
+            "start": 157,
+            "end": 162
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "none@134",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 145,
+              "end": 146
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 128,
+            "end": 148
+          }
+        },
+        {
+          "kind": "Inject",
+          "binding": "count@157",
+          "key": "CountKey",
+          "fallback": {
+            "code": "none",
+            "span": {
+              "start": 182,
+              "end": 186
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "none@134",
+                "span": {
+                  "start": 182,
+                  "end": 186
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 151,
+            "end": 188
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "output",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Text",
+            "value": "Count: ",
+            "span": {
+              "start": 206,
+              "end": 213
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "count.value",
+              "span": {
+                "start": 214,
+                "end": 225
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "count@157",
+                  "span": {
+                    "start": 214,
+                    "end": 225
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 213,
+              "end": 226
+            }
+          }
+        ],
+        "span": {
+          "start": 198,
+          "end": 235
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Display",
+      "span": {
+        "start": 90,
+        "end": 238
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Counter.uf.tsx",
+      "file": "Counter.uf.tsx",
+      "api": {
+        "file": "Counter.uf.tsx",
+        "components": [
+          {
+            "name": "Counter",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "section"
+          }
+        ],
+        "keys": [
+          {
+            "name": "CountKey",
+            "description": "uf.count",
+            "type": "Ref<number>",
+            "ref": "Ref"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Key",
+          "imported": "CountKey",
+          "local": "CountKey",
+          "span": {
+            "start": 53,
+            "end": 61
+          }
+        }
+      ],
+      "span": {
+        "start": 44,
+        "end": 88
+      }
+    }
+  ]
+}

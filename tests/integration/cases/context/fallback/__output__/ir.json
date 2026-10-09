@@ -1,0 +1,230 @@
+{
+  "irVersion": 1,
+  "file": "context/fallback/Page.uf.tsx",
+  "components": [
+    {
+      "name": "Page",
+      "span": {
+        "start": 97,
+        "end": 292
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "main",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Greeting",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "name",
+                "value": {
+                  "code": "\"Ada\"",
+                  "span": {
+                    "start": 173,
+                    "end": 178
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 168,
+                  "end": 178
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 158,
+              "end": 181
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "LocaleProvider",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "locale",
+                "value": {
+                  "code": "\"pt\"",
+                  "span": {
+                    "start": 211,
+                    "end": 215
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 204,
+                  "end": 215
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Component",
+                    "component": "Greeting",
+                    "attributes": [
+                      {
+                        "kind": "Prop",
+                        "name": "name",
+                        "value": {
+                          "code": "\"Inês\"",
+                          "span": {
+                            "start": 240,
+                            "end": 246
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 235,
+                          "end": 246
+                        }
+                      }
+                    ],
+                    "fills": [],
+                    "span": {
+                      "start": 225,
+                      "end": 249
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 225,
+                  "end": 249
+                }
+              }
+            ],
+            "span": {
+              "start": 188,
+              "end": 273
+            }
+          }
+        ],
+        "span": {
+          "start": 145,
+          "end": 285
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Page",
+      "span": {
+        "start": 97,
+        "end": 292
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Greeting.uf.tsx",
+      "file": "Greeting.uf.tsx",
+      "api": {
+        "file": "Greeting.uf.tsx",
+        "components": [
+          {
+            "name": "Greeting",
+            "export": "default",
+            "props": [
+              {
+                "name": "name",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "p"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Greeting",
+          "span": {
+            "start": 7,
+            "end": 15
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 41
+      }
+    },
+    {
+      "specifier": "./LocaleProvider.uf.tsx",
+      "file": "LocaleProvider.uf.tsx",
+      "api": {
+        "file": "LocaleProvider.uf.tsx",
+        "components": [
+          {
+            "name": "LocaleProvider",
+            "export": "default",
+            "props": [
+              {
+                "name": "locale",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": [
+          {
+            "name": "LocaleKey",
+            "description": "uf.locale",
+            "type": "string"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "LocaleProvider",
+          "span": {
+            "start": 49,
+            "end": 63
+          }
+        }
+      ],
+      "span": {
+        "start": 42,
+        "end": 95
+      }
+    }
+  ]
+}

@@ -515,7 +515,8 @@ function selfTriggeringEffects(
       const getter = getters.get(id);
       if (getter) for (const read of summarizeCode(getter.body, component).reads) reads.add(read);
     }
-    const state = (id: BindingId) => bindings.get(id)?.kind === "state" && reads.has(id);
+    const state = (id: BindingId) =>
+      (bindings.get(id)?.kind === "state" || bindings.get(id)?.kind === "model") && reads.has(id);
     const reported = new Set<BindingId>();
     const why =
       "Vue ignores what an effect writes while it runs, and Svelte, Solid, Angular, Qwik and React run it again after its own write, without end.";

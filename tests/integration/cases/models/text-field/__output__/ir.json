@@ -1,0 +1,367 @@
+{
+  "irVersion": 1,
+  "file": "models/text-field/ContactForm.uf.tsx",
+  "components": [
+    {
+      "name": "ContactForm",
+      "span": {
+        "start": 36,
+        "end": 537
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "name@84",
+          "name": "name",
+          "kind": "state",
+          "span": {
+            "start": 84,
+            "end": 88
+          }
+        },
+        {
+          "id": "email@111",
+          "name": "email",
+          "kind": "state",
+          "span": {
+            "start": 111,
+            "end": 116
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "name@84",
+          "initial": {
+            "code": "\"Ada\"",
+            "span": {
+              "start": 95,
+              "end": 100
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 78,
+            "end": 102
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "email@111",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 123,
+              "end": 125
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 105,
+            "end": 127
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "form",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Contact",
+            "span": {
+              "start": 149,
+              "end": 169
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Name ",
+                "span": {
+                  "start": 184,
+                  "end": 198
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "name.value",
+                      "span": {
+                        "start": 214,
+                        "end": 224
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "name@84",
+                          "span": {
+                            "start": 214,
+                            "end": 224
+                          }
+                        }
+                      ]
+                    },
+                    "control": "text",
+                    "span": {
+                      "start": 205,
+                      "end": 225
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 198,
+                  "end": 228
+                }
+              }
+            ],
+            "span": {
+              "start": 177,
+              "end": 243
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Email ",
+                "span": {
+                  "start": 257,
+                  "end": 272
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "email",
+                    "span": {
+                      "start": 279,
+                      "end": 291
+                    }
+                  },
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "email.value",
+                      "span": {
+                        "start": 301,
+                        "end": 312
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "email@111",
+                          "span": {
+                            "start": 301,
+                            "end": 312
+                          }
+                        }
+                      ]
+                    },
+                    "control": "text",
+                    "span": {
+                      "start": 292,
+                      "end": 313
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 272,
+                  "end": 316
+                }
+              }
+            ],
+            "span": {
+              "start": 250,
+              "end": 331
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "name.value",
+                  "span": {
+                    "start": 356,
+                    "end": 366
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@84",
+                      "span": {
+                        "start": 356,
+                        "end": 366
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 355,
+                  "end": 367
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " at ",
+                "span": {
+                  "start": 367,
+                  "end": 371
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "email.value || \"no address\"",
+                  "span": {
+                    "start": 372,
+                    "end": 399
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "email@111",
+                      "span": {
+                        "start": 372,
+                        "end": 383
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 371,
+                  "end": 400
+                }
+              }
+            ],
+            "span": {
+              "start": 338,
+              "end": 416
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 431,
+                  "end": 444
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(name.value = \"Grace\")",
+                      "span": {
+                        "start": 460,
+                        "end": 482
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "name@84",
+                          "operator": "=",
+                          "span": {
+                            "start": 460,
+                            "end": 482
+                          },
+                          "target": {
+                            "start": 461,
+                            "end": 471
+                          },
+                          "value": {
+                            "start": 474,
+                            "end": 481
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 454,
+                      "end": 482
+                    }
+                  },
+                  "span": {
+                    "start": 454,
+                    "end": 482
+                  }
+                },
+                "span": {
+                  "start": 445,
+                  "end": 483
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Use Grace",
+                "span": {
+                  "start": 484,
+                  "end": 509
+                }
+              }
+            ],
+            "span": {
+              "start": 423,
+              "end": 518
+            }
+          }
+        ],
+        "span": {
+          "start": 143,
+          "end": 530
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ContactForm",
+      "span": {
+        "start": 36,
+        "end": 537
+      }
+    }
+  ],
+  "types": []
+}

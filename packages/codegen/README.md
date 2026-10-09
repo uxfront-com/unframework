@@ -17,8 +17,7 @@ framework-specific.
   element HTML ties to its parent (`contextual-root`, which a component without composition
   may need). `compositionUse` finds where a component first uses composition, in source order:
   until a target's M3 lane lands, its `emit` reports UF1002 there and emits nothing for it (Vue
-  emits components, slots, fallthrough and expose, and reports models, context and dynamic
-  components its own way until they land).
+  emits all of composition).
   Each cell is `native`, `emulated` with the name of the inline helper the target prints (React's
   `cx` for `class-binding`), or `unsupported` with a portability diagnostic: a target declares in
   its matrix what it cannot render exactly (P4, ADR-0033). `requiredCapabilities` derives what a
@@ -113,8 +112,10 @@ setInterval(() => count.value++, 1000)`), and its replacement is parenthesised w
   one `item={({ item }) => …}`, its parameter as written; `jsxFillValue`); the dialect overrides
   each (`componentTag`, `propAttribute`, `componentEvent`, `fillAttribute`). Where the targets
   differ entirely there is no default, and a dialect that meets the construct without its hook
-  throws: `slotValue` (a component's own slot as a value, which a forwarded fill passes on) and
-  `slotOutlet` (where it renders a slot; `jsxSlotProps` gives its props). Text
+  throws: `slotValue` (a component's own slot as a value, which a forwarded fill passes on),
+  `slotOutlet` (where it renders a slot; `jsxSlotProps` gives its props), `modelAttribute` (a
+  control's `v-model`), `modelBinding` (a component's `v-model:<name>`) and `dynamic`
+  (`<component is>`; `jsxDynamic` prints it as an element of the name a target gives it). Text
   goes through `jsxText`, the JSX escaping contract (ADR-0030): raw only when every JSX
   transform and formatter keeps it as written, and never where a formatter could start a line
   with `//` or `/*`.
@@ -148,7 +149,9 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   dialect's hooks, which a dialect that meets one without it throws for: `propAttribute`,
   `componentEvent`, `fills` (the component's content from its fills, with a scoped fill's
   parameter as written and a forwarded slot's presence as the rules spell it,
-  `RewriteRules.slot`) and `slotOutlet` (its props key by key when they are an object literal).
+  `RewriteRules.slot`), `slotOutlet` (its props key by key when they are an object literal),
+  `modelAttribute` (a control's `v-model`), `modelBinding` (a component's `v-model:<name>`) and
+  `dynamic` (`<component is>`, as an `element` or a `component` piece the printer writes).
   The optional `componentTag` hook, and `MarkupOptions.componentTag` before it, let a dialect or a
   target write a component under a name of its own. A dialect may return a `component` piece (Vue's `v-for` and `v-if` on the component itself)
   and a `tag` piece (`<slot name="title">`, `<template #title>`), which closes itself without

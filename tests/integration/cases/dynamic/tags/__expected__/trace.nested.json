@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Nest' })",
+      "dom": [
+        "<article>",
+        "  <h3 class=\"title\">",
+        "    \"Introduction\"",
+        "  </h3>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Lift\"",
+        "  </button>",
+        "</article>"
+      ],
+      "aria": [
+        "- article:",
+        "  - heading \"Introduction\" [level=3]",
+        "  - button \"Lift\""
+      ],
+      "events": {}
+    }
+  ]
+}

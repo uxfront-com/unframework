@@ -1,0 +1,121 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit two-way-binding yet: composition lands in M3.",
+    "file": "models/textarea/NoteEditor.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 35,
+      "offset": 184
+    },
+    "end": {
+      "line": 7,
+      "column": 55,
+      "offset": 204
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit two-way-binding yet: composition lands in M3.",
+    "file": "models/textarea/NoteEditor.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 35,
+      "offset": 184
+    },
+    "end": {
+      "line": 7,
+      "column": 55,
+      "offset": 204
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "models/textarea/NoteEditor.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 35,
+      "offset": 184
+    },
+    "end": {
+      "line": 7,
+      "column": 55,
+      "offset": 204
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit two-way-binding yet: composition lands in M3.",
+    "file": "models/textarea/NoteEditor.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 35,
+      "offset": 184
+    },
+    "end": {
+      "line": 7,
+      "column": 55,
+      "offset": 204
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit two-way-binding yet: composition lands in M3.",
+    "file": "models/textarea/NoteEditor.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 35,
+      "offset": 184
+    },
+    "end": {
+      "line": 7,
+      "column": 55,
+      "offset": 204
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit two-way-binding yet: composition lands in M3.",
+    "file": "models/textarea/NoteEditor.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 35,
+      "offset": 184
+    },
+    "end": {
+      "line": 7,
+      "column": 55,
+      "offset": 204
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit two-way-binding yet: composition lands in M3.",
+    "file": "models/textarea/NoteEditor.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 35,
+      "offset": 184
+    },
+    "end": {
+      "line": 7,
+      "column": 55,
+      "offset": 204
+    },
+    "target": "svelte"
+  }
+]

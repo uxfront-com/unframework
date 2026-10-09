@@ -1,0 +1,10 @@
+- group "Drinks":
+  - text: Drinks
+  - checkbox "Tea" [checked]
+  - text: Tea
+  - checkbox "Coffee"
+  - text: Coffee
+  - checkbox "Juice"
+  - text: Juice
+  - status: "Ordered: tea"
+  - button "Only juice"

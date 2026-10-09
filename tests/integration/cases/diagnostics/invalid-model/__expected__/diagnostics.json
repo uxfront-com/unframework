@@ -1,0 +1,34 @@
+[
+  {
+    "code": "UF2028",
+    "severity": "error",
+    "message": "`defineModel` is called without a name: every target names a model's prop after it (`value`, React's `onValueChange`), so the name is written out.",
+    "file": "diagnostics/invalid-model/Rating.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 17,
+      "offset": 257
+    },
+    "end": {
+      "line": 6,
+      "column": 52,
+      "offset": 292
+    },
+    "help": "Name the model and give it static options: `defineModel<string>(\"value\", { default: \"\" })`.",
+    "fixes": [
+      {
+        "title": "Name the model `\"value\"`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 277,
+              "end": 277
+            },
+            "text": "\"value\", "
+          }
+        ]
+      }
+    ]
+  }
+]

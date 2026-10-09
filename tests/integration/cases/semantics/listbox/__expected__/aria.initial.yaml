@@ -1,0 +1,6 @@
+- region "Colours":
+  - listbox "Colour":
+    - option "Red"
+    - option "Green"
+    - option "Blue"
+  - status: "Picked: none"

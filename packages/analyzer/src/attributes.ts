@@ -55,6 +55,7 @@ import type { HtmlOnlyReference, Piece } from "./jsx/text.ts";
 import { listenerName, lowerListener, lowerRef } from "./listeners.ts";
 import { isStaticString, piecesOf, reportCharacters, valueOf } from "./literals.ts";
 import type { StaticString } from "./literals.ts";
+import { CONTROL_MODEL, lowerControlModel } from "./models.ts";
 import type { RenderContext } from "./render.ts";
 import { spreadSource } from "./spread-source.ts";
 import { lowerStaticStyle, lowerStyleObject } from "./style.ts";
@@ -131,9 +132,12 @@ interface Read {
   form: Form;
 }
 
-/** A listener or a template ref, lowered on its own (`./listeners.ts`). */
+/**
+ * A listener or a template ref, lowered on its own (`./listeners.ts`), or a `v-model`, lowered
+ * once the element's `type` is known (`./models.ts`).
+ */
 interface OwnRead {
-  own: "listener" | "ref";
+  own: "listener" | "ref" | "model";
   node: AST.JSXAttribute;
   nameNode: AST.JSXIdentifier;
   attribute: Attribute | undefined;
@@ -141,6 +145,8 @@ interface OwnRead {
   key: string;
   /** Its name as it is written canonically, which a message names it by. */
   canonical: string;
+  /** A `v-model`'s modifier, from its spelling (`v-model_trim`). */
+  modifier?: "trim" | "lazy" | "number" | undefined;
 }
 
 /** A spread, read on its own. */
@@ -179,6 +185,15 @@ export function lowerAttributes(
       nameNode.type === "JSXNamespacedName"
         ? `${nameNode.namespace.name}:${nameNode.name.name}`
         : nameNode.name;
+    if (nameNode.type === "JSXNamespacedName" && CONTROL_MODEL.test(nameNode.namespace.name)) {
+      reporter.report(
+        "UF3042",
+        nameNode,
+        `\`${authored}\` binds a component's model by its name, and <${element.tag}> is an element: a form control's \`v-model\` takes no name.`,
+        { help: "Write `v-model={text.value}` on the control." },
+      );
+      continue;
+    }
     if (nameNode.type === "JSXNamespacedName" && !/^(xlink|xml|xmlns):/.test(authored)) {
       reporter.unsupported(nameNode, "Namespaced attributes are not supported yet.");
       continue;
@@ -190,6 +205,19 @@ export function lowerAttributes(
       if (name === "ref") {
         const attribute = lowerRef(item, nameNode, own, element.render.attached);
         entries.push({ own: "ref", node: item, nameNode, attribute, key: "ref", canonical: "ref" });
+        continue;
+      }
+      const model = CONTROL_MODEL.exec(authored);
+      if (model) {
+        entries.push({
+          own: "model",
+          node: item,
+          nameNode,
+          attribute: undefined,
+          key: "v-model",
+          canonical: "v-model",
+          modifier: model[1] as OwnRead["modifier"],
+        });
         continue;
       }
       const listener = listenerName(authored);
@@ -852,14 +880,15 @@ function checkAgainstElement(
   const owned = new Map<string, Span>();
   for (const entry of entries) {
     if ("own" in entry) {
-      // One listener per event and option on an element, and one template ref (ADR-0047).
+      // One listener per event and option on an element, one template ref (ADR-0047), and one
+      // `v-model`, whatever its modifier.
       const first = owned.get(entry.key);
       if (first) {
         reporter.report(
           "UF3007",
           entry.nameNode,
-          entry.own === "ref"
-            ? `\`ref\` is set twice on this <${tag}>.`
+          entry.own === "ref" || entry.own === "model"
+            ? `\`${entry.canonical}\` is set twice on this <${tag}>.`
             : `\`${entry.canonical}\` is set twice on this <${tag}>: an element listens to an event with one handler for each option.`,
           {
             help: "Keep one: call both functions from one handler.",
@@ -869,6 +898,29 @@ function checkAgainstElement(
         continue;
       }
       owned.set(entry.key, span(entry.nameNode));
+      if (entry.own === "model") {
+        const multiple = reads.find((read) => read.name === "multiple");
+        const model = lowerControlModel(entry.node, entry.nameNode, entry.modifier, {
+          tag,
+          type: typeRead === undefined ? undefined : type === undefined ? null : type,
+          multiple: !multiple
+            ? false
+            : multiple.form.kind === "static"
+              ? true
+              : multiple.form.kind === "absent"
+                ? false
+                : null,
+          value:
+            reads.some((read) => read.name === "value") ||
+            entries.some(
+              (other) => "keys" in other && other.keys.some((key) => key.name === "value"),
+            ),
+          hasChildren,
+          render: element.render,
+        });
+        if (model) attributes.push(model);
+        continue;
+      }
       if (entry.attribute) attributes.push(entry.attribute);
       continue;
     }

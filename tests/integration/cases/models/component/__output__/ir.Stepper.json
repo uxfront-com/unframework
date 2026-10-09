@@ -1,0 +1,400 @@
+{
+  "irVersion": 1,
+  "file": "models/component/Stepper.uf.tsx",
+  "components": [
+    {
+      "name": "Stepper",
+      "span": {
+        "start": 44,
+        "end": 521
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 96,
+              "end": 102
+            }
+          },
+          "binding": "label@78",
+          "span": {
+            "start": 89,
+            "end": 102
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 87,
+            "end": 104
+          }
+        },
+        "span": {
+          "start": 76,
+          "end": 104
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@78",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 78,
+            "end": 83
+          }
+        },
+        {
+          "id": "value@116",
+          "name": "value",
+          "kind": "model",
+          "span": {
+            "start": 116,
+            "end": 121
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Model",
+          "binding": "value@116",
+          "name": "value",
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 136,
+              "end": 142
+            }
+          },
+          "default": {
+            "code": "0",
+            "span": {
+              "start": 164,
+              "end": 165
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 110,
+            "end": 169
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "stepper",
+            "span": {
+              "start": 190,
+              "end": 205
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 221,
+                  "end": 234
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-label",
+                "value": {
+                  "code": "`Fewer ${label}`",
+                  "span": {
+                    "start": 247,
+                    "end": 263
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@78",
+                      "span": {
+                        "start": 256,
+                        "end": 261
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 235,
+                  "end": 264
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(value.value -= 1)",
+                      "span": {
+                        "start": 280,
+                        "end": 298
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "value@116",
+                          "operator": "-=",
+                          "span": {
+                            "start": 280,
+                            "end": 298
+                          },
+                          "target": {
+                            "start": 281,
+                            "end": 292
+                          },
+                          "value": {
+                            "start": 296,
+                            "end": 297
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 274,
+                      "end": 298
+                    }
+                  },
+                  "span": {
+                    "start": 274,
+                    "end": 298
+                  }
+                },
+                "span": {
+                  "start": 265,
+                  "end": 299
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "-",
+                "span": {
+                  "start": 300,
+                  "end": 317
+                }
+              }
+            ],
+            "span": {
+              "start": 213,
+              "end": 326
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "span",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 349,
+                    "end": 354
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@78",
+                      "span": {
+                        "start": 349,
+                        "end": 354
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 348,
+                  "end": 355
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ": ",
+                "span": {
+                  "start": 355,
+                  "end": 357
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "value.value",
+                  "span": {
+                    "start": 358,
+                    "end": 369
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "value@116",
+                      "span": {
+                        "start": 358,
+                        "end": 369
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 357,
+                  "end": 370
+                }
+              }
+            ],
+            "span": {
+              "start": 333,
+              "end": 384
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 399,
+                  "end": 412
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-label",
+                "value": {
+                  "code": "`More ${label}`",
+                  "span": {
+                    "start": 425,
+                    "end": 440
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@78",
+                      "span": {
+                        "start": 433,
+                        "end": 438
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 413,
+                  "end": 441
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(value.value += 1)",
+                      "span": {
+                        "start": 457,
+                        "end": 475
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "value@116",
+                          "operator": "+=",
+                          "span": {
+                            "start": 457,
+                            "end": 475
+                          },
+                          "target": {
+                            "start": 458,
+                            "end": 469
+                          },
+                          "value": {
+                            "start": 473,
+                            "end": 474
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 451,
+                      "end": 475
+                    }
+                  },
+                  "span": {
+                    "start": 451,
+                    "end": 475
+                  }
+                },
+                "span": {
+                  "start": 442,
+                  "end": 476
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "+",
+                "span": {
+                  "start": 477,
+                  "end": 494
+                }
+              }
+            ],
+            "span": {
+              "start": 391,
+              "end": 503
+            }
+          }
+        ],
+        "span": {
+          "start": 185,
+          "end": 514
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Stepper",
+      "span": {
+        "start": 44,
+        "end": 521
+      }
+    }
+  ],
+  "types": []
+}

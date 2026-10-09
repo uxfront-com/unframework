@@ -38,6 +38,7 @@ import { checkExpression, shadowing, span } from "./expressions.ts";
 import { lowerComponentHandler, lowerRef } from "./listeners.ts";
 import { hasContent, lowerChildren, lowerContent, textPlacementProblem } from "./lower.ts";
 import type { Place } from "./lower.ts";
+import { CONTROL_MODEL, lowerModelBinding, namelessModel } from "./models.ts";
 import type { ComponentInfo, LoopVariable, RenderContext } from "./render.ts";
 import { setupBindingOf } from "./render.ts";
 import { UNKNOWN } from "./types/kinds.ts";
@@ -62,8 +63,6 @@ export function lowerComponent(
   render: RenderContext,
   listBody: boolean,
 ): LoweredComponent {
-  const { reporter } = render;
-  const mark = reporter.diagnostics.length;
   const info = componentOf(name, render);
   if (!info) {
     // A name an unresolved import binds is reported where it is imported (UF1202).
@@ -72,6 +71,25 @@ export function lowerComponent(
     lowerChildren(node.children, FILL, render);
     return { node: undefined, key: undefined };
   }
+  return lowerComponentAs(node, name, info, place, render, listBody);
+}
+
+/**
+ * Lowers a component element as the component `info` names: its attributes and its fills, as
+ * that component declares them. `<component is>` lowers its attributes and fills so for each
+ * of its component candidates (`./dynamic.ts`), leaving out `skip`, its `is`.
+ */
+export function lowerComponentAs(
+  node: AST.JSXElement,
+  name: AST.JSXIdentifier,
+  info: ComponentInfo,
+  place: Place,
+  render: RenderContext,
+  listBody: boolean,
+  skip?: AST.JSXAttribute,
+): LoweredComponent {
+  const { reporter } = render;
+  const mark = reporter.diagnostics.length;
   const { api } = info;
   // Its root element is checked where the component sits, as the element would be there
   // (ADR-0054): a root that lives only inside a given parent (`<li>`, `<tr>`) is checked against
@@ -89,6 +107,7 @@ export function lowerComponent(
   for (const item of node.openingElement.attributes) {
     const previous = after;
     after = item.end;
+    if (item === skip) continue;
     if (item.type === "JSXAttribute") {
       const written =
         item.name.type === "JSXIdentifier"
@@ -118,13 +137,8 @@ export function lowerComponent(
       continue;
     }
     if (item.name.type === "JSXNamespacedName") {
-      const written = `${item.name.namespace.name}:${item.name.name.name}`;
-      reporter.unsupported(
-        item.name,
-        written.startsWith("v-model:")
-          ? `\`${written}\` binds a model, and component models are not supported yet.`
-          : `\`${written}\` is not an attribute a component takes.`,
-      );
+      const binding = lowerModelBinding(item, item.name, api, info, render);
+      if (binding) attributes.push(binding);
       continue;
     }
     const attribute = item.name.name;
@@ -147,11 +161,8 @@ export function lowerComponent(
       fallthrough.push(item);
       continue;
     }
-    if (attribute === "v-model") {
-      reporter.unsupported(
-        item.name,
-        "`v-model` on a component binds a model, and component models are not supported yet.",
-      );
+    if (CONTROL_MODEL.test(attribute)) {
+      namelessModel(item.name, api, info, render);
       continue;
     }
     if (/^on[A-Z]/.test(attribute)) {
@@ -231,8 +242,8 @@ function templateRefType(binding: string, render: RenderContext): AST.TSType | u
  * The component a tag names: an imported one, or a component function of the module; `null` for
  * a name an unresolved import binds, and `undefined` for none.
  */
-function componentOf(
-  name: AST.JSXIdentifier,
+export function componentOf(
+  name: AST.JSXIdentifier | AST.IdentifierReference,
   render: RenderContext,
 ): ComponentInfo | null | undefined {
   const resolution = render.scopes.resolve(name as unknown as AST.IdentifierReference);
@@ -564,7 +575,7 @@ function forwardedDefault(content: readonly AST.JSXChild[], render: RenderContex
 }
 
 /** Where a fill's content is lowered: inside a component, whose DOM parent the child decides. */
-const FILL: Place = { ancestors: [], namespace: "html", fill: true };
+export const FILL: Place = { ancestors: [], namespace: "html", fill: true };
 
 /** The fills a slot object writes (ADR-0054). */
 function lowerSlotObject(

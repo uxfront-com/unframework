@@ -1,0 +1,121 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit dynamic-component yet: composition lands in M3.",
+    "file": "dynamic/components/Tag.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 242
+    },
+    "end": {
+      "line": 10,
+      "column": 67,
+      "offset": 302
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit dynamic-component yet: composition lands in M3.",
+    "file": "dynamic/components/Tag.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 242
+    },
+    "end": {
+      "line": 10,
+      "column": 67,
+      "offset": 302
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit dynamic-component yet: composition lands in M3.",
+    "file": "dynamic/components/Tag.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 242
+    },
+    "end": {
+      "line": 10,
+      "column": 67,
+      "offset": 302
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit dynamic-component yet: composition lands in M3.",
+    "file": "dynamic/components/Tag.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 242
+    },
+    "end": {
+      "line": 10,
+      "column": 67,
+      "offset": 302
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit dynamic-component yet: composition lands in M3.",
+    "file": "dynamic/components/Tag.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 242
+    },
+    "end": {
+      "line": 10,
+      "column": 67,
+      "offset": 302
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit dynamic-component yet: composition lands in M3.",
+    "file": "dynamic/components/Tag.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 242
+    },
+    "end": {
+      "line": 10,
+      "column": 67,
+      "offset": 302
+    },
+    "target": "svelte"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "dynamic/components/Tag.uf.tsx",
+    "start": {
+      "line": 11,
+      "column": 29,
+      "offset": 331
+    },
+    "end": {
+      "line": 11,
+      "column": 77,
+      "offset": 379
+    },
+    "target": "astro"
+  }
+]

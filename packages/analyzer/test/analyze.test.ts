@@ -274,7 +274,7 @@ describe("diagnostics", () => {
     expect(lower[0]!.message).toContain("PascalCase");
   });
 
-  it("reports each JSX construct M2 does not lower, and keeps going", () => {
+  it("reports each JSX construct it does not lower, and keeps going", () => {
     const source = [
       "export function A() {",
       "  return (",
@@ -289,12 +289,13 @@ describe("diagnostics", () => {
     ].join("\n");
     const { module, diagnostics } = run(source);
     expect(module!.components).toEqual([]);
-    // A string ref is Vue's (UF3027), and `go` is no local function (UF3029).
+    // A string ref is Vue's (UF3027), `go` is no local function (UF3029), a control's `v-model`
+    // takes no name and binds a ref's value (UF3042, reported once the element's type is read).
     expect(problems(source, diagnostics)).toEqual([
       'UF3027 "r"',
-      "UF1002 v-model",
-      "UF1002 v-model:open",
+      "UF3042 v-model:open",
       "UF3029 go",
+      'UF3042 "x"',
       "UF3047 Child",
       "UF1002 svg:rect",
       "UF1002 a.b",

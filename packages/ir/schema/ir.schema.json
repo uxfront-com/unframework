@@ -265,7 +265,7 @@
         },
         "span": {
           "$ref": "#/definitions/Span",
-          "description": "What a target replaces with its own spelling of the binding: the identifier; the whole `props.label` in the object form; and the whole `count.value` for a `state`, `derived` or `templateRef` binding, whose value is the only thing code reads (ADR-0045)."
+          "description": "What a target replaces with its own spelling of the binding: the identifier; the whole `props.label` in the object form; and the whole `count.value` for a `state`, `derived`, `templateRef` or `model` binding, or a `context` binding of a key of a ref, whose value is the only thing code reads (ADR-0045, ADR-0054). A key of a ref is provided the ref itself, by its name."
         },
         "shorthand": {
           "type": "boolean",
@@ -2854,6 +2854,10 @@
         },
         "type": {
           "type": "string"
+        },
+        "ref": {
+          "$ref": "#/definitions/RefType",
+          "description": "The authoring type of the ref the key holds, as `InjectionKeyDeclaration.ref`."
         }
       },
       "required": [
@@ -2863,6 +2867,15 @@
       ],
       "additionalProperties": false,
       "description": "An injection key of a child module's API."
+    },
+    "RefType": {
+      "type": "string",
+      "enum": [
+        "Ref",
+        "ComputedRef",
+        "ModelRef"
+      ],
+      "description": "An authoring type of a ref a key may hold."
     },
     "ImportedName": {
       "type": "object",
@@ -2909,6 +2922,10 @@
         "type": {
           "$ref": "#/definitions/TypeText",
           "description": "The value's type, `Theme` in `InjectionKey<Theme>`, as written."
+        },
+        "ref": {
+          "$ref": "#/definitions/RefType",
+          "description": "The authoring type of the ref the key holds, read from its type (`InjectionKey<Ref<number>>`): it is provided the ref itself, and its injection is read as `x.value` (ADR-0054)."
         },
         "span": {
           "$ref": "#/definitions/Span"

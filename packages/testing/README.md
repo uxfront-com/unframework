@@ -250,6 +250,11 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
   `settleArtefact(path, actual, context)` and `settleArtefactDirectory(dir, files, context)`.
   Check mode compares and never writes; in update mode owners and the reference target write,
   and followers compare against what the reference wrote in the same run (a per-run ledger).
+  A case's `case.json` may name its own reference (`reference`, ADR-0057): that target writes
+  the case's shared artefacts and its pixels, publishes its live capture, and its scenarios are
+  the ones every target's must check (`caseReference`, `sharedArtefactContext(harness, target,
+case)`); its projects run after the run's reference and before every other target
+  (`groupOrder`'s `caseReferences`).
 - **The run:** `resolveHarnessMode` (`UF_UPDATE`, `UF_PIXELS`, `UF_CANARY`,
   `UF_BASELINE_ENVIRONMENT`; it refuses writing in CI, and writing the visual baselines outside
   `BASELINE_ENVIRONMENT`), `createHarnessRun` (the context provided to every project as

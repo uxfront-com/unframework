@@ -118,6 +118,11 @@ export interface PartialMatrix extends ParityMatrix, RunInfo {
    * `null` for a run outside the harness. A merge takes the newest run's.
    */
   reference: string | null;
+  /**
+   * The cases that name their own reference (ADR-0057), with it: their scenarios are judged
+   * against that target's. A merge takes the newest run's.
+   */
+  references?: Record<string, string>;
   /** Project → its own cells, so a later run of a project replaces exactly its cells. */
   byProject: Record<string, MatrixCells>;
   /** Project → its own scenarios, kept and replaced with its cells. */
@@ -320,6 +325,8 @@ export function buildPartialMatrix(input: {
   quarantine: readonly QuarantineEntry[];
   /** The run's reference target; none outside the harness. */
   reference?: string | null;
+  /** The cases that name their own reference, with it. */
+  references?: Record<string, string>;
 }): PartialMatrix {
   const projects = [...new Set(input.projects)].sort();
   const byProject: Record<string, MatrixCells> = {};
@@ -344,6 +351,9 @@ export function buildPartialMatrix(input: {
     empty: [...new Set(input.empty)].sort(),
     quarantine: [...input.quarantine],
     reference: input.reference ?? null,
+    ...(input.references && Object.keys(input.references).length
+      ? { references: { ...input.references } }
+      : {}),
     cases: mergeCells(Object.values(byProject)),
     scenarios: mergeScenarios(Object.values(scenariosByProject)),
     tests: mergeTests(Object.values(testsByProject)),
@@ -395,6 +405,7 @@ export function mergeMatrices(partials: readonly PartialMatrix[]): {
   matrix: MergedMatrix;
   quarantine: QuarantineEntry[];
   reference: string | null;
+  references: Record<string, string>;
 } {
   for (const partial of partials) {
     if (partial.version !== MATRIX_VERSION) {
@@ -443,6 +454,7 @@ export function mergeMatrices(partials: readonly PartialMatrix[]): {
     },
     quarantine: [...(ordered.at(-1)?.quarantine ?? [])],
     reference: ordered.findLast((partial) => partial.reference !== null)?.reference ?? null,
+    references: { ...ordered.findLast((partial) => partial.reference !== null)?.references },
   };
 }
 

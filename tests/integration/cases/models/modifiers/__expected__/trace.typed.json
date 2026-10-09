@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "fill getByRole('textbox', { name: 'Name' }) \"  Ada  \"",
+      "dom": [
+        "<form aria-label=\"Profile\">",
+        "  <label>",
+        "    \"Name \"",
+        "    <input uf:focused=\"\" uf:value=\"  Ada  \">",
+        "  </label>",
+        "  <label>",
+        "    \"City \"",
+        "    <input uf:value=\"Lisbon\">",
+        "  </label>",
+        "  <label>",
+        "    \"Weight \"",
+        "    <input uf:value=\"0\">",
+        "  </label>",
+        "  <output>",
+        "    \"[Ada] from Lisbon, 1\"",
+        "  </output>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Profile\":",
+        "  - text: Name",
+        "  - textbox \"Name\": Ada",
+        "  - text: City",
+        "  - textbox \"City\": Lisbon",
+        "  - text: Weight",
+        "  - textbox \"Weight\": \"0\"",
+        "  - status: \"[Ada] from Lisbon, 1\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "fill getByRole('textbox', { name: 'Weight' }) \"12.5kg\"",
+      "dom": [
+        "<form aria-label=\"Profile\">",
+        "  <label>",
+        "    \"Name \"",
+        "    <input uf:value=\"Ada\">",
+        "  </label>",
+        "  <label>",
+        "    \"City \"",
+        "    <input uf:value=\"Lisbon\">",
+        "  </label>",
+        "  <label>",
+        "    \"Weight \"",
+        "    <input uf:focused=\"\" uf:value=\"12.5kg\">",
+        "  </label>",
+        "  <output>",
+        "    \"[Ada] from Lisbon, 13.5\"",
+        "  </output>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Profile\":",
+        "  - text: Name",
+        "  - textbox \"Name\": Ada",
+        "  - text: City",
+        "  - textbox \"City\": Lisbon",
+        "  - text: Weight",
+        "  - textbox \"Weight\": 12.5kg",
+        "  - status: \"[Ada] from Lisbon, 13.5\""
+      ],
+      "events": {}
+    }
+  ]
+}

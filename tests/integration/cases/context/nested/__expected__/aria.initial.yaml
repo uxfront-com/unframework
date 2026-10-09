@@ -1,0 +1,8 @@
+- region "Book":
+  - heading "Book at depth 0" [level=2]
+  - region "Part":
+    - heading "Part at depth 1" [level=2]
+    - region "Chapter":
+      - heading "Chapter at depth 2" [level=2]
+  - region "Appendix":
+    - heading "Appendix at depth 1" [level=2]

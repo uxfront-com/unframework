@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('radio', { name: 'Yearly' })",
+      "dom": [
+        "<fieldset>",
+        "  <legend>",
+        "    \"Billing\"",
+        "  </legend>",
+        "  <label>",
+        "    <input name=\"plan\" type=\"radio\" uf:checked=\"false\" value=\"monthly\">",
+        "    \" Monthly\"",
+        "  </label>",
+        "  <label>",
+        "    <input name=\"plan\" type=\"radio\" uf:checked=\"true\" uf:focused=\"\" value=\"yearly\">",
+        "    \" Yearly\"",
+        "  </label>",
+        "  <output>",
+        "    \"Plan: yearly\"",
+        "  </output>",
+        "  <button type=\"button\">",
+        "    \"Reset\"",
+        "  </button>",
+        "</fieldset>"
+      ],
+      "aria": [
+        "- group \"Billing\":",
+        "  - text: Billing",
+        "  - radio \"Monthly\"",
+        "  - text: Monthly",
+        "  - radio \"Yearly\" [checked]",
+        "  - text: Yearly",
+        "  - status: \"Plan: yearly\"",
+        "  - button \"Reset\""
+      ],
+      "events": {}
+    }
+  ]
+}

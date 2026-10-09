@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Green' })",
+      "dom": [
+        "<section aria-label=\"Pizza\">",
+        "  <label>",
+        "    \"Toppings \"",
+        "    <select multiple=\"\">",
+        "      <option uf:selected=\"false\" value=\"cheese\">",
+        "        \"Cheese\"",
+        "      </option>",
+        "      <option uf:selected=\"true\" value=\"olives\">",
+        "        \"Olives\"",
+        "      </option>",
+        "      <option uf:selected=\"true\" value=\"basil\">",
+        "        \"Basil\"",
+        "      </option>",
+        "    </select>",
+        "  </label>",
+        "  <output>",
+        "    \"On top: basil, olives\"",
+        "  </output>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Green\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Pizza\":",
+        "  - text: Toppings",
+        "  - listbox \"Toppings\":",
+        "    - option \"Cheese\"",
+        "    - option \"Olives\" [selected]",
+        "    - option \"Basil\" [selected]",
+        "  - status: \"On top: basil, olives\"",
+        "  - button \"Green\""
+      ],
+      "events": {}
+    }
+  ]
+}

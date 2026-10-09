@@ -4,15 +4,18 @@ import {
   createExport,
   createFragment,
   createImportedName,
+  createInjectionKeyDeclaration,
   createModule,
   createModuleImport,
   createTypeDeclaration,
+  createTypeText,
   isExportName,
   walk,
 } from "@unframework/ir";
 import type {
   ComponentApi,
   ImportedName,
+  InjectionKeyDeclaration,
   ModuleApi,
   ModuleImport,
   TypeDeclaration,
@@ -34,7 +37,7 @@ import type { ApiContext } from "./api.ts";
 import { authoringBindings, checkAuthoringImport } from "./authoring.ts";
 import type { AuthoringApi } from "./authoring.ts";
 import { Reporter } from "./context.ts";
-import { checkTypeDeclaration, collectTypes, setupTypes } from "./declarations.ts";
+import { checkTypeDeclaration, closure, collectTypes, setupTypes } from "./declarations.ts";
 import type { ModuleTypes } from "./declarations.ts";
 import { frameworkOf, isAuthoringModule } from "./frameworks.ts";
 import { containsJsx, lowerElement, lowerRootChildren, ROOT } from "./lower.ts";
@@ -42,7 +45,8 @@ import { analyzeProps } from "./props.ts";
 import type { ComponentFunction, ComponentInfo, RenderContext, SetupBinding } from "./render.ts";
 import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
-import { checkDirective, declareSetup, isDirective } from "./setup.ts";
+import { checkDirective, declareSetup, isDirective, refTypeOf } from "./setup.ts";
+import type { InjectionKeyInfo } from "./setup.ts";
 import { syntaxError } from "./syntax.ts";
 
 /** The result of analysing one module. */
@@ -146,7 +150,14 @@ export function analyzeModule(
   ].toSorted((a, b) => a.span.start - b.span.start);
   const componentStatements = new Set(candidates.map((candidate) => candidate.span.start));
   const declarations = findTypeDeclarations(parsed.program);
-  const types = collectTypes(declarations, candidates);
+  // The module's injection keys (ADR-0054): read before any import or component, since the
+  // resolver gives a parent's keys to the children that inject them.
+  const keyCandidates = findKeys(parsed.program);
+  const types = collectTypes(
+    declarations,
+    candidates,
+    [...keyCandidates.values()].flatMap((candidate) => (candidate.type ? [candidate.type] : [])),
+  );
   const scopes = new Scopes(parsed.program);
   const authoring = authoringBindings(parsed.program);
   // Every component's API, read from its declarations before any is lowered: they render each
@@ -156,6 +167,23 @@ export function analyzeModule(
   for (const candidate of candidates) {
     if (!candidate.value) apis.set(candidate, componentApi(candidate, apiContext));
   }
+  const keyMark = reporter.diagnostics.length;
+  const keyDeclarations: InjectionKeyDeclaration[] = [];
+  const keys = new Map<object, InjectionKeyInfo>();
+  for (const candidate of keyCandidates.values()) {
+    // A key reported here is still one `provide` and `inject` may name: their uses are checked
+    // as its fix would leave them, and report nothing more (one code per misuse).
+    const ref = refTypeOf(candidate.type);
+    keys.set(candidate.id, {
+      name: candidate.id.name,
+      type: candidate.type ?? "",
+      ...(ref ? { ref } : {}),
+    });
+    const declaration = checkKey(candidate, parsed.source, reporter);
+    if (declaration) keyDeclarations.push(declaration);
+  }
+  // A key is the module's, as an import is: an error in one drops every component.
+  const keyErrors = reporter.hasErrorsSince(keyMark);
   const imports: ModuleImport[] = [];
   const components = new Map<object, ComponentInfo | undefined>();
   for (const [candidate, api] of apis) {
@@ -171,17 +199,27 @@ export function analyzeModule(
     resolved: options.imports ?? new Map(),
     imports,
     components,
+    keys,
     outputs: new Map(candidates.map((candidate) => [candidate.name.toLowerCase(), candidate.name])),
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
-    if (componentStatements.has(statement.start)) continue;
+    if (componentStatements.has(statement.start) || keyCandidates.has(statement.start)) continue;
     checkTopLevelStatement(statement, context);
   }
   // A module-level error drops every component, but they are still checked: fixing it must
   // reveal nothing new (the harness's L1).
-  const moduleErrors = reporter.hasErrorsSince(moduleMark);
-  const api: ModuleApi = { file: parsed.file, components: [...apis.values()], keys: [] };
+  const moduleErrors = keyErrors || reporter.hasErrorsSince(moduleMark);
+  const api: ModuleApi = {
+    file: parsed.file,
+    components: [...apis.values()],
+    keys: keyDeclarations.map((key) => ({
+      name: key.name,
+      description: key.description,
+      type: key.type.code,
+      ...(key.ref ? { ref: key.ref } : {}),
+    })),
+  };
 
   const module: ComponentModule = {
     parsed,
@@ -190,6 +228,7 @@ export function analyzeModule(
     authoring,
     reporter,
     components,
+    keys,
     ...(observe ? { observe } : {}),
   };
   const lowered: UfComponent[] = [];
@@ -211,6 +250,26 @@ export function analyzeModule(
     }
   }
   dropFailedRenders(lowered, candidates);
+  // The output of the module's main component declares its keys, and the types they reach.
+  // Codegen's `keyOwner` rule: the default export, else the first exported, else the first.
+  const ownerName = (exports.find((entry) => entry.kind === "default") ?? exports[0])?.local;
+  const ownerIndex = lowered.findIndex((component) => component.name === ownerName);
+  const owner = lowered[ownerIndex];
+  if (owner && keyDeclarations.length) {
+    const names = new Set([
+      ...owner.types,
+      ...closure(
+        [...keyCandidates.values()].map((candidate) => candidate.type),
+        types.table,
+      ),
+    ]);
+    lowered[ownerIndex] = {
+      ...owner,
+      types: types.declarations
+        .filter((declaration) => names.has(declaration.name))
+        .map((declaration) => declaration.name),
+    };
+  }
   const kept = new Set(lowered.map((component) => component.name));
   if (moduleErrors) return { module: undefined, diagnostics: reporter.diagnostics, api };
   if (!candidates.some((candidate) => candidate.exports.length)) {
@@ -227,6 +286,7 @@ export function analyzeModule(
       exports.filter((entry) => kept.has(entry.local)),
       moduleTypes(lowered, types, parsed.source),
       imports,
+      keyDeclarations,
     ),
     diagnostics: reporter.diagnostics,
     api,
@@ -348,6 +408,8 @@ interface ModuleContext {
    * a name an unresolved import binds, reported once, where it is imported.
    */
   components: Map<object, ComponentInfo | undefined>;
+  /** The injection keys `provide` and `inject` may name, by the identifier that declares each. */
+  keys: Map<object, InjectionKeyInfo>;
 }
 
 /** The local names a module exports as values in `export { name }` and `export default name`. */
@@ -614,6 +676,19 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
       continue;
     }
     const imported = item.type === "ImportDefaultSpecifier" ? "default" : exportName(item.imported);
+    const key =
+      imported === "default" ? undefined : api.keys.find((each) => each.name === imported);
+    if (key) {
+      names.push(
+        createImportedName("Key", imported, item.local.name, { start: item.start, end: item.end }),
+      );
+      context.keys.set(item.local, {
+        name: item.local.name,
+        type: key.type,
+        ...(key.ref ? { ref: key.ref } : {}),
+      });
+      continue;
+    }
     const component = api.components.find((entry) =>
       imported === "default"
         ? entry.export === "default"
@@ -629,7 +704,7 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
         item,
         imported === "default"
           ? `"${specifier}" has no default export: it exports ${exported.join(", ") || "no component"}.`
-          : `"${specifier}" exports no component named \`${imported}\`: it exports ${exported.join(", ") || "no component"}.`,
+          : `"${specifier}" exports no component or injection key named \`${imported}\`: it exports ${[...exported, ...api.keys.map((each) => `\`${each.name}\``)].join(", ") || "no component"}.`,
         { help: "Import a component the module exports." },
       );
       continue;
@@ -665,6 +740,112 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
       start: statement.start,
       end: statement.end,
     }),
+  );
+}
+
+/**
+ * A top-level `const` that reads as an injection key (ADR-0054): typed `InjectionKey<…>`, or
+ * holding `Symbol(…)`, exported or not, which `checkKey` judges.
+ */
+interface KeyCandidate {
+  statement: AST.Statement;
+  declaration: AST.VariableDeclaration;
+  id: AST.BindingIdentifier;
+  exported: boolean;
+  /** The value's type, `T` in `InjectionKey<T>`, when the annotation is one. */
+  type: AST.TSType | undefined;
+}
+
+/** The module's key candidates, by the start of the statement that declares each. */
+function findKeys(program: AST.Program): Map<number, KeyCandidate> {
+  const keys = new Map<number, KeyCandidate>();
+  for (const statement of program.body) {
+    const exported =
+      statement.type === "ExportNamedDeclaration" &&
+      statement.declaration?.type === "VariableDeclaration";
+    const declaration = exported
+      ? (statement.declaration as AST.VariableDeclaration)
+      : statement.type === "VariableDeclaration"
+        ? statement
+        : undefined;
+    const [declarator] = declaration?.declarations ?? [];
+    if (!declaration || declarator?.id.type !== "Identifier") continue;
+    const annotation = declarator.id.typeAnnotation?.typeAnnotation;
+    const typed =
+      annotation?.type === "TSTypeReference" &&
+      annotation.typeName.type === "Identifier" &&
+      annotation.typeName.name === "InjectionKey";
+    const symbol =
+      declarator.init?.type === "CallExpression" &&
+      declarator.init.callee.type === "Identifier" &&
+      declarator.init.callee.name === "Symbol";
+    if (!typed && !symbol) continue;
+    const params = typed ? (annotation as AST.TSTypeReference).typeArguments?.params : undefined;
+    keys.set(statement.start, {
+      statement: statement as AST.Statement,
+      declaration,
+      id: declarator.id,
+      exported,
+      type: params?.length === 1 ? params[0] : undefined,
+    });
+  }
+  return keys;
+}
+
+/**
+ * Checks a key (UF2033): `export const ThemeKey: InjectionKey<Theme> = Symbol("theme")`, one
+ * exported `const` typed with one type argument, holding a `Symbol` described by a string. Each
+ * target writes it as its own context's key (ADR-0054).
+ */
+function checkKey(
+  candidate: KeyCandidate,
+  source: string,
+  reporter: Reporter,
+): InjectionKeyDeclaration | undefined {
+  const { declaration, id } = candidate;
+  const invalid = (at: { start: number; end: number }, message: string) => {
+    reporter.report("UF2033", at, message, {
+      help: 'Declare it as `export const ThemeKey: InjectionKey<Theme> = Symbol("theme");`, in the module of the component that provides it.',
+    });
+    return undefined;
+  };
+  if (declaration.kind !== "const" || declaration.declarations.length > 1) {
+    return invalid(declaration, "An injection key is declared alone, by a `const`.");
+  }
+  const name = { start: id.start, end: id.start + id.name.length };
+  if (!candidate.exported) {
+    return invalid(
+      name,
+      `\`${id.name}\` is not exported: an injection key is exported, so the components that inject it import it.`,
+    );
+  }
+  if (!candidate.type) {
+    return invalid(
+      id.typeAnnotation ?? name,
+      `\`${id.name}\` is typed \`InjectionKey<T>\` with the type of what it provides: the targets that type their contexts declare it so.`,
+    );
+  }
+  const init = declaration.declarations[0]!.init;
+  const [description, ...more] = init?.type === "CallExpression" ? init.arguments : [];
+  if (
+    init?.type !== "CallExpression" ||
+    init.callee.type !== "Identifier" ||
+    init.callee.name !== "Symbol" ||
+    more.length ||
+    description?.type !== "Literal" ||
+    typeof description.value !== "string"
+  ) {
+    return invalid(
+      init ?? name,
+      `\`${id.name}\` holds \`Symbol("…")\` with a string that describes it: Angular's and Qwik's keys take the description as their name.`,
+    );
+  }
+  return createInjectionKeyDeclaration(
+    id.name,
+    description.value,
+    createTypeText(source.slice(candidate.type.start, candidate.type.end), spanOf(candidate.type)),
+    spanOf(candidate.statement),
+    refTypeOf(candidate.type),
   );
 }
 
@@ -711,6 +892,8 @@ interface ComponentModule {
   reporter: Reporter;
   /** The components templates may render, by the identifier that declares each. */
   components: ReadonlyMap<object, ComponentInfo | undefined>;
+  /** The injection keys the module declares or imports, by the identifier that declares each. */
+  keys: ReadonlyMap<object, InjectionKeyInfo>;
   observe?: SetupObserver;
 }
 
@@ -755,6 +938,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     props,
     statements: body.slice(0, -1),
     returned: returned ?? undefined,
+    keys: module.keys,
   });
   const render: RenderContext = {
     source: parsed.source,
@@ -806,9 +990,12 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     }
     root = children.length ? createFragment(children, spanOf(returned)) : undefined;
   } else {
-    // A component at the root renders as the root's one child (ADR-0053).
+    // A component, or `<component is>`, at the root renders as the root's one child (ADR-0053).
     const element = lowerElement(returned, ROOT, render).element;
-    root = element?.kind === "Component" ? createFragment([element], spanOf(returned)) : element;
+    root =
+      element?.kind === "Component" || element?.kind === "Dynamic"
+        ? createFragment([element], spanOf(returned))
+        : element;
   }
   setup.finish(render);
   // The rules that need every function's summary (ADR-0045), once everything is lowered.

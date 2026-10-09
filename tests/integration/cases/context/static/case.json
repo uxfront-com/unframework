@@ -1,0 +1,4 @@
+{
+  "description": "A parent provides a static value under an injection key it declares, and a child imports the key and injects the value.",
+  "main": "ThemeProvider.uf.tsx"
+}

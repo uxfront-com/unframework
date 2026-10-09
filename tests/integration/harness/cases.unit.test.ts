@@ -101,6 +101,21 @@ describe("listCases", () => {
     );
   });
 
+  it("reads a case's own reference, a target other than Vue (ADR-0057)", () => {
+    const files = { "forms/list/List.uf.tsx": input, "forms/list/list.test.ts": spec('"initial"') };
+    const [list] = listCases(
+      makeCorpus({ ...files, "forms/list/case.json": '{ "reference": "react" }' }),
+    );
+    expect(list!.config).toEqual({ reference: "react" });
+    for (const reference of ['"vue"', '"preact"', "1"]) {
+      expect(() =>
+        listCases(
+          makeCorpus({ ...files, "forms/list/case.json": `{ "reference": ${reference} }` }),
+        ),
+      ).toThrow(/case\.json has "reference" must name a target other than vue/);
+    }
+  });
+
   it("refuses a malformed corpus, loudly", () => {
     expect(() => listCases(makeCorpus({ "basics/.keep": "" }))).toThrow(/No cases under/);
     expect(() => listCases(makeCorpus({ "basics/Card/Card.uf.tsx": input }))).toThrow(

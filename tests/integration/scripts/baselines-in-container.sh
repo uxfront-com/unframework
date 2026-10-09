@@ -38,8 +38,11 @@ pnpm install --frozen-lockfile --store-dir /pnpm-store --reporter=append-only \
 cd /work/tests/integration
 # One test file at a time: on Apple silicon the container emulates linux/amd64, and a Chromium
 # page per worker exhausts Docker Desktop's default 8 GB mid-run ("The chromium page crashed").
-# A caller's own `--maxWorkers` comes later and wins.
+# A caller's own `--maxWorkers` replaces it: Vitest refuses the option twice.
 WORKERS=(--maxWorkers=1)
+for arg in "$@"; do
+  case "$arg" in --maxWorkers | --maxWorkers=*) WORKERS=() ;; esac
+done
 case "$MODE" in
   update)
     # Only browser:vue writes the baselines; the other browser projects compare against them
@@ -47,6 +50,11 @@ case "$MODE" in
     status=0
     env -u CI UF_UPDATE=1 UF_PIXELS=baseline node scripts/run.ts --project "browser:vue" \
       "${WORKERS[@]}" "$@" \
+      || status=$?
+    # A case that names its own reference (ADR-0057) takes its baselines from that target's
+    # browser project, kept to its cases by UF_REFERENCE_PASS, with the caller's arguments for
+    # Vitest to apply (`referencePasses` in harness/references.ts).
+    env -u CI UF_UPDATE=1 UF_PIXELS=baseline node scripts/references.ts "${WORKERS[@]}" "$@" \
       || status=$?
     cd /work
     # Only what changed, so an unchanged baseline keeps its bytes and its mtime on the host.

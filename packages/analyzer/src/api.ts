@@ -67,6 +67,11 @@ export function componentApi(candidate: ApiCandidate, context: ApiContext): Comp
       case "defineOptions":
         if (inheritsNothing(call.call)) api.inheritAttrs = false;
         break;
+      case "defineModel": {
+        const model = modelOf(call.call, context);
+        if (model && !api.models.some((each) => each.name === model.name)) api.models.push(model);
+        break;
+      }
       default:
         break;
     }
@@ -188,6 +193,28 @@ function slotsOf(type: AST.TSType, context: ApiContext): ApiSlot[] {
       parameter?.type === "Identifier" ? parameter.typeAnnotation?.typeAnnotation : undefined;
     return [{ name, optional: member.optional, ...(props ? { props: text(props, context) } : {}) }];
   });
+}
+
+/**
+ * A model `defineModel` declares: its name, a string literal, whether a consumer may leave it
+ * unbound (anything but `required: true`), and its type argument as written.
+ */
+function modelOf(call: AST.CallExpression, context: ApiContext): ApiMember | undefined {
+  const [name, options] = call.arguments;
+  if (name?.type !== "Literal" || typeof name.value !== "string") return undefined;
+  const required =
+    options?.type === "ObjectExpression" &&
+    options.properties.some(
+      (property) =>
+        property.type === "Property" &&
+        !property.computed &&
+        ((property.key.type === "Identifier" && property.key.name === "required") ||
+          (property.key.type === "Literal" && property.key.value === "required")) &&
+        property.value.type === "Literal" &&
+        property.value.value === true,
+    );
+  const [type] = call.typeArguments?.params ?? [];
+  return { name: name.value, optional: !required, type: type ? text(type, context) : "unknown" };
 }
 
 /** The names `defineExpose`'s object literal exposes, in shorthand. */

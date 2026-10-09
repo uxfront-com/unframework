@@ -1,0 +1,25 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/context-write/Toolbar.uf.tsx",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "keys": [
+    {
+      "name": "ModeKey",
+      "description": "uf.mode",
+      "type": {
+        "code": "Ref<string>",
+        "span": {
+          "start": 288,
+          "end": 299
+        }
+      },
+      "ref": "Ref",
+      "span": {
+        "start": 253,
+        "end": 321
+      }
+    }
+  ]
+}

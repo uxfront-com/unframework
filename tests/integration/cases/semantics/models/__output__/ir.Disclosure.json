@@ -1,0 +1,330 @@
+{
+  "irVersion": 1,
+  "file": "semantics/models/Disclosure.uf.tsx",
+  "components": [
+    {
+      "name": "Disclosure",
+      "span": {
+        "start": 44,
+        "end": 412
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 99,
+              "end": 105
+            }
+          },
+          "binding": "title@81",
+          "span": {
+            "start": 92,
+            "end": 105
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ title: string }",
+          "span": {
+            "start": 90,
+            "end": 107
+          }
+        },
+        "span": {
+          "start": 79,
+          "end": 107
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "title@81",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 81,
+            "end": 86
+          }
+        },
+        {
+          "id": "open@119",
+          "name": "open",
+          "kind": "model",
+          "span": {
+            "start": 119,
+            "end": 123
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Model",
+          "binding": "open@119",
+          "name": "open",
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 138,
+              "end": 145
+            }
+          },
+          "default": {
+            "code": "false",
+            "span": {
+              "start": 166,
+              "end": 171
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 113,
+            "end": 175
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "disclosure",
+            "span": {
+              "start": 196,
+              "end": 214
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 230,
+                  "end": 243
+                }
+              },
+              {
+                "kind": "Bound",
+                "name": "aria-expanded",
+                "value": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 259,
+                    "end": 269
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@119",
+                      "span": {
+                        "start": 259,
+                        "end": 269
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 244,
+                  "end": 270
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(open.value = !open.value)",
+                      "span": {
+                        "start": 286,
+                        "end": 312
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "open@119",
+                          "operator": "=",
+                          "span": {
+                            "start": 286,
+                            "end": 312
+                          },
+                          "target": {
+                            "start": 287,
+                            "end": 297
+                          },
+                          "value": {
+                            "start": 300,
+                            "end": 311
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "open@119",
+                          "span": {
+                            "start": 301,
+                            "end": 311
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 280,
+                      "end": 312
+                    }
+                  },
+                  "span": {
+                    "start": 280,
+                    "end": 312
+                  }
+                },
+                "span": {
+                  "start": 271,
+                  "end": 313
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "title",
+                  "span": {
+                    "start": 324,
+                    "end": 329
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@81",
+                      "span": {
+                        "start": 324,
+                        "end": 329
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 323,
+                  "end": 330
+                }
+              }
+            ],
+            "span": {
+              "start": 222,
+              "end": 346
+            }
+          },
+          {
+            "kind": "If",
+            "branches": [
+              {
+                "condition": {
+                  "code": "open.value",
+                  "span": {
+                    "start": 354,
+                    "end": 364
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "open@119",
+                      "span": {
+                        "start": 354,
+                        "end": 364
+                      }
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Details of ",
+                        "span": {
+                          "start": 371,
+                          "end": 382
+                        }
+                      },
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "title",
+                          "span": {
+                            "start": 383,
+                            "end": 388
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "title@81",
+                              "span": {
+                                "start": 383,
+                                "end": 388
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 382,
+                          "end": 389
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 368,
+                      "end": 393
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 354,
+                  "end": 393
+                }
+              }
+            ],
+            "span": {
+              "start": 354,
+              "end": 393
+            }
+          }
+        ],
+        "span": {
+          "start": 191,
+          "end": 405
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Disclosure",
+      "span": {
+        "start": 44,
+        "end": 412
+      }
+    }
+  ],
+  "types": []
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF2033",
+    "severity": "error",
+    "message": "`ThemeKey` is not exported: an injection key is exported, so the components that inject it import it.",
+    "file": "diagnostics/invalid-injection-key/Theme.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 231
+    },
+    "end": {
+      "line": 6,
+      "column": 15,
+      "offset": 239
+    },
+    "help": "Declare it as `export const ThemeKey: InjectionKey<Theme> = Symbol(\"theme\");`, in the module of the component that provides it."
+  }
+]

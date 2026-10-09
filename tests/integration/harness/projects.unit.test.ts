@@ -2,7 +2,7 @@ import type { HarnessContext } from "@unframework/testing/node";
 import { describe, expect, inject, it } from "vitest";
 import type { UserWorkspaceConfig } from "vitest/config";
 
-import { listCases } from "./cases.ts";
+import { caseConfigs, listCases } from "./cases.ts";
 import { noOutputCases } from "./no-output.ts";
 import {
   harnessProjects,
@@ -11,6 +11,7 @@ import {
   projectNames,
   projectPatterns,
   projectTest,
+  referencesOnly,
 } from "./projects.ts";
 import { selectTargets } from "./targets.ts";
 
@@ -173,5 +174,47 @@ describe("browser projects", () => {
     hot.send({ type: "full-reload", path: "*" });
     hot.send("vitest:custom", { data: 1 });
     expect(sent).toEqual([[{ type: "full-reload", path: "*" }], ["vitest:custom", { data: 1 }]]);
+  });
+});
+
+describe("a case's own reference outside UF_TARGETS (ADR-0057)", () => {
+  const configs = caseConfigs(listCases(harness.casesDir));
+
+  it("adds the reference a case names where the run's targets leave it out", () => {
+    expect(referencesOnly(configs, ["vue"])).toEqual({ react: ["semantics/listbox"] });
+    expect(referencesOnly(configs, ["vue", "svelte"])).toEqual({ react: ["semantics/listbox"] });
+    expect(referencesOnly(configs, ["react", "vue"])).toEqual({});
+  });
+
+  it("runs its ssr and browser projects alone, on those cases", async () => {
+    const only = { react: ["semantics/listbox"] };
+    const projects = harnessProjects({ harness, mode, targets: ["vue"], referencesOnly: only });
+    // compile, harness, then vue's three, then react's two.
+    expect(projects).toHaveLength(7);
+    const [ssr, browser] = await Promise.all(
+      projects.slice(5).map((project) => (project as () => Promise<UserWorkspaceConfig>)()),
+    );
+    expect(ssr!.test?.name).toBe("ssr:react");
+    const provided = ssr!.test?.provide as { ufOnly?: string[] } | undefined;
+    expect(provided?.ufOnly).toEqual(["semantics/listbox"]);
+    expect(browser!.test?.name).toBe("browser:react");
+    expect(browser!.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);
+    const full = harnessProjects({ harness, mode, targets: ["react", "vue"] });
+    expect(full).toHaveLength(8);
+  });
+
+  it("keeps the reference to those cases in the baseline script's pass (UF_REFERENCE_PASS)", async () => {
+    const only = referencesOnly(configs, ["react", "vue"], true);
+    expect(only).toEqual({ react: ["semantics/listbox"] });
+    const projects = harnessProjects({
+      harness,
+      mode,
+      targets: ["react", "vue"],
+      referencesOnly: only,
+    });
+    expect(projects).toHaveLength(8);
+    const browser = await (projects[6] as () => Promise<UserWorkspaceConfig>)();
+    expect(browser.test?.name).toBe("browser:react");
+    expect(browser.test?.include).toEqual(["cases/semantics/listbox/listbox.test.ts"]);
   });
 });

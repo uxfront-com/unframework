@@ -11,12 +11,14 @@
 // project (the browser-projects ADR), and a project must hold its own toolchain only. Toolchains
 // and the unplugin load inside each ssr and browser project's factory, so one that cannot load
 // fails its own projects, loudly, through `harness/unavailable.test.ts`.
+import { relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { Toolchain, ToolchainContext } from "@unframework/codegen";
 import { builtinTargets } from "@unframework/compiler";
 import type { TargetName } from "@unframework/compiler";
 import {
+  caseReferences,
   formatError,
   groupOrder,
   parityBrowser,
@@ -48,6 +50,31 @@ export interface HarnessSetup {
   targets: readonly string[];
   /** `--project` patterns from the command line; unselected projects load no toolchain. */
   projectFilter?: readonly string[] | undefined;
+  /**
+   * The targets some case names as its own reference (ADR-0057), each with those cases: their
+   * `ssr:` and `browser:` projects run on those cases alone. A target the run leaves out joins
+   * with them, so the other targets have the case's expectations and pixels to compare with.
+   */
+  referencesOnly?: Readonly<Record<string, readonly string[]>>;
+}
+
+/**
+ * The targets `targets` leaves out that some case names as its own reference, each with those
+ * cases (`HarnessSetup.referencesOnly`). The baseline script's reference pass
+ * (`scripts/references.ts`) sets UF_REFERENCE_PASS=1, which keeps every such target to those
+ * cases, and leaves the caller's filters and options to Vitest.
+ */
+export function referencesOnly(
+  cases: Readonly<Record<string, { reference?: string }>>,
+  targets: readonly string[],
+  pass: boolean = process.env.UF_REFERENCE_PASS === "1",
+): Record<string, string[]> {
+  const only: Record<string, string[]> = {};
+  for (const [id, config] of Object.entries(cases)) {
+    if (config.reference === undefined || (!pass && targets.includes(config.reference))) continue;
+    (only[config.reference] ??= []).push(id);
+  }
+  return only;
 }
 
 /** What every node project runs with, unless its toolchain needs otherwise. */
@@ -90,6 +117,12 @@ export function harnessProjects(setup: HarnessSetup): TestProjectConfiguration[]
     ),
     ...setup.targets.map((target) => lazyProject(setup, "ssr", target, ssrProject)),
     ...setup.targets.map((target) => lazyProject(setup, "browser", target, browserProject)),
+    ...Object.keys(setup.referencesOnly ?? {})
+      .filter((target) => !setup.targets.includes(target))
+      .flatMap((target) => [
+        lazyProject(setup, "ssr", target, ssrProject),
+        lazyProject(setup, "browser", target, browserProject),
+      ]),
   ];
 }
 
@@ -109,7 +142,9 @@ function nodeProject(
       root: ROOT,
       include,
       provide: { ...(target ? { target } : {}), ufHarness: setup.harness },
-      sequence: { groupOrder: groupOrder(kind, target, setup.mode, REFERENCE) },
+      sequence: {
+        groupOrder: groupOrder(kind, target, setup.mode, REFERENCE, caseReferences(setup.harness)),
+      },
       ...test,
     },
   };
@@ -172,7 +207,15 @@ function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOption
       recordCompiledModule(event);
       return guard ? goldenGuard(event) : undefined;
     },
-    plugins: canaryPlugins(setup.mode.canary, target),
+    plugins: canaryPlugins(
+      setup.mode.canary,
+      target,
+      Object.fromEntries(
+        Object.entries(setup.harness.cases).flatMap(([id, config]) =>
+          config.reference ? [[id, config.reference]] : [],
+        ),
+      ),
+    ),
   };
 }
 
@@ -190,8 +233,15 @@ const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework)
       name: `ssr:${target}`,
       root: ROOT,
       include: ["harness/ssr.test.ts"],
-      provide: { target, ufHarness: setup.harness, ufServer: toolchain.server },
-      sequence: { groupOrder: groupOrder("ssr", target, setup.mode, REFERENCE) },
+      provide: {
+        target,
+        ufHarness: setup.harness,
+        ufServer: toolchain.server,
+        ...(setup.referencesOnly?.[target] ? { ufOnly: [...setup.referencesOnly[target]] } : {}),
+      },
+      sequence: {
+        groupOrder: groupOrder("ssr", target, setup.mode, REFERENCE, caseReferences(setup.harness)),
+      },
     }),
   } as UserWorkspaceConfig;
 };
@@ -239,7 +289,12 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
       {
         name,
         root: ROOT,
-        include: ["cases/**/*.test.ts"],
+        // A target the run adds as some case's reference runs that case alone.
+        include: setup.referencesOnly?.[target]
+          ? cases
+              .filter((info) => setup.referencesOnly![target]!.includes(info.id) && info.spec)
+              .map((info) => relative(ROOT, info.spec!).split(sep).join("/"))
+          : ["cases/**/*.test.ts"],
         setupFiles: [
           resolveModule("@unframework/testing/setup"),
           resolveModule(`@unframework/testing/${target}`),
@@ -253,7 +308,15 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
           ufCapabilities: builtinTargets[target as TargetName].capabilities,
           ufNoOutput: noOutput,
         },
-        sequence: { groupOrder: groupOrder("browser", target, setup.mode, REFERENCE) },
+        sequence: {
+          groupOrder: groupOrder(
+            "browser",
+            target,
+            setup.mode,
+            REFERENCE,
+            caseReferences(setup.harness),
+          ),
+        },
         browser: {
           ...parityBrowser({ name, commands: toolchain.browserCommands?.(context) ?? {} }),
           // Vitest's failure screenshots go next to the spec by default, among the committed

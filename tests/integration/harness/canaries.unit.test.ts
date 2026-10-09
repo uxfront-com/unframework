@@ -111,6 +111,7 @@ const fixture = (hasFixes: boolean): CanaryCase => ({
   interacts: () => false,
   rerenders: () => false,
   listens: false,
+  reference: REFERENCE,
 });
 
 /** The elements of a render tree, in document order, through branches and list bodies. */
@@ -452,6 +453,21 @@ describe("canaries", () => {
     expect(canaryPlugins("L10-root-hidden", REFERENCE)).toEqual([]);
   });
 
+  it("spares a case's own reference where a canary spares the reference (ADR-0057)", async () => {
+    const compileAs = (references: Record<string, string>) =>
+      compile(source, {
+        filename,
+        targets: ["react"],
+        plugins: canaryPlugins("L10-root-hidden", "react", references),
+        format: false,
+      });
+    const clean = await compile(source, { filename, targets: ["react"], format: false });
+    const spared = await compileAs({ [filename.slice(0, filename.lastIndexOf("/"))]: "react" });
+    expect(spared.outputs).toEqual(clean.outputs);
+    const other = await compileAs({ "forms/elsewhere": "react" });
+    expect(other.outputs).not.toEqual(clean.outputs);
+  });
+
   it("L13 and L5-debugger put their statement in every target's render path", async () => {
     const result = await compileWith("L13-console-warn");
     const contents = (target: string) => result.outputs[target]![0]!.contents;
@@ -598,6 +614,22 @@ describe("canaries", () => {
       "  readonly move = output<any>();",
       "  readonly pick = output<any>();",
       "  readonly share = output<any>();",
+    ]);
+  });
+
+  it("L4-consumer types a Vue model `any` too, on a case whose consumers misuse one", async () => {
+    // As for the events: the prop fixtures meet the evidence alone, so only this test proves
+    // the models are widened.
+    const info = listCases().find(({ id }) => id === "models/component")!;
+    const stepper = info.sources.find(({ filename }) => filename.endsWith("/Stepper.uf.tsx"))!;
+    const { outputs } = await compile(readFileSync(stepper.source, "utf8"), {
+      filename: stepper.filename,
+      targets: ["vue"],
+      plugins: canaryPlugins("L4-consumer", "vue"),
+    });
+    expect(outputs.vue![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line))).toEqual([
+      "const { label } = defineProps<Record<string, any>>();",
+      'const value = defineModel<any>("value", { default: 0 });',
     ]);
   });
 

@@ -1,0 +1,8 @@
+- group "Billing":
+  - text: Billing
+  - radio "Monthly"
+  - text: Monthly
+  - radio "Yearly" [checked]
+  - text: Yearly
+  - status: "Plan: yearly"
+  - button "Reset"

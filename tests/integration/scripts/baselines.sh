@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # `pnpm test:baselines`: (re)generates the committed Linux screenshot baselines in CI's image
-# (the screenshot ADR). Only the reference target (vue) writes; every other target must match.
+# (the screenshot ADR). Only the reference target (vue) writes, and the target a case names as its
+# own reference (ADR-0057) for that case; every other target must match.
 #   bash scripts/baselines.sh update   UF_UPDATE=1 browser:vue run; copies back *-linux.png and geometry,
 #                                      and fails where a DOM, ARIA or trace expectation reads otherwise on Linux
 #   bash scripts/baselines.sh check    CI's compare mode (CI=1) for the browser projects: nothing is written

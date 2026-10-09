@@ -1,0 +1,4 @@
+{
+  "description": "A component injects its parent's depth and provides its own under the same key: each nested provider answers its own descendants, and the inner one wins.",
+  "main": "Outline.uf.tsx"
+}

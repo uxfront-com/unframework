@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Cheaper' })",
+      "dom": [
+        "<section aria-label=\"Search\">",
+        "  <fieldset>",
+        "    <legend>",
+        "      \"Price\"",
+        "    </legend>",
+        "    <p>",
+        "      \"From 10 to 40\"",
+        "    </p>",
+        "    <button type=\"button\">",
+        "      \"Widen\"",
+        "    </button>",
+        "  </fieldset>",
+        "  <output>",
+        "    \"Between 10 and 40\"",
+        "  </output>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Cheaper\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Search\":",
+        "  - group \"Price\":",
+        "    - text: Price",
+        "    - paragraph: From 10 to 40",
+        "    - button \"Widen\"",
+        "  - status: Between 10 and 40",
+        "  - button \"Cheaper\""
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -94,9 +94,7 @@ target):
 Single-selection list boxes are declared unsupported (`listbox`): Vue's client selects their
 first option, where HTML and the other targets select none (ADR-0033). Every other capability is
 native: the listeners' options and DOM semantics, `useId` and `nextTick` are Vue's own, and so is
-all of composition. Models, context and `<component is>` (ADR-0055) are declared before Vue emits
-them: until they land, `emit` reports UF1002 where a component first uses one, and emits nothing
-for that component.
+all of composition.
 
 ## Composition
 
@@ -115,6 +113,20 @@ Components, slots, fallthrough and `defineExpose` (ADR-0053, ADR-0054) are Vue's
   under its presence, `<template v-if="slots.title" #title>`;
 - `class` and `style` fall through as Vue makes them, `defineOptions({ inheritAttrs: false })`
   turns it off, and `defineExpose({ … })` comes last, once every function it names is declared.
+
+Models, context and `<component is>` (ADR-0054) are Vue's own as well:
+
+- `defineModel` as written, with the other macros; an unbound model without a default gets
+  `{ default: undefined }` and `T | undefined`, or Vue would cast an absent boolean model to
+  `false` (ADR-0034);
+- a control's `v-model` with its modifiers (`v-model.trim`); a range input takes `.number`,
+  since Vue's `vModelText` casts only a number input's value, and the contract casts both; a
+  component's `v-model:value`;
+- the module's injection keys in a plain `<script lang="ts">` block of its main component's
+  output (the default export's), typed with Vue's `InjectionKey` (and `Ref`), which another
+  component imports from that file; `provide` and `inject` as written; the template reads an
+  injected ref without its `.value`, as it reads the setup's own refs;
+- `<component :is="…">`, a candidate named like a Vue built-in under its alias.
 
 ## The toolchain
 

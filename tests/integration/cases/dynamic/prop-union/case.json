@@ -1,0 +1,4 @@
+{
+  "description": "`<component is>` renders the tag a prop names, the prop typed as a union of tags.",
+  "main": "Outline.uf.tsx"
+}

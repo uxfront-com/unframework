@@ -1,0 +1,11 @@
+error[UF2032]: `DepthKey` is injected after the component provides it: a component that provides a key and injects it reads its parent's value, so `inject` comes first.
+  --> diagnostics/invalid-context/Level.uf.tsx:11:17
+   |
+11 |   const depth = inject(DepthKey, 0);
+   |                 ^^^^^^^^^^^^^^^^^^^
+   |
+10 |   provide(DepthKey, 1);
+   |   ^^^^^^^^^^^^^^^^^^^^ Provided here
+   |
+   = help: Move the `inject` above the `provide`.
+   = see: https://unframework.dev/diagnostics/UF2032

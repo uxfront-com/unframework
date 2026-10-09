@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Discard' })",
+      "dom": [
+        "<section aria-label=\"Note\">",
+        "  <textarea aria-label=\"Text\" uf:value=\"\"></textarea>",
+        "  <output>",
+        "    \"0 characters\"",
+        "  </output>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Discard\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Note\":",
+        "  - textbox \"Text\"",
+        "  - status: 0 characters",
+        "  - button \"Discard\""
+      ],
+      "events": {}
+    }
+  ]
+}

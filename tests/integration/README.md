@@ -21,7 +21,7 @@ pnpm test:canaries L8 --shard 1/2   # a part of the cases, as CI runs a browser 
 cases/basics/hello/
 ├── Hello.uf.tsx                       the input
 ├── hello.test.ts                      the browser spec, written once and run on every target
-├── case.json                          optional: { description, main, ssr: { <scenario>: { props } }, axe: [rule ids], requires: why }
+├── case.json                          optional: { description, main, ssr: { <scenario>: { props } }, axe: [rule ids], requires: why, reference }
 ├── __output__/
 │   ├── ir.json                        the IR snapshot, validated against @unframework/ir's schema
 │   └── <target>/<files>               the golden outputs: formatted, reviewed, checked in place
@@ -44,6 +44,12 @@ A case may hold several `.uf.tsx` inputs (ADR-0057): a component and its childre
 parent that composes the component under test. `case.json` then names the main one, the one the
 spec mounts and the SSR scenarios render: `"main": "Form.uf.tsx"`. A case of one input needs no
 `main`.
+
+A case Vue has no output for, because it requires a capability Vue's cell leaves unsupported
+(`listbox`), names the target that writes its expectations instead: `"reference": "react"`
+(ADR-0057). The compile project checks that Vue declares the capability unsupported and the named
+target native; the named target's projects run after Vue's and before every other target's, and
+`pnpm test:baselines` takes the case's pixels from it (`semantics/listbox`).
 
 ```
 cases/components/form/
@@ -328,7 +334,8 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
 ## Where things live
 
 - `harness/projects.ts`: the Vitest projects (`compile`, `harness`, and `toolchain:`, `ssr:` and
-  `browser:` per target). `UF_TARGETS=vue,react` restricts the targets.
+  `browser:` per target). `UF_TARGETS=vue,react` restricts the targets; a target a case names as
+  its own reference (`"reference"`, ADR-0057) still runs that case alone (`referencesOnly`).
 - `harness/cases.ts`: the corpus, each case's inputs, its main one and its `case.json`;
   `sources.ts`: how a case's inputs join their diagnostics and golden files.
 - `harness/compile.test.ts`, `toolchain.test.ts`, `ssr.test.ts`: the node-side layers;

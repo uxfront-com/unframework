@@ -199,6 +199,10 @@ function caseDeclarations(
       for (const event of component.emits?.events ?? []) {
         declarations.set(`${component.name}.event:${event.name}`, { at: at(event.span.start) });
       }
+      for (const item of component.setup) {
+        if (item.kind !== "Model") continue;
+        declarations.set(`${component.name}.model:${item.name}`, { at: at(item.span.start) });
+      }
       for (const slot of component.slots?.slots ?? []) {
         declarations.set(`${component.name}.slot:${slot.name}`, {
           at: at(slot.span.start),

@@ -154,7 +154,7 @@ export function summarise(
   expected: SummaryExpectations,
   judgement: SummaryJudgement = {},
 ): SummaryResult {
-  const { matrix: merged, quarantine, reference } = mergeMatrices(partials);
+  const { matrix: merged, quarantine, reference, references } = mergeMatrices(partials);
   const coverage = coverageOf(merged, expected.projects);
   const { missingProjects, partialProjects } = coverage;
   const complete = missingProjects.length === 0 && partialProjects.size === 0;
@@ -213,7 +213,9 @@ export function summarise(
       );
     }
     if (checkMissing && reference !== null) {
-      problems.push(...scenarioProblems(merged, caseId, reference, expected.targets));
+      // A case that names its own reference (ADR-0057) is judged against that target's scenarios.
+      const judge = references[caseId] ?? reference;
+      problems.push(...scenarioProblems(merged, caseId, judge, expected.targets));
     }
   }
   const matrix: MergedMatrix = {

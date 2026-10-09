@@ -1,0 +1,358 @@
+{
+  "irVersion": 1,
+  "file": "models/select-multiple/ToppingPicker.uf.tsx",
+  "components": [
+    {
+      "name": "ToppingPicker",
+      "span": {
+        "start": 36,
+        "end": 640
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "toppings@86",
+          "name": "toppings",
+          "kind": "state",
+          "span": {
+            "start": 86,
+            "end": 94
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "toppings@86",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 101,
+              "end": 109
+            }
+          },
+          "initial": {
+            "code": "[\"cheese\"]",
+            "span": {
+              "start": 111,
+              "end": 121
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 80,
+            "end": 123
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Pizza",
+            "span": {
+              "start": 148,
+              "end": 166
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Toppings ",
+                "span": {
+                  "start": 181,
+                  "end": 203
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "select",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "multiple",
+                    "value": true,
+                    "span": {
+                      "start": 220,
+                      "end": 228
+                    }
+                  },
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "toppings.value",
+                      "span": {
+                        "start": 238,
+                        "end": 252
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "toppings@86",
+                          "span": {
+                            "start": 238,
+                            "end": 252
+                          }
+                        }
+                      ]
+                    },
+                    "control": "select-multiple",
+                    "span": {
+                      "start": 229,
+                      "end": 253
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "option",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "value",
+                        "value": "cheese",
+                        "span": {
+                          "start": 273,
+                          "end": 287
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Cheese",
+                        "span": {
+                          "start": 288,
+                          "end": 294
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 265,
+                      "end": 303
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "option",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "value",
+                        "value": "olives",
+                        "span": {
+                          "start": 322,
+                          "end": 336
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Olives",
+                        "span": {
+                          "start": 337,
+                          "end": 343
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 314,
+                      "end": 352
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "option",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "value",
+                        "value": "basil",
+                        "span": {
+                          "start": 371,
+                          "end": 384
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Basil",
+                        "span": {
+                          "start": 385,
+                          "end": 390
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 363,
+                      "end": 399
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 212,
+                  "end": 417
+                }
+              }
+            ],
+            "span": {
+              "start": 174,
+              "end": 432
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "On top: ",
+                "span": {
+                  "start": 447,
+                  "end": 455
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "toppings.value.join(\", \") || \"nothing\"",
+                  "span": {
+                    "start": 456,
+                    "end": 494
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "toppings@86",
+                      "span": {
+                        "start": 456,
+                        "end": 470
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 455,
+                  "end": 495
+                }
+              }
+            ],
+            "span": {
+              "start": 439,
+              "end": 504
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 519,
+                  "end": 532
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(toppings.value = [\"basil\", \"olives\"])",
+                      "span": {
+                        "start": 548,
+                        "end": 586
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "toppings@86",
+                          "operator": "=",
+                          "span": {
+                            "start": 548,
+                            "end": 586
+                          },
+                          "target": {
+                            "start": 549,
+                            "end": 563
+                          },
+                          "value": {
+                            "start": 566,
+                            "end": 585
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 542,
+                      "end": 586
+                    }
+                  },
+                  "span": {
+                    "start": 542,
+                    "end": 586
+                  }
+                },
+                "span": {
+                  "start": 533,
+                  "end": 587
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Green",
+                "span": {
+                  "start": 588,
+                  "end": 609
+                }
+              }
+            ],
+            "span": {
+              "start": 511,
+              "end": 618
+            }
+          }
+        ],
+        "span": {
+          "start": 139,
+          "end": 633
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ToppingPicker",
+      "span": {
+        "start": 36,
+        "end": 640
+      }
+    }
+  ],
+  "types": []
+}

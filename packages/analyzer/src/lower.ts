@@ -24,6 +24,7 @@ import {
 } from "@unframework/ir";
 import type {
   ComponentNode,
+  DynamicNode,
   ElementNode,
   IfBranch,
   IfNode,
@@ -39,6 +40,7 @@ import { lowerAttributes } from "./attributes.ts";
 import { unportableCharacters } from "./characters.ts";
 import { lowerComponent, lowerSlotOutlet } from "./components.ts";
 import { reportCharacter, reportDivergence, reportHtmlOnlyReference } from "./context.ts";
+import { lowerDynamic } from "./dynamic.ts";
 import { checkPlacement, checkTag } from "./elements.ts";
 import type { OpenElement } from "./elements.ts";
 import { checkExpression, span } from "./expressions.ts";
@@ -69,8 +71,8 @@ export const ROOT: Place = { ancestors: [], namespace: "html" };
 
 /** An element lowered, and the `key` a list lifts off it. */
 export interface LoweredElement {
-  /** The element, or a component element (ADR-0053). */
-  element: ElementNode | ComponentNode | undefined;
+  /** The element, a component element (ADR-0053), or `<component is>` (ADR-0054). */
+  element: ElementNode | ComponentNode | DynamicNode | undefined;
   key: AST.JSXAttribute | undefined;
   /**
    * Whether the element or anything inside it binds (a binding, an expression, a conditional,
@@ -103,6 +105,13 @@ export function lowerElement(
   if (/^[A-Z]/.test(name.name)) {
     const lowered = lowerComponent(node, name, place, render, listBody);
     return { element: lowered.node, key: lowered.key, binds: true };
+  }
+  if (name.name === "component") {
+    return {
+      element: lowerDynamic(node, name, place, render, listBody),
+      key: undefined,
+      binds: true,
+    };
   }
   const check = checkTag(node, name, place.namespace, place.ancestors.length === 0, reporter);
   if (!check.as) {

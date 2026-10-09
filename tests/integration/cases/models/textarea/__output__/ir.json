@@ -1,0 +1,244 @@
+{
+  "irVersion": 1,
+  "file": "models/textarea/NoteEditor.uf.tsx",
+  "components": [
+    {
+      "name": "NoteEditor",
+      "span": {
+        "start": 36,
+        "end": 378
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "note@83",
+          "name": "note",
+          "kind": "state",
+          "span": {
+            "start": 83,
+            "end": 87
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "note@83",
+          "initial": {
+            "code": "\"Buy milk\"",
+            "span": {
+              "start": 94,
+              "end": 104
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 77,
+            "end": 106
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Note",
+            "span": {
+              "start": 131,
+              "end": 148
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "textarea",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Text",
+                "span": {
+                  "start": 166,
+                  "end": 183
+                }
+              },
+              {
+                "kind": "Model",
+                "value": {
+                  "code": "note.value",
+                  "span": {
+                    "start": 193,
+                    "end": 203
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "note@83",
+                      "span": {
+                        "start": 193,
+                        "end": 203
+                      }
+                    }
+                  ]
+                },
+                "control": "textarea",
+                "span": {
+                  "start": 184,
+                  "end": 204
+                }
+              }
+            ],
+            "children": [],
+            "span": {
+              "start": 156,
+              "end": 207
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "note.value.length",
+                  "span": {
+                    "start": 223,
+                    "end": 240
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "note@83",
+                      "span": {
+                        "start": 223,
+                        "end": 233
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 222,
+                  "end": 241
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " characters",
+                "span": {
+                  "start": 241,
+                  "end": 252
+                }
+              }
+            ],
+            "span": {
+              "start": 214,
+              "end": 261
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 276,
+                  "end": 289
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(note.value = \"\")",
+                      "span": {
+                        "start": 305,
+                        "end": 322
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "note@83",
+                          "operator": "=",
+                          "span": {
+                            "start": 305,
+                            "end": 322
+                          },
+                          "target": {
+                            "start": 306,
+                            "end": 316
+                          },
+                          "value": {
+                            "start": 319,
+                            "end": 321
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 299,
+                      "end": 322
+                    }
+                  },
+                  "span": {
+                    "start": 299,
+                    "end": 322
+                  }
+                },
+                "span": {
+                  "start": 290,
+                  "end": 323
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Discard",
+                "span": {
+                  "start": 324,
+                  "end": 347
+                }
+              }
+            ],
+            "span": {
+              "start": 268,
+              "end": 356
+            }
+          }
+        ],
+        "span": {
+          "start": 122,
+          "end": 371
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "NoteEditor",
+      "span": {
+        "start": 36,
+        "end": 378
+      }
+    }
+  ],
+  "types": []
+}

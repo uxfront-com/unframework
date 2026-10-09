@@ -2,7 +2,7 @@
 // context. Commands read them per call, so one set of commands serves every project of a run.
 import { dirname, join } from "node:path";
 
-import { isReference } from "../harness.ts";
+import { caseReference, isReference } from "../harness.ts";
 import type { HarnessContext } from "../harness.ts";
 import type { ArtefactContext } from "./policy.ts";
 
@@ -42,15 +42,19 @@ export function displayRoot(harness: HarnessContext): string {
 }
 
 /**
- * How a target settles the artefacts every target shares (`__expected__/*`): the reference
- * writes them in update mode, everyone else compares.
+ * How a target settles a case's artefacts every target shares (`__expected__/*`): the case's
+ * reference (ADR-0057) writes them in update mode, everyone else compares.
  */
-export function sharedArtefactContext(harness: HarnessContext, target: string): ArtefactContext {
+export function sharedArtefactContext(
+  harness: HarnessContext,
+  target: string,
+  caseId: string,
+): ArtefactContext {
   return {
-    role: isReference(harness, target) ? "reference" : "follower",
+    role: isReference(harness, target, caseId) ? "reference" : "follower",
     update: harness.update,
     root: displayRoot(harness),
     ledgerDir: harness.ledgerDir,
-    reference: harness.reference,
+    reference: caseReference(harness, caseId),
   };
 }

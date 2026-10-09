@@ -1,0 +1,8 @@
+error[UF2033]: `ThemeKey` is not exported: an injection key is exported, so the components that inject it import it.
+ --> diagnostics/invalid-injection-key/Theme.uf.tsx:6:7
+  |
+6 | const ThemeKey: InjectionKey<string> = Symbol("uf.theme");
+  |       ^^^^^^^^
+  |
+  = help: Declare it as `export const ThemeKey: InjectionKey<Theme> = Symbol("theme");`, in the module of the component that provides it.
+  = see: https://unframework.dev/diagnostics/UF2033

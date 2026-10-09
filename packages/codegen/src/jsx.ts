@@ -10,7 +10,10 @@ import type {
   BindingId,
   BoundAttribute,
   ClassAttribute,
+  Attribute,
+  ComponentAttribute,
   ComponentNode,
+  DynamicNode,
   ElementNode,
   EventAttribute,
   Expression,
@@ -19,6 +22,8 @@ import type {
   Handler,
   IfNode,
   ListenerAttribute,
+  ModelAttribute,
+  ModelBindingAttribute,
   PropAttribute,
   RefAttribute,
   RenderNode,
@@ -149,6 +154,31 @@ export interface JsxDialect {
    * give the parts).
    */
   slotOutlet?(node: SlotOutletNode, context: JsxContext): AST.Expression;
+  /**
+   * A form control's `v-model` (ADR-0054): the control's value or checked state, and the
+   * listener that writes it back. No default: each target writes its state and its setter its
+   * own way.
+   */
+  modelAttribute?(
+    attribute: ModelAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
+  /**
+   * A component's `v-model:<name>` (ADR-0054): the model's value and its change callback. No
+   * default: each target names the callback and writes the value its own way.
+   */
+  modelBinding?(
+    attribute: ModelBindingAttribute,
+    node: ComponentNode,
+    context: JsxContext,
+  ): AST.JSXAttributeItem[];
+  /**
+   * `<component is>` (ADR-0054). No default: React and Qwik render a `const` the component
+   * declares, Solid its `<Dynamic>`. {@link jsxDynamic} prints the element under the name each
+   * gives it.
+   */
+  dynamic?(node: DynamicNode, context: JsxContext): AST.Expression;
 }
 
 /** What a JSX printer prints one component with. */
@@ -252,10 +282,8 @@ export function jsxNode(node: RenderNode | FragmentNode, context: JsxContext): A
       return jsxComponent(node, context);
     case "SlotOutlet":
       return hook(context, "slotOutlet")(node, context);
-    // `<component is>` is not printed yet (ADR-0055): each target's `emit` reports UF1002 for it
-    // before printing.
     case "Dynamic":
-      return js.nullLiteral();
+      return hook(context, "dynamic")(node, context);
     default:
       return unreachable(node);
   }
@@ -277,15 +305,13 @@ export function jsxChildren(nodes: readonly RenderNode[], context: JsxContext): 
       case "Interpolation":
       case "If":
       case "For":
-      case "SlotOutlet": {
+      case "SlotOutlet":
+      case "Dynamic": {
         const expression = jsxNode(node, context);
         return expression.type === "JSXElement" || expression.type === "JSXFragment"
           ? expression
           : js.jsxExpressionContainer(expression);
       }
-      // Not printed yet (`jsxNode`).
-      case "Dynamic":
-        return js.jsxExpressionContainer(js.nullLiteral());
       default:
         return unreachable(node);
     }
@@ -382,8 +408,18 @@ export function jsxComponent(
   context: JsxContext,
   leading: readonly AST.JSXAttributeItem[] = [],
 ): AST.JSXElement {
+  const tag = context.dialect.componentTag?.(node, context) ?? node.component;
+  return componentElement(node, tag, context, leading);
+}
+
+/** A component element written with `tag`: its attributes, then its fills. */
+function componentElement(
+  node: ComponentNode,
+  tag: string,
+  context: JsxContext,
+  leading: readonly AST.JSXAttributeItem[],
+): AST.JSXElement {
   const { dialect } = context;
-  const tag = dialect.componentTag?.(node, context) ?? node.component;
   // The element-shaped context the class, style and ref hooks take: the component's tag.
   const element: ElementNode = {
     kind: "Element",
@@ -414,10 +450,8 @@ export function jsxComponent(
         return dialect.refAttribute
           ? dialect.refAttribute(attribute, element, context)
           : refJsxAttribute(attribute, element, context);
-      // A component model is not printed yet (ADR-0055): each target's `emit` reports UF1002
-      // for it before printing.
       case "ModelBinding":
-        return [];
+        return hook(context, "modelBinding")(attribute, node, context);
       default:
         return unreachable(attribute);
     }
@@ -435,6 +469,43 @@ export function jsxComponent(
     }
   }
   return js.jsxElement(tag, [...leading, ...attributes], children);
+}
+
+/**
+ * `<component is>` written as an element named `name` (ADR-0054): React's and Qwik's `const`
+ * (`<Tag>`), Solid's `<Dynamic>` with its `component` among the `leading` attributes. Tag
+ * candidates take the node's attributes as their first tag's, and its children; component
+ * candidates take them as their first component's, and its fills.
+ */
+export function jsxDynamic(
+  node: DynamicNode,
+  name: string,
+  context: JsxContext,
+  leading: readonly AST.JSXAttributeItem[] = [],
+): AST.JSXElement {
+  const [first] = node.candidates;
+  if (first?.kind === "Component") {
+    const component: ComponentNode = {
+      kind: "Component",
+      component: first.component,
+      attributes: node.attributes as ComponentAttribute[],
+      fills: node.fills ?? [],
+      span: node.span,
+    };
+    return componentElement(component, name, context, leading);
+  }
+  const element: ElementNode = {
+    kind: "Element",
+    tag: first?.kind === "Tag" ? first.tag : name,
+    attributes: node.attributes as Attribute[],
+    children: node.children,
+    span: node.span,
+  };
+  return js.jsxElement(
+    name,
+    [...leading, ...jsxAttributes(element, context)],
+    jsxChildren(node.children, context),
+  );
 }
 
 /** A prop, `label="Name"` for a string literal (as written), and `tone={tone}` otherwise. */
@@ -497,7 +568,7 @@ export function jsxSlotProps(
 }
 
 /** A composition hook a dialect that meets its construct must have (ADR-0055). */
-function hook<K extends "slotValue" | "slotOutlet">(
+function hook<K extends "slotValue" | "slotOutlet" | "modelAttribute" | "modelBinding" | "dynamic">(
   context: JsxContext,
   name: K,
 ): NonNullable<JsxDialect[K]> {
@@ -539,9 +610,8 @@ export function jsxAttributes(node: ElementNode, context: JsxContext): AST.JSXAt
         return dialect.refAttribute
           ? dialect.refAttribute(attribute, node, context)
           : refJsxAttribute(attribute, node, context);
-      // Not printed yet (`jsxNode`).
       case "Model":
-        return [];
+        return hook(context, "modelAttribute")(attribute, node, context);
       default:
         return unreachable(attribute);
     }

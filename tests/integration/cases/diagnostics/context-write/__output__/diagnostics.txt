@@ -1,0 +1,8 @@
+error[UF2034]: `mode` is injected, and an injected value is read-only: the component that provides it owns it.
+  --> diagnostics/context-write/Toolbar.uf.tsx:12:43
+   |
+12 |     <button type="button" onClick={() => (mode.value = "edit")}>
+   |                                           ^^^^^^^^^^
+   |
+   = help: Change it in the component that provides it: a child asks for the change with an event its parent listens to, or binds a model the provider owns.
+   = see: https://unframework.dev/diagnostics/UF2034

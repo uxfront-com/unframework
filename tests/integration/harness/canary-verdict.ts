@@ -147,6 +147,8 @@ function missingEvidence(
  */
 function verifies(canary: Canary, kind: ProjectKind, info: CanaryCase, target: string): boolean {
   if (canary.appliesTo && !canary.appliesTo(info, target)) return false;
+  // A canary that spares the reference spares a case's own reference (ADR-0057).
+  if (canary.followersOnly && target === info.reference) return false;
   if (kind === "compile" && (canary.source !== undefined || canary.fixes !== undefined)) {
     return true;
   }

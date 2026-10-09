@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('checkbox', { name: 'Coffee' })",
+      "dom": [
+        "<fieldset>",
+        "  <legend>",
+        "    \"Drinks\"",
+        "  </legend>",
+        "  <label>",
+        "    <input type=\"checkbox\" uf:checked=\"true\" uf:indeterminate=\"false\" value=\"tea\">",
+        "    \" Tea\"",
+        "  </label>",
+        "  <label>",
+        "    <input type=\"checkbox\" uf:checked=\"true\" uf:focused=\"\" uf:indeterminate=\"false\" value=\"coffee\">",
+        "    \" Coffee\"",
+        "  </label>",
+        "  <label>",
+        "    <input type=\"checkbox\" uf:checked=\"false\" uf:indeterminate=\"false\" value=\"juice\">",
+        "    \" Juice\"",
+        "  </label>",
+        "  <output>",
+        "    \"Ordered: tea, coffee\"",
+        "  </output>",
+        "  <button type=\"button\">",
+        "    \"Only juice\"",
+        "  </button>",
+        "</fieldset>"
+      ],
+      "aria": [
+        "- group \"Drinks\":",
+        "  - text: Drinks",
+        "  - checkbox \"Tea\" [checked]",
+        "  - text: Tea",
+        "  - checkbox \"Coffee\" [checked]",
+        "  - text: Coffee",
+        "  - checkbox \"Juice\"",
+        "  - text: Juice",
+        "  - status: \"Ordered: tea, coffee\"",
+        "  - button \"Only juice\""
+      ],
+      "events": {}
+    }
+  ]
+}

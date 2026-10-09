@@ -1,0 +1,248 @@
+{
+  "irVersion": 1,
+  "file": "context/reactive/Counter.uf.tsx",
+  "components": [
+    {
+      "name": "Counter",
+      "span": {
+        "start": 212,
+        "end": 481
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "count@256",
+          "name": "count",
+          "kind": "state",
+          "span": {
+            "start": 256,
+            "end": 261
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "count@256",
+          "initial": {
+            "code": "1",
+            "span": {
+              "start": 268,
+              "end": 269
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 250,
+            "end": 271
+          }
+        },
+        {
+          "kind": "Provide",
+          "key": "CountKey",
+          "value": {
+            "code": "count",
+            "span": {
+              "start": 292,
+              "end": 297
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "count@256",
+                "span": {
+                  "start": 292,
+                  "end": 297
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 274,
+            "end": 299
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Counter",
+            "span": {
+              "start": 324,
+              "end": 344
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Display",
+            "attributes": [],
+            "fills": [],
+            "span": {
+              "start": 352,
+              "end": 363
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 378,
+                  "end": 391
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(count.value += 1)",
+                      "span": {
+                        "start": 407,
+                        "end": 425
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "count@256",
+                          "operator": "+=",
+                          "span": {
+                            "start": 407,
+                            "end": 425
+                          },
+                          "target": {
+                            "start": 408,
+                            "end": 419
+                          },
+                          "value": {
+                            "start": 423,
+                            "end": 424
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 401,
+                      "end": 425
+                    }
+                  },
+                  "span": {
+                    "start": 401,
+                    "end": 425
+                  }
+                },
+                "span": {
+                  "start": 392,
+                  "end": 426
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Add one",
+                "span": {
+                  "start": 427,
+                  "end": 450
+                }
+              }
+            ],
+            "span": {
+              "start": 370,
+              "end": 459
+            }
+          }
+        ],
+        "span": {
+          "start": 315,
+          "end": 474
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Counter",
+      "span": {
+        "start": 212,
+        "end": 481
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Display.uf.tsx",
+      "file": "Display.uf.tsx",
+      "api": {
+        "file": "Display.uf.tsx",
+        "components": [
+          {
+            "name": "Display",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "output"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Display",
+          "span": {
+            "start": 106,
+            "end": 113
+          }
+        }
+      ],
+      "span": {
+        "start": 99,
+        "end": 138
+      }
+    }
+  ],
+  "keys": [
+    {
+      "name": "CountKey",
+      "description": "uf.count",
+      "type": {
+        "code": "Ref<number>",
+        "span": {
+          "start": 176,
+          "end": 187
+        }
+      },
+      "ref": "Ref",
+      "span": {
+        "start": 140,
+        "end": 210
+      }
+    }
+  ]
+}

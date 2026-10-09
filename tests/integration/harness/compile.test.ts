@@ -32,12 +32,13 @@ import {
   formattingProblems,
   forTarget,
   nondeterminism,
+  referenceProblems,
 } from "./compile-checks.ts";
 import { coverageProblems } from "./coverage.ts";
 import { ROOT } from "./paths.ts";
 import { caseDiagnostics, caseOutputs, caseResolver, sourceTexts } from "./sources.ts";
 import type { SourceCompile } from "./sources.ts";
-import { selectTargets } from "./targets.ts";
+import { REFERENCE, selectTargets } from "./targets.ts";
 
 const harness = inject("ufHarness");
 const cases = listCases(harness.casesDir);
@@ -211,7 +212,14 @@ async function checkDiagnostics(
   }
 
   // P2: no internal error is an expectation, and a feature case expects only declared errors.
-  const problems = expectationProblems(actual, target, info.spec !== undefined);
+  // The case's own reference (ADR-0057) is judged on the L1 cell of the target that writes its
+  // expectations.
+  const problems = [
+    ...expectationProblems(actual, target, info.spec !== undefined),
+    ...(target === (info.config.reference ?? REFERENCE)
+      ? referenceProblems(actual, info.spec !== undefined, REFERENCE, info.config.reference)
+      : []),
+  ];
   if (problems.length) throw new Error(problems.join("\n"));
 
   // The L1-fix-no-op canary corrupts the fixes here, on the cases whose diagnostics have one.

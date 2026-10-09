@@ -41,8 +41,7 @@ checked as the declaration its likely fix writes (`analyze.ts`).
   some component's props; the outputs copy it as written.
 - **The authoring API** (`authoring.ts`): named imports from `"unframework"`, recognised by the
   binding each declares (ADR-0006), as the package exports them (a test reads its `index.ts`).
-  Anything else is UF2016; `defineModel`, `provide` and `inject` are UF1002 until M3's models and
-  context land.
+  Anything else is UF2016.
 - **Composition** (`api.ts`, `components.ts`, ADR-0053 to ADR-0055):
   - A component's API (`ComponentApi`: its props, events, slots, exposed functions, options and
     the shape of its root) is read from its declarations alone, before any component is lowered:
@@ -64,11 +63,35 @@ checked as the declaration its likely fix writes (`analyze.ts`).
     children, forwards the parent's own slot. What the child does not declare is UF3035, UF3036
     or UF3038 (layer 2 of §5.6). Its root element is checked where it sits, as the element would
     be (UF3003).
-  - `defineSlots` (UF2029: an optional method each, named apart from the props and the events'
-    callbacks), `defineExpose` (UF2030: the setup's local functions, in shorthand) and
+  - `defineSlots` (UF2029: an optional method each, named apart from the props, the models and
+    the events' callbacks), `defineExpose` (UF2030: the setup's local functions, in shorthand) and
     `defineOptions` (UF2031: `{ inheritAttrs: false }` alone). A component renders a slot with
     `{slots.title?.()}`, its props an object literal and its fallback after `??`, and tests one
     with `slots.title` in a template (`SlotReference`); any other use is UF3041.
+- **Models** (`setup.ts`, `models.ts`, ADR-0054): `const value = defineModel<T>("value", { default,
+required })` declares a `model` binding, read and written as `value.value`, as state is; the
+  name is a camelCase string literal apart from the props, the other models and an event's
+  change callback (`valueChange`), and the options static (UF2028, with a safe fix that names a
+  nameless model `"value"`). `v-model={text.value}` on a form control binds the value or checked
+  state of the control its tag and static `type` make (`ModelAttribute.control`: text-like
+  inputs, number and range, `<textarea>`, `<select>`, `<select multiple>`, a checkbox of a boolean
+  or, with its `value`, of an array, a radio with its `value`), with one modifier in Vue JSX's
+  spelling (`v-model_trim`, `_lazy`, `_number`); `v-model:value={…}` on a component binds a model
+  it declares (UF3037 otherwise, with the model it may mean). Each binds a `state`'s or a model's
+  `.value` of the kind the control writes; anything else is UF3042, with a safe fix to
+  `v-model:<name>` on a component with one model.
+- **Context** (`analyze.ts`, `setup.ts`, ADR-0054): a module's keys are its exported
+  `const ThemeKey: InjectionKey<T> = Symbol("…")` (UF2033 otherwise, a module-level error), in
+  its API for the resolver, and a module imports another's keys by name. `provide(Key, value)`
+  and `const theme = inject(Key, fallback)` name a key (UF2032), `inject` before `provide` of
+  the same key; `inject` declares a read-only `context` binding (UF2034 at a write through it). A
+  key of a ref (`InjectionKey<Ref<number>>`) is provided the ref whole, a `state`, `derived` or
+  `model` binding by its name, injected with a fallback ref, and read as `count.value`.
+- **Dynamic components** (`dynamic.ts`, ADR-0054): `<component is={…}>` over a literal, a
+  conditional of literals or of components, or a value typed as a union of tags; the leaves are
+  all tags (whose attributes and children each tag must take, checked per tag) or all components
+  (whose attributes and fills each must declare), each a `component` binding. Anything else is
+  UF3044.
 - **The setup** (`setup.ts`): each statement before the return, in source order, as a setup item
   and a binding (ADR-0045): `ref`, `computed`, `useTemplateRef`, `useId`, `const`, `let`, local
   functions, `watch` (a ref, a getter or an array of them; `immediate` and `flush`),

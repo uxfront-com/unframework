@@ -90,8 +90,16 @@ export interface InjectionKeyDeclaration {
   description: string;
   /** The value's type, `Theme` in `InjectionKey<Theme>`, as written. */
   type: TypeText;
+  /**
+   * The authoring type of the ref the key holds, read from its type (`InjectionKey<Ref<number>>`):
+   * it is provided the ref itself, and its injection is read as `x.value` (ADR-0054).
+   */
+  ref?: RefType;
   span: Span;
 }
+
+/** An authoring type of a ref a key may hold. */
+export type RefType = "Ref" | "ComputedRef" | "ModelRef";
 
 /**
  * The public API of a `.uf.tsx` module, as the resolver returns it (ADR-0053): what a parent
@@ -169,6 +177,8 @@ export interface KeyApi {
   name: string;
   description: string;
   type: string;
+  /** The authoring type of the ref the key holds, as `InjectionKeyDeclaration.ref`. */
+  ref?: RefType;
 }
 
 /** An export of a module. */
@@ -367,8 +377,10 @@ export interface BindingReference {
   binding: BindingId;
   /**
    * What a target replaces with its own spelling of the binding: the identifier; the whole
-   * `props.label` in the object form; and the whole `count.value` for a `state`, `derived` or
-   * `templateRef` binding, whose value is the only thing code reads (ADR-0045).
+   * `props.label` in the object form; and the whole `count.value` for a `state`, `derived`,
+   * `templateRef` or `model` binding, or a `context` binding of a key of a ref, whose value is the
+   * only thing code reads (ADR-0045, ADR-0054). A key of a ref is provided the ref itself, by its
+   * name.
    */
   span: Span;
   /** Set for a shorthand property (`{ label }`), which a rewrite must expand to `label: …`. */

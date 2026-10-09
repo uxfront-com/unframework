@@ -1,0 +1,4 @@
+{
+  "description": "A child declares two models, and its parent binds both on one element: a write of each reaches the other side, and one function of the child writes both.",
+  "main": "Search.uf.tsx"
+}

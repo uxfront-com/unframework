@@ -23,7 +23,15 @@ import {
 import type { ComponentApi, UfComponent } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
-import { childImports, exportsOf, referencedBindings } from "../src/index.ts";
+import {
+  childImports,
+  exportsOf,
+  ImportSet,
+  js,
+  keyOwner,
+  printProgram,
+  referencedBindings,
+} from "../src/index.ts";
 import { printMarkup, svelteDialect } from "../src/markup.ts";
 import { objectEntries } from "../src/markup/printer.ts";
 
@@ -165,5 +173,39 @@ describe("referencedBindings", () => {
       ],
     );
     expect([...referencedBindings(component)].toSorted()).toEqual(["clear@3", "field@4"]);
+  });
+});
+
+describe("keyOwner (ADR-0054)", () => {
+  it("writes a module's keys into its main component: the default export, else the first exported", () => {
+    expect(
+      keyOwner(
+        [{ name: "Item" }, { name: "List" }],
+        [
+          { kind: "named", local: "Item" },
+          { kind: "default", local: "List" },
+        ],
+      ),
+    ).toBe("List");
+    expect(keyOwner([{ name: "Item" }], [{ kind: "named", local: "Item" }])).toBe("Item");
+    expect(
+      keyOwner([
+        { name: "Row", export: "local" },
+        { name: "Table", export: "default" },
+      ]),
+    ).toBe("Table");
+    expect(keyOwner([{ name: "Row", export: "local" }])).toBe("Row");
+  });
+});
+
+describe("ImportSet aliases (ADR-0054)", () => {
+  it("imports a name the source binds twice under each of its locals", () => {
+    const imports = new ImportSet(["A", "B"]);
+    expect(imports.add("./K.vue", "AKey", { local: "A", exact: true })).toBe("A");
+    expect(imports.add("./K.vue", "AKey", { local: "B", exact: true })).toBe("B");
+    expect(imports.add("./K.vue", "AKey", { local: "B", exact: true })).toBe("B");
+    expect(printProgram(js.program(imports.toDeclarations())).trim()).toBe(
+      'import { AKey as A, AKey as B } from "./K.vue";',
+    );
   });
 });

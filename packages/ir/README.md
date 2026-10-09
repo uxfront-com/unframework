@@ -77,7 +77,9 @@ plain, versioned, schema-validated JSON (plan §5.3).
   written; a `Dynamic` node's candidates are all tags, whose attributes and children each tag
   keeps as an element, or all components; slots, exposed functions and models are declared once,
   a model named apart from the props; `provide` and `inject` name a key the module declares or
-  imports; and a `v-model`'s control is one its element has. The compiler emits from no module
+  imports, and a key of a ref (`InjectionKey<Ref<number>>`, ADR-0054) is provided, or injected
+  with a fallback, as a `state`, `derived` or `model` binding by its name, and its injected
+  binding read as `x.value`; and a `v-model`'s control is one its element has. The compiler emits from no module
   that breaks one, a plugin's included, and checks itself that a plugin's code is the analyser's.
 - **Portability facts:** what the targets render differently from the same markup
   (`portability.ts`): elements Vue does not know, template syntax, attributes a framework acts on

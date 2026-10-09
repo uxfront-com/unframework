@@ -66,6 +66,7 @@ export type {
   PropsParameter,
   ProvideItem,
   RefAttribute,
+  RefType,
   Reference,
   RefSource,
   RenderNode,

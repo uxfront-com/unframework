@@ -78,6 +78,16 @@ describe("ufArtefact", () => {
     expect(readFileSync(expected(), "utf8")).toBe("<p>Hi</p>\n");
   });
 
+  it("lets a case's own reference write its artefacts, and Vue follow it (ADR-0057)", () => {
+    const cases = { "basics/hello": { reference: "react" } };
+    const request = { case: "basics/hello", file: "dom.initial.html", contents: "<p>Hi</p>\n" };
+    const vue = ufArtefact(project("vue", { update: true, cases }), request);
+    expect(vue.status).toBe("missing-reference");
+    expect(vue.message).toContain("The reference target (react)");
+    expect(ufArtefact(project("react", { update: true, cases }), request).status).toBe("written");
+    expect(ufArtefact(project("svelte", { update: true, cases }), request).status).toBe("matched");
+  });
+
   it("settles a trace, and a trace that must not exist", () => {
     const trace = join(
       harness.casesDir,

@@ -8,6 +8,8 @@
 import {
   bindingOf,
   childImports,
+  keyImports,
+  keyOwner,
   componentTypes,
   functionText,
   ImportSet,
@@ -50,6 +52,11 @@ export interface ScriptSetup {
   listeners: Listeners;
   /** The name the script imports a child under, where it is not the child's own. */
   components: ReadonlyMap<string, string>;
+  /**
+   * The `<script lang="ts">` block of the output that declares the module's injection keys
+   * (ADR-0054), which a `<script setup>` cannot export: absent elsewhere.
+   */
+  keys?: string;
 }
 
 /**
@@ -115,7 +122,9 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   const components = new Map<string, string>();
   for (const child of children) {
     if (!child.self && !VUE_BUILT_INS.has(child.local)) {
-      imports.addDefault(child.specifier, child.local, { exact: true });
+      // A child the source imports under two names is imported once, and written by that name.
+      const local = imports.addDefault(child.specifier, child.local, { exact: true });
+      if (local !== child.local) components.set(child.local, local);
     }
   }
   for (const child of children) {
@@ -125,6 +134,20 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
       child.local,
       child.self ? names.scope.claim(local) : imports.addDefault(child.specifier, local),
     );
+  }
+  for (const key of keyImports(component, module, (name) => `${name}.vue`)) {
+    if (key.specifier) imports.add(key.specifier, key.name, { local: key.local, exact: true });
+  }
+  // The output of the module's main component declares the keys, and the types it copies, in a
+  // plain `<script lang="ts">` block, which `<script setup>` reads.
+  const keys =
+    module.keys?.length && keyOwner(module.components, module.exports) === component.name
+      ? keyBlock(component, module, names)
+      : undefined;
+  // `<component is>` reads a candidate by its binding, under the alias of a built-in's name too.
+  for (const binding of component.bindings) {
+    const alias = binding.kind === "component" ? components.get(binding.name) : undefined;
+    if (alias) names.rename(binding.id, alias);
   }
   const self = children.find((child) => child.self);
   const recursive = self && (components.get(self.local) ?? self.local);
@@ -170,7 +193,10 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   }
   for (const item of component.setup) {
     const code = itemCode(item, component, module, names, imports, script);
-    statements.push({ code, layout: declares(item) && !code.includes("\n") ? "line" : "block" });
+    // A model is a macro, which stays with `defineProps` and `defineEmits` where it follows them.
+    const layout =
+      item.kind === "Model" ? "macro" : declares(item) && !code.includes("\n") ? "line" : "block";
+    statements.push({ code, layout });
   }
   for (const code of listeners.functions) statements.push({ code, layout: "block" });
   // Last, once every function it names is declared (ADR-0054).
@@ -183,10 +209,10 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     statements.push({ code: `defineExpose({ ${exposed.join(", ")} });`, layout: "block" });
   }
   if (statements.length === 0 && imports.size === 0) {
-    return { rewrite: template, listeners, components };
+    return { rewrite: template, listeners, components, ...(keys ? { keys } : {}) };
   }
   const head = imports.size > 0 ? printProgram(js.program(imports.toDeclarations())).trim() : "";
-  const types = componentTypes(component, module).map(typeDeclarationCode);
+  const types = keys ? [] : componentTypes(component, module).map(typeDeclarationCode);
   const code = [
     ...(head ? [head] : []),
     ...types,
@@ -197,7 +223,39 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
     rewrite: template,
     listeners,
     components,
+    ...(keys ? { keys } : {}),
   };
+}
+
+/** The authoring types of a ref a key may hold, which are Vue's own (ADR-0054). */
+const REF_TYPES = ["Ref", "ComputedRef", "ModelRef"] as const;
+
+/**
+ * The `<script lang="ts">` block that declares a module's injection keys (ADR-0054), each a
+ * `Symbol` typed with Vue's `InjectionKey`, after the types the component copies, which
+ * `<script setup>` reads from it.
+ */
+function keyBlock(component: UfComponent, module: UfModule, names: VueNames): string {
+  const imports = new ImportSet(names.scope);
+  const injectionKey = imports.add("vue", "InjectionKey", { type: true });
+  const declarations = module.keys!.map((key) => {
+    // A ref the key holds is typed with Vue's own `Ref`, as the source's authoring one is.
+    let type = key.type.code;
+    for (const name of REF_TYPES) {
+      const reference = new RegExp(`(?<![\\w$.])${name}(?=\\s*<)`, "g");
+      if (!reference.test(type)) continue;
+      const local = imports.add("vue", name, { type: true });
+      type = type.replace(reference, local);
+    }
+    return `export const ${key.name}: ${injectionKey}<${type}> = Symbol(${JSON.stringify(key.description)});`;
+  });
+  const types = componentTypes(component, module).map(typeDeclarationCode);
+  const code = [
+    printProgram(js.program(imports.toDeclarations())).trim(),
+    ...types,
+    declarations.join("\n"),
+  ].join("\n\n");
+  return `<script lang="ts">\n${escapeScriptEnd(code)}\n</script>`;
 }
 
 /**
@@ -353,14 +411,36 @@ function itemCode(
       const hook = imports.add("vue", lifecycleHook(item.hook));
       return `${hook}(${fn(item.callback, "client")});`;
     }
-    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
-    case "Model":
-    case "Provide":
-    case "Inject":
-      return "";
+    case "Model": {
+      // An unbound model without a default holds `undefined`, as every target's does: Vue would
+      // cast an absent boolean model to `false` without the explicit default (ADR-0034).
+      const unset = item.default === undefined && !item.required;
+      const type = item.type ? `<${unset ? orUndefined(item.type.code) : item.type.code}>` : "";
+      const options = [
+        ...(item.required ? ["required: true"] : []),
+        ...(item.default ? [`default: ${item.default.code}`] : unset ? ["default: undefined"] : []),
+      ];
+      return `const ${local(item.binding)} = defineModel${type}(${[JSON.stringify(item.name), ...(options.length ? [`{ ${options.join(", ")} }`] : [])].join(", ")});`;
+    }
+    case "Provide": {
+      const provide = imports.add("vue", "provide");
+      return `${provide}(${item.key}, ${code(item.value, "pure")});`;
+    }
+    case "Inject": {
+      const inject = imports.add("vue", "inject");
+      // `undefined` is the source's own fallback: without a second argument, Vue's development
+      // build warns where no ancestor provides the key.
+      const fallback = item.fallback ? `, ${code(item.fallback, "pure")}` : ", undefined";
+      return `const ${local(item.binding)} = ${inject}(${item.key}${fallback});`;
+    }
     default:
       return unreachable(item);
   }
+}
+
+/** `T | undefined`, with parentheses around a function type, which `|` would split. */
+function orUndefined(type: string): string {
+  return `${/=>/.test(type) ? `(${type})` : type} | undefined`;
 }
 
 /** A type argument as written (`<Item[]>`), or nothing. */
