@@ -151,6 +151,18 @@ describe("groupOrder", () => {
     expect(groupOrder("ssr", "react", update, "vue")).toBe(2);
     expect(groupOrder("browser", "astro", update, "vue")).toBe(2);
   });
+
+  it("runs a target a case names as its reference after the reference and before the rest", () => {
+    // ADR-0057: React writes such a case's artefacts, and follows Vue everywhere else.
+    expect(groupOrder("browser", "vue", update, "vue", ["react"])).toBe(1);
+    expect(groupOrder("ssr", "react", update, "vue", ["react"])).toBe(2);
+    expect(groupOrder("browser", "react", update, "vue", ["react"])).toBe(2);
+    expect(groupOrder("browser", "astro", update, "vue", ["react"])).toBe(3);
+    expect(groupOrder("browser", "vue", live, "vue", ["react"])).toBe(0);
+    expect(groupOrder("browser", "react", live, "vue", ["react"])).toBe(1);
+    expect(groupOrder("browser", "astro", live, "vue", ["react"])).toBe(2);
+    expect(groupOrder("browser", "astro", check, "vue", ["react"])).toBe(0);
+  });
 });
 
 /** An L10 quarantine entry of the reference, for one pixel mode or both. */

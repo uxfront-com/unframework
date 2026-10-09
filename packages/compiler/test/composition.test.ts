@@ -7,29 +7,41 @@ import { composition } from "../../ir/test/composition-fixture.ts";
 import { builtinTargets, compile, TARGET_NAMES } from "../src/index.ts";
 
 describe("composition before M3's lanes", () => {
-  // Vue emits components, slots, fallthrough and expose (M3's core lane), and reports what it
-  // does not emit yet: models, context and `<component is>`.
-  it.each(TARGET_NAMES)("%s reports UF1002 where a component first uses it", (name) => {
+  // Vue emits all of composition (M3's core lane); every other target reports it until its own
+  // lane lands.
+  it("vue emits it", () => {
     const module = composition();
     const reported: Omit<Diagnostic, "file" | "target">[] = [];
-    const files = builtinTargets[name].emit(module.components[0]!, {
+    const files = builtinTargets.vue.emit(module.components[0]!, {
       module,
       options: undefined,
       report: (diagnostic) => reported.push(diagnostic),
     });
-    expect(files).toEqual([]);
-    expect(reported).toEqual([
-      {
-        code: "UF1002",
-        severity: "error",
-        message:
-          name === "vue"
-            ? "The vue target does not emit an injection key yet: models, context and `<component is>` land later in M3."
-            : `The ${name} target does not emit an injection key yet: composition lands in M3.`,
-        span: module.keys![0]!.span,
-      },
-    ]);
+    expect(reported).toEqual([]);
+    expect(files.map((file) => file.path)).toEqual(["Form.vue"]);
   });
+
+  it.each(TARGET_NAMES.filter((name) => name !== "vue"))(
+    "%s reports UF1002 where a component first uses it",
+    (name) => {
+      const module = composition();
+      const reported: Omit<Diagnostic, "file" | "target">[] = [];
+      const files = builtinTargets[name].emit(module.components[0]!, {
+        module,
+        options: undefined,
+        report: (diagnostic) => reported.push(diagnostic),
+      });
+      expect(files).toEqual([]);
+      expect(reported).toEqual([
+        {
+          code: "UF1002",
+          severity: "error",
+          message: `The ${name} target does not emit an injection key yet: composition lands in M3.`,
+          span: module.keys![0]!.span,
+        },
+      ]);
+    },
+  );
 });
 
 describe("a contextual root without composition", () => {

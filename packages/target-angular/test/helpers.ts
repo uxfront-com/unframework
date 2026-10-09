@@ -62,7 +62,8 @@ export function corpusSources(): { name: string; file: string; source: string }[
  * (UXF-318) emits composition: `harness/quarantine/angular.ts` lists them, and the lane brings
  * them back here.
  */
-const COMPOSITION = /^(?:components|slots|fallthrough|expose)\//;
+const COMPOSITION =
+  /^(?:components|slots|fallthrough|expose|models|context|dynamic)\/|^semantics\/models$/;
 
 /** What this target emits for a module, unformatted, failing on any diagnostic. */
 export function emitModule(module: UfModule): OutputFile[] {

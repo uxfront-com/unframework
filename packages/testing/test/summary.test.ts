@@ -613,7 +613,11 @@ describe("summarise: parity scenarios", () => {
    */
   function scenarios(
     byTarget: Record<string, Record<string, Checked>>,
-    options: { filtered?: string; reference?: string | null } = {},
+    options: {
+      filtered?: string;
+      reference?: string | null;
+      references?: Record<string, string>;
+    } = {},
   ): PartialMatrix {
     return buildPartialMatrix({
       run: options.filtered ? "all+filtered-abc" : "all",
@@ -645,6 +649,7 @@ describe("summarise: parity scenarios", () => {
       empty: [],
       quarantine: [],
       reference: options.reference === undefined ? "vue" : options.reference,
+      ...(options.references ? { references: options.references } : {}),
     });
   }
 
@@ -674,6 +679,34 @@ describe("summarise: parity scenarios", () => {
         "basics/hello > updates": { scenarios: ["after-click", "rerendered"] },
       },
     });
+  });
+
+  it("judges a case that names its own reference against that target's scenarios", () => {
+    // ADR-0057: Vue has no output for the case, and React writes its expectations.
+    const run = scenarios(
+      {
+        vue: { renders: { skipped: "no output: UF4001 (fixture)" } },
+        react: { renders: ["initial"] },
+      },
+      { references: { "basics/hello": "react" } },
+    );
+    expect(summarise([run], twoTargets).problems).toEqual([]);
+    expect(
+      summarise(
+        [
+          scenarios(
+            {
+              vue: { renders: { skipped: "no output: UF4001 (fixture)" } },
+              react: { renders: ["initial"] },
+            },
+            {},
+          ),
+        ],
+        twoTargets,
+      ).problems,
+    ).toEqual([
+      `basics/hello › react: its parity scenarios differ from vue's: "basics/hello > renders" checks initial, which vue never checks (it skipped the test: no output: UF4001 (fixture)). ${SUFFIX}`,
+    ]);
   });
 
   it("fails a target whose test leaves out a scenario, or checks one the reference never does", () => {

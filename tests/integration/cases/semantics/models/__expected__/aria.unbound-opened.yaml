@@ -1,0 +1,7 @@
+- region "Panels":
+  - button "Shipping" [expanded]
+  - paragraph: Details of Shipping
+  - button "Returns" [expanded]
+  - paragraph: Details of Returns
+  - status: Shipping is open
+  - button "Toggle shipping"

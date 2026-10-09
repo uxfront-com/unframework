@@ -1,0 +1,6 @@
+- region "Order":
+  - button "Fewer Cups": "-"
+  - text: "Cups: 0"
+  - button "More Cups": +
+  - status: "Ordered: 0"
+  - button "Clear"

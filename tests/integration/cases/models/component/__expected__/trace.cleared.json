@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Clear' })",
+      "dom": [
+        "<section aria-label=\"Order\">",
+        "  <div class=\"stepper\">",
+        "    <button aria-label=\"Fewer Cups\" type=\"button\">",
+        "      \"-\"",
+        "    </button>",
+        "    <span>",
+        "      \"Cups: 0\"",
+        "    </span>",
+        "    <button aria-label=\"More Cups\" type=\"button\">",
+        "      \"+\"",
+        "    </button>",
+        "  </div>",
+        "  <output>",
+        "    \"Ordered: 0\"",
+        "  </output>",
+        "  <button type=\"button\" uf:focused=\"\">",
+        "    \"Clear\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Order\":",
+        "  - button \"Fewer Cups\": \"-\"",
+        "  - text: \"Cups: 0\"",
+        "  - button \"More Cups\": +",
+        "  - status: \"Ordered: 0\"",
+        "  - button \"Clear\""
+      ],
+      "events": {}
+    }
+  ]
+}

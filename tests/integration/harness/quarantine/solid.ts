@@ -3,10 +3,10 @@
 import type { QuarantineEntry } from "@unframework/testing/node";
 
 /**
- * The cases of M3's core lane (components, slots, fallthrough and expose) that Solid reports
- * as UF1002 until its own M3 lane emits composition (codegen's `compositionUse`): L1 finds an
- * error no capability cell of Solid's declares, or a fix that recompiles to one. Every later
- * layer has no output to check, and is skipped.
+ * The cases of M3's core lane (components, slots, fallthrough, expose, models, context and
+ * `<component is>`) that Solid reports as UF1002 until its own M3 lane emits composition (codegen's
+ * `compositionUse`): L1 finds an error no capability cell of Solid's declares, or a fix that
+ * recompiles to one. Every later layer has no output to check, and is skipped.
  */
 const COMPOSITION: readonly string[] = [
   "components/acronym-names",
@@ -19,13 +19,34 @@ const COMPOSITION: readonly string[] = [
   "components/props-and-events",
   "components/recursion",
   "components/three-levels",
+  "context/fallback",
+  "context/nested",
+  "context/reactive",
+  "context/static",
   "diagnostics/component-listener-option",
+  "diagnostics/invalid-model",
+  "diagnostics/invalid-v-model",
   "diagnostics/unknown-component",
+  "dynamic/components",
+  "dynamic/prop-union",
+  "dynamic/tags",
   "expose/focus",
   "expose/several",
   "fallthrough/class-and-style",
   "fallthrough/inherit-attrs-false",
   "fallthrough/to-component-root",
+  "models/checkbox",
+  "models/checkbox-group",
+  "models/component",
+  "models/modifiers",
+  "models/number",
+  "models/radio",
+  "models/select",
+  "models/select-multiple",
+  "models/several",
+  "models/text-field",
+  "models/textarea",
+  "semantics/models",
   "slots/default",
   "slots/fallback",
   "slots/forwarding",

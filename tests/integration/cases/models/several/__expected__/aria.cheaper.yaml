@@ -1,0 +1,7 @@
+- region "Search":
+  - group "Price":
+    - text: Price
+    - paragraph: From 10 to 40
+    - button "Widen"
+  - status: Between 10 and 40
+  - button "Cheaper"

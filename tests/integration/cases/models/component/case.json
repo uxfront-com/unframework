@@ -1,0 +1,4 @@
+{
+  "description": "A child declares a model with `defineModel`, and its parent binds it with `v-model:value`: the child shows the parent's value, and a write in either reaches both.",
+  "main": "Order.uf.tsx"
+}

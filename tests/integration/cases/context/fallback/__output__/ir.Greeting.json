@@ -1,0 +1,260 @@
+{
+  "irVersion": 1,
+  "file": "context/fallback/Greeting.uf.tsx",
+  "components": [
+    {
+      "name": "Greeting",
+      "span": {
+        "start": 93,
+        "end": 293
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 144,
+              "end": 150
+            }
+          },
+          "binding": "name@128",
+          "span": {
+            "start": 138,
+            "end": 150
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ name: string }",
+          "span": {
+            "start": 136,
+            "end": 152
+          }
+        },
+        "span": {
+          "start": 126,
+          "end": 152
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "name@128",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 128,
+            "end": 132
+          }
+        },
+        {
+          "id": "locale@164",
+          "name": "locale",
+          "kind": "context",
+          "span": {
+            "start": 164,
+            "end": 170
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Inject",
+          "binding": "locale@164",
+          "key": "LocaleKey",
+          "fallback": {
+            "code": "\"en\"",
+            "span": {
+              "start": 191,
+              "end": 195
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 158,
+            "end": 197
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "p",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "locale === \"pt\" ? \"Olá\" : \"Hello\"",
+              "span": {
+                "start": 224,
+                "end": 257
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "locale@164",
+                  "span": {
+                    "start": 224,
+                    "end": 230
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 223,
+              "end": 258
+            }
+          },
+          {
+            "kind": "Text",
+            "value": ", ",
+            "span": {
+              "start": 258,
+              "end": 260
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "name",
+              "span": {
+                "start": 261,
+                "end": 265
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "name@128",
+                  "span": {
+                    "start": 261,
+                    "end": 265
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 260,
+              "end": 266
+            }
+          },
+          {
+            "kind": "Text",
+            "value": " (",
+            "span": {
+              "start": 266,
+              "end": 268
+            }
+          },
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "locale",
+              "span": {
+                "start": 269,
+                "end": 275
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "locale@164",
+                  "span": {
+                    "start": 269,
+                    "end": 275
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 268,
+              "end": 276
+            }
+          },
+          {
+            "kind": "Text",
+            "value": ")",
+            "span": {
+              "start": 276,
+              "end": 282
+            }
+          }
+        ],
+        "span": {
+          "start": 213,
+          "end": 286
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Greeting",
+      "span": {
+        "start": 93,
+        "end": 293
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./LocaleProvider.uf.tsx",
+      "file": "LocaleProvider.uf.tsx",
+      "api": {
+        "file": "LocaleProvider.uf.tsx",
+        "components": [
+          {
+            "name": "LocaleProvider",
+            "export": "default",
+            "props": [
+              {
+                "name": "locale",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": [
+          {
+            "name": "LocaleKey",
+            "description": "uf.locale",
+            "type": "string"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Key",
+          "imported": "LocaleKey",
+          "local": "LocaleKey",
+          "span": {
+            "start": 48,
+            "end": 57
+          }
+        }
+      ],
+      "span": {
+        "start": 39,
+        "end": 91
+      }
+    }
+  ]
+}

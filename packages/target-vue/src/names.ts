@@ -129,7 +129,8 @@ export class VueNames {
 
   /**
    * A reference as the template writes it: a setup ref's value (`state`, `derived`,
-   * `templateRef`) is the ref itself, which Vue unwraps; everything else as the script does.
+   * `templateRef`, `model`, an injected ref) is the ref itself, which Vue unwraps; everything
+   * else as the script does.
    */
   template(binding: Binding, written: string): string {
     switch (binding.kind) {
@@ -138,6 +139,12 @@ export class VueNames {
       case "templateRef":
       case "model":
         return this.local(binding);
+      // An injected ref is read as `x.value`, the reference's whole text (ADR-0054), and the
+      // template unwraps it as it unwraps the setup's own refs.
+      case "context":
+        return written === `${binding.name}.value`
+          ? this.local(binding)
+          : this.script(binding, written);
       case "prop":
       case "loopVar":
       case "localConst":
@@ -146,7 +153,6 @@ export class VueNames {
       case "emit":
       case "slots":
       case "slotScope":
-      case "context":
       case "component":
         return this.script(binding, written);
       default:

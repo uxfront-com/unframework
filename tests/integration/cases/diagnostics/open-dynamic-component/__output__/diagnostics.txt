@@ -1,0 +1,8 @@
+error[UF3044]: `is` reads a value no target can render without knowing every tag or component it may name: it is a literal, a conditional of them, a component, or a value typed as a union of tags.
+ --> diagnostics/open-dynamic-component/Box.uf.tsx:5:20
+  |
+5 |     <component is={tag} class="box">
+  |                    ^^^
+  |
+  = help: Choose from a known set: `is={href ? "a" : "button"}`, `is={compact ? Chip : Card}`, or a prop typed as a union of tags.
+  = see: https://unframework.dev/diagnostics/UF3044

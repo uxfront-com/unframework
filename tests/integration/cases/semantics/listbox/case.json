@@ -1,0 +1,4 @@
+{
+  "description": "A <select> shown as a single-selection list box selects no option until the user picks one, as HTML does. Vue's client selects the first (its `listbox` cell is unsupported), so React writes the case's expectations (ADR-0057).",
+  "reference": "react"
+}

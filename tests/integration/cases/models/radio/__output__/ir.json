@@ -1,0 +1,372 @@
+{
+  "irVersion": 1,
+  "file": "models/radio/Billing.uf.tsx",
+  "components": [
+    {
+      "name": "Billing",
+      "span": {
+        "start": 36,
+        "end": 556
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "plan@80",
+          "name": "plan",
+          "kind": "state",
+          "span": {
+            "start": 80,
+            "end": 84
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "plan@80",
+          "initial": {
+            "code": "\"monthly\"",
+            "span": {
+              "start": 91,
+              "end": 100
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 74,
+            "end": 102
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "fieldset",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "legend",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Billing",
+                "span": {
+                  "start": 143,
+                  "end": 150
+                }
+              }
+            ],
+            "span": {
+              "start": 135,
+              "end": 159
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "radio",
+                    "span": {
+                      "start": 189,
+                      "end": 201
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "plan",
+                    "span": {
+                      "start": 202,
+                      "end": 213
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "value",
+                    "value": "monthly",
+                    "span": {
+                      "start": 214,
+                      "end": 229
+                    }
+                  },
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "plan.value",
+                      "span": {
+                        "start": 239,
+                        "end": 249
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "plan@80",
+                          "span": {
+                            "start": 239,
+                            "end": 249
+                          }
+                        }
+                      ]
+                    },
+                    "control": "radio",
+                    "span": {
+                      "start": 230,
+                      "end": 250
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 182,
+                  "end": 253
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " Monthly",
+                "span": {
+                  "start": 253,
+                  "end": 268
+                }
+              }
+            ],
+            "span": {
+              "start": 166,
+              "end": 276
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "radio",
+                    "span": {
+                      "start": 306,
+                      "end": 318
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "name",
+                    "value": "plan",
+                    "span": {
+                      "start": 319,
+                      "end": 330
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "value",
+                    "value": "yearly",
+                    "span": {
+                      "start": 331,
+                      "end": 345
+                    }
+                  },
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "plan.value",
+                      "span": {
+                        "start": 355,
+                        "end": 365
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "plan@80",
+                          "span": {
+                            "start": 355,
+                            "end": 365
+                          }
+                        }
+                      ]
+                    },
+                    "control": "radio",
+                    "span": {
+                      "start": 346,
+                      "end": 366
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 299,
+                  "end": 369
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " Yearly",
+                "span": {
+                  "start": 369,
+                  "end": 383
+                }
+              }
+            ],
+            "span": {
+              "start": 283,
+              "end": 391
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Plan: ",
+                "span": {
+                  "start": 406,
+                  "end": 412
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "plan.value",
+                  "span": {
+                    "start": 413,
+                    "end": 423
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "plan@80",
+                      "span": {
+                        "start": 413,
+                        "end": 423
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 412,
+                  "end": 424
+                }
+              }
+            ],
+            "span": {
+              "start": 398,
+              "end": 433
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 448,
+                  "end": 461
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(plan.value = \"monthly\")",
+                      "span": {
+                        "start": 477,
+                        "end": 501
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "plan@80",
+                          "operator": "=",
+                          "span": {
+                            "start": 477,
+                            "end": 501
+                          },
+                          "target": {
+                            "start": 478,
+                            "end": 488
+                          },
+                          "value": {
+                            "start": 491,
+                            "end": 500
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 471,
+                      "end": 501
+                    }
+                  },
+                  "span": {
+                    "start": 471,
+                    "end": 501
+                  }
+                },
+                "span": {
+                  "start": 462,
+                  "end": 502
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Reset",
+                "span": {
+                  "start": 503,
+                  "end": 524
+                }
+              }
+            ],
+            "span": {
+              "start": 440,
+              "end": 533
+            }
+          }
+        ],
+        "span": {
+          "start": 118,
+          "end": 549
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Billing",
+      "span": {
+        "start": 36,
+        "end": 556
+      }
+    }
+  ],
+  "types": []
+}

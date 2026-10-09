@@ -1,0 +1,3 @@
+- region "Counter":
+  - status: "Count: 2"
+  - button "Add one"

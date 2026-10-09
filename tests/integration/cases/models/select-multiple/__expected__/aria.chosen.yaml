@@ -1,0 +1,8 @@
+- region "Pizza":
+  - text: Toppings
+  - listbox "Toppings":
+    - option "Cheese" [selected]
+    - option "Olives"
+    - option "Basil" [selected]
+  - status: "On top: cheese, basil"
+  - button "Green"

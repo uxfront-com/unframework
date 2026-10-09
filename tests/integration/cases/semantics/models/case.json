@@ -1,0 +1,4 @@
+{
+  "description": "The models rule of the semantics contract (plan §4.5): one child, bound and unbound side by side. Bound, it shows its parent's value and asks the parent to change it; unbound, it keeps local state seeded by its default.",
+  "main": "Panels.uf.tsx"
+}

@@ -1,0 +1,24 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/invalid-context/Level.uf.tsx",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "keys": [
+    {
+      "name": "DepthKey",
+      "description": "uf.depth",
+      "type": {
+        "code": "number",
+        "span": {
+          "start": 333,
+          "end": 339
+        }
+      },
+      "span": {
+        "start": 297,
+        "end": 362
+      }
+    }
+  ]
+}

@@ -1,0 +1,402 @@
+{
+  "irVersion": 1,
+  "file": "models/modifiers/Profile.uf.tsx",
+  "components": [
+    {
+      "name": "Profile",
+      "span": {
+        "start": 36,
+        "end": 544
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "name@80",
+          "name": "name",
+          "kind": "state",
+          "span": {
+            "start": 80,
+            "end": 84
+          }
+        },
+        {
+          "id": "city@104",
+          "name": "city",
+          "kind": "state",
+          "span": {
+            "start": 104,
+            "end": 108
+          }
+        },
+        {
+          "id": "weight@134",
+          "name": "weight",
+          "kind": "state",
+          "span": {
+            "start": 134,
+            "end": 140
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "name@80",
+          "initial": {
+            "code": "\"\"",
+            "span": {
+              "start": 91,
+              "end": 93
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 74,
+            "end": 95
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "city@104",
+          "initial": {
+            "code": "\"Lisbon\"",
+            "span": {
+              "start": 115,
+              "end": 123
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 98,
+            "end": 125
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "weight@134",
+          "initial": {
+            "code": "0",
+            "span": {
+              "start": 147,
+              "end": 148
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 128,
+            "end": 150
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "form",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Profile",
+            "span": {
+              "start": 172,
+              "end": 192
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Name ",
+                "span": {
+                  "start": 207,
+                  "end": 221
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "name.value",
+                      "span": {
+                        "start": 242,
+                        "end": 252
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "name@80",
+                          "span": {
+                            "start": 242,
+                            "end": 252
+                          }
+                        }
+                      ]
+                    },
+                    "control": "text",
+                    "trim": true,
+                    "span": {
+                      "start": 228,
+                      "end": 253
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 221,
+                  "end": 256
+                }
+              }
+            ],
+            "span": {
+              "start": 200,
+              "end": 271
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "City ",
+                "span": {
+                  "start": 285,
+                  "end": 299
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "city.value",
+                      "span": {
+                        "start": 320,
+                        "end": 330
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "city@104",
+                          "span": {
+                            "start": 320,
+                            "end": 330
+                          }
+                        }
+                      ]
+                    },
+                    "control": "text",
+                    "lazy": true,
+                    "span": {
+                      "start": 306,
+                      "end": 331
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 299,
+                  "end": 334
+                }
+              }
+            ],
+            "span": {
+              "start": 278,
+              "end": 349
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Weight ",
+                "span": {
+                  "start": 363,
+                  "end": 379
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "weight.value",
+                      "span": {
+                        "start": 402,
+                        "end": 414
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "weight@134",
+                          "span": {
+                            "start": 402,
+                            "end": 414
+                          }
+                        }
+                      ]
+                    },
+                    "control": "text",
+                    "number": true,
+                    "span": {
+                      "start": 386,
+                      "end": 415
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 379,
+                  "end": 418
+                }
+              }
+            ],
+            "span": {
+              "start": 356,
+              "end": 433
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "[",
+                "span": {
+                  "start": 448,
+                  "end": 458
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "name.value",
+                  "span": {
+                    "start": 459,
+                    "end": 469
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "name@80",
+                      "span": {
+                        "start": 459,
+                        "end": 469
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 458,
+                  "end": 470
+                }
+              },
+              {
+                "kind": "Text",
+                "value": "] from ",
+                "span": {
+                  "start": 470,
+                  "end": 477
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "city.value",
+                  "span": {
+                    "start": 478,
+                    "end": 488
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "city@104",
+                      "span": {
+                        "start": 478,
+                        "end": 488
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 477,
+                  "end": 489
+                }
+              },
+              {
+                "kind": "Text",
+                "value": ", ",
+                "span": {
+                  "start": 489,
+                  "end": 491
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "weight.value + 1",
+                  "span": {
+                    "start": 492,
+                    "end": 508
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "weight@134",
+                      "span": {
+                        "start": 492,
+                        "end": 504
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 491,
+                  "end": 509
+                }
+              }
+            ],
+            "span": {
+              "start": 440,
+              "end": 525
+            }
+          }
+        ],
+        "span": {
+          "start": 166,
+          "end": 537
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Profile",
+      "span": {
+        "start": 36,
+        "end": 544
+      }
+    }
+  ],
+  "types": []
+}

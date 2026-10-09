@@ -1,0 +1,65 @@
+error[UF1002] (angular): The angular target does not emit model yet: composition lands in M3.
+ --> diagnostics/invalid-v-model/Survey.uf.tsx:6:3
+  |
+6 |   const picked = defineModel<string>("picked", { default: "" });
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (astro): The astro target does not emit model yet: composition lands in M3.
+ --> diagnostics/invalid-v-model/Survey.uf.tsx:6:3
+  |
+6 |   const picked = defineModel<string>("picked", { default: "" });
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (qwik): The qwik target does not emit model yet: composition lands in M3.
+ --> diagnostics/invalid-v-model/Survey.uf.tsx:6:3
+  |
+6 |   const picked = defineModel<string>("picked", { default: "" });
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (react): The react target does not emit model yet: composition lands in M3.
+ --> diagnostics/invalid-v-model/Survey.uf.tsx:6:3
+  |
+6 |   const picked = defineModel<string>("picked", { default: "" });
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (solid): The solid target does not emit model yet: composition lands in M3.
+ --> diagnostics/invalid-v-model/Survey.uf.tsx:6:3
+  |
+6 |   const picked = defineModel<string>("picked", { default: "" });
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+error[UF1002] (svelte): The svelte target does not emit model yet: composition lands in M3.
+ --> diagnostics/invalid-v-model/Survey.uf.tsx:6:3
+  |
+6 |   const picked = defineModel<string>("picked", { default: "" });
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+ --> diagnostics/invalid-v-model/Survey.uf.tsx:8:27
+  |
+8 |     <button type="button" onClick={() => (picked.value = "yes")}>
+  |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF3042]: `v-model` on a component binds a model by its name: Choice declares `picked`.
+  --> diagnostics/invalid-v-model/Survey.uf.tsx:18:15
+   |
+18 |       <Choice v-model={answer.value} />
+   |               ^^^^^^^
+   |
+   = help: Write `v-model:picked`.
+   = fix (safe): Bind `picked`
+   = see: https://unframework.dev/diagnostics/UF3042

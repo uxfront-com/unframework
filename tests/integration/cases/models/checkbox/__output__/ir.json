@@ -1,0 +1,263 @@
+{
+  "irVersion": 1,
+  "file": "models/checkbox/Terms.uf.tsx",
+  "components": [
+    {
+      "name": "Terms",
+      "span": {
+        "start": 36,
+        "end": 429
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "agreed@78",
+          "name": "agreed",
+          "kind": "state",
+          "span": {
+            "start": 78,
+            "end": 84
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "agreed@78",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 91,
+              "end": 96
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 72,
+            "end": 98
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Terms",
+            "span": {
+              "start": 123,
+              "end": 141
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "checkbox",
+                    "span": {
+                      "start": 172,
+                      "end": 187
+                    }
+                  },
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "agreed.value",
+                      "span": {
+                        "start": 197,
+                        "end": 209
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "agreed@78",
+                          "span": {
+                            "start": 197,
+                            "end": 209
+                          }
+                        }
+                      ]
+                    },
+                    "control": "checkbox",
+                    "span": {
+                      "start": 188,
+                      "end": 210
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 165,
+                  "end": 213
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " I agree",
+                "span": {
+                  "start": 213,
+                  "end": 228
+                }
+              }
+            ],
+            "span": {
+              "start": 149,
+              "end": 236
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "agreed.value ? \"Agreed\" : \"Not agreed\"",
+                  "span": {
+                    "start": 252,
+                    "end": 290
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "agreed@78",
+                      "span": {
+                        "start": 252,
+                        "end": 264
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 251,
+                  "end": 291
+                }
+              }
+            ],
+            "span": {
+              "start": 243,
+              "end": 300
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 315,
+                  "end": 328
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(agreed.value = !agreed.value)",
+                      "span": {
+                        "start": 344,
+                        "end": 374
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "agreed@78",
+                          "operator": "=",
+                          "span": {
+                            "start": 344,
+                            "end": 374
+                          },
+                          "target": {
+                            "start": 345,
+                            "end": 357
+                          },
+                          "value": {
+                            "start": 360,
+                            "end": 373
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "agreed@78",
+                          "span": {
+                            "start": 361,
+                            "end": 373
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 338,
+                      "end": 374
+                    }
+                  },
+                  "span": {
+                    "start": 338,
+                    "end": 374
+                  }
+                },
+                "span": {
+                  "start": 329,
+                  "end": 375
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Toggle",
+                "span": {
+                  "start": 376,
+                  "end": 398
+                }
+              }
+            ],
+            "span": {
+              "start": 307,
+              "end": 407
+            }
+          }
+        ],
+        "span": {
+          "start": 114,
+          "end": 422
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Terms",
+      "span": {
+        "start": 36,
+        "end": 429
+      }
+    }
+  ],
+  "types": []
+}

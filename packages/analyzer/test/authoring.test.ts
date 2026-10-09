@@ -47,7 +47,7 @@ describe("the authoring API", () => {
     expect(run(source).diagnostics).toEqual([]);
   });
 
-  it("reports what is not the API (UF2016), and M3's APIs as landing in M3 (UF1002)", () => {
+  it("reports what is not the API (UF2016)", () => {
     const source = [
       'import * as uf from "unframework";',
       'import api from "unframework";',
@@ -64,18 +64,13 @@ describe("the authoring API", () => {
       'UF2016 import "unframework";',
       "UF2016 reactive",
       "UF2016 toRefs",
-      "UF1002 defineModel",
-      "UF1002 provide",
       "UF2016 nope",
       "UF2016 ref",
     ]);
     expect(diagnostics[3]!.message).toBe(
       "`reactive` is Vue's, not unframework's: state is a `ref`, whose value is replaced whole (ADR-0008).",
     );
-    expect(diagnostics[5]!.message).toBe(
-      "`defineModel` is not supported yet: two-way bindings (`defineModel` and `v-model`) land in M3.",
-    );
-    expect(diagnostics[7]!.message).toBe('"unframework" exports no `nope`.');
+    expect(diagnostics[5]!.message).toBe('"unframework" exports no `nope`.');
   });
 
   it("recognises the API by binding, not by name: a local `ref` is no API", () => {

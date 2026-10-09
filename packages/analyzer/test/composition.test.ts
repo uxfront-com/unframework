@@ -383,7 +383,7 @@ export function Hint() { return <small />; }`,
       "export default function Field({ label }: { label: string }) { return <p>{label}</p>; }\nfunction Hint() { return <small />; }",
     );
     expect(codes(diagnostics)).toEqual(["UF1202"]);
-    expect(diagnostics[0]!.message).toContain("exports no component named `Hint`");
+    expect(diagnostics[0]!.message).toContain("exports no component or injection key named `Hint`");
   });
 });
 

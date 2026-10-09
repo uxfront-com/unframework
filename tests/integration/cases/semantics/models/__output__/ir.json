@@ -1,0 +1,337 @@
+{
+  "irVersion": 1,
+  "file": "semantics/models/Panels.uf.tsx",
+  "components": [
+    {
+      "name": "Panels",
+      "span": {
+        "start": 83,
+        "end": 511
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "shipping@126",
+          "name": "shipping",
+          "kind": "state",
+          "span": {
+            "start": 126,
+            "end": 134
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "shipping@126",
+          "initial": {
+            "code": "true",
+            "span": {
+              "start": 141,
+              "end": 145
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 120,
+            "end": 147
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Panels",
+            "span": {
+              "start": 172,
+              "end": 191
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Disclosure",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "title",
+                "value": {
+                  "code": "\"Shipping\"",
+                  "span": {
+                    "start": 217,
+                    "end": 227
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 211,
+                  "end": 227
+                }
+              },
+              {
+                "kind": "ModelBinding",
+                "model": "open",
+                "value": {
+                  "code": "shipping.value",
+                  "span": {
+                    "start": 242,
+                    "end": 256
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "shipping@126",
+                      "span": {
+                        "start": 242,
+                        "end": 256
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 228,
+                  "end": 257
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 199,
+              "end": 260
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Disclosure",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "title",
+                "value": {
+                  "code": "\"Returns\"",
+                  "span": {
+                    "start": 285,
+                    "end": 294
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 279,
+                  "end": 294
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 267,
+              "end": 297
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Shipping is ",
+                "span": {
+                  "start": 312,
+                  "end": 324
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "shipping.value ? \"open\" : \"closed\"",
+                  "span": {
+                    "start": 325,
+                    "end": 359
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "shipping@126",
+                      "span": {
+                        "start": 325,
+                        "end": 339
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 324,
+                  "end": 360
+                }
+              }
+            ],
+            "span": {
+              "start": 304,
+              "end": 369
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 384,
+                  "end": 397
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(shipping.value = !shipping.value)",
+                      "span": {
+                        "start": 413,
+                        "end": 447
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "shipping@126",
+                          "operator": "=",
+                          "span": {
+                            "start": 413,
+                            "end": 447
+                          },
+                          "target": {
+                            "start": 414,
+                            "end": 428
+                          },
+                          "value": {
+                            "start": 431,
+                            "end": 446
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "shipping@126",
+                          "span": {
+                            "start": 432,
+                            "end": 446
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 407,
+                      "end": 447
+                    }
+                  },
+                  "span": {
+                    "start": 407,
+                    "end": 447
+                  }
+                },
+                "span": {
+                  "start": 398,
+                  "end": 448
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Toggle shipping",
+                "span": {
+                  "start": 449,
+                  "end": 480
+                }
+              }
+            ],
+            "span": {
+              "start": 376,
+              "end": 489
+            }
+          }
+        ],
+        "span": {
+          "start": 163,
+          "end": 504
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Panels",
+      "span": {
+        "start": 83,
+        "end": 511
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Disclosure.uf.tsx",
+      "file": "Disclosure.uf.tsx",
+      "api": {
+        "file": "Disclosure.uf.tsx",
+        "components": [
+          {
+            "name": "Disclosure",
+            "export": "default",
+            "props": [
+              {
+                "name": "title",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [
+              {
+                "name": "open",
+                "optional": true,
+                "type": "boolean"
+              }
+            ],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Disclosure",
+          "span": {
+            "start": 43,
+            "end": 53
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 81
+      }
+    }
+  ]
+}

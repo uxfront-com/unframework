@@ -74,6 +74,7 @@ export {
   jsxChildren,
   jsxComponent,
   jsxContext,
+  jsxDynamic,
   jsxElement,
   jsxExpression,
   jsxFillValue,
@@ -165,8 +166,8 @@ export {
 export type { Namespace } from "./html.ts";
 export { formatOutput, isFormatted, OUTPUT_FORMAT } from "./format.ts";
 export type { FormatOutcome } from "./format.ts";
-export { childImports, ImportSet } from "./imports.ts";
-export type { ChildImport } from "./imports.ts";
+export { childImports, ImportSet, keyImports, keyOwner } from "./imports.ts";
+export type { ChildImport, KeyImport } from "./imports.ts";
 export { isPrimitiveState } from "./kinds.ts";
 export { kebabCase, NameScope, pascalCase, sourceNames, typeNames } from "./names.ts";
 export type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";

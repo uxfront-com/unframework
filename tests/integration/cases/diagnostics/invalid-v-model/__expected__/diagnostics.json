@@ -1,0 +1,153 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit model yet: composition lands in M3.",
+    "file": "diagnostics/invalid-v-model/Survey.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 3,
+      "offset": 205
+    },
+    "end": {
+      "line": 6,
+      "column": 65,
+      "offset": 267
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit model yet: composition lands in M3.",
+    "file": "diagnostics/invalid-v-model/Survey.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 3,
+      "offset": 205
+    },
+    "end": {
+      "line": 6,
+      "column": 65,
+      "offset": 267
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit model yet: composition lands in M3.",
+    "file": "diagnostics/invalid-v-model/Survey.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 3,
+      "offset": 205
+    },
+    "end": {
+      "line": 6,
+      "column": 65,
+      "offset": 267
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit model yet: composition lands in M3.",
+    "file": "diagnostics/invalid-v-model/Survey.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 3,
+      "offset": 205
+    },
+    "end": {
+      "line": 6,
+      "column": 65,
+      "offset": 267
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit model yet: composition lands in M3.",
+    "file": "diagnostics/invalid-v-model/Survey.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 3,
+      "offset": 205
+    },
+    "end": {
+      "line": 6,
+      "column": 65,
+      "offset": 267
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit model yet: composition lands in M3.",
+    "file": "diagnostics/invalid-v-model/Survey.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 3,
+      "offset": 205
+    },
+    "end": {
+      "line": 6,
+      "column": 65,
+      "offset": 267
+    },
+    "target": "svelte"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "diagnostics/invalid-v-model/Survey.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 27,
+      "offset": 305
+    },
+    "end": {
+      "line": 8,
+      "column": 65,
+      "offset": 343
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF3042",
+    "severity": "error",
+    "message": "`v-model` on a component binds a model by its name: Choice declares `picked`.",
+    "file": "diagnostics/invalid-v-model/Survey.uf.tsx",
+    "start": {
+      "line": 18,
+      "column": 15,
+      "offset": 514
+    },
+    "end": {
+      "line": 18,
+      "column": 22,
+      "offset": 521
+    },
+    "help": "Write `v-model:picked`.",
+    "fixes": [
+      {
+        "title": "Bind `picked`",
+        "confidence": "safe",
+        "edits": [
+          {
+            "span": {
+              "start": 514,
+              "end": 521
+            },
+            "text": "v-model:picked"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -130,8 +130,11 @@ export type ProjectKind = "compile" | "harness" | "toolchain" | "ssr" | "browser
  * another writes in the same run must sit in a later group:
  *
  * - update: compile (and the harness's own tests) 0, then the toolchains and the reference's
- *   ssr and browser projects 1, then every follower 2;
- * - check with live pixels: the reference browser project 0, the other browser projects 1;
+ *   ssr and browser projects 1, then every follower 2; where a case names its own reference
+ *   (`caseReferences`, ADR-0057), that target's projects run at 2 alone, as they follow the
+ *   reference everywhere else, and the other followers at 3;
+ * - check with live pixels: the reference browser project 0, the other browser projects 1; the
+ *   browser projects of the targets some case names at 1 alone, and the others at 2;
  * - check with baselines (CI): everything 0, in parallel.
  */
 export function groupOrder(
@@ -139,14 +142,20 @@ export function groupOrder(
   target: string | undefined,
   mode: Pick<HarnessMode, "update" | "pixels">,
   reference: string,
+  caseReferences: readonly string[] = [],
 ): number {
   const isReference = target === reference;
+  // A group for the targets some case names runs only where a case names one.
+  const named = caseReferences.length ? 1 : 0;
+  const namedByCase = target !== undefined && caseReferences.includes(target);
   if (mode.update) {
     if (kind === "compile" || kind === "harness") return 0;
     if (kind === "toolchain" || isReference) return 1;
-    return 2;
+    return namedByCase ? 2 : 2 + named;
   }
-  if (mode.pixels === "live" && kind === "browser") return isReference ? 0 : 1;
+  if (mode.pixels === "live" && kind === "browser") {
+    return isReference ? 0 : namedByCase ? 1 : 1 + named;
+  }
   return 0;
 }
 

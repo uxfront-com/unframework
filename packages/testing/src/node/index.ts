@@ -64,7 +64,13 @@ export { formatConsoleArgs } from "../browser/console.ts";
 export { diffLines } from "../diff.ts";
 export type { DiffOptions } from "../diff.ts";
 export { formatError } from "../errors.ts";
-export { caseOfFile, isReference, ssrScenarios } from "../harness.ts";
+export {
+  caseOfFile,
+  caseReference,
+  caseReferences,
+  isReference,
+  ssrScenarios,
+} from "../harness.ts";
 export type { CaseConfig, HarnessContext, PixelMode, SsrScenario } from "../harness.ts";
 export {
   checkLayers,

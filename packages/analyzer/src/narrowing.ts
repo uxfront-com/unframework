@@ -1000,10 +1000,23 @@ function refOf(resolution: Resolution, render: RenderContext): boolean {
   );
 }
 
-/** Whether a reference's root declares a ref: `state`, `derived` or `templateRef`. */
+/**
+ * Whether a reference's root declares a ref: `state`, `derived`, `templateRef`, `model`, or a
+ * `context` binding whose key holds a ref.
+ */
 function isRefRoot(root: object, render: RenderContext): boolean {
-  const kind = render.setup.bindings.get(root)?.kind;
-  return kind === "state" || kind === "derived" || kind === "templateRef";
+  const binding = render.setup.bindings.get(root);
+  switch (binding?.kind) {
+    case "state":
+    case "derived":
+    case "templateRef":
+    case "model":
+      return true;
+    case "context":
+      return binding.ref === true;
+    default:
+      return false;
+  }
 }
 
 /** Whether a node lies in a list's key, which Angular writes as its `@for`'s `track`. */

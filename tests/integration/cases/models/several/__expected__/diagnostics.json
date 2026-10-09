@@ -1,0 +1,240 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit model yet: composition lands in M3.",
+    "file": "models/several/PriceRange.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 3,
+      "offset": 113
+    },
+    "end": {
+      "line": 4,
+      "column": 58,
+      "offset": 168
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit model yet: composition lands in M3.",
+    "file": "models/several/PriceRange.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 3,
+      "offset": 113
+    },
+    "end": {
+      "line": 4,
+      "column": 58,
+      "offset": 168
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit model yet: composition lands in M3.",
+    "file": "models/several/PriceRange.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 3,
+      "offset": 113
+    },
+    "end": {
+      "line": 4,
+      "column": 58,
+      "offset": 168
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit model yet: composition lands in M3.",
+    "file": "models/several/PriceRange.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 3,
+      "offset": 113
+    },
+    "end": {
+      "line": 4,
+      "column": 58,
+      "offset": 168
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit model yet: composition lands in M3.",
+    "file": "models/several/PriceRange.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 3,
+      "offset": 113
+    },
+    "end": {
+      "line": 4,
+      "column": 58,
+      "offset": 168
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit model yet: composition lands in M3.",
+    "file": "models/several/PriceRange.uf.tsx",
+    "start": {
+      "line": 4,
+      "column": 3,
+      "offset": 113
+    },
+    "end": {
+      "line": 4,
+      "column": 58,
+      "offset": 168
+    },
+    "target": "svelte"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "models/several/PriceRange.uf.tsx",
+    "start": {
+      "line": 16,
+      "column": 29,
+      "offset": 442
+    },
+    "end": {
+      "line": 16,
+      "column": 44,
+      "offset": 457
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit component yet: composition lands in M3.",
+    "file": "models/several/Search.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 216
+    },
+    "end": {
+      "line": 10,
+      "column": 84,
+      "offset": 293
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "file": "models/several/Search.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 216
+    },
+    "end": {
+      "line": 10,
+      "column": 84,
+      "offset": 293
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
+    "file": "models/several/Search.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 216
+    },
+    "end": {
+      "line": 10,
+      "column": 84,
+      "offset": 293
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit component yet: composition lands in M3.",
+    "file": "models/several/Search.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 216
+    },
+    "end": {
+      "line": 10,
+      "column": 84,
+      "offset": 293
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit component yet: composition lands in M3.",
+    "file": "models/several/Search.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 216
+    },
+    "end": {
+      "line": 10,
+      "column": 84,
+      "offset": 293
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit component yet: composition lands in M3.",
+    "file": "models/several/Search.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 7,
+      "offset": 216
+    },
+    "end": {
+      "line": 10,
+      "column": 84,
+      "offset": 293
+    },
+    "target": "svelte"
+  },
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "models/several/Search.uf.tsx",
+    "start": {
+      "line": 10,
+      "column": 33,
+      "offset": 242
+    },
+    "end": {
+      "line": 10,
+      "column": 56,
+      "offset": 265
+    },
+    "target": "astro"
+  }
+]

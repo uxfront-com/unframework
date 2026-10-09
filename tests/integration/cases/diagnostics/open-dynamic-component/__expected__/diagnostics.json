@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF3044",
+    "severity": "error",
+    "message": "`is` reads a value no target can render without knowing every tag or component it may name: it is a literal, a conditional of them, a component, or a value typed as a union of tags.",
+    "file": "diagnostics/open-dynamic-component/Box.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 20,
+      "offset": 221
+    },
+    "end": {
+      "line": 5,
+      "column": 23,
+      "offset": 224
+    },
+    "help": "Choose from a known set: `is={href ? \"a\" : \"button\"}`, `is={compact ? Chip : Card}`, or a prop typed as a union of tags."
+  }
+]

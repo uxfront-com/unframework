@@ -367,8 +367,10 @@ export interface BindingReference {
   binding: BindingId;
   /**
    * What a target replaces with its own spelling of the binding: the identifier; the whole
-   * `props.label` in the object form; and the whole `count.value` for a `state`, `derived` or
-   * `templateRef` binding, whose value is the only thing code reads (ADR-0045).
+   * `props.label` in the object form; and the whole `count.value` for a `state`, `derived`,
+   * `templateRef` or `model` binding, or a `context` binding of a key of a ref, whose value is the
+   * only thing code reads (ADR-0045, ADR-0054). A key of a ref is provided the ref itself, by its
+   * name.
    */
   span: Span;
   /** Set for a shorthand property (`{ label }`), which a rewrite must expand to `label: …`. */

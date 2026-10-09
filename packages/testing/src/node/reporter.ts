@@ -174,6 +174,11 @@ export class ParityReporter {
       empty,
       quarantine: harness?.quarantine ?? [],
       reference: harness?.reference ?? null,
+      references: Object.fromEntries(
+        Object.entries(harness?.cases ?? {}).flatMap(([id, config]) =>
+          config.reference ? [[id, config.reference]] : [],
+        ),
+      ),
     });
     if (complete) {
       // Every record of every cell is here: a quarantined cell that no longer fails is stale.

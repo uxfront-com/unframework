@@ -13,6 +13,7 @@ import {
   expectationProblems,
   formattingProblems,
   nondeterminism,
+  referenceProblems,
 } from "./compile-checks.ts";
 
 const filename = "fixture/badge/Badge.uf.tsx";
@@ -234,5 +235,39 @@ describe("expectationProblems (L1)", () => {
     expect(expectationProblems([undeclared, analyser], "react", false)).toEqual([]);
     // A warning or a note is no error: Astro's inert listeners are notes.
     expect(expectationProblems([{ ...analyser, severity: "warning" }], "react", true)).toEqual([]);
+  });
+});
+
+describe("referenceProblems (L1, ADR-0057)", () => {
+  const LISTBOX =
+    'export default function Pick() {\n  return (\n    <select aria-label="Size" size="2">\n      <option>S</option>\n      <option>M</option>\n    </select>\n  );\n}\n';
+  const PLAIN = "export default function Hello() {\n  return <p>Hello</p>;\n}\n";
+
+  it("lets a case Vue has no output for name a target whose cell is native", async () => {
+    const { diagnostics } = await compileWith(LISTBOX);
+    expect(referenceProblems(diagnostics, true, "vue", "react")).toEqual([]);
+  });
+
+  it("asks a case Vue has no output for to name one", async () => {
+    const { diagnostics } = await compileWith(LISTBOX);
+    expect(referenceProblems(diagnostics, true, "vue", undefined)).toEqual([
+      expect.stringMatching(
+        /^vue, the run's reference, has no output for the case: it leaves listbox unsupported/,
+      ),
+    ]);
+  });
+
+  it("refuses a reference Vue does not need, and one whose cell is not native", async () => {
+    const plain = await compileWith(PLAIN);
+    expect(referenceProblems(plain.diagnostics, true, "vue", "react")).toEqual([
+      expect.stringMatching(/^The case names react as its reference, yet vue renders it/),
+    ]);
+    expect(referenceProblems(plain.diagnostics, false, "vue", "react")).toEqual([
+      expect.stringMatching(/^The case names a reference, and has no spec/),
+    ]);
+    const listbox = await compileWith(LISTBOX);
+    expect(referenceProblems(listbox.diagnostics, true, "react", "vue")).toEqual([
+      expect.stringMatching(/^The case names vue as its reference, yet react renders it/),
+    ]);
   });
 });

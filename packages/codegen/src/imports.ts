@@ -56,16 +56,22 @@ export class ImportSet {
 
   /**
    * Imports a named binding: `import { name } from "source"`, or `name as local` when its name
-   * is taken. Returns the local name to refer to it by.
+   * is taken. Returns the local name to refer to it by. `exact` keeps a local name the source
+   * declares itself (an imported injection key's, ADR-0054), which the scope reserves already.
    */
-  add(source: string, name: string, options: { type?: boolean; local?: string } = {}): string {
+  add(
+    source: string,
+    name: string,
+    options: { type?: boolean; local?: string; exact?: boolean } = {},
+  ): string {
     const entry = this.#module(source);
     const existing = entry.names.get(name);
     if (existing) {
       existing.type &&= Boolean(options.type);
       return existing.local;
     }
-    const local = this.scope.claim(options.local ?? name);
+    if (options.exact) this.scope.reserve(options.local ?? name);
+    const local = options.exact ? (options.local ?? name) : this.scope.claim(options.local ?? name);
     entry.names.set(name, { local, type: Boolean(options.type) });
     return local;
   }
@@ -185,5 +191,73 @@ export function childImports(
       export: exported ? "default" : "named",
       self: local === component.name,
     };
+  });
+}
+
+/**
+ * The component whose output declares a module's injection keys (ADR-0054): its main one, the
+ * default export, else its first exported component, else its first.
+ */
+export function keyOwner(
+  components: readonly { name: string; export?: "default" | "named" | "local" }[],
+  exports: readonly { kind: "default" | "named"; local: string }[] = [],
+): string | undefined {
+  const exported = exports.find((entry) => entry.kind === "default") ?? exports[0];
+  if (exported) return exported.local;
+  const main =
+    components.find((component) => component.export === "default") ??
+    components.find((component) => component.export === "named") ??
+    components[0];
+  return main?.name;
+}
+
+/**
+ * An injection key a component's setup names (ADR-0054), and the output file it is imported
+ * from: each target writes a module's keys into the output of its main component (`keyOwner`).
+ */
+export interface KeyImport {
+  /** The name the setup uses. */
+  local: string;
+  /** The key's own name, which its module exports. */
+  name: string;
+  /** `./Tabs.vue`, `./tabs`: absent for a key the component's own output declares. */
+  specifier?: string;
+}
+
+/**
+ * The keys a component's `provide` and `inject` name, each once, in source order, with the
+ * output file each is imported from: `file(name)` names a component's output file, as for
+ * {@link childImports}.
+ */
+export function keyImports(
+  component: UfComponent,
+  module: UfModule,
+  file: (name: string) => string,
+): KeyImport[] {
+  const used: string[] = [];
+  for (const item of component.setup) {
+    if ((item.kind === "Provide" || item.kind === "Inject") && !used.includes(item.key)) {
+      used.push(item.key);
+    }
+  }
+  return used.map((local): KeyImport => {
+    for (const entry of module.imports ?? []) {
+      const imported = entry.names.find((name) => name.kind === "Key" && name.local === local);
+      const owner = keyOwner(entry.api.components);
+      if (!imported || owner === undefined) continue;
+      const directory = entry.file.includes("/")
+        ? entry.file.slice(0, entry.file.lastIndexOf("/"))
+        : "";
+      const path = `${directory ? `${directory}/` : ""}${file(owner)}`;
+      return {
+        local,
+        name: imported.imported,
+        specifier: path.startsWith("../") ? path : `./${path}`,
+      };
+    }
+    const owner = keyOwner(module.components, module.exports)!;
+    return owner === component.name
+      ? { local, name: local }
+      : { local, name: local, specifier: `./${file(owner)}` };
   });
 }

@@ -1,0 +1,434 @@
+{
+  "irVersion": 1,
+  "file": "models/checkbox-group/Drinks.uf.tsx",
+  "components": [
+    {
+      "name": "Drinks",
+      "span": {
+        "start": 36,
+        "end": 684
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "drinks@79",
+          "name": "drinks",
+          "kind": "state",
+          "span": {
+            "start": 79,
+            "end": 85
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "drinks@79",
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 92,
+              "end": 100
+            }
+          },
+          "initial": {
+            "code": "[\"tea\"]",
+            "span": {
+              "start": 102,
+              "end": 109
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 73,
+            "end": 111
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "fieldset",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "legend",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Drinks",
+                "span": {
+                  "start": 152,
+                  "end": 158
+                }
+              }
+            ],
+            "span": {
+              "start": 144,
+              "end": 167
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "checkbox",
+                    "span": {
+                      "start": 197,
+                      "end": 212
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "value",
+                    "value": "tea",
+                    "span": {
+                      "start": 213,
+                      "end": 224
+                    }
+                  },
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "drinks.value",
+                      "span": {
+                        "start": 234,
+                        "end": 246
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "drinks@79",
+                          "span": {
+                            "start": 234,
+                            "end": 246
+                          }
+                        }
+                      ]
+                    },
+                    "control": "checkbox-group",
+                    "span": {
+                      "start": 225,
+                      "end": 247
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 190,
+                  "end": 250
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " Tea",
+                "span": {
+                  "start": 250,
+                  "end": 261
+                }
+              }
+            ],
+            "span": {
+              "start": 174,
+              "end": 269
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "checkbox",
+                    "span": {
+                      "start": 299,
+                      "end": 314
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "value",
+                    "value": "coffee",
+                    "span": {
+                      "start": 315,
+                      "end": 329
+                    }
+                  },
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "drinks.value",
+                      "span": {
+                        "start": 339,
+                        "end": 351
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "drinks@79",
+                          "span": {
+                            "start": 339,
+                            "end": 351
+                          }
+                        }
+                      ]
+                    },
+                    "control": "checkbox-group",
+                    "span": {
+                      "start": 330,
+                      "end": 352
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 292,
+                  "end": 355
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " Coffee",
+                "span": {
+                  "start": 355,
+                  "end": 369
+                }
+              }
+            ],
+            "span": {
+              "start": 276,
+              "end": 377
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "input",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "type",
+                    "value": "checkbox",
+                    "span": {
+                      "start": 407,
+                      "end": 422
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "name": "value",
+                    "value": "juice",
+                    "span": {
+                      "start": 423,
+                      "end": 436
+                    }
+                  },
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "drinks.value",
+                      "span": {
+                        "start": 446,
+                        "end": 458
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "drinks@79",
+                          "span": {
+                            "start": 446,
+                            "end": 458
+                          }
+                        }
+                      ]
+                    },
+                    "control": "checkbox-group",
+                    "span": {
+                      "start": 437,
+                      "end": 459
+                    }
+                  }
+                ],
+                "children": [],
+                "span": {
+                  "start": 400,
+                  "end": 462
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " Juice",
+                "span": {
+                  "start": 462,
+                  "end": 475
+                }
+              }
+            ],
+            "span": {
+              "start": 384,
+              "end": 483
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Ordered: ",
+                "span": {
+                  "start": 498,
+                  "end": 507
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "drinks.value.join(\", \") || \"nothing\"",
+                  "span": {
+                    "start": 508,
+                    "end": 544
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "drinks@79",
+                      "span": {
+                        "start": 508,
+                        "end": 520
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 507,
+                  "end": 545
+                }
+              }
+            ],
+            "span": {
+              "start": 490,
+              "end": 554
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 569,
+                  "end": 582
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(drinks.value = [\"juice\"])",
+                      "span": {
+                        "start": 598,
+                        "end": 624
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "drinks@79",
+                          "operator": "=",
+                          "span": {
+                            "start": 598,
+                            "end": 624
+                          },
+                          "target": {
+                            "start": 599,
+                            "end": 611
+                          },
+                          "value": {
+                            "start": 614,
+                            "end": 623
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 592,
+                      "end": 624
+                    }
+                  },
+                  "span": {
+                    "start": 592,
+                    "end": 624
+                  }
+                },
+                "span": {
+                  "start": 583,
+                  "end": 625
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Only juice",
+                "span": {
+                  "start": 626,
+                  "end": 652
+                }
+              }
+            ],
+            "span": {
+              "start": 561,
+              "end": 661
+            }
+          }
+        ],
+        "span": {
+          "start": 127,
+          "end": 677
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Drinks",
+      "span": {
+        "start": 36,
+        "end": 684
+      }
+    }
+  ],
+  "types": []
+}

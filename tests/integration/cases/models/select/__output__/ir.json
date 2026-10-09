@@ -1,0 +1,342 @@
+{
+  "irVersion": 1,
+  "file": "models/select/SizePicker.uf.tsx",
+  "components": [
+    {
+      "name": "SizePicker",
+      "span": {
+        "start": 36,
+        "end": 537
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "size@83",
+          "name": "size",
+          "kind": "state",
+          "span": {
+            "start": 83,
+            "end": 87
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "size@83",
+          "initial": {
+            "code": "\"m\"",
+            "span": {
+              "start": 94,
+              "end": 97
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 77,
+            "end": 99
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Size",
+            "span": {
+              "start": 124,
+              "end": 141
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "label",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Size ",
+                "span": {
+                  "start": 156,
+                  "end": 174
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "select",
+                "attributes": [
+                  {
+                    "kind": "Model",
+                    "value": {
+                      "code": "size.value",
+                      "span": {
+                        "start": 200,
+                        "end": 210
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "size@83",
+                          "span": {
+                            "start": 200,
+                            "end": 210
+                          }
+                        }
+                      ]
+                    },
+                    "control": "select",
+                    "span": {
+                      "start": 191,
+                      "end": 211
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "option",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "value",
+                        "value": "s",
+                        "span": {
+                          "start": 231,
+                          "end": 240
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Small",
+                        "span": {
+                          "start": 241,
+                          "end": 246
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 223,
+                      "end": 255
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "option",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "value",
+                        "value": "m",
+                        "span": {
+                          "start": 274,
+                          "end": 283
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Medium",
+                        "span": {
+                          "start": 284,
+                          "end": 290
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 266,
+                      "end": 299
+                    }
+                  },
+                  {
+                    "kind": "Element",
+                    "tag": "option",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "value",
+                        "value": "l",
+                        "span": {
+                          "start": 318,
+                          "end": 327
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "Large",
+                        "span": {
+                          "start": 328,
+                          "end": 333
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 310,
+                      "end": 342
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 183,
+                  "end": 360
+                }
+              }
+            ],
+            "span": {
+              "start": 149,
+              "end": 375
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Chosen: ",
+                "span": {
+                  "start": 390,
+                  "end": 398
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "size.value",
+                  "span": {
+                    "start": 399,
+                    "end": 409
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "size@83",
+                      "span": {
+                        "start": 399,
+                        "end": 409
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 398,
+                  "end": 410
+                }
+              }
+            ],
+            "span": {
+              "start": 382,
+              "end": 419
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 434,
+                  "end": 447
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(size.value = \"l\")",
+                      "span": {
+                        "start": 463,
+                        "end": 481
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "size@83",
+                          "operator": "=",
+                          "span": {
+                            "start": 463,
+                            "end": 481
+                          },
+                          "target": {
+                            "start": 464,
+                            "end": 474
+                          },
+                          "value": {
+                            "start": 477,
+                            "end": 480
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 457,
+                      "end": 481
+                    }
+                  },
+                  "span": {
+                    "start": 457,
+                    "end": 481
+                  }
+                },
+                "span": {
+                  "start": 448,
+                  "end": 482
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Largest",
+                "span": {
+                  "start": 483,
+                  "end": 506
+                }
+              }
+            ],
+            "span": {
+              "start": 426,
+              "end": 515
+            }
+          }
+        ],
+        "span": {
+          "start": 115,
+          "end": 530
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "SizePicker",
+      "span": {
+        "start": 36,
+        "end": 537
+      }
+    }
+  ],
+  "types": []
+}

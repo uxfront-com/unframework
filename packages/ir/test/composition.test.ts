@@ -600,3 +600,22 @@ describe("checkInvariants on what round 1 left untested", () => {
     );
   });
 });
+
+describe("checkInvariants on a key of a ref (ADR-0054)", () => {
+  it("takes the ref itself, a state's by its name, where `provide` gives the key", () => {
+    const module = composition();
+    module.keys![0]!.type.code = "Ref<string>";
+    reports(
+      module,
+      "/setup/3/value",
+      "must be a `state`, `derived` or `model` binding by its name",
+    );
+    const at = find("label", 0, find("provide(").start);
+    (form(module).setup[3] as ProvideItem).value = createCode("text", at, [
+      createBindingReference(ids.text, at),
+    ]);
+    expect(
+      checkInvariants(module).filter((error) => error.path.startsWith("/components/0/setup/3")),
+    ).toEqual([]);
+  });
+});

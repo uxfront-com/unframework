@@ -3,10 +3,12 @@
 import { existsSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync } from "node:fs";
 import { basename, dirname, join, sep } from "node:path";
 
+import { TARGET_NAMES } from "@unframework/compiler";
 import { KEBAB_CASE, ssrScenarios } from "@unframework/testing/node";
 import type { CaseConfig } from "@unframework/testing/node";
 
 import { CASES_DIR } from "./paths.ts";
+import { REFERENCE } from "./targets.ts";
 
 /** One `.uf.tsx` input of a case. */
 export interface CaseSource {
@@ -38,7 +40,7 @@ export interface CaseInfo {
   config: CaseConfig;
 }
 
-const CASE_KEYS = new Set(["description", "main", "ssr", "axe", "requires"]);
+const CASE_KEYS = new Set(["description", "main", "ssr", "axe", "requires", "reference"]);
 
 /** Every case, sorted by id. Throws on a malformed case, so a broken corpus is loud. */
 export function listCases(casesDir: string = CASES_DIR): CaseInfo[] {
@@ -120,6 +122,18 @@ function readConfig(id: string, file: string): CaseConfig {
   }
   if (config.main !== undefined && typeof config.main !== "string") {
     problems.push(`"main" must be the file name of one of the case's .uf.tsx inputs`);
+  }
+  // The target that writes the case's expectations in the reference's place (ADR-0057): the
+  // compile project checks why, against the capability cells.
+  if (
+    config.reference !== undefined &&
+    (typeof config.reference !== "string" ||
+      config.reference === REFERENCE ||
+      !(TARGET_NAMES as readonly string[]).includes(config.reference))
+  ) {
+    problems.push(
+      `"reference" must name a target other than ${REFERENCE}: ${TARGET_NAMES.filter((name) => name !== REFERENCE).join(", ")}`,
+    );
   }
   // Why every test of the case requires a capability (`CaseConfig.requires`, ADR-0050).
   if (

@@ -1,0 +1,7 @@
+{
+  "description": "`<component is>` chooses between two components that both declare its prop: the parent switches from one to the other.",
+  "main": "Tag.uf.tsx",
+  "ssr": {
+    "sale": { "props": { "label": "Sale" } }
+  }
+}

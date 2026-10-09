@@ -1,0 +1,206 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit dynamic-component yet: composition lands in M3.",
+    "file": "dynamic/prop-union/Heading.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 5,
+      "offset": 107
+    },
+    "end": {
+      "line": 5,
+      "column": 17,
+      "offset": 173
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit dynamic-component yet: composition lands in M3.",
+    "file": "dynamic/prop-union/Heading.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 5,
+      "offset": 107
+    },
+    "end": {
+      "line": 5,
+      "column": 17,
+      "offset": 173
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit dynamic-component yet: composition lands in M3.",
+    "file": "dynamic/prop-union/Heading.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 5,
+      "offset": 107
+    },
+    "end": {
+      "line": 5,
+      "column": 17,
+      "offset": 173
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit dynamic-component yet: composition lands in M3.",
+    "file": "dynamic/prop-union/Heading.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 5,
+      "offset": 107
+    },
+    "end": {
+      "line": 5,
+      "column": 17,
+      "offset": 173
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit dynamic-component yet: composition lands in M3.",
+    "file": "dynamic/prop-union/Heading.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 5,
+      "offset": 107
+    },
+    "end": {
+      "line": 5,
+      "column": 17,
+      "offset": 173
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit dynamic-component yet: composition lands in M3.",
+    "file": "dynamic/prop-union/Heading.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 5,
+      "offset": 107
+    },
+    "end": {
+      "line": 5,
+      "column": 17,
+      "offset": 173
+    },
+    "target": "svelte"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit component yet: composition lands in M3.",
+    "file": "dynamic/prop-union/Outline.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 105
+    },
+    "end": {
+      "line": 6,
+      "column": 40,
+      "offset": 138
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "file": "dynamic/prop-union/Outline.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 105
+    },
+    "end": {
+      "line": 6,
+      "column": 40,
+      "offset": 138
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
+    "file": "dynamic/prop-union/Outline.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 105
+    },
+    "end": {
+      "line": 6,
+      "column": 40,
+      "offset": 138
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit component yet: composition lands in M3.",
+    "file": "dynamic/prop-union/Outline.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 105
+    },
+    "end": {
+      "line": 6,
+      "column": 40,
+      "offset": 138
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit component yet: composition lands in M3.",
+    "file": "dynamic/prop-union/Outline.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 105
+    },
+    "end": {
+      "line": 6,
+      "column": 40,
+      "offset": 138
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit component yet: composition lands in M3.",
+    "file": "dynamic/prop-union/Outline.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 105
+    },
+    "end": {
+      "line": 6,
+      "column": 40,
+      "offset": 138
+    },
+    "target": "svelte"
+  }
+]

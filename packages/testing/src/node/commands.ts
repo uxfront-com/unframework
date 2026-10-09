@@ -53,7 +53,7 @@ export function ufArtefact(context: CommandProject, request: ArtefactRequest): A
   const outcome = settleArtefact(
     path,
     request.contents ?? undefined,
-    sharedArtefactContext(harness, target),
+    sharedArtefactContext(harness, target, request.case),
   );
   return { pass: outcome.pass, status: outcome.status, message: outcome.message };
 }

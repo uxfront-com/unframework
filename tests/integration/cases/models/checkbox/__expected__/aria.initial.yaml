@@ -1,0 +1,5 @@
+- region "Terms":
+  - checkbox "I agree"
+  - text: I agree
+  - status: Not agreed
+  - button "Toggle"

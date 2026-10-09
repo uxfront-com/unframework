@@ -1,0 +1,126 @@
+{
+  "irVersion": 1,
+  "file": "dynamic/components/Card.uf.tsx",
+  "components": [
+    {
+      "name": "Card",
+      "span": {
+        "start": 0,
+        "end": 143
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 49,
+              "end": 55
+            }
+          },
+          "binding": "label@31",
+          "span": {
+            "start": 42,
+            "end": 55
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 40,
+            "end": 57
+          }
+        },
+        "span": {
+          "start": 29,
+          "end": 57
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@31",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 31,
+            "end": 36
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "card",
+            "span": {
+              "start": 81,
+              "end": 93
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "strong",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "label",
+                  "span": {
+                    "start": 110,
+                    "end": 115
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "label@31",
+                      "span": {
+                        "start": 110,
+                        "end": 115
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 109,
+                  "end": 116
+                }
+              }
+            ],
+            "span": {
+              "start": 101,
+              "end": 125
+            }
+          }
+        ],
+        "span": {
+          "start": 76,
+          "end": 136
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Card",
+      "span": {
+        "start": 0,
+        "end": 143
+      }
+    }
+  ],
+  "types": []
+}

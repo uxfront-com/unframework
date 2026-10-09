@@ -1,0 +1,168 @@
+{
+  "irVersion": 1,
+  "file": "context/static/ThemeProvider.uf.tsx",
+  "components": [
+    {
+      "name": "ThemeProvider",
+      "span": {
+        "start": 255,
+        "end": 446
+      },
+      "props": [],
+      "types": [
+        "Theme"
+      ],
+      "bindings": [],
+      "setup": [
+        {
+          "kind": "Provide",
+          "key": "ThemeKey",
+          "value": {
+            "code": "{ accent: \"teal\", label: \"Teal\" }",
+            "span": {
+              "start": 317,
+              "end": 350
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 299,
+            "end": 352
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Themed",
+            "span": {
+              "start": 377,
+              "end": 396
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Badge",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "\"New\"",
+                  "span": {
+                    "start": 416,
+                    "end": 421
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 411,
+                  "end": 421
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 404,
+              "end": 424
+            }
+          }
+        ],
+        "span": {
+          "start": 368,
+          "end": 439
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ThemeProvider",
+      "span": {
+        "start": 255,
+        "end": 446
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "Theme",
+      "exported": true,
+      "code": "interface Theme {\n  accent: string;\n  label: string;\n}",
+      "span": {
+        "start": 133,
+        "end": 187
+      }
+    }
+  ],
+  "imports": [
+    {
+      "specifier": "./Badge.uf.tsx",
+      "file": "Badge.uf.tsx",
+      "api": {
+        "file": "Badge.uf.tsx",
+        "components": [
+          {
+            "name": "Badge",
+            "export": "default",
+            "props": [
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "span"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Badge",
+          "span": {
+            "start": 96,
+            "end": 101
+          }
+        }
+      ],
+      "span": {
+        "start": 89,
+        "end": 124
+      }
+    }
+  ],
+  "keys": [
+    {
+      "name": "ThemeKey",
+      "description": "uf.theme",
+      "type": {
+        "code": "Theme",
+        "span": {
+          "start": 225,
+          "end": 230
+        }
+      },
+      "span": {
+        "start": 189,
+        "end": 253
+      }
+    }
+  ]
+}

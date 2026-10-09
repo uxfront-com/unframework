@@ -32,6 +32,12 @@ export interface CaseConfig {
    * whose every test requires something.
    */
   requires?: string;
+  /**
+   * The target that writes the case's shared expectations in place of the run's reference
+   * (ADR-0057), for a case that requires a capability Vue renders differently (`listbox`): the
+   * compile project checks that Vue declares the capability unsupported and this target native.
+   */
+  reference?: string;
 }
 
 /**
@@ -117,7 +123,39 @@ export function caseOfFile(
   return id;
 }
 
-/** Whether a target is the run's reference, which writes the shared artefacts in update mode. */
-export function isReference(harness: Pick<HarnessContext, "reference">, target: string): boolean {
-  return harness.reference === target;
+/**
+ * The target that writes a case's shared artefacts: the one its `case.json` names (ADR-0057), or
+ * the run's reference.
+ */
+export function caseReference(
+  harness: Pick<HarnessContext, "reference" | "cases">,
+  caseId: string,
+): string {
+  return harness.cases[caseId]?.reference ?? harness.reference;
+}
+
+/**
+ * Whether a target writes a case's shared artefacts in update mode: the case's reference
+ * (`caseReference`).
+ */
+export function isReference(
+  harness: Pick<HarnessContext, "reference" | "cases">,
+  target: string,
+  caseId: string,
+): boolean {
+  return caseReference(harness, caseId) === target;
+}
+
+/**
+ * The targets that write some case's shared artefacts in place of the run's reference
+ * (ADR-0057): they run after the reference and before every other target (`groupOrder`).
+ */
+export function caseReferences(harness: Pick<HarnessContext, "reference" | "cases">): string[] {
+  return [
+    ...new Set(
+      Object.values(harness.cases).flatMap((config) =>
+        config.reference && config.reference !== harness.reference ? [config.reference] : [],
+      ),
+    ),
+  ].sort();
 }

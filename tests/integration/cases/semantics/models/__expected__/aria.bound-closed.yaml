@@ -1,0 +1,5 @@
+- region "Panels":
+  - button "Shipping"
+  - button "Returns"
+  - status: Shipping is closed
+  - button "Toggle shipping"

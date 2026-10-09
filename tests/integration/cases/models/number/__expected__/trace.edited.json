@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "fill getByRole('spinbutton', { name: 'Count' }) \"7\"",
+      "dom": [
+        "<section aria-label=\"Order\">",
+        "  <input aria-label=\"Count\" min=\"0\" type=\"number\" uf:focused=\"\" uf:value=\"7\">",
+        "  <input aria-label=\"Volume\" max=\"10\" min=\"0\" type=\"range\" uf:value=\"5\">",
+        "  <output>",
+        "    \"Next: 8, volume 6\"",
+        "  </output>",
+        "  <button type=\"button\">",
+        "    \"Ten\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Order\":",
+        "  - spinbutton \"Count\": \"7\"",
+        "  - slider \"Volume\": \"5\"",
+        "  - status: \"Next: 8, volume 6\"",
+        "  - button \"Ten\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "type getByRole('slider', { name: 'Volume' }) \"{ArrowRight}\"",
+      "dom": [
+        "<section aria-label=\"Order\">",
+        "  <input aria-label=\"Count\" min=\"0\" type=\"number\" uf:value=\"7\">",
+        "  <input aria-label=\"Volume\" max=\"10\" min=\"0\" type=\"range\" uf:focused=\"\" uf:value=\"6\">",
+        "  <output>",
+        "    \"Next: 8, volume 7\"",
+        "  </output>",
+        "  <button type=\"button\">",
+        "    \"Ten\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Order\":",
+        "  - spinbutton \"Count\": \"7\"",
+        "  - slider \"Volume\": \"6\"",
+        "  - status: \"Next: 8, volume 7\"",
+        "  - button \"Ten\""
+      ],
+      "events": {}
+    }
+  ]
+}

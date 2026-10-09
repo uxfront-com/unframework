@@ -1,0 +1,7 @@
+- form "Contact":
+  - text: Name
+  - textbox "Name": Ada
+  - text: Email
+  - textbox "Email"
+  - status: Ada at no address
+  - button "Use Grace"

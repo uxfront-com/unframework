@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "click getByRole('button', { name: 'Returns' })",
+      "dom": [
+        "<section aria-label=\"Panels\">",
+        "  <div class=\"disclosure\">",
+        "    <button aria-expanded=\"true\" type=\"button\">",
+        "      \"Shipping\"",
+        "    </button>",
+        "    <p>",
+        "      \"Details of Shipping\"",
+        "    </p>",
+        "  </div>",
+        "  <div class=\"disclosure\">",
+        "    <button aria-expanded=\"true\" type=\"button\" uf:focused=\"\">",
+        "      \"Returns\"",
+        "    </button>",
+        "    <p>",
+        "      \"Details of Returns\"",
+        "    </p>",
+        "  </div>",
+        "  <output>",
+        "    \"Shipping is open\"",
+        "  </output>",
+        "  <button type=\"button\">",
+        "    \"Toggle shipping\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Panels\":",
+        "  - button \"Shipping\" [expanded]",
+        "  - paragraph: Details of Shipping",
+        "  - button \"Returns\" [expanded]",
+        "  - paragraph: Details of Returns",
+        "  - status: Shipping is open",
+        "  - button \"Toggle shipping\""
+      ],
+      "events": {}
+    }
+  ]
+}

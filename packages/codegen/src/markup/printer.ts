@@ -13,6 +13,7 @@ import type {
   Attribute,
   ComponentAttribute,
   ComponentNode,
+  DynamicNode,
   ElementNode,
   EventAttribute,
   Expression,
@@ -21,6 +22,8 @@ import type {
   Handler,
   IfBranch,
   ListenerAttribute,
+  ModelAttribute,
+  ModelBindingAttribute,
   Namespace,
   RefAttribute,
   RenderNode,
@@ -144,6 +147,30 @@ export interface PrintedFill {
   forwardsProps?: boolean;
   /** The forwarded slot's presence, `slots.title`, as the rules spell it. */
   presence?: string;
+}
+
+/**
+ * A form control's `v-model` (ADR-0054), with its value as code for the `render` site: the
+ * control shows the value, and a change of it writes the value's binding.
+ */
+export interface PrintedModel {
+  attribute: ModelAttribute;
+  value: string;
+}
+
+/** A component's `v-model:<name>` (ADR-0054), with its value as code for the `render` site. */
+export interface PrintedModelBinding {
+  attribute: ModelBindingAttribute;
+  value: string;
+}
+
+/**
+ * `<component is>` (ADR-0054), with what chooses the candidate as code: the dialect writes it,
+ * as a `component` or an `element` piece to print the candidates' attributes and content.
+ */
+export interface PrintedDynamic {
+  node: DynamicNode;
+  is: string;
 }
 
 /** A slot outlet, with its props as code, and key by key when they are an object literal. */
@@ -312,6 +339,22 @@ export interface MarkupDialect {
   fills?(fills: readonly PrintedFill[], context: ComponentContext): MarkupPiece[];
   /** Writes a slot outlet (ADR-0054): what the parent filled the slot with, or the fallback. */
   slotOutlet?(outlet: PrintedSlotOutlet): MarkupPiece[];
+  /**
+   * Writes a form control's `v-model` (ADR-0054): the control shows the value, and each change
+   * the control's kind and modifiers say writes it.
+   */
+  modelAttribute?(model: PrintedModel, context: AttributeContext): PrintedAttribute[];
+  /**
+   * Writes a component's `v-model:<name>` (ADR-0054): the child shows the value, and its writes
+   * of the model write it.
+   */
+  modelBinding?(binding: PrintedModelBinding, context: ComponentContext): PrintedAttribute[];
+  /**
+   * Writes `<component is>` (ADR-0054): the candidate `is` names renders, with the node's
+   * attributes, and its children or fills. The printer prints an `element` piece's tag and a
+   * `component` piece's name as the dialect gives them, with the node's attributes.
+   */
+  dynamic?(dynamic: PrintedDynamic): MarkupPiece[];
 }
 
 /**
@@ -645,10 +688,8 @@ export function printMarkup(
           return [componentItem(node, [], at)];
         case "SlotOutlet":
           return piecesItems(hook(at.dialect, "slotOutlet")(slotOutletParts(node)), at);
-        // `<component is>` is not printed yet (ADR-0055): each target's `emit` reports UF1002
-        // for it before printing.
         case "Dynamic":
-          return [];
+          return piecesItems(hook(at.dialect, "dynamic")({ node, is: code(node.is) }), at);
         default:
           return unreachable(node);
       }
@@ -859,9 +900,10 @@ export function printMarkup(
             ),
           );
           break;
-        // A component model is not printed yet (ADR-0055): each target's `emit` reports UF1002
-        // for it before printing.
         case "ModelBinding":
+          printed.push(
+            ...hook(of, "modelBinding")({ attribute, value: code(attribute.value) }, context),
+          );
           break;
         default:
           unreachable(attribute);
@@ -1062,8 +1104,10 @@ export function printMarkup(
             ...of.refAttribute({ attribute, name: bindingName(attribute.binding) }, context),
           );
           break;
-        // Not printed yet, as composition's nodes.
         case "Model":
+          printed.push(
+            ...hook(of, "modelAttribute")({ attribute, value: code(attribute.value) }, context),
+          );
           break;
         default:
           unreachable(attribute);
@@ -1342,10 +1386,16 @@ function decodeReferences(code: string): string {
 }
 
 /** A dialect's optional hook, which a dialect that meets its construct must have. */
-function hook<K extends "propAttribute" | "componentEvent" | "fills" | "slotOutlet">(
-  dialect: MarkupDialect,
-  name: K,
-): NonNullable<MarkupDialect[K]> {
+function hook<
+  K extends
+    | "propAttribute"
+    | "componentEvent"
+    | "fills"
+    | "slotOutlet"
+    | "modelAttribute"
+    | "modelBinding"
+    | "dynamic",
+>(dialect: MarkupDialect, name: K): NonNullable<MarkupDialect[K]> {
   const found = dialect[name];
   if (!found) {
     throw new Error(`The ${dialect.name} dialect does not print composition yet (${name}).`);
@@ -1448,7 +1498,6 @@ function attributeName(attribute: Attribute): string {
       return `@${attribute.event}`;
     case "Ref":
       return "ref";
-    // Not printed yet, as composition's nodes.
     case "Model":
       return "v-model";
     default:

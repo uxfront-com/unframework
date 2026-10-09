@@ -23,7 +23,7 @@ import {
 import type { ComponentApi, UfComponent } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
-import { childImports, exportsOf, referencedBindings } from "../src/index.ts";
+import { childImports, exportsOf, keyOwner, referencedBindings } from "../src/index.ts";
 import { printMarkup, svelteDialect } from "../src/markup.ts";
 import { objectEntries } from "../src/markup/printer.ts";
 
@@ -165,5 +165,27 @@ describe("referencedBindings", () => {
       ],
     );
     expect([...referencedBindings(component)].toSorted()).toEqual(["clear@3", "field@4"]);
+  });
+});
+
+describe("keyOwner (ADR-0054)", () => {
+  it("writes a module's keys into its main component: the default export, else the first exported", () => {
+    expect(
+      keyOwner(
+        [{ name: "Item" }, { name: "List" }],
+        [
+          { kind: "named", local: "Item" },
+          { kind: "default", local: "List" },
+        ],
+      ),
+    ).toBe("List");
+    expect(keyOwner([{ name: "Item" }], [{ kind: "named", local: "Item" }])).toBe("Item");
+    expect(
+      keyOwner([
+        { name: "Row", export: "local" },
+        { name: "Table", export: "default" },
+      ]),
+    ).toBe("Table");
+    expect(keyOwner([{ name: "Row", export: "local" }])).toBe("Row");
   });
 });

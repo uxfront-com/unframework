@@ -17,6 +17,7 @@ const still = {
   interacts: () => false,
   rerenders: () => false,
   listens: false,
+  reference: "vue",
 };
 const hello: CanaryCase = {
   id: "basics/hello",

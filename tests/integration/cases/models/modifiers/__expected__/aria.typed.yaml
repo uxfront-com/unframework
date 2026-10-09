@@ -1,0 +1,8 @@
+- form "Profile":
+  - text: Name
+  - textbox "Name": Ada
+  - text: City
+  - textbox "City": Lisbon
+  - text: Weight
+  - textbox "Weight": 12.5kg
+  - status: "[Ada] from Lisbon, 13.5"

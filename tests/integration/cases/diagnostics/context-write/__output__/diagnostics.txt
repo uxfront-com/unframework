@@ -1,0 +1,8 @@
+error[UF2034]: `mode` is injected, and an injected value is read-only: the component that provides it owns it.
+  --> diagnostics/context-write/Toolbar.uf.tsx:12:43
+   |
+12 |     <button type="button" onClick={() => (mode.value = "edit")}>
+   |                                           ^^^^^^^^^^
+   |
+   = help: Provide a function with the value, and call it to change the value: `provide(TabsKey, { active, select })`.
+   = see: https://unframework.dev/diagnostics/UF2034

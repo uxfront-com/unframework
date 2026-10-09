@@ -1,0 +1,281 @@
+{
+  "irVersion": 1,
+  "file": "dynamic/tags/Section.uf.tsx",
+  "components": [
+    {
+      "name": "Section",
+      "span": {
+        "start": 36,
+        "end": 407
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 88,
+              "end": 94
+            }
+          },
+          "binding": "title@70",
+          "span": {
+            "start": 81,
+            "end": 94
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ title: string }",
+          "span": {
+            "start": 79,
+            "end": 96
+          }
+        },
+        "span": {
+          "start": 68,
+          "end": 96
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "title@70",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 70,
+            "end": 75
+          }
+        },
+        {
+          "id": "nested@108",
+          "name": "nested",
+          "kind": "state",
+          "span": {
+            "start": 108,
+            "end": 114
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "nested@108",
+          "initial": {
+            "code": "false",
+            "span": {
+              "start": 121,
+              "end": 126
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 102,
+            "end": 128
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Dynamic",
+            "is": {
+              "code": "nested.value ? \"h3\" : \"h2\"",
+              "span": {
+                "start": 175,
+                "end": 201
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "nested@108",
+                  "span": {
+                    "start": 175,
+                    "end": 187
+                  }
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "kind": "Tag",
+                "tag": "h3"
+              },
+              {
+                "kind": "Tag",
+                "tag": "h2"
+              }
+            ],
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "title",
+                "span": {
+                  "start": 203,
+                  "end": 216
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "title",
+                  "span": {
+                    "start": 227,
+                    "end": 232
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@70",
+                      "span": {
+                        "start": 227,
+                        "end": 232
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 226,
+                  "end": 233
+                }
+              }
+            ],
+            "span": {
+              "start": 160,
+              "end": 252
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 267,
+                  "end": 280
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(nested.value = !nested.value)",
+                      "span": {
+                        "start": 296,
+                        "end": 326
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "nested@108",
+                          "operator": "=",
+                          "span": {
+                            "start": 296,
+                            "end": 326
+                          },
+                          "target": {
+                            "start": 297,
+                            "end": 309
+                          },
+                          "value": {
+                            "start": 312,
+                            "end": 325
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Binding",
+                          "binding": "nested@108",
+                          "span": {
+                            "start": 313,
+                            "end": 325
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 290,
+                      "end": 326
+                    }
+                  },
+                  "span": {
+                    "start": 290,
+                    "end": 326
+                  }
+                },
+                "span": {
+                  "start": 281,
+                  "end": 327
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "nested.value ? \"Lift\" : \"Nest\"",
+                  "span": {
+                    "start": 338,
+                    "end": 368
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "nested@108",
+                      "span": {
+                        "start": 338,
+                        "end": 350
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 337,
+                  "end": 369
+                }
+              }
+            ],
+            "span": {
+              "start": 259,
+              "end": 385
+            }
+          }
+        ],
+        "span": {
+          "start": 144,
+          "end": 400
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Section",
+      "span": {
+        "start": 36,
+        "end": 407
+      }
+    }
+  ],
+  "types": []
+}

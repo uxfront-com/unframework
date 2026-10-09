@@ -19,7 +19,7 @@ import { join, relative, sep } from "node:path";
 
 import type { OutputFile } from "@unframework/codegen";
 import { builtinTargets } from "@unframework/compiler";
-import type { CompilerPlugin, TargetName } from "@unframework/compiler";
+import type { CompilerPlugin, OutputHookContext, TargetName } from "@unframework/compiler";
 import type { Diagnostic } from "@unframework/diagnostics";
 import {
   childrenOf,
@@ -37,6 +37,7 @@ import {
 } from "@unframework/ir";
 import type {
   Attribute,
+  DynamicNode,
   ElementNode,
   FragmentNode,
   Namespace,
@@ -78,6 +79,11 @@ export interface CanaryCase {
   rerenders(target: string): boolean;
   /** Whether a source's committed IR has an element listener (an `Event` attribute) to unwire. */
   listens: boolean;
+  /**
+   * The target that writes the case's shared artefacts (ADR-0057): a canary that spares the
+   * reference spares it there.
+   */
+  reference: string;
 }
 
 /** One canary. */
@@ -652,9 +658,15 @@ export function canaryProjects(canary: Canary): ProjectKind[] {
 
 /**
  * The compiler plugins of a run: the canary's, or none. `target` is the target a project
- * compiles to; a canary that spares the reference needs it.
+ * compiles to; a canary that spares the reference needs it, and `references`, the cases that
+ * name their own reference (ADR-0057), by id: it spares the modules of those whose reference
+ * `target` is, as it spares the run's reference everywhere.
  */
-export function canaryPlugins(id: string | null, target?: string): CompilerPlugin[] {
+export function canaryPlugins(
+  id: string | null,
+  target?: string,
+  references: Readonly<Record<string, string>> = {},
+): CompilerPlugin[] {
   if (!id) return [];
   const canary = findCanary(id);
   if (!canary.plugin) return [];
@@ -665,7 +677,30 @@ export function canaryPlugins(id: string | null, target?: string): CompilerPlugi
       `The ${id} canary spares the reference target, so it needs the project's target.`,
     );
   }
-  return target === REFERENCE ? [] : [canary.plugin()];
+  if (target === REFERENCE) return [];
+  const spared = Object.keys(references).filter((caseId) => references[caseId] === target);
+  return [sparing(canary.plugin(), spared)];
+}
+
+/** A plugin that leaves the modules of some cases, by id, as they are. */
+function sparing(plugin: CompilerPlugin, cases: readonly string[]): CompilerPlugin {
+  if (!cases.length) return plugin;
+  const spared = (module: UfModule) =>
+    cases.some((id) =>
+      new RegExp(`(?:^|/)${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/[^/]+$`).test(module.file),
+    );
+  return {
+    name: plugin.name,
+    ...(plugin.ir
+      ? { ir: (module: UfModule) => (spared(module) ? undefined : plugin.ir!(module)) }
+      : {}),
+    ...(plugin.output
+      ? {
+          output: (files: readonly OutputFile[], context: OutputHookContext) =>
+            spared(context.module) ? undefined : plugin.output!(files, context),
+        }
+      : {}),
+  };
 }
 
 /** Whether a canary corrupts a target: every one, unless it names its targets. */
@@ -729,6 +764,7 @@ export function canaryCase(info: CaseInfo): CanaryCase {
     listens: irs.some(
       (ir) => existsSync(ir) && listens(JSON.parse(readFileSync(ir, "utf8")) as UfModule),
     ),
+    reference: info.config.reference ?? REFERENCE,
   };
 }
 
@@ -848,6 +884,23 @@ function markText(render: ElementNode | FragmentNode): boolean {
       return true;
     }
   }
+  // A root `<component is>` over tags renders its children in whichever tag it chooses
+  // (ADR-0054), each one that holds text.
+  if (render.kind === "Fragment") {
+    for (const node of render.children) {
+      if (
+        node.kind === "Dynamic" &&
+        node.candidates.every(
+          (candidate) =>
+            candidate.kind === "Tag" &&
+            textHolder(createElement(candidate.tag, [], [], node.span), "html"),
+        )
+      ) {
+        appendMarker(node);
+        return true;
+      }
+    }
+  }
   let marked = false;
   for (const root of rootElements(render)) {
     const holder = textHolder(root, "html");
@@ -859,12 +912,20 @@ function markText(render: ElementNode | FragmentNode): boolean {
   return marked;
 }
 
-/** Whether a component's roots are all components, whose own compiles render its text. */
+/**
+ * Whether a component's roots are all components, or `<component is>` over components, whose own
+ * compiles render its text.
+ */
 function rendersComponents(render: ElementNode | FragmentNode): boolean {
   return (
     render.kind === "Fragment" &&
     render.children.length > 0 &&
-    render.children.every((node) => node.kind === "Component")
+    render.children.every(
+      (node) =>
+        node.kind === "Component" ||
+        (node.kind === "Dynamic" &&
+          node.candidates.every((candidate) => candidate.kind === "Component")),
+    )
   );
 }
 
@@ -895,7 +956,7 @@ function textHolder(element: ElementNode, parent: Namespace): ElementNode | unde
  * Appends the marker as the element's last text, merged into a text it ends with: no two texts
  * are adjacent in the IR.
  */
-function appendMarker(element: ElementNode): void {
+function appendMarker(element: ElementNode | DynamicNode): void {
   const last = element.children.at(-1);
   if (last?.kind === "Text") {
     last.value = `${last.value} ${TEXT_MARKER}`;
@@ -1006,9 +1067,9 @@ export function mismatchClosingTag(file: OutputFile): string {
 /**
  * An output whose props and events a consumer sees as `any`: the type each target's checker
  * reads them from, the component's props parameter (React, Solid), its `$props()` (Svelte), its
- * `Props` (Astro), or the type arguments of `component$` (Qwik), `defineProps` and `defineEmits`
- * (Vue), and `input`, `output` and `model` (Angular). An output with none, a component without
- * props or events, is left as it is.
+ * `Props` (Astro), or the type arguments of `component$` (Qwik), `defineProps`, `defineModel`,
+ * `defineEmits` and `defineSlots` (Vue), and `input`, `output` and `model` (Angular). An output
+ * with none, a component without props or events, is left as it is.
  */
 function widenPublicTypes(file: OutputFile, target: string): string {
   const { contents } = file;
@@ -1033,7 +1094,10 @@ function widenPublicTypes(file: OutputFile, target: string): string {
       // `defineProps<any>()` declares no props to vue-tsc: each key takes anything instead.
       return anyTypeArguments(
         anyTypeArguments(
-          anyTypeArguments(contents, /\bdefineProps</g, "Record<string, any>"),
+          anyTypeArguments(
+            anyTypeArguments(contents, /\bdefineProps</g, "Record<string, any>"),
+            /\bdefineModel</g,
+          ),
           /\bdefineEmits</g,
           "Record<string, any[]>",
         ),

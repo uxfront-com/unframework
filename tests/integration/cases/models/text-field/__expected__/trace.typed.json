@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "fill getByRole('textbox', { name: 'Name' }) \"Linus\"",
+      "dom": [
+        "<form aria-label=\"Contact\">",
+        "  <label>",
+        "    \"Name \"",
+        "    <input uf:focused=\"\" uf:value=\"Linus\">",
+        "  </label>",
+        "  <label>",
+        "    \"Email \"",
+        "    <input type=\"email\" uf:value=\"\">",
+        "  </label>",
+        "  <output>",
+        "    \"Linus at no address\"",
+        "  </output>",
+        "  <button type=\"button\">",
+        "    \"Use Grace\"",
+        "  </button>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Contact\":",
+        "  - text: Name",
+        "  - textbox \"Name\": Linus",
+        "  - text: Email",
+        "  - textbox \"Email\"",
+        "  - status: Linus at no address",
+        "  - button \"Use Grace\""
+      ],
+      "events": {}
+    },
+    {
+      "action": "type getByRole('textbox', { name: 'Email' }) \"linus@example.com\"",
+      "dom": [
+        "<form aria-label=\"Contact\">",
+        "  <label>",
+        "    \"Name \"",
+        "    <input uf:value=\"Linus\">",
+        "  </label>",
+        "  <label>",
+        "    \"Email \"",
+        "    <input type=\"email\" uf:focused=\"\" uf:value=\"linus@example.com\">",
+        "  </label>",
+        "  <output>",
+        "    \"Linus at linus@example.com\"",
+        "  </output>",
+        "  <button type=\"button\">",
+        "    \"Use Grace\"",
+        "  </button>",
+        "</form>"
+      ],
+      "aria": [
+        "- form \"Contact\":",
+        "  - text: Name",
+        "  - textbox \"Name\": Linus",
+        "  - text: Email",
+        "  - textbox \"Email\": linus@example.com",
+        "  - status: Linus at linus@example.com",
+        "  - button \"Use Grace\""
+      ],
+      "events": {}
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+error[UF2028]: `defineModel` is called without a name: every target names a model's prop after it (`value`, React's `onValueChange`), so the name is written out.
+ --> diagnostics/invalid-model/Rating.uf.tsx:6:17
+  |
+6 |   const stars = defineModel<number>({ default: 3 });
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: Name the model and give it static options: `defineModel<string>("value", { default: "" })`.
+  = fix (safe): Name the model `"value"`
+  = see: https://unframework.dev/diagnostics/UF2028

@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "selectOptions getByRole('listbox', { name: 'Colour' }) [\"green\"]",
+      "dom": [
+        "<section aria-label=\"Colours\">",
+        "  <select aria-label=\"Colour\" size=\"3\">",
+        "    <option uf:selected=\"false\" value=\"red\">",
+        "      \"Red\"",
+        "    </option>",
+        "    <option uf:selected=\"true\" value=\"green\">",
+        "      \"Green\"",
+        "    </option>",
+        "    <option uf:selected=\"false\" value=\"blue\">",
+        "      \"Blue\"",
+        "    </option>",
+        "  </select>",
+        "  <output>",
+        "    \"Picked: green\"",
+        "  </output>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Colours\":",
+        "  - listbox \"Colour\":",
+        "    - option \"Red\"",
+        "    - option \"Green\" [selected]",
+        "    - option \"Blue\"",
+        "  - status: \"Picked: green\""
+      ],
+      "events": {}
+    }
+  ]
+}

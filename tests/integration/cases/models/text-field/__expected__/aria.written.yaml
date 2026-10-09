@@ -1,0 +1,7 @@
+- form "Contact":
+  - text: Name
+  - textbox "Name": Grace
+  - text: Email
+  - textbox "Email": linus@example.com
+  - status: Grace at linus@example.com
+  - button "Use Grace"

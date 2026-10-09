@@ -1,0 +1,5 @@
+- region "Order":
+  - spinbutton "Count": "2"
+  - slider "Volume": "5"
+  - status: "Next: 3, volume 6"
+  - button "Ten"

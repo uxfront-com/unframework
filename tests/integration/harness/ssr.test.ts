@@ -110,7 +110,7 @@ describe(`ssr:${target}`, () => {
               const outcome = settleArtefact(
                 join(info.dir, "__expected__", `ssr.${scenario}.html`),
                 html,
-                sharedArtefactContext(harness, target),
+                sharedArtefactContext(harness, target, info.id),
               );
               if (!outcome.pass) throw new Error(outcome.message);
             },

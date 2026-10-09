@@ -1,0 +1,304 @@
+{
+  "irVersion": 1,
+  "file": "semantics/listbox/ColourList.uf.tsx",
+  "components": [
+    {
+      "name": "ColourList",
+      "span": {
+        "start": 36,
+        "end": 526
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "colour@83",
+          "name": "colour",
+          "kind": "state",
+          "span": {
+            "start": 83,
+            "end": 89
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "colour@83",
+          "initial": {
+            "code": "\"none\"",
+            "span": {
+              "start": 96,
+              "end": 102
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 77,
+            "end": 104
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Colours",
+            "span": {
+              "start": 129,
+              "end": 149
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "select",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "size",
+                "value": "3",
+                "span": {
+                  "start": 173,
+                  "end": 181
+                }
+              },
+              {
+                "kind": "Static",
+                "name": "aria-label",
+                "value": "Colour",
+                "span": {
+                  "start": 190,
+                  "end": 209
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "change",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [
+                      {
+                        "name": "event",
+                        "event": "Event",
+                        "span": {
+                          "start": 229,
+                          "end": 234
+                        }
+                      }
+                    ],
+                    "body": {
+                      "code": "(colour.value = (event.currentTarget as HTMLSelectElement).value)",
+                      "span": {
+                        "start": 239,
+                        "end": 304
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "colour@83",
+                          "operator": "=",
+                          "span": {
+                            "start": 239,
+                            "end": 304
+                          },
+                          "target": {
+                            "start": 240,
+                            "end": 252
+                          },
+                          "value": {
+                            "start": 255,
+                            "end": 303
+                          },
+                          "arrowBody": true
+                        },
+                        {
+                          "kind": "Event",
+                          "member": "currentTarget",
+                          "span": {
+                            "start": 256,
+                            "end": 275
+                          }
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 228,
+                      "end": 304
+                    }
+                  },
+                  "span": {
+                    "start": 228,
+                    "end": 304
+                  }
+                },
+                "span": {
+                  "start": 218,
+                  "end": 305
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "option",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "value",
+                    "value": "red",
+                    "span": {
+                      "start": 330,
+                      "end": 341
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Red",
+                    "span": {
+                      "start": 342,
+                      "end": 345
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 322,
+                  "end": 354
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "option",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "value",
+                    "value": "green",
+                    "span": {
+                      "start": 371,
+                      "end": 384
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Green",
+                    "span": {
+                      "start": 385,
+                      "end": 390
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 363,
+                  "end": 399
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "option",
+                "attributes": [
+                  {
+                    "kind": "Static",
+                    "name": "value",
+                    "value": "blue",
+                    "span": {
+                      "start": 416,
+                      "end": 428
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Blue",
+                    "span": {
+                      "start": 429,
+                      "end": 433
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 408,
+                  "end": 442
+                }
+              }
+            ],
+            "span": {
+              "start": 157,
+              "end": 458
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Picked: ",
+                "span": {
+                  "start": 473,
+                  "end": 481
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "colour.value",
+                  "span": {
+                    "start": 482,
+                    "end": 494
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "colour@83",
+                      "span": {
+                        "start": 482,
+                        "end": 494
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 481,
+                  "end": 495
+                }
+              }
+            ],
+            "span": {
+              "start": 465,
+              "end": 504
+            }
+          }
+        ],
+        "span": {
+          "start": 120,
+          "end": 519
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "ColourList",
+      "span": {
+        "start": 36,
+        "end": 526
+      }
+    }
+  ],
+  "types": []
+}

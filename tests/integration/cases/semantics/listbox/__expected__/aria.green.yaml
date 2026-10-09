@@ -1,0 +1,6 @@
+- region "Colours":
+  - listbox "Colour":
+    - option "Red"
+    - option "Green" [selected]
+    - option "Blue"
+  - status: "Picked: green"

@@ -42,9 +42,10 @@ interface Problem {
 
 /** Framework built-ins written as lower-case tags, and their framework. */
 const FRAMEWORK_ELEMENTS: ReadonlyMap<string, string> = new Map(
-  ["component", "keep-alive", "suspense", "teleport", "transition", "transition-group"].map(
-    (tag) => [tag, "Vue"],
-  ),
+  ["keep-alive", "suspense", "teleport", "transition", "transition-group"].map((tag) => [
+    tag,
+    "Vue",
+  ]),
 );
 
 /** The outcome of {@link checkTag}. */

@@ -1066,7 +1066,14 @@ class Walk {
     switch (binding.kind) {
       case "state":
       case "derived":
-      case "templateRef": {
+      case "templateRef":
+      case "model":
+      case "context": {
+        // An injected value that is no ref is read as it is, as a constant is.
+        if (!isRef(binding)) {
+          this.refs.push(createBindingReference(binding.id, span(node), shorthand));
+          return binding.kinds;
+        }
         const text = shorthand ? `${name}: ${name}.value` : `${name}.value`;
         reporter.report(
           "UF3026",
@@ -1112,10 +1119,8 @@ class Walk {
       case "slots":
         this.#slotUse(node, `\`${name}\` is used whole`);
         return UNKNOWN;
-      // Composition's bindings (ADR-0055) the analyser does not declare in the setup yet.
-      case "model":
+      // Composition's bindings (ADR-0055) the setup never declares.
       case "slotScope":
-      case "context":
       case "component":
         return UNKNOWN;
       default:
@@ -2906,7 +2911,7 @@ class Walk {
     const binding = setupBindingOf(object.object, this.#context);
     const { source } = this.#context;
     const written = `${binding?.name}.value`;
-    if (binding?.kind !== "state" || source.slice(object.start, object.end) !== written) {
+    if (!binding || !isWritableRef(binding) || source.slice(object.start, object.end) !== written) {
       return undefined;
     }
     const edits: Fix["edits"] = [];
@@ -3230,7 +3235,7 @@ class Walk {
           if (binding && isRef(binding) && !inner.computed) {
             if (binding.kind === "templateRef") return ELEMENT;
             return other(
-              `\`${binding.name}.value\`, ${binding.kind === "state" ? "a ref's value" : "a computed value"},`,
+              `\`${binding.name}.value\`, ${binding.kind === "derived" ? "a computed value" : binding.kind === "context" ? "an injected ref's value" : "a ref's value"},`,
             );
           }
           if (this.#isPropsObject(object)) return other("a prop");
@@ -4542,7 +4547,7 @@ class Walk {
     binding: SetupBinding,
     operator: string,
   ): NarrowedPath[] {
-    if (binding.kind !== "state" || !READING_WRITES.has(operator) || !mayBeAbsent(binding.kinds)) {
+    if (!isWritableRef(binding) || !READING_WRITES.has(operator) || !mayBeAbsent(binding.kinds)) {
       return [];
     }
     const path = referencePath(target as AST.Expression, this.#context);
@@ -4719,7 +4724,7 @@ class Walk {
         return undefined;
       }
       const found = setupBindingOf(object.object, this.#context);
-      if (found?.kind !== "state" || (binding && binding !== found)) return undefined;
+      if (!found || !isWritableRef(found) || (binding && binding !== found)) return undefined;
       binding = found;
     }
     if (!binding) return undefined;
@@ -4794,6 +4799,7 @@ class Walk {
           const binding = context.setup.bindings.get(resolution.declaration);
           if (!binding) return { kind: "invalid" };
           if (binding.kind === "localVar") return { kind: "binding", binding };
+          if (binding.kind === "context") return this.#contextWrite(node, binding);
           return isRef(binding)
             ? invalid(
                 node,
@@ -4865,7 +4871,8 @@ class Walk {
             object.start === node.start &&
             !node.optional
           ) {
-            if (binding.kind === "state") return { kind: "binding", binding };
+            if (isWritableRef(binding)) return { kind: "binding", binding };
+            if (binding.kind === "context") return this.#contextWrite(node, binding);
             return invalid(
               node,
               binding.kind === "derived"
@@ -4875,6 +4882,9 @@ class Walk {
             );
           }
         }
+        const root = memberRoot(node);
+        const rooted = root ? setupBindingOf(root, context) : undefined;
+        if (rooted?.kind === "context") return this.#contextWrite(node, rooted);
         return { kind: "member" };
       }
       case "ArrayPattern":
@@ -4921,6 +4931,22 @@ class Walk {
   }
 
   /**
+   * A write through an injected value (UF2034, ADR-0054): what a component injects belongs to
+   * the ancestor that provides it, which every target but Vue hands down read-only.
+   */
+  #contextWrite(node: { start: number; end: number }, binding: SetupBinding): Target {
+    this.#context.reporter.report(
+      "UF2034",
+      node,
+      `\`${binding.name}\` is injected, and an injected value is read-only: the component that provides it owns it.`,
+      {
+        help: "Provide a function with the value, and call it to change the value: `provide(TabsKey, { active, select })`.",
+      },
+    );
+    return { kind: "invalid" };
+  }
+
+  /**
    * Checks a write of a binding where it is (ADR-0045, UF2011): client code only, an operator a
    * setter takes, and a statement of its own, which every target can rewrite into a setter call.
    * A setup function whose expression body is the write gets a block body (the fix). Returns
@@ -4933,7 +4959,7 @@ class Walk {
     position: Position,
   ): boolean {
     const { reporter } = this.#context;
-    const target = binding.kind === "state" ? `${binding.name}.value` : binding.name;
+    const target = isWritableRef(binding) ? `${binding.name}.value` : binding.name;
     if (this.#mode !== "client") {
       reporter.report(
         "UF2011",
@@ -5330,9 +5356,30 @@ const WHAT: Readonly<Record<SetupBinding["kind"], string>> = {
   component: "a component",
 };
 
-/** Whether a setup binding is a ref, whose value is read and written as `x.value`. */
+/**
+ * Whether a setup binding is a ref, whose value is read as `x.value`: a `context` binding is one
+ * where its key holds a ref (ADR-0054).
+ */
 export function isRef(binding: SetupBinding): boolean {
-  return binding.kind === "state" || binding.kind === "derived" || binding.kind === "templateRef";
+  return (
+    binding.kind === "state" ||
+    binding.kind === "derived" ||
+    binding.kind === "templateRef" ||
+    binding.kind === "model" ||
+    (binding.kind === "context" && binding.ref === true)
+  );
+}
+
+/** Whether a setup binding is a ref that code writes: state, or a model (ADR-0054). */
+export function isWritableRef(binding: SetupBinding | undefined): boolean {
+  return binding?.kind === "state" || binding?.kind === "model";
+}
+
+/** The identifier a member chain starts from, `theme` in `theme.colors.primary`. */
+function memberRoot(node: AST.MemberExpression): AST.IdentifierReference | undefined {
+  let object: AST.Expression | AST.Super = node.object;
+  while (object.type === "MemberExpression") object = object.object;
+  return object.type === "Identifier" ? object : undefined;
 }
 
 /** The targets a destructuring assignment writes, each with the default written for it. */

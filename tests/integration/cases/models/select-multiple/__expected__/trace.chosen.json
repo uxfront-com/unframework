@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "selectOptions getByRole('listbox', { name: 'Toppings' }) [\"cheese\",\"basil\"]",
+      "dom": [
+        "<section aria-label=\"Pizza\">",
+        "  <label>",
+        "    \"Toppings \"",
+        "    <select multiple=\"\">",
+        "      <option uf:selected=\"true\" value=\"cheese\">",
+        "        \"Cheese\"",
+        "      </option>",
+        "      <option uf:selected=\"false\" value=\"olives\">",
+        "        \"Olives\"",
+        "      </option>",
+        "      <option uf:selected=\"true\" value=\"basil\">",
+        "        \"Basil\"",
+        "      </option>",
+        "    </select>",
+        "  </label>",
+        "  <output>",
+        "    \"On top: cheese, basil\"",
+        "  </output>",
+        "  <button type=\"button\">",
+        "    \"Green\"",
+        "  </button>",
+        "</section>"
+      ],
+      "aria": [
+        "- region \"Pizza\":",
+        "  - text: Toppings",
+        "  - listbox \"Toppings\":",
+        "    - option \"Cheese\" [selected]",
+        "    - option \"Olives\"",
+        "    - option \"Basil\" [selected]",
+        "  - status: \"On top: cheese, basil\"",
+        "  - button \"Green\""
+      ],
+      "events": {}
+    }
+  ]
+}

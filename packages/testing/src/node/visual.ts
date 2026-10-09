@@ -20,6 +20,7 @@ import pixelmatch from "pixelmatch";
 import type { CDPSession, Page } from "playwright";
 import { PNG } from "pngjs";
 
+import { caseReference } from "../harness.ts";
 import type {
   CaptureAttachment,
   CaptureOutcome,
@@ -89,7 +90,9 @@ export async function ufVisualCapture(
   }
   const root = displayRoot(harness);
   const rel = (file: string) => relative(root, file).split(sep).join("/");
-  const isReference = target === harness.reference;
+  // The case's reference (ADR-0057) publishes or writes its pixels; every other target compares.
+  const reference = caseReference(harness, request.case);
+  const isReference = target === reference;
   const mode = `${harness.update ? "update" : "check"}+${harness.pixels}`;
   const key = `${harness.runId}:${request.case}/${request.name}`;
   const paths = {
@@ -167,7 +170,7 @@ export async function ufVisualCapture(
   //    committed baselines.
   const fromReference = harness.pixels === "live" || harness.update;
   const geometryAgainst = fromReference
-    ? `${harness.reference}'s capture in this run`
+    ? `${reference}'s capture in this run`
     : rel(paths.geometry);
   let expectedGeometry: GeometrySnapshot;
   let expectedPng: string;
@@ -179,7 +182,7 @@ export async function ufVisualCapture(
         pass: false,
         outcome: "missing-reference-capture",
         message: missingReference(
-          harness.reference,
+          reference,
           `${request.case}/${request.name}`,
           harness.update ? "update" : "live",
         ),
@@ -195,7 +198,7 @@ export async function ufVisualCapture(
       return done({
         pass: false,
         outcome: "missing-artefact",
-        message: `Missing artefact ${missing.map(rel).join(" and ")}. Run \`pnpm test:baselines\` to write it (the reference target, ${harness.reference}, in the Linux image).`,
+        message: `Missing artefact ${missing.map(rel).join(" and ")}. Run \`pnpm test:baselines\` to write it (the reference target, ${reference}, in the Linux image).`,
       });
     }
     expectedGeometry = JSON.parse(readFileSync(paths.geometry, "utf8")) as GeometrySnapshot;

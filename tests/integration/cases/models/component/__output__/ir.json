@@ -1,0 +1,302 @@
+{
+  "irVersion": 1,
+  "file": "models/component/Order.uf.tsx",
+  "components": [
+    {
+      "name": "Order",
+      "span": {
+        "start": 77,
+        "end": 394
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "cups@119",
+          "name": "cups",
+          "kind": "state",
+          "span": {
+            "start": 119,
+            "end": 123
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "cups@119",
+          "initial": {
+            "code": "2",
+            "span": {
+              "start": 130,
+              "end": 131
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 113,
+            "end": 133
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Order",
+            "span": {
+              "start": 158,
+              "end": 176
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Stepper",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Cups\"",
+                  "span": {
+                    "start": 199,
+                    "end": 205
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 193,
+                  "end": 205
+                }
+              },
+              {
+                "kind": "ModelBinding",
+                "model": "value",
+                "value": {
+                  "code": "cups.value",
+                  "span": {
+                    "start": 221,
+                    "end": 231
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "cups@119",
+                      "span": {
+                        "start": 221,
+                        "end": 231
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 206,
+                  "end": 232
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 184,
+              "end": 235
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Ordered: ",
+                "span": {
+                  "start": 250,
+                  "end": 259
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "cups.value",
+                  "span": {
+                    "start": 260,
+                    "end": 270
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "cups@119",
+                      "span": {
+                        "start": 260,
+                        "end": 270
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 259,
+                  "end": 271
+                }
+              }
+            ],
+            "span": {
+              "start": 242,
+              "end": 280
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 295,
+                  "end": 308
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(cups.value = 0)",
+                      "span": {
+                        "start": 324,
+                        "end": 340
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "cups@119",
+                          "operator": "=",
+                          "span": {
+                            "start": 324,
+                            "end": 340
+                          },
+                          "target": {
+                            "start": 325,
+                            "end": 335
+                          },
+                          "value": {
+                            "start": 338,
+                            "end": 339
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 318,
+                      "end": 340
+                    }
+                  },
+                  "span": {
+                    "start": 318,
+                    "end": 340
+                  }
+                },
+                "span": {
+                  "start": 309,
+                  "end": 341
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Clear",
+                "span": {
+                  "start": 342,
+                  "end": 363
+                }
+              }
+            ],
+            "span": {
+              "start": 287,
+              "end": 372
+            }
+          }
+        ],
+        "span": {
+          "start": 149,
+          "end": 387
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Order",
+      "span": {
+        "start": 77,
+        "end": 394
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Stepper.uf.tsx",
+      "file": "Stepper.uf.tsx",
+      "api": {
+        "file": "Stepper.uf.tsx",
+        "components": [
+          {
+            "name": "Stepper",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [
+              {
+                "name": "value",
+                "optional": true,
+                "type": "number"
+              }
+            ],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Stepper",
+          "span": {
+            "start": 43,
+            "end": 50
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 75
+      }
+    }
+  ]
+}

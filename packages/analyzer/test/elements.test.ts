@@ -66,7 +66,6 @@ describe("element names", () => {
     ["ng-container", "Angular"],
     ["ng-template", "Angular"],
     ["ng-content", "Angular"],
-    ["component", "Vue"],
     ["transition", "Vue"],
     ["transition-group", "Vue"],
     ["keep-alive", "Vue"],

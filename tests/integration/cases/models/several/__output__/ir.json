@@ -1,0 +1,389 @@
+{
+  "irVersion": 1,
+  "file": "models/several/Search.uf.tsx",
+  "components": [
+    {
+      "name": "Search",
+      "span": {
+        "start": 83,
+        "end": 486
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "low@126",
+          "name": "low",
+          "kind": "state",
+          "span": {
+            "start": 126,
+            "end": 129
+          }
+        },
+        {
+          "id": "high@149",
+          "name": "high",
+          "kind": "state",
+          "span": {
+            "start": 149,
+            "end": 153
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "State",
+          "binding": "low@126",
+          "initial": {
+            "code": "20",
+            "span": {
+              "start": 136,
+              "end": 138
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 120,
+            "end": 140
+          }
+        },
+        {
+          "kind": "State",
+          "binding": "high@149",
+          "initial": {
+            "code": "50",
+            "span": {
+              "start": 160,
+              "end": 162
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 143,
+            "end": 164
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Search",
+            "span": {
+              "start": 189,
+              "end": 208
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "PriceRange",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Price\"",
+                  "span": {
+                    "start": 234,
+                    "end": 241
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 228,
+                  "end": 241
+                }
+              },
+              {
+                "kind": "ModelBinding",
+                "model": "min",
+                "value": {
+                  "code": "low.value",
+                  "span": {
+                    "start": 255,
+                    "end": 264
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "low@126",
+                      "span": {
+                        "start": 255,
+                        "end": 264
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 242,
+                  "end": 265
+                }
+              },
+              {
+                "kind": "ModelBinding",
+                "model": "max",
+                "value": {
+                  "code": "high.value",
+                  "span": {
+                    "start": 279,
+                    "end": 289
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "high@149",
+                      "span": {
+                        "start": 279,
+                        "end": 289
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 266,
+                  "end": 290
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 216,
+              "end": 293
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "output",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Between ",
+                "span": {
+                  "start": 308,
+                  "end": 325
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "low.value",
+                  "span": {
+                    "start": 326,
+                    "end": 335
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "low@126",
+                      "span": {
+                        "start": 326,
+                        "end": 335
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 325,
+                  "end": 336
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " and ",
+                "span": {
+                  "start": 336,
+                  "end": 341
+                }
+              },
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "high.value",
+                  "span": {
+                    "start": 342,
+                    "end": 352
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "high@149",
+                      "span": {
+                        "start": 342,
+                        "end": 352
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 341,
+                  "end": 353
+                }
+              }
+            ],
+            "span": {
+              "start": 300,
+              "end": 369
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "button",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "type",
+                "value": "button",
+                "span": {
+                  "start": 384,
+                  "end": 397
+                }
+              },
+              {
+                "kind": "Event",
+                "event": "click",
+                "handler": {
+                  "kind": "Inline",
+                  "function": {
+                    "parameters": [],
+                    "body": {
+                      "code": "(high.value = 40)",
+                      "span": {
+                        "start": 413,
+                        "end": 430
+                      },
+                      "refs": [
+                        {
+                          "kind": "Write",
+                          "binding": "high@149",
+                          "operator": "=",
+                          "span": {
+                            "start": 413,
+                            "end": 430
+                          },
+                          "target": {
+                            "start": 414,
+                            "end": 424
+                          },
+                          "value": {
+                            "start": 427,
+                            "end": 429
+                          },
+                          "arrowBody": true
+                        }
+                      ]
+                    },
+                    "expression": true,
+                    "span": {
+                      "start": 407,
+                      "end": 430
+                    }
+                  },
+                  "span": {
+                    "start": 407,
+                    "end": 430
+                  }
+                },
+                "span": {
+                  "start": 398,
+                  "end": 431
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Cheaper",
+                "span": {
+                  "start": 432,
+                  "end": 455
+                }
+              }
+            ],
+            "span": {
+              "start": 376,
+              "end": 464
+            }
+          }
+        ],
+        "span": {
+          "start": 180,
+          "end": 479
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Search",
+      "span": {
+        "start": 83,
+        "end": 486
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./PriceRange.uf.tsx",
+      "file": "PriceRange.uf.tsx",
+      "api": {
+        "file": "PriceRange.uf.tsx",
+        "components": [
+          {
+            "name": "PriceRange",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [
+              {
+                "name": "min",
+                "optional": true,
+                "type": "number"
+              },
+              {
+                "name": "max",
+                "optional": true,
+                "type": "number"
+              }
+            ],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "fieldset"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "PriceRange",
+          "span": {
+            "start": 43,
+            "end": 53
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 81
+      }
+    }
+  ]
+}

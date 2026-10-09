@@ -1,0 +1,222 @@
+{
+  "irVersion": 1,
+  "file": "context/nested/Outline.uf.tsx",
+  "components": [
+    {
+      "name": "Outline",
+      "span": {
+        "start": 37,
+        "end": 237
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Level",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "title",
+                "value": {
+                  "code": "\"Book\"",
+                  "span": {
+                    "start": 101,
+                    "end": 107
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 95,
+                  "end": 107
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Component",
+                    "component": "Level",
+                    "attributes": [
+                      {
+                        "kind": "Prop",
+                        "name": "title",
+                        "value": {
+                          "code": "\"Part\"",
+                          "span": {
+                            "start": 128,
+                            "end": 134
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 122,
+                          "end": 134
+                        }
+                      }
+                    ],
+                    "fills": [
+                      {
+                        "slot": "default",
+                        "children": [
+                          {
+                            "kind": "Component",
+                            "component": "Level",
+                            "attributes": [
+                              {
+                                "kind": "Prop",
+                                "name": "title",
+                                "value": {
+                                  "code": "\"Chapter\"",
+                                  "span": {
+                                    "start": 157,
+                                    "end": 166
+                                  },
+                                  "refs": []
+                                },
+                                "span": {
+                                  "start": 151,
+                                  "end": 166
+                                }
+                              }
+                            ],
+                            "fills": [],
+                            "span": {
+                              "start": 144,
+                              "end": 169
+                            }
+                          }
+                        ],
+                        "span": {
+                          "start": 144,
+                          "end": 169
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 115,
+                      "end": 184
+                    }
+                  },
+                  {
+                    "kind": "Component",
+                    "component": "Level",
+                    "attributes": [
+                      {
+                        "kind": "Prop",
+                        "name": "title",
+                        "value": {
+                          "code": "\"Appendix\"",
+                          "span": {
+                            "start": 204,
+                            "end": 214
+                          },
+                          "refs": []
+                        },
+                        "span": {
+                          "start": 198,
+                          "end": 214
+                        }
+                      }
+                    ],
+                    "fills": [],
+                    "span": {
+                      "start": 191,
+                      "end": 217
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 115,
+                  "end": 217
+                }
+              }
+            ],
+            "span": {
+              "start": 88,
+              "end": 230
+            }
+          }
+        ],
+        "span": {
+          "start": 88,
+          "end": 230
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Outline",
+      "span": {
+        "start": 37,
+        "end": 237
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Level.uf.tsx",
+      "file": "Level.uf.tsx",
+      "api": {
+        "file": "Level.uf.tsx",
+        "components": [
+          {
+            "name": "Level",
+            "export": "default",
+            "props": [
+              {
+                "name": "title",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "section"
+          }
+        ],
+        "keys": [
+          {
+            "name": "DepthKey",
+            "description": "uf.depth",
+            "type": "number"
+          }
+        ]
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Level",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    }
+  ]
+}

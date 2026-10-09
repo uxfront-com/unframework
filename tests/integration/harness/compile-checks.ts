@@ -63,6 +63,59 @@ export function expectationProblems(
 }
 
 /**
+ * L1: the rules of a case's own reference (ADR-0057). A case names a target other than the run's
+ * reference only when the run's reference has no output for it because it declares a capability
+ * the case requires unsupported (Vue's `listbox`), and only a target whose cells for those
+ * capabilities are native. A feature case the run's reference has no output for names one, or
+ * no target would write its expectations.
+ */
+export function referenceProblems(
+  expected: readonly ExpectedDiagnosticText[],
+  hasSpec: boolean,
+  runReference: string,
+  reference: string | undefined,
+): string[] {
+  if (!hasSpec) {
+    return reference === undefined
+      ? []
+      : ["The case names a reference, and has no spec: only a spec's expectations have a writer."];
+  }
+  const capabilities: Partial<Capabilities> = targetsByName[runReference]?.capabilities ?? {};
+  const lacking = Object.entries(capabilities).flatMap(([capability, cell]) =>
+    cell &&
+    cell.support === "unsupported" &&
+    cell.severity === "error" &&
+    forTarget(expected, runReference).some(
+      (diagnostic) =>
+        cellKey(diagnostic) ===
+        `${cell.code} ${cell.severity} The ${runReference} target does not support ${capability}: ${cell.reason}`,
+    )
+      ? [capability]
+      : [],
+  );
+  if (reference === undefined) {
+    return lacking.length
+      ? [
+          `${runReference}, the run's reference, has no output for the case: it leaves ${lacking.join(", ")} unsupported. Name a target whose cells are native as the case's "reference" in case.json (ADR-0057), so a reviewed target writes its expectations.`,
+        ]
+      : [];
+  }
+  if (!lacking.length) {
+    return [
+      `The case names ${reference} as its reference, yet ${runReference} renders it: a case names another reference only for a capability ${runReference} leaves unsupported (ADR-0057).`,
+    ];
+  }
+  const cells: Partial<Capabilities> = targetsByName[reference]?.capabilities ?? {};
+  return lacking.flatMap((capability) =>
+    cells[capability as keyof Capabilities]?.support === "native"
+      ? []
+      : [
+          `The case names ${reference} as its reference, whose ${capability} cell is not native: a case's reference renders what ${runReference} cannot as the capability means it (ADR-0057).`,
+        ],
+  );
+}
+
+/**
  * The diagnostics a target's capability cells report, as {@link cellKey} writes them: one for
  * each capability the target leaves unsupported, with the cell's code, severity and reason, in
  * the compiler's words (ADR-0033). A capability the matrix does not declare is no cell.

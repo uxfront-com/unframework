@@ -1,0 +1,8 @@
+- region "Size":
+  - text: Size
+  - combobox "Size":
+    - option "Small"
+    - option "Medium" [selected]
+    - option "Large"
+  - status: "Chosen: m"
+  - button "Largest"

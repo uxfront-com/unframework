@@ -1,3 +1,5 @@
+import type { Attribute, ComponentAttribute } from "@unframework/ir";
+
 // Vue templates (plan §6): `{{ }}` interpolations, `:attr` bindings, `v-if` and `v-for` on the
 // element they control (or on a `<template>` around content that is not one element), `@event`
 // listeners with their modifiers, `ref` attributes, and attributes in `vue/attributes-order`.
@@ -118,15 +120,18 @@ function styleObject(parts: readonly StylePart[]): string {
 }
 
 /**
- * The order `vue/attributes-order` (in `plugin:vue/recommended`) wants: `v-for`, then the
+ * The order `vue/attributes-order` (in `plugin:vue/recommended`) wants: `:is`, `v-for`, then the
  * conditionals, then `id`, then `key` and `ref` (its unique attributes, in any order between
- * them), then the other attributes, then the listeners (`@click`), each group in any order.
+ * them), then `v-model`, then the other attributes, then the listeners (`@click`), each group in
+ * any order.
  */
 function vueRank({ name }: PrintedAttribute): number {
+  if (name === ":is") return -1;
   if (name === "v-for") return 0;
   if (name === "v-if" || name === "v-else-if" || name === "v-else") return 1;
   if (name === "id") return 2;
   if (name === "key" || name === "ref") return 3;
+  if (name === "v-model" || name.startsWith("v-model:")) return 3.5;
   if (name.startsWith("@") || name.startsWith("v-on:")) return 5;
   return 4;
 }
@@ -293,6 +298,57 @@ export const vueDialect: MarkupDialect = {
     return fills.map(slotTemplate);
   },
   slotOutlet: (outlet) => [slotElement(outlet)],
+  // Vue's own `v-model`. Its `vModelText` casts a number input's value as `.number` does, but
+  // not a range input's, which the contract casts too (ADR-0054): that one takes `.number`.
+  modelAttribute: ({ attribute, value }, { element }) => {
+    const type = element.attributes.find((each) => each.kind === "Static" && each.name === "type");
+    const cast =
+      attribute.number ||
+      (attribute.control === "number" && !(type?.kind === "Static" && type.value === "number"));
+    const modifiers = [
+      attribute.lazy ? ".lazy" : "",
+      cast ? ".number" : "",
+      attribute.trim ? ".trim" : "",
+    ].join("");
+    return [{ name: "v-model", text: `v-model${modifiers}="${vueAttributeCode(value)}"` }];
+  },
+  modelBinding: ({ attribute, value }) => {
+    const name = `v-model:${attribute.model}`;
+    return [{ name, text: `${name}="${vueAttributeCode(value)}"` }];
+  },
+  // `<component :is>`, with the candidates' attributes and content as an element's (tags) or a
+  // component's (components).
+  dynamic: ({ node, is }) => {
+    const directives: PrintedAttribute[] = [{ name: ":is", text: `:is="${vueAttributeCode(is)}"` }];
+    if (node.candidates.every((candidate) => candidate.kind === "Tag")) {
+      return [
+        {
+          kind: "element",
+          element: {
+            kind: "Element",
+            tag: "component",
+            attributes: node.attributes as Attribute[],
+            children: node.children,
+            span: node.span,
+          },
+          directives,
+        },
+      ];
+    }
+    return [
+      {
+        kind: "component",
+        component: {
+          kind: "Component",
+          component: "component",
+          attributes: node.attributes as ComponentAttribute[],
+          fills: node.fills ?? [],
+          span: node.span,
+        },
+        directives,
+      },
+    ];
+  },
 };
 
 /**

@@ -48,6 +48,15 @@ case "$MODE" in
     env -u CI UF_UPDATE=1 UF_PIXELS=baseline node scripts/run.ts --project "browser:vue" \
       "${WORKERS[@]}" "$@" \
       || status=$?
+    # A case that names its own reference (ADR-0057) takes its baselines from that target's
+    # browser project, run on such cases alone.
+    while read -r target dirs; do
+      [ -n "$target" ] || continue
+      # shellcheck disable=SC2086 # one case directory per word
+      env -u CI UF_UPDATE=1 UF_PIXELS=baseline node scripts/run.ts --project "browser:$target" \
+        "${WORKERS[@]}" $dirs \
+        || status=$?
+    done < <(node scripts/references.ts)
     cd /work
     # Only what changed, so an unchanged baseline keeps its bytes and its mtime on the host.
     find tests/integration/cases -type f \

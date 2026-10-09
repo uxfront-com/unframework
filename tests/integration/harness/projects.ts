@@ -17,6 +17,7 @@ import type { Toolchain, ToolchainContext } from "@unframework/codegen";
 import { builtinTargets } from "@unframework/compiler";
 import type { TargetName } from "@unframework/compiler";
 import {
+  caseReferences,
   formatError,
   groupOrder,
   parityBrowser,
@@ -109,7 +110,9 @@ function nodeProject(
       root: ROOT,
       include,
       provide: { ...(target ? { target } : {}), ufHarness: setup.harness },
-      sequence: { groupOrder: groupOrder(kind, target, setup.mode, REFERENCE) },
+      sequence: {
+        groupOrder: groupOrder(kind, target, setup.mode, REFERENCE, caseReferences(setup.harness)),
+      },
       ...test,
     },
   };
@@ -172,7 +175,15 @@ function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOption
       recordCompiledModule(event);
       return guard ? goldenGuard(event) : undefined;
     },
-    plugins: canaryPlugins(setup.mode.canary, target),
+    plugins: canaryPlugins(
+      setup.mode.canary,
+      target,
+      Object.fromEntries(
+        Object.entries(setup.harness.cases).flatMap(([id, config]) =>
+          config.reference ? [[id, config.reference]] : [],
+        ),
+      ),
+    ),
   };
 }
 
@@ -191,7 +202,9 @@ const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework)
       root: ROOT,
       include: ["harness/ssr.test.ts"],
       provide: { target, ufHarness: setup.harness, ufServer: toolchain.server },
-      sequence: { groupOrder: groupOrder("ssr", target, setup.mode, REFERENCE) },
+      sequence: {
+        groupOrder: groupOrder("ssr", target, setup.mode, REFERENCE, caseReferences(setup.harness)),
+      },
     }),
   } as UserWorkspaceConfig;
 };
@@ -253,7 +266,15 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
           ufCapabilities: builtinTargets[target as TargetName].capabilities,
           ufNoOutput: noOutput,
         },
-        sequence: { groupOrder: groupOrder("browser", target, setup.mode, REFERENCE) },
+        sequence: {
+          groupOrder: groupOrder(
+            "browser",
+            target,
+            setup.mode,
+            REFERENCE,
+            caseReferences(setup.harness),
+          ),
+        },
         browser: {
           ...parityBrowser({ name, commands: toolchain.browserCommands?.(context) ?? {} }),
           // Vitest's failure screenshots go next to the spec by default, among the committed

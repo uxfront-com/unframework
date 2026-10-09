@@ -994,4 +994,110 @@ export default function Page() { return <p><${first} /><${second} /></p>; }`);
       expect(files["Page.vue"]).toContain('import TransitionComponent_1 from "./Transition.vue";');
     });
   });
+  describe("models, context and <component is> (ADR-0054)", () => {
+    async function emitAll(source: string): Promise<Record<string, string>> {
+      const files = await emitFormatted(lower(source));
+      return Object.fromEntries(files.map((file) => [file.path, file.contents]));
+    }
+
+    it("declares a model, defaulting an unbound one to `undefined` as a prop's", async () => {
+      expect(
+        await emitSource(`import { defineModel } from "unframework";
+export default function Toggle() {
+  const on = defineModel<boolean>("on");
+  const size = defineModel<number>("size", { default: 2 });
+  return <button type="button" onClick={() => (on.value = !on.value)}>{size.value}</button>;
+}`),
+      ).toBe(
+        sfc(
+          [
+            'const on = defineModel<boolean | undefined>("on", { default: undefined });',
+            'const size = defineModel<number>("size", { default: 2 });',
+          ],
+          ['<button type="button" @click="on = !on">{{ size }}</button>'],
+        ),
+      );
+    });
+
+    it("writes a control's v-model with its modifiers, and casts a range input", async () => {
+      const output = await emitSource(`import { ref } from "unframework";
+export default function Form() {
+  const name = ref("");
+  const count = ref(0);
+  return (
+    <form>
+      <input v-model_trim={name.value} />
+      <input type="number" v-model={count.value} />
+      <input type="range" v-model={count.value} />
+    </form>
+  );
+}`);
+      expect(output).toContain('<input v-model.trim="name" />');
+      expect(output).toContain('<input v-model="count" type="number" />');
+      expect(output).toContain('<input v-model.number="count" type="range" />');
+    });
+
+    it("binds a component's model by its name", async () => {
+      const files = await emitAll(`import { defineModel, ref } from "unframework";
+function Field() {
+  const value = defineModel<string>("value", { default: "" });
+  return <p>{value.value}</p>;
+}
+export default function Form() {
+  const text = ref("a");
+  return <Field v-model:value={text.value} />;
+}`);
+      expect(files["Form.vue"]).toContain('<Field v-model:value="text" />');
+    });
+
+    it("declares the module's keys in a plain script block, and unwraps an injected ref", async () => {
+      const files = await emitAll(`import { inject, provide, ref } from "unframework";
+import type { InjectionKey, Ref } from "unframework";
+export const CountKey: InjectionKey<Ref<number>> = Symbol("uf.count");
+function Display() {
+  const none = ref(0);
+  const count = inject(CountKey, none);
+  return <output>{count.value}</output>;
+}
+export default function Counter() {
+  const count = ref(1);
+  provide(CountKey, count);
+  return <Display />;
+}`);
+      expect(files["Display.vue"]).toContain('import { CountKey } from "./Counter.vue";');
+      expect(files["Display.vue"]).toContain("const count = inject(CountKey, none);");
+      expect(files["Display.vue"]).toContain("<output>{{ count }}</output>");
+      expect(files["Counter.vue"]).toContain(
+        [
+          '<script lang="ts">',
+          'import type { InjectionKey, Ref } from "vue";',
+          "",
+          'export const CountKey: InjectionKey<Ref<number>> = Symbol("uf.count");',
+          "</script>",
+        ].join("\n"),
+      );
+      expect(files["Counter.vue"]).toContain("provide(CountKey, count);");
+    });
+
+    it("writes <component :is>, a built-in's name under its alias", async () => {
+      const files = await emitAll(`import { ref } from "unframework";
+function Transition({ label }: { label: string }) { return <i>{label}</i>; }
+function Card({ label }: { label: string }) { return <b>{label}</b>; }
+export default function Tag() {
+  const fade = ref(true);
+  return (
+    <p>
+      <component is={fade.value ? Transition : Card} label="x" />
+      <component is={fade.value ? "h2" : "h3"} class="t">y</component>
+    </p>
+  );
+}`);
+      expect(files["Tag.vue"]).toContain(
+        '<component :is="fade ? TransitionComponent : Card" label="x" />',
+      );
+      expect(files["Tag.vue"]).toContain(
+        "<component :is=\"fade ? 'h2' : 'h3'\" class=\"t\">y</component>",
+      );
+    });
+  });
 });

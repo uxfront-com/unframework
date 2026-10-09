@@ -1,0 +1,192 @@
+{
+  "irVersion": 1,
+  "file": "context/fallback/LocaleProvider.uf.tsx",
+  "components": [
+    {
+      "name": "LocaleProvider",
+      "span": {
+        "start": 180,
+        "end": 395
+      },
+      "props": [
+        {
+          "name": "locale",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 241,
+              "end": 247
+            }
+          },
+          "binding": "locale@221",
+          "span": {
+            "start": 233,
+            "end": 247
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ locale: string }",
+          "span": {
+            "start": 231,
+            "end": 249
+          }
+        },
+        "span": {
+          "start": 219,
+          "end": 249
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@261",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 281,
+            "end": 304
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 283,
+              "end": 302
+            }
+          }
+        ],
+        "span": {
+          "start": 255,
+          "end": 308
+        }
+      },
+      "bindings": [
+        {
+          "id": "locale@221",
+          "name": "locale",
+          "kind": "prop",
+          "span": {
+            "start": 221,
+            "end": 227
+          }
+        },
+        {
+          "id": "slots@261",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 261,
+            "end": 266
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Provide",
+          "key": "LocaleKey",
+          "value": {
+            "code": "locale",
+            "span": {
+              "start": 330,
+              "end": 336
+            },
+            "refs": [
+              {
+                "kind": "Binding",
+                "binding": "locale@221",
+                "span": {
+                  "start": 330,
+                  "end": 336
+                }
+              }
+            ]
+          },
+          "span": {
+            "start": 311,
+            "end": 338
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Bound",
+            "name": "lang",
+            "value": {
+              "code": "locale",
+              "span": {
+                "start": 359,
+                "end": 365
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "locale@221",
+                  "span": {
+                    "start": 359,
+                    "end": 365
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 353,
+              "end": 366
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "SlotOutlet",
+            "slot": "default",
+            "fallback": [],
+            "span": {
+              "start": 367,
+              "end": 386
+            }
+          }
+        ],
+        "span": {
+          "start": 348,
+          "end": 392
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "LocaleProvider",
+      "span": {
+        "start": 180,
+        "end": 395
+      }
+    }
+  ],
+  "types": [],
+  "keys": [
+    {
+      "name": "LocaleKey",
+      "description": "uf.locale",
+      "type": {
+        "code": "string",
+        "span": {
+          "start": 148,
+          "end": 154
+        }
+      },
+      "span": {
+        "start": 111,
+        "end": 178
+      }
+    }
+  ]
+}

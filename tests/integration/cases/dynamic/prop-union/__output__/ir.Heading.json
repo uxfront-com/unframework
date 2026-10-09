@@ -1,0 +1,179 @@
+{
+  "irVersion": 1,
+  "file": "dynamic/prop-union/Heading.uf.tsx",
+  "components": [
+    {
+      "name": "Heading",
+      "span": {
+        "start": 0,
+        "end": 180
+      },
+      "props": [
+        {
+          "name": "tag",
+          "optional": false,
+          "type": {
+            "code": "\"h1\" | \"h2\" | \"h3\"",
+            "span": {
+              "start": 54,
+              "end": 72
+            }
+          },
+          "binding": "tag@34",
+          "span": {
+            "start": 49,
+            "end": 73
+          }
+        },
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 80,
+              "end": 86
+            }
+          },
+          "binding": "text@39",
+          "span": {
+            "start": 74,
+            "end": 86
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ tag: \"h1\" | \"h2\" | \"h3\"; text: string }",
+          "span": {
+            "start": 47,
+            "end": 88
+          }
+        },
+        "span": {
+          "start": 32,
+          "end": 88
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "tag@34",
+          "name": "tag",
+          "kind": "prop",
+          "span": {
+            "start": 34,
+            "end": 37
+          }
+        },
+        {
+          "id": "text@39",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 39,
+            "end": 43
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Fragment",
+        "children": [
+          {
+            "kind": "Dynamic",
+            "is": {
+              "code": "tag",
+              "span": {
+                "start": 122,
+                "end": 125
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tag@34",
+                  "span": {
+                    "start": 122,
+                    "end": 125
+                  }
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "kind": "Tag",
+                "tag": "h1"
+              },
+              {
+                "kind": "Tag",
+                "tag": "h2"
+              },
+              {
+                "kind": "Tag",
+                "tag": "h3"
+              }
+            ],
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "heading",
+                "span": {
+                  "start": 127,
+                  "end": 142
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "text",
+                  "span": {
+                    "start": 151,
+                    "end": 155
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "text@39",
+                      "span": {
+                        "start": 151,
+                        "end": 155
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 150,
+                  "end": 156
+                }
+              }
+            ],
+            "span": {
+              "start": 107,
+              "end": 173
+            }
+          }
+        ],
+        "span": {
+          "start": 107,
+          "end": 173
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Heading",
+      "span": {
+        "start": 0,
+        "end": 180
+      }
+    }
+  ],
+  "types": []
+}

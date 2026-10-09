@@ -199,7 +199,6 @@ describe("attribute names", () => {
   });
 
   it.each([
-    ['<input v-model="x" />', "v-model"],
     ['<p v-if="x">a</p>', "v-if"],
     ['<p innerHTML="<b>x</b>">a</p>', "innerHTML"],
     ['<input defaultValue="v" />', "defaultValue"],

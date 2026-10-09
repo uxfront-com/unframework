@@ -111,6 +111,7 @@ const fixture = (hasFixes: boolean): CanaryCase => ({
   interacts: () => false,
   rerenders: () => false,
   listens: false,
+  reference: REFERENCE,
 });
 
 /** The elements of a render tree, in document order, through branches and list bodies. */
@@ -450,6 +451,21 @@ describe("canaries", () => {
   it("needs the project's target for a canary that spares the reference", () => {
     expect(() => canaryPlugins("L10-root-hidden")).toThrow(/needs the project's target/);
     expect(canaryPlugins("L10-root-hidden", REFERENCE)).toEqual([]);
+  });
+
+  it("spares a case's own reference where a canary spares the reference (ADR-0057)", async () => {
+    const compileAs = (references: Record<string, string>) =>
+      compile(source, {
+        filename,
+        targets: ["react"],
+        plugins: canaryPlugins("L10-root-hidden", "react", references),
+        format: false,
+      });
+    const clean = await compile(source, { filename, targets: ["react"], format: false });
+    const spared = await compileAs({ [filename.slice(0, filename.lastIndexOf("/"))]: "react" });
+    expect(spared.outputs).toEqual(clean.outputs);
+    const other = await compileAs({ "forms/elsewhere": "react" });
+    expect(other.outputs).not.toEqual(clean.outputs);
   });
 
   it("L13 and L5-debugger put their statement in every target's render path", async () => {

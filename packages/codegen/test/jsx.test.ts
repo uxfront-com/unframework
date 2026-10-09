@@ -7,6 +7,7 @@ import {
   createComponent,
   createComponentNode,
   createDynamicClass,
+  createDynamicNode,
   createElement,
   createEventAttribute,
   createFor,
@@ -17,6 +18,8 @@ import {
   createIf,
   createInterpolation,
   createListenerAttribute,
+  createModelAttribute,
+  createModelBindingAttribute,
   createParameter,
   createParameterPattern,
   createProp,
@@ -47,6 +50,7 @@ import {
   js,
   jsxChildren,
   jsxContext,
+  jsxDynamic,
   jsxFillValue,
   jsxHandler,
   jsxNode,
@@ -835,6 +839,58 @@ describe("composition (ADR-0053, ADR-0054)", () => {
 });
 
 /** An identifier printed as `name`, which may hold what no identifier does (`title?.`). */
+describe("models and <component is> (ADR-0054)", () => {
+  const model = el("input", [createModelAttribute(expr("tone", ["tone", tone]), "text", at)]);
+  const bound = createComponentNode(
+    "Field",
+    [createModelBindingAttribute("value", expr("tone", ["tone", tone]), at)],
+    [],
+    at,
+  );
+  const tags = createDynamicNode(
+    expr('tone ? "h2" : "h3"', ["tone", tone]),
+    [
+      { kind: "Tag", tag: "h2" },
+      { kind: "Tag", tag: "h3" },
+    ],
+    [createStaticAttribute("class", "title", at)],
+    [text("Hi")],
+    at,
+  );
+  const components = createDynamicNode(
+    expr("tone", ["tone", tone]),
+    [{ kind: "Component", component: "Field" }],
+    [createPropAttribute("label", expr('"Name"'), at)],
+    [],
+    at,
+    [createSlotFill("default", [text("Hi")], at)],
+  );
+
+  it("prints them through the dialect, and throws where it has no hook", () => {
+    const dialect: JsxDialect = {
+      modelAttribute: () => [js.jsxAttribute("value", js.stringLiteral("v"))],
+      modelBinding: (attribute) => [js.jsxAttribute(attribute.model, js.stringLiteral("v"))],
+      dynamic: (node, context) => jsxDynamic(node, "Tag", context),
+    };
+    expect(print(el("div", [], model, bound), { dialect })).toBe(
+      '<div><input value="v" /><Field value="v" /></div>',
+    );
+    expect(print(el("div", [], tags), { dialect })).toBe('<div><Tag class="title">Hi</Tag></div>');
+    expect(print(el("div", [], components), { dialect })).toBe(
+      '<div><Tag label="Name">Hi</Tag></div>',
+    );
+    expect(() => print(el("div", [], model))).toThrow(
+      "The JSX dialect does not print composition yet (modelAttribute).",
+    );
+    expect(() => print(el("div", [], bound))).toThrow(
+      "The JSX dialect does not print composition yet (modelBinding).",
+    );
+    expect(() => print(el("div", [], tags))).toThrow(
+      "The JSX dialect does not print composition yet (dynamic).",
+    );
+  });
+});
+
 function printedIdentifier(name: string) {
   return js.identifier(name);
 }

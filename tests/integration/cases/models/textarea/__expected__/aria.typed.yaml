@@ -1,0 +1,4 @@
+- region "Note":
+  - textbox "Text": Buy milk and bread
+  - status: 18 characters
+  - button "Discard"
