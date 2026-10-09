@@ -28,6 +28,14 @@ const noVirtualModules = { name: "unframework", api: { getCompiled: () => undefi
 const testTimeout = 30_000;
 
 /**
+ * Vitest serves every project's transforms from one main thread, and the browser project's ngtsc
+ * plugin compiles the corpus's components there synchronously, a block that grows with the
+ * corpus. An SSR render that waited behind it took 13.8 s to 30 s in CI's Unit tests, against
+ * 0.8 s alone. So `ssr` runs first, on its own, and `unit` and `browser` start after it.
+ */
+const afterSsr = { groupOrder: 1 };
+
+/**
  * `unit` runs in plain Node. `ssr` runs the renderer tests on the toolchain's own SSR Vite
  * configuration, as the ssr:angular project does: Angular's packages linked as they load, and
  * no JIT compiler. `browser` mounts the corpus's components, as this target emits them now, in
@@ -44,6 +52,7 @@ const config: ViteUserConfig = defineConfig({
           exclude: [...SSR, "test/*.browser.test.ts"],
           environment: "node",
           testTimeout,
+          sequence: afterSsr,
         },
       },
       {
@@ -62,6 +71,7 @@ const config: ViteUserConfig = defineConfig({
           name: "browser",
           include: ["test/*.browser.test.ts"],
           testTimeout,
+          sequence: afterSsr,
           browser: {
             enabled: true,
             provider: playwright(),

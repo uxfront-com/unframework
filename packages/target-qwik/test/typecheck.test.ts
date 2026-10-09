@@ -36,12 +36,16 @@ const component = (body: string, before = "") =>
   `import { component$ } from "@qwik.dev/core";\n${before}\nexport default component$(() => {\n${body}\n});\n`;
 
 describe("typecheck (L4, tsgo)", () => {
+  // One tsgo run over every committed golden output, which no test can split per case, so its
+  // time grows with the corpus: 2.5 s to 3.3 s in four runs of CI's Unit tests, against the 5 s
+  // default. This test and the next take the batch timeout of the other targets' L4 tests.
   it("passes every committed golden output and the fixtures, in one run", async () => {
     expect(goldens.length).toBeGreaterThanOrEqual(2);
     const results = await toolchain.typecheck([...goldens, ...fixtures], context);
     expect([...results.entries()]).toEqual([...goldens, ...fixtures].map((file) => [file, []]));
-  });
+  }, 60_000);
 
+  // The same batch with three more files: 2.0 s to 3.0 s in the same four runs.
   it("reports each error against the file it is in, beside clean files", async () => {
     const clean = write("Clean.tsx", component("  return <p>Hello</p>;"));
     const script = write(
@@ -64,7 +68,7 @@ describe("typecheck (L4, tsgo)", () => {
     ]);
     for (const golden of goldens) expect(results.get(golden)).toEqual([]);
     expect(results.size).toBe(goldens.length + 3);
-  });
+  }, 60_000);
 
   it("keeps an elaborated message whole", async () => {
     const file = write("Unknown.tsx", component('  return <div tabindex="0" />;'));
