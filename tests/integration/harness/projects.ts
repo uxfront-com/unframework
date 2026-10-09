@@ -11,6 +11,7 @@
 // project (the browser-projects ADR), and a project must hold its own toolchain only. Toolchains
 // and the unplugin load inside each ssr and browser project's factory, so one that cannot load
 // fails its own projects, loudly, through `harness/unavailable.test.ts`.
+import { relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type { Toolchain, ToolchainContext } from "@unframework/codegen";
@@ -49,6 +50,28 @@ export interface HarnessSetup {
   targets: readonly string[];
   /** `--project` patterns from the command line; unselected projects load no toolchain. */
   projectFilter?: readonly string[] | undefined;
+  /**
+   * The targets the run leaves out that some case names as its own reference (ADR-0057), each
+   * with those cases: their `ssr:` and `browser:` projects run on those cases alone, so the
+   * other targets have the case's expectations and pixels to compare with.
+   */
+  referencesOnly?: Readonly<Record<string, readonly string[]>>;
+}
+
+/**
+ * The targets `targets` leaves out that some case names as its own reference, each with those
+ * cases (`HarnessSetup.referencesOnly`).
+ */
+export function referencesOnly(
+  cases: Readonly<Record<string, { reference?: string }>>,
+  targets: readonly string[],
+): Record<string, string[]> {
+  const only: Record<string, string[]> = {};
+  for (const [id, config] of Object.entries(cases)) {
+    if (config.reference === undefined || targets.includes(config.reference)) continue;
+    (only[config.reference] ??= []).push(id);
+  }
+  return only;
 }
 
 /** What every node project runs with, unless its toolchain needs otherwise. */
@@ -91,6 +114,10 @@ export function harnessProjects(setup: HarnessSetup): TestProjectConfiguration[]
     ),
     ...setup.targets.map((target) => lazyProject(setup, "ssr", target, ssrProject)),
     ...setup.targets.map((target) => lazyProject(setup, "browser", target, browserProject)),
+    ...Object.keys(setup.referencesOnly ?? {}).flatMap((target) => [
+      lazyProject(setup, "ssr", target, ssrProject),
+      lazyProject(setup, "browser", target, browserProject),
+    ]),
   ];
 }
 
@@ -201,7 +228,12 @@ const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework)
       name: `ssr:${target}`,
       root: ROOT,
       include: ["harness/ssr.test.ts"],
-      provide: { target, ufHarness: setup.harness, ufServer: toolchain.server },
+      provide: {
+        target,
+        ufHarness: setup.harness,
+        ufServer: toolchain.server,
+        ...(setup.referencesOnly?.[target] ? { ufOnly: [...setup.referencesOnly[target]] } : {}),
+      },
       sequence: {
         groupOrder: groupOrder("ssr", target, setup.mode, REFERENCE, caseReferences(setup.harness)),
       },
@@ -252,7 +284,12 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
       {
         name,
         root: ROOT,
-        include: ["cases/**/*.test.ts"],
+        // A target the run adds as some case's reference runs that case alone.
+        include: setup.referencesOnly?.[target]
+          ? cases
+              .filter((info) => setup.referencesOnly![target]!.includes(info.id) && info.spec)
+              .map((info) => relative(ROOT, info.spec!).split(sep).join("/"))
+          : ["cases/**/*.test.ts"],
         setupFiles: [
           resolveModule("@unframework/testing/setup"),
           resolveModule(`@unframework/testing/${target}`),

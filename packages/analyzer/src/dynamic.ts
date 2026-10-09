@@ -25,9 +25,11 @@ import type { AST } from "@unframework/parser";
 import { lowerAttributes } from "./attributes.ts";
 import { componentOf, lowerComponentAs } from "./components.ts";
 import { Reporter } from "./context.ts";
+import { checkPlacement } from "./elements.ts";
 import { checkExpression, span } from "./expressions.ts";
 import { hasContent, lowerChildren } from "./lower.ts";
 import type { Place } from "./lower.ts";
+import { CONTROL_MODEL } from "./models.ts";
 import type { ComponentInfo, RenderContext } from "./render.ts";
 import { has } from "./types/kinds.ts";
 
@@ -269,8 +271,12 @@ function merge(render: RenderContext, mark: number, probes: readonly RenderConte
 }
 
 /**
- * Tag candidates (ADR-0055): the attributes as each tag's (UF3006 for one a tag does not take),
- * and the children, which no void tag takes, inside the first tag.
+ * Tag candidates (ADR-0055): each tag is checked as the element it may render, from the context
+ * as it was before any of them: its placement among its ancestors (UF3003), its attributes
+ * (UF3006 for one a tag does not take; a template ref attaches once whichever renders), and the
+ * children inside it, which no void tag takes. The first one's lowering is the node's; what any
+ * other finds besides is reported too, so the order of `is` changes nothing. A control's
+ * `v-model` binds a control its tag decides, which `is` does not fix: UF3042.
  */
 function lowerTags(
   node: AST.JSXElement,
@@ -281,25 +287,60 @@ function lowerTags(
   isAttribute: AST.JSXAttribute,
 ): Lowered | undefined {
   const tags = candidates.map((candidate) => (candidate as { tag: string }).tag);
+  if (place.namespace !== "html") {
+    render.reporter.report(
+      "UF3001",
+      name,
+      `\`<component is>\` renders an HTML element (${tags.map((tag) => `<${tag}>`).join(", ")}), which cannot be inside an <${place.namespace}>: the HTML parser ends it before it.`,
+      { help: "Close the <svg> first, or write the SVG element itself." },
+    );
+    return undefined;
+  }
+  const model = node.openingElement.attributes.find(
+    (item): item is AST.JSXAttribute =>
+      item.type === "JSXAttribute" &&
+      item.name.type === "JSXIdentifier" &&
+      CONTROL_MODEL.test(item.name.name),
+  );
+  if (model) {
+    render.reporter.report(
+      "UF3042",
+      model.name,
+      "`v-model` binds a form control, whose tag decides what it binds, and `<component is>` renders a tag only its `is` decides.",
+      { help: "Write the control itself, as `<input v-model={text.value} />`." },
+    );
+  }
   const opening = {
     ...node.openingElement,
-    attributes: node.openingElement.attributes.filter((item) => item !== isAttribute),
+    attributes: node.openingElement.attributes.filter(
+      (item) => item !== isAttribute && item !== model,
+    ),
   };
   const content = hasContent(node.children);
   const mark = render.reporter.diagnostics.length;
-  const context = (tag: string, at: RenderContext) => ({
-    tag,
-    namespace: "html" as const,
-    hasChildren: content,
-    listBody: false,
-    render: at,
-  });
-  const { attributes } = lowerAttributes(opening, context(tags[0]!, render));
-  const probes = tags.slice(1).map((tag) => {
-    const at = probe(render);
-    lowerAttributes(opening, context(tag, at));
-    return at;
-  });
+  // Taken before the first tag lowers, so each later one starts from the same context.
+  const probes = tags.slice(1).map(() => probe(render));
+  const check = (tag: string, at: RenderContext) => {
+    checkPlacement(tag, name, place.ancestors, at.reporter, !place.fill);
+    const { attributes } = lowerAttributes(opening, {
+      tag,
+      namespace: "html",
+      hasChildren: content,
+      listBody: false,
+      render: at,
+    });
+    const children = lowerChildren(
+      node.children,
+      {
+        ancestors: [...place.ancestors, { tag, name: span(name), namespace: "html" }],
+        namespace: "html",
+      },
+      at,
+    );
+    return { attributes, children };
+  };
+  const lowered = check(tags[0]!, render);
+  for (const [index, tag] of tags.slice(1).entries()) check(tag, probes[index]!);
   merge(render, mark, probes);
   const empty = tags.find((tag) => isVoidElement(tag));
   if (empty && content) {
@@ -310,15 +351,7 @@ function lowerTags(
       { help: "Leave the void tag out of `is`, or move the children after the element." },
     );
   }
-  const children = lowerChildren(
-    node.children,
-    {
-      ancestors: [...place.ancestors, { tag: tags[0]!, name: span(name), namespace: "html" }],
-      namespace: "html",
-    },
-    render,
-  );
-  return { attributes, children };
+  return lowered;
 }
 
 /**
@@ -340,12 +373,12 @@ function lowerComponents(
     }
   }
   const mark = render.reporter.diagnostics.length;
+  // Taken before the first component lowers, so each later one starts from the same context.
+  const probes = infos.slice(1).map(() => probe(render));
   const first = lowerComponentAs(node, name, infos[0]!, place, render, false, isAttribute);
-  const probes = infos.slice(1).map((info) => {
-    const at = probe(render);
-    lowerComponentAs(node, name, info, place, at, false, isAttribute);
-    return at;
-  });
+  for (const [index, info] of infos.slice(1).entries()) {
+    lowerComponentAs(node, name, info, place, probes[index]!, false, isAttribute);
+  }
   merge(render, mark, probes);
   if (!first.node) return undefined;
   return { attributes: first.node.attributes, children: [], fills: first.node.fills };

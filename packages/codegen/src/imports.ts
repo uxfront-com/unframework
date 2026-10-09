@@ -8,6 +8,8 @@ import { NameScope } from "./names.ts";
 interface ModuleImports {
   defaultName?: string;
   names: Map<string, { local: string; type: boolean }>;
+  /** Further local names of a named import the source binds twice (`{ AKey as A, AKey as B }`). */
+  aliases: { name: string; local: string; type: boolean }[];
   sideEffect: boolean;
 }
 
@@ -38,7 +40,7 @@ export class ImportSet {
   #module(source: string): ModuleImports {
     let entry = this.#modules.get(source);
     if (!entry) {
-      entry = { names: new Map(), sideEffect: false };
+      entry = { names: new Map(), aliases: [], sideEffect: false };
       this.#modules.set(source, entry);
     }
     return entry;
@@ -66,6 +68,19 @@ export class ImportSet {
   ): string {
     const entry = this.#module(source);
     const existing = entry.names.get(name);
+    if (
+      existing &&
+      options.exact &&
+      options.local !== undefined &&
+      options.local !== existing.local
+    ) {
+      // The source binds the name twice: each local is its own, so each is imported.
+      if (!entry.aliases.some((alias) => alias.local === options.local)) {
+        this.scope.reserve(options.local);
+        entry.aliases.push({ name, local: options.local, type: Boolean(options.type) });
+      }
+      return options.local;
+    }
     if (existing) {
       existing.type &&= Boolean(options.type);
       return existing.local;
@@ -103,7 +118,12 @@ export class ImportSet {
       const entry = this.#modules.get(source)!;
       const specifiers: AST.ImportDeclarationSpecifier[] = [];
       if (entry.defaultName) specifiers.push(importDefaultSpecifier(entry.defaultName));
-      const names = [...entry.names.entries()].toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+      const names = [
+        ...entry.names.entries(),
+        ...entry.aliases.map(({ name, ...value }) => [name, value] as const),
+      ].toSorted(([a, x], [b, y]) =>
+        a < b ? -1 : a > b ? 1 : x.local < y.local ? -1 : x.local > y.local ? 1 : 0,
+      );
       const allTypes =
         names.length > 0 && names.every(([, value]) => value.type) && !entry.defaultName;
       for (const [name, value] of names) {

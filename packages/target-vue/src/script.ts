@@ -122,7 +122,9 @@ export function scriptSetup(component: UfComponent, module: UfModule): ScriptSet
   const components = new Map<string, string>();
   for (const child of children) {
     if (!child.self && !VUE_BUILT_INS.has(child.local)) {
-      imports.addDefault(child.specifier, child.local, { exact: true });
+      // A child the source imports under two names is imported once, and written by that name.
+      const local = imports.addDefault(child.specifier, child.local, { exact: true });
+      if (local !== child.local) components.set(child.local, local);
     }
   }
   for (const child of children) {
@@ -240,9 +242,10 @@ function keyBlock(component: UfComponent, module: UfModule, names: VueNames): st
     // A ref the key holds is typed with Vue's own `Ref`, as the source's authoring one is.
     let type = key.type.code;
     for (const name of REF_TYPES) {
-      if (!new RegExp(`\\b${name}<`).test(type)) continue;
+      const reference = new RegExp(`(?<![\\w$.])${name}(?=\\s*<)`, "g");
+      if (!reference.test(type)) continue;
       const local = imports.add("vue", name, { type: true });
-      type = type.replace(new RegExp(`\\b${name}<`, "g"), `${local}<`);
+      type = type.replace(reference, local);
     }
     return `export const ${key.name}: ${injectionKey}<${type}> = Symbol(${JSON.stringify(key.description)});`;
   });
@@ -425,7 +428,9 @@ function itemCode(
     }
     case "Inject": {
       const inject = imports.add("vue", "inject");
-      const fallback = item.fallback ? `, ${code(item.fallback, "pure")}` : "";
+      // `undefined` is the source's own fallback: without a second argument, Vue's development
+      // build warns where no ancestor provides the key.
+      const fallback = item.fallback ? `, ${code(item.fallback, "pure")}` : ", undefined";
       return `const ${local(item.binding)} = ${inject}(${item.key}${fallback});`;
     }
     default:

@@ -915,6 +915,7 @@ function checkAgainstElement(
             entries.some(
               (other) => "keys" in other && other.keys.some((key) => key.name === "value"),
             ),
+          hasChildren,
           render: element.render,
         });
         if (model) attributes.push(model);

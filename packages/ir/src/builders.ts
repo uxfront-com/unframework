@@ -63,6 +63,7 @@ import type {
   PropsParameter,
   ProvideItem,
   RefAttribute,
+  RefType,
   Reference,
   RefSource,
   RenderNode,
@@ -149,8 +150,9 @@ export function createInjectionKeyDeclaration(
   description: string,
   type: TypeText,
   at: Span,
+  ref?: RefType,
 ): InjectionKeyDeclaration {
-  return { name, description, type, span: at };
+  return { name, description, type, ...(ref ? { ref } : {}), span: at };
 }
 
 /** Builds a type declaration. */

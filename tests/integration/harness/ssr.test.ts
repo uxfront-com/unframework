@@ -29,7 +29,9 @@ if (!isNormalizeTarget(target)) {
 }
 const harness = inject("ufHarness");
 const server = inject("ufServer");
-const cases = listCases(harness.casesDir);
+// A project the run adds as some case's reference renders those cases alone (ADR-0057).
+const only = inject("ufOnly");
+const cases = listCases(harness.casesDir).filter((info) => !only || only.includes(info.id));
 const components = import.meta.glob<{ default: unknown }>("../cases/**/*.uf.tsx");
 
 let renderer: Promise<SsrRenderer> | undefined;

@@ -47,6 +47,7 @@ import type {
   Emits,
   EventDeclaration,
   Exposes,
+  RefType,
   SetupItem,
   SlotDeclaration,
   Slots,
@@ -189,6 +190,8 @@ interface ModelOptions {
 export interface InjectionKeyInfo {
   readonly name: string;
   readonly type: AST.TSType | string;
+  /** The authoring type of the ref the key holds, read from its declaration's AST. */
+  readonly ref?: RefType;
 }
 
 /** The macros whose result is bound (plan §4.2): their results are the setup's bindings. */
@@ -1235,7 +1238,7 @@ export function declareSetup(context: SetupContext): Setup {
       );
       return;
     }
-    const holdsRef = refType(key.type);
+    const holdsRef = key.ref !== undefined;
     if (holdsRef && !fallback) {
       reporter.report(
         "UF2032",
@@ -1246,7 +1249,7 @@ export function declareSetup(context: SetupContext): Setup {
       return;
     }
     injected.set(key.name, call);
-    const value = valueType(key.type);
+    const value = valueType(key);
     const kinds = value ? context.types.kindsOf(value) : UNKNOWN;
     binding.kinds = fallback ? kinds : union(kinds, UNDEFINED);
     if (holdsRef) binding.ref = true;
@@ -1769,41 +1772,58 @@ function contextValue(
   key: InjectionKeyInfo,
   render: RenderContext,
 ): Code | undefined {
-  if (!refType(key.type)) return checkCode(node, render).code;
+  if (!key.ref) return checkCode(node, render).code;
+  // A `ComputedRef` takes a `computed`, a `ModelRef` a model; a `Ref` any of them, whose types
+  // each target's `Ref` accepts.
+  const accepted = REF_BINDINGS[key.ref];
   const binding = node.type === "Identifier" ? setupBindingOf(node, render) : undefined;
-  if (binding?.kind === "state" || binding?.kind === "derived" || binding?.kind === "model") {
+  if (binding && (accepted as readonly string[]).includes(binding.kind)) {
     return createCode(binding.name, span(node), [createBindingReference(binding.id, span(node))]);
   }
+  const what = { state: "a `ref`", derived: "a `computed`", model: "a model" };
   render.reporter.report(
     "UF2032",
     node,
-    `\`${key.name}\` holds a ref, so it takes a ref: a \`ref\`, a \`computed\` or a model, by its name, which stays reactive where it is injected.`,
+    `\`${key.name}\` holds a \`${key.ref}\`, so it takes ${accepted
+      .map((kind) => what[kind])
+      .join(", ")
+      .replace(/, ([^,]*)$/, " or $1")} by its name, which stays reactive where it is injected.`,
     { help: "Pass the ref itself: `provide(CountKey, count)`." },
   );
   return undefined;
 }
 
+/** The bindings a key of each kind of ref takes whole. */
+const REF_BINDINGS: Readonly<Record<RefType, readonly ("state" | "derived" | "model")[]>> = {
+  Ref: ["state", "derived", "model"],
+  ComputedRef: ["derived"],
+  ModelRef: ["model"],
+};
+
 /** The authoring types of a ref, which a key may hold: code reads its value (ADR-0054). */
 const REF_TYPES: ReadonlySet<string> = new Set(["Ref", "ComputedRef", "ModelRef"]);
 
 /**
- * Whether a key's value is a ref (`InjectionKey<Ref<number>>`): what it provides stays reactive,
- * and an injection reads it as `x.value`. An imported key's type is the text its module writes.
+ * The ref a key's value type is (`InjectionKey<Ref<number>>`), read from its AST: what it
+ * provides stays reactive, and an injection reads it as `x.value`.
  */
-function refType(type: AST.TSType | string): boolean {
-  if (typeof type === "string") return /^(Ref|ComputedRef|ModelRef)</.test(type);
-  return (
-    type.type === "TSTypeReference" &&
+export function refTypeOf(type: AST.TSType | undefined): RefType | undefined {
+  return type?.type === "TSTypeReference" &&
     type.typeName.type === "Identifier" &&
     REF_TYPES.has(type.typeName.name) &&
     type.typeArguments?.params.length === 1
-  );
+    ? (type.typeName.name as RefType)
+    : undefined;
 }
 
-/** The type of what reading a key's injection gives: a ref's value's, for a key of a ref. */
-function valueType(type: AST.TSType | string): AST.TSType | undefined {
+/**
+ * The type of what reading a key's injection gives: a ref's value's, for a key of a ref. An
+ * imported key's type is text, which the model does not read.
+ */
+function valueType(key: InjectionKeyInfo): AST.TSType | undefined {
+  const { type } = key;
   if (typeof type === "string") return undefined;
-  return refType(type) ? (type as AST.TSTypeReference).typeArguments!.params[0] : type;
+  return key.ref ? (type as AST.TSTypeReference).typeArguments!.params[0] : type;
 }
 
 /** The parameters each API passes its callback, as the wrapper of UF2022's fix names them. */
@@ -2086,6 +2106,15 @@ function unwatchable(
       fix = getterFix(node, text);
     } else if (binding?.kind === "templateRef") {
       what = `\`${node.name}\` is a template ref, which is never a reactive dependency on every target`;
+    } else if (binding?.kind === "model" || (binding?.kind === "context" && binding.ref)) {
+      // A watcher's ref sources are state and computed values (ADR-0048): a model or an injected
+      // ref is watched through a getter of its value.
+      what = `\`${node.name}\` is ${binding.kind === "model" ? "a model" : "an injected ref"}, which a watcher reads through a getter`;
+      fix = {
+        title: `Watch \`() => ${node.name}.value\``,
+        confidence: "safe",
+        edits: [{ span: span(node), text: `() => ${node.name}.value` }],
+      };
     } else if (binding) {
       what = `\`${node.name}\` is ${binding.kind === "localVar" ? "a setup `let`" : binding.kind === "emit" ? "the component's `emit`" : "a constant"}, which nothing can watch`;
     }

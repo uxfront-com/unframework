@@ -617,6 +617,22 @@ describe("canaries", () => {
     ]);
   });
 
+  it("L4-consumer types a Vue model `any` too, on a case whose consumers misuse one", async () => {
+    // As for the events: the prop fixtures meet the evidence alone, so only this test proves
+    // the models are widened.
+    const info = listCases().find(({ id }) => id === "models/component")!;
+    const stepper = info.sources.find(({ filename }) => filename.endsWith("/Stepper.uf.tsx"))!;
+    const { outputs } = await compile(readFileSync(stepper.source, "utf8"), {
+      filename: stepper.filename,
+      targets: ["vue"],
+      plugins: canaryPlugins("L4-consumer", "vue"),
+    });
+    expect(outputs.vue![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line))).toEqual([
+      "const { label } = defineProps<Record<string, any>>();",
+      'const value = defineModel<any>("value", { default: 0 });',
+    ]);
+  });
+
   it("L4-consumer applies to the cases with consumer fixtures, on each target that has them", () => {
     const canary = findCanary("L4-consumer");
     const [withFixtures, without] = ["events/emit-payloads", "basics/hello"].map((id) =>

@@ -257,7 +257,7 @@ describe("referenceProblems (L1, ADR-0057)", () => {
     ]);
   });
 
-  it("refuses a reference Vue does not need, and one whose cell is not native", async () => {
+  it("refuses a reference the run's reference does not need, and one on a case without a spec", async () => {
     const plain = await compileWith(PLAIN);
     expect(referenceProblems(plain.diagnostics, true, "vue", "react")).toEqual([
       expect.stringMatching(/^The case names react as its reference, yet vue renders it/),

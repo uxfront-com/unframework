@@ -90,8 +90,16 @@ export interface InjectionKeyDeclaration {
   description: string;
   /** The value's type, `Theme` in `InjectionKey<Theme>`, as written. */
   type: TypeText;
+  /**
+   * The authoring type of the ref the key holds, read from its type (`InjectionKey<Ref<number>>`):
+   * it is provided the ref itself, and its injection is read as `x.value` (ADR-0054).
+   */
+  ref?: RefType;
   span: Span;
 }
+
+/** An authoring type of a ref a key may hold. */
+export type RefType = "Ref" | "ComputedRef" | "ModelRef";
 
 /**
  * The public API of a `.uf.tsx` module, as the resolver returns it (ADR-0053): what a parent
@@ -169,6 +177,8 @@ export interface KeyApi {
   name: string;
   description: string;
   type: string;
+  /** The authoring type of the ref the key holds, as `InjectionKeyDeclaration.ref`. */
+  ref?: RefType;
 }
 
 /** An export of a module. */

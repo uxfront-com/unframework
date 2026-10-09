@@ -94,6 +94,11 @@ declare module "vitest" {
      * skipped with `no output: <the errors>`. Absent outside the harness.
      */
     ufNoOutput: Record<string, string>;
+    /**
+     * SSR projects of a target the run adds only as some case's reference (ADR-0057): the ids
+     * of those cases, which it renders alone. Absent everywhere else.
+     */
+    ufOnly?: string[];
   }
 }
 

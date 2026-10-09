@@ -605,6 +605,7 @@ describe("checkInvariants on a key of a ref (ADR-0054)", () => {
   it("takes the ref itself, a state's by its name, where `provide` gives the key", () => {
     const module = composition();
     module.keys![0]!.type.code = "Ref<string>";
+    module.keys![0]!.ref = "Ref";
     reports(
       module,
       "/setup/3/value",

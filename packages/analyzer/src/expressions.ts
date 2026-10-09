@@ -4940,7 +4940,7 @@ class Walk {
       node,
       `\`${binding.name}\` is injected, and an injected value is read-only: the component that provides it owns it.`,
       {
-        help: "Provide a function with the value, and call it to change the value: `provide(TabsKey, { active, select })`.",
+        help: "Change it in the component that provides it: a child asks for the change with an event its parent listens to, or binds a model the provider owns.",
       },
     );
     return { kind: "invalid" };

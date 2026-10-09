@@ -11,6 +11,7 @@ describeTargets("semantics/listbox", () => {
   it("selects no option", async () => {
     const view = await mount(ColourList);
     await view.expectParity("initial");
+    await expect.element(view.getByRole("option", { name: "Red" })).toBeVisible();
     await expect.element(view.getByRole("option", { selected: true })).not.toBeInTheDocument();
     await expect.element(view.getByRole("status")).toHaveTextContent("Picked: none");
   });

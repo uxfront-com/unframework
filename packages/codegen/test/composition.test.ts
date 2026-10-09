@@ -23,7 +23,15 @@ import {
 import type { ComponentApi, UfComponent } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
-import { childImports, exportsOf, keyOwner, referencedBindings } from "../src/index.ts";
+import {
+  childImports,
+  exportsOf,
+  ImportSet,
+  js,
+  keyOwner,
+  printProgram,
+  referencedBindings,
+} from "../src/index.ts";
 import { printMarkup, svelteDialect } from "../src/markup.ts";
 import { objectEntries } from "../src/markup/printer.ts";
 
@@ -187,5 +195,17 @@ describe("keyOwner (ADR-0054)", () => {
       ]),
     ).toBe("Table");
     expect(keyOwner([{ name: "Row", export: "local" }])).toBe("Row");
+  });
+});
+
+describe("ImportSet aliases (ADR-0054)", () => {
+  it("imports a name the source binds twice under each of its locals", () => {
+    const imports = new ImportSet(["A", "B"]);
+    expect(imports.add("./K.vue", "AKey", { local: "A", exact: true })).toBe("A");
+    expect(imports.add("./K.vue", "AKey", { local: "B", exact: true })).toBe("B");
+    expect(imports.add("./K.vue", "AKey", { local: "B", exact: true })).toBe("B");
+    expect(printProgram(js.program(imports.toDeclarations())).trim()).toBe(
+      'import { AKey as A, AKey as B } from "./K.vue";',
+    );
   });
 });

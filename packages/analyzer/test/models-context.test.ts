@@ -17,7 +17,7 @@ import { analyze, componentImports } from "../src/index.ts";
 import { applyAndRecheck, codeOf, codes, only, problems, run } from "./helpers.ts";
 
 const API =
-  'import { defineModel, defineSlots, inject, provide, ref } from "unframework";\nimport type { Element, InjectionKey, Ref } from "unframework";\n';
+  'import { defineModel, defineSlots, inject, provide, ref, useTemplateRef } from "unframework";\nimport type { Element, InjectionKey, Ref } from "unframework";\n';
 
 /** The first node of a kind in a render tree, depth first. */
 function find<T>(value: unknown, kind: string): T {
@@ -415,5 +415,118 @@ export function A() {
     );
     expect(codes(diagnostics)).toEqual(["UF3006"]);
     expect(diagnostics[0]!.message).toContain("<p>");
+  });
+});
+
+describe("the first review's findings (UXF-314)", () => {
+  it("rejects v-model on <component is>, whichever tags it chooses (UF3042)", () => {
+    for (const is of ['big.value ? "input" : "input"', 'big.value ? "textarea" : "input"']) {
+      const { source, diagnostics } = component(
+        'const big = ref(false);\n  const s = ref("");',
+        `<component is={${is}} v-model={s.value} />`,
+      );
+      expect(problems(source, diagnostics), is).toEqual(["UF3042 v-model"]);
+    }
+  });
+
+  it("checks every tag candidate from the same start, in either order", () => {
+    const ref = component(
+      "const big = ref(false);\n  const el = useTemplateRef<HTMLElement>();",
+      '<component is={big.value ? "h1" : "h2"} ref={el}>x</component>',
+    );
+    expect(ref.diagnostics).toEqual([]);
+    for (const is of ['a.value ? "div" : "p"', 'a.value ? "p" : "div"']) {
+      const { diagnostics } = component(
+        "const a = ref(false);",
+        `<component is={${is}}><div>x</div></component>`,
+      );
+      expect(codes(diagnostics), is).toEqual(["UF3003"]);
+    }
+    expect(codes(component("", '<p><component is="div">x</component></p>').diagnostics)).toEqual([
+      "UF3003",
+    ]);
+    expect(
+      codes(component("", '<svg><component is="div">x</component></svg>').diagnostics),
+    ).toEqual(["UF3001"]);
+  });
+
+  it("reads a key's ref from its type's syntax, whatever its spacing", () => {
+    const spaced = component(
+      "const none = ref(0);\n  const seen = inject(CountKey, none);\n  const count = ref(1);\n  provide(CountKey, count);",
+      "<p>{seen.value}</p>",
+      'export const CountKey: InjectionKey<Ref <number>> = Symbol("uf.count");\n',
+    );
+    expect(spaced.diagnostics).toEqual([]);
+    expect(spaced.module!.keys![0]!.ref).toBe("Ref");
+    const list = component(
+      "provide(ListKey, []);",
+      "<p />",
+      'export const ListKey: InjectionKey<Ref<number>[]> = Symbol("uf.list");\n',
+    );
+    expect(list.diagnostics).toEqual([]);
+    expect(list.module!.keys![0]!.ref).toBeUndefined();
+  });
+
+  it("takes a computed for a key of a ComputedRef, and a model for one of a ModelRef (UF2032)", () => {
+    const before =
+      'import { computed } from "unframework";\nimport type { ComputedRef } from "unframework";\nexport const DoubleKey: InjectionKey<ComputedRef<number>> = Symbol("uf.double");\n';
+    const plain = component(
+      "const count = ref(1);\n  provide(DoubleKey, count);",
+      "<p>{count.value}</p>",
+      before,
+    );
+    expect(problems(plain.source, plain.diagnostics)).toEqual(["UF2032 count"]);
+    const derived = component(
+      "const count = ref(1);\n  const double = computed(() => count.value * 2);\n  provide(DoubleKey, double);",
+      "<p>{double.value}</p>",
+      before,
+    );
+    expect(derived.diagnostics).toEqual([]);
+  });
+
+  it("treats an injected ref as reactive in the setup's rules (UF2007, UF2015)", () => {
+    const key = 'export const CountKey: InjectionKey<Ref<number>> = Symbol("uf.count");\n';
+    const once = component(
+      "const fb = ref(0);\n  const c = inject(CountKey, fb);\n  const doubled = c.value * 2;",
+      "<p>{doubled}</p>",
+      key,
+    );
+    expect(codes(once.diagnostics)).toEqual(["UF2007"]);
+    const effect = run(
+      `import { inject, ref, watchEffect } from "unframework";\nimport type { InjectionKey, Ref } from "unframework";\n${key}export function A({ on }: { on: boolean }) {\n  const fb = ref(0);\n  const c = inject(CountKey, fb);\n  watchEffect(() => {\n    if (on) console.log(c.value);\n  });\n  return <p />;\n}\n`,
+    );
+    expect(codes(effect.diagnostics)).toEqual(["UF2015"]);
+  });
+
+  it("reports a later declaration that provide or inject reads (UF2023)", () => {
+    const key = 'export const CountKey: InjectionKey<Ref<number>> = Symbol("uf.count");\n';
+    const provided = component(
+      "provide(CountKey, count);\n  const count = ref(1);",
+      "<p>{count.value}</p>",
+      key,
+    );
+    expect(codes(provided.diagnostics)).toEqual(["UF2023"]);
+    const injected = component(
+      "const c = inject(CountKey, fb);\n  const fb = ref(1);",
+      "<p>{c.value}</p>",
+      key,
+    );
+    expect(codes(injected.diagnostics)).toEqual(["UF2023"]);
+  });
+
+  it("reports a <textarea> with both v-model and content (UF3042)", () => {
+    const { source, diagnostics } = component(
+      'const s = ref("");',
+      "<textarea v-model={s.value}>hello</textarea>",
+    );
+    expect(problems(source, diagnostics)).toEqual(["UF3042 v-model"]);
+  });
+
+  it("names a model watched whole, with the getter fix (UF2020)", () => {
+    const source = `import { defineModel, watch } from "unframework";\nexport function A() {\n  const value = defineModel<number>("value", { default: 0 });\n  watch(value, () => {});\n  return <p>{value.value}</p>;\n}\n`;
+    const { diagnostics } = run(source);
+    expect(codes(diagnostics)).toEqual(["UF2020"]);
+    expect(diagnostics[0]!.message).toContain("`value` is a model");
+    expect(applyAndRecheck(source, diagnostics)).toContain("watch(() => value.value, () => {});");
   });
 });

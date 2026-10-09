@@ -1086,10 +1086,10 @@ function Card({ label }: { label: string }) { return <b>{label}</b>; }
 export default function Tag() {
   const fade = ref(true);
   return (
-    <p>
+    <div>
       <component is={fade.value ? Transition : Card} label="x" />
       <component is={fade.value ? "h2" : "h3"} class="t">y</component>
-    </p>
+    </div>
   );
 }`);
       expect(files["Tag.vue"]).toContain(

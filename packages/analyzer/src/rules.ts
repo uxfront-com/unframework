@@ -155,6 +155,10 @@ class Rules {
     return this.#bindings.get(id)?.kind;
   }
 
+  #refValue(id: BindingId): boolean {
+    return refValue(id, this.#bindings, this.#input);
+  }
+
   /**
    * What makes a local function's result depend on time, chance or the machine, itself or
    * through the functions it calls (UF3019), or `undefined`.
@@ -520,6 +524,13 @@ class Rules {
           }
           if (item.immediate) codes.push(item.callback.body);
           break;
+        // What a key is provided, or an injection falls back to, is read as the setup runs.
+        case "Provide":
+          codes.push(item.value);
+          break;
+        case "Inject":
+          if (item.fallback) codes.push(item.fallback);
+          break;
         default:
           break;
       }
@@ -719,16 +730,9 @@ class Rules {
     for (const item of this.#component.setup) {
       if (item.kind !== "Const") continue;
       const summary = summarizeCode(item.value, this.#component);
-      const read = [...summary.reads].find((id) => {
-        const kind = this.#kind(id);
-        return (
-          kind === "prop" ||
-          kind === "state" ||
-          kind === "derived" ||
-          kind === "model" ||
-          once.has(id)
-        );
-      });
+      const read = [...summary.reads].find(
+        (id) => this.#kind(id) === "prop" || this.#refValue(id) || once.has(id),
+      );
       if (read === undefined) continue;
       once.add(item.binding);
       const kind = this.#kind(read);
@@ -737,7 +741,7 @@ class Rules {
         item.binding,
         kind === "prop"
           ? `the prop \`${name}\``
-          : kind === "state" || kind === "model"
+          : kind === "state" || kind === "model" || kind === "context"
             ? `the ref \`${name}\`'s value`
             : kind === "derived"
               ? `the computed value \`${name}\``
@@ -1025,10 +1029,9 @@ class ConditionalReads {
         continue;
       }
       if (!region || !this.#reactive(ref.binding)) continue;
-      const kind = this.#bindings.get(ref.binding)?.kind;
       problems.push({
         span: ref.span,
-        what: `\`${name}${kind === "state" || kind === "derived" || kind === "model" ? ".value" : ""}\``,
+        what: `\`${name}${refValue(ref.binding, this.#bindings, this.#input) ? ".value" : ""}\``,
         why: region.why,
       });
     }
@@ -1036,8 +1039,7 @@ class ConditionalReads {
   }
 
   #reactive(id: BindingId): boolean {
-    const kind = this.#bindings.get(id)?.kind;
-    return kind === "prop" || kind === "state" || kind === "derived" || kind === "model";
+    return this.#bindings.get(id)?.kind === "prop" || refValue(id, this.#bindings, this.#input);
   }
 
   /** Whether a local function reads a reactive value while it runs, itself or through a call. */
@@ -1069,6 +1071,23 @@ class ConditionalReads {
     this.#conditional.set(id, result);
     return result;
   }
+}
+
+/**
+ * Whether a binding is a ref whose value code reads as `x.value`, which stays reactive: state, a
+ * computed value, a model, or an injected ref (ADR-0054).
+ */
+function refValue(
+  id: BindingId,
+  bindings: ReadonlyMap<BindingId, Binding>,
+  input: RulesInput,
+): boolean {
+  const kind = bindings.get(id)?.kind;
+  if (kind === "state" || kind === "derived" || kind === "model") return true;
+  return (
+    kind === "context" &&
+    [...input.render.setup.bindings.values()].some((each) => each.id === id && each.ref === true)
+  );
 }
 
 /** Whether a value may be an object or an array, whose identity React compares (UF2015). */

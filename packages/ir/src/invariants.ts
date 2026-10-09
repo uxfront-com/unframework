@@ -206,14 +206,14 @@ export function checkInvariants(module: UfModule): IrValidationError[] {
   // The keys `provide` and `inject` may name: the module's own, and the imported ones, each with
   // whether it holds a ref.
   const keys = new Map<string, boolean>([
-    ...(module.keys ?? []).map(({ name, type }) => [name, holdsRef(type.code)] as const),
+    ...(module.keys ?? []).map(({ name, ref }) => [name, ref !== undefined] as const),
     ...(module.imports ?? []).flatMap((entry) =>
       entry.names.flatMap(({ kind, imported, local }) =>
         kind === "Key"
           ? [
               [
                 local,
-                holdsRef(entry.api.keys.find((key) => key.name === imported)?.type ?? ""),
+                entry.api.keys.find((key) => key.name === imported)?.ref !== undefined,
               ] as const,
             ]
           : [],
@@ -2215,11 +2215,6 @@ function referenceText(
     return { text: `${binding.name}.value`, object: binding.name, member: "value" };
   }
   return { text: binding.name, object: binding.name };
-}
-
-/** Whether an injection key's value type is a ref: `Ref<number>`, `ComputedRef<…>`, a model's. */
-function holdsRef(type: string): boolean {
-  return /^(Ref|ComputedRef|ModelRef)</.test(type.trim());
 }
 
 /** Whether a `context` binding injects a key that holds a ref, which is read as `x.value`. */

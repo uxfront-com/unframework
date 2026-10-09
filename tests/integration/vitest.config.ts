@@ -15,7 +15,12 @@ import { findCanary } from "./harness/canaries.ts";
 import { caseConfigs, listCases } from "./harness/cases.ts";
 import { LOAD_FAILURES, LoadFailureReporter } from "./harness/load-failures.ts";
 import { CANARY_DIR, CASES_DIR, REPORTS_DIR, ROOT } from "./harness/paths.ts";
-import { harnessProjects, projectNames, projectPatterns } from "./harness/projects.ts";
+import {
+  harnessProjects,
+  projectNames,
+  projectPatterns,
+  referencesOnly,
+} from "./harness/projects.ts";
 import { QUARANTINE, validateQuarantine } from "./harness/quarantine.ts";
 import { REFERENCE, selectTargets } from "./harness/targets.ts";
 
@@ -74,6 +79,8 @@ const config: ViteUserConfig = defineConfig({
       mode,
       targets,
       projectFilter: projectPatterns(process.argv),
+      // A case's own reference runs on that case where UF_TARGETS leaves it out (ADR-0057).
+      referencesOnly: referencesOnly(caseConfigs(cases), targets),
     }),
   },
 });

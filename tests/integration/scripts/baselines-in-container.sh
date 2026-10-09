@@ -49,14 +49,34 @@ case "$MODE" in
       "${WORKERS[@]}" "$@" \
       || status=$?
     # A case that names its own reference (ADR-0057) takes its baselines from that target's
-    # browser project, run on such cases alone.
+    # browser project, run on such cases alone: those among the caller's case filters, if it
+    # gave any, with the caller's options.
+    references="$(node scripts/references.ts)"
+    options=()
+    filters=()
+    for arg in "$@"; do
+      case "$arg" in
+        -*) options+=("$arg") ;;
+        *) filters+=("$arg") ;;
+      esac
+    done
     while read -r target dirs; do
       [ -n "$target" ] || continue
-      # shellcheck disable=SC2086 # one case directory per word
+      selected=()
+      for dir in $dirs; do
+        if [ "${#filters[@]}" -eq 0 ]; then
+          selected+=("$dir")
+          continue
+        fi
+        for filter in "${filters[@]}"; do
+          case "$dir" in "$filter"* | */"$filter"*) selected+=("$dir") && break ;; esac
+        done
+      done
+      [ "${#selected[@]}" -gt 0 ] || continue
       env -u CI UF_UPDATE=1 UF_PIXELS=baseline node scripts/run.ts --project "browser:$target" \
-        "${WORKERS[@]}" $dirs \
+        "${WORKERS[@]}" ${options[@]+"${options[@]}"} "${selected[@]}" \
         || status=$?
-    done < <(node scripts/references.ts)
+    done <<<"$references"
     cd /work
     # Only what changed, so an unchanged baseline keeps its bytes and its mtime on the host.
     find tests/integration/cases -type f \

@@ -50,6 +50,8 @@ export interface ControlContext {
   readonly multiple: boolean | null;
   /** Whether the element has a `value` attribute: a checkbox's in a group, a radio's. */
   readonly value: boolean;
+  /** Whether the element has content: a `<textarea>`'s is its initial text. */
+  readonly hasChildren: boolean;
   readonly render: RenderContext;
 }
 
@@ -157,6 +159,15 @@ function controlOf(
   const { tag, type, multiple, value, render } = context;
   switch (tag) {
     case "textarea":
+      // Its content is its initial text, which the server renders and the model replaces.
+      if (context.hasChildren) {
+        return invalid(
+          render,
+          name,
+          "A <textarea> whose `v-model` binds its text takes no content: the server renders the model's value, and the content would differ from it.",
+          "Remove the content, and give the ref the initial text.",
+        );
+      }
       return "textarea";
     case "select":
       if (multiple === null) {

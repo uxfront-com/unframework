@@ -45,7 +45,7 @@ import { analyzeProps } from "./props.ts";
 import type { ComponentFunction, ComponentInfo, RenderContext, SetupBinding } from "./render.ts";
 import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
-import { checkDirective, declareSetup, isDirective } from "./setup.ts";
+import { checkDirective, declareSetup, isDirective, refTypeOf } from "./setup.ts";
 import type { InjectionKeyInfo } from "./setup.ts";
 import { syntaxError } from "./syntax.ts";
 
@@ -173,7 +173,12 @@ export function analyzeModule(
   for (const candidate of keyCandidates.values()) {
     // A key reported here is still one `provide` and `inject` may name: their uses are checked
     // as its fix would leave them, and report nothing more (one code per misuse).
-    keys.set(candidate.id, { name: candidate.id.name, type: candidate.type ?? "" });
+    const ref = refTypeOf(candidate.type);
+    keys.set(candidate.id, {
+      name: candidate.id.name,
+      type: candidate.type ?? "",
+      ...(ref ? { ref } : {}),
+    });
     const declaration = checkKey(candidate, parsed.source, reporter);
     if (declaration) keyDeclarations.push(declaration);
   }
@@ -212,6 +217,7 @@ export function analyzeModule(
       name: key.name,
       description: key.description,
       type: key.type.code,
+      ...(key.ref ? { ref: key.ref } : {}),
     })),
   };
 
@@ -676,7 +682,11 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
       names.push(
         createImportedName("Key", imported, item.local.name, { start: item.start, end: item.end }),
       );
-      context.keys.set(item.local, { name: item.local.name, type: key.type });
+      context.keys.set(item.local, {
+        name: item.local.name,
+        type: key.type,
+        ...(key.ref ? { ref: key.ref } : {}),
+      });
       continue;
     }
     const component = api.components.find((entry) =>
@@ -835,6 +845,7 @@ function checkKey(
     description.value,
     createTypeText(source.slice(candidate.type.start, candidate.type.end), spanOf(candidate.type)),
     spanOf(candidate.statement),
+    refTypeOf(candidate.type),
   );
 }
 
