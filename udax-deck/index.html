@@ -1,0 +1,1500 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UDAX: UI and UX design proposal</title>
+<link rel="stylesheet" href="deck.css">
+<link rel="stylesheet" href="slides.css">
+</head>
+<body>
+<main class="stage" id="stage">
+<div class="deck" id="deck" aria-live="polite">
+
+<!-- ============ 1. Cover ============ -->
+<section class="slide cover" data-chapter="Premise" aria-label="Cover">
+  <div class="graph" id="g-hero"></div>
+  <div class="cover-scrim"></div>
+  <div class="cover-text">
+    <p class="wordmark"><span class="wm-glyphs"><i data-g="backlog"></i><i data-g="todo"></i><i data-g="progress"></i><i data-g="review"></i><i data-g="done"></i></span>UDAX</p>
+    <h1 class="h-display">The work is<br>the interface.</h1>
+    <p class="lede">A UI and UX proposal for UDAX, the IDE for user, developer, and agentic experience. Issues become a living graph on one canvas, and people and agents build software on it together.</p>
+    <p class="small cover-meta">Design proposal, September 2026</p>
+  </div>
+</section>
+
+<!-- ============ 2. The shift ============ -->
+<section class="slide" data-chapter="Premise" aria-label="The shift">
+  <div class="split wide-text">
+    <div class="text">
+      <h2 class="h1">The bottleneck moved from typing to deciding.</h2>
+      <p class="lede">Agents now write most of the diff. The scarce work is deciding what to build, splitting it well, steering it, and checking what comes back.</p>
+      <p class="body" style="margin-top:22px">Today that work is spread across four tools that don’t share context. People carry it between them by hand.</p>
+    </div>
+    <div class="shift">
+      <div class="shift-row">
+        <p class="shift-label">Today</p>
+        <div class="tools">
+          <div class="tool"><b>Tracker</b><span>Status updated by hand, days late</span></div>
+          <div class="gap"><i></i><span>copy link</span></div>
+          <div class="tool"><b>Agent chat</b><span>Context re-explained every session</span></div>
+          <div class="gap"><i></i><span>paste</span></div>
+          <div class="tool"><b>Editor</b><span>One repo per window</span></div>
+          <div class="gap"><i></i><span>push</span></div>
+          <div class="tool"><b>Pull request</b><span>“Which issue is this for?”</span></div>
+        </div>
+      </div>
+      <div class="shift-row">
+        <p class="shift-label">In UDAX</p>
+        <div class="one-node">
+          <div class="on-head"><i data-g="progress" class="c st-progress"></i><span class="n-key">CHK-32</span><b>Wallet buttons on web checkout</b><span class="grow"></span><span class="agent">W</span><span class="small">Wren is editing OrderSummary.tsx</span></div>
+          <div class="on-body">
+            <div><p class="on-k">Intent and criteria</p><p>Apple Pay and Google Pay on web checkout. Falls back to the card form.</p></div>
+            <div><p class="on-k">Repositories</p><p><i data-repo="web"></i> <i data-repo="ds"></i> <span class="mono">chk-32/wallet-buttons</span></p></div>
+            <div><p class="on-k">Pull requests</p><p><i data-pr="web#482:running"></i></p></div>
+            <div><p class="on-k">Evidence</p><p>2 of 3 criteria verified</p></div>
+          </div>
+        </div>
+        <p class="body shift-caption">One object carries the intent, the code, the agent, the review, and the proof. Nobody copies anything.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. Three experiences ============ -->
+<section class="slide" data-chapter="Premise" aria-label="Three experiences">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">One graph, three kinds of users.</h2>
+      <p class="lede">U, D, and A each read the same issue differently. UDAX renders the same node for each of them, from the same source of truth.</p>
+    </div>
+    <div class="visual trio">
+      <div class="persona">
+        <div class="p-head"><span class="p-letter">U</span><div><h3 class="h3">User</h3><p class="small">Product leads, founders, designers</p></div></div>
+        <p class="p-job">Say what should exist. See where it stands without asking anyone.</p>
+        <div class="p-view view-u">
+          <div class="vu-top"><i data-g="progress" class="c st-progress"></i><b>Wallet buttons on web checkout</b></div>
+          <p class="vu-who"><span class="avatar owner h2c">TR</span>Theo owns this. Wren, an agent, is building it.</p>
+          <p>Apple Pay and Google Pay work. The card fallback is next, then review.</p>
+          <div class="vu-crit"><span class="ok">Apple Pay on Safari</span><span class="ok">Google Pay on Chrome</span><span>Card fallback</span></div>
+          <div class="vu-bar"><i style="width:66%"></i></div>
+          <p class="small">2 of 3 outcomes verified. Expected in review today.</p>
+        </div>
+      </div>
+      <div class="persona">
+        <div class="p-head"><span class="p-letter">D</span><div><h3 class="h3">Developer</h3><p class="small">Engineers and tech leads</p></div></div>
+        <p class="p-job">Shape the work, steer agents mid-flight, and own the quality of what merges.</p>
+        <div class="p-view view-d">
+          <div class="vd-row"><i data-g="progress" class="c st-progress"></i><span class="n-key">CHK-32</span><span class="grow"></span><span class="pill">Ask first</span></div>
+          <div class="vd-row"><span class="avatar owner h2c inherited">TR</span>Owner: Theo<span class="small">from CHK-12</span><span class="grow"></span><span class="agent">W</span>Assignee: Wren</div>
+          <div class="vd-row"><i data-repo="web"></i><span class="mono">chk-32/wallet-buttons</span><span class="grow"></span><i data-pr="web#482:running"></i></div>
+          <div class="vd-row"><i data-repo="ds"></i><span class="mono">chk-32/wallet-buttons</span><span class="grow"></span><span class="small">2 files, no PR</span></div>
+          <div class="vd-row warn"><span class="dotc"></span>Kit (CHK-41) is also editing OrderSummary.tsx</div>
+          <div class="vd-row"><span class="agent">W</span>Wren <span class="small">6 of 9 checks, 12 min in, budget 45 min</span></div>
+        </div>
+      </div>
+      <div class="persona">
+        <div class="p-head"><span class="p-letter agent-letter">A</span><div><h3 class="h3">Agent</h3><p class="small">Coding, planning, and review agents</p></div></div>
+        <p class="p-job">Get exact context, act inside clear limits, and report back in a structure people can check.</p>
+        <pre class="p-view view-a"><code><span class="k">issue:</span> CHK-32
+<span class="k">intent:</span> Add Apple Pay and Google Pay
+        buttons to web checkout
+<span class="k">inherits:</span> [CHK-1, CHK-12]
+<span class="k">owner:</span> theo.ramos  <span class="cm"># questions go here</span>
+<span class="k">agent:</span> wren v7     <span class="cm"># sonnet-5.5, high</span>
+<span class="k">accept:</span>
+  - Apple Pay shows on Safari  <span class="cm"># e2e</span>
+  - Google Pay shows on Chrome <span class="cm"># e2e</span>
+  - Falls back to card form    <span class="cm"># unit</span>
+<span class="k">repos:</span>
+  web: write   <span class="cm"># chk-32/wallet-buttons</span>
+  ds:  write   <span class="cm"># src/Button/**</span>
+<span class="k">contracts:</span> [CHK-31 POST /wallet/tokens]
+<span class="k">autonomy:</span> ask-before-merge
+<span class="k">budget:</span> 45m</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. Principles ============ -->
+<section class="slide" data-chapter="Premise" aria-label="Principles">
+  <div class="stack">
+    <h2 class="h1">Six rules the design follows.</h2>
+    <div class="visual principles">
+      <div><h3 class="h3">The issue is the unit of work.</h3><p class="body">Branches, worktrees, PRs, and agent runs hang off issues. Never the other way around.</p></div>
+      <div><h3 class="h3">Zoom is navigation.</h3><p class="body">One canvas runs from the portfolio to a line of code. No tabs to lose your place in.</p></div>
+      <div><h3 class="h3">Status is readable from any height.</h3><p class="body">Color and glyph survive every zoom level. You can read a project’s health at 8%.</p></div>
+      <div><h3 class="h3">Agents are teammates on the canvas.</h3><p class="body">They work where you can see them and talk in the issue’s conversation. A person always owns the outcome.</p></div>
+      <div><h3 class="h3">Proposals are ghosts until accepted.</h3><p class="body">Anything an agent suggests is visibly unconfirmed, free to drop, and never runs on its own.</p></div>
+      <div><h3 class="h3">Approve by evidence.</h3><p class="body">Review starts with “does it meet the criteria?” and only then “is the diff good?”</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. Canvas anatomy ============ -->
+<section class="slide" data-chapter="The canvas" aria-label="Canvas anatomy">
+  <div class="anatomy-layout">
+    <div class="window app" id="app-window">
+      <div class="titlebar">
+        <div class="lights"><i></i><i></i><i></i></div>
+        <div class="crumbs" data-callout="A"><span>Northwind</span><span class="sep">/</span><b>Checkout 2.0</b></div>
+        <span class="grow"></span>
+        <div class="search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>Jump to issue, PR, or file<span class="kbd">⌘K</span></div>
+        <span class="grow"></span>
+        <button class="needs" data-callout="B"><span class="beacon-dot"></span>Needs you<b>2</b></button>
+        <div class="presence" data-callout="C"><span class="avatar h1c">MC</span><span class="avatar h2c">TR</span><span class="avatar h3c">PN</span><span class="agent">W</span><span class="agent">P</span><span class="agent">K</span><span class="agent">J</span></div>
+      </div>
+      <div class="app-body">
+        <nav class="rail" aria-label="Views">
+          <span class="on" title="Canvas"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="10" r="2.2"/><circle cx="15" cy="5" r="2.2"/><circle cx="15" cy="15" r="2.2"/><path d="M7.2 10c3 0 3-5 5.6-5M7.2 10c3 0 3 5 5.6 5"/></svg></span>
+          <span title="Inbox"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11.5 5 4h10l2 7.5V16H3z"/><path d="M3 11.5h4l1 2h4l1-2h4"/></svg></span>
+          <span title="Agents"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m10 2.5 6.5 3.75v7.5L10 17.5l-6.5-3.75v-7.5z"/></svg></span>
+          <span title="Repositories"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="4.5" r="1.8"/><circle cx="6" cy="15.5" r="1.8"/><circle cx="14" cy="6.5" r="1.8"/><path d="M6 6.3v7.4M14 8.3c0 3.5-8 2.5-8 5.4"/></svg></span>
+          <span class="rail-end" title="Settings"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h12M4 14h12"/><circle cx="8" cy="6" r="2" fill="var(--ink-0)"/><circle cx="13" cy="14" r="2" fill="var(--ink-0)"/></svg></span>
+        </nav>
+        <div class="canvas-area">
+          <div class="graph" id="g-anatomy" data-callout="D"></div>
+          <div class="canvas-hud bottom-left" data-callout="E">
+            <div class="seg" role="group" aria-label="Lens"><button aria-pressed="true">Status</button><button>Repo</button><button>Owner</button><button>Assignee</button><button>Stuck</button><button>Risk</button></div>
+          </div>
+          <div class="canvas-hud bottom-center intent" data-callout="F">
+            <span class="intent-glyph"><i data-g="backlog"></i></span>
+            <span class="ph">Describe a change, or type / for commands</span>
+            <span class="kbd">/</span>
+          </div>
+          <div class="canvas-hud bottom-right minimap" data-callout="G">
+            <svg viewBox="0 0 120 70"><g fill="none" stroke="#3a4570" stroke-width="1"><path d="M20 35C35 35 35 12 50 12M20 35C35 35 35 26 50 26M20 35C35 35 35 40 50 40M20 35C35 35 35 52 50 52M20 35C35 35 35 62 50 62"/></g>
+              <g><circle cx="20" cy="35" r="3" fill="#ffb547"/><circle cx="50" cy="12" r="3" fill="#3fd99a"/><circle cx="50" cy="26" r="3" fill="#ffb547"/><circle cx="50" cy="40" r="3" fill="#ffb547"/><circle cx="50" cy="52" r="3" fill="none" stroke="#d6def5"/><circle cx="50" cy="62" r="3" fill="#c792ff"/>
+              <circle cx="80" cy="6" r="2.4" fill="#3fd99a"/><circle cx="80" cy="16" r="2.4" fill="#3fd99a"/><circle cx="80" cy="22" r="2.4" fill="#c792ff"/><circle cx="80" cy="29" r="2.4" fill="#ffb547"/><circle cx="80" cy="35" r="2.4" fill="none" stroke="#d6def5"/><circle cx="80" cy="42" r="2.4" fill="#ffb547"/><circle cx="80" cy="48" r="2.4" fill="#ffb547"/></g>
+              <rect x="10" y="4" width="84" height="46" rx="3" fill="none" stroke="#eaeef9" stroke-width="1.2"/></svg>
+            <span>62%</span>
+          </div>
+        </div>
+        <aside class="peek" data-callout="H">
+          <div class="peek-head"><i data-g="progress" class="c st-progress"></i><span class="n-key">CHK-32</span><span class="grow"></span><span class="kbd">Space</span></div>
+          <h4>Wallet buttons on web checkout</h4>
+          <div class="peek-row"><span>Status</span><b class="c st-progress">In progress</b></div>
+          <div class="peek-row"><span>Owner</span><b><span class="avatar owner h2c inherited sm">TR</span>Theo Ramos<span class="from">from CHK-12</span></b></div>
+          <div class="peek-row"><span>Assignee</span><b><span class="agent sm">W</span>Wren</b></div>
+          <div class="peek-row"><span>Autonomy</span><b>Ask first</b></div>
+          <div class="peek-row"><span>Parent</span><b>CHK-12 Wallet payments</b></div>
+          <p class="peek-k">Repositories</p>
+          <div class="peek-repo"><i data-repo="web"></i><i data-pr="web#482:running"></i></div>
+          <div class="peek-repo"><i data-repo="ds"></i><span class="small">2 files, no PR yet</span></div>
+          <p class="peek-k">Acceptance criteria</p>
+          <div class="peek-crit ok"><i data-icon="check"></i>Apple Pay shows on Safari</div>
+          <div class="peek-crit ok"><i data-icon="check"></i>Google Pay shows on Chrome</div>
+          <div class="peek-crit"><i data-icon="open"></i>Falls back to the card form</div>
+          <button class="btn primary peek-open">Open room<span class="kbd">↵</span></button>
+        </aside>
+      </div>
+    </div>
+    <div class="anatomy-side">
+      <h2 class="h1">The canvas.</h2>
+      <ol class="legend">
+        <li><b>A</b><div><strong>Project path.</strong> Where you are in the portfolio. Click to rise.</div></li>
+        <li><b>B</b><div><strong>Needs you.</strong> Questions and approvals for issues you own, across every project.</div></li>
+        <li><b>C</b><div><strong>Presence.</strong> People and agents active here right now.</div></li>
+        <li><b>D</b><div><strong>Issue graph.</strong> Sub-issues branch to the right. Color and glyph show status.</div></li>
+        <li><b>E</b><div><strong>Lenses.</strong> Recolor the same graph to answer a different question.</div></li>
+        <li><b>F</b><div><strong>Intent bar.</strong> Describe a change in plain words, or run a command.</div></li>
+        <li><b>G</b><div><strong>Minimap.</strong> Where the viewport sits, and how far you’ve zoomed.</div></li>
+        <li><b>H</b><div><strong>Peek.</strong> Repos, PRs, and criteria for the selected issue without leaving the canvas.</div></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. Node anatomy ============ -->
+<section class="slide" data-chapter="The canvas" aria-label="Anatomy of an issue">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Anatomy of an issue.</h2>
+      <p class="lede">A node is a card you can read at arm’s length. Everything on it is live: status, agent, branches, and checks update without a refresh.</p>
+    </div>
+    <div class="visual node-anatomy">
+      <div class="na-stage">
+        <div class="graph" id="g-node"></div>
+        <svg class="na-lines" id="na-lines"></svg>
+        <div class="na-label" data-for=".n-head .glyph" data-side="l" style="left:0;top:36px"><strong>Status glyph</strong>The ring fills as work matures.</div>
+        <div class="na-label" data-for=".n-key" data-side="l" style="left:0;top:136px"><strong>Key</strong>Stable ID. Type it anywhere to link.</div>
+        <div class="na-label" data-for=".n-title" data-side="l" style="left:0;top:236px"><strong>Title</strong>Written as an outcome, not a task.</div>
+        <div class="na-label" data-for=".n-foot .repo" data-side="l" style="left:0;top:336px"><strong>Repositories</strong>Every repo the issue touches.</div>
+        <div class="na-label" data-for=".n-prs .pr" data-side="r" style="right:0;top:36px"><strong>Pull requests</strong>Docked by repo, colored by state.</div>
+        <div class="na-label" data-for=".n-kids" data-side="r" style="right:0;top:136px"><strong>Sub-issues</strong>Done out of total.</div>
+        <div class="na-label" data-for=".rollup" data-side="r" style="right:0;top:236px"><strong>Rollup bar</strong>Each child’s status, in proportion.</div>
+        <div class="na-label" data-for=".avatar.owner" data-side="r" style="right:0;top:0"><strong>Owner</strong>One person. Answers for the outcome.</div>
+        <div class="na-label" data-for=".n-agent" data-side="r" style="right:0;top:336px"><strong>Assignee at work</strong>Who is doing it, and what they’re doing now.</div>
+      </div>
+      <div class="modifiers">
+        <p class="mod-title">States a node can add</p>
+        <div class="mod"><span class="mod-demo beacon-demo"><i></i></span><div><strong>Needs you</strong><p>An agent is waiting on the owner. Visible from every zoom level.</p></div></div>
+        <div class="mod"><span class="mod-demo blocked-demo"><i data-icon="block"></i></span><div><strong>Blocked</strong><p>A dependency isn’t done. The badge names it.</p></div></div>
+        <div class="mod"><span class="mod-demo collision-demo"><i></i></span><div><strong>Collision</strong><p>Two agents are editing the same file.</p></div></div>
+        <div class="mod"><span class="mod-demo ghost-demo"><i></i></span><div><strong>Ghost</strong><p>Proposed by an agent. Not real until you accept it.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. Owners and assignees ============ -->
+<section class="slide" data-chapter="The canvas" aria-label="Owners and assignees">
+  <div class="split roles-split">
+    <div class="text">
+      <h2 class="h1">One owner. Any number of hands.</h2>
+      <p class="lede">Agents can do the work, but they can’t answer for it. So UDAX separates the two.</p>
+      <div class="roles">
+        <div class="role"><span class="avatar owner h2c lg">TR</span><div><h3 class="h3">Owner</h3><p class="body">Answers for the outcome. Exactly one, always a person. Inherited from the parent unless set.</p></div></div>
+        <div class="role"><span class="agent lg">W</span><div><h3 class="h3">Assignees</h3><p class="body">Do the work. People or agents, as many as needed, handed off freely.</p></div></div>
+      </div>
+      <ul class="notes">
+        <li><strong>Questions go to the owner.</strong> If the owner doesn’t answer, they go to the parent’s owner.</li>
+        <li><strong>The owner accepts the outcome.</strong> Code owners approve the diff.</li>
+        <li><strong>Autopilot needs a person as owner.</strong> An owner can’t be removed while agents are working.</li>
+      </ul>
+    </div>
+    <div class="roles-visual framed">
+      <div class="graph" id="g-roles"></div>
+      <div class="roles-key">
+        <span><span class="avatar owner h2c">TR</span>Owner, set here</span>
+        <span><span class="avatar owner h2c inherited">TR</span>Owner, inherited</span>
+        <span><span class="agent">W</span>Assignee</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8. Status ============ -->
+<section class="slide" data-chapter="The canvas" aria-label="Status system">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Five statuses. The ring fills as work matures.</h2>
+      <p class="lede">Status is carried by shape as well as color, so it reads for everyone. It moves on real events, not on someone remembering to drag a card.</p>
+    </div>
+    <div class="visual status-grid">
+      <div class="status-col st-backlog">
+        <i data-g="backlog" class="big c"></i>
+        <h3 class="h3">Backlog</h3>
+        <p class="hex">Fog #7C87A8</p>
+        <p class="body">Captured, not committed. Cheap to create, cheap to drop.</p>
+        <div class="trigger"><span class="t-n">1</span>Created from the intent bar, an accepted ghost, or an import.</div>
+      </div>
+      <div class="status-col st-todo">
+        <i data-g="todo" class="big c"></i>
+        <h3 class="h3">To do</h3>
+        <p class="hex">Chalk #D6DEF5</p>
+        <p class="body">Committed and ready. Has an owner and no open blockers.</p>
+        <div class="trigger"><span class="t-n">2</span>Pulled into the current cycle, or its last blocker merges.</div>
+      </div>
+      <div class="status-col st-progress">
+        <i data-g="progress" class="big c"></i>
+        <h3 class="h3">In progress</h3>
+        <p class="hex">Saffron #FFB547</p>
+        <p class="body">A person or an agent is working on it in a real branch.</p>
+        <div class="trigger"><span class="t-n">3</span>The first branch is created or an agent run starts.</div>
+      </div>
+      <div class="status-col st-review">
+        <i data-g="review" class="big c"></i>
+        <h3 class="h3">In review</h3>
+        <p class="hex">Orchid #C792FF</p>
+        <p class="body">Waiting for a human decision. The work is done as far as the agent can tell.</p>
+        <div class="trigger"><span class="t-n">4</span>Every linked PR is ready and its checks pass.</div>
+      </div>
+      <div class="status-col st-done">
+        <i data-g="done" class="big c"></i>
+        <h3 class="h3">Done</h3>
+        <p class="hex">Jade #3FD99A</p>
+        <p class="body">Merged and verified. Every criterion has evidence attached.</p>
+        <div class="trigger"><span class="t-n">5</span>Every PR is merged and every criterion is checked.</div>
+      </div>
+    </div>
+    <div class="status-rules">
+      <p><strong>Parents roll up.</strong> A parent can’t be Done while a child is open. Its rollup bar shows why.</p>
+      <p><strong>Overrides are allowed.</strong> Moving status by hand asks for a reason and leaves a marker on the node.</p>
+      <p><strong>Backwards is normal.</strong> A failed check sends In review back to In progress, and the agent is told why.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 9. Edges ============ -->
+<section class="slide" data-chapter="The canvas" aria-label="Edges">
+  <div class="split">
+    <div class="text">
+      <h2 class="h1">Branches show structure. Color shows progress.</h2>
+      <p class="lede">As work completes, branches light up from the leaves back to the root. A finished project looks finished from across the room.</p>
+      <div class="edge-legend">
+        <div><svg viewBox="0 0 80 20"><path d="M2 10H78" stroke="#3fd99a" stroke-width="2.4" stroke-linecap="round"/></svg><p><strong>Sub-issue.</strong> Solid, tinted by the child’s status.</p></div>
+        <div><svg viewBox="0 0 80 20"><path d="M2 10H78" stroke="#7c87a8" stroke-width="2" stroke-dasharray="4 6" stroke-linecap="round"/></svg><p><strong>Sub-issue in backlog.</strong> Dashed until someone commits to it.</p></div>
+        <div><svg viewBox="0 0 80 20"><path d="M2 10H72" stroke="#737d9f" stroke-width="1.6" stroke-dasharray="2 5" stroke-linecap="round"/><path d="m70 6 5 4-5 4" fill="none" stroke="#737d9f" stroke-width="1.6" stroke-linecap="round"/></svg><p><strong>Depends on.</strong> Dotted, the arrow points at the blocker.</p></div>
+        <div><svg viewBox="0 0 80 20"><path d="M2 10H78" stroke="#ff7a6b" stroke-width="2" stroke-linecap="round"/></svg><p><strong>Collision.</strong> Two agents editing the same file.</p></div>
+      </div>
+      <button class="btn" id="btn-critical"><span class="kbd">⌥</span>Show what CHK-33 is waiting on</button>
+    </div>
+    <div class="graph framed" id="g-edges"></div>
+  </div>
+</section>
+
+<!-- ============ 10. Semantic zoom ============ -->
+<section class="slide" data-chapter="The canvas" aria-label="Semantic zoom">
+  <div class="split zoom-split">
+    <div class="text">
+      <h2 class="h1">Zoom is navigation.</h2>
+      <p class="lede">One canvas runs from the whole portfolio to a single line of code. Each altitude shows only what you can act on from there.</p>
+      <ol class="altitudes" id="altitudes">
+        <li><button data-alt="0"><span class="alt-n">8%</span><span><strong>Portfolio.</strong> Projects as clusters of dots. Only status and needs-you beacons survive.</span></button></li>
+        <li><button data-alt="1"><span class="alt-n">25%</span><span><strong>Project.</strong> Issues shrink to pills. Good for planning and spotting stuck branches.</span></button></li>
+        <li><button data-alt="2"><span class="alt-n">60%</span><span><strong>Board.</strong> Full cards with owners, assignees, repos, and PRs.</span></button></li>
+        <li><button data-alt="3"><span class="alt-n">100%</span><span><strong>Issue.</strong> Cards open in place: branches, PR checks, criteria, blockers.</span></button></li>
+        <li><button data-alt="4"><span class="alt-n">↵</span><span><strong>Room.</strong> Step inside to see code, diffs, previews, and the agent’s log.</span></button></li>
+      </ol>
+      <p class="small">Scroll or pinch to move between altitudes. <span class="kbd">↵</span> enters a room, <span class="kbd">Esc</span> rises one level.</p>
+    </div>
+    <div class="zoom-visual framed">
+      <div class="graph" id="g-zoom"></div>
+      <div class="mini-room" id="mini-room" aria-hidden="true">
+        <div class="mr-top"><i data-g="progress" class="c st-progress"></i><span class="n-key">CHK-32</span><b>Wallet buttons on web checkout</b><span class="grow"></span><span class="agent">W</span></div>
+        <div class="mr-body">
+          <div class="mr-col"><p class="peek-k">Acceptance criteria</p><div class="peek-crit ok"><i data-icon="check"></i>Apple Pay on Safari</div><div class="peek-crit ok"><i data-icon="check"></i>Google Pay on Chrome</div><div class="peek-crit"><i data-icon="open"></i>Card fallback</div></div>
+          <pre class="mr-code"><code><span class="ln">14</span>  const wallets = useAvailableWallets();
+<span class="ln add">15</span><span class="add">+ if (!wallets.length) return &lt;CardFallback /&gt;;</span>
+<span class="ln">16</span>  return (
+<span class="ln">17</span>    &lt;Stack gap="2"&gt;
+<span class="ln add">18</span><span class="add">+     {wallets.includes('apple') &amp;&amp; (</span>
+<span class="ln add">19</span><span class="add">+       &lt;ApplePayButton amount={total} /&gt;</span></code></pre>
+        </div>
+      </div>
+      <div class="zoom-readout" id="zoom-readout">60%</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11. Decompose ============ -->
+<section class="slide" data-chapter="Doing the work" aria-label="Decomposition">
+  <div class="split">
+    <div class="text">
+      <h2 class="h1">Branching out. Agents propose, you prune.</h2>
+      <p class="lede">Press <span class="kbd">S</span> on any issue and an agent drafts sub-issues as ghosts. Ghosts cost nothing, run nothing, and vanish unless you keep them.</p>
+      <ul class="notes">
+        <li><strong>Every ghost explains itself:</strong> why it exists, which repos it touches, and a rough size.</li>
+        <li><strong>Keep or drop in one key.</strong> <span class="kbd">↵</span> accepts, <span class="kbd">E</span> edits, <span class="kbd">⌫</span> drops, <span class="kbd">⇧↵</span> keeps all.</li>
+        <li><strong>Dropped ghosts are remembered</strong> as out of scope for this project, so they don’t come back.</li>
+      </ul>
+      <div class="demo-actions">
+        <button class="btn primary" id="btn-plan"><span class="kbd">S</span>Ask Juno to plan</button>
+        <button class="btn" id="btn-plan-reset">Reset</button>
+      </div>
+    </div>
+    <div class="graph framed" id="g-split"></div>
+  </div>
+</section>
+
+<!-- ============ 12. Many repos ============ -->
+<section class="slide" data-chapter="Doing the work" aria-label="Many repositories">
+  <div class="split">
+    <div class="text">
+      <h2 class="h1">One issue, many repositories.</h2>
+      <p class="lede">Features cross service boundaries. An issue owns one branch name, created in every repo it touches, each in its own worktree.</p>
+      <ul class="notes">
+        <li><strong>Repos are inherited.</strong> Sub-issues start with the parent’s repos and narrow them down.</li>
+        <li><strong>Worktrees are automatic.</strong> Created when work starts and removed after merge, so parallel agents never share a checkout.</li>
+        <li><strong>Contracts are checked across repos.</strong> A type change in <span class="mono">api</span> flags every PR that depends on it.</li>
+      </ul>
+    </div>
+    <div class="window tracks">
+      <div class="tr-head">
+        <div class="tr-title"><i data-g="progress" class="c st-progress"></i><span class="n-key">CHK-12</span><b>Wallet payments</b></div>
+        <div class="tr-branch"><i data-icon="branch"></i><span class="mono">chk-12/wallet-payments</span><span class="small">Same branch name in every repository</span></div>
+      </div>
+      <div class="tr-grid">
+        <div class="tr-cols"><span>Repository</span><span>Progress</span><span>Worktree</span><span>Pull request</span><span>Sub-issue</span></div>
+        <div class="track"><i data-repo="api"></i><div class="lane"><i class="lane-fill st-review" style="width:92%"></i></div><span class="small">Ready, 14 files</span><i data-pr="api#219:approved"></i><span class="tr-sub"><i data-g="review" class="c st-review"></i>CHK-31</span></div>
+        <div class="track"><i data-repo="web"></i><div class="lane"><i class="lane-fill st-progress" style="width:64%"></i></div><span class="small">Ready, 9 files</span><i data-pr="web#482:running"></i><span class="tr-sub"><i data-g="progress" class="c st-progress"></i>CHK-32</span></div>
+        <div class="track"><i data-repo="ds"></i><div class="lane"><i class="lane-fill st-progress" style="width:30%"></i></div><span class="small">Ready, 2 files</span><span class="small">No PR yet</span><span class="tr-sub"><i data-g="progress" class="c st-progress"></i>CHK-32</span></div>
+        <div class="track waiting"><i data-repo="mobile"></i><div class="lane dashed"></div><span class="small">Not created</span><span class="small">Waits on CHK-31</span><span class="tr-sub"><i data-g="todo" class="c st-todo"></i>CHK-33</span></div>
+        <button class="tr-add">+ Add repository <span class="kbd">R</span></button>
+      </div>
+      <div class="contract">
+        <span class="contract-icon">!</span>
+        <div><strong>Contract changed in api#219</strong><p><span class="mono">POST /wallet/tokens</span> now returns <span class="mono">expiresAt</span>. web#482 reads the old shape. Wren has been sent the new type.</p></div>
+        <button class="btn">Open diff</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 13. PRs ============ -->
+<section class="slide" data-chapter="Doing the work" aria-label="Pull requests">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Pull requests dock onto issues.</h2>
+      <p class="lede">An issue can hold many PRs across repos, and one PR can close several issues. Linking is automatic, and anything that slips through is easy to catch.</p>
+    </div>
+    <div class="visual pr-board">
+      <div class="pr-states">
+        <p class="mod-title">PR states reuse the status inks</p>
+        <div><i data-pr="web#488:draft"></i><span>Draft</span></div>
+        <div><i data-pr="web#491:ready"></i><span>Ready for review</span></div>
+        <div><i data-pr="web#482:running"></i><span>Checks running</span></div>
+        <div><i data-pr="api#224:failing"></i><span>Checks failing</span></div>
+        <div><i data-pr="ds#80:changes"></i><span>Changes requested</span></div>
+        <div><i data-pr="api#219:approved"></i><span>Approved</span></div>
+        <div><i data-pr="api#215:merged"></i><span>Merged</span></div>
+      </div>
+      <div class="pr-dock-demo">
+        <p class="mod-title">A dock, stacked by repo</p>
+        <div class="dock-node">
+          <div class="n-head c st-progress"><i data-g="progress"></i><span class="n-key">CHK-32</span></div>
+          <div class="n-title">Wallet buttons on web checkout</div>
+          <div class="dock">
+            <div class="dock-repo"><i data-repo="web"></i><div class="dock-stack"><i data-pr="web#482:running"></i><span class="stack-on">stacked on</span><i data-pr="web#479:approved"></i></div></div>
+            <div class="dock-repo"><i data-repo="ds"></i><div class="dock-stack"><i data-pr="ds#81:draft"></i></div></div>
+          </div>
+        </div>
+        <div class="bridge">
+          <div class="bridge-node"><i data-g="review" class="c st-review"></i>CHK-39 PDF receipts</div>
+          <div class="bridge-line"><i data-pr="api#221:approved"></i></div>
+          <div class="bridge-node"><i data-g="review" class="c st-review"></i>CHK-15 Receipts</div>
+        </div>
+        <p class="small">One PR, two issues: the pill bridges both nodes and closes both on merge.</p>
+      </div>
+      <div class="loose">
+        <p class="mod-title">Loose ends</p>
+        <div class="loose-item dragging">
+          <i data-pr="web#490:ready"></i>
+          <b>Fix focus ring on wallet buttons</b>
+          <p class="small">Branch <span class="mono">fix/wallet-focus</span> touches files from CHK-32.</p>
+          <div class="loose-actions"><button class="btn primary">Link to CHK-32</button><button class="btn">Choose…</button></div>
+        </div>
+        <div class="loose-item">
+          <i data-pr="infra#33:ready"></i>
+          <b>Bump CDN cache TTL</b>
+          <p class="small">No match. Link it, make an issue from it, or mark it as chore.</p>
+        </div>
+        <ul class="notes compact">
+          <li>PRs link from branch names, agent runs, or “Closes CHK-32”.</li>
+          <li>Drag any loose PR onto a node to link it.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 14. Changesets ============ -->
+<section class="slide" data-chapter="Doing the work" aria-label="Changesets">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Multi-repo work ships as one changeset.</h2>
+      <p class="lede">When an issue spans repos, its PRs merge together in dependency order. One preview runs every branch at once, so you test the feature, not the fragments.</p>
+    </div>
+    <div class="visual changeset"><div class="cs-main">
+      <div class="cs-train" id="cs-train">
+        <div class="cs-step" data-i="0"><div class="cs-dot"><i data-g="review" class="c st-review"></i></div><i data-repo="api"></i><i data-pr="api#219:approved"></i><p>Merges first. Web and mobile call its new endpoint.</p><span class="cs-state">Waiting</span></div>
+        <div class="cs-link"></div>
+        <div class="cs-step" data-i="1"><div class="cs-dot"><i data-g="review" class="c st-review"></i></div><i data-repo="ds"></i><i data-pr="ds#81:approved"></i><p>Button variants for the wallet buttons.</p><span class="cs-state">Waiting</span></div>
+        <div class="cs-link"></div>
+        <div class="cs-step" data-i="2"><div class="cs-dot"><i data-g="review" class="c st-review"></i></div><i data-repo="web"></i><i data-pr="web#482:approved"></i><p>Consumes the new token shape and ds variants.</p><span class="cs-state">Waiting</span></div>
+      </div>
+      <ul class="notes cs-notes">
+        <li><strong>Order comes from the graph.</strong> Dependencies and contract checks decide what merges first. You can reorder, and UDAX warns when that breaks a contract.</li>
+        <li><strong>Each step rebases on the last one</strong> and reruns its checks against what just merged.</li>
+        <li><strong>A failure pauses the train.</strong> Nothing else merges until a person chooses to revert or fix forward.</li>
+      </ul>
+      </div>
+      <div class="cs-side">
+        <div class="cs-preview">
+          <p class="mod-title">Preview</p>
+          <p class="mono cs-url">chk-12.preview.northwind.dev</p>
+          <p class="small">Runs api#219, ds#81, and web#482 together against the payments sandbox.</p>
+        </div>
+        <div class="cs-actions">
+          <button class="btn primary" id="btn-merge">Merge changeset</button>
+          <button class="btn" id="btn-merge-fail">Show a failure</button>
+        </div>
+        <div class="cs-fail" id="cs-fail">
+          <strong>web#482 failed after api#219 and ds#81 merged.</strong>
+          <p>The changeset is paused. Nothing else merges until you decide.</p>
+          <div class="loose-actions"><button class="btn">Revert api#219 and ds#81</button><button class="btn">Fix forward with Wren</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 15. Agents ============ -->
+<section class="slide" data-chapter="Doing the work" aria-label="Agents on the canvas">
+  <div class="split agents-split">
+    <div class="text">
+      <h2 class="h1">Agents work in the open.</h2>
+      <p class="lede">No separate chat window. You see agents where they work, and you talk to them in the issue’s conversation.</p>
+      <ul class="notes">
+        <li><strong>Live agents glow cyan</strong> and narrate their current step on the node.</li>
+        <li><strong>Needs you goes to the owner</strong> as a beacon on the node, visible from every altitude. <span class="kbd">Tab</span> jumps to the next one. Answer inline without opening anything.</li>
+        <li><strong>Collisions show up before conflicts.</strong> When two agents edit the same file, a coral link appears with one-click fixes.</li>
+      </ul>
+    </div>
+    <div class="agents-visual framed">
+      <div class="graph" id="g-agents"></div>
+      <div class="collision-card">
+        <strong>Wren and Kit are both editing OrderSummary.tsx</strong>
+        <div class="loose-actions"><button class="btn">Let Kit go first</button><button class="btn">Share one branch</button><button class="btn">Ignore</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 16. Configure agents ============ -->
+<section class="slide" data-chapter="Doing the work" aria-label="Configure agents">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Agents are teammates you configure.</h2>
+      <p class="lede">Each agent is a role, a system prompt, a model, and an effort level. Edit it once and every issue it picks up gets the new version.</p>
+    </div>
+    <div class="visual">
+      <div class="window agents-win">
+        <div class="titlebar">
+          <div class="lights"><i></i><i></i><i></i></div>
+          <div class="crumbs"><span>Northwind</span><span class="sep">/</span><span>Settings</span><span class="sep">/</span><b>Agents</b></div>
+          <span class="grow"></span>
+          <button class="btn">New agent</button>
+        </div>
+        <div class="agents-body">
+          <aside class="roster">
+            <div class="ag-row on"><span class="agent lg">W</span><div class="ag-id"><b>Wren</b><span>Frontend builder</span></div><div class="ag-meta"><span class="chip">Sonnet 5.5</span><span class="meter" data-l="3"></span></div></div>
+            <div class="ag-row"><span class="agent lg">A</span><div class="ag-id"><b>Atlas</b><span>Backend and payments</span></div><div class="ag-meta"><span class="chip">Opus 5.5</span><span class="meter" data-l="3"></span></div></div>
+            <div class="ag-row"><span class="agent lg">P</span><div class="ag-id"><b>Pike</b><span>Pricing and contracts</span></div><div class="ag-meta"><span class="chip">Sonnet 5.5</span><span class="meter" data-l="2"></span></div></div>
+            <div class="ag-row"><span class="agent lg">K</span><div class="ag-id"><b>Kit</b><span>UI polish</span></div><div class="ag-meta"><span class="chip">Haiku 4.5</span><span class="meter" data-l="1"></span></div></div>
+            <div class="ag-row"><span class="agent lg">J</span><div class="ag-id"><b>Juno</b><span>Planner</span></div><div class="ag-meta"><span class="chip">Opus 5.5</span><span class="meter" data-l="4"></span></div></div>
+            <p class="small roster-note">Five agents, four working now.</p>
+          </aside>
+          <div class="ag-editor">
+            <div class="age-head">
+              <span class="agent xl">W</span>
+              <div><div class="age-name">Wren</div><div class="small">Frontend builder. Working on CHK-32.</div></div>
+              <span class="grow"></span>
+              <span class="chip">Prompt v7</span>
+            </div>
+            <div class="age-grid">
+              <div class="age-prompt">
+                <p class="peek-k">System prompt</p>
+                <pre class="prompt"><code><span class="pl">You build frontend features for Northwind’s web checkout.</span>
+<span class="pl">Use components from ds. Never hand-roll a button or an input.</span>
+<span class="pl">Start by restating the acceptance criteria in a comment.</span>
+<span class="pl">Ask <span class="var">{{owner.name}}</span> before touching <span class="var">{{protected_paths}}</span>.</span>
+<span class="pl">If checks fail twice, stop and comment with the log.</span>
+<span class="pl">Reply to every steering comment with what you changed.</span></code></pre>
+                <p class="small">UDAX adds the rest on every run: the intent chain, criteria, decisions, contracts, repo conventions, and the <span class="mono">udax</span> CLI.</p>
+                <p class="peek-k">Recent runs</p>
+                <div class="runs-t">
+                  <div class="rt-h"><span>Issue</span><span>Prompt</span><span>Effort</span><span>Result</span><span>Time</span></div>
+                  <div><span><i data-g="progress" class="c st-progress"></i>CHK-32 Wallet buttons</span><span>v7</span><span>High</span><span class="sig">Running</span><span>15 min</span></div>
+                  <div><span><i data-g="done" class="c st-done"></i>CHK-35 Address combobox</span><span>v6</span><span>Medium</span><span>Merged, 1 change asked</span><span>22 min</span></div>
+                  <div><span><i data-g="done" class="c st-done"></i>CHK-29 Promo code field</span><span>v6</span><span>Medium</span><span>Merged first try</span><span>9 min</span></div>
+                </div>
+              </div>
+              <div class="age-side">
+                <p class="peek-k">Model</p>
+                <div class="select"><span>Claude Sonnet 5.5</span><i data-icon="chev"></i></div>
+                <p class="peek-k">Effort</p>
+                <div class="seg small-seg effort-seg"><button>Low</button><button>Medium</button><button aria-pressed="true">High</button><button>Max</button></div>
+                <p class="small">High plans before it edits and checks its own work. Runs take longer and cost more.</p>
+                <p class="peek-k">Access</p>
+                <div class="acc"><i data-repo="web"></i><span>Write</span></div>
+                <div class="acc"><i data-repo="ds"></i><span>Write</span></div>
+                <div class="acc"><i data-repo="api"></i><span>Read only</span></div>
+                <p class="peek-k">Defaults</p>
+                <div class="peek-row"><span>Autonomy</span><b>Ask first</b></div>
+                <div class="peek-row"><span>Budget</span><b>45 min, $6</b></div>
+              </div>
+            </div>
+            <div class="age-foot">
+              <span class="small">v7 saved by Theo yesterday. Each run records the version it used.</span>
+              <span class="grow"></span>
+              <button class="btn">History</button>
+              <button class="btn">Try on an issue</button>
+              <button class="btn primary">Save as v8</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 17. Assign an agent ============ -->
+<section class="slide" data-chapter="Doing the work" aria-label="Assign an agent">
+  <div class="split">
+    <div class="text">
+      <h2 class="h1">Match the agent to the work.</h2>
+      <p class="lede">Assign from the node. UDAX suggests an agent from the issue’s repos and history, and you can change the model or effort for one run.</p>
+      <div class="effort-guide">
+        <div><span class="meter" data-l="1"></span><b>Low</b><span>Copy changes, renames, small fixes.</span></div>
+        <div><span class="meter" data-l="2"></span><b>Medium</b><span>One file with clear criteria.</span></div>
+        <div><span class="meter" data-l="3"></span><b>High</b><span>Work across several files. The default.</span></div>
+        <div><span class="meter" data-l="4"></span><b>Max</b><span>Unclear bugs, contracts across repos, design calls.</span></div>
+      </div>
+      <p class="body">Every run records its agent, prompt version, model, and effort, so you can compare runs and repeat the good ones.</p>
+    </div>
+    <div class="assign-visual framed">
+      <div class="graph" id="g-assign"></div>
+      <div class="assign-pop" id="assign-pop">
+        <div class="ap-search"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>Assign CHK-36 to…</div>
+        <p class="ap-k">Suggested</p>
+        <div class="ap-row on"><span class="agent">A</span><div class="ap-id"><b>Atlas</b><span>Backend. Built the tokens in CHK-31.</span></div><span class="chip">Opus 5.5</span><span class="meter" data-l="3"></span></div>
+        <p class="ap-k">Agents</p>
+        <div class="ap-row"><span class="agent">W</span><div class="ap-id"><b>Wren</b><span>Frontend builder</span></div><span class="chip">Sonnet 5.5</span><span class="meter" data-l="3"></span></div>
+        <div class="ap-row"><span class="agent">P</span><div class="ap-id"><b>Pike</b><span>Busy on CHK-40</span></div><span class="chip">Sonnet 5.5</span><span class="meter" data-l="2"></span></div>
+        <p class="ap-k">People</p>
+        <div class="ap-row"><span class="avatar h2c">TR</span><div class="ap-id"><b>Theo Ramos</b><span>Owns CHK-12</span></div></div>
+        <div class="ap-run">
+          <p class="ap-k">For this run only</p>
+          <div class="ap-run-row"><span>Model</span><div class="select sm"><span>Claude Opus 5.5</span><i data-icon="chev"></i></div></div>
+          <div class="ap-run-row"><span>Effort</span><div class="seg small-seg"><button>Low</button><button>Medium</button><button>High</button><button aria-pressed="true">Max</button></div></div>
+          <p class="small">Session tokens touch auth. Saved on the issue, not on Atlas.</p>
+        </div>
+        <button class="btn primary ap-go">Assign Atlas<span class="kbd">↵</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 18. Autonomy ============ -->
+<section class="slide" data-chapter="Doing the work" aria-label="Autonomy">
+  <div class="split">
+    <div class="text">
+      <h2 class="h1">Autonomy is a dial, set per branch.</h2>
+      <p class="lede">Trust isn’t global. Low-risk work can run on autopilot while payments stays on a short leash, in the same project.</p>
+      <div class="dial-cards">
+        <div class="dial-card" data-level="suggest"><h3 class="h3">Suggest</h3><p class="body">Plans and drafts only. Proposes ghosts and diffs, changes nothing without you.</p></div>
+        <div class="dial-card" data-level="ask"><h3 class="h3">Ask first</h3><p class="body">Works in its own worktree and opens PRs. Asks before merging, going over budget, or touching protected paths.</p></div>
+        <div class="dial-card" data-level="auto"><h3 class="h3">Autopilot</h3><p class="body">Takes the issue to Done within budget. The owner gets a summary and can undo the changeset.</p></div>
+      </div>
+    </div>
+    <div class="autonomy-visual framed">
+      <div class="auto-tree">
+        <div class="at-node lvl-ask" style="left:24px;top:290px"><span class="at-k">CHK-1</span>One-page checkout<span class="at-tag">Ask first</span></div>
+        <div class="at-node lvl-auto" style="left:300px;top:70px"><span class="at-k">CHK-13</span>Address autocomplete<span class="at-tag">Autopilot</span></div>
+        <div class="at-node lvl-suggest sel" style="left:300px;top:210px"><span class="at-k">CHK-12</span>Wallet payments<span class="at-tag">Suggest</span></div>
+        <div class="at-node lvl-ask inh" style="left:300px;top:350px"><span class="at-k">CHK-14</span>Guest checkout<span class="at-tag">Ask first</span></div>
+        <div class="at-node lvl-auto" style="left:300px;top:490px"><span class="at-k">CHK-15</span>Receipts<span class="at-tag">Autopilot</span></div>
+        <div class="at-node lvl-suggest inh" style="left:590px;top:140px"><span class="at-k">CHK-31</span>Tokenize payments<span class="at-tag">Suggest</span></div>
+        <div class="at-node lvl-suggest inh" style="left:590px;top:280px"><span class="at-k">CHK-32</span>Wallet buttons<span class="at-tag">Suggest</span></div>
+        <svg class="at-edges"></svg>
+      </div>
+      <div class="auto-panel">
+        <p class="peek-k">CHK-12 Wallet payments</p>
+        <div class="seg" role="group" aria-label="Autonomy"><button aria-pressed="true">Suggest</button><button>Ask first</button><button>Autopilot</button></div>
+        <div class="peek-row"><span>Budget</span><b>45 min, $6 per issue</b></div>
+        <div class="peek-row"><span>Protected paths</span><b class="mono" style="font-size:11px">api/payments/**</b></div>
+        <div class="peek-row"><span>Ceiling</span><b>Ask first, set by the payments team</b></div>
+        <p class="small">Children inherit this setting unless they override it. A child can be stricter, never looser than the ceiling.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 19. Room ============ -->
+<section class="slide" data-chapter="Inside an issue" aria-label="The issue room">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Enter an issue to work inside it.</h2>
+      <p class="lede">The room is the issue’s workspace. Criteria on the left, five views in the middle, repos and the agent on the right. It opens on the conversation.</p>
+    </div>
+    <div class="visual">
+      <div class="window room">
+        <div class="titlebar">
+          <div class="lights"><i></i><i></i><i></i></div>
+          <div class="crumbs"><span>Checkout 2.0</span><span class="sep">/</span><span>CHK-12 Wallet payments</span><span class="sep">/</span><b>CHK-32 Wallet buttons on web checkout</b></div>
+          <span class="grow"></span>
+          <span class="pill c st-progress"><i data-g="progress"></i>In progress</span>
+          <div class="seg small-seg"><button>Suggest</button><button aria-pressed="true">Ask first</button><button>Autopilot</button></div>
+          <button class="btn"><span class="kbd">Esc</span>Canvas</button>
+        </div>
+        <div class="room-body">
+          <aside class="room-left">
+            <p class="peek-k">Intent</p>
+            <p class="room-intent">Shoppers with a saved wallet can pay in one tap. Everyone else sees the card form exactly as today.</p>
+            <p class="peek-k">Acceptance criteria</p>
+            <div class="rc ok"><i data-icon="check"></i><div>Apple Pay shows on Safari<span>e2e passed, 2 min ago</span></div></div>
+            <div class="rc ok"><i data-icon="check"></i><div>Google Pay shows on Chrome<span>e2e passed, 2 min ago</span></div></div>
+            <div class="rc"><i data-icon="open"></i><div>Falls back to the card form<span>Test written, not run yet</span></div></div>
+            <p class="peek-k">Context</p>
+            <div class="ctx"><i data-g="progress" class="c st-progress"></i>CHK-1 One-page checkout</div>
+            <div class="ctx"><i data-g="progress" class="c st-progress"></i>CHK-12 Wallet payments</div>
+            <div class="ctx"><i data-g="review" class="c st-review"></i>CHK-31 contract: POST /wallet/tokens</div>
+            <p class="peek-k">People</p>
+            <div class="ctx"><span class="avatar owner h2c inherited sm">TR</span>Theo Ramos<span class="small">owner, from CHK-12</span></div>
+            <div class="ctx"><span class="agent sm">W</span>Wren<span class="small">assignee</span></div>
+          </aside>
+          <div class="room-center">
+            <div class="tabs" data-nav><span class="on">Conversation</span><span>Activity</span><span>Code</span><span>Preview</span><span>Terminal</span><span class="grow"></span><span class="small">3 requests, 1 in progress</span></div>
+            <div class="thread">
+              <div class="cm">
+                <div class="cm-h"><span class="avatar owner h2c inherited sm">TR</span><b>Theo Ramos</b><span class="tag">Owner</span><span class="t">09:05</span><span class="grow"></span><span class="req done"><i data-g="done"></i>Done</span></div>
+                <p><span class="at">@Wren</span> use the sandbox merchant ID in previews, not production.</p>
+                <div class="cm reply">
+                  <div class="cm-h"><span class="agent sm">W</span><b>Wren</b><span class="t">09:06</span></div>
+                  <p>Switched <span class="mono">APPLE_MERCHANT_ID</span> in <span class="mono">.env.preview</span>. Production is untouched.</p>
+                  <div class="atts"><span class="att"><i data-icon="commit"></i>a41c9e2</span></div>
+                </div>
+              </div>
+              <div class="cm">
+                <div class="cm-h"><span class="agent sm">W</span><b>Wren</b><span class="tag ask">Asked Theo</span><span class="t">09:11</span></div>
+                <p>Apple Pay needs a domain file at <span class="mono">/.well-known/</span>. Should it live in web, or does infra own that path?</p>
+                <div class="cm reply">
+                  <div class="cm-h"><span class="avatar owner h2c inherited sm">TR</span><b>Theo Ramos</b><span class="t">09:12</span><span class="grow"></span><span class="tag decision">Decision</span></div>
+                  <p>Put it in web for now. Open an issue for infra to own it in production.</p>
+                </div>
+              </div>
+              <div class="cm">
+                <div class="cm-h"><span class="avatar h1c sm">MC</span><b>Maya Chen</b><span class="t">09:16</span><span class="grow"></span><span class="req work"><i data-g="progress"></i>In progress</span></div>
+                <div class="anchor"><i data-icon="pin"></i>Preview, pin 1</div>
+                <p>The Apple Pay button is taller than the card field. Can they match?</p>
+                <div class="typing"><span class="agent sm">W</span>Wren is working on this<span class="dots"><i></i><i></i><i></i></span></div>
+              </div>
+            </div>
+            <div class="composer">
+              <div class="seg small-seg"><button aria-pressed="true">Steer</button><button>Note</button></div>
+              <span class="cmp-ph">Comment to steer Wren. Type @ to mention someone.</span>
+              <span class="grow"></span>
+              <button class="btn primary">Comment<span class="kbd">⌘↵</span></button>
+            </div>
+          </div>
+          <aside class="room-right">
+            <p class="peek-k">Repositories</p>
+            <div class="rr"><i data-repo="web"></i><i data-pr="web#482:running"></i></div>
+            <div class="checks"><span class="ck ok"></span><span class="ck ok"></span><span class="ck ok"></span><span class="ck ok"></span><span class="ck ok"></span><span class="ck ok"></span><span class="ck run"></span><span class="ck run"></span><span class="ck run"></span><span class="small">6 of 9</span></div>
+            <div class="rr"><i data-repo="ds"></i><span class="small">2 files, no PR yet</span></div>
+            <p class="peek-k">Agent</p>
+            <div class="agent-card">
+              <div class="ac-h"><span class="agent lg">W</span><div><b>Wren</b><span>Frontend builder</span></div></div>
+              <div class="ac-chips"><span class="chip">Sonnet 5.5</span><span class="chip"><span class="meter" data-l="3"></span>High</span><span class="chip">Prompt v7</span></div>
+              <div class="peek-row"><span>Run 2</span><b>15 min, $0.84</b></div>
+              <div class="peek-row"><span>Now</span><b class="sig">Editing OrderSummary.tsx</b></div>
+              <div class="ac-actions"><button class="btn">Pause</button><button class="btn">Take over</button></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 20. Conversation ============ -->
+<section class="slide" data-chapter="Inside an issue" aria-label="Conversation">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Steer with comments.</h2>
+      <p class="lede">The conversation belongs to the issue, not to a chat window. A comment to an agent becomes a request with a status, and the agent replies in the thread with what it changed.</p>
+    </div>
+    <div class="visual">
+      <div class="window room-shell" data-tab="Conversation" data-aside="Oldest first">
+        <div class="rt-body conv-body">
+          <div class="thread full">
+            <div class="cm">
+              <div class="cm-h"><span class="agent sm">W</span><b>Wren</b><span class="t">09:03</span></div>
+              <p>Starting on Sonnet 5.5 at High effort. My reading of the criteria: Apple Pay on Safari, Google Pay on Chrome, and the card form when neither is available.</p>
+            </div>
+            <div class="cm">
+              <div class="cm-h"><span class="avatar owner h2c inherited sm">TR</span><b>Theo Ramos</b><span class="tag">Owner</span><span class="t">09:05</span><span class="grow"></span><span class="req done"><i data-g="done"></i>Done</span></div>
+              <p><span class="at">@Wren</span> use the sandbox merchant ID in previews, not production.</p>
+              <div class="cm reply">
+                <div class="cm-h"><span class="agent sm">W</span><b>Wren</b><span class="t">09:06</span></div>
+                <p>Switched <span class="mono">APPLE_MERCHANT_ID</span> in <span class="mono">.env.preview</span>. Production is untouched.</p>
+                <div class="atts"><span class="att"><i data-icon="commit"></i>a41c9e2</span></div>
+              </div>
+            </div>
+            <div class="cm">
+              <div class="cm-h"><span class="agent sm">W</span><b>Wren</b><span class="tag ask">Asked Theo</span><span class="t">09:11</span></div>
+              <p>Apple Pay needs a domain file at <span class="mono">/.well-known/</span>. Should it live in web, or does infra own that path?</p>
+              <div class="quick"><span class="picked">Put it in web</span><span>Infra owns it</span></div>
+              <div class="cm reply">
+                <div class="cm-h"><span class="avatar owner h2c inherited sm">TR</span><b>Theo Ramos</b><span class="t">09:12</span><span class="grow"></span><span class="tag decision">Decision</span></div>
+                <p>Put it in web for now. Open an issue for infra to own it in production.</p>
+              </div>
+              <div class="cm reply">
+                <div class="cm-h"><span class="agent sm">W</span><b>Wren</b><span class="t">09:13</span></div>
+                <p>Added in web. I proposed CHK-44 under CHK-12 for infra. It’s a ghost until you accept it.</p>
+                <div class="atts"><span class="att"><i data-icon="commit"></i>3b7f010</span><span class="att ghost-att"><i data-g="backlog"></i>Proposed: Serve the domain file from the edge</span></div>
+              </div>
+            </div>
+            <div class="cm">
+              <div class="cm-h"><span class="avatar h1c sm">MC</span><b>Maya Chen</b><span class="t">09:16</span><span class="grow"></span><span class="req work"><i data-g="progress"></i>In progress</span></div>
+              <div class="anchor"><i data-icon="pin"></i>Preview, pin 1</div>
+              <p>The Apple Pay button is taller than the card field. Can they match?</p>
+              <div class="typing"><span class="agent sm">W</span>Wren is working on this<span class="dots"><i></i><i></i><i></i></span></div>
+            </div>
+          </div>
+          <aside class="conv-side">
+            <p class="peek-k">Requests</p>
+            <div class="rq"><i data-g="done" class="c st-done"></i><div><b>Use the sandbox merchant ID</b><span>Theo, done in a41c9e2</span></div></div>
+            <div class="rq"><i data-g="done" class="c st-done"></i><div><b>Serve the domain file from web</b><span>Theo, done in 3b7f010</span></div></div>
+            <div class="rq"><i data-g="progress" class="c st-progress"></i><div><b>Match the button heights</b><span>Maya, in progress</span></div></div>
+            <p class="peek-k">Decisions</p>
+            <div class="dc">The domain file lives in web until infra owns it.<span>Theo, 09:12</span></div>
+            <p class="small">Decisions join the agent’s context for this issue and every sub-issue under it.</p>
+            <p class="peek-k">Steer or note</p>
+            <p class="small"><b>Steer</b> sends a comment to the assignee as a request. <b>Note</b> starts no work, but agents can still read it, like the rest of the conversation.</p>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 21. Activity ============ -->
+<section class="slide" data-chapter="Inside an issue" aria-label="Activity">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Activity is the full record, grouped by run.</h2>
+      <p class="lede">Every agent run, commit, check, and status change in one timeline. Tool calls fold into readable steps, and each run shows its model, effort, prompt, time, and cost.</p>
+    </div>
+    <div class="visual">
+      <div class="window room-shell" data-tab="Activity">
+        <div class="rt-body act-body">
+          <div class="act-main">
+            <div class="act-filter"><div class="seg small-seg"><button aria-pressed="true">All</button><button>Agents</button><button>People</button><button>Checks</button><button>Status</button></div><span class="grow"></span><span class="small">Newest first</span></div>
+            <div class="run live">
+              <div class="run-h"><span class="agent sm">W</span><b>Wren, run 2</b><span class="chip">Sonnet 5.5</span><span class="chip"><span class="meter" data-l="3"></span>High</span><span class="chip">Prompt v7</span><span class="grow"></span><span class="run-live"><i></i>Running</span><span class="small">15 min, $0.84</span></div>
+              <ol class="steps">
+                <li class="now"><span class="st-t">09:14</span><i class="dot"></i><span class="st-d">Editing <span class="mono">OrderSummary.tsx</span></span></li>
+                <li><span class="st-t">09:13</span><i class="dot"></i><span class="st-d">Served the Apple Pay domain file from web<span class="att"><i data-icon="commit"></i>3b7f010</span></span></li>
+                <li><span class="st-t">09:12</span><i class="dot ok"></i><span class="st-d">Ran unit tests<span class="chip ok">42 passed</span></span></li>
+                <li class="open"><span class="st-t">09:09</span><i class="dot"></i><span class="st-d">Added wallet buttons and two ds variants<span class="att"><i data-icon="commit"></i>9c2e71b</span><span class="small">+184 −6</span></span>
+                  <div class="calls">
+                    <div><span class="k">read</span><span>ds/src/Button/Button.tsx</span></div>
+                    <div><span class="k">write</span><span>web/src/checkout/WalletButtons.tsx</span><span class="n">+96</span></div>
+                    <div><span class="k">write</span><span>ds/src/Button/variants.ts</span><span class="n">+41</span></div>
+                    <div><span class="k">run</span><span>pnpm -C ds build</span><span class="n ok">passed in 8.2s</span></div>
+                  </div>
+                </li>
+                <li><span class="st-t">09:06</span><i class="dot"></i><span class="st-d">Replied to Theo and switched the merchant ID<span class="att"><i data-icon="commit"></i>a41c9e2</span></span></li>
+              </ol>
+            </div>
+            <div class="run">
+              <div class="run-h"><span class="chev">›</span><span class="agent sm">W</span><b>Wren, run 1</b><span class="chip">Sonnet 5.5</span><span class="chip"><span class="meter" data-l="2"></span>Medium</span><span class="chip">Prompt v6</span><span class="grow"></span><span class="small">Stopped by Theo to raise the effort. 4 min, $0.18</span></div>
+            </div>
+            <div class="evt-row"><span class="st-t">08:55</span><i data-g="progress" class="c st-progress"></i>Moved to In progress when <span class="mono">chk-32/wallet-buttons</span> was created</div>
+          </div>
+          <aside class="act-side">
+            <p class="peek-k">So far</p>
+            <div class="peek-row"><span>Runs</span><b>2</b></div>
+            <div class="peek-row"><span>Agent time</span><b>19 min</b></div>
+            <div class="peek-row"><span>Cost</span><b>$1.02</b></div>
+            <div class="peek-row"><span>Commits</span><b>3</b></div>
+            <p class="peek-k">Budget</p>
+            <div class="bud"><div class="bud-h"><span>Time</span><b>19 of 45 min</b></div><div class="bar"><i style="width:42%"></i></div></div>
+            <div class="bud"><div class="bud-h"><span>Cost</span><b>$1.02 of $6</b></div><div class="bar"><i style="width:17%"></i></div></div>
+            <p class="small">At 80% of either budget, Wren asks Theo before it continues.</p>
+            <button class="btn">Compare runs</button>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 22. Code ============ -->
+<section class="slide" data-chapter="Inside an issue" aria-label="Code">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Code shows what this issue changed.</h2>
+      <p class="lede">One file tree across every repo the issue touches, with the agent’s reasoning beside its edits. Select a line to comment on it, or edit it yourself.</p>
+    </div>
+    <div class="visual">
+      <div class="window room-shell" data-tab="Code" data-aside="7 files, +281 −10">
+        <div class="rt-body code-body">
+          <aside class="ftree">
+            <div class="seg small-seg"><button aria-pressed="true">Changed</button><button>All files</button></div>
+            <div class="fg">
+              <div class="fg-h"><i data-repo="web"></i><span class="mono">src/checkout</span></div>
+              <div class="f on"><i data-icon="file"></i><span>WalletButtons.tsx</span><span class="fa">New</span><span class="fn">+96</span></div>
+              <div class="f"><i data-icon="file"></i><span>OrderSummary.tsx</span><span class="live-dot" title="Wren is editing"></span><span class="fn">+12 −3</span></div>
+              <div class="f"><i data-icon="file"></i><span>CardFallback.tsx</span><span class="fa">New</span><span class="fn">+31</span></div>
+              <div class="f"><i data-icon="file"></i><span>.env.preview</span><span class="fn">+1 −1</span></div>
+              <div class="f"><i data-icon="file"></i><span>.well-known/apple-…</span><span class="fa">New</span><span class="fn">+1</span></div>
+            </div>
+            <div class="fg">
+              <div class="fg-h"><i data-repo="ds"></i><span class="mono">src/Button</span></div>
+              <div class="f"><i data-icon="file"></i><span>variants.ts</span><span class="fn">+41</span></div>
+              <div class="f"><i data-icon="file"></i><span>Button.stories.tsx</span><span class="fn">+18</span></div>
+            </div>
+          </aside>
+          <div class="editor">
+            <div class="ed-tabs"><span class="on">WalletButtons.tsx</span><span>OrderSummary.tsx<i class="live-dot"></i></span><span class="grow"></span><div class="seg small-seg"><button aria-pressed="true">Changes</button><button>Whole file</button></div></div>
+            <pre class="code"><code><span class="l"><i>12</i>export function WalletButtons({ total, onToken }: Props) {</span>
+<span class="l"><i>13</i>  const wallets = useAvailableWallets();</span>
+<span class="l add sel"><i>14</i>+ if (!wallets.length) return &lt;CardFallback /&gt;;</span>
+<span class="l note"><i></i><span class="agent">W</span> Returning early means the card form never renders twice. Criterion 3.</span>
+<span class="l cthread"><i></i><span class="ct"><span class="ct-row"><span class="avatar owner h2c inherited sm">TR</span><b>Theo</b>Could the fallback reuse <span class="mono">CardForm</span> instead of a new component?<span class="req queue"><i data-g="todo"></i>Queued</span></span><span class="ct-row"><span class="agent sm">W</span><b>Wren</b>Yes. I’ll swap it in after the button heights.</span></span></span>
+<span class="l"><i>15</i>  return (</span>
+<span class="l"><i>16</i>    &lt;Stack gap="2"&gt;</span>
+<span class="l add"><i>17</i>+     {wallets.includes('apple') &amp;&amp; (</span>
+<span class="l add"><i>18</i>+       &lt;ApplePayButton amount={total} onToken={onToken} /&gt;</span>
+<span class="l add"><i>19</i>+     )}</span>
+<span class="l add"><i>20</i>+     {wallets.includes('google') &amp;&amp; (</span>
+<span class="l add human"><i>21</i>+       &lt;GooglePayButton amount={total} onToken={onToken} size="md"<span class="caret-h"><b>Theo</b></span> /&gt;</span>
+<span class="l add"><i>22</i>+     )}</span>
+<span class="l"><i>23</i>    &lt;/Stack&gt;</span></code></pre>
+            <div class="ed-banner"><span class="avatar h2c sm">TR</span>Theo is editing line 21. Wren holds off on this file and picks up the change when Theo stops.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 23. Preview ============ -->
+<section class="slide" data-chapter="Inside an issue" aria-label="Preview">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Preview the branch, not a screenshot.</h2>
+      <p class="lede">A live build of every branch in the changeset. Switch browser and device, compare with main, and pin comments on what you see.</p>
+    </div>
+    <div class="visual">
+      <div class="window room-shell" data-tab="Preview">
+        <div class="rt-body prev-body">
+          <div class="prev-bar">
+            <div class="url"><i data-icon="reload"></i><span class="mono">chk-12.preview.northwind.dev/checkout</span></div>
+            <div class="seg small-seg"><button aria-pressed="true">Safari</button><button>Chrome</button><button>Firefox</button></div>
+            <div class="seg small-seg"><button aria-pressed="true">Desktop</button><button>Phone</button></div>
+            <div class="seg small-seg"><button>Branch</button><button>Main</button><button aria-pressed="true">Split</button></div>
+            <span class="grow"></span>
+            <span class="small">Built from api#219, ds#81, web#482</span>
+          </div>
+          <div class="prev-stage">
+            <div class="pv-frame">
+              <p class="pv-label">main</p>
+              <div class="page">
+                <div class="pg-h"><b>Northwind</b><span>Checkout</span></div>
+                <div class="pg-sum"><div><span>Trail runner, size 42</span><span>$89.00</span></div><div><span>Shipping</span><span>$9.00</span></div><div><span>Tax</span><span>$6.50</span></div><div class="tot"><span>Total</span><span>$104.50</span></div></div>
+                <div class="pg-pay"><div class="in">Card number</div><div class="in-row"><div class="in">MM / YY</div><div class="in">CVC</div></div><div class="pay">Pay $104.50</div></div>
+              </div>
+            </div>
+            <div class="pv-frame">
+              <p class="pv-label on">chk-12</p>
+              <div class="page">
+                <div class="pg-h"><b>Northwind</b><span>Checkout</span></div>
+                <div class="pg-sum"><div><span>Trail runner, size 42</span><span>$89.00</span></div><div><span>Shipping</span><span>$9.00</span></div><div><span>Tax</span><span>$6.50</span></div><div class="tot"><span>Total</span><span>$104.50</span></div></div>
+                <div class="pg-pay"><div class="apple">Apple Pay<span class="pv-pin">1</span></div><div class="gpay">Google Pay</div><div class="or">or pay with card</div><div class="in">Card number</div><div class="pay">Pay $104.50</div></div>
+                <div class="pin-bubble"><span class="avatar h1c sm">MC</span><div><b>Maya</b>Taller than the card field. Can they match?<span class="req work"><i data-g="progress"></i>Wren is on it</span></div></div>
+              </div>
+            </div>
+            <aside class="pv-side">
+              <p class="peek-k">Criteria in this preview</p>
+              <div class="rc ok"><i data-icon="check"></i><div>Apple Pay shows on Safari<span>Seen here and saved as evidence</span></div></div>
+              <div class="rc"><i data-icon="open"></i><div>Google Pay shows on Chrome<span>Switch to Chrome to check</span></div></div>
+              <div class="rc"><i data-icon="open"></i><div>Falls back to the card form<span>Turn wallets off to check</span></div></div>
+              <button class="btn">Save as evidence</button>
+              <p class="peek-k">Pins</p>
+              <div class="pin-row"><span class="pin-n">1</span><span>Match the button heights</span><i data-g="progress" class="c st-progress"></i></div>
+              <p class="small">Click anywhere on the page to pin a comment. It lands in the conversation with a screenshot.</p>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 24. Terminal ============ -->
+<section class="slide" data-chapter="Inside an issue" aria-label="Terminal">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Terminals are shared, and the agent’s is live.</h2>
+      <p class="lede">Every worktree gets its own terminals. Watch the agent’s session as it runs, open yours beside it, and take over with one key.</p>
+    </div>
+    <div class="visual">
+      <div class="window room-shell" data-tab="Terminal">
+        <div class="rt-body term-body">
+          <aside class="sessions">
+            <div class="fg-h"><i data-repo="web"></i><span class="small">worktree</span></div>
+            <div class="ses on"><span class="agent sm">W</span><span>Wren</span><span class="live-dot"></span></div>
+            <div class="ses"><i data-icon="term"></i><span>Your shell</span></div>
+            <div class="ses"><i data-icon="term"></i><span>dev server</span><span class="port">:3000</span></div>
+            <div class="fg-h"><i data-repo="ds"></i><span class="small">worktree</span></div>
+            <div class="ses"><i data-icon="term"></i><span>storybook</span><span class="port">:6006</span></div>
+            <button class="tr-add">+ New terminal</button>
+          </aside>
+          <div class="panes">
+            <div class="pane agent-pane">
+              <div class="pane-h"><span class="agent sm">W</span><b>Wren</b><span class="small">Live, read-only</span><span class="grow"></span><button class="btn">Take over<span class="kbd">⌘T</span></button></div>
+              <div class="term"><span class="ln"><span class="pp">~/wt/web/chk-32 $</span> pnpm test wallet --run</span>
+<span class="ln"> <span class="ok">✓</span> renders Apple Pay on Safari        <span class="dim">38ms</span></span>
+<span class="ln"> <span class="ok">✓</span> renders Google Pay on Chrome       <span class="dim">31ms</span></span>
+<span class="ln"> <span class="ok">✓</span> falls back to CardFallback         <span class="dim">12ms</span></span>
+<span class="ln"> <span class="ok">Tests  3 passed</span> <span class="dim">(3)</span></span>
+<span class="ln"><span class="pp">~/wt/web/chk-32 $</span> udax evidence attach 3 --from-test wallet</span>
+<span class="ln"> <span class="ok">✓</span> Attached to “Falls back to the card form”</span>
+<span class="ln"><span class="pp">~/wt/web/chk-32 $</span> pnpm lint src/checkout --fix</span>
+<span class="ln"> <span class="dim">4 files checked, 1 fixed</span></span>
+<span class="ln"><span class="pp">~/wt/web/chk-32 $</span> git commit -am "Match wallet button height"<span class="cur"></span></span></div>
+            </div>
+            <div class="pane">
+              <div class="pane-h"><span class="avatar h2c sm">TR</span><b>Your shell</b><span class="small">Same worktree</span></div>
+              <div class="term"><span class="ln"><span class="pp">~/wt/web/chk-32 $</span> git log --oneline -4</span>
+<span class="ln"><span class="sha">3b7f010</span> Serve Apple Pay domain file in preview</span>
+<span class="ln"><span class="sha">9c2e71b</span> Add wallet buttons and ds variants</span>
+<span class="ln"><span class="sha">a41c9e2</span> Use sandbox merchant ID in previews</span>
+<span class="ln"><span class="sha">e17b2c0</span> Merge api#211 address autocomplete</span>
+<span class="ln"><span class="pp">~/wt/web/chk-32 $</span> curl -sI localhost:3000/.well-known/apple-…</span>
+<span class="ln"><span class="selbg">HTTP/1.1 200 OK</span><span class="sel-chip">Comment on selection</span></span>
+<span class="ln"><span class="dim">content-type: text/plain</span></span>
+<span class="ln"><span class="pp">~/wt/web/chk-32 $</span> <span class="cur off"></span></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 25. Review ============ -->
+<section class="slide" data-chapter="Inside an issue" aria-label="Review by evidence">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Approve by evidence.</h2>
+      <p class="lede">Reviewers check outcomes first, then read a diff grouped by intent, with the agent’s reasoning beside each change. Risk is summarized, not buried.</p>
+    </div>
+    <div class="visual">
+      <div class="window review">
+        <div class="titlebar">
+          <div class="lights"><i></i><i></i><i></i></div>
+          <div class="crumbs"><span>Review</span><span class="sep">/</span><b>CHK-31 Tokenize wallet payments</b></div>
+          <span class="grow"></span>
+          <span class="pill c st-review"><i data-g="review"></i>In review</span>
+          <span class="agent">A</span><span class="small">Atlas</span>
+        </div>
+        <div class="review-body">
+          <section class="rv-evidence">
+            <p class="peek-k">Criteria and evidence</p>
+            <div class="ev"><div class="ev-top"><i data-icon="check"></i><b>Tokens never touch our logs</b></div><p>Scanned logs from 1,200 sandbox requests. 0 matches for token patterns.</p><span class="ev-link">View query</span></div>
+            <div class="ev"><div class="ev-top"><i data-icon="check"></i><b>Idempotent on retry</b></div><p>Replayed 50 duplicate requests. 1 charge created.</p><span class="ev-link">View test run</span></div>
+            <div class="ev"><div class="ev-top"><i data-icon="check"></i><b>Sandbox charges pass</b></div><p>Apple Pay and Google Pay, recorded end to end.</p><div class="ev-thumbs"><span class="thumb t-apple">Pay</span><span class="thumb t-google">G Pay</span></div></div>
+          </section>
+          <section class="rv-diff">
+            <p class="peek-k">Changes, grouped by intent</p>
+            <div class="grp"><div class="grp-h"><span class="chev">›</span>Accept wallet tokens<span class="small">4 files, +212 −8</span></div></div>
+            <div class="grp open"><div class="grp-h"><span class="chev">⌄</span>Keep tokens out of logs<span class="small">3 files, +18 −11</span></div>
+              <p class="why"><span class="agent">A</span>Request logging printed the whole struct, token included. Log only the wallet type and amount.</p>
+              <pre class="code sm"><code><span class="l"><i>41</i>func (s *Service) Tokenize(ctx context.Context, req WalletReq) (Token, error) {</span>
+<span class="l del"><i>42</i>-   log.Info("tokenize", "req", req)</span>
+<span class="l add"><i>42</i>+   log.Info("tokenize", "wallet", req.Wallet, "amount", req.Amount)</span></code></pre>
+            </div>
+            <div class="grp"><div class="grp-h"><span class="chev">›</span>Idempotency keys<span class="small">5 files, +96 −4</span></div></div>
+            <div class="grp"><div class="grp-h"><span class="chev">›</span>Tests<span class="small">2 files, +141</span></div></div>
+          </section>
+          <section class="rv-risk">
+            <p class="peek-k">Risk</p>
+            <div class="risk-row"><span>Blast radius</span><b>payments-service, 2 endpoints</b></div>
+            <div class="risk-row"><span>Migrations</span><b>None</b></div>
+            <div class="risk-row hot"><span>Protected path</span><b class="mono" style="font-size:11px">api/payments/**</b></div>
+            <div class="risk-row"><span>Code review</span><b>1 of 2, payments team needed</b></div>
+            <div class="risk-row"><span>Outcome</span><b>Theo accepts, as owner</b></div>
+            <div class="rv-actions">
+              <button class="btn primary">Approve</button>
+              <button class="btn">Request changes</button>
+              <button class="btn">Take over</button>
+            </div>
+            <p class="small">Requested changes become a follow-up for Atlas on this issue, not a comment thread.</p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 26. Lenses ============ -->
+<section class="slide" data-chapter="Steering" aria-label="Lenses">
+  <div class="split lens-split">
+    <div class="text">
+      <h2 class="h1">Same graph, different questions.</h2>
+      <p class="lede">Lenses recolor the canvas without moving anything, so your spatial memory survives. Glyphs keep showing status underneath.</p>
+      <div class="seg lens-seg" id="lens-seg" role="group" aria-label="Lens">
+        <button data-lens="status" aria-pressed="true">Status</button>
+        <button data-lens="repo">Repo</button>
+        <button data-lens="owner">Owner</button>
+        <button data-lens="assignee">Assignee</button>
+        <button data-lens="stuck">Stuck</button>
+        <button data-lens="risk">Risk</button>
+      </div>
+      <p class="small lens-hint">Press <span class="kbd">1</span> to <span class="kbd">6</span> to switch.</p>
+      <div class="lens-q" id="lens-q"></div>
+      <div class="lens-legend" id="lens-legend"></div>
+    </div>
+    <div class="graph framed" id="g-lens"></div>
+  </div>
+</section>
+
+<!-- ============ 27. Intent bar and keys ============ -->
+<section class="slide" data-chapter="Steering" aria-label="Intent bar and keyboard">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Say it, or press it.</h2>
+      <p class="lede">The intent bar turns plain language into graph changes, with a preview before anything is created. Every action also has a key.</p>
+    </div>
+    <div class="visual intent-layout">
+      <div class="intent-demo">
+        <div class="intent-big">
+          <span class="intent-glyph"><i data-g="backlog"></i></span>
+          <span class="typed" id="typed"></span><span class="caret"></span>
+        </div>
+        <div class="intent-preview" id="intent-preview">
+          <p class="peek-k">Preview</p>
+          <div class="ip-row"><i data-g="backlog" class="c st-backlog"></i><b>Guest checkout</b><span class="small">new issue under CHK-1 One-page checkout</span></div>
+          <div class="ip-row"><span class="ip-k">Repos</span><i data-repo="api"></i><i data-repo="web"></i><span class="small">from similar issues</span></div>
+          <div class="ip-row"><span class="ip-k">Target</span><span>Two weeks, noted as a constraint for the planner</span></div>
+          <div class="ip-row"><span class="ip-k">Next</span><span>Plan with Juno as ghosts</span></div>
+          <div class="ip-actions"><button class="btn primary">Create and plan<span class="kbd">⌘↵</span></button><button class="btn">Create only<span class="kbd">↵</span></button></div>
+        </div>
+        <div class="commands">
+          <div><span class="mono">/split</span><span>Ask an agent to propose sub-issues</span></div>
+          <div><span class="mono">/link web#490</span><span>Link a PR to the selected issue</span></div>
+          <div><span class="mono">@Wren use the sandbox keys</span><span>Steer the agent working here</span></div>
+          <div><span class="mono">?stuck repo:api</span><span>Filter the canvas</span></div>
+        </div>
+      </div>
+      <div class="keymap">
+        <div class="km-group"><p class="peek-k">Move</p>
+          <div><span><i class="kbd">←</i></span>Parent</div>
+          <div><span><i class="kbd">→</i></span>First sub-issue</div>
+          <div><span><i class="kbd">↑</i><i class="kbd">↓</i></span>Siblings</div>
+          <div><span><i class="kbd">Tab</i></span>Next needs-you</div>
+          <div><span><i class="kbd">↵</i></span>Enter room</div>
+          <div><span><i class="kbd">Esc</i></span>Rise one altitude</div>
+          <div><span><i class="kbd">Space</i></span>Peek</div>
+        </div>
+        <div class="km-group"><p class="peek-k">Shape</p>
+          <div><span><i class="kbd">N</i></span>New sub-issue</div>
+          <div><span><i class="kbd">S</i></span>Split with an agent</div>
+          <div><span><i class="kbd">D</i></span>Add dependency</div>
+          <div><span><i class="kbd">L</i></span>Link a PR</div>
+          <div><span><i class="kbd">R</i></span>Add repository</div>
+          <div><span><i class="kbd">⇧</i><i class="kbd">1–5</i></span>Set status</div>
+        </div>
+        <div class="km-group"><p class="peek-k">See</p>
+          <div><span><i class="kbd">1–6</i></span>Switch lens</div>
+          <div><span><i class="kbd">⌘K</i></span>Jump to anything</div>
+          <div><span><i class="kbd">⌘\</i></span>Outline view</div>
+          <div><span><i class="kbd">⌘Z</i></span>Undo, including accepted agent work</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 28. Agentic experience ============ -->
+<section class="slide" data-chapter="Steering" aria-label="Agentic experience">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Designed for the agent, too.</h2>
+      <p class="lede">The graph is an agent’s context. The path from the root to its node is the brief, and every action people click is a <span class="mono">udax</span> command agents run.</p>
+    </div>
+    <div class="visual ax">
+      <div class="cascade">
+        <p class="mod-title">Context cascade for CHK-32</p>
+        <div class="cc-path">
+          <div class="cc-node"><i data-g="progress" class="c st-progress"></i><span class="n-key">CHK-1</span>One-page checkout<span class="cc-what">Goal and constraints</span></div>
+          <div class="cc-link"></div>
+          <div class="cc-node"><i data-g="progress" class="c st-progress"></i><span class="n-key">CHK-12</span>Wallet payments<span class="cc-what">Scope and repos</span></div>
+          <div class="cc-link"></div>
+          <div class="cc-node me"><i data-g="progress" class="c st-progress"></i><span class="n-key">CHK-32</span>Wallet buttons on web<span class="cc-what">Intent and criteria</span></div>
+          <div class="cc-side"><i data-g="review" class="c st-review"></i><span class="n-key">CHK-31</span>Sibling contract</div>
+        </div>
+        <p class="mod-title" style="margin-top:26px">What the agent receives</p>
+        <div class="pack">
+          <div class="pack-bar"><i style="flex:12" class="pb1"></i><i style="flex:3" class="pb2"></i><i style="flex:2" class="pb6"></i><i style="flex:8" class="pb3"></i><i style="flex:21" class="pb4"></i><i style="flex:56" class="pb5"></i></div>
+          <div class="pack-keys">
+            <span><i class="pb1"></i>Intent chain</span><span><i class="pb2"></i>Criteria</span><span><i class="pb6"></i>Decisions</span><span><i class="pb3"></i>Contracts</span><span><i class="pb4"></i>Repo conventions</span><span><i class="pb5"></i>Relevant files</span>
+          </div>
+          <p class="small">Every source is listed in the room, so people can see exactly what the agent was told.</p>
+        </div>
+      </div>
+      <div class="verbs">
+        <p class="mod-title">Same verbs for people and agents</p>
+        <div class="verb"><span>Split an issue</span><span class="mono">udax issue propose</span></div>
+        <div class="verb"><span>Ask a question</span><span class="mono">udax issue ask</span></div>
+        <div class="verb"><span>Link a PR</span><span class="mono">udax pr link</span></div>
+        <div class="verb"><span>Attach evidence</span><span class="mono">udax evidence attach</span></div>
+        <div class="verb"><span>Move status</span><span class="mono">udax issue status</span></div>
+        <div class="verb"><span>Flag a collision</span><span class="mono">udax file claim</span></div>
+        <div class="verb"><span>Read any conversation</span><span class="mono">udax issue comment list</span></div>
+        <div class="verb"><span>Reply to a comment</span><span class="mono">udax issue comment add</span></div>
+        <p class="body" style="margin-top:18px">Agents can <strong>read</strong> any issue and its conversation. They <strong>propose</strong> changes, and events and people confirm them. Writes follow the agent’s repo scopes, budget, branch autonomy, and the owner it answers to.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 29. CLI ============ -->
+<section class="slide" data-chapter="Steering" aria-label="The udax CLI">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">One CLI for people and agents.</h2>
+      <p class="lede">The same <span class="mono">udax</span> commands work in your shell and inside an agent’s run. In a run, the CLI already knows which agent it is and what it may change.</p>
+    </div>
+    <div class="visual cli2">
+      <div class="window cli-term">
+        <div class="titlebar">
+          <div class="lights"><i></i><i></i><i></i></div>
+          <div class="crumbs"><span class="avatar h2c sm">TR</span><b>Theo’s shell</b></div>
+        </div>
+        <div class="term"><span class="ln"><span class="pp">$</span> udax setup</span>
+<span class="ln"><span class="ok">✓</span> Signed in as theo@northwind.dev</span>
+<span class="ln"><span class="ok">✓</span> Workspace: northwind</span>
+<span class="ln"><span class="ok">✓</span> Runtime “Theo’s MacBook” is online. Found claude, codex.</span>
+<span class="ln"><span class="pp">$</span> udax issue list --project checkout --status in_progress</span>
+<span class="ln"><span class="th">KEY     STATUS       ASSIGNEE  TITLE</span></span>
+<span class="ln">CHK-32  in_progress  Wren      Wallet buttons on web checkout</span>
+<span class="ln">CHK-40  in_progress  Pike      Quote prices from pricing-engine</span>
+<span class="ln">CHK-41  in_progress  Kit       Show new totals in the cart</span>
+<span class="ln">CHK-17  in_progress  <span class="dim">none</span>      Cart on the new pricing engine</span>
+<span class="ln"><span class="pp">$</span> udax issue assign CHK-36 --to atlas --effort max</span>
+<span class="ln"><span class="ok">✓</span> Assigned CHK-36 to Atlas at Max effort. <span class="sig">A run is queued.</span></span>
+<span class="ln"><span class="pp">$</span> udax issue comment add CHK-32 --note --content "The fallback works."</span>
+<span class="ln"><span class="ok">✓</span> Note added. No run started.</span>
+<span class="ln"><span class="pp">$</span> <span class="cur off"></span></span></div>
+      </div>
+      <div class="window cli-term agent-run">
+        <div class="titlebar">
+          <div class="lights"><i></i><i></i><i></i></div>
+          <div class="crumbs"><span class="agent sm">W</span><b>Inside Wren’s run</b><span class="sep">/</span><span class="mono">CHK-32, run 2</span></div>
+          <span class="grow"></span>
+          <span class="small">Scoped token from the runtime</span>
+        </div>
+        <div class="term"><span class="ln"><span class="pp">$</span> udax whoami</span>
+<span class="ln">Wren, agent. Run 2 on CHK-32. Owner: Theo Ramos.</span>
+<span class="ln"><span class="dim">Can write web and ds. Budget left: 26 min, $4.98.</span></span>
+<span class="ln"><span class="pp">$</span> udax issue get CHK-32 --output json | jq .criteria</span>
+<span class="ln"><span class="js">["Apple Pay shows on Safari", "Google Pay shows on Chrome",</span></span>
+<span class="ln"><span class="js"> "Falls back to the card form"]</span></span>
+<span class="ln"><span class="pp">$</span> udax issue comment list CHK-31 --decisions</span>
+<span class="ln"><span class="th">DECISION                          BY    WHEN</span></span>
+<span class="ln">Tokens expire after 15 minutes.   Theo  Mon</span>
+<span class="ln">Never log the raw token.          Theo  Mon</span>
+<span class="ln"><span class="pp">$</span> udax issue comment add CHK-32 --reply c12 --content-stdin &lt; reply.md</span>
+<span class="ln"><span class="ok">✓</span> Replied on CHK-32. Theo’s request is done.</span>
+<span class="ln"><span class="pp">$</span> udax issue assign CHK-41 --to wren</span>
+<span class="ln"><span class="err">✗</span> Agents can’t reassign work. Ask the owner: udax issue ask CHK-41</span>
+<span class="ln"><span class="pp">$</span> udax login</span>
+<span class="ln"><span class="err">✗</span> Not needed inside a run. This run already has a scoped token.</span>
+<span class="ln"><span class="pp">$</span> <span class="cur"></span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 30. CLI reference ============ -->
+<section class="slide" data-chapter="Steering" aria-label="CLI reference">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Nouns first, then verbs.</h2>
+      <p class="lede">Every command follows one grammar, so people and agents can guess the next one. Tables for reading, JSON for scripts, and nothing wakes an agent by surprise.</p>
+    </div>
+    <div class="visual cli-ref2">
+      <div class="grammar-col">
+        <div class="grammar">
+          <div class="gm-line">
+            <span class="gm-part"><code>udax</code><small></small></span>
+            <span class="gm-part gm-noun"><code>issue</code><small>noun</small></span>
+            <span class="gm-part gm-verb"><code>assign</code><small>verb</small></span>
+            <span class="gm-part gm-key"><code>CHK-36</code><small>key</small></span>
+            <span class="gm-part gm-flag"><code>--to atlas --effort max</code><small>flags</small></span>
+          </div>
+        </div>
+        <div class="nouns">
+          <div class="noun"><b>issue</b><span>list, get, create, update, assign, status, search, children, ask, propose</span></div>
+          <div class="noun"><b>issue comment</b><span>list, add, resolve</span></div>
+          <div class="noun"><b>run</b><span>list, logs, rerun, cancel, usage</span></div>
+          <div class="noun"><b>agent</b><span>list, get, create, update, copy, archive</span></div>
+          <div class="noun"><b>evidence</b><span>attach, list</span></div>
+          <div class="noun"><b>pr</b><span>list, link</span></div>
+          <div class="noun"><b>repo</b><span>list, checkout</span></div>
+          <div class="noun"><b>file</b><span>claim, release</span></div>
+          <div class="noun"><b>graph</b><span>show</span></div>
+          <div class="noun"><b>runtime, daemon</b><span>list, status, start, logs</span></div>
+          <div class="noun"><b>workspace</b><span>list, switch</span></div>
+          <div class="noun"><b>setup, login, config</b><span>For people only</span></div>
+        </div>
+        <p class="small cli-credit">Grammar and conventions adapted from the Multica CLI (multica.ai/docs/cli).</p>
+      </div>
+      <div class="conventions">
+        <div class="cv"><h3 class="h3">Keys, not IDs.</h3><p class="body"><span class="mono">CHK-32</span> works in every command. <span class="mono">--full-id</span> prints the UUID when a script needs it.</p></div>
+        <div class="cv"><h3 class="h3">Tables for people, JSON for machines.</h3><p class="body"><span class="mono">list</span> prints a table and <span class="mono">get</span> prints JSON. <span class="mono">--output</span> switches either one.</p></div>
+        <div class="cv"><h3 class="h3">Names resolve.</h3><p class="body"><span class="mono">--to wren</span> matches agents and people by name. <span class="mono">--to-id</span> settles a clash.</p></div>
+        <div class="cv"><h3 class="h3">Long text goes through stdin.</h3><p class="body"><span class="mono">--content-stdin</span> and <span class="mono">--content-file</span> keep comments and descriptions out of shell quoting.</p></div>
+        <div class="cv"><h3 class="h3">Side effects are announced.</h3><p class="body">A command that starts a run says so. <span class="mono">--note</span> and <span class="mono">--no-start</span> change things without waking an agent.</p></div>
+        <div class="cv"><h3 class="h3">Runs get scoped tokens.</h3><p class="body">Inside a run, the runtime injects a token for that agent and issue. Human commands like <span class="mono">login</span> are refused.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 31. Replay ============ -->
+<section class="slide" data-chapter="Steering" aria-label="Morning replay">
+  <div class="split replay-split">
+    <div class="text">
+      <h2 class="h1">Catch up in ten seconds.</h2>
+      <p class="lede">When you come back, the canvas replays what changed while you were away, then settles with those nodes outlined. Scrub to any moment.</p>
+      <div class="digest" id="digest">
+        <p class="mod-title">Since you left at 18:00</p>
+        <div class="dg" data-t="1"><span>19:12</span>Atlas opened api#219 for review</div>
+        <div class="dg" data-t="2"><span>21:40</span>Receipt email template merged</div>
+        <div class="dg" data-t="3"><span>23:05</span>Pike started quoting from pricing-engine</div>
+        <div class="dg" data-t="4"><span>02:18</span>Kit opened web#488 as a draft</div>
+        <div class="dg" data-t="5"><span>06:30</span>Juno asked Maya about guest sessions</div>
+        <div class="dg" data-t="6"><span>07:55</span>Wren started wallet buttons</div>
+      </div>
+    </div>
+    <div class="replay-visual framed">
+      <div class="graph" id="g-replay"></div>
+      <div class="scrubber">
+        <button class="btn" id="btn-replay" aria-label="Play replay">▶</button>
+        <div class="track-bar" id="track-bar"><i class="fill" id="scrub-fill"></i><span class="tick" style="left:8%"></span><span class="tick" style="left:24%"></span><span class="tick" style="left:34%"></span><span class="tick" style="left:55%"></span><span class="tick" style="left:83%"></span><span class="tick" style="left:94%"></span></div>
+        <span class="clock" id="clock">18:00</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 32. Journey ============ -->
+<section class="slide" data-chapter="Shipping it" aria-label="A feature's journey">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">A feature, start to finish.</h2>
+      <p class="lede">Guest checkout, from a sentence to merged code. Seven moments, three kinds of users, one node that never changes identity.</p>
+    </div>
+    <div class="visual journey">
+      <div class="j-line"></div>
+      <div class="j-step"><span class="j-n">1</span><i data-g="backlog" class="c st-backlog j-g"></i><p class="j-who"><span class="avatar h1c">MC</span>Maya, user</p><p>Types “Let guests check out without an account.” A Backlog node appears under CHK-1, owned by Maya.</p></div>
+      <div class="j-step"><span class="j-n">2</span><i data-g="backlog" class="c st-backlog j-g"></i><p class="j-who"><span class="avatar h2c">TR</span>Theo, developer</p><p>Presses S. Juno proposes four ghosts. Theo keeps three and drops the Redis migration.</p></div>
+      <div class="j-step"><span class="j-n">3</span><i data-g="todo" class="c st-todo j-g"></i><p class="j-who"><span class="avatar h2c">TR</span>Theo</p><p>Assigns Juno, sets autonomy to Ask first, and pulls it into this cycle. Maya stays the owner.</p></div>
+      <div class="j-step"><span class="j-n">4</span><i data-g="progress" class="c st-progress j-g"></i><p class="j-who"><span class="agent">J</span>Juno, agent</p><p>Creates branches in api and web. Asks Maya, the owner, whether guest sessions last 24 hours or 7 days.</p></div>
+      <div class="j-step"><span class="j-n">5</span><i data-g="progress" class="c st-progress j-g"></i><p class="j-who"><span class="avatar h1c">MC</span>Maya</p><p>Answers “7 days” in the conversation, from a phone notification. Juno continues.</p></div>
+      <div class="j-step"><span class="j-n">6</span><i data-g="review" class="c st-review j-g"></i><p class="j-who"><span class="avatar h2c">TR</span>Theo</p><p>Reviews the code and requests one change. Juno fixes it in minutes.</p></div>
+      <div class="j-step"><span class="j-n">7</span><i data-g="done" class="c st-done j-g"></i><p class="j-who"><span class="avatar h1c">MC</span>Maya</p><p>Accepts the outcome against the evidence. The changeset merges and the branch turns jade.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 33. Edge states ============ -->
+<section class="slide" data-chapter="Shipping it" aria-label="Hard moments">
+  <div class="stack">
+    <div class="head-row">
+      <h2 class="h1">Designing the hard moments.</h2>
+      <p class="lede">The empty canvas, the huge one, and the ones where something went wrong. Each ends with a clear next step.</p>
+    </div>
+    <div class="visual edge-states">
+      <div class="es">
+        <div class="es-art empty-art">
+          <div class="first-node"><i data-g="backlog"></i><span>What are we building?</span></div>
+          <div class="es-intent"><span>A marketplace for used climbing gear</span><span class="caret"></span></div>
+        </div>
+        <h3 class="h3">Empty project</h3>
+        <p class="body">The first node is a question. Answer it and an agent drafts the first branches as ghosts.</p>
+      </div>
+      <div class="es">
+        <div class="es-art scale-art">
+          <svg viewBox="0 0 300 170" id="scale-svg"></svg>
+          <div class="seed"><i data-g="done" class="c st-done"></i>CHK-13 and 14 more, all done<span class="small">Expand</span></div>
+        </div>
+        <h3 class="h3">Two thousand issues</h3>
+        <p class="body">Done subtrees fold into a single seed after a week. The outline view takes over when a canvas stops helping.</p>
+      </div>
+      <div class="es">
+        <div class="es-art conflict-art">
+          <div class="mini-node"><span class="agent">W</span>CHK-32</div>
+          <svg viewBox="0 0 120 40"><path d="M5 20C40 20 80 20 115 20" stroke="#ff7a6b" stroke-width="2" fill="none"/></svg>
+          <div class="mini-node"><span class="agent">K</span>CHK-41</div>
+          <p class="es-file mono">OrderSummary.tsx</p>
+        </div>
+        <h3 class="h3">Agents collide</h3>
+        <p class="body">Flagged at the first overlapping edit, not at merge. You pick who goes first. The other agent rebases after.</p>
+      </div>
+      <div class="es">
+        <div class="es-art fail-art">
+          <div class="fail-row"><i data-pr="api#224:failing"></i><span class="small">contract-tests</span></div>
+          <div class="fail-log mono">expected total 104.50, got 104.5000001</div>
+          <div class="fail-row"><span class="agent">P</span><span class="small">Pike retried twice. Now it needs you.</span></div>
+        </div>
+        <h3 class="h3">Checks keep failing</h3>
+        <p class="body">Agents retry twice, then escalate with the failing log attached and a proposed fix to approve.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 34. Accessibility ============ -->
+<section class="slide" data-chapter="Shipping it" aria-label="Accessibility">
+  <div class="split">
+    <div class="text">
+      <h2 class="h1">Readable without color. Usable without a mouse.</h2>
+      <ul class="notes">
+        <li><strong>Shape carries status.</strong> Dashed, empty, half, three-quarters, full. Color is a second channel, never the only one.</li>
+        <li><strong>An outline view mirrors the canvas.</strong> <span class="kbd">⌘\</span> switches to a tree that screen readers announce as a tree, with dependencies read out on focus.</li>
+        <li><strong>Every canvas action has a key</strong>, and focus is always visible on the canvas.</li>
+        <li><strong>Contrast is checked on the canvas ink.</strong> Text meets 4.5:1. Status inks and edges meet 3:1.</li>
+        <li><strong>Reduced motion is respected.</strong> Beacons stop pulsing and become a static ring. Camera moves become cuts.</li>
+      </ul>
+    </div>
+    <div class="a11y-visual">
+      <div class="a11y-pane framed"><div class="graph" id="g-a11y"></div><p class="pane-cap">Canvas</p></div>
+      <div class="a11y-pane framed outline">
+        <p class="pane-cap">Outline <span class="kbd">⌘\</span></p>
+        <ul class="tree" role="tree" id="outline"></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 35. Build order ============ -->
+<section class="slide" data-chapter="Shipping it" aria-label="Build order">
+  <div class="stack">
+    <h2 class="h1">What we build first, and how we’ll know.</h2>
+    <div class="visual plan">
+      <div class="plan-col">
+        <p class="mod-title">Build order</p>
+        <div class="phase"><span class="ph-n">1</span><div><h3 class="h3">Graph</h3><p class="body">Canvas, issues, the five statuses, sub-issues, owners and assignees, GitHub PR linking, one repo per issue.</p></div></div>
+        <div class="phase"><span class="ph-n">2</span><div><h3 class="h3">Agents</h3><p class="body">Configurable agents, the <span class="mono">udax</span> CLI, runs in worktrees, the conversation and activity views, ghosts, needs-you, the autonomy dial.</p></div></div>
+        <div class="phase"><span class="ph-n">3</span><div><h3 class="h3">Many repos</h3><p class="body">Repo tracks, changesets, contract checks, and the code, preview, and terminal views across repos.</p></div></div>
+        <div class="phase"><span class="ph-n">4</span><div><h3 class="h3">Scale</h3><p class="body">Lenses, replay, outline parity, two-way sync with Linear, Jira, and GitHub Issues.</p></div></div>
+      </div>
+      <div class="plan-col">
+        <p class="mod-title">Signals we’ll watch</p>
+        <div class="metric"><h3 class="h3">Intent to merged PR</h3><p class="body">Median time from a new node to its first merge, compared with the team’s current tracker.</p></div>
+        <div class="metric"><h3 class="h3">Reviews decided on evidence</h3><p class="body">Share of approvals made without expanding every diff group, with no rise in reverts.</p></div>
+        <div class="metric"><h3 class="h3">Time to answer an agent</h3><p class="body">How long needs-you beacons wait on owners. If it grows, agents are asking the wrong questions.</p></div>
+      </div>
+      <div class="plan-col">
+        <p class="mod-title">Open questions</p>
+        <div class="question"><p class="body">Past a few hundred visible issues, should big projects open in outline view by default?</p></div>
+        <div class="question"><p class="body">Do we own issues, or sync two-way with the tracker a team already uses?</p></div>
+        <div class="question"><p class="body">How much autonomy should a new team get on day one?</p></div>
+        <div class="question"><p class="body">What counts as evidence for work with no UI, like migrations and infrastructure?</p></div>
+        <div class="question"><p class="body">Should agents be able to create and configure other agents, or only people?</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 36. Close ============ -->
+<section class="slide cover close" data-chapter="Shipping it" aria-label="Close">
+  <div class="graph" id="g-close"></div>
+  <div class="cover-scrim"></div>
+  <div class="cover-text">
+    <p class="wordmark"><span class="wm-glyphs"><i data-g="done"></i><i data-g="done"></i><i data-g="done"></i><i data-g="done"></i><i data-g="done"></i></span>UDAX</p>
+    <h2 class="h-display">Let’s draw the work.</h2>
+    <p class="lede">People decide what should exist. Agents build it in the open. Everyone sees the tree turn green.</p>
+  </div>
+</section>
+
+</div>
+</main>
+
+<div class="nav"><button id="prev" aria-label="Previous slide">‹</button><button id="next" aria-label="Next slide">›</button></div>
+<p class="nav-hint"><span class="kbd">←</span> <span class="kbd">→</span> to move between slides</p>
+
+<script src="graph.js"></script>
+<script src="deck.js"></script>
+</body>
+</html>
