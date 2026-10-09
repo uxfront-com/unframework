@@ -1,16 +1,19 @@
-// The cases that name their own reference target in case.json (ADR-0057), one line per target:
-// `<target> <case directory>…`, relative to the integration package, for the baseline scripts.
-import { relative } from "node:path";
+// `pnpm test:baselines`' pass for the cases that name their own reference target (ADR-0057),
+// run inside the baseline container after browser:vue's: each such target's browser project, on
+// its cases alone, with the caller's arguments (`referencePasses`). It exits with the first
+// failing pass's status.
+import { spawnSync } from "node:child_process";
 
 import { listCases } from "../harness/cases.ts";
-import { ROOT } from "../harness/paths.ts";
+import { referencePasses } from "../harness/references.ts";
 
-const byTarget = new Map<string, string[]>();
-for (const info of listCases()) {
-  const { reference } = info.config;
-  if (reference === undefined) continue;
-  byTarget.set(reference, [...(byTarget.get(reference) ?? []), relative(ROOT, info.dir)]);
+let status = 0;
+for (const { target, args } of referencePasses(listCases(), process.argv.slice(2))) {
+  const run = spawnSync(
+    process.execPath,
+    ["scripts/run.ts", "--project", `browser:${target}`, ...args],
+    { stdio: "inherit" },
+  );
+  if (run.status !== 0 && status === 0) status = run.status ?? 1;
 }
-for (const [target, dirs] of [...byTarget].sort(([a], [b]) => a.localeCompare(b))) {
-  process.stdout.write(`${target} ${dirs.join(" ")}\n`);
-}
+process.exitCode = status;

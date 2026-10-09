@@ -38,8 +38,11 @@ pnpm install --frozen-lockfile --store-dir /pnpm-store --reporter=append-only \
 cd /work/tests/integration
 # One test file at a time: on Apple silicon the container emulates linux/amd64, and a Chromium
 # page per worker exhausts Docker Desktop's default 8 GB mid-run ("The chromium page crashed").
-# A caller's own `--maxWorkers` comes later and wins.
+# A caller's own `--maxWorkers` replaces it: Vitest refuses the option twice.
 WORKERS=(--maxWorkers=1)
+for arg in "$@"; do
+  case "$arg" in --maxWorkers | --maxWorkers=*) WORKERS=() ;; esac
+done
 case "$MODE" in
   update)
     # Only browser:vue writes the baselines; the other browser projects compare against them
@@ -49,34 +52,10 @@ case "$MODE" in
       "${WORKERS[@]}" "$@" \
       || status=$?
     # A case that names its own reference (ADR-0057) takes its baselines from that target's
-    # browser project, run on such cases alone: those among the caller's case filters, if it
-    # gave any, with the caller's options.
-    references="$(node scripts/references.ts)"
-    options=()
-    filters=()
-    for arg in "$@"; do
-      case "$arg" in
-        -*) options+=("$arg") ;;
-        *) filters+=("$arg") ;;
-      esac
-    done
-    while read -r target dirs; do
-      [ -n "$target" ] || continue
-      selected=()
-      for dir in $dirs; do
-        if [ "${#filters[@]}" -eq 0 ]; then
-          selected+=("$dir")
-          continue
-        fi
-        for filter in "${filters[@]}"; do
-          case "$dir" in "$filter"* | */"$filter"*) selected+=("$dir") && break ;; esac
-        done
-      done
-      [ "${#selected[@]}" -gt 0 ] || continue
-      env -u CI UF_UPDATE=1 UF_PIXELS=baseline node scripts/run.ts --project "browser:$target" \
-        "${WORKERS[@]}" ${options[@]+"${options[@]}"} "${selected[@]}" \
-        || status=$?
-    done <<<"$references"
+    # browser project, on its cases alone, with the caller's options and file filters
+    # (`referencePasses` in harness/references.ts).
+    env -u CI UF_UPDATE=1 UF_PIXELS=baseline node scripts/references.ts "${WORKERS[@]}" "$@" \
+      || status=$?
     cd /work
     # Only what changed, so an unchanged baseline keeps its bytes and its mtime on the host.
     find tests/integration/cases -type f \

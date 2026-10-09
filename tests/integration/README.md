@@ -334,7 +334,8 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
 ## Where things live
 
 - `harness/projects.ts`: the Vitest projects (`compile`, `harness`, and `toolchain:`, `ssr:` and
-  `browser:` per target). `UF_TARGETS=vue,react` restricts the targets.
+  `browser:` per target). `UF_TARGETS=vue,react` restricts the targets; a target a case names as
+  its own reference (`"reference"`, ADR-0057) still runs that case alone (`referencesOnly`).
 - `harness/cases.ts`: the corpus, each case's inputs, its main one and its `case.json`;
   `sources.ts`: how a case's inputs join their diagnostics and golden files.
 - `harness/compile.test.ts`, `toolchain.test.ts`, `ssr.test.ts`: the node-side layers;

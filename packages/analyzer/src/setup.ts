@@ -2134,6 +2134,21 @@ function unwatchable(
         confidence: "safe",
         edits: [{ span: span(node), text: binding.name }],
       };
+    } else if (
+      (binding?.kind === "model" || (binding?.kind === "context" && binding.ref)) &&
+      !node.computed &&
+      !node.optional &&
+      node.property.type === "Identifier" &&
+      node.property.name === "value" &&
+      node.object.start === node.start
+    ) {
+      // A model or an injected ref is watched through a getter of its value (ADR-0048).
+      what = `\`${binding.name}.value\` is ${binding.kind === "model" ? "a model's" : "an injected ref's"} value as the setup runs, which nothing can watch`;
+      fix = {
+        title: `Watch \`() => ${binding.name}.value\``,
+        confidence: "safe",
+        edits: [{ span: span(node), text: `() => ${binding.name}.value` }],
+      };
     } else {
       const resolution = render.scopes.resolve(node.object);
       if (

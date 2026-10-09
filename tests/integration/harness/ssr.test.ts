@@ -18,6 +18,7 @@ import { isNormalizeTarget, normalizeHtml } from "@unframework/testing/normalize
 import { beforeAll, describe, inject, it } from "vitest";
 
 import { errorState, listCases } from "./cases.ts";
+import { onlyCases } from "./references.ts";
 import "./context.ts";
 
 const target = inject("target");
@@ -31,7 +32,7 @@ const harness = inject("ufHarness");
 const server = inject("ufServer");
 // A project the run adds as some case's reference renders those cases alone (ADR-0057).
 const only = inject("ufOnly");
-const cases = listCases(harness.casesDir).filter((info) => !only || only.includes(info.id));
+const cases = onlyCases(listCases(harness.casesDir), only);
 const components = import.meta.glob<{ default: unknown }>("../cases/**/*.uf.tsx");
 
 let renderer: Promise<SsrRenderer> | undefined;

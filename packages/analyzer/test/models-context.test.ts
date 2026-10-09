@@ -528,5 +528,9 @@ describe("the first review's findings (UXF-314)", () => {
     expect(codes(diagnostics)).toEqual(["UF2020"]);
     expect(diagnostics[0]!.message).toContain("`value` is a model");
     expect(applyAndRecheck(source, diagnostics)).toContain("watch(() => value.value, () => {});");
+    const read = source.replace("watch(value,", "watch(value.value,");
+    const reported = run(read).diagnostics;
+    expect(codes(reported)).toEqual(["UF2020"]);
+    expect(applyAndRecheck(read, reported)).toContain("watch(() => value.value, () => {});");
   });
 });
