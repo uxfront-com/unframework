@@ -4,7 +4,7 @@ import { inject } from "vue";
 
 const { text } = defineProps<{ text: string }>();
 
-const theme = inject(ThemeKey);
+const theme = inject(ThemeKey, undefined);
 </script>
 
 <template>
