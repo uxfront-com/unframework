@@ -107,12 +107,14 @@ export function shardFilters(
 }
 
 /**
- * The Vitest arguments of a canary's runs: one run for each kind of project, one after the
- * other. A browser project's page must connect within Vitest's `connectTimeout` (60 s), and it
- * connects only once the project's dependencies are optimised, Angular's through its linker.
- * Beside the ssr projects, whose transforms hold a CI runner's CPUs for a minute or more, that
- * missed the deadline: `browser:angular` ran no spec, and the golden guard's canary was not
- * caught there.
+ * The Vitest arguments of a canary's runs, one after the other: its projects in one run, except
+ * each project whose evidence is its specs' load failures, which runs alone. A browser page
+ * must connect within Vitest's `connectTimeout` (60 s), and Angular's connects only once its
+ * dependencies are optimised through the Angular linker, on the main thread every project of a
+ * run shares. When the other projects' specs fail at import, they ask that thread to compile
+ * and judge the corpus for six targets at once: Angular's pages connected after 23 to 29 s on
+ * a laptop, against 1 s alone, and missed the deadline on CI. A page that misses it fails the
+ * run, every browser project's remaining specs with it, and the verdict found them not failed.
  */
 export function canaryRuns(
   canary: Canary,
@@ -120,13 +122,19 @@ export function canaryRuns(
   cases: readonly CanaryCase[],
   shard: CanaryShard | undefined,
 ): string[][] {
-  return canaryProjects(canary).map((kind) => [
-    // A canary of some targets runs their projects only: the others have nothing corrupted.
-    ...(canary.targets && kind !== "compile" && kind !== "harness"
-      ? canary.targets
-          .filter((target) => targets.includes(target))
-          .flatMap((target) => ["--project", `${kind}:${target}`])
-      : ["--project", PROJECTS[kind]]),
+  // A canary of some targets runs their projects only: the others have nothing corrupted.
+  const corrupted = (canary.targets ?? targets).filter((target) => targets.includes(target));
+  const projectsOf = (kind: ProjectKind) =>
+    canary.targets && kind !== "compile" && kind !== "harness"
+      ? corrupted.map((target) => `${kind}:${target}`)
+      : [PROJECTS[kind]];
+  const loads = canaryProjects(canary).filter((kind) => kind in (canary.loadEvidence ?? {}));
+  const together = canaryProjects(canary)
+    .filter((kind) => !loads.includes(kind))
+    .flatMap(projectsOf);
+  const alone = loads.flatMap((kind) => corrupted.map((target) => [`${kind}:${target}`]));
+  return [...(together.length ? [together] : []), ...alone].map((projects) => [
+    ...projects.flatMap((project) => ["--project", project]),
     ...shardFilters(cases, shard),
   ]);
 }

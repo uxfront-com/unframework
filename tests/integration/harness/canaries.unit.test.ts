@@ -328,16 +328,25 @@ describe("canaries", () => {
       expect(info.spec ?? "").not.toContain("harness/");
   });
 
-  it("run each kind of project in a Vitest run of its own, so no browser session starts beside the ssr projects", () => {
-    const cases = shardCases(listCases().slice(0, 4).map(canaryCase), { index: 2, count: 2 });
-    const filters = shardFilters(cases, { index: 2, count: 2 });
-    for (const id of ["L6-golden-guard", "L13-console-warn"]) {
-      expect(canaryRuns(findCanary(id), TARGET_NAMES, cases, { index: 2, count: 2 }), id).toEqual([
-        ["--project", "ssr:*", ...filters],
-        ["--project", "browser:*", ...filters],
-      ]);
-    }
-    // A canary of some targets runs their projects only.
+  it("run each project whose specs fail to load alone, so its page connects before Vitest's deadline", () => {
+    const shard = { index: 2, count: 2 };
+    const cases = shardCases(listCases().slice(0, 4).map(canaryCase), shard);
+    const filters = shardFilters(cases, shard);
+    expect(canaryRuns(findCanary("L6-golden-guard"), TARGET_NAMES, cases, shard)).toEqual([
+      ["--project", "ssr:*", ...filters],
+      ...TARGET_NAMES.map((target) => ["--project", `browser:${target}`, ...filters]),
+    ]);
+    expect(canaryRuns(findCanary("L6-golden-guard"), ["vue", "angular"], cases, undefined)).toEqual(
+      [
+        ["--project", "ssr:*"],
+        ["--project", "browser:vue"],
+        ["--project", "browser:angular"],
+      ],
+    );
+    // The other canaries run their projects together, and a canary of some targets theirs only.
+    expect(canaryRuns(findCanary("L13-console-warn"), TARGET_NAMES, cases, shard)).toEqual([
+      ["--project", "ssr:*", "--project", "browser:*", ...filters],
+    ]);
     expect(
       canaryRuns(findCanary("L13-qwik-handler-throws"), TARGET_NAMES, cases, undefined),
     ).toEqual([["--project", "browser:qwik"]]);
