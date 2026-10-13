@@ -1,9 +1,0 @@
-error[UF3039]: Badge's `tone` takes `"info" | "warning"`, and "warn" is none of them. Did you mean "warning"?
-  --> diagnostics/literal-outside-union/Status.uf.tsx:10:31
-   |
-10 |       Disk space: <Badge tone="warn" />
-   |                               ^^^^^^
-   |
-   = help: Pass one of the literals of `tone`, or add "warn" to its type in Badge.
-   = fix (likely): Write `"warning"`
-   = see: https://unframework.dev/diagnostics/UF3039
