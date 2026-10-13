@@ -1,7 +1,9 @@
 // `pnpm test:canaries` (plan §7.7): runs each canary against the projects that verify its layer,
 // with UF_CANARY=<id>, and fails unless the run failed and the layer caught the canary on every
 // case and target it corrupts, in every sub-check the canary names (harness/canary-verdict.ts).
-// Each run's parity matrix, the specs it could not load and its log go to `.canary/<id>/`.
+// Each run's parity matrix, the specs it could not load and its log go to `.canary/<id>/`; a
+// canary of several Vitest runs keeps each run's matrix and load failures in
+// `.canary/<id>/<run>/`, and their logs in one, each after a header line.
 //
 //   pnpm test:canaries                    every canary
 //   pnpm test:canaries L7-wrong-text …    some of them
@@ -9,8 +11,8 @@
 //                                         layer or one canary)
 //   pnpm test:canaries L8 --shard 1/2     a part of the cases, as CI runs a browser canary
 //                                         (ADR-0052)
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { basename, join, relative } from "node:path";
 
 import { LAYERS } from "@unframework/testing/node";
 import type { LayerName, PartialMatrix, ProjectKind } from "@unframework/testing/node";
@@ -115,13 +117,16 @@ export function shardFilters(
  * and judge the corpus for six targets at once: Angular's pages connected after 23 to 29 s on
  * a laptop, against 1 s alone, and missed the deadline on CI. A page that misses it fails the
  * run, every browser project's remaining specs with it, and the verdict found them not failed.
+ * Alone, a page still waits for that optimisation, so a machine loaded as a whole can still
+ * delay it past the deadline: only optimising off the main thread would remove the wait.
+ * Each run is named for its projects (`ssr`, `browser-angular`).
  */
 export function canaryRuns(
   canary: Canary,
   targets: readonly string[],
   cases: readonly CanaryCase[],
   shard: CanaryShard | undefined,
-): string[][] {
+): { name: string; args: string[] }[] {
   // A canary of some targets runs their projects only: the others have nothing corrupted.
   const corrupted = (canary.targets ?? targets).filter((target) => targets.includes(target));
   const projectsOf = (kind: ProjectKind) =>
@@ -133,10 +138,10 @@ export function canaryRuns(
     .filter((kind) => !loads.includes(kind))
     .flatMap(projectsOf);
   const alone = loads.flatMap((kind) => corrupted.map((target) => [`${kind}:${target}`]));
-  return [...(together.length ? [together] : []), ...alone].map((projects) => [
-    ...projects.flatMap((project) => ["--project", project]),
-    ...shardFilters(cases, shard),
-  ]);
+  return [...(together.length ? [together] : []), ...alone].map((projects) => ({
+    name: projects.map((project) => project.replace(/:\*$/, "").replace(":", "-")).join("+"),
+    args: [...projects.flatMap((project) => ["--project", project]), ...shardFilters(cases, shard)],
+  }));
 }
 
 /**
@@ -171,19 +176,27 @@ function runCanary(
   const matrixFile = join(directory, "parity-matrix.json");
   const failuresFile = join(directory, LOAD_FAILURES);
   const started = performance.now();
-  const runs = canaryRuns(canary, targets, cases, shard).map((args) => {
-    // Each run writes both files afresh: one that writes neither is not read as the last one.
-    rmSync(matrixFile, { force: true });
-    rmSync(failuresFile, { force: true });
+  const vitestRuns = canaryRuns(canary, targets, cases, shard);
+  const several = vitestRuns.length > 1;
+  const runs = vitestRuns.map(({ name, args }) => {
     const { status, stdout } = runVitest(args, env, "pipe");
     const matrix = existsSync(matrixFile)
       ? (JSON.parse(readFileSync(matrixFile, "utf8")) as PartialMatrix)
       : undefined;
+    const loadFailures = readLoadFailures(failuresFile);
+    // Each run's files are kept apart, where a failed run can be read, so the next run writes
+    // both afresh and one that writes neither is not read as the last one.
+    if (several) {
+      mkdirSync(join(directory, name), { recursive: true });
+      for (const file of [matrixFile, failuresFile].filter((path) => existsSync(path))) {
+        renameSync(file, join(directory, name, basename(file)));
+      }
+    }
     return {
       status,
-      stdout,
+      stdout: several ? `[uf:canaries] ${name}: vitest run ${args.join(" ")}\n${stdout}` : stdout,
       projects: matrix?.byProject,
-      loadFailures: readLoadFailures(failuresFile),
+      loadFailures,
     };
   });
   const seconds = (performance.now() - started) / 1000;
