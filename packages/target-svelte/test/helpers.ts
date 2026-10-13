@@ -49,18 +49,35 @@ function hasErrors(caseDir: string): boolean {
   );
 }
 
+/** An IR snapshot. */
+const readModule = (file: string) => JSON.parse(readFileSync(file, "utf8")) as UfModule;
+
 /**
- * Each corpus case's IR snapshot, with the directory its golden outputs live in: the cases the
- * compiler emits a Svelte output for.
+ * Each corpus case's IR snapshots, with the directory its golden outputs live in: the cases the
+ * compiler emits a Svelte output for. `module` is the main source's; `modules` holds every
+ * source's (ADR-0057), the main one first, whose outputs import each other.
  */
-export function corpus(): { name: string; module: UfModule; outputDir: string }[] {
+export function corpus(): {
+  name: string;
+  module: UfModule;
+  modules: UfModule[];
+  outputDir: string;
+}[] {
   return filesUnder(casesDir)
     .filter((path) => path.endsWith("/__output__/ir.json") && !hasErrors(join(path, "../..")))
-    .map((path) => ({
-      name: path.slice(casesDir.length + 1, -"/__output__/ir.json".length),
-      module: JSON.parse(readFileSync(path, "utf8")) as UfModule,
-      outputDir: join(path, "../svelte"),
-    }));
+    .map((path) => {
+      const module = readModule(path);
+      const others = readdirSync(join(path, ".."))
+        .filter((name) => /^ir\.[^.]+\.json$/.test(name))
+        .toSorted()
+        .map((name) => readModule(join(path, "..", name)));
+      return {
+        name: path.slice(casesDir.length + 1, -"/__output__/ir.json".length),
+        module,
+        modules: [module, ...others],
+        outputDir: join(path, "../svelte"),
+      };
+    });
 }
 
 /** What this target emits for a module, formatted as the compiler formats it. */

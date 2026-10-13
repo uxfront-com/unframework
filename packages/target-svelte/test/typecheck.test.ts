@@ -49,11 +49,15 @@ describe("svelte typecheck", () => {
   it("checks the corpus and an injected error in one run, by file", checker, async () => {
     const golden = goldenFiles();
     expect(golden.length).toBeGreaterThan(0);
-    const emitted: Record<string, string> = {};
-    for (const { module } of corpus()) {
-      for (const file of await emitFormatted(module)) emitted[file.path] = file.contents;
+    // Each case in a directory of its own, where its sources' outputs import each other.
+    const fresh: string[] = [];
+    for (const { modules } of corpus()) {
+      const emitted: Record<string, string> = {};
+      for (const module of modules) {
+        for (const file of await emitFormatted(module)) emitted[file.path] = file.contents;
+      }
+      fresh.push(...Object.values(writeScratch(emitted)));
     }
-    const fresh = Object.values(writeScratch(emitted));
     const { "Broken.svelte": broken } = writeScratch({
       "Broken.svelte": [
         "<svelte:options runes={true} />",

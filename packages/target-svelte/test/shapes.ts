@@ -62,10 +62,10 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
     "  return <h2>{$.title}</h2>;",
     "}",
   ].join("\n"),
-  /** Props no expression reads. */
+  /** Props no expression reads, under a fragment root, which takes no fallthrough (ADR-0054). */
   unread: [
     "export default function Hi({ label }: { label?: string }) {",
-    "  return <p>Hi</p>;",
+    "  return <><p>Hi</p></>;",
     "}",
   ].join("\n"),
   /** Defaults whose literals run over several lines. */
@@ -807,13 +807,18 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
     "  );",
     "}",
   ].join("\n"),
-  /** A handler with a cast in a component without a script, which Svelte must parse as TypeScript. */
+  /**
+   * A handler with a cast in a component without a script, which Svelte must parse as TypeScript:
+   * a fragment root, which takes no fallthrough, so the component declares no props.
+   */
   typedMarkup: [
     "export default function Plain() {",
     "  return (",
-    '    <button type="button" value="a" onClick={(event) => console.log((event.currentTarget as HTMLButtonElement).value)}>',
-    "      Log",
-    "    </button>",
+    "    <>",
+    '      <button type="button" value="a" onClick={(event) => console.log((event.currentTarget as HTMLButtonElement).value)}>',
+    "        Log",
+    "      </button>",
+    "    </>",
     "  );",
     "}",
   ].join("\n"),

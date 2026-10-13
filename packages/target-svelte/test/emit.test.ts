@@ -58,7 +58,7 @@ const svelteFile = (...blocks: string[]) => `${[OPTIONS, ...blocks].join("\n\n")
 const script = (...lines: string[]) => `<script lang="ts">\n${lines.join("\n")}\n</script>`;
 
 describe("svelte target", () => {
-  it("declares every capability, natively but for once listeners, model modifiers and reactive context", () => {
+  it("declares every capability, natively but for once listeners, fallthrough, model modifiers and reactive context", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
       "attribute-spread",
       "bound-attribute",
@@ -104,6 +104,7 @@ describe("svelte target", () => {
     ]);
     const helpers: Readonly<Record<string, string>> = {
       "event-once": "once",
+      fallthrough: "mergeStyle",
       "model-modifiers": "modelText",
       "reactive-context": "refObject",
     };
@@ -123,7 +124,18 @@ describe("svelte target", () => {
         contents: [
           "<svelte:options runes={true} preserveWhitespace={false} />",
           "",
-          '<p class="greeting">Hello, world!</p>',
+          '<script lang="ts">',
+          '  import type { ClassValue } from "svelte/elements";',
+          "",
+          "  type Props = {",
+          "    class?: ClassValue;",
+          "    style?: string;",
+          "  };",
+          "",
+          "  let { class: className, style }: Props = $props();",
+          "</script>",
+          "",
+          '<p class={["greeting", className]} {style}>Hello, world!</p>',
           "",
         ].join("\n"),
       },
@@ -143,8 +155,8 @@ describe("svelte target", () => {
   // Without the declaration, Svelte compiles a component that uses no runes in legacy mode.
   // One test per case, so no test's time grows with the corpus. As one test over the cases M2
   // left, it took 0.6 s alone on a laptop and overran Vitest's 5 s default in CI's Unit tests.
-  it.each(cases)("compiles $name in runes mode", async ({ name, module }) => {
-    for (const file of await emitFormatted(module)) {
+  it.each(cases)("compiles $name in runes mode", async ({ name, modules }) => {
+    for (const file of (await Promise.all(modules.map(emitFormatted))).flat()) {
       const { metadata, js } = compile(file.contents, { filename: file.path });
       expect(metadata.runes, name).toBe(true);
       expect(js.code, name).not.toContain("svelte/internal/flags/legacy");
@@ -154,7 +166,7 @@ describe("svelte target", () => {
   it("adds no text before the markup", async () => {
     const [file] = emit().files;
     const { js } = compile(file!.contents, { filename: file!.path, generate: "server" });
-    expect(js.code).toContain('$$renderer.push(`<p class="greeting">Hello, world!</p>`)');
+    expect(js.code).toMatch(/\$\$renderer\.push\(`<p\b/);
   });
 });
 
@@ -165,6 +177,8 @@ describe("svelte props", () => {
     expect((await emitSource(SHAPES.destructured)).contents).toBe(
       svelteFile(
         script(
+          '  import type { ClassValue } from "svelte/elements";',
+          "",
           '  type Tone = "info" | "warn";',
           "",
           "  export interface BadgeProps {",
@@ -174,9 +188,14 @@ describe("svelte props", () => {
           "    hidden?: boolean;",
           "  }",
           "",
-          '  let { tone = "info", label }: BadgeProps = $props();',
+          "  type Props = BadgeProps & {",
+          "    class?: ClassValue;",
+          "    style?: string;",
+          "  };",
+          "",
+          '  let { tone = "info", label, class: className, style }: Props = $props();',
         ),
-        "<p class={tone}>{label}</p>",
+        "<p class={[tone, className]} {style}>{label}</p>",
       ),
     );
   });
@@ -185,14 +204,21 @@ describe("svelte props", () => {
     expect((await emitSource(SHAPES.objectForm)).contents).toBe(
       svelteFile(
         script(
+          '  import type { ClassValue } from "svelte/elements";',
+          "",
           "  interface CardProps {",
           "    title: string;",
           "    subtitle?: string;",
           "  }",
           "",
-          "  let p: CardProps = $props();",
+          "  type Props = CardProps & {",
+          "    class?: ClassValue;",
+          "    style?: string;",
+          "  };",
+          "",
+          "  let { class: className, style, ...p }: Props = $props();",
         ),
-        "<h2 title={p.subtitle}>{p.title}</h2>",
+        "<h2 title={p.subtitle} class={className} {style}>{p.title}</h2>",
       ),
     );
   });
@@ -200,7 +226,20 @@ describe("svelte props", () => {
   // Svelte reserves the `$` prefix: `let $: P = $props()` is `dollar_prefix_invalid`.
   it("names a props object `props` where Svelte reserves the source's name", async () => {
     expect((await emitSource(SHAPES.reservedName)).contents).toBe(
-      svelteFile(script("  let props: { title: string } = $props();"), "<h2>{props.title}</h2>"),
+      svelteFile(
+        script(
+          '  import type { ClassValue } from "svelte/elements";',
+          "",
+          "  type Props = {",
+          "    title: string;",
+          "    class?: ClassValue;",
+          "    style?: string;",
+          "  };",
+          "",
+          "  let { class: className, style, ...props }: Props = $props();",
+        ),
+        "<h2 class={className} {style}>{props.title}</h2>",
+      ),
     );
   });
 
@@ -219,7 +258,8 @@ describe("svelte props", () => {
     ["_props", "_props"],
     ["_", "__"],
   ])("names an object form %s that nothing reads %s", async (name, declared) => {
-    const source = `export default function Hi(${name}: { label?: string }) {\n  return <p>Hi</p>;\n}`;
+    // A fragment root takes no fallthrough (ADR-0054), so nothing else is bound.
+    const source = `export default function Hi(${name}: { label?: string }) {\n  return <><p>Hi</p></>;\n}`;
     expect((await emitSource(source)).contents).toBe(
       svelteFile(script(`  let ${declared}: { label?: string } = $props();`), "<p>Hi</p>"),
     );
@@ -229,11 +269,19 @@ describe("svelte props", () => {
     expect((await emitSource(SHAPES.multiline)).contents).toBe(
       svelteFile(
         script(
+          '  import type { ClassValue } from "svelte/elements";',
+          "",
+          "  type Props = {",
+          "    text?: string; note?: string;",
+          "    class?: ClassValue;",
+          "    style?: string;",
+          "  };",
+          "",
           "  let { text = `roses",
           '  are red`, note = "a\\',
-          '  b" }: { text?: string; note?: string } = $props();',
+          '  b", class: className, style }: Props = $props();',
         ),
-        "<pre>{text}{note}</pre>",
+        "<pre class={className} {style}>{text}{note}</pre>",
       ),
     );
   });
@@ -263,7 +311,7 @@ describe("svelte markup", () => {
   it("prints a keyed each block, without the index no expression reads, and an if block", async () => {
     expect(await markupOf(SHAPES.lists)).toBe(
       [
-        "<ul>",
+        "<ul class={className} {style}>",
         "  {#each items as item (item.id)}",
         "    <li>{item.name}</li>",
         "  {/each}{#if items.length === 0}",
@@ -280,7 +328,7 @@ describe("svelte markup", () => {
   it("prints bindings, one class, style directives and spreads key by key", async () => {
     expect(await markupOf(SHAPES.bindings)).toBe(
       [
-        "<p>",
+        "<p class={className} {style}>",
         "  <a",
         "    {href}",
         '    class={["link", { active }, tone, attrs.class]}',
@@ -308,7 +356,7 @@ describe("svelte markup", () => {
   it("writes an attribute Svelte's types lack on its element as an object spread", async () => {
     expect(await markupOf(SHAPES.untyped)).toBe(
       [
-        '<form aria-label="Note">',
+        '<form aria-label="Note" class={className} {style}>',
         '  <p {...{ autocorrect: "off" }}>a</p',
         "  ><input autocorrect={mode}",
         "  /><div {...{ autocorrect: hints.autocorrect }}>b</div>",
@@ -325,7 +373,7 @@ describe("svelte markup", () => {
   it("writes static text Svelte's server would escape twice or fold as expressions", async () => {
     expect(await markupOf(SHAPES.runtimeText)).toBe(
       [
-        "<div>",
+        "<div class={className} {style}>",
         "  <blockquote",
         '    style:font-family={"\\"Segoe UI\\", serif"}',
         `    style:content={"'a  b'"}`,
@@ -372,7 +420,7 @@ describe("svelte markup", () => {
     expect(contents).toBe(readFileSync(join(packageDir, "test/fixtures/Steps.svelte"), "utf8"));
     expect(await markupOf(SHAPES.assignedValues)).toBe(
       [
-        "<form>",
+        "<form class={className} {style}>",
         "  <ol>",
         "    {#each steps as step, index (step)}",
         "      <li {...{ value: steps.length - 1 - index }}>{step}</li>",
@@ -559,13 +607,21 @@ describe("svelte setup", () => {
     const code = await scriptOf(SHAPES.watchers);
     expect(code).toContain("onresize?: (value: number, previous?: number) => void;");
     expect(code).toContain(
-      "let { size, onturn, onleft, onspan, onrange, onresize }: Props = $props();",
+      "let { size, onturn, onleft, onspan, onrange, onresize, class: className, style }: Props = $props();",
     );
   });
 
   it("calls a callback prop through the props object in the object form", async () => {
     expect(await markupOf(SHAPES.objectEvents)).toBe(
-      '<button type="button" onclick={() => props.onremove?.(props.label)}>{props.label}</button>\n',
+      [
+        "<button",
+        '  type="button"',
+        "  onclick={() => props.onremove?.(props.label)}",
+        "  class={className}",
+        "  {style}",
+        ">{props.label}</button>",
+        "",
+      ].join("\n"),
     );
   });
 
@@ -738,5 +794,122 @@ describe("svelte setup", () => {
   it("declares an empty TypeScript script for a handler's cast in a component without one", async () => {
     const { contents } = await emitSource(SHAPES.typedMarkup);
     expect(contents).toContain('<script lang="ts"></script>');
+  });
+});
+
+/** What the target emits for a corpus case's sources, by file name. */
+async function caseOutputs(name: string): Promise<Record<string, string>> {
+  const found = corpus().find((each) => each.name === name);
+  if (!found) throw new Error(`no corpus case ${name}`);
+  const files = (await Promise.all(found.modules.map(emitFormatted))).flat();
+  return Object.fromEntries(files.map((file) => [file.path, file.contents]));
+}
+
+// ADR-0053 to ADR-0055: composition, from the corpus's IR, whose parents read their children's
+// API through the resolver.
+describe("svelte composition", () => {
+  it("imports a child's file and passes it props and callback props", async () => {
+    const { "Form.svelte": form } = await caseOutputs("components/props-and-events");
+    expect(form).toContain('import Field from "./Field.svelte";');
+    expect(form).toContain('<Field label="Street" onclear={clear}');
+    expect(form).toContain(
+      '<Field label={city} tone="warn" onclear={(label) => clear(label.toUpperCase())}',
+    );
+  });
+
+  it("passes slots as snippets, renders them with their fallback, and tests their presence", async () => {
+    const {
+      "Box.svelte": box,
+      "Frame.svelte": frame,
+      "Gallery.svelte": gallery,
+    } = await caseOutputs("slots/forwarding");
+    expect(box).toContain("title?: Snippet;");
+    expect(box).toContain("{#if title}{@render title()}{:else}Untitled{/if}");
+    // Forwarding passes the parent's own snippets on, so the child sees what the parent got.
+    expect(frame).toContain("<Box {children} {title} />");
+    expect(gallery).toContain("{#snippet title()}Sunset{/snippet}");
+    const { "Card.svelte": card } = await caseOutputs("slots/presence");
+    expect(card).toContain("{#if title}");
+  });
+
+  it("names a slot's snippet apart from a source name its prop would capture", async () => {
+    const { "List.svelte": list } = await caseOutputs("slots/scoped");
+    expect(list).toContain("item: itemSnippet,");
+    expect(list).toContain("{@render itemSnippet?.({ item, index })}");
+  });
+
+  it("writes the default slot's content between the tags beside named snippets", async () => {
+    const { "Post.svelte": post } = await caseOutputs("slots/named");
+    expect(post).not.toContain("{#snippet children()}");
+    expect(post).toContain("{#snippet header()}");
+  });
+
+  it("declares a model $bindable and binds it from a parent", async () => {
+    const { "Stepper.svelte": stepper, "Order.svelte": order } =
+      await caseOutputs("models/component");
+    expect(stepper).toContain("value = $bindable(0)");
+    expect(stepper).toContain("value?: number;");
+    expect(order).toContain("bind:value={cups}");
+  });
+
+  it("binds native controls, and modified or number fields through modelText", async () => {
+    expect((await caseOutputs("models/checkbox-group"))["Drinks.svelte"]).toContain(
+      "bind:group={drinks}",
+    );
+    const profile = (await caseOutputs("models/modifiers"))["Profile.svelte"]!;
+    expect(profile).toContain("function modelText<T>(");
+    expect(profile).toContain(
+      "{@attach modelText(() => name, (value) => (name = value), { trim: true })}",
+    );
+    expect(profile).toContain("value={untrack(() => name)}");
+  });
+
+  it("declares a module's keys in <script module>, provides and injects them", async () => {
+    const outputs = await caseOutputs("context/static");
+    expect(outputs["ThemeProvider.svelte"]).toContain('<script lang="ts" module>');
+    expect(outputs["ThemeProvider.svelte"]).toContain(
+      'export const ThemeKey = Symbol("uf.theme");',
+    );
+    expect(outputs["ThemeProvider.svelte"]).toContain("setContext(ThemeKey, {");
+    expect(outputs["Badge.svelte"]).toContain(
+      'import { type Theme, ThemeKey } from "./ThemeProvider.svelte";',
+    );
+    expect(outputs["Badge.svelte"]).toContain("getContext<Theme | undefined>(ThemeKey)");
+  });
+
+  it("provides a ref through refObject, and falls back to one", async () => {
+    const { "Counter.svelte": counter, "Display.svelte": display } =
+      await caseOutputs("context/reactive");
+    expect(counter).toMatch(/setContext\(\s*CountKey,\s*refObject\(\(\) => count\),?\s*\);/);
+    expect(display).toMatch(
+      /hasContext\(CountKey\)\s*\? getContext<\{ readonly value: number \}>\(CountKey\)\s*: refObject\(\(\) => none\)/,
+    );
+  });
+
+  it("exports the functions defineExpose exposes", async () => {
+    const { "Counter.svelte": counter } = await caseOutputs("expose/several");
+    expect(counter).toContain("export function increment()");
+    expect(counter).toContain("export const reset = () =>");
+  });
+
+  it("renders <component is> over tags as svelte:element, over components as a $derived", async () => {
+    expect((await caseOutputs("dynamic/tags"))["Section.svelte"]).toContain(
+      '<svelte:element this={nested ? "h3" : "h2"}',
+    );
+    const tag = (await caseOutputs("dynamic/components"))["Tag.svelte"]!;
+    expect(tag).toContain("const Component = $derived(compact ? Chip : Card);");
+    expect(tag).toContain("<Component {label}");
+  });
+
+  it("merges a consumer's class and style into the root, or passes them on to a root component", async () => {
+    const { "Tag.svelte": tag } = await caseOutputs("fallthrough/class-and-style");
+    expect(tag).toContain('class={["tag", className]}');
+    expect(tag).toContain(
+      'style={mergeStyle({ padding: "2px 6px", color: "rgb(30, 30, 30)" }, style)}',
+    );
+    const { "Primary.svelte": primary } = await caseOutputs("fallthrough/to-component-root");
+    expect(primary).toContain('class={["primary", className]}');
+    const { "Field.svelte": field } = await caseOutputs("fallthrough/inherit-attrs-false");
+    expect(field).not.toContain("className");
   });
 });

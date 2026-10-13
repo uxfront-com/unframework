@@ -1,15 +1,21 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  let { steps, score, label, mode }: {
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = {
     steps: string[];
     score: number;
     label: string;
     mode: string;
-  } = $props();
+    class?: ClassValue;
+    style?: string;
+  };
+
+  let { steps, score, label, mode, class: className, style }: Props = $props();
 </script>
 
-<form>
+<form class={className} {style}>
   <ol>
     {#each steps as step, index (step)}
       <li {...{ value: steps.length - 1 - index }}>{step}</li>
