@@ -9,7 +9,7 @@ export interface AuthorBylineProps {
 
 @Component({
   selector: "uf-author-byline",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let author = this.author();
@@ -18,6 +18,8 @@ export interface AuthorBylineProps {
     @let affiliation = this.affiliation();
     <p
       class="byline"
+      [class]="this.class()"
+      [style]="this.style()"
     >By {{ author }}, {{ affiliation ?? "independent" }}<br /><time
       [attr.datetime]="published"
     >{{ published }}</time> · {{ minutes }} min read</p>
@@ -28,4 +30,6 @@ export default class AuthorByline {
   readonly published = input.required<string>();
   readonly minutes = input.required<number>();
   readonly affiliation = input<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

@@ -12,7 +12,7 @@ export interface NoticeProps {
 
 @Component({
   selector: "uf-notice",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let message = this.message();
@@ -22,7 +22,13 @@ export interface NoticeProps {
     @let expanded = this.expanded();
     @let tags = this.tags();
     @let author = this.author();
-    <section class="notice" [attr.aria-label]="title" [attr.data-tone]="tone">
+    <section
+      class="notice"
+      [attr.aria-label]="title"
+      [attr.data-tone]="tone"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <h2>{{ title }}</h2>
       <p>{{ message }}</p>
       <details [attr.open]="expanded ? '' : null">
@@ -53,4 +59,6 @@ export default class Notice {
     { name: "System" },
     { transform: (value) => (value === undefined ? { name: "System" } : value) },
   );
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

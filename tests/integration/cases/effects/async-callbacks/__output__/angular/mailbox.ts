@@ -23,13 +23,13 @@ export interface MailboxProps {
 
 @Component({
   selector: "uf-mailbox",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let name = this.name();
     @let status = this.status();
     @let summary = this.summary();
-    <section class="mailbox" aria-label="Mailbox">
+    <section class="mailbox" aria-label="Mailbox" [class]="this.class()" [style]="this.style()">
       <h2>{{ name }}</h2>
       <p role="status">{{ summary }}</p>
       <p>Status: {{ status }}</p>
@@ -42,8 +42,10 @@ export interface MailboxProps {
 })
 export default class Mailbox implements OnInit, OnDestroy {
   readonly folder = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly loaded = output<[name: string, unread: number]>();
-  readonly progress = output<[status: string, attempts: number]>();
+  readonly ufProgress = output<[status: string, attempts: number]>();
   readonly seen = output<string>();
   readonly noted = output<string>();
   private readonly injector = inject(Injector);
@@ -103,7 +105,7 @@ export default class Mailbox implements OnInit, OnDestroy {
         const [nextStatus, nextAttempts] = current;
         lastValues_1 = current;
         untracked(() => {
-          this.progress.emit([nextStatus, nextAttempts]);
+          this.ufProgress.emit([nextStatus, nextAttempts]);
         });
       },
       { injector: this.injector },

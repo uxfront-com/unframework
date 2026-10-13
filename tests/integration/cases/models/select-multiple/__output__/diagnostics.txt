@@ -1,11 +1,3 @@
-error[UF1002] (angular): The angular target does not emit two-way-binding yet: composition lands in M3.
- --> models/select-multiple/ToppingPicker.uf.tsx:9:26
-  |
-9 |         <select multiple v-model={toppings.value}>
-  |                          ^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (astro): The astro target does not emit two-way-binding yet: composition lands in M3.
  --> models/select-multiple/ToppingPicker.uf.tsx:9:26
   |

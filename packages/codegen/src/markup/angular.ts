@@ -4,7 +4,9 @@
 // refs. Angular's expression language is not JavaScript: its lexer reads fewer escapes and no
 // comments, so literals are re-printed from their values and comments dropped, token by token.
 import { angularLowercases, angularMisreads, BINDABLE_BOOLEAN_ATTRIBUTES } from "@unframework/ir";
+import type { Attribute, ComponentAttribute } from "@unframework/ir";
 
+import { kebabCase } from "../names.ts";
 import { parseCodeSource, parseExpression } from "../parse.ts";
 import type { CodeKind } from "../parse.ts";
 import {
@@ -31,6 +33,11 @@ import type {
   ClassPart,
   LiteralRegion,
   MarkupDialect,
+  MarkupPiece,
+  PrintedAttribute,
+  PrintedFill,
+  PrintedModel,
+  PrintedSlotOutlet,
   StylePart,
   TextPosition,
 } from "./printer.ts";
@@ -443,7 +450,8 @@ export const angularDialect: MarkupDialect = {
     namespace === "html" && BINDABLE_BOOLEAN_ATTRIBUTES.has(name)
       ? `[attr.${name}]="${angularCode(`${test(code)} ? "" : null`, "attribute")}"`
       : `[attr.${name}]="${angularCode(code, "attribute")}"`,
-  classAttribute: (written) => {
+  classAttribute: (written, { element }) => {
+    if (isComponentTag(element.tag)) return [componentClass(written)];
     // A static name holding `{{` has no static spelling (it would interpolate): it is bound as a
     // string, which a class binding takes as written (no security context).
     const parts = written.map((part): ClassPart =>
@@ -477,7 +485,11 @@ export const angularDialect: MarkupDialect = {
       { name: "class", text: `[class]="${angularCode(expression, "attribute")}"` },
     ];
   },
-  styleAttribute: (written) => {
+  styleAttribute: (written, { element }) => {
+    // A component's style, or a root's own merged with the one it passes on, is one map.
+    if (isComponentTag(element.tag) || written.some((part) => part.property === "")) {
+      return [componentStyle(written)];
+    }
     readsEveryDeclaration(written);
     // A static value holding `{{` is bound as a string, as a class name is: Angular does not
     // sanitise style bindings.
@@ -553,7 +565,311 @@ export const angularDialect: MarkupDialect = {
     return [{ name, text: `${name}="${angularCode(statement, "event")}"` }];
   },
   refAttribute: ({ name }) => [{ name: `#${name}`, text: `#${name}` }],
+  // A component's element is its selector (ADR-0010), and every prop a binding, so the host keeps
+  // no attribute and is unwrapped (ADR-0056): `[label]="'Name'"` for a static one.
+  componentTag: (name) => `uf-${kebabCase(name)}`,
+  propAttribute: ({ name, code }) => [
+    { name: `[${name}]`, text: `[${name}]="${angularCode(code, "attribute")}"` },
+  ],
+  // An output's listener: a handler the source names takes the payload (`(clear)="clear($event)"`).
+  // An inline handler is no template statement, so the Angular target writes the listener itself.
+  componentEvent: ({ attribute, handler }) => {
+    if (attribute.handler.kind !== "Function") {
+      throw new Error(
+        `An Angular template cannot run \`${handler}\` as a listener: the Angular target supplies a template statement.`,
+      );
+    }
+    const name = `(${attribute.event})`;
+    return [{ name, text: `${name}="${angularCode(`${handler}($event)`, "event")}"` }];
+  },
+  fills: (fills, { tag }) => fills.map((each) => fillPiece(each, tag)),
+  slotOutlet: (outlet) => [slotOutletPiece(outlet)],
+  // A native control's `v-model` with the value as the state's writable signal (`this.name`):
+  // the control shows the signal's value, and its event sets it. Modifiers, a number cast and an
+  // array need helpers the component declares, which the Angular target writes itself.
+  modelAttribute: (model) => modelAttributes(model),
+  // `[(value)]` on a writable signal (`this.cups`): Angular's two-way binding sets the child's
+  // `model()` and writes the signal back (ADR-0056).
+  modelBinding: ({ attribute, value }) => {
+    const name = `[(${attribute.model})]`;
+    return [{ name, text: `${name}="${angularCode(value, "attribute")}"` }];
+  },
+  // `<component is>` over a known set is an `@switch` with one `@case` per candidate (ADR-0054):
+  // `is` gives a tag's name, or a component's as a string (`'Chip'`), which the cases match.
+  dynamic: ({ node, is }) => {
+    const segments = node.candidates.map((candidate, index) => {
+      const label = candidate.kind === "Tag" ? candidate.tag : candidate.component;
+      const open = `@case (${angularCode(JSON.stringify(label), "block")}) {`;
+      const content: MarkupPiece =
+        candidate.kind === "Tag"
+          ? {
+              kind: "element",
+              element: {
+                kind: "Element",
+                tag: candidate.tag,
+                attributes: node.attributes as Attribute[],
+                children: node.children,
+                span: node.span,
+              },
+              directives: [],
+            }
+          : {
+              kind: "component",
+              component: {
+                kind: "Component",
+                component: candidate.component,
+                attributes: node.attributes as ComponentAttribute[],
+                fills: node.fills ?? [],
+                span: node.span,
+              },
+              directives: [],
+            };
+      return { open: index === 0 ? open : `} ${open}`, content };
+    });
+    const cases: MarkupPiece = { kind: "block", segments, close: "}" };
+    return [
+      {
+        kind: "block",
+        segments: [{ open: `@switch (${angularCode(is, "block")}) {`, content: cases }],
+        close: "}",
+      },
+    ];
+  },
 };
+
+/**
+ * Whether a tag is a component's selector (`uf-field`, the dialect's `componentTag`): the
+ * analyser rejects a custom element in the source, so only a component is written so.
+ */
+function isComponentTag(tag: string): boolean {
+  return tag.startsWith("uf-");
+}
+
+/**
+ * A component's `class`, which falls through to its root through an input (ADR-0056): one
+ * string binding, since a static `class` beside a `[class]` would set the input twice.
+ */
+function componentClass(parts: readonly ClassPart[]): PrintedAttribute {
+  const values = parts.map((part) =>
+    part.kind === "Static"
+      ? JSON.stringify(part.value)
+      : part.kind === "Toggle"
+        ? `${test(part.condition)} ? ${JSON.stringify(part.name)} : null`
+        : part.value,
+  );
+  const [only] = values;
+  const expression =
+    values.length === 1 && only !== undefined ? only : `[${values.join(", ")}].join(" ")`;
+  return { name: "class", text: `[class]="${angularCode(expression, "attribute")}"` };
+}
+
+/**
+ * A component's `style`, which falls through to its root through an input (ADR-0056): one
+ * object of its declarations. A root merges its own with the one it passes on in the same
+ * object, spread last, so a property the consumer leaves `undefined` removes the root's own,
+ * as Vue's merge does.
+ */
+function componentStyle(parts: readonly StylePart[]): PrintedAttribute {
+  readsEveryDeclaration(parts.filter((part) => part.property !== ""));
+  const [only] = parts;
+  const expression =
+    parts.length === 1 && only?.kind === "Bound" && only.property === ""
+      ? only.value
+      : `{ ${parts
+          .map((part) =>
+            part.kind === "Bound" && part.property === ""
+              ? `...${operand(part.value)}`
+              : property({
+                  key: part.property,
+                  value: part.kind === "Static" ? JSON.stringify(part.value) : part.value,
+                }),
+          )
+          .join(", ")} }`;
+  return { name: "style", text: `[style]="${angularCode(expression, "attribute")}"` };
+}
+
+/**
+ * The attribute of a slot's template that a component's slot directive selects (ADR-0056):
+ * the component's selector in camel case and the slot's name, `ufFieldTitle` for `uf-field`.
+ */
+function slotAttribute(tag: string, slot: string): string {
+  const component = tag.replace(/-(\w)/g, (_, next: string) => next.toUpperCase());
+  return `${component}${slot.charAt(0).toUpperCase()}${slot.slice(1)}`;
+}
+
+/**
+ * A fill of a child's slot (ADR-0056): the default slot's content as it is, projected into the
+ * child's `<ng-content>`; any other slot, or a scoped one, an `<ng-template>` its directive
+ * selects, with a `let-` variable per name its parameter declares (`let-item="item"`, the whole
+ * props as `let-entry`); a forwarded slot, the parent's own template re-declared for the child
+ * under its presence, `@if (titleTemplate(); as template)`.
+ */
+function fillPiece({ fill, parameter, presence }: PrintedFill, tag: string): MarkupPiece {
+  const directive = slotAttribute(tag, fill.slot);
+  // The default slot forwarded re-projects the parent's own, which Angular counts as content
+  // whether or not it got any: `default-slot-presence` declares it unsupported (ADR-0056).
+  if (fill.forward !== undefined && fill.slot === "default") {
+    return { kind: "tag", tag: "ng-content", attributes: [] };
+  }
+  if (fill.forward !== undefined) {
+    return {
+      kind: "block",
+      segments: [
+        {
+          open: `@if (${angularCode(presence!, "block")}; as template) {`,
+          content: {
+            kind: "tag",
+            tag: "ng-template",
+            attributes: [{ name: directive, text: directive }],
+            content: [
+              {
+                kind: "tag",
+                tag: "ng-container",
+                attributes: [{ name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="template"` }],
+              },
+            ],
+          },
+        },
+      ],
+      close: "}",
+    };
+  }
+  if (fill.slot === "default" && parameter === undefined) {
+    return { kind: "nodes", nodes: fill.children, container: fill };
+  }
+  return {
+    kind: "tag",
+    tag: "ng-template",
+    attributes: [{ name: directive, text: directive }, ...letVariables(parameter)],
+    content: [{ kind: "nodes", nodes: fill.children, container: fill }],
+  };
+}
+
+/**
+ * The `let-` variables of a scoped fill's parameter: a name takes the whole props (the
+ * context's `$implicit`), and a destructuring pattern's names each take their key.
+ */
+function letVariables(parameter: string | undefined): PrintedAttribute[] {
+  if (parameter === undefined) return [];
+  if (!parameter.startsWith("{")) return [{ name: `let-${parameter}`, text: `let-${parameter}` }];
+  const pattern = parseExpression(`(${parameter})`) as unknown as {
+    type: string;
+    properties: {
+      type: string;
+      computed: boolean;
+      key: { type: string; name?: string; value?: unknown };
+      value: { type: string; name?: string };
+    }[];
+  };
+  return pattern.properties.map((property) => {
+    const key = property.key.type === "Identifier" ? property.key.name : String(property.key.value);
+    if (property.type !== "Property" || property.computed || property.value.type !== "Identifier") {
+      throw new Error(`An Angular slot template cannot destructure \`${parameter}\`.`);
+    }
+    const name = `let-${property.value.name!}`;
+    return { name, text: `${name}="${escapeHtmlAttribute(contextKey(key!))}"` };
+  });
+}
+
+/**
+ * A slot outlet (ADR-0056): the default slot without props is `<ng-content>`, its fallback as
+ * its content; any other renders the template its directive's query holds (`titleTemplate()`),
+ * with the props as its context (each by name, and whole as `$implicit`), or the fallback.
+ */
+function slotOutletPiece({ node, props }: PrintedSlotOutlet): MarkupPiece {
+  const fallback: MarkupPiece = { kind: "nodes", nodes: node.fallback, container: node };
+  if (node.slot === "default" && props === undefined) {
+    return {
+      kind: "tag",
+      tag: "ng-content",
+      attributes: [],
+      ...(node.fallback.length ? { content: [fallback] } : {}),
+    };
+  }
+  const attributes: PrintedAttribute[] = [
+    { name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="template"` },
+  ];
+  if (props) {
+    const context = props.entries
+      ? `{ $implicit: { ${props.entries.map(property).join(", ")} }, ${props.entries
+          .map(({ key, value }) => `${contextKey(key)}: ${value}`)
+          .join(", ")} }`
+      : `{ $implicit: ${props.code}, ...${operand(props.code)} }`;
+    attributes.push({
+      name: "[ngTemplateOutletContext]",
+      text: `[ngTemplateOutletContext]="${angularCode(context, "attribute")}"`,
+    });
+  }
+  return {
+    kind: "block",
+    segments: [
+      {
+        open: `@if (${node.slot}Template(); as template) {`,
+        content: { kind: "tag", tag: "ng-container", attributes },
+      },
+      ...(node.fallback.length ? [{ open: "} @else {", content: fallback }] : []),
+    ],
+    close: "}",
+  };
+}
+
+/** A property of an object literal: `item: item`, `"data-id": person.id`. */
+function property({ key, value }: { key: string; value: string }): string {
+  return `${IDENTIFIER.test(key) ? key : JSON.stringify(key)}: ${value}`;
+}
+
+const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
+
+/**
+ * A prop's key in a slot template's context, which a `let-` value reads as an expression: its
+ * name, or for a name no expression can read (`data-id`) its camel case (`dataId`), which the
+ * Angular target's context type declares too.
+ */
+function contextKey(key: string): string {
+  if (IDENTIFIER.test(key)) return key;
+  return key
+    .replace(/[^A-Za-z0-9_$]+(.)?/g, (_, next: string | undefined) => next?.toUpperCase() ?? "")
+    .replace(/^(?=\d)/, "_");
+}
+
+/**
+ * A native control's `v-model` (ADR-0054, ADR-0056), the value being the state's writable
+ * signal: a text field, a text area and a select show it as `[value]` and set it on `input` or
+ * `change`, a checkbox as `[checked]`, and a radio as `[checked]` when it holds the radio's
+ * value. The control is the event's target.
+ */
+function modelAttributes({ attribute, value }: PrintedModel): PrintedAttribute[] {
+  const signal = angularCode(value, "attribute");
+  const write = (event: string, read: string) => ({
+    name: `(${event})`,
+    text: `(${event})="${signal}.set($any($event.target).${read})"`,
+  });
+  if (attribute.trim || attribute.lazy || attribute.number) {
+    throw new Error("An Angular `v-model` with modifiers needs the Angular target's `modelText`.");
+  }
+  switch (attribute.control) {
+    case "text":
+    case "textarea":
+      return [{ name: "[value]", text: `[value]="${signal}()"` }, write("input", "value")];
+    case "select":
+      return [{ name: "[value]", text: `[value]="${signal}()"` }, write("change", "value")];
+    case "checkbox":
+      return [{ name: "[checked]", text: `[checked]="${signal}()"` }, write("change", "checked")];
+    case "number":
+    case "radio":
+    case "checkbox-group":
+    case "select-multiple":
+      throw new Error(
+        `An Angular \`v-model\` on a ${attribute.control} control needs the Angular target's helpers.`,
+      );
+    default:
+      return unreachableControl(attribute.control);
+  }
+}
+
+function unreachableControl(control: never): never {
+  throw new Error(`Unexpected control: ${JSON.stringify(control)}`);
+}
 
 /**
  * Text as M0 writes it for Angular: references, `&ngsp;`, and literals for what it rewrites.

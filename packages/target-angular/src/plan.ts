@@ -1,7 +1,7 @@
 // What the Angular class declares for each of a component's bindings (plan §6, ADR-0046), and the
 // names the output file claims beside the source's own.
 import { codeKind, codeNames, ImportSet, NameScope, sourceNames } from "@unframework/codegen";
-import { summarizeCode } from "@unframework/ir";
+import { summarizeCode, walk } from "@unframework/ir";
 import type {
   Binding,
   BindingId,
@@ -14,6 +14,7 @@ import type {
 } from "@unframework/ir";
 
 import { assertedSetup } from "./narrowing.ts";
+import { outputName } from "./outputs.ts";
 
 /**
  * How the class declares a binding, which decides how code reads it:
@@ -31,8 +32,18 @@ import { assertedSetup } from "./narrowing.ts";
  *   field, so it keeps `this`;
  * - `field`: a setup `let`, a mutable field (`this.timer`); one whose initial value reads an
  *   input or a lazy member is assigned in `ngOnInit` (`Plan.seeded`);
- * - `loop`: a list's item or index, the `@for`'s own;
- * - `emit`: the `emit` function: each event is an `output()` of its name.
+ * - `loop`: a list's item or index, the `@for`'s own, or a scoped slot's variable, its
+ *   `ng-template`'s own (`let-item`);
+ * - `emit`: the `emit` function: each event is an `output()` of its name;
+ * - `model`: a model, `model(default)`, a signal input the component also writes (ADR-0056);
+ * - `context`: an injected value, `computed(() => untracked(() => injector.get(LocaleKey, …)))`,
+ *   read once in `ngOnInit`, as `once` is: a consumer projected into its provider is created
+ *   before the provider's inputs are set, which its value may read (NG0950). A key of a ref
+ *   holds an object with a `value` getter (`refObject`, ADR-0054);
+ * - `instance`: a template ref on a component, `viewChild<T>("name")`, read as the component's
+ *   instance (`this.search()?.focus()`, ADR-0054);
+ * - `component`: a component `<component is>` names, which the template reads as its name
+ *   (`'Chip'`), as the `@switch`'s cases match it.
  */
 export type MemberForm =
   | "input"
@@ -46,7 +57,11 @@ export type MemberForm =
   | "arrow"
   | "field"
   | "loop"
-  | "emit";
+  | "emit"
+  | "model"
+  | "context"
+  | "instance"
+  | "component";
 
 /** What the emitter knows about a component before it prints anything. */
 export interface Plan {
@@ -97,14 +112,21 @@ export const ANGULAR_IMPORTS: readonly string[] = [
   "OnInit",
   "PLATFORM_ID",
   "Renderer2",
+  "InjectionToken",
+  "NgTemplateOutlet",
+  "TemplateRef",
+  "WritableSignal",
   "afterNextRender",
   "afterRenderEffect",
   "computed",
+  "contentChild",
   "effect",
   "inject",
   "input",
   "isPlatformBrowser",
+  "isPlatformServer",
   "linkedSignal",
+  "model",
   "output",
   "signal",
   "untracked",
@@ -128,7 +150,7 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
     ...ANGULAR_MEMBERS,
     ...component.props.map(({ name }) => name),
     ...component.bindings.filter(({ kind }) => !isLoopVariable(kind)).map(({ name }) => name),
-    ...events.keys(),
+    ...[...events.keys()].map(outputName),
   ];
   const members = new NameScope(memberNames);
   const bindingNames = new Set(component.bindings.map(({ name }) => name));
@@ -168,7 +190,7 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
  * a reference the rules spell by its binding's name, so the new name reaches each one.
  */
 function withOutputNames(component: UfComponent, module: UfModule): UfComponent {
-  const events = new Set(component.emits?.events.map(({ name }) => name) ?? []);
+  const events = new Set(component.emits?.events.map(({ name }) => outputName(name)) ?? []);
   const clashing = component.bindings.filter(
     ({ name, kind }) =>
       events.has(name) && kind !== "prop" && kind !== "emit" && !isLoopVariable(kind),
@@ -257,17 +279,24 @@ function formsOf(component: UfComponent): {
       case "localFn":
       case "localVar":
         break;
-      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+      case "slotScope":
+        forms.set(binding.id, "loop");
+        break;
+      case "context":
+        forms.set(binding.id, "context");
+        break;
+      case "component":
+        forms.set(binding.id, "component");
+        break;
+      // A model is its setup item's; `slots` is read only as slots (`SlotReference`).
       case "model":
       case "slots":
-      case "slotScope":
-      case "context":
-      case "component":
         break;
       default:
         unreachable(binding.kind);
     }
   }
+  const instances = componentRefs(component);
   const escaping = escapingFunctions(component);
   for (const item of component.setup) {
     switch (item.kind) {
@@ -281,7 +310,10 @@ function formsOf(component: UfComponent): {
         forms.set(item.binding, "computed");
         break;
       case "TemplateRef":
-        forms.set(item.binding, "query");
+        forms.set(item.binding, instances.has(item.binding) ? "instance" : "query");
+        break;
+      case "Model":
+        forms.set(item.binding, "model");
         break;
       case "Id":
         forms.set(item.binding, "value");
@@ -307,7 +339,6 @@ function formsOf(component: UfComponent): {
       case "Watch":
       case "WatchEffect":
       case "Lifecycle":
-      case "Model":
       case "Provide":
       case "Inject":
         break;
@@ -316,6 +347,20 @@ function formsOf(component: UfComponent): {
     }
   }
   return { forms, seeded };
+}
+
+/** The template refs a `ref` on a component holds, which hold its instance (ADR-0054). */
+function componentRefs(component: UfComponent): Set<BindingId> {
+  const found = new Set<BindingId>();
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Component" && node.kind !== "Dynamic") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Ref") found.add(attribute.binding);
+      }
+    },
+  });
+  return found;
 }
 
 /** The local functions code passes as a value (`setTimeout(tick, 100)`), which run later. */
@@ -431,6 +476,7 @@ function readLazily(kind: BindingKind): boolean {
     case "prop":
     case "model":
     case "derived":
+    case "context":
       return true;
     case "loopVar":
     case "state":
@@ -441,7 +487,6 @@ function readLazily(kind: BindingKind): boolean {
     case "emit":
     case "slots":
     case "slotScope":
-    case "context":
     case "component":
       return false;
     default:
@@ -479,7 +524,12 @@ export function isSignal(form: MemberForm): boolean {
     case "field":
     case "loop":
     case "emit":
+    case "instance":
+    case "component":
       return false;
+    case "model":
+    case "context":
+      return true;
     default:
       return unreachable(form);
   }

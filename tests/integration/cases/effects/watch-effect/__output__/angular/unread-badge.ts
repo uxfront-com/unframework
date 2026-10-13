@@ -14,11 +14,11 @@ export interface UnreadBadgeProps {
 
 @Component({
   selector: "uf-unread-badge",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let unread = this.unread();
-    <section class="unread-badge" aria-label="Inbox">
+    <section class="unread-badge" aria-label="Inbox" [class]="this.class()" [style]="this.style()">
       <p role="status">{{ unread }} unread</p>
       <button type="button" (click)="onReceiveAMessage()">Receive a message</button>
       <button type="button" (click)="onMarkAllRead()">Mark all read</button>
@@ -27,6 +27,8 @@ export interface UnreadBadgeProps {
 })
 export default class UnreadBadge implements OnDestroy {
   readonly appName = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly titleChange = output<string>();
   readonly titleRelease = output<string>();
   protected readonly unread = signal(0);

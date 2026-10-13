@@ -2,23 +2,6 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The angular target does not emit component yet: composition lands in M3.",
-    "file": "components/recursion/Countdown.uf.tsx",
-    "start": {
-      "line": 6,
-      "column": 19,
-      "offset": 233
-    },
-    "end": {
-      "line": 6,
-      "column": 48,
-      "offset": 262
-    },
-    "target": "angular"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
     "message": "The astro target does not emit component yet: composition lands in M3.",
     "file": "components/recursion/Countdown.uf.tsx",
     "start": {

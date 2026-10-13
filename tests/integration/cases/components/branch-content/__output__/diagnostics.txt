@@ -1,11 +1,3 @@
-error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
-  --> components/branch-content/Inbox.uf.tsx:10:9
-   |
-10 |         <Notice text={`${count.value} unread`} tone="info" />
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (astro): The astro target does not emit component yet: composition lands in M3.
   --> components/branch-content/Inbox.uf.tsx:10:9
    |

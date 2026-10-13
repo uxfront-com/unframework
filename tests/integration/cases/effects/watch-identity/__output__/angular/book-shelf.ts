@@ -24,7 +24,7 @@ export interface BookShelfProps {
 
 @Component({
   selector: "uf-book-shelf",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let books = this.books();
@@ -35,7 +35,7 @@ export interface BookShelfProps {
     @let loading = this.loading();
     @let low = this.low();
     @let high = this.high();
-    <section class="book-shelf" aria-label="Books">
+    <section class="book-shelf" aria-label="Books" [class]="this.class()" [style]="this.style()">
       <ul aria-label="Shelf">
         @for (book of books; track book.id) {
           <li>
@@ -59,6 +59,8 @@ export interface BookShelfProps {
 })
 export default class BookShelf implements OnInit {
   readonly books = input.required<Book[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly moved = output<[title: string, previous: string]>();
   readonly counted = output<string>();
   readonly toggled = output<boolean>();

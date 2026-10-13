@@ -27,6 +27,7 @@ import {
 } from "@unframework/codegen";
 import { DOM_EVENTS, walk } from "@unframework/ir";
 import type {
+  Attribute,
   BindingId,
   Code,
   CodeReference,
@@ -34,9 +35,12 @@ import type {
   EventAttribute,
   FunctionCode,
   IfNode,
+  ListenerAttribute,
   UfComponent,
 } from "@unframework/ir";
+import type { ApiEvent } from "@unframework/ir";
 
+import { childEvent } from "./composition.ts";
 import type { DirectiveSpec } from "./directives.ts";
 import { assertedCode, assertedFunction } from "./narrowing.ts";
 import { bindingById, formOf, isLoopVariable, unreachable } from "./plan.ts";
@@ -58,6 +62,8 @@ export interface HandlerMethod {
 export interface Listeners {
   /** The template statement of each listener without an option, by its IR attribute. */
   statements: ReadonlyMap<EventAttribute, string>;
+  /** The template statement of each listener of a child's output, by its IR attribute. */
+  outputs: ReadonlyMap<ListenerAttribute, string>;
   /** The whole attribute of each listener with an option: `(ufClickCapture)="…"`. */
   attributes: ReadonlyMap<EventAttribute, string>;
   /** The methods handlers moved to, in document order. */
@@ -86,6 +92,7 @@ export interface Listeners {
 export function planListeners(plan: Plan, nextTick: string | undefined): Listeners {
   const { component } = plan;
   const statements = new Map<EventAttribute, string>();
+  const outputs = new Map<ListenerAttribute, string>();
   const attributes = new Map<EventAttribute, string>();
   const methods: HandlerMethod[] = [];
   const directives = new Map<string, DirectiveSpec>();
@@ -128,49 +135,80 @@ export function planListeners(plan: Plan, nextTick: string | undefined): Listene
     },
     enter(node) {
       if (node.kind === "If") count(node, 1);
-      if (node.kind !== "Element") return;
-      const groups = orderedGroups(node);
-      for (const attribute of node.attributes) {
-        if (attribute.kind !== "Event") continue;
-        const group = groups.get(attribute);
-        if (group !== undefined) {
-          // The group's first attribute writes its one listener; the others print nothing.
-          const statement =
-            group[0] === attribute ? groupStatement(plan, node, group, context) : undefined;
-          attributes.set(
-            attribute,
-            statement === undefined
-              ? ""
-              : `(${attribute.event})="${angularCode(statement, "event")}"`,
-          );
-          continue;
+      const child =
+        node.kind === "Component"
+          ? node.component
+          : node.kind === "Dynamic"
+            ? node.candidates.find((candidate) => candidate.kind === "Component")?.component
+            : undefined;
+      if (child !== undefined && (node.kind === "Component" || node.kind === "Dynamic")) {
+        for (const attribute of node.attributes) {
+          if (attribute.kind !== "Listener") continue;
+          const event = childEvent(plan, child, attribute.event);
+          outputs.set(attribute, outputStatement(plan, attribute, event, methods, collected));
         }
-        const name = () => handlerName(plan, node, attribute.event, optionOf(attribute));
-        const { code, valued } = listenerStatement(plan, attribute, name, methods, collected);
-        const statement = valued ? `void ${code}` : code;
-        const option = optionOf(attribute);
-        if (option === undefined) {
-          statements.set(attribute, statement);
-          continue;
-        }
-        const output = `uf${pascalCase(attribute.event)}${pascalCase(option)}`;
-        let directive = directives.get(output);
-        if (!directive) {
-          directive = {
-            event: attribute.event,
-            option,
-            output,
-            className: plan.imports.claim(`${pascalCase(attribute.event)}${pascalCase(option)}`),
-            eventType: DOM_EVENTS.get(attribute.event) ?? "Event",
-          };
-          directives.set(output, directive);
-        }
-        attributes.set(attribute, `(${output})="${angularCode(statement, "event")}"`);
+        return;
       }
+      // `<component is>` over tags takes an element's listeners, on each candidate alike.
+      const element: ElementNode | undefined =
+        node.kind === "Element"
+          ? node
+          : node.kind === "Dynamic" && node.candidates[0]?.kind === "Tag"
+            ? {
+                kind: "Element",
+                tag: node.candidates[0].tag,
+                attributes: node.attributes as Attribute[],
+                children: node.children,
+                span: node.span,
+              }
+            : undefined;
+      if (element === undefined) return;
+      onElement(element);
     },
   });
+  function onElement(node: ElementNode): void {
+    const groups = orderedGroups(node);
+    for (const attribute of node.attributes) {
+      if (attribute.kind !== "Event") continue;
+      const group = groups.get(attribute);
+      if (group !== undefined) {
+        // The group's first attribute writes its one listener; the others print nothing.
+        const statement =
+          group[0] === attribute ? groupStatement(plan, node, group, context) : undefined;
+        attributes.set(
+          attribute,
+          statement === undefined
+            ? ""
+            : `(${attribute.event})="${angularCode(statement, "event")}"`,
+        );
+        continue;
+      }
+      const name = () => handlerName(plan, node, attribute.event, optionOf(attribute));
+      const { code, valued } = listenerStatement(plan, attribute, name, methods, collected);
+      const statement = valued ? `void ${code}` : code;
+      const option = optionOf(attribute);
+      if (option === undefined) {
+        statements.set(attribute, statement);
+        continue;
+      }
+      const output = `uf${pascalCase(attribute.event)}${pascalCase(option)}`;
+      let directive = directives.get(output);
+      if (!directive) {
+        directive = {
+          event: attribute.event,
+          option,
+          output,
+          className: plan.imports.claim(`${pascalCase(attribute.event)}${pascalCase(option)}`),
+          eventType: DOM_EVENTS.get(attribute.event) ?? "Event",
+        };
+        directives.set(output, directive);
+      }
+      attributes.set(attribute, `(${output})="${angularCode(statement, "event")}"`);
+    }
+  }
   return {
     statements,
+    outputs,
     attributes,
     methods,
     directives: [...directives.values()],
@@ -180,6 +218,69 @@ export function planListeners(plan: Plan, nextTick: string | undefined): Listene
     guards: [...guards.values()],
     ...(once === undefined ? {} : { once }),
   };
+}
+
+/**
+ * What a listener of a child's output passes its handler, by the payload rule (ADR-0047): an
+ * output emits one value, nothing for an event without members, the value for one required
+ * member, and the tuple of the arguments otherwise.
+ */
+function payloadArguments(event: ApiEvent): string[] {
+  const [only, ...more] = event.parameters;
+  if (only === undefined) return [];
+  if (more.length === 0 && !only.optional) return ["$event"];
+  return event.parameters.map((_, index) => `$event[${index}]`);
+}
+
+/**
+ * The template statement of a listener of a child's output (ADR-0053): a setup function it
+ * names, called with as much of the payload as it takes (`clear($event)`); an inline handler that
+ * is one call the template can read, its parameters read from the payload
+ * (`clear($event.toUpperCase())` would not be one); or any other, moved to a method that takes
+ * the payload's members, typed as the child declares them (`onPickedURL($event)`). An output's
+ * listener prevents nothing, whatever its value.
+ */
+function outputStatement(
+  plan: Plan,
+  attribute: ListenerAttribute,
+  event: ApiEvent,
+  methods: HandlerMethod[],
+  collected: StatementReads,
+): string {
+  const payload = payloadArguments(event);
+  const { handler } = attribute;
+  switch (handler.kind) {
+    case "Function": {
+      const fn = functionOf(plan.component, handler.binding);
+      collected.reads.add(handler.binding);
+      const name = bindingById(plan, handler.binding).name;
+      return `${name}(${payload.slice(0, fn.parameters.length).join(", ")})`;
+    }
+    case "Inline": {
+      const fn = handler.function;
+      const statement = templateStatement(plan, fn, collected, payload);
+      if (statement !== undefined) return statement.code;
+      const name = templateMember(plan, `on${pascalCase(attribute.event)}`);
+      const body = bodyStatements(
+        assertedFunction(fn, () => true),
+        plan,
+        classRules(plan, collected.nextTick),
+      );
+      methods.push({
+        name,
+        parameters: fn.parameters.map((parameter, index) =>
+          parameter.type || event.parameters[index] === undefined
+            ? parameterText(parameter)
+            : `${parameterText(parameter)}: ${event.parameters[index]!.type}`,
+        ),
+        async: fn.async === true,
+        body,
+      });
+      return `${name}(${payload.slice(0, fn.parameters.length).join(", ")})`;
+    }
+    default:
+      return unreachable(handler);
+  }
 }
 
 /** A listener's option, or none. */
@@ -389,9 +490,13 @@ function templateStatement(
   plan: Plan,
   fn: FunctionCode,
   { reads, members, globals, tested }: StatementReads,
+  /** What each parameter reads in the template: the event, `$event`, by default. */
+  payload: readonly string[] = ["$event"],
 ): Statement | undefined {
   const call = singleCall(fn.body, fn.expression === true);
   if (!call) return undefined;
+  // A destructured parameter has no name the template could read the payload by.
+  if (fn.parameters.some((parameter) => parameter.name === undefined)) return undefined;
   const refs = fn.body.refs;
   const readsLoop = refs.some(
     (reference) =>
@@ -432,9 +537,10 @@ function templateStatement(
     } else if (reference.kind === "Emit") reads.add(reference.binding);
     else if (reference.kind === "Global") globals.add(reference.name);
   }
-  const rewritten = rewriteCode(code, plan.component, statementRules(plan), "client");
-  const event = fn.parameters[0]?.name;
-  const statement = event === undefined ? rewritten : withEvent(rewritten, event);
+  const statement = fn.parameters.reduce(
+    (written, parameter, index) => renamed(written, parameter.name!, payload[index] ?? "$event"),
+    rewriteCode(code, plan.component, statementRules(plan), "client"),
+  );
   if (call.callee === undefined) return { code: statement, valued: false };
   // A setup function's value, unless it is async (its value is a promise).
   const callee = functionOf(plan.component, call.callee);
@@ -571,7 +677,11 @@ function simpleRead(plan: Plan, reference: CodeReference): boolean {
         case "loop":
         case "method":
         case "arrow":
+        case "context":
           return true;
+        case "model":
+        case "instance":
+        case "component":
         case "signal":
         case "linked":
         case "computed":
@@ -595,11 +705,6 @@ function simpleRead(plan: Plan, reference: CodeReference): boolean {
     default:
       return unreachable(reference);
   }
-}
-
-/** A template statement with the handler's event parameter, read whole, as `$event`. */
-function withEvent(statement: string, event: string): string {
-  return renamed(statement, event, "$event");
 }
 
 /** An expression with every read of the name `from` renamed `to`. */

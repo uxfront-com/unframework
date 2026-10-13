@@ -10,13 +10,18 @@ export interface AccountMenuProps {
 
 @Component({
   selector: "uf-account-menu",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let owner = this.owner();
     @let step = this.step();
     @let user = this.user();
-    <section class="account-menu" aria-label="Account">
+    <section
+      class="account-menu"
+      aria-label="Account"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       @if (step === "intro") {
         <button type="button" (click)="start()">Start</button>
       } @else {
@@ -41,6 +46,8 @@ export interface AccountMenuProps {
 })
 export default class AccountMenu {
   readonly owner = input<User>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly greeted = output<string>();
   protected readonly step = signal("intro");
   protected readonly user = signal<User | null>(null);

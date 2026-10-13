@@ -199,6 +199,8 @@ export interface NgtscVite {
    * module itself), as the unframework plugin does; by default it serves every source.
    */
   lazy?: boolean;
+  /** Fails each load with this reason, as the unframework plugin fails a module it rejects. */
+  loadError?: string;
 }
 
 /**
@@ -244,6 +246,7 @@ export async function ngtscPlugin(
     },
     load: async ({ id }: { id: string }) => {
       loaded.push(id);
+      if (vite.loadError !== undefined) throw new Error(vite.loadError);
       return transform(id);
     },
   };

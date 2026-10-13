@@ -1,8 +1,8 @@
-import { Component, output, signal } from "@angular/core";
+import { Component, input, output, signal } from "@angular/core";
 
 @Component({
   selector: "uf-signup-form",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let fullName = this.fullName();
@@ -10,7 +10,13 @@ import { Component, output, signal } from "@angular/core";
     @let plan = this.plan();
     @let newsletter = this.newsletter();
     @let focused = this.focused();
-    <form class="signup-form" aria-label="Sign up" (submit)="submit($event)">
+    <form
+      class="signup-form"
+      aria-label="Sign up"
+      (submit)="submit($event)"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <label>Name<input
         name="name"
         (change)="onNameChange($event)"
@@ -37,6 +43,8 @@ import { Component, output, signal } from "@angular/core";
   `,
 })
 export default class SignupForm {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly signup = output<[fullName: string, email: string, plan: string, newsletter: boolean]>();
   protected readonly fullName = signal("");
   protected readonly email = signal("");

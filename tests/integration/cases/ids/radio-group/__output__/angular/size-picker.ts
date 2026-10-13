@@ -9,13 +9,18 @@ let nextId = 0;
 
 @Component({
   selector: "uf-size-picker",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let legend = this.legend();
     @let sizes = this.sizes();
     @let picked = this.picked();
-    <fieldset class="size-picker" [attr.aria-describedby]="hintId">
+    <fieldset
+      class="size-picker"
+      [attr.aria-describedby]="hintId"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <legend>{{ legend }}</legend>
       <p [attr.id]="hintId">Pick one size.</p>
       @for (size of sizes; track size; let index = $index) {
@@ -37,6 +42,8 @@ let nextId = 0;
 export default class SizePicker {
   readonly legend = input.required<string>();
   readonly sizes = input.required<string[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly group = `uf-id-size-picker-${nextId++}`;
   protected readonly hintId = `uf-id-size-picker-${nextId++}`;
   protected readonly picked = signal("");

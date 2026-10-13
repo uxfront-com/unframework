@@ -1,11 +1,16 @@
-import { Component } from "@angular/core";
+import { Component, input } from "@angular/core";
 
 @Component({
   selector: "uf-profile-card",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
-    <article class="profile" aria-labelledby="profile-name">
+    <article
+      class="profile"
+      aria-labelledby="profile-name"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <header class="profile-header">
         <img
           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%23345'/%3E%3C/svg%3E"
@@ -22,4 +27,7 @@ import { Component } from "@angular/core";
     </article>
   `,
 })
-export default class ProfileCard {}
+export default class ProfileCard {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
+}

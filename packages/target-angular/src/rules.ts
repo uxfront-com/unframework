@@ -3,9 +3,10 @@
 // in a list's `track` (`this.count()`: NG8009) and in a listener's template statement.
 import { mapCode, parseCodeSource, parseExpression, writtenValue } from "@unframework/codegen";
 import type { CodeKind, RewriteRules, RewriteSite } from "@unframework/codegen";
-import type { Binding, EmitReference, EventDeclaration } from "@unframework/ir";
+import type { Binding, EmitReference, EventDeclaration, Expression } from "@unframework/ir";
 
 import { narrowedWhole } from "./narrowing.ts";
+import { outputName } from "./outputs.ts";
 import { formOf, isSignal, unreachable } from "./plan.ts";
 import type { MemberForm, Plan } from "./plan.ts";
 
@@ -17,12 +18,17 @@ import type { MemberForm, Plan } from "./plan.ts";
  */
 export function classRules(plan: Plan, nextTick?: string): RewriteRules {
   return {
-    binding: (reference, binding) => classRead(plan, binding, narrowedWhole(reference)),
+    binding: (reference, binding, written) =>
+      wholeRef(plan, binding, written)
+        ? `this.${binding.name}`
+        : classRead(plan, binding, narrowedWhole(reference), written),
+    slot: (reference) => slotPresence(plan, reference.slot, "this."),
     write: (write, binding, parts) => {
       const form = formOf(plan, binding);
       switch (form) {
         case "signal":
         case "linked":
+        case "model":
           if (write.operator === "=") return `this.${binding.name}.set(${parts.value})`;
           // `update` for a new value made from the current one, as Angular's guide writes it,
           // where the value reads only literals and signals. Its callback is a closure, where
@@ -46,13 +52,16 @@ export function classRules(plan: Plan, nextTick?: string): RewriteRules {
         case "arrow":
         case "loop":
         case "emit":
+        case "context":
+        case "instance":
+        case "component":
           throw new Error(`\`${binding.name}\` is written, which the analyser rejects (UF2011).`);
         default:
           return unreachable(form);
       }
     },
     emit: (emit, _binding, parts) =>
-      emitCall(`this.${emit.event}`, eventOf(plan, emit), parts.arguments),
+      emitCall(`this.${outputName(emit.event)}`, eventOf(plan, emit), parts.arguments),
     api: () => {
       if (nextTick === undefined) throw new Error("`nextTick` is called, and no helper declared.");
       return `this.${nextTick}`;
@@ -211,7 +220,7 @@ function isNode(value: unknown): value is Node {
  * ref's `this.field()!.nativeElement` (an assertion inside `?.nativeElement` would leave the chain
  * optional).
  */
-export function classRead(plan: Plan, binding: Binding, narrowed = false): string {
+export function classRead(plan: Plan, binding: Binding, narrowed = false, written = ""): string {
   const form = formOf(plan, binding);
   switch (form) {
     case "input":
@@ -219,7 +228,11 @@ export function classRead(plan: Plan, binding: Binding, narrowed = false): strin
     case "linked":
     case "computed":
     case "once":
+    case "model":
+    case "instance":
       return `this.${binding.name}()${narrowed ? "!" : ""}`;
+    case "context":
+      return `this.${binding.name}()${narrowed ? "!" : ""}${refMember(written)}`;
     case "query":
       return `this.${binding.name}()${narrowed ? "!." : "?."}nativeElement`;
     case "value":
@@ -229,6 +242,7 @@ export function classRead(plan: Plan, binding: Binding, narrowed = false): strin
       return `this.${binding.name}`;
     case "loop":
     case "emit":
+    case "component":
       throw new Error(`\`${binding.name}\` is read in the class, where it is not in scope.`);
     default:
       return unreachable(form);
@@ -241,13 +255,21 @@ export function classRead(plan: Plan, binding: Binding, narrowed = false): strin
  * constant, a method) by its own name; in a list's `track`, which may read only its item, its
  * index and the component's members (NG8009), a signal from the class.
  */
-export function templateRules(plan: Plan): RewriteRules {
+export function templateRules(
+  plan: Plan,
+  signals: ReadonlySet<Expression> = new Set(),
+): RewriteRules {
+  const written = new Set([...signals].map(({ span }) => `${span.start}:${span.end}`));
   return {
-    binding: (_reference, binding, _written, site) => templateRead(plan, binding, site),
+    binding: (reference, binding, text, site) =>
+      written.has(`${reference.span.start}:${reference.span.end}`)
+        ? `this.${binding.name}`
+        : templateRead(plan, binding, site, text),
+    slot: (reference) => slotPresence(plan, reference.slot, ""),
   };
 }
 
-function templateRead(plan: Plan, binding: Binding, site: RewriteSite): string {
+function templateRead(plan: Plan, binding: Binding, site: RewriteSite, written: string): string {
   const form = formOf(plan, binding);
   switch (form) {
     case "input":
@@ -255,16 +277,23 @@ function templateRead(plan: Plan, binding: Binding, site: RewriteSite): string {
     case "linked":
     case "computed":
     case "once":
+    case "model":
       return site === "key" ? `this.${binding.name}()` : binding.name;
     case "value":
     case "method":
     case "arrow":
       return site === "key" ? `this.${binding.name}` : binding.name;
+    case "context":
+      return `${site === "key" ? `this.${binding.name}()` : binding.name}${refMember(written)}`;
     case "loop":
       return binding.name;
+    // A component `<component is>` names: the `@switch` matches its name (`angularDialect`).
+    case "component":
+      return JSON.stringify(binding.name);
     case "query":
     case "field":
     case "emit":
+    case "instance":
       throw new Error(`\`${binding.name}\` is read in the template, which the analyser rejects.`);
     default:
       return unreachable(form);
@@ -280,13 +309,12 @@ function templateRead(plan: Plan, binding: Binding, site: RewriteSite): string {
  */
 export function statementRules(plan: Plan): RewriteRules {
   return {
-    binding: (reference, binding) => statementRead(plan, binding, narrowedWhole(reference)),
+    binding: (reference, binding, written) =>
+      statementRead(plan, binding, narrowedWhole(reference), written),
     event: (reference) => `$event.${reference.member}`,
     emit: (emit, _binding, parts) => {
-      const output =
-        plan.loopNames.has(emit.event) || !readsAsName(emit.event)
-          ? `this.${emit.event}`
-          : emit.event;
+      const name = outputName(emit.event);
+      const output = plan.loopNames.has(name) || !readsAsName(name) ? `this.${name}` : name;
       return emitCall(output, eventOf(plan, emit), parts.arguments);
     },
   };
@@ -319,7 +347,12 @@ const NAMES = new Map<string, boolean>();
  * A read of a binding in a template statement; `narrowed` as in {@link classRead}, which an
  * input, read through the template's own name, needs not.
  */
-export function statementRead(plan: Plan, binding: Binding, narrowed = false): string {
+export function statementRead(
+  plan: Plan,
+  binding: Binding,
+  narrowed = false,
+  written = "",
+): string {
   const form: MemberForm = formOf(plan, binding);
   switch (form) {
     case "input":
@@ -332,14 +365,53 @@ export function statementRead(plan: Plan, binding: Binding, narrowed = false): s
     case "linked":
     case "computed":
     case "once":
+    case "model":
       return `this.${binding.name}()${narrowed ? "!" : ""}`;
+    case "context":
+      return `this.${binding.name}()${narrowed ? "!" : ""}${refMember(written)}`;
     case "query":
     case "field":
     case "emit":
+    case "instance":
+    case "component":
       throw new Error(`\`${binding.name}\` is read in a template statement.`);
     default:
       return unreachable(form);
   }
+}
+
+/**
+ * Whether a reference reads a ref itself rather than its value (`provide(CountKey, count)`, a key
+ * of a ref, ADR-0054): the signal, which `refObject` wraps.
+ */
+function wholeRef(plan: Plan, binding: Binding, written: string): boolean {
+  const form = formOf(plan, binding);
+  const ref = form === "signal" || form === "linked" || form === "computed" || form === "model";
+  return ref && !written.endsWith(".value");
+}
+
+/**
+ * What an injected value's read keeps after its name: a key of a ref is read through its value
+ * (`count.value`), which `refObject`'s getter gives (ADR-0054); any other value is read whole.
+ */
+function refMember(written: string): string {
+  const dot = written.indexOf(".");
+  return dot === -1 ? "" : written.slice(dot);
+}
+
+/**
+ * A slot's presence: whether its directive's query holds a template. The default slot without
+ * props has no directive, and its presence is unsupported (`default-slot-presence`, UF4001, an
+ * error): its output, which nothing runs, reads `true`, so the file still compiles.
+ */
+function slotPresence(plan: Plan, slot: string, through: string): string {
+  const props = plan.component.slots?.slots.find((each) => each.name === slot)?.props;
+  return slot === "default" && props === undefined ? "true" : `${through}${slotQuery(slot)}()`;
+}
+
+/** The member that queries a slot's template, `titleTemplate` (`angularDialect`'s outlet). */
+export function slotQuery(slot: string): string {
+  return `${slot}Template`;
 }
 
 /** Whether the template reads a binding through a `@let`: a signal's value. */

@@ -19,12 +19,17 @@ export interface ContactListProps {
 
 @Component({
   selector: "uf-contact-list",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let contacts = this.contacts();
     @let chosen = this.chosen();
-    <section class="contact-list" aria-label="Contacts">
+    <section
+      class="contact-list"
+      aria-label="Contacts"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <ul>
         @for (contact of contacts; track contact.id; let index = $index) {
           <li>
@@ -47,6 +52,8 @@ export interface ContactListProps {
 })
 export default class ContactList implements OnInit {
   readonly initial = input.required<Contact[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly choose = output<[id: string, position: number]>();
   readonly removed = output<string>();
   protected readonly contacts = linkedSignal(() => untracked(() => this.initial()));

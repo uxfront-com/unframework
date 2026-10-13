@@ -1,11 +1,3 @@
-error[UF1002] (angular): The angular target does not emit two-way-binding yet: composition lands in M3.
-  --> models/modifiers/Profile.uf.tsx:10:21
-   |
-10 |         Name <input v-model_trim={name.value} />
-   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (astro): The astro target does not emit two-way-binding yet: composition lands in M3.
   --> models/modifiers/Profile.uf.tsx:10:21
    |

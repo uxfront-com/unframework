@@ -6,12 +6,17 @@ export interface CommandMenuProps {
 
 @Component({
   selector: "uf-command-menu",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let commands = this.commands();
     @let active = this.active();
-    <section class="command-menu" aria-label="Command menu">
+    <section
+      class="command-menu"
+      aria-label="Command menu"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <form role="search" aria-label="Commands">
         <label>Command<input
           name="command"
@@ -34,6 +39,8 @@ export interface CommandMenuProps {
 })
 export default class CommandMenu {
   readonly commands = input_1.required<string[]>();
+  readonly class = input_1<string>();
+  readonly style = input_1<Record<string, string | null | undefined>>();
   readonly run = output<string>();
   readonly dismiss = output<void>();
   private readonly shortcutField = viewChild<ElementRef<HTMLInputElement>>("shortcutField");

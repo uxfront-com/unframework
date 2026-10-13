@@ -18,16 +18,18 @@ export interface SectionHeadingProps {
 
 @Component({
   selector: "uf-section-heading",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let title = this.title();
-    <h2 class="section-heading">{{ title }}</h2>
+    <h2 class="section-heading" [class]="this.class()" [style]="this.style()">{{ title }}</h2>
   `,
 })
 export default class SectionHeading implements OnInit {
   readonly title = input.required<string>();
-  readonly change = output<[title: string, previous?: string]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
+  readonly ufChange = output<[title: string, previous?: string]>();
   readonly ready = output<void>();
   private readonly injector = inject(Injector);
   private readonly platformId = inject(PLATFORM_ID);
@@ -49,7 +51,7 @@ export default class SectionHeading implements OnInit {
         lastTitle = value;
         if (!isPlatformBrowser(this.platformId)) return;
         untracked(() => {
-          this.change.emit([value, previous]);
+          this.ufChange.emit([value, previous]);
         });
       },
       { injector: this.injector },

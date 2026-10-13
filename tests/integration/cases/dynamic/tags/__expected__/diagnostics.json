@@ -2,23 +2,6 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The angular target does not emit dynamic-component yet: composition lands in M3.",
-    "file": "dynamic/tags/Section.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 7,
-      "offset": 160
-    },
-    "end": {
-      "line": 9,
-      "column": 19,
-      "offset": 252
-    },
-    "target": "angular"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
     "message": "The astro target does not emit dynamic-component yet: composition lands in M3.",
     "file": "dynamic/tags/Section.uf.tsx",
     "start": {

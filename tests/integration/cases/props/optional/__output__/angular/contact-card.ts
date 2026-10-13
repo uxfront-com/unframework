@@ -10,7 +10,7 @@ export interface ContactCardProps {
 
 @Component({
   selector: "uf-contact-card",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let name = this.name();
@@ -18,7 +18,13 @@ export interface ContactCardProps {
     @let team = this.team();
     @let pronouns = this.pronouns();
     @let phone = this.phone();
-    <article class="contact-card" [attr.aria-label]="name" [attr.data-team]="team">
+    <article
+      class="contact-card"
+      [attr.aria-label]="name"
+      [attr.data-team]="team"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <h2 [attr.title]="pronouns">{{ name }}</h2>
       <p>{{ jobTitle }}</p>
       <p>Phone: {{ phone ?? "not listed" }}</p>
@@ -31,4 +37,6 @@ export default class ContactCard {
   readonly team = input<string>();
   readonly pronouns = input<string>();
   readonly phone = input<string | null>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

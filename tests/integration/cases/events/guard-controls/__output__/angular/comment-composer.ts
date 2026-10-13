@@ -1,8 +1,8 @@
-import { Component, output, signal } from "@angular/core";
+import { Component, input, output, signal } from "@angular/core";
 
 @Component({
   selector: "uf-comment-composer",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let tags = this.tags();
@@ -11,7 +11,12 @@ import { Component, output, signal } from "@angular/core";
     @let confirming = this.confirming();
     @let tipShown = this.tipShown();
     @let log = this.log();
-    <section class="comment-composer" aria-label="Composer">
+    <section
+      class="comment-composer"
+      aria-label="Composer"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <label>Comment<textarea name="comment" (keydown)="send($event)"></textarea></label>
       <form aria-label="Tags" (submit)="onTagsSubmit($event)">
         <label>Tag<input name="tag" (keydown)="onTagKeydown($event)" /></label>
@@ -78,6 +83,8 @@ import { Component, output, signal } from "@angular/core";
   `,
 })
 export default class CommentComposer {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly sent = output<string>();
   readonly saved = output<number>();
   readonly firstSave = output<void>();

@@ -6,13 +6,13 @@ export interface DeleteFileProps {
 
 @Component({
   selector: "uf-delete-file",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let fileName = this.fileName();
     @let copies = this.copies();
     @let confirming = this.confirming();
-    <section class="delete-file" aria-label="File">
+    <section class="delete-file" aria-label="File" [class]="this.class()" [style]="this.style()">
       <p>{{ fileName }}, {{ copies }}&ngsp;{{ copies === 1 ? "copy" : "copies" }}</p>
       <button type="button" (click)="addCopy()">Add a copy</button>
       @if (confirming) {
@@ -25,6 +25,8 @@ export interface DeleteFileProps {
 })
 export default class DeleteFile {
   readonly fileName = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly deleted = output<[fileName: string, copies: number]>();
   protected readonly copies = signal(1);
   protected readonly confirming = signal(false);

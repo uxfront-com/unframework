@@ -7,12 +7,12 @@ export interface StepListProps {
 
 @Component({
   selector: "uf-step-list",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let title = this.title();
     @let steps = this.steps();
-    <ol class="step-list" [attr.aria-label]="title">
+    <ol class="step-list" [attr.aria-label]="title" [class]="this.class()" [style]="this.style()">
       @for (step of steps; track index; let index = $index) {
         <li [attr.data-step]="index + 1">Step {{ index + 1 }}: {{ step }}</li>
       }
@@ -22,4 +22,6 @@ export interface StepListProps {
 export default class StepList {
   readonly title = input.required<string>();
   readonly steps = input.required<string[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

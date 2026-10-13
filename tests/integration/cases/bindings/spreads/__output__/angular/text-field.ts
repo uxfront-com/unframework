@@ -24,7 +24,7 @@ export interface TextFieldProps {
 
 @Component({
   selector: "uf-text-field",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let label = this.label();
@@ -32,7 +32,7 @@ export interface TextFieldProps {
     @let hintText = this.hintText();
     @let field = this.field();
     @let hint = this.hint();
-    <div class="text-field">
+    <div class="text-field" [class]="this.class()" [style]="this.style()">
       <label [attr.for]="inputId">{{ label }}</label>
       <input
         [attr.id]="inputId"
@@ -54,4 +54,6 @@ export default class TextField {
   readonly hintText = input.required<string>();
   readonly field = input.required<FieldAttributes>();
   readonly hint = input<HintAttributes>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

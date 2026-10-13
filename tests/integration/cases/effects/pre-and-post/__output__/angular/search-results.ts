@@ -9,6 +9,7 @@ import {
   computed,
   effect,
   inject,
+  input,
   output,
   signal,
   untracked,
@@ -17,13 +18,18 @@ import {
 
 @Component({
   selector: "uf-search-results",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let status = this.status();
     @let results = this.results();
     @let doubled = this.doubled();
-    <section class="search-results" aria-label="Search">
+    <section
+      class="search-results"
+      aria-label="Search"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <p #banner>{{ status }}</p>
       <label>Query<input name="query" (input)="onQueryInput($event)" /></label>
       <ul #list aria-label="Results">
@@ -37,6 +43,8 @@ import {
   `,
 })
 export default class SearchResults implements OnInit {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly ready = output<string>();
   readonly rendered = output<number>();
   readonly shown = output<string>();

@@ -17,7 +17,7 @@ export interface MeetingListProps {
 
 @Component({
   selector: "uf-meeting-list",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let organiser = this.organiser();
@@ -26,7 +26,12 @@ export interface MeetingListProps {
     @let lastKey = this.lastKey();
     @let clicks = this.clicks();
     @let upcoming = this.upcoming();
-    <section class="meeting-list" aria-label="Meetings">
+    <section
+      class="meeting-list"
+      aria-label="Meetings"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <ul aria-label="Upcoming">
         @for (event of upcoming; track event.id) {
           <li>
@@ -73,6 +78,8 @@ export interface MeetingListProps {
 export default class MeetingList {
   readonly meetings = input.required<Meeting[]>();
   readonly organiser = input<Organiser>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly opened = output<string>();
   readonly thanked = output<string>();
   readonly track = output<[name: string, count: number]>();

@@ -11,13 +11,13 @@ export interface FruitPickerProps {
 
 @Component({
   selector: "uf-fruit-picker",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let fruits = this.fruits();
     @let selected = this.selected();
     @let basket = this.basket();
-    <section class="fruit-picker" aria-label="Fruit">
+    <section class="fruit-picker" aria-label="Fruit" [class]="this.class()" [style]="this.style()">
       <ul aria-label="Fruits">
         @for (fruit of fruits; track fruit.name) {
           <li>
@@ -40,6 +40,8 @@ export interface FruitPickerProps {
 })
 export default class FruitPicker {
   readonly fruits = input.required<Fruit[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly kept = output<[name: string, colour: string]>();
   protected readonly selected = signal<Fruit | null>(null);
   protected readonly basket = signal<Fruit[]>([]);

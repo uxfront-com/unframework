@@ -1,13 +1,19 @@
-import { Component, output, signal } from "@angular/core";
+import { Component, input, output, signal } from "@angular/core";
 
 @Component({
   selector: "uf-note-editor",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let bold = this.bold();
     @let saves = this.saves();
-    <form class="note-editor" aria-label="Note" (submit)="onNoteSubmit($event)">
+    <form
+      class="note-editor"
+      aria-label="Note"
+      (submit)="onNoteSubmit($event)"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <label>Title<input name="title" (input)="onTitleInput($event)" /></label>
       <label>Text<textarea name="text"></textarea></label>
       <div class="format" role="group" aria-label="Format">
@@ -24,6 +30,8 @@ import { Component, output, signal } from "@angular/core";
   `,
 })
 export default class NoteEditor {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly saved = output<[title: string, bold: boolean]>();
   private readonly title = signal("");
   protected readonly bold = signal(false);

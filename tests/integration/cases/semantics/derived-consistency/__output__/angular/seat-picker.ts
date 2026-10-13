@@ -6,11 +6,11 @@ export interface SeatPickerProps {
 
 @Component({
   selector: "uf-seat-picker",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let summary = this.summary();
-    <section class="seat-picker" aria-label="Seats">
+    <section class="seat-picker" aria-label="Seats" [class]="this.class()" [style]="this.style()">
       <p role="status">{{ summary }}</p>
       <button type="button" (click)="addSeat()">Add a seat</button>
       <button type="button" (click)="addGroupWithGuide()">Add a group and a guide</button>
@@ -19,6 +19,8 @@ export interface SeatPickerProps {
 })
 export default class SeatPicker {
   readonly pricePerSeat = input.required<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly quote = output<[seats: number, total: number, summary: string]>();
   private readonly seats = signal(1);
   private readonly total = computed(() => this.seats() * this.pricePerSeat());

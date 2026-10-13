@@ -114,17 +114,23 @@ describe("angular target", () => {
       {
         path: "hello.ts",
         contents: [
-          'import { Component } from "@angular/core";',
+          'import { Component, input } from "@angular/core";',
           "",
           "@Component({",
           '  selector: "uf-hello",',
-          '  host: { style: "display: contents" },',
+          "  host: {",
+          '    "[attr.class]": "null",',
+          '    "[attr.style]": "\'display: contents;\'"',
+          "  },",
           "  preserveWhitespaces: false,",
           "  template: `",
-          '    <p class="greeting">Hello, world!</p>',
+          '    <p class="greeting" [class]="this.class()" [style]="this.style()">Hello, world!</p>',
           "  `",
           "})",
-          "export default class Hello {}",
+          "export default class Hello {",
+          "  readonly class = input<string>();",
+          "  readonly style = input<Record<string, string | null | undefined>>();",
+          "}",
           "",
         ].join("\n"),
       },
@@ -133,7 +139,7 @@ describe("angular target", () => {
 
   it("exports a named component by name", () => {
     const [file] = emitModule(moduleOf(greeting, "Hello", "named"));
-    expect(file!.contents).toMatch(/\}\)\nexport class Hello \{\}\n$/);
+    expect(file!.contents).toMatch(/\}\)\nexport class Hello \{\n[\s\S]*\n\}\n$/);
   });
 
   it("names the file and the selector after the component, in kebab case", () => {
@@ -151,7 +157,14 @@ describe("angular target", () => {
   it("escapes Angular's template syntax and the template literal's", () => {
     const [file] = emitModule(moduleOf(element("p", [text("@if (b) {} <c> & `${d}` \\e")])));
     expect(templateOf(file!.contents)).toBe(
-      "\n    <p>&#64;if (b) &#123;&#125; &lt;c> &amp; \\`$&#123;d&#125;\\` \\\\e</p>\n  ",
+      [
+        "",
+        "    <p",
+        '      [class]="this.class()"',
+        '      [style]="this.style()"',
+        "    >&#64;if (b) &#123;&#125; &lt;c> &amp; \\`$&#123;d&#125;\\` \\\\e</p>",
+        "  ",
+      ].join("\n"),
     );
   });
 
@@ -159,7 +172,7 @@ describe("angular target", () => {
   it("prints a run of opening braces through a string interpolation", () => {
     const [file] = emitModule(moduleOf(element("p", [text("{{ a }} {b} {{{")])));
     expect(templateOf(file!.contents)).toContain(
-      String.raw`<p>{{ "\\u007b\\u007b" }} a &#125;&#125; &#123;b&#125; {{ "\\u007b\\u007b\\u007b" }}</p>`,
+      String.raw`>{{ "\\u007b\\u007b" }} a &#125;&#125; &#123;b&#125; {{ "\\u007b\\u007b\\u007b" }}</p>`,
     );
   });
 
@@ -189,7 +202,9 @@ describe("angular target", () => {
   it("writes a carriage return in an attribute as a reference", () => {
     const render = createElement("p", [createStaticAttribute("title", "a\rb", at)], [], at);
     const [file] = emitModule(moduleOf(render));
-    expect(templateOf(file!.contents)).toContain('<p title="a&#13;b"></p>');
+    expect(templateOf(file!.contents)).toContain(
+      '<p title="a&#13;b" [class]="this.class()" [style]="this.style()"></p>',
+    );
   });
 
   // Angular's compiler accepts a signal input only in a class whose decorator it imports as
@@ -197,12 +212,12 @@ describe("angular target", () => {
   it("names the class apart when the component is named after Angular's decorator", () => {
     const [file] = emitModule(moduleOf(greeting, "Component"));
     expect(file!.contents).toMatch(
-      /^import \{ Component \} from "@angular\/core";\n\n@Component\(\{/,
+      /^import \{ Component, input \} from "@angular\/core";\n\n@Component\(\{/,
     );
-    expect(file!.contents).toMatch(/\nexport default class Component_1 \{\}\n$/);
+    expect(file!.contents).toMatch(/\nexport default class Component_1 \{\n/);
     const [named] = emitModule(moduleOf(greeting, "Component", "named"));
     expect(named!.contents).toMatch(
-      /\nclass Component_1 \{\}\nexport \{ Component_1 as Component \};\n$/,
+      /\nclass Component_1 \{\n[\s\S]*\n\}\nexport \{ Component_1 as Component \};\n$/,
     );
   });
 
@@ -237,7 +252,9 @@ describe("angular target", () => {
   it("leaves text with content alone", () => {
     const render = element("p", [text("a "), element("b", [text("b")]), text(" c")]);
     const [file] = emitModule(moduleOf(render));
-    expect(templateOf(file!.contents)).toContain("<p>a <b>b</b> c</p>");
+    expect(templateOf(file!.contents)).toContain(
+      '<p [class]="this.class()" [style]="this.style()">a <b>b</b> c</p>',
+    );
   });
 });
 
@@ -282,13 +299,17 @@ export default function Badge({ label, tone = "info", count }: BadgeProps) {
         "",
         "@Component({",
         '  selector: "uf-badge",',
-        '  host: { style: "display: contents" },',
+        '  host: { "[attr.class]": "null", "[attr.style]": "\'display: contents;\'" },',
         "  preserveWhitespaces: false,",
         "  template: `",
         "    @let label = this.label();",
         "    @let tone = this.tone();",
         "    @let count = this.count();",
-        '    <p [attr.data-tone]="tone">{{ label }}&ngsp;{{ count ?? 0 }}</p>',
+        "    <p",
+        '      [attr.data-tone]="tone"',
+        '      [class]="this.class()"',
+        '      [style]="this.style()"',
+        "    >{{ label }}&ngsp;{{ count ?? 0 }}</p>",
         "  `,",
         "})",
         "export default class Badge {",
@@ -297,6 +318,8 @@ export default function Badge({ label, tone = "info", count }: BadgeProps) {
         '    transform: (value) => (value === undefined ? "info" : value),',
         "  });",
         "  readonly count = input<number>();",
+        "  readonly class = input<string>();",
+        "  readonly style = input<Record<string, string | null | undefined>>();",
         "}",
         "",
       ].join("\n"),
@@ -332,6 +355,8 @@ export default function Defaults({ label = null, size = 1000, tags = [], author 
       '{ name: "Ada" },',
       '{ transform: (value) => (value === undefined ? { name: "Ada" } : value) },',
       ");",
+      "readonly class = input<string>();",
+      "readonly style = input<Record<string, string | null | undefined>>();",
     ]);
   });
 
@@ -357,6 +382,8 @@ export default function ToneLabel({ tone = "info", size = 1 }: ToneProps) {
       "readonly size = input<number, number | undefined>(1, {",
       "transform: (value) => (value === undefined ? 1 : value),",
       "});",
+      "readonly class = input<string>();",
+      "readonly style = input<Record<string, string | null | undefined>>();",
     ]);
   });
 
@@ -369,11 +396,13 @@ export default function Byline(props: { author: string; minutes?: number }) {
     expect(templateLines(file.contents)).toEqual([
       "@let author = this.author();",
       "@let minutes = this.minutes();",
-      "<p>By {{ author }}, {{ minutes ?? 1 }} min</p>",
+      '<p [class]="this.class()" [style]="this.style()">By {{ author }}, {{ minutes ?? 1 }} min</p>',
     ]);
     expect(classBody(file.contents)).toEqual([
       "readonly author = input.required<string>();",
       "readonly minutes = input<number>();",
+      "readonly class = input<string>();",
+      "readonly style = input<Record<string, string | null | undefined>>();",
     ]);
     // An inline props type declares nothing.
     expect(file.contents).not.toMatch(/interface|type /);
@@ -395,12 +424,14 @@ export default function Quiet({ label, note }: QuietProps) {
 `);
     expect(templateLines(file.contents)).toEqual([
       "@let label = this.label();",
-      "<p>{{ label }}</p>",
+      '<p [class]="this.class()" [style]="this.style()">{{ label }}</p>',
     ]);
     expect(classBody(file.contents)).toEqual([
       "readonly label = input.required<string>();",
       "readonly hidden = input<boolean>();",
       "readonly note = input<string>();",
+      "readonly class = input<string>();",
+      "readonly style = input<Record<string, string | null | undefined>>();",
     ]);
   });
 
@@ -436,7 +467,15 @@ export default function Panel({ finishes, extra }: PanelProps) {
   });
 
   it("imports `input` only when there are props, under another name when the module declares it", async () => {
-    const plain = await formatted(`export default function Plain() { return <p>{Math.PI}</p>; }`);
+    // A component that opts out of the fallthrough declares no `class` and `style` inputs.
+    const plain = await formatted(`
+import { defineOptions } from "unframework";
+
+export default function Plain() {
+  defineOptions({ inheritAttrs: false });
+  return <p>{Math.PI}</p>;
+}
+`);
     expect(plain.contents).toMatch(/^import \{ Component \} from "@angular\/core";\n/);
     const taken = await formatted(`
 export interface input {
@@ -450,7 +489,11 @@ export default function Field({ value }: input) {
     expect(taken.contents).toMatch(
       /^import \{ Component, input as input_1 \} from "@angular\/core";/,
     );
-    expect(classBody(taken.contents)).toEqual(["readonly value = input_1.required<string>();"]);
+    expect(classBody(taken.contents)).toEqual([
+      "readonly value = input_1.required<string>();",
+      "readonly class = input_1<string>();",
+      "readonly style = input_1<Record<string, string | null | undefined>>();",
+    ]);
   });
 });
 
@@ -473,7 +516,7 @@ export default function Card({ owner }: CardProps) {
 `);
     expect(templateLines(file.contents)).toEqual([
       "@let owner = this.owner();",
-      "<div>",
+      '<div [class]="this.class()" [style]="this.style()">',
       "@if (owner) {",
       "<p>{{ owner.name.toUpperCase() }}</p>",
       "}",
@@ -501,7 +544,7 @@ export default function Rows({ prefix, rows }: RowsProps) {
 `);
     expect(templateLines(file.contents)).toEqual([
       "@let rows = this.rows();",
-      "<ul>",
+      '<ul [class]="this.class()" [style]="this.style()">',
       "@for (row of rows; track this.prefix() + row.id) {",
       "<li>{{ row.label }}</li>",
       "}",
@@ -527,6 +570,8 @@ export default function Stats({ values }: StatsProps) {
 `);
     expect(classBody(file.contents)).toEqual([
       "readonly values = input.required<number[]>();",
+      "readonly class = input<string>();",
+      "readonly style = input<Record<string, string | null | undefined>>();",
       "protected readonly JSON = JSON;",
       "protected readonly Math = Math;",
       "protected readonly NaN = NaN;",
@@ -555,7 +600,7 @@ export default function Gap({ on, names }: GapProps) {
     expect(templateLines(file.contents)).toEqual([
       "@let on = this.on();",
       "@let names = this.names();",
-      "<p>",
+      '<p [class]="this.class()" [style]="this.style()">',
       '@if (on) {<i>a</i>}{{ " " }}<b>b</b>',
       '@for (name of names; track name) {<i>{{ name }}</i>}{{ "\\\\u00a0" }}<b>c</b>&ngsp;<i>d</i>',
       "</p>",
@@ -586,7 +631,11 @@ export default function Match({ label, on }: MatchProps) {
     expect(templateLines(file.contents)).toEqual([
       "@let label = this.label();",
       "@let on = this.on();",
-      "<div [attr.title]=\"/\\\\x27/.test(label) ? 'quoted' : 'plain'\">",
+      "<div",
+      "[attr.title]=\"/\\\\x27/.test(label) ? 'quoted' : 'plain'\"",
+      '[class]="this.class()"',
+      '[style]="this.style()"',
+      ">",
       "@if (/^\\\\x2f/.test(label)) {",
       "<b>slash</b>",
       "}",
@@ -628,7 +677,9 @@ export default function Empty({ attrs }: EmptyProps) {
       ],
     } as UfModule;
     const [file] = emitModule(keyless);
-    expect(templateLines(file!.contents)).toEqual(["<p>x</p>"]);
+    expect(templateLines(file!.contents)).toEqual([
+      '<p [class]="this.class()" [style]="this.style()">x</p>',
+    ]);
   });
 
   it("prints valid TypeScript before formatting too", () => {
@@ -643,6 +694,8 @@ export default function Badge({ tone = "info" }: BadgeProps) {
 `);
     expect(classBody(contents)).toEqual([
       'readonly tone = input<"info" | "warn", "info" | "warn" | undefined>("info", { transform: (value) => value === undefined ? "info" : value });',
+      "readonly class = input<string>();",
+      "readonly style = input<Record<string, string | null | undefined>>();",
     ]);
   });
 });

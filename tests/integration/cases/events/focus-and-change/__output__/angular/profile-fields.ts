@@ -1,15 +1,20 @@
-import { Component, output, signal } from "@angular/core";
+import { Component, input, output, signal } from "@angular/core";
 
 @Component({
   selector: "uf-profile-fields",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let log = this.log();
     @let nickname = this.nickname();
     @let cardFocuses = this.cardFocuses();
     @let cardBlurs = this.cardBlurs();
-    <section class="profile-fields" aria-label="Profile">
+    <section
+      class="profile-fields"
+      aria-label="Profile"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <div
         class="name-group"
         role="group"
@@ -58,6 +63,8 @@ import { Component, output, signal } from "@angular/core";
   `,
 })
 export default class ProfileFields {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly firstNickname = output<string>();
   protected readonly log = signal<string[]>([]);
   protected readonly nickname = signal("");

@@ -16,11 +16,16 @@ export interface AutoRefreshProps {
 
 @Component({
   selector: "uf-auto-refresh",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let enabled = this.enabled();
-    <section class="auto-refresh" aria-label="Auto-refresh">
+    <section
+      class="auto-refresh"
+      aria-label="Auto-refresh"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <button type="button" [attr.aria-pressed]="enabled" (click)="toggle()">Auto-refresh</button>
       <p role="status">{{ enabled ? "Refreshing" : "Paused" }}</p>
     </section>
@@ -28,6 +33,8 @@ export interface AutoRefreshProps {
 })
 export default class AutoRefresh implements OnDestroy {
   readonly interval = input.required<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly refresh = output<number>();
   private readonly platformId = inject(PLATFORM_ID);
   private readonly tick = () => {

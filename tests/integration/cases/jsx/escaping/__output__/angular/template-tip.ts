@@ -8,13 +8,13 @@ export interface TemplateTipProps {
 
 @Component({
   selector: "uf-template-tip",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let example = this.example();
     @let note = this.note();
     @let path = this.path();
-    <figure class="template-tip">
+    <figure class="template-tip" [class]="this.class()" [style]="this.style()">
       <ng-container ngNonBindable ngPreserveWhitespaces><figcaption
         title="Vue &#123;&#123; name &#125;&#125;, Svelte &#123;#if ok&#125;, Angular @if (ok) &amp; JSX &#123;name&#125;"
       >Template syntax &amp; escaping</figcaption></ng-container>
@@ -37,4 +37,6 @@ export default class TemplateTip {
   readonly example = input.required<string>();
   readonly note = input.required<string>();
   readonly path = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

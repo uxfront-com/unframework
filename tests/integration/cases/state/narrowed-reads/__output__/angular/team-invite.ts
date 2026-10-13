@@ -31,7 +31,7 @@ export interface TeamInviteProps {
 
 @Component({
   selector: "uf-team-invite",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let greeting = this.greeting();
@@ -41,7 +41,7 @@ export interface TeamInviteProps {
     @let visible = this.visible();
     @let byPassword = this.byPassword();
     @let seconds = this.seconds();
-    <section class="team-invite" aria-label="Invite">
+    <section class="team-invite" aria-label="Invite" [class]="this.class()" [style]="this.style()">
       <h2>{{ greeting }}</h2>
       <ul aria-label="Members">
         @for (member of visible; track member.id) {
@@ -92,7 +92,9 @@ export interface TeamInviteProps {
 export default class TeamInvite implements OnDestroy {
   readonly inviter = input<Inviter>();
   readonly members = input.required<Member[]>();
-  readonly select = output<Member>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
+  readonly ufSelect = output<Member>();
   readonly removed = output<string>();
   readonly submitted = output<string>();
   readonly tagged = output<number>();
@@ -123,7 +125,7 @@ export default class TeamInvite implements OnDestroy {
   }
 
   protected invite() {
-    if (this.selected()) this.select.emit(this.selected()!);
+    if (this.selected()) this.ufSelect.emit(this.selected()!);
   }
 
   protected remove() {

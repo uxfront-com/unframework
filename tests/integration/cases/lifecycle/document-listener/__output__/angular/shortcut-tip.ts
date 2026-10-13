@@ -9,6 +9,7 @@ import {
   afterRenderEffect,
   computed,
   inject,
+  input,
   output,
   signal,
   untracked,
@@ -16,13 +17,18 @@ import {
 
 @Component({
   selector: "uf-shortcut-tip",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let open = this.open();
     @let enabled = this.enabled();
     @let count = this.count();
-    <section class="shortcut-tip" aria-label="Shortcuts">
+    <section
+      class="shortcut-tip"
+      aria-label="Shortcuts"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <p>{{ open ? "Press Escape to hide this tip." : "Tip hidden." }}</p>
       <button type="button" [attr.aria-pressed]="enabled" (click)="toggle()">Shortcut K</button>
       <p role="status">Used: {{ count }}</p>
@@ -30,6 +36,8 @@ import {
   `,
 })
 export default class ShortcutTip implements OnInit, OnDestroy {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly dismissed = output<void>();
   readonly shortcut = output<[key: string, count: number]>();
   private readonly injector = inject(Injector);

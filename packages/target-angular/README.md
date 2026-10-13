@@ -6,9 +6,11 @@ templates, whose host element has `display: contents` (decision D6, ADR-0010).
 ## Output
 
 One `<kebab-name>.ts` file per component (plan §6), in this order: the imports from
-`@angular/core` (and `isPlatformBrowser` from `@angular/common`), each under a name no source name
-takes; the type declarations; `let nextId = 0;` when the component makes ids; the directives its
-listeners' options need; the component.
+`@angular/core` and `@angular/common`, and of the children's output files, each under a name no
+source name takes; the type declarations; `let nextId = 0;` when the component makes ids; the
+injection tokens of the module's keys; the inline helpers (`refObject`, the native controls'
+`modelText`, `toggle`, `selectedValues`); the slot directives; the directives its listeners'
+options need; the component.
 
 - **Types.** The source's type declarations the output reads (its inputs' and outputs' types, the
   setup's annotations and code) and every exported one, copied as written and exported as the
@@ -20,7 +22,10 @@ listeners' options need; the component.
   `input<T, T | undefined>(default, { transform })` with a default, whose transform is
   `(value) => (value === undefined ? default : value)`: an explicit `undefined` takes the
   default, as JavaScript's destructuring does, and `null` stays a value.
-- **Outputs.** Every event `defineEmits` declares is a public `output()` of its name (ADR-0012):
+- **Outputs.** Every event `defineEmits` declares is a public `output()` of its name (ADR-0012),
+  or, for a name angular-eslint's `no-output-native` knows as a native DOM event, `uf` and the name
+  in PascalCase (`change` → `ufChange`, ADR-0056), which the native event bubbling out of the
+  component through its host cannot reach (`src/outputs.ts`):
   an `output()` emits one value, so the payload is nothing for an event without members
   (`output<void>()`, `emit()`), the value for one required member (`output<number>()`), and the
   named tuple of exactly the arguments given otherwise (`output<[path: string, note?: string]>()`,
@@ -129,6 +134,52 @@ returns runs in a function of its own (`(() => { … })();`), so its `return` en
 `ngOnDestroy`. A callback the class runs (a hook, an effect, a watcher's) returns no value, as
 none is read: its `return x;` keeps only what `x` changes.
 
+### Composition (ADR-0053 to ADR-0056)
+
+| Source                                          | Angular output                                                                                                         |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `import Field from "./Field.uf.tsx"`, `<Field>` | `import Field from "./field"`, `imports: [Field]`, `<uf-field>`; a component that renders itself uses its own selector |
+| `label="Name"`, `tone={tone.value}`             | `[label]="'Name'"`, `[tone]="tone"`: a static prop is bound too, so the host keeps no attribute                        |
+| `onClear={clear}`                               | `(clear)="clear($event)"`, the payload spread by the tuple rule; any other handler a method (`onPickedURL($event)`)    |
+| `{slots.default?.()}`, with fallback            | `<ng-content />`, `<ng-content>fallback</ng-content>`                                                                  |
+| `{slots.title?.()}`, `{slots.item?.({ item })}` | `@if (itemTemplate(); as template) { <ng-container [ngTemplateOutlet]="template" [ngTemplateOutletContext]="…" /> }`   |
+| `defineSlots<…>()`                              | a directive per named or scoped slot, `ng-template[ufListItem]`, with `ngTemplateContextGuard`, read by `contentChild` |
+| a fill, `{{ item: ({ item }) => … }}`           | `<ng-template ufListItem let-item="item">`, its directive in `imports`                                                 |
+| `slots.title` as a condition                    | `titleTemplate()`                                                                                                      |
+| `defineModel("value", { default: 0 })`          | `readonly value = model<number>(0)`, read and written as a signal                                                      |
+| `v-model:value={cups.value}`                    | `[(value)]="this.cups"`, on the signal                                                                                 |
+| `v-model` on a control                          | `#nameField [value]="this.name()" (input)="this.name.set(nameField.value)"`, `[checked]` and `(change)` for a box      |
+| `class` and `style` on a component              | `[class]`, `[style]`: the child's `class` and `style` inputs, merged into its root; the host clears both               |
+| `defineExpose({ focus })`, `ref={search}`       | `focus` public; `viewChild<{ focus(): void }>("search")`, read as `this.search()?.focus()`                             |
+| `export const LocaleKey: InjectionKey<T>`       | `export const LocaleKey = new InjectionToken<T>("…")` in the module's main component's file                            |
+| `provide(LocaleKey, locale)`                    | `providers: [{ provide: LocaleKey, useFactory: () => inject(LocaleProvider).locale() }]`; `useValue` for a constant    |
+| `inject(LocaleKey, "en")`                       | `computed(() => untracked(() => this.injector.get(LocaleKey, null, { optional: true, skipSelf: true }) ?? "en"))`      |
+| `<component is={nested.value ? "h3" : "h2"}>`   | `@switch (nested ? 'h3' : 'h2') { @case ('h2') { <h2>…</h2> } … }`; a component candidate is matched by its name       |
+
+- **Slots.** The default slot without props is `<ng-content>`; every other slot is a directive the
+  file exports, `<Component><Slot>` with the selector `ng-template[uf<Component><Slot>]`, whose
+  context guard types the consumer's `let-` variables (its props by name, and whole as
+  `$implicit`; a prop no template variable can read, `"data-id"`, also as `dataId`). The template
+  ends with `<ng-content select="[ufListItem]" />` per directive, so a slot's template never counts
+  as the default slot's content. A forwarded named slot re-declares the child's template under
+  `@if (titleTemplate(); as template)`.
+- **Models.** A text field, a text area and a select write the state through a template variable
+  of the control, which types its value. Vue's `vModelText` (trim, lazy, a number's cast) goes
+  through `modelText`, which keeps the field's own text where it already means the value
+  (`12.5kg` for `12.5`), and `writeModelText`; a checkbox group through `toggle`; a multiple select
+  through `selectedValues`. A select's options bind `[selected]`, and on the server, whose DOM has
+  no selectedness, `[defaultSelected]` too (`onServer`), so the server HTML marks the option.
+- **Fallthrough.** A component whose root is an element or a component, and that does not set
+  `inheritAttrs: false`, declares `class` and `style` inputs and merges them into its root: the
+  class among its parts, the style in one map after the root's own, so a property the consumer
+  leaves `undefined` removes the root's, as Vue's merge does. The host clears both with
+  `[attr.class]` and `[attr.style]` bindings, keeping only `display: contents`.
+- **Context.** An injected value is read once the inputs are set, from the injector the class
+  holds: a consumer projected into its provider is created before the provider's inputs are set,
+  which a provided value may read (NG0950). A key of a ref (`InjectionKey<Ref<number>>`) holds
+  `{ readonly value: number }`, which `refObject` makes from the provided signal. Members a
+  provider's factory reads are public.
+
 ### Listeners (ADR-0047)
 
 Angular's template statements are not JavaScript functions (no block bodies, no `++`, a signal
@@ -193,9 +244,13 @@ above, helper `uf<Event><Option>`), `use-id` (emulated, `nextId`), `next-tick` (
 `slot-forwarding` (emulated, the slot directives `uf<Component><Slot>`), `model-array`
 (`toggle`), `model-modifiers` (`modelText`), `fallthrough` (`fallthrough`), `reactive-context`
 (`refObject`) and `dynamic-component` (`@switch`), all emulated, and `default-slot-presence` and
-`contextual-root`, unsupported (UF4001, errors). Composition's cells (ADR-0055) are declared before
-Angular emits composition: until M3's lane for Angular lands, `emit` reports UF1002 where a
-component first uses it, and emits nothing for that component.
+`contextual-root`, unsupported (UF4001, errors). Where an unsupported cell is reported, the
+output still compiles: default-slot presence reads `true`, and the forwarded default slot
+re-projects `<ng-content />`.
+
+Chrome's accessible name puts a space at every `display: contents` element, the host included, so
+two components rendered side by side as inline content read `Build passing` where the other
+targets read `Buildpassing`: `harness/quarantine/angular.ts` lists the cells, pending a decision.
 
 ## Toolchain
 
@@ -210,12 +265,14 @@ Tests and tooling build, check and run the Angular output through three subpaths
     program over every file, reported per file.
   - `lint(files, context)` (L5, ADR-0042): oxlint's shared baseline over the TypeScript, and
     ESLint with angular-eslint over the file and its inline template.
-    `@angular-eslint/no-output-native` is off: it judges the author's event names (ADR-0047).
+    `@angular-eslint/no-output-native` is on: an output named like a native event takes the `uf`
+    prefix (ADR-0056).
 - `@unframework/target-angular/toolchain/client`: the browser mount adapter (`createApplication`
   and `createComponent`, zoneless, settled with `whenStable`). `rerender(props)` sets each new
   prop with `setInput`, and `setInput(name, undefined)` for a prop the new props leave out,
   since Angular cannot unset an input (ADR-0043). The test's listeners are bound to the outputs
-  of their events' names (`outputBinding`), and each payload is given back by its event's shape.
+  of their events (`outputBinding`, `ufChange` for `change`), and each payload is given back by
+  its event's shape.
 - `@unframework/target-angular/toolchain/server`: the SSR renderer (`renderApplication`), which
   returns the component's HTML only. It runs on the `ssr` Vite configuration, which links
   Angular's packages as they load.

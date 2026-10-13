@@ -15,14 +15,19 @@ export interface ArticlePreviewProps {
 
 @Component({
   selector: "uf-article-preview",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let title = this.title();
     @let text = this.text();
     @let characters = this.characters();
     @let counted = this.counted();
-    <article class="article-preview" [attr.aria-label]="title">
+    <article
+      class="article-preview"
+      [attr.aria-label]="title"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <h2>{{ title }}</h2>
       <p #body>{{ text }}</p>
       <p role="status">{{ counted ? characters + " characters" : "Counting the characters" }}</p>
@@ -32,6 +37,8 @@ export interface ArticlePreviewProps {
 export default class ArticlePreview {
   readonly title = input.required<string>();
   readonly text = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly ready = output<number>();
   private readonly body = viewChild<ElementRef<HTMLParagraphElement>>("body");
   protected readonly characters = signal(0);

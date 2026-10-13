@@ -21,11 +21,9 @@ export default [
       "@angular-eslint/no-empty-lifecycle-method": "error",
       "@angular-eslint/no-input-rename": "error",
       "@angular-eslint/no-inputs-metadata-property": "error",
-      // Off: it judges the author's event names, which every target keeps (ADR-0012), and the
-      // output is named by its event (`change`). The hazard it guards, a native `change` that
-      // bubbles out of the component reaching a consumer's `(change)` on its host, needs a child
-      // component (M3): the M2 amendment of ADR-0042.
-      "@angular-eslint/no-output-native": "off",
+      // An output named like a native DOM event takes the `uf` prefix (`ufChange`, ADR-0056), so
+      // the native event that bubbles out of the component never reaches its listener.
+      "@angular-eslint/no-output-native": "error",
       "@angular-eslint/no-output-on-prefix": "error",
       "@angular-eslint/no-output-rename": "error",
       "@angular-eslint/no-outputs-metadata-property": "error",

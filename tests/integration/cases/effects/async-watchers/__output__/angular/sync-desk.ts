@@ -26,7 +26,7 @@ export interface SyncDeskProps {
 
 @Component({
   selector: "uf-sync-desk",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let email = this.email();
@@ -43,7 +43,7 @@ export interface SyncDeskProps {
     @let sendBusy = this.sendBusy();
     @let outcome = this.outcome();
     @let level = this.level();
-    <section class="sync-desk" aria-label="Sync desk">
+    <section class="sync-desk" aria-label="Sync desk" [class]="this.class()" [style]="this.style()">
       <button type="button" (click)="suggest()">Suggest</button>
       <button type="button" #confirm>Use this email</button>
       <p>{{ email }}: {{ checking ? "checking" : valid ? "valid" : "invalid" }}</p>
@@ -71,10 +71,12 @@ export interface SyncDeskProps {
 })
 export default class SyncDesk implements OnInit {
   readonly files = input.required<string[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly checked = output<string>();
   readonly summary = output<string>();
   readonly focused = output<string>();
-  readonly progress = output<[step: string, owner: string]>();
+  readonly ufProgress = output<[step: string, owner: string]>();
   readonly saveState = output<[error: string, name: string]>();
   readonly savedName = output<string>();
   readonly importState = output<[status: string, count: number]>();
@@ -153,7 +155,7 @@ export default class SyncDesk implements OnInit {
         const [current, who] = current_1;
         lastValues = current_1;
         untracked(() => {
-          this.progress.emit([current, who]);
+          this.ufProgress.emit([current, who]);
         });
       },
       { injector: this.injector },

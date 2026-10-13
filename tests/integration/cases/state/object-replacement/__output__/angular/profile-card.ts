@@ -12,11 +12,16 @@ export interface ProfileCardProps {
 
 @Component({
   selector: "uf-profile-card",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let profile = this.profile();
-    <article class="profile-card" aria-label="Profile">
+    <article
+      class="profile-card"
+      aria-label="Profile"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <h2>{{ profile.name }}</h2>
       <p>{{ profile.title }}</p>
       <p role="status">{{ profile.available ? "Available" : "Away" }}</p>
@@ -31,6 +36,8 @@ export interface ProfileCardProps {
 })
 export default class ProfileCard implements OnInit {
   readonly initial = input.required<Profile>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly profile = linkedSignal(() => untracked(() => this.initial()));
 
   ngOnInit(): void {

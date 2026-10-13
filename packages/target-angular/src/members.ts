@@ -20,12 +20,16 @@ import {
 import type { Placeholders, RewriteRules } from "@unframework/codegen";
 import type { Code, Prop, TypeDeclaration } from "@unframework/ir";
 
+import { keyOf } from "./composition.ts";
+import type { SlotDirective } from "./composition.ts";
 import { arrow, lifecycleCode, watchEffectCode, watcherCode } from "./effects.ts";
 import type { EffectCode, EffectNames } from "./effects.ts";
 import type { HandlerMethod } from "./listeners.ts";
+import type { ModelHelper } from "./models.ts";
+import { outputName } from "./outputs.ts";
 import { bindingById, formOf, unreachable } from "./plan.ts";
 import type { Plan } from "./plan.ts";
-import { outputType, tidied } from "./rules.ts";
+import { outputType, slotQuery, tidied } from "./rules.ts";
 import { parenthesised, valueType } from "./seeded.ts";
 import { withoutUndefined } from "./types.ts";
 
@@ -62,6 +66,20 @@ export interface MemberContext {
   nextTick?: string;
   /** The module-level counter ids are made from, when the component declares one. */
   nextId?: string;
+  /** The component's own slot directives, whose templates it queries (./composition.ts). */
+  slots: readonly SlotDirective[];
+  /** Whether the component takes `class` and `style` inputs it merges into its root (ADR-0056). */
+  fallthrough: boolean;
+  /** The local name of each injection key the setup names. */
+  keyNames: ReadonlyMap<string, string>;
+  /** The `refObject` helper's name, when a key of a ref is provided or injected with a fallback. */
+  refObject?: string;
+  /** The members code outside the class reads (a provider's factory), which are public. */
+  external: ReadonlySet<string>;
+  /** The member that tells the server's render apart, for a select's options (./models.ts). */
+  server?: string;
+  /** The native controls' helpers the template calls (./models.ts). */
+  helpers: readonly ModelHelper[];
 }
 
 /** The class's members, and the interfaces it implements (`OnInit`). */
@@ -72,13 +90,64 @@ export function classMembers(context: MemberContext): {
   const { plan, placeholders } = context;
   const { component, imports } = plan;
   const core = (name: string) => imports.add("@angular/core", name);
+  // An exposed function is the component's API (ADR-0054), and a member a provider's factory
+  // reads is read from outside the class: both are public, the rest protected or private.
+  const exposed = new Set(
+    (component.exposes?.functions ?? []).map((id) => bindingById(plan, id).name),
+  );
+  const visibility = (name: string) =>
+    exposed.has(name) || context.external.has(name)
+      ? undefined
+      : context.templateMembers.has(name)
+        ? ("protected" as const)
+        : ("private" as const);
   const members: Member[] = component.props.map((prop) =>
     inputMember(prop, core("input"), placeholders, context.declarations),
   );
+  if (context.fallthrough) {
+    // The consumer's `class` and `style`, which the root merges (ADR-0056): inputs, so a static
+    // `class` and a bound one both reach them, and the host keeps neither.
+    members.push(
+      js.propertyDefinition(
+        "class",
+        js.callExpression(js.identifier(core("input")), [], [placeholders.type("string")]),
+        { readonly: true },
+      ),
+      js.propertyDefinition(
+        "style",
+        js.callExpression(
+          js.identifier(core("input")),
+          [],
+          [placeholders.type("Record<string, string | null | undefined>")],
+        ),
+        { readonly: true },
+      ),
+    );
+  }
+  // A model is a signal input the component writes (`model()`), declared with the inputs.
+  for (const item of component.setup) {
+    if (item.kind !== "Model") continue;
+    const { name } = bindingById(plan, item.binding);
+    const callee = js.identifier(core("model"));
+    const type = item.type ? [placeholders.type(item.type.code)] : [];
+    members.push(
+      js.propertyDefinition(
+        name,
+        item.required
+          ? js.callExpression(js.memberExpression(callee, "required"), [], type)
+          : js.callExpression(
+              callee,
+              item.default ? [placeholders.expression(item.default.code)] : [],
+              type,
+            ),
+        { readonly: true },
+      ),
+    );
+  }
   for (const event of component.emits?.events ?? []) {
     members.push(
       js.propertyDefinition(
-        event.name,
+        outputName(event.name),
         js.callExpression(
           js.identifier(core("output")),
           [],
@@ -88,10 +157,38 @@ export function classMembers(context: MemberContext): {
       ),
     );
   }
+  // Each named or scoped slot's template, which the consumer's `<ng-template>` gives (ADR-0056).
+  for (const { slot, className } of context.slots) {
+    const name = slotQuery(slot.name);
+    members.push(
+      js.propertyDefinition(
+        name,
+        placeholders.expression(
+          `${core("contentChild")}(${className}, { read: ${core("TemplateRef")} })`,
+        ),
+        { accessibility: visibility(name), readonly: true },
+      ),
+    );
+  }
   // View queries next to the inputs and outputs, as Angular's guide groups them.
   for (const item of component.setup) {
     if (item.kind !== "TemplateRef") continue;
     const name = bindingById(plan, item.binding).name;
+    if (formOf(plan, bindingById(plan, item.binding)) === "instance") {
+      // A ref on a component holds its instance, typed as the source types what it exposes.
+      members.push(
+        js.propertyDefinition(
+          name,
+          js.callExpression(
+            js.identifier(core("viewChild")),
+            [js.stringLiteral(name)],
+            [placeholders.type(item.type?.code ?? "unknown")],
+          ),
+          { accessibility: visibility(name), readonly: true },
+        ),
+      );
+      continue;
+    }
     const element = `${core("ElementRef")}<${item.type?.code ?? "unknown"}>`;
     members.push(
       js.propertyDefinition(
@@ -157,8 +254,6 @@ export function classMembers(context: MemberContext): {
     initCode[initCode.length - 1] = pins.join("\n");
   };
   const methods: Member[] = [];
-  const visibility = (name: string) =>
-    context.templateMembers.has(name) ? ("protected" as const) : ("private" as const);
   const expression = (code: string) => placeholders.expression(code);
   const typed = (type: string | undefined) => (type ? [placeholders.type(type)] : []);
 
@@ -347,10 +442,34 @@ export function classMembers(context: MemberContext): {
       case "Lifecycle":
         effect(constructorCode, lifecycleCode(item, plan, context.rules, names), true);
         break;
-      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+      case "Inject": {
+        // Its parent's value (`skipSelf`, since a component that provides the key it injects
+        // reads its parent's, ADR-0054), or the fallback, or `undefined` as Vue gives.
+        const { name } = bindingById(plan, item.binding);
+        const key = context.keyNames.get(item.key) ?? item.key;
+        const fallback = item.fallback ? pure(context, item.fallback) : "undefined";
+        const value =
+          item.fallback && keyOf(plan, item.key).ref
+            ? `${context.refObject}(${fallback})`
+            : fallback;
+        // Read once the inputs are set: a consumer projected into its provider is created
+        // before the provider's inputs are set, which a provided value may read (NG0950).
+        const injected = `this.${names.member("injector")}.get(${key}, null, { optional: true, skipSelf: true }) ?? ${value}`;
+        fields.push(
+          js.propertyDefinition(
+            name,
+            js.callExpression(js.identifier(core("computed")), [
+              expression(arrow(`${core("untracked")}(${arrow(injected)})`)),
+            ]),
+            { accessibility: visibility(name), readonly: true },
+          ),
+        );
+        pin(`this.${name}();`);
+        break;
+      }
+      // A model is declared with the inputs, and a provided value in the metadata.
       case "Model":
       case "Provide":
-      case "Inject":
         break;
       default:
         unreachable(item);
@@ -427,7 +546,19 @@ export function classMembers(context: MemberContext): {
       { accessibility: "private", readonly: true },
     ),
   );
-  const globals = context.globals.map((name) =>
+  if (context.server !== undefined) {
+    fields.push(
+      js.propertyDefinition(
+        context.server,
+        expression(
+          `${imports.add("@angular/common", "isPlatformServer")}(${core("inject")}(${core("PLATFORM_ID")}))`,
+        ),
+        { accessibility: "protected", readonly: true },
+      ),
+    );
+  }
+  // The template reads module functions through members of their names, as it reads globals.
+  const globals = [...context.globals, ...context.helpers.map(({ name }) => name)].map((name) =>
     js.propertyDefinition(name, js.identifier(name), {
       accessibility: "protected",
       readonly: true,

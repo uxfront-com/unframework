@@ -1,13 +1,13 @@
-import { ApplicationRef, Component, inject, output, signal } from "@angular/core";
+import { ApplicationRef, Component, inject, input, output, signal } from "@angular/core";
 
 @Component({
   selector: "uf-picker",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let log = this.log();
     @let status = this.status();
-    <section class="picker" aria-label="Picker">
+    <section class="picker" aria-label="Picker" [class]="this.class()" [style]="this.style()">
       <div class="choices" role="presentation" (click)="report()">
         <button type="button" (click)="pick('alpha')">Alpha</button>
         <button type="button" (click)="pick('beta')">Beta</button>
@@ -23,6 +23,8 @@ import { ApplicationRef, Component, inject, output, signal } from "@angular/core
   `,
 })
 export default class Picker {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly done = output<[step: number, status: string]>();
   private readonly appRef = inject(ApplicationRef);
   private readonly selected = signal("none");

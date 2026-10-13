@@ -5,6 +5,7 @@ import {
   ElementRef,
   Renderer2,
   inject,
+  input,
   output,
   signal,
 } from "@angular/core";
@@ -60,12 +61,17 @@ export class WheelPassive {
 @Component({
   selector: "uf-event-log",
   imports: [ClickCapture, ClickOnce, WheelPassive],
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let log = this.log();
     @let volume = this.volume();
-    <section class="event-log" aria-label="Event options">
+    <section
+      class="event-log"
+      aria-label="Event options"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <div
         class="panel"
         role="presentation"
@@ -91,6 +97,8 @@ export class WheelPassive {
   `,
 })
 export default class EventLog {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly log = signal<string[]>([]);
   protected readonly volume = signal(5);
 

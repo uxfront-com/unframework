@@ -3,65 +3,34 @@
 import type { QuarantineEntry } from "@unframework/testing/node";
 
 /**
- * The cases of M3's core lane (components, slots, fallthrough, expose, models, context and
- * `<component is>`) that Angular reports as UF1002 until its own M3 lane emits composition
- * (codegen's `compositionUse`): L1 finds an error no capability cell of Angular's declares, or a
- * fix that recompiles to one. Every later layer has no output to check, and is skipped.
+ * Chrome's accessible name puts a space at every `display: contents` element, and Angular's host
+ * element is one (ADR-0010): two components rendered side by side as inline content read
+ * "Build passing" where every other target reads "Buildpassing". The DOM, the pixels and the
+ * behaviour match; the host strategy, or a declared difference, needs a decision.
  */
-const COMPOSITION: readonly string[] = [
-  "components/acronym-names",
-  "components/branch-content",
-  "components/framework-names",
-  "components/list-item-root",
-  "components/list-rows",
-  "components/local-sibling",
-  "components/named-import",
-  "components/props-and-events",
-  "components/recursion",
-  "components/three-levels",
-  "context/fallback",
-  "context/nested",
-  "context/reactive",
-  "context/static",
-  "diagnostics/component-listener-option",
-  "diagnostics/invalid-model",
-  "diagnostics/invalid-v-model",
-  "diagnostics/unknown-component",
-  "dynamic/components",
-  "dynamic/prop-union",
-  "dynamic/tags",
-  "expose/focus",
-  "expose/several",
-  "fallthrough/class-and-style",
-  "fallthrough/inherit-attrs-false",
-  "fallthrough/to-component-root",
-  "models/checkbox",
-  "models/checkbox-group",
-  "models/component",
-  "models/modifiers",
-  "models/number",
-  "models/radio",
-  "models/select",
-  "models/select-multiple",
-  "models/several",
-  "models/text-field",
-  "models/textarea",
-  "semantics/models",
-  "slots/default",
-  "slots/fallback",
-  "slots/forwarding",
-  "slots/in-list",
-  "slots/named",
-  "slots/presence",
-  "slots/prop-names",
-  "slots/scoped",
-  "slots/scoped-default",
-];
+const HOST_NAME_SPACE =
+  "Chrome's accessible name puts a space at Angular's `display: contents` host (ADR-0010) between inline siblings.";
 
-export const QUARANTINE: readonly QuarantineEntry[] = COMPOSITION.map((id) => ({
-  case: id,
-  target: "angular",
-  layer: "L1",
-  reason: "Angular reports composition (UF1002) until its M3 lane emits it.",
-  issue: "UXF-318",
-}));
+export const QUARANTINE: readonly QuarantineEntry[] = [
+  {
+    case: "components/named-import",
+    target: "angular",
+    layer: "L7",
+    reason: HOST_NAME_SPACE,
+    issue: "UXF-318",
+  },
+  {
+    case: "fallthrough/class-and-style",
+    target: "angular",
+    layer: "L7",
+    reason: HOST_NAME_SPACE,
+    issue: "UXF-318",
+  },
+  {
+    case: "fallthrough/class-and-style",
+    target: "angular",
+    layer: "L9",
+    reason: HOST_NAME_SPACE,
+    issue: "UXF-318",
+  },
+];

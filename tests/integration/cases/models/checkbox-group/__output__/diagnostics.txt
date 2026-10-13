@@ -1,11 +1,3 @@
-error[UF1002] (angular): The angular target does not emit two-way-binding yet: composition lands in M3.
- --> models/checkbox-group/Drinks.uf.tsx:9:44
-  |
-9 |         <input type="checkbox" value="tea" v-model={drinks.value} /> Tea
-  |                                            ^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (astro): The astro target does not emit two-way-binding yet: composition lands in M3.
  --> models/checkbox-group/Drinks.uf.tsx:9:44
   |

@@ -182,6 +182,26 @@ describe("ngtscVirtual", () => {
       expect(loaded).toEqual([id("Pong")]);
     });
 
+    // The golden guard fails a child it rejects in its load, inside the parent's transform.
+    it("fails the parent with the reason a child failed to load for", async () => {
+      const reason = "[uf guard] The angular output of Field.uf.tsx is not its golden output";
+      const options = {
+        lazy: true,
+        loadError: reason,
+        resolve: (specifier: string) => (specifier === "./field" ? id("Field") : undefined),
+      };
+      const server = await ngtscPlugin({}, "server", options);
+      await expect(server.transform(id("Form"), form("./field", "[label]"))).rejects.toThrow(
+        reason,
+      );
+      const client = await ngtscPlugin({}, "client", options);
+      const { code } = await client.transform(id("Form"), form("./field", "[label]"));
+      expect(client.logged).toEqual([expect.stringContaining(reason)]);
+      expect(code).toBe(
+        `throw new Error(${JSON.stringify(client.logged[0])});\nexport default undefined;\n`,
+      );
+    });
+
     it("fails the parent when Vite cannot resolve it", async () => {
       const { transform, loaded } = await ngtscPlugin({}, "server", { lazy: true });
       await expect(transform(id("Form"), form("./field", "[label]"))).rejects.toThrow(/TS2307/);

@@ -1,12 +1,18 @@
-import { Component, output, signal } from "@angular/core";
+import { Component, input, output, signal } from "@angular/core";
 
 @Component({
   selector: "uf-star-rating",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let stars = this.stars();
-    <div class="star-rating" role="group" aria-label="Rating">
+    <div
+      class="star-rating"
+      role="group"
+      aria-label="Rating"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <ul>
         @for (choice of choices; track choice) {
           <li>
@@ -24,6 +30,8 @@ import { Component, output, signal } from "@angular/core";
   `,
 })
 export default class StarRating {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly preview = output<number>();
   readonly rate = output<[stars: number, previous: number]>();
   readonly cleared = output<void>();
