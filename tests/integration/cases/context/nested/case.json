@@ -1,4 +1,5 @@
 {
   "description": "A component injects its parent's depth and provides its own under the same key: each nested provider answers its own descendants, and the inner one wins.",
-  "main": "Outline.uf.tsx"
+  "main": "Outline.uf.tsx",
+  "requires": "Every test reads what a provider passes down, which a target without `context` renders as the fallback (ADR-0054)."
 }

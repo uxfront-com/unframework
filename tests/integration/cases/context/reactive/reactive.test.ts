@@ -6,13 +6,13 @@ import { expect } from "vitest";
 import Counter from "./Counter.uf.tsx";
 
 describeTargets("context/reactive", () => {
-  it("injects the ref's value", async () => {
+  it("injects the ref's value", { requires: ["context"] }, async () => {
     const view = await mount(Counter);
     await view.expectParity("initial");
     await expect.element(view.getByRole("status")).toHaveTextContent("Count: 1");
   });
 
-  it("renders each write of the ref", { requires: ["interactivity"] }, async () => {
+  it("renders each write of the ref", { requires: ["context", "interactivity"] }, async () => {
     const view = await mount(Counter);
     await view.user.click(view.getByRole("button", { name: "Add one" }));
     await view.expectParity("added");
