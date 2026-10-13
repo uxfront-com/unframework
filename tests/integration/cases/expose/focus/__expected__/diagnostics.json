@@ -19,23 +19,6 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit component yet: composition lands in M3.",
-    "file": "expose/focus/Header.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 7,
-      "offset": 230
-    },
-    "end": {
-      "line": 9,
-      "column": 48,
-      "offset": 271
-    },
-    "target": "astro"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
     "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "expose/focus/Header.uf.tsx",
     "start": {
@@ -134,23 +117,6 @@
       "offset": 257
     },
     "target": "angular"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The astro target does not emit expose yet: composition lands in M3.",
-    "file": "expose/focus/SearchField.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 3,
-      "offset": 234
-    },
-    "end": {
-      "line": 8,
-      "column": 26,
-      "offset": 257
-    },
-    "target": "astro"
   },
   {
     "code": "UF1002",

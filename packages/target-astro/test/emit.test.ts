@@ -126,7 +126,19 @@ describe("astro target", () => {
       const { files, reported } = emit("Hello", hello, kind);
       expect(reported).toEqual([]);
       expect(files).toEqual([
-        { path: "Hello.astro", contents: '<p class="greeting">Hello, world!</p>\n' },
+        {
+          path: "Hello.astro",
+          contents: [
+            "---",
+            "interface Props { class?: string; style?: Record<string, string | number | undefined> }",
+            "",
+            "const { class: className, style } = Astro.props;",
+            "---",
+            "",
+            '<p class:list={["greeting", className]} style={style}>Hello, world!</p>',
+            "",
+          ].join("\n"),
+        },
       ]);
     }
   });
@@ -134,7 +146,13 @@ describe("astro target", () => {
   it("prints nested elements, void elements and boolean attributes as Astro markup", () => {
     expect(emit("Card", card).files[0]!.contents).toBe(
       [
-        '<section class="card">',
+        "---",
+        "interface Props { class?: string; style?: Record<string, string | number | undefined> }",
+        "",
+        "const { class: className, style } = Astro.props;",
+        "---",
+        "",
+        '<section class:list={["card", className]} style={style}>',
         '  <h2 title="say &quot;hi&quot; &amp; {x}">a &lt; b &amp; &#123;c&#125; d&nbsp;e</h2>',
         "  <p>Line one<br />Line two</p>",
         '  <input type="checkbox" checked aria-label="Agree" />',
@@ -197,8 +215,12 @@ const inline = `export default function Tag({ label, tone = "info" }: { label: s
 }
 `;
 
-const namedProps = `interface Props { label: string }
+// Without fallthrough: with it, the source's `Props` is renamed for the `Props` that adds `class`
+// and `style`.
+const namedProps = `import { defineOptions } from "unframework";
+interface Props { label: string }
 export default function Tag({ label }: Props) {
+  defineOptions({ inheritAttrs: false });
   return <span>{label}</span>;
 }
 `;
@@ -216,23 +238,31 @@ export default function Tag(${name}: TagProps) {
 }
 `;
 
+// The three below turn fallthrough off: a root that takes `class` and `style` reads `Astro.props`.
+
 /** A component that reads nothing, its parameter written `parameter`. */
-const readsNothing = (parameter: string) => `export interface ListProps { title?: string }
+const readsNothing = (parameter: string) => `import { defineOptions } from "unframework";
+export interface ListProps { title?: string }
 export default function List(${parameter}: ListProps) {
+  defineOptions({ inheritAttrs: false });
   return <p>x</p>;
 }
 `;
 
 /** A component that reads none of the props of an inline type. */
-const readsNothingInline = `export default function List(_props: { title?: string }) {
+const readsNothingInline = `import { defineOptions } from "unframework";
+export default function List(_props: { title?: string }) {
+  defineOptions({ inheritAttrs: false });
   return <p>x</p>;
 }
 `;
 
 /** A component that reads none of the props of a type the source names `Props`. */
-const readsNothingNamed = `interface Item { id: string }
+const readsNothingNamed = `import { defineOptions } from "unframework";
+interface Item { id: string }
 interface Props { items: Item[] }
 export default function List({ items }: Props) {
+  defineOptions({ inheritAttrs: false });
   return <p>x</p>;
 }
 `;
@@ -322,12 +352,12 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "  available?: boolean;",
         "}",
         "",
-        "type Props = ProductTileProps;",
+        "interface Props extends ProductTileProps { class?: string; style?: Record<string, string | number | undefined> }",
         "",
-        "const { name, price, available = true } = Astro.props;",
+        "const { name, price, available = true, class: className, style } = Astro.props;",
         "---",
         "",
-        '<article class="product-tile" aria-label={name}>',
+        '<article class:list={["product-tile", className]} aria-label={name} style={style}>',
         "  <p>Price: {price} EUR</p>",
         '  <p>{available ? "Available" : "Unavailable"}</p>',
         '  <button type="button" disabled={!available}>Add {name}</button>',
@@ -354,12 +384,12 @@ describe("props: the frontmatter (ADR-0034)", () => {
     expect(emitted(inline)).toBe(
       lines(
         "---",
-        'interface Props { label: string; tone?: "info" | "warn" }',
+        'interface Props { label: string; tone?: "info" | "warn"; class?: string; style?: Record<string, string | number | undefined> }',
         "",
-        'const { label, tone = "info" } = Astro.props;',
+        'const { label, tone = "info", class: className, style } = Astro.props;',
         "---",
         "",
-        "<span data-tone={tone}>{label}</span>",
+        "<span data-tone={tone} class:list={[className]} style={style}>{label}</span>",
       ),
     );
     expect(emitted(namedProps)).toBe(
@@ -381,12 +411,13 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "---",
         "export interface TagProps { label: string; hint?: string }",
         "",
-        "type Props = TagProps;",
+        "interface Props extends TagProps { class?: string; style?: Record<string, string | number | undefined> }",
         "",
         "const props = Astro.props;",
+        "const { class: className, style } = Astro.props;",
         "---",
         "",
-        "<span title={props.hint}>{props.label}</span>",
+        "<span title={props.hint} class:list={[className]} style={style}>{props.label}</span>",
       ),
     );
   });
@@ -400,12 +431,13 @@ describe("props: the frontmatter (ADR-0034)", () => {
           "---",
           "export interface TagProps { label: string }",
           "",
-          "type Props = TagProps;",
+          "interface Props extends TagProps { class?: string; style?: Record<string, string | number | undefined> }",
           "",
           "const props = Astro.props;",
+          "const { class: className, style } = Astro.props;",
           "---",
           "",
-          "<span>{props.label}</span>",
+          "<span class:list={[className]} style={style}>{props.label}</span>",
         ),
       );
       await expect(renderSource(output, { label: "Hi" })).resolves.toBe("<span>Hi</span>");
@@ -425,12 +457,12 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "",
         "export interface ListProps { items: Item[]; title?: string; extra?: number; prefix: string }",
         "",
-        "type Props = ListProps;",
+        "interface Props extends ListProps { class?: string; style?: Record<string, string | number | undefined> }",
         "",
-        "const { items } = Astro.props;",
+        "const { items, class: className, style } = Astro.props;",
         "---",
         "",
-        "<ul>",
+        "<ul class:list={[className]} style={style}>",
         "  {items.map((item) => (",
         "    <li>{item.label}</li>",
         "  ))}",
@@ -506,7 +538,10 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "  author?: { name: string };",
         "}",
         "",
-        "type Props = NoticeProps;",
+        "interface Props extends NoticeProps {",
+        "  class?: string;",
+        "  style?: Record<string, string | number | undefined>;",
+        "}",
         "",
         "const {",
         "  message,",
@@ -514,10 +549,17 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "  priority = 1,",
         '  tags = ["general"],',
         '  author = { name: "System" },',
+        "  class: className,",
+        "  style,",
         "} = Astro.props;",
         "---",
         "",
-        '<p title={title} data-priority={priority}>{message} {tags.join(", ")} {author.name}</p>',
+        "<p",
+        "  title={title}",
+        "  data-priority={priority}",
+        "  class:list={[className]}",
+        "  style={style}",
+        '>{message} {tags.join(", ")} {author.name}</p>',
       ),
     );
   });
@@ -527,7 +569,7 @@ describe("control flow (ADR-0036)", () => {
   it("writes conditionals as ternaries ending in `null`, and lists as `.map` without keys", () => {
     expect(markupOf(emitted(controlFlow))).toBe(
       lines(
-        "<div>",
+        "<div class:list={[className]} style={style}>",
         "  {open ? (",
         "    <p>open</p>",
         "  ) : null}",
@@ -598,7 +640,7 @@ describe("attributes (ADR-0037 to ADR-0040)", () => {
   it("writes bindings, `class:list`, style objects and spreads key by key", () => {
     expect(markupOf(emitted(attributes))).toBe(
       lines(
-        "<div>",
+        "<div class:list={[className]} style={style}>",
         // Astro's renderer does not read `multiple` as a boolean (ADR-0037).
         '  <input type="file" multiple={on ? "" : undefined} disabled={!on} aria-label="Files" />',
         '  <p class="a b">s</p>',

@@ -1,0 +1,15 @@
+---
+interface Props {
+  steps: string[];
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { steps, class: className, style } = Astro.props;
+---
+
+<ol class:list={["steps", className]} style={style}>
+  {steps.map((step) => (
+    <li><slot name="marker" />{step}</li>
+  ))}
+</ol>

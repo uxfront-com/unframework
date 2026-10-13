@@ -1,0 +1,17 @@
+---
+import CardIcon from "./CardIcon.astro";
+
+interface Props {
+  title: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { title, class: className, style } = Astro.props;
+---
+
+<div class:list={["card", className]} style={style}>
+  <CardIcon symbol="+" />
+  <h3>{title}</h3>
+  <CardIcon symbol="-" />
+</div>

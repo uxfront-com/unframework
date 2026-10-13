@@ -9,17 +9,6 @@ error[UF1002] (angular): The angular target does not emit dynamic-component yet:
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (astro): The astro target does not emit dynamic-component yet: composition lands in M3.
- --> dynamic/tags/Section.uf.tsx:7:7
-  |
-7 |       <component is={nested.value ? "h3" : "h2"} class="title">
-  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  | ...
-9 |       </component>
-  | ^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (qwik): The qwik target does not emit dynamic-component yet: composition lands in M3.
  --> dynamic/tags/Section.uf.tsx:7:7
   |

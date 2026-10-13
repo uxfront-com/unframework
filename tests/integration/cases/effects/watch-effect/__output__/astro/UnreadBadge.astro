@@ -3,12 +3,17 @@ export interface UnreadBadgeProps {
   appName: string;
 }
 
-export type Props = UnreadBadgeProps;
+interface Props extends UnreadBadgeProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
 
 const unread = 0 as number;
 ---
 
-<section class="unread-badge" aria-label="Inbox">
+<section class:list={["unread-badge", className]} aria-label="Inbox" style={style}>
   <p role="status">{unread} unread</p>
   <button type="button">Receive a message</button>
   <button type="button">Mark all read</button>

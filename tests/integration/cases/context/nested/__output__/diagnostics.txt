@@ -6,14 +6,6 @@ error[UF1002] (angular): The angular target does not emit an injection key yet: 
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (astro): The astro target does not emit an injection key yet: composition lands in M3.
- --> context/nested/Level.uf.tsx:4:1
-  |
-4 | export const DepthKey: InjectionKey<number> = Symbol("uf.depth");
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (qwik): The qwik target does not emit an injection key yet: composition lands in M3.
  --> context/nested/Level.uf.tsx:4:1
   |
@@ -55,17 +47,6 @@ warning[UF4001] (astro): The astro target does not support context: Astro render
   = see: https://unframework.dev/diagnostics/UF4001
 
 error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
-  --> context/nested/Outline.uf.tsx:5:5
-   |
- 5 |     <Level title="Book">
-   |     ^^^^^^^^^^^^^^^^^^^^
-   | ...
-10 |     </Level>
-   | ^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (astro): The astro target does not emit component yet: composition lands in M3.
   --> context/nested/Outline.uf.tsx:5:5
    |
  5 |     <Level title="Book">

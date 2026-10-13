@@ -1,0 +1,18 @@
+---
+interface Props {
+  from: number;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { from, class: className, style } = Astro.props;
+---
+
+<div class:list={["level", className]} style={style}>
+  <span>{from}</span>
+  {from > 0 ? (
+    <Astro.self from={from - 1} />
+  ) : (
+    <strong>Liftoff</strong>
+  )}
+</div>

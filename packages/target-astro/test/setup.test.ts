@@ -252,13 +252,15 @@ export default function Field({ label }: FieldProps) {
 }
 `;
 
-const idsUnread = `import { useId } from "unframework";
+// Without fallthrough, which would read `Astro.props`: only the helper names `Astro`.
+const idsUnread = `import { defineOptions, useId } from "unframework";
 
 export interface FieldProps {
   label?: string;
 }
 
 export default function Field(_props: FieldProps) {
+  defineOptions({ inheritAttrs: false });
   const id = useId();
 
   return <input id={id} aria-label="Name" />;
@@ -313,16 +315,19 @@ describe("setup (ADR-0046)", () => {
 
   it("widens a conditional of literals as `ref` does, and keeps the union a `computed` keeps", async () => {
     const output = await compiled(conditionals);
-    expect(output.slice(0, output.indexOf("---\n\n<p>"))).toBe(
+    expect(output.slice(0, output.indexOf("---\n\n<p"))).toBe(
       [
         "---",
         "export interface LevelProps {",
         "  flag: boolean;",
         "}",
         "",
-        "type Props = LevelProps;",
+        "interface Props extends LevelProps {",
+        "  class?: string;",
+        "  style?: Record<string, string | number | undefined>;",
+        "}",
         "",
-        "const { flag } = Astro.props;",
+        "const { flag, class: className, style } = Astro.props;",
         "",
         "const level = (flag ? 1 : 2) as number;",
         "const maybe = (flag ? 1 : null) as number | null;",
@@ -350,6 +355,13 @@ describe("setup (ADR-0046)", () => {
     expect(output).toBe(
       [
         "---",
+        "interface Props {",
+        "  class?: string;",
+        "  style?: Record<string, string | number | undefined>;",
+        "}",
+        "",
+        "const { class: className, style } = Astro.props;",
+        "",
         "const rates = { standard: 0, express: 12 };",
         "",
         "function format(cents: number): string {",
@@ -361,7 +373,7 @@ describe("setup (ADR-0046)", () => {
         "const shipping = double(rates[method]);",
         "---",
         "",
-        '<section aria-label="Totals">',
+        '<section aria-label="Totals" class:list={[className]} style={style}>',
         "  <p>{format(shipping)}</p>",
         '  <button type="button">Express</button>',
         "</section>",
@@ -385,14 +397,17 @@ describe("setup (ADR-0046)", () => {
         "  delay: number;",
         "}",
         "",
-        "type Props = PanelProps;",
+        "interface Props extends PanelProps {",
+        "  class?: string;",
+        "  style?: Record<string, string | number | undefined>;",
+        "}",
         "",
-        "const { heading } = Astro.props;",
+        "const { heading, class: className, style } = Astro.props;",
         "",
         'const status = "Waiting" as string;',
         "---",
         "",
-        "<section aria-label={heading}>",
+        "<section aria-label={heading} class:list={[className]} style={style}>",
         '  <p role="status">{status}</p>',
         '  <input aria-label="Name" />',
         '  <button type="button">Toggle</button>',
@@ -414,15 +429,19 @@ describe("setup (ADR-0046)", () => {
         "  name: string;",
         "}",
         "",
-        "type Props = PlanetProps;",
+        "interface Props extends PlanetProps {",
+        "  class?: string;",
+        "  style?: Record<string, string | number | undefined>;",
+        "}",
         "",
         "const props = Astro.props;",
+        "const { class: className, style } = Astro.props;",
         "",
         "const moons = 2 as number;",
         "const label = `${props.name}: ${moons}`;",
         "---",
         "",
-        "<p>{label}</p>",
+        "<p class:list={[className]} style={style}>{label}</p>",
         "",
       ].join("\n"),
     );
@@ -430,7 +449,21 @@ describe("setup (ADR-0046)", () => {
     // The compiled component declares `Astro` in the frontmatter's scope.
     const binding = await compiled(astroBinding);
     expect(binding).toBe(
-      ["---", 'const Astro_1 = "Mars" as string;', "---", "", "<p>{Astro_1}</p>", ""].join("\n"),
+      [
+        "---",
+        "interface Props {",
+        "  class?: string;",
+        "  style?: Record<string, string | number | undefined>;",
+        "}",
+        "",
+        "const { class: className, style } = Astro.props;",
+        "",
+        'const Astro_1 = "Mars" as string;',
+        "---",
+        "",
+        "<p class:list={[className]} style={style}>{Astro_1}</p>",
+        "",
+      ].join("\n"),
     );
     await expect(renderSource(binding)).resolves.toBe("<p>Mars</p>");
   });

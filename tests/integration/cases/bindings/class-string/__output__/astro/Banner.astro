@@ -5,12 +5,15 @@ export interface BannerProps {
   emphasis?: string | null;
 }
 
-type Props = BannerProps;
+interface Props extends BannerProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { message, tone, emphasis } = Astro.props;
+const { message, tone, emphasis, class: className, style } = Astro.props;
 ---
 
-<div class:list={["banner", tone]} role="note">
+<div class:list={["banner", tone, className]} role="note" style={style}>
   <p class:list={[emphasis]}>{message}</p>
   <p class:list={[`banner-footer banner-footer-${tone}`]}>Shown to every visitor.</p>
 </div>

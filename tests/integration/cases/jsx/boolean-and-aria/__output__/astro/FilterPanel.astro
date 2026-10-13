@@ -12,7 +12,10 @@ export interface FilterPanelProps {
   current?: "page" | "step";
 }
 
-type Props = FilterPanelProps;
+interface Props extends FilterPanelProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
 const {
   heading,
@@ -25,10 +28,18 @@ const {
   loading,
   invalid,
   current,
+  class: className,
+  style,
 } = Astro.props;
 ---
 
-<section class="filter-panel" aria-label={heading} data-category={category} data-layout="stacked">
+<section
+  class:list={["filter-panel", className]}
+  aria-label={heading}
+  data-category={category}
+  data-layout="stacked"
+  style={style}
+>
   <button
     type="button"
     aria-expanded={expanded}

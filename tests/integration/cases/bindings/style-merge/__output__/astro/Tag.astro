@@ -6,12 +6,15 @@ export interface TagProps {
   indent?: string;
 }
 
-type Props = TagProps;
+interface Props extends TagProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { label, colour, weight, indent } = Astro.props;
+const { label, colour, weight, indent, class: className, style } = Astro.props;
 ---
 
 <span
-  class="tag"
-  style={{ display: "inline-block", padding: "2px 8px", borderStyle: "solid", borderWidth: "1px", borderColor: colour ?? "#5a5a5a", color: colour, fontWeight: weight, marginLeft: indent }}
+  class:list={["tag", className]}
+  style={{ display: "inline-block", padding: "2px 8px", borderStyle: "solid", borderWidth: "1px", borderColor: colour ?? "#5a5a5a", color: colour, fontWeight: weight, marginLeft: indent, ...style }}
 >{label}</span>

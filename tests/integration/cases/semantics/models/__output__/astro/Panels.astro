@@ -1,0 +1,19 @@
+---
+import Disclosure from "./Disclosure.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+const shipping = true as boolean;
+---
+
+<section aria-label="Panels" class:list={[className]} style={style}>
+  <Disclosure title="Shipping" open={shipping} />
+  <Disclosure title="Returns" />
+  <output>Shipping is {shipping ? "open" : "closed"}</output>
+  <button type="button">Toggle shipping</button>
+</section>

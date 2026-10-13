@@ -1,0 +1,18 @@
+---
+import Notice from "./Notice.astro";
+
+interface Props {
+  build: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { build, class: className, style } = Astro.props;
+---
+
+<div class:list={[className]} style={style}>
+  <Notice
+    label="Build"
+  >Build {build} failed.<Fragment slot="action"><a href="#logs">See the logs</a></Fragment></Notice>
+  <Notice label="Deploy" />
+</div>

@@ -24,6 +24,11 @@ export interface Spelling {
   propsObject?: string;
   /** The names taken, for the target's own: helpers, a block getter's function. */
   scope: NameScope;
+  /**
+   * The name each scoped slot's render prop is read under (ADR-0054): the slot's own, or
+   * `defaultSlot` for the default one, whose name is a keyword.
+   */
+  renderProps: ReadonlyMap<string, string>;
 }
 
 /**
@@ -46,8 +51,17 @@ export function spellingOf(component: UfComponent, module: UfModule): Spelling {
     names.set(binding.id, taken ? scope.claim(binding.name) : binding.name);
   }
   const name = (id: BindingId) => names.get(id)!;
+  const renderProps = new Map<string, string>();
+  for (const slot of component.slots?.slots ?? []) {
+    if (slot.props) {
+      renderProps.set(slot.name, scope.claim(slot.name === "default" ? "defaultSlot" : slot.name));
+    }
+  }
   return {
     rules: {
+      // A named slot's presence is Astro's own; a scoped slot is a render prop, present when
+      // passed.
+      slot: ({ slot }) => renderProps.get(slot) ?? `Astro.slots.has(${JSON.stringify(slot)})`,
       binding: (_, binding, written) => {
         switch (binding.kind) {
           case "prop":
@@ -77,6 +91,7 @@ export function spellingOf(component: UfComponent, module: UfModule): Spelling {
     name,
     ...(propsObject === undefined ? {} : { propsObject }),
     scope,
+    renderProps,
   };
 }
 

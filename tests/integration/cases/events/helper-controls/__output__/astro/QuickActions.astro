@@ -3,16 +3,19 @@ export interface QuickActionsProps {
   actions: string[];
 }
 
-type Props = QuickActionsProps;
+interface Props extends QuickActionsProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { actions } = Astro.props;
+const { actions, class: className, style } = Astro.props;
 
 const query = "" as string;
 const lastKey = "none" as string;
 const subscriptions = 0 as number;
 ---
 
-<section class="quick-actions" aria-label="Quick actions">
+<section class:list={["quick-actions", className]} aria-label="Quick actions" style={style}>
   <label>Search<input name="query" /></label>
   <p>Query: {query}</p>
   <label>Note<input name="note" /></label>

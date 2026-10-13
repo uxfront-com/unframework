@@ -1,9 +1,11 @@
 ---
 interface Props {
   text: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
 }
 
-const { text } = Astro.props;
+const { text, class: className, style } = Astro.props;
 ---
 
-<h3 class="heading">{text}</h3>
+<h3 class:list={["heading", className]} style={style}>{text}</h3>

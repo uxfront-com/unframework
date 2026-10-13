@@ -1,8 +1,15 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const results = [] as string[];
 ---
 
-<section class="search-session" aria-label="Search">
+<section class:list={["search-session", className]} aria-label="Search" style={style}>
   <label>Query<input name="query" /></label>
   <ul aria-label="Results">
     {results.map((result) => (

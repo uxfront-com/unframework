@@ -1,10 +1,17 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const saves = 0 as number;
 const lastKey = "none" as string;
 const tags = [] as string[];
 ---
 
-<section class="note-editor" aria-label="Note">
+<section class:list={["note-editor", className]} aria-label="Note" style={style}>
   <button type="button">Save</button>
   <label>Title<input name="title" /></label>
   <label>Body<textarea name="body"></textarea></label>

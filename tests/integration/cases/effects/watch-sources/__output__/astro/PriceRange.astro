@@ -3,15 +3,18 @@ export interface PriceRangeProps {
   currency: string;
 }
 
-type Props = PriceRangeProps;
+interface Props extends PriceRangeProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { currency } = Astro.props;
+const { currency, class: className, style } = Astro.props;
 
 const low = 10 as number;
 const high = 50 as number;
 ---
 
-<section class="price-range" aria-label="Price range">
+<section class:list={["price-range", className]} aria-label="Price range" style={style}>
   <p role="status">{low} to {high} {currency}</p>
   <button type="button">Shift up</button>
   <button type="button">Widen</button>

@@ -1,0 +1,17 @@
+---
+import Level from "./Level.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<Level title="Book" class:list={[className]} style={style}>
+  <Level title="Part">
+    <Level title="Chapter" />
+  </Level>
+  <Level title="Appendix" />
+</Level>

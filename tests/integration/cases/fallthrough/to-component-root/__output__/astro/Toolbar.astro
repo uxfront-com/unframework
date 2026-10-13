@@ -1,0 +1,14 @@
+---
+import Primary from "./Primary.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<div role="toolbar" aria-label="Actions" class:list={[className]} style={style}>
+  <Primary text="Save" class="wide" />
+</div>

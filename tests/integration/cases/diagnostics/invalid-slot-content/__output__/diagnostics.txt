@@ -6,14 +6,6 @@ error[UF1002] (angular): The angular target does not emit `defineSlots` yet: com
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (astro): The astro target does not emit `defineSlots` yet: composition lands in M3.
- --> diagnostics/invalid-slot-content/Page.uf.tsx:7:3
-  |
-7 |   const slots = defineSlots<{ title?(): Element; default?(): Element }>();
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (qwik): The qwik target does not emit `defineSlots` yet: composition lands in M3.
  --> diagnostics/invalid-slot-content/Page.uf.tsx:7:3
   |

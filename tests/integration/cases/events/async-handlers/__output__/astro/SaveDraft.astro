@@ -1,8 +1,15 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const status = "Not saved" as string;
 ---
 
-<section class="save-draft" aria-label="Draft">
+<section class:list={["save-draft", className]} aria-label="Draft" style={style}>
   <p role="status">{status}</p>
   <button type="button">Save the draft</button>
 </section>

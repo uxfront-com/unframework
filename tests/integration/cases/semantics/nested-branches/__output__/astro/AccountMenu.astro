@@ -7,15 +7,18 @@ export interface AccountMenuProps {
   owner?: User;
 }
 
-type Props = AccountMenuProps;
+interface Props extends AccountMenuProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { owner } = Astro.props;
+const { owner, class: className, style } = Astro.props;
 
 const step = "intro" as string;
 const user = null as User | null;
 ---
 
-<section class="account-menu" aria-label="Account">
+<section class:list={["account-menu", className]} aria-label="Account" style={style}>
   {step === "intro" ? (
     <button type="button">Start</button>
   ) : (

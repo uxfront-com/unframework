@@ -1,10 +1,17 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const size = "M" as string;
 const quantity = 1 as number;
 const note = "" as string;
 ---
 
-<section class="shirt-order" aria-label="Shirt order">
+<section class:list={["shirt-order", className]} aria-label="Shirt order" style={style}>
   <p role="status">{`${quantity} x size ${size}`}</p>
   <div role="group" aria-label="Size">
     <button type="button" value="S" aria-pressed={size === "S"}>Small</button>

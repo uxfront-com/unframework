@@ -1,0 +1,302 @@
+// Composition in Astro's shape (ADR-0054): what the markup printer cannot write from the IR as it
+// stands, because Astro writes it elsewhere than the source. The render tree is copied with:
+// - the consumer's `class` and `style` merged into the root (fallthrough), read from the props;
+// - each scoped fill, and each forwarded scoped slot, as a render prop named as the slot, since
+//   Astro's `<Fragment slot>` drops a slot's arguments; the fill stays in place, for what reads
+//   its bindings (a list's index), and the dialect writes no content for it;
+// - a `<textarea>`'s model as its text, and a `<select>`'s as `selected` on its options.
+// Astro renders once, on the server, so a model renders its initial state and nothing writes it.
+import { rewriteExpression } from "@unframework/codegen";
+import type {
+  Attribute,
+  ComponentAttribute,
+  ComponentNode,
+  DynamicNode,
+  ElementNode,
+  Expression,
+  FragmentNode,
+  ModelAttribute,
+  RenderNode,
+  SlotFill,
+  UfComponent,
+} from "@unframework/ir";
+
+import { unreachable } from "./spelling.ts";
+import type { Spelling } from "./spelling.ts";
+
+/**
+ * The property of the style declaration that stands for the consumer's style, spread last into
+ * the root's style object so that its declarations win (`...style`).
+ */
+export const SPREAD_STYLE = "...";
+
+/** The names the frontmatter reads the consumer's `class` and `style` under. */
+export interface Fallthrough {
+  className: string;
+  style: string;
+}
+
+/** A component's render tree in Astro's shape, with the names the frontmatter declares for it. */
+export interface AstroRender {
+  render: ElementNode | FragmentNode;
+  /** Present where the root takes the consumer's `class` and `style` (ADR-0054). */
+  fallthrough?: Fallthrough;
+  /** Each `<component is>` of the copy, with the constant the frontmatter declares it as. */
+  dynamics: Map<DynamicNode, string>;
+}
+
+/**
+ * Whether a component's root takes a consumer's `class` and `style`: one element, or one
+ * component, unless `inheritAttrs` is off (the analyser's `ComponentApi.root`).
+ */
+export function takesFallthrough(component: UfComponent): boolean {
+  if (component.inheritAttrs === false) return false;
+  const { render } = component;
+  return (
+    render.kind === "Element" ||
+    (render.children.length === 1 && render.children[0]!.kind === "Component")
+  );
+}
+
+/**
+ * Whether a fill is passed as a render prop: a scoped one, or a forwarded slot that takes props
+ * (`slots` are the component's own declared slots).
+ */
+export function isRenderProp(fill: SlotFill, component: UfComponent): boolean {
+  if (fill.parameter !== undefined) return true;
+  if (fill.forward === undefined) return false;
+  return component.slots?.slots.find((slot) => slot.name === fill.forward)?.props !== undefined;
+}
+
+/** A component's render tree in Astro's shape. */
+export function astroRender(
+  component: UfComponent,
+  spelling: Spelling,
+  fallthrough: Fallthrough | undefined,
+): AstroRender {
+  const rules = spelling.rules;
+  const dynamics = new Map<DynamicNode, string>();
+  const code = (expression: Expression) => rewriteExpression(expression, component, rules);
+
+  // A root component takes the fallthrough before it branches (`withFallthrough`).
+  const rootComponent =
+    component.render.kind === "Fragment" ? component.render.children[0] : undefined;
+  const nodes = (children: readonly RenderNode[]): RenderNode[] => children.map(node);
+  const fills = (each: readonly SlotFill[]): SlotFill[] =>
+    each.map((fill) => ({ ...fill, children: nodes(fill.children) }));
+  const renderProps = (each: readonly SlotFill[]): ComponentAttribute[] =>
+    each
+      .filter((fill) => isRenderProp(fill, component))
+      .map((fill) => ({
+        kind: "Prop",
+        name: fill.slot,
+        // The dialect writes the fill's function in its place (`../markup.ts`).
+        value: written("undefined", fill),
+        span: fill.span,
+      }));
+
+  function node(each: RenderNode): RenderNode {
+    switch (each.kind) {
+      case "Text":
+      case "Interpolation":
+        return each;
+      case "Element":
+        return element(each);
+      case "If":
+        return {
+          ...each,
+          branches: each.branches.map((branch) => ({
+            ...branch,
+            children: nodes(branch.children),
+          })),
+        };
+      case "For":
+        return {
+          ...each,
+          body: each.body.kind === "Element" ? element(each.body) : componentChild(each.body),
+        };
+      case "Component":
+        return branched(componentChild(each));
+      case "SlotOutlet":
+        return { ...each, fallback: nodes(each.fallback) };
+      case "Dynamic": {
+        const copy: DynamicNode = {
+          ...each,
+          attributes: [...each.attributes, ...renderProps(each.fills ?? [])],
+          children: nodes(each.children),
+          ...(each.fills ? { fills: fills(each.fills) } : {}),
+        };
+        dynamics.set(copy, spelling.scope.claim("Tag"));
+        return copy;
+      }
+      default:
+        return unreachable(each);
+    }
+  }
+
+  function componentChild(each: ComponentNode): ComponentNode {
+    const root = each === rootComponent && fallthrough ? withFallthrough(each, fallthrough) : each;
+    return {
+      ...root,
+      attributes: [...root.attributes, ...renderProps(root.fills)],
+      fills: fills(root.fills),
+    };
+  }
+
+  /**
+   * A component that forwards slots, as one branch per set of the forwarded slots present, the
+   * largest first, each with only those fills: Astro's compiler gives a component every slot its
+   * content names, so a fill kept where the slot is absent would hide the child's fallback.
+   * Each branch tests only the slots it forwards: the branches before it, which test larger
+   * sets, failed.
+   */
+  function branched(each: ComponentNode): RenderNode {
+    const forwarded = each.fills.filter(
+      (fill) => fill.forward !== undefined && !isRenderProp(fill, component),
+    );
+    if (!forwarded.length) return each;
+    const sets = forwarded
+      .reduce<SlotFill[][]>((all, fill) => all.flatMap((set) => [[...set, fill], set]), [[]])
+      .toSorted((a, b) => b.length - a.length);
+    const presence = (fill: SlotFill) =>
+      rules.slot!({ kind: "Slot", slot: fill.forward!, span: fill.span }, "render");
+    return {
+      kind: "If",
+      branches: sets.map((set) => ({
+        ...(set.length ? { condition: written(set.map(presence).join(" && "), each) } : {}),
+        children: [
+          {
+            ...each,
+            fills: each.fills.filter((fill) => !forwarded.includes(fill) || set.includes(fill)),
+          },
+        ],
+        span: each.span,
+      })),
+      span: each.span,
+    };
+  }
+
+  function element(each: ElementNode): ElementNode {
+    const model = each.attributes.find(
+      (attribute): attribute is ModelAttribute => attribute.kind === "Model",
+    );
+    if (model?.control === "textarea") {
+      return {
+        ...each,
+        children: [{ kind: "Interpolation", value: model.value, span: model.span }],
+      };
+    }
+    if (model?.control === "select" || model?.control === "select-multiple") {
+      const value = code(model.value);
+      const test = (option: string) =>
+        model.control === "select" ? `${value} === ${option}` : `${value}.includes(${option})`;
+      return { ...each, children: each.children.map((child) => selected(child, test)) };
+    }
+    return { ...each, children: nodes(each.children) };
+  }
+
+  /** An option of a bound `<select>`, selected where its value is the model's (ADR-0054). */
+  function selected(each: RenderNode, test: (option: string) => string): RenderNode {
+    if (each.kind === "Element" && each.tag === "option") {
+      const option = optionValue(each, code);
+      const attribute: Attribute = {
+        kind: "Bound",
+        name: "selected",
+        value: written(test(option), each),
+        span: each.span,
+      };
+      return { ...each, attributes: [...each.attributes, attribute] };
+    }
+    if (each.kind === "Element") {
+      return { ...each, children: each.children.map((child) => selected(child, test)) };
+    }
+    if (each.kind === "If") {
+      return {
+        ...each,
+        branches: each.branches.map((branch) => ({
+          ...branch,
+          children: branch.children.map((child) => selected(child, test)),
+        })),
+      };
+    }
+    if (each.kind === "For") return { ...each, body: selected(each.body, test) as ElementNode };
+    return node(each);
+  }
+
+  const render =
+    component.render.kind === "Element"
+      ? element(component.render)
+      : { ...component.render, children: nodes(component.render.children) };
+  if (!fallthrough) return { render, dynamics };
+  return {
+    render: render.kind === "Element" ? withFallthrough(render, fallthrough) : render,
+    fallthrough,
+    dynamics,
+  };
+}
+
+/**
+ * The root with the consumer's `class` merged into its own, and the consumer's `style` spread
+ * after its own declarations: Astro passes a component's `class` (`class:list` resolved) and
+ * `style` as props.
+ */
+function withFallthrough<T extends ElementNode | ComponentNode>(root: T, names: Fallthrough): T {
+  const attributes = [...root.attributes] as (Attribute | ComponentAttribute)[];
+  const className = {
+    kind: "Dynamic" as const,
+    value: written(names.className, root),
+    span: root.span,
+  };
+  const style = {
+    kind: "Bound" as const,
+    property: SPREAD_STYLE,
+    value: written(names.style, root),
+    span: root.span,
+  };
+  // A static `class` is one of the root's attributes: it joins the class as a static part.
+  const staticAt = attributes.findIndex(
+    (attribute) => attribute.kind === "Static" && attribute.name === "class",
+  );
+  const own = attributes[staticAt];
+  if (own?.kind === "Static" && own.value !== true) {
+    attributes[staticAt] = {
+      kind: "Class",
+      items: [{ kind: "Static", value: own.value, span: own.span }],
+      span: own.span,
+    };
+  }
+  const classAt = attributes.findIndex((attribute) => attribute.kind === "Class");
+  const existing = attributes[classAt];
+  if (existing?.kind === "Class")
+    attributes[classAt] = { ...existing, items: [...existing.items, className] };
+  else attributes.push({ kind: "Class", items: [className], span: root.span });
+  const styleAt = attributes.findIndex((attribute) => attribute.kind === "Style");
+  const declared = attributes[styleAt];
+  if (declared?.kind === "Style") {
+    attributes[styleAt] = { ...declared, declarations: [...declared.declarations, style] };
+  } else attributes.push({ kind: "Style", declarations: [style], span: root.span });
+  return { ...root, attributes } as T;
+}
+
+/**
+ * An option's value as code: its `value` attribute, or its text, which a form submits where it
+ * has none.
+ */
+function optionValue(option: ElementNode, code: (expression: Expression) => string): string {
+  for (const attribute of option.attributes) {
+    if (attribute.kind === "Static" && attribute.name === "value" && attribute.value !== true) {
+      return JSON.stringify(attribute.value);
+    }
+    if (attribute.kind === "Bound" && attribute.name === "value") return code(attribute.value);
+  }
+  const text = option.children.map((child) => (child.kind === "Text" ? child.value : "")).join("");
+  return JSON.stringify(text.trim().replace(/\s+/g, " "));
+}
+
+/**
+ * Code the target writes itself, already in the output's spelling: no references, so the
+ * printer splices nothing into it.
+ */
+function written(code: string, at: { span: Expression["span"] }): Expression {
+  return { code, span: at.span, refs: [] };
+}

@@ -1,0 +1,18 @@
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+const count = 2 as number;
+const volume = 5 as number;
+---
+
+<section aria-label="Order" class:list={[className]} style={style}>
+  <input type="number" aria-label="Count" min="0" value={count} />
+  <input type="range" aria-label="Volume" min="0" max="10" value={volume} />
+  <output>Next: {count + 1}, volume {volume + 1}</output>
+  <button type="button">Ten</button>
+</section>

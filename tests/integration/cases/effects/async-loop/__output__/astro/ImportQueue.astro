@@ -3,13 +3,18 @@ export interface ImportQueueProps {
   files: string[];
 }
 
-export type Props = ImportQueueProps;
+interface Props extends ImportQueueProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
 
 const status = "idle" as string;
 const attempts = 0 as number;
 ---
 
-<section class="import-queue" aria-label="Import">
+<section class:list={["import-queue", className]} aria-label="Import" style={style}>
   <button type="button">Import all</button>
   <p role="status">{status}, {attempts} attempts</p>
 </section>

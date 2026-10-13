@@ -1,0 +1,21 @@
+---
+import Card from "./Card.astro";
+
+interface Props {
+  author: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { author, class: className, style } = Astro.props;
+---
+
+<Card class:list={[className]} style={style}>
+  <p>Slots arrive in M3.</p>
+  <Fragment slot="header">
+    <h2>Release notes</h2>
+  </Fragment>
+  <Fragment slot="footer">
+    <small>By {author}</small>
+  </Fragment>
+</Card>

@@ -3,65 +3,45 @@
 import type { QuarantineEntry } from "@unframework/testing/node";
 
 /**
- * The cases of M3's core lane (components, slots, fallthrough, expose, models, context and
- * `<component is>`) that Astro reports as UF1002 until its own M3 lane emits composition (codegen's
- * `compositionUse`): L1 finds an error no capability cell of Astro's declares, or a fix that
- * recompiles to one. Every later layer has no output to check, and is skipped.
+ * Context is unsupported on Astro (ADR-0054, a warning): `inject` gives its fallback, so the
+ * render differs from Vue's by declaration. The specs do not require `context`, and L6 has no
+ * skip by capability, so the cells fail until they can.
  */
-const COMPOSITION: readonly string[] = [
-  "components/acronym-names",
-  "components/branch-content",
-  "components/framework-names",
-  "components/list-item-root",
-  "components/list-rows",
-  "components/local-sibling",
-  "components/named-import",
-  "components/props-and-events",
-  "components/recursion",
-  "components/three-levels",
+const CONTEXT: readonly QuarantineEntry[] = [
   "context/fallback",
   "context/nested",
   "context/reactive",
   "context/static",
-  "diagnostics/component-listener-option",
-  "diagnostics/invalid-model",
-  "diagnostics/invalid-v-model",
-  "diagnostics/unknown-component",
-  "dynamic/components",
-  "dynamic/prop-union",
-  "dynamic/tags",
-  "expose/focus",
-  "expose/several",
-  "fallthrough/class-and-style",
-  "fallthrough/inherit-attrs-false",
-  "fallthrough/to-component-root",
-  "models/checkbox",
-  "models/checkbox-group",
-  "models/component",
-  "models/modifiers",
-  "models/number",
-  "models/radio",
-  "models/select",
-  "models/select-multiple",
-  "models/several",
-  "models/text-field",
-  "models/textarea",
-  "semantics/models",
-  "slots/default",
-  "slots/fallback",
-  "slots/forwarding",
-  "slots/in-list",
-  "slots/named",
-  "slots/presence",
-  "slots/prop-names",
-  "slots/scoped",
-  "slots/scoped-default",
-];
+].flatMap((id) =>
+  (["L6", "L7", "L8", "L10"] as const).map((layer) => ({
+    case: id,
+    target: "astro",
+    layer,
+    reason:
+      "Astro's `context` cell is unsupported, so `inject` gives its fallback; the case has no skip by capability for it.",
+    issue: "UXF-320",
+  })),
+);
 
-export const QUARANTINE: readonly QuarantineEntry[] = COMPOSITION.map((id) => ({
-  case: id,
+/**
+ * A static control shows its model's state as markup (`checked`, `selected`, a `<textarea>`'s
+ * text), where Vue's client sets the property alone: the normaliser drops only an `<input>`'s
+ * settled `value` (ADR-0058, rule 4d).
+ */
+const CONTROLS: readonly QuarantineEntry[] = [
+  ["models/checkbox-group", "L7"],
+  ["models/radio", "L7"],
+  ["models/select", "L7"],
+  ["models/select-multiple", "L7"],
+  ["models/textarea", "L7"],
+  ["models/textarea", "L10"],
+].map(([id, layer]) => ({
+  case: id!,
   target: "astro",
-  layer: "L1",
-  reason: "Astro reports composition (UF1002) until its M3 lane emits it.",
+  layer: layer as QuarantineEntry["layer"],
+  reason:
+    "Astro writes a control's state as markup, which the normaliser compares with Vue's properties.",
   issue: "UXF-320",
 }));
+
+export const QUARANTINE: readonly QuarantineEntry[] = [...CONTEXT, ...CONTROLS];

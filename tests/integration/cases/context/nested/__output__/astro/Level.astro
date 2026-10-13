@@ -1,0 +1,16 @@
+---
+interface Props {
+  title: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { title, class: className, style } = Astro.props;
+
+const depth = 0 as number;
+---
+
+<section aria-label={title} class:list={[className]} style={style}>
+  <h2>{title} at depth {depth}</h2>
+  <slot />
+</section>

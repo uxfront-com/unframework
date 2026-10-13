@@ -5,11 +5,14 @@ export interface OrderStatusProps {
   eta?: string;
 }
 
-type Props = OrderStatusProps;
+interface Props extends OrderStatusProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { status, carrier, eta } = Astro.props;
+const { status, carrier, eta, class: className, style } = Astro.props;
 ---
 
-<p class="order-status">
+<p class:list={["order-status", className]} style={style}>
   {status === "pending" ? "Waiting for payment." : status === "shipped" ? <><strong>Shipped</strong> with {carrier ?? "our courier"}, arriving {eta ?? "soon"}.</> : status === "delivered" ? <strong>Delivered</strong> : <em>Cancelled</em>}
 </p>

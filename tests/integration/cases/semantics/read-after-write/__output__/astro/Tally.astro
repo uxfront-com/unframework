@@ -1,9 +1,16 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const count = 0 as number;
 const trail = [] as string[];
 ---
 
-<section class="tally" aria-label="Tally">
+<section class:list={["tally", className]} aria-label="Tally" style={style}>
   <p role="status">Count: {count}</p>
   <button type="button">Add two</button>
   <button type="button">Add five</button>

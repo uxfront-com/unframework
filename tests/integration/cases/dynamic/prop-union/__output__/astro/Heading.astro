@@ -1,0 +1,12 @@
+---
+interface Props {
+  tag: "h1" | "h2" | "h3";
+  text: string;
+}
+
+const { tag, text } = Astro.props;
+
+const Tag = tag;
+---
+
+<Tag class="heading">{text}</Tag>

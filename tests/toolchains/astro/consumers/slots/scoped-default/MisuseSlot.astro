@@ -1,0 +1,6 @@
+---
+import Names from "../../../../../integration/cases/slots/scoped-default/__output__/astro/Names.astro";
+---
+
+<!-- @uf-expect TS2339 Names.slot:default -->
+<Names names={["Ada"]} default={({ size }) => <b>{size}</b>} />

@@ -1,9 +1,16 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const log = [] as string[];
 const resets = 0 as number;
 ---
 
-<section class="listener-order" aria-label="Listener order">
+<section class:list={["listener-order", className]} aria-label="Listener order" style={style}>
   <div class="toolbar" role="presentation">
     <button type="button">Save</button>
     <button type="button">Send</button>

@@ -1,0 +1,13 @@
+---
+interface Props {
+  locale: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { locale, class: className, style } = Astro.props;
+---
+
+<div lang={locale} class:list={[className]} style={style}>
+  <slot />
+</div>

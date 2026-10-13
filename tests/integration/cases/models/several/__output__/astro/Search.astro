@@ -1,0 +1,19 @@
+---
+import PriceRange from "./PriceRange.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+const low = 20 as number;
+const high = 50 as number;
+---
+
+<section aria-label="Search" class:list={[className]} style={style}>
+  <PriceRange label="Price" min={low} max={high} />
+  <output>Between {low} and {high}</output>
+  <button type="button">Cheaper</button>
+</section>

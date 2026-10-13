@@ -1,8 +1,15 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const open = false as boolean;
 ---
 
-<section class="profile-menu" aria-label="Profile">
+<section class:list={["profile-menu", className]} aria-label="Profile" style={style}>
   <div class="menu">
     <button type="button" aria-expanded={open}>Account</button>
     {open ? (

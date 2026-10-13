@@ -4,9 +4,12 @@ export interface EmailFieldProps {
   hint: string;
 }
 
-type Props = EmailFieldProps;
+interface Props extends EmailFieldProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { label, hint } = Astro.props;
+const { label, hint, class: className, style } = Astro.props;
 
 function uniqueId(): string {
   const locals = Astro.locals as { ufIdCount?: number };
@@ -18,7 +21,7 @@ const inputId = uniqueId();
 const hintId = uniqueId();
 ---
 
-<div class="email-field">
+<div class:list={["email-field", className]} style={style}>
   <label for={inputId}>{label}</label>
   <input id={inputId} name="email" type="email" aria-describedby={hintId} />
   <p id={hintId}>{hint}</p>

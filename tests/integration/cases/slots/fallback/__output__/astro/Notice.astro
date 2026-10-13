@@ -1,0 +1,20 @@
+---
+interface Props {
+  label: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, class: className, style } = Astro.props;
+---
+
+<div role="note" aria-label={label} class:list={["notice", className]} style={style}>
+  <p>
+    <slot>
+      <em>Nothing to report.</em>
+    </slot>
+  </p>
+  <slot name="action">
+    <span class="muted">No action</span>
+  </slot>
+</div>
