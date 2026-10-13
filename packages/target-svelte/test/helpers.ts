@@ -9,6 +9,7 @@ import type { UfModule } from "@unframework/ir";
 // The analyzer is no dependency of a target (plan §5.2): tests reach it from its source, as the
 // render-parity kit does, to lower source snippets as `compile()` would.
 import { analyze } from "../../analyzer/src/index.ts";
+import { compile, createFileResolver } from "../../compiler/src/index.ts";
 import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
 
@@ -110,6 +111,32 @@ export async function emitSource(
     : target.emit(module.components[0]!, context(module));
   if (files.length !== 1) throw new Error(`expected one file, got ${files.length}`);
   return files[0]!;
+}
+
+/**
+ * What this target emits for several sources that import each other, as `compile()` does with
+ * a file resolver over them (ADR-0053): every output file by its name. Fails on any error.
+ */
+export async function compileSources(
+  sources: Record<string, string>,
+): Promise<Record<string, string>> {
+  const resolve = createFileResolver({
+    root: "/case",
+    readFile: async (path) => sources[path.slice(6)],
+  });
+  const files: Record<string, string> = {};
+  for (const [filename, source] of Object.entries(sources)) {
+    const { diagnostics, outputs } = await compile(source, {
+      filename,
+      targets: [target],
+      resolve,
+    });
+    const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
+    if (errors.length)
+      throw new Error(`${filename}: ${errors.map((each) => each.message).join("; ")}`);
+    for (const file of outputs["svelte"] ?? []) files[file.path] = file.contents;
+  }
+  return files;
 }
 
 /** An emit context that fails on any diagnostic: a target never reports from `emit`. */

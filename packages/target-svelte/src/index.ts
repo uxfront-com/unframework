@@ -90,9 +90,10 @@ export const svelte: Target = defineTarget({
     "late-prop": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    const { module, block, markup: options, render } = instanceScript(component, context.module);
+    const script = instanceScript(component, context.module);
+    const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.
-    const markup = printMarkup(render, svelteDialect, { component, ...options });
+    const markup = printMarkup(render, svelteDialect, { component: script.component, ...options });
     const parts = [OPTIONS, ...(module ? [module] : []), ...(block ? [block] : []), markup];
     return [{ path: `${component.name}.svelte`, contents: `${parts.join("\n\n")}\n` }];
   },

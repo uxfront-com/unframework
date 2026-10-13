@@ -3,7 +3,7 @@
 // `bind:this`. Svelte parses balanced JavaScript in `{…}`, braces in strings and comments
 // included, so expression code is printed as written.
 import { HTML_ELEMENTS } from "@unframework/ir";
-import type { Attribute, ElementNode } from "@unframework/ir";
+import type { Attribute, ComponentAttribute, ElementNode } from "@unframework/ir";
 
 import {
   escapeBraces,
@@ -416,7 +416,7 @@ export const svelteDialect: MarkupDialect = {
         element: {
           kind: "Element",
           tag: "svelte:element",
-          attributes: node.attributes as Attribute[],
+          attributes: node.attributes.filter(isElementAttribute),
           children: node.children,
           span: node.span,
         },
@@ -425,6 +425,13 @@ export const svelteDialect: MarkupDialect = {
     ];
   },
 };
+
+/** Whether an attribute of `<component is>` over tags is an element's: every one is. */
+function isElementAttribute(attribute: Attribute | ComponentAttribute): attribute is Attribute {
+  return (
+    attribute.kind !== "Prop" && attribute.kind !== "Listener" && attribute.kind !== "ModelBinding"
+  );
+}
 
 /** `bind:value={text}`, or `bind:value` where the variable is named like the property. */
 function binding(property: string, code: string): PrintedAttribute {

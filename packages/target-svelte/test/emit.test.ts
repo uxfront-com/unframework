@@ -872,9 +872,9 @@ describe("svelte composition", () => {
     );
     expect(outputs["ThemeProvider.svelte"]).toContain("setContext(ThemeKey, {");
     expect(outputs["Badge.svelte"]).toContain(
-      'import { type Theme, ThemeKey } from "./ThemeProvider.svelte";',
+      'import { ThemeKey, type ThemeKeyValue } from "./ThemeProvider.svelte";',
     );
-    expect(outputs["Badge.svelte"]).toContain("getContext<Theme | undefined>(ThemeKey)");
+    expect(outputs["Badge.svelte"]).toContain("getContext<ThemeKeyValue | undefined>(ThemeKey)");
   });
 
   it("provides a ref through refObject, and falls back to one", async () => {
@@ -882,7 +882,7 @@ describe("svelte composition", () => {
       await caseOutputs("context/reactive");
     expect(counter).toMatch(/setContext\(\s*CountKey,\s*refObject\(\(\) => count\),?\s*\);/);
     expect(display).toMatch(
-      /hasContext\(CountKey\)\s*\? getContext<\{ readonly value: number \}>\(CountKey\)\s*: refObject\(\(\) => none\)/,
+      /hasContext\(CountKey\)\s*\? getContext<CountKeyValue>\(CountKey\)\s*: refObject\(\(\) => none\)/,
     );
   });
 

@@ -23,7 +23,6 @@ import {
   rewriteExpression,
   sourceNames,
   typeDeclarationCode,
-  typeNames,
 } from "@unframework/codegen";
 import type { MarkupOptions, RewriteRules } from "@unframework/codegen";
 import { codeOf, expressionsOf, walk } from "@unframework/ir";
@@ -55,7 +54,13 @@ import type {
 } from "@unframework/ir";
 
 import { functionRanges, readsName, visit } from "./ast.ts";
-import { composedRender, hasOwnStyle, slotProp, takesFallthrough } from "./composition.ts";
+import {
+  composedRender,
+  hasOwnStyle,
+  rootTakesFallthrough,
+  slotProp,
+  takesFallthrough,
+} from "./composition.ts";
 import type { Fallthrough } from "./composition.ts";
 import { isAttached } from "./events.ts";
 import { handlerTypes } from "./handlers.ts";
@@ -63,6 +68,8 @@ import { block, escapeScriptEnd, INDENT, reindent } from "./text.ts";
 
 /** What a component's script gives its markup. */
 export interface InstanceScript {
+  /** The component as the markup prints it: a binding a snippet would hide has its own name. */
+  component: UfComponent;
   /**
    * The `<script lang="ts" module>` block of the output that declares the module's injection keys
    * (ADR-0054): absent elsewhere.
@@ -214,6 +221,10 @@ class ScriptWriter {
   /** The functions whose parameters' types Svelte's event types need changed (`handlers.ts`). */
   readonly #functions: ReadonlyMap<FunctionCode, FunctionCode>;
   readonly rules: RewriteRules;
+  /** The local name of each imported key's value type, by the key's local name. */
+  readonly #valueTypes = new Map<string, string>();
+  /** The bindings the output names apart from the source (`snippetNames`). */
+  readonly #renamed = new Set<string>();
   /** The template refs attached to an element or a component a condition renders. */
   readonly #conditionalRefs: ReadonlySet<string>;
   /** The id `$props.id()` gives, once the first `useId()` claimed it, and the next id's suffix. */
@@ -230,9 +241,18 @@ class ScriptWriter {
   readonly #componentTags = new Map<string, string>();
 
   constructor(component: UfComponent, module: UfModule) {
-    this.#component = component;
     this.#module = module;
     this.#names = new Names(component, module);
+    // A fill's snippet is named like its slot, which would hide a binding of that name from
+    // everything between the child's tags: such a binding takes a name of its own.
+    const hidden = snippetNames(component);
+    const bindings = component.bindings.map((binding) => {
+      if (!hidden.has(binding.name) || !renamable(binding, component)) return binding;
+      this.#renamed.add(binding.id);
+      return { ...binding, name: this.#names.claim(binding.name) };
+    });
+    this.#component = this.#renamed.size ? { ...component, bindings } : component;
+    component = this.#component;
     this.#bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
     this.#functions = handlerTypes(component);
     this.#conditionalRefs = conditionalRefs(component);
@@ -314,6 +334,7 @@ class ScriptWriter {
     const result = (instance?: string): InstanceScript => ({
       ...(moduleBlock ? { module: moduleBlock } : {}),
       ...(instance ? { block: instance } : {}),
+      component,
       markup,
       render: composed.render,
     });
@@ -348,10 +369,12 @@ class ScriptWriter {
       if (!component.setup.some((item) => item.kind === "Inject" && item.key === key.local)) {
         continue;
       }
-      for (const name of typeNames(this.#key(key.local).type)) {
-        if (!GLOBAL_TYPES.has(name))
-          this.#names.importNamed(key.specifier, name, name, { type: true });
-      }
+      // The key's value type, which the output declaring it exports (`#moduleScript`): what the
+      // key's type names may be global, or the module's own and not exported.
+      const value = this.#names.importNamed(key.specifier, valueType(key.name), undefined, {
+        type: true,
+      });
+      this.#valueTypes.set(key.local, value);
     }
   }
 
@@ -372,21 +395,20 @@ class ScriptWriter {
    * `value` reads it (ADR-0054).
    */
   #contextType(local: string): string {
-    const { type, ref } = this.#key(local);
-    if (!ref) return type;
-    const inner = new RegExp(`^${ref}\\s*<([\\s\\S]*)>$`).exec(type.trim())?.[1] ?? "unknown";
-    return `{ readonly value: ${inner.trim()} }`;
+    return this.#valueTypes.get(local) ?? valueType(local);
   }
 
   /**
    * The `<script module>` block of the output that declares the module's injection keys
-   * (ADR-0054): each a `Symbol`, which `setContext` and `getContext` take, beside the types the
-   * component copies, which a consumer imports with a key it injects.
+   * (ADR-0054): each a `Symbol`, which `setContext` and `getContext` take, and the type of the
+   * value it holds (`ThemeKeyValue`), which a consumer imports with the key it injects, beside
+   * the types the component copies.
    */
   #moduleScript(types: readonly string[]): string {
-    const keys = this.#module.keys!.map(
-      (key) => `export const ${key.name} = Symbol(${JSON.stringify(key.description)});`,
-    );
+    const keys = this.#module.keys!.flatMap((key) => [
+      `export type ${valueType(key.name)} = ${contextValue(key.type.code, key.ref)};`,
+      `export const ${key.name} = Symbol(${JSON.stringify(key.description)});`,
+    ]);
     const body = [...types.map((each) => indent(each, INDENT)), indent(keys.join("\n"), INDENT)];
     return `<script lang="ts" module>\n${escapeScriptEnd(body.join("\n\n"))}\n</script>`;
   }
@@ -402,6 +424,13 @@ class ScriptWriter {
       enter: (node) => {
         if (node.kind !== "Dynamic") return;
         if (!node.candidates.every((candidate) => candidate.kind === "Component")) return;
+        // A condition that reads a block's variable is chosen where it sits (`composition.ts`).
+        const scoped = node.is.refs.some((reference) => {
+          if (reference.kind !== "Binding") return false;
+          const kind = this.#bindings.get(reference.binding)?.kind;
+          return kind === "loopVar" || kind === "slotScope";
+        });
+        if (scoped) return;
         const name = this.#names.claim("Component");
         this.#dynamic.set(node, name);
         const is = rewriteExpression(node.is, this.#component, this.rules, "render");
@@ -437,6 +466,7 @@ class ScriptWriter {
 
   /** How code reads a binding: a ref's value without `.value`, everything else as written. */
   #read(binding: Binding, written: string): string {
+    if (this.#renamed.has(binding.id)) return binding.name;
     switch (binding.kind) {
       case "prop":
         return this.#propsObject === undefined ? written : `${this.#propsObject}.${binding.name}`;
@@ -537,6 +567,10 @@ class ScriptWriter {
     if (fallthrough) {
       const classValue = scope.import("svelte/elements", "ClassValue", { type: true });
       members.push(`class?: ${classValue};`, "style?: string;");
+    }
+    // A root component that turns fallthrough off takes neither: the component declares them,
+    // as its API says, and renders neither, as Vue's `inheritAttrs: false` child drops them.
+    if (fallthrough && rootTakesFallthrough(component, this.#module)) {
       this.#fallthrough = {
         className: scope.claim("className"),
         style: scope.claim("style"),
@@ -582,7 +616,9 @@ class ScriptWriter {
       const entries = component.bindings.flatMap(({ id, kind }) => {
         const prop = kind === "prop" && read.has(id) ? props.get(id) : undefined;
         if (!prop) return [];
-        return [prop.default ? `${prop.name} = ${prop.default.code}` : prop.name];
+        const local = this.#name(id);
+        const bound = local === prop.name ? prop.name : `${prop.name}: ${local}`;
+        return [prop.default ? `${bound} = ${prop.default.code}` : bound];
       });
       for (const { key, local } of this.#events.values()) {
         if (local !== undefined) entries.push(local === key ? key : `${key}: ${local}`);
@@ -1219,28 +1255,65 @@ function onceHelper(name: string): string {
   );
 }
 
-/** Type names a key's type may read that are the language's own, never an output's export. */
-const GLOBAL_TYPES: ReadonlySet<string> = new Set([
-  "Array",
-  "Date",
-  "Map",
-  "Omit",
-  "Partial",
-  "Pick",
-  "Promise",
-  "ReadonlyArray",
-  "Readonly",
-  "Record",
-  "Required",
-  "Set",
-  "ComputedRef",
-  "ModelRef",
-  "Ref",
-]);
+/** The type a key's module output exports for the value the key holds: `ThemeKeyValue`. */
+function valueType(key: string): string {
+  return `${key}Value`;
+}
+
+/**
+ * The value `getContext` reads under a key, as the key's type writes it: a ref is passed as
+ * `refObject`'s object, whose `value` reads it (ADR-0054).
+ */
+function contextValue(type: string, ref: RefType | undefined): string {
+  if (!ref) return type;
+  const inner = new RegExp(`^${ref}\\s*<([\\s\\S]*)>$`).exec(type.trim())?.[1] ?? "unknown";
+  return `{ readonly value: ${inner.trim()} }`;
+}
 
 /** `T | undefined`, with parentheses around a function type, which `|` would split. */
 function orUndefined(type: string): string {
   return `${/=>/.test(type) ? `(${type})` : type} | undefined`;
+}
+
+/**
+ * The names of the snippets the markup declares between a child's tags: each fill of a named
+ * slot, and a default fill with a parameter (ADR-0054).
+ */
+function snippetNames(component: UfComponent): Set<string> {
+  const names = new Set<string>();
+  walk(component.render, {
+    enter(node) {
+      const fills =
+        node.kind === "Component" ? node.fills : node.kind === "Dynamic" ? node.fills : [];
+      for (const fill of fills ?? []) {
+        if (fill.forward === undefined && (fill.slot !== "default" || fill.parameter)) {
+          names.add(slotProp(fill.slot));
+        }
+      }
+    },
+  });
+  return names;
+}
+
+/**
+ * Whether the output may name a binding apart from the source: a variable it declares, but not
+ * a prop read through the props object, an exposed function, whose name is the component's API,
+ * a component, an import's name, or a fill's parameter, which shadows its own snippet only.
+ */
+function renamable(binding: Binding, component: UfComponent): boolean {
+  switch (binding.kind) {
+    case "prop":
+      return component.propsParameter?.form !== "object";
+    case "localFn":
+      return !component.exposes?.functions.includes(binding.id);
+    case "component":
+    case "slotScope":
+    case "slots":
+    case "emit":
+      return false;
+    default:
+      return true;
+  }
 }
 
 /**
@@ -1270,8 +1343,11 @@ function usedSlots(component: UfComponent): Set<string> {
  * none of.
  */
 function usesModelText(attribute: ModelAttribute): boolean {
-  return Boolean(
-    attribute.trim || attribute.lazy || attribute.number || attribute.control === "number",
+  return (
+    attribute.trim === true ||
+    attribute.lazy === true ||
+    attribute.number === true ||
+    attribute.control === "number"
   );
 }
 
@@ -1292,7 +1368,10 @@ function modelTextFields(component: UfComponent): ModelAttribute[] {
 /**
  * The `mergeStyle` helper (`fallthrough`, emulated, ADR-0054): the root's own declarations with
  * a consumer's `style` over them, as the other targets merge style objects. Svelte writes a
- * consumer's nullish value as an empty declaration (`color: `), which removes the root's own.
+ * consumer's nullish value as an empty declaration (`color: `), which removes the root's own
+ * and stays empty in the result, so a component whose root is another component passes it on
+ * as Vue's `normalizeStyle` keeps the `undefined`; the CSSOM drops an empty declaration. The
+ * consumer's text splits at each `;` outside a string or parentheses (`content: "a;b"`).
  */
 function mergeStyleHelper(name: string): string {
   return [
@@ -1301,12 +1380,30 @@ function mergeStyleHelper(name: string): string {
     "  consumer: string | undefined,",
     "): string {",
     "  const merged = { ...own };",
-    '  for (const declaration of (consumer ?? "").split(/;(?![^(]*\\))/)) {',
+    '  const text = consumer ?? "";',
+    "  const add = (declaration: string) => {",
     '    const colon = declaration.indexOf(":");',
     "    if (colon > 0) merged[declaration.slice(0, colon).trim()] = declaration.slice(colon + 1).trim();",
+    "  };",
+    "  let start = 0;",
+    "  let depth = 0;",
+    '  let quote = "";',
+    "  for (let index = 0; index < text.length; index++) {",
+    "    const char = text[index];",
+    "    if (quote) {",
+    '      if (char === "\\\\") index++;',
+    '      else if (char === quote) quote = "";',
+    `    } else if (char === '"' || char === "'") quote = char;`,
+    '    else if (char === "(") depth++;',
+    '    else if (char === ")") depth--;',
+    '    else if (char === ";" && depth === 0) {',
+    "      add(text.slice(start, index));",
+    "      start = index + 1;",
+    "    }",
     "  }",
+    "  add(text.slice(start));",
     "  return Object.entries(merged)",
-    '    .flatMap(([property, value]) => (value == null || value === "" ? [] : [`${property}: ${value}`]))',
+    '    .map(([property, value]) => `${property}: ${value ?? ""}`)',
     '    .join("; ");',
     "}",
   ].join("\n");

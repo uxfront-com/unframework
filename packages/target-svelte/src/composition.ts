@@ -3,16 +3,20 @@
 // and `style` are props it merges into its root; a forwarded slot is the parent's snippet
 // passed on as a prop (`{title}`); and `<component is>` over components renders a variable the
 // script declares with `$derived`. The target prints the tree this module returns.
+import { parseExpression } from "@unframework/codegen";
 import type {
   Attribute,
   ComponentAttribute,
   ComponentNode,
+  DynamicNode,
   ElementNode,
   Expression,
   FragmentNode,
+  IfNode,
   RenderNode,
   StyleAttribute,
   UfComponent,
+  UfModule,
 } from "@unframework/ir";
 
 /** The local names of a component's fallthrough props, `class` and `style`. */
@@ -53,6 +57,95 @@ export function takesFallthrough(component: UfComponent): boolean {
   );
 }
 
+/** Whether an attribute of a `<component is>` over components is a component's. */
+function isComponentAttribute(
+  attribute: Attribute | ComponentAttribute,
+): attribute is ComponentAttribute {
+  switch (attribute.kind) {
+    case "Prop":
+    case "Listener":
+    case "ModelBinding":
+    case "Class":
+    case "Style":
+    case "Ref":
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * `<component is>` over components whose condition reads a variable of the block it sits in (a
+ * list's item, a fill's parameter), which a `$derived` in the script cannot see: each candidate
+ * under its branch of the condition, `{#if item.compact}<Chip />{:else}<Card />{/if}`, where it
+ * sits. Svelte mounts the other component when the condition changes, as it does for a
+ * component held in a variable.
+ */
+function chosenComponent(
+  node: DynamicNode,
+  component: (name: string) => ComponentNode,
+): RenderNode {
+  const { is } = node;
+  const part = (start: number, end: number) => ({
+    code: is.code.slice(start, end),
+    span: { start: is.span.start + start, end: is.span.start + end },
+    refs: is.refs.filter(
+      (reference) =>
+        reference.span.start >= is.span.start + start && reference.span.end <= is.span.start + end,
+    ),
+  });
+  const chosen = (expression: ReturnType<typeof parseExpression>): RenderNode => {
+    switch (expression.type) {
+      case "ParenthesizedExpression":
+        return chosen(expression.expression);
+      case "ConditionalExpression": {
+        const choice: IfNode = {
+          kind: "If",
+          branches: [
+            {
+              condition: part(expression.test.start, expression.test.end),
+              children: [chosen(expression.consequent)],
+              span: node.span,
+            },
+            { children: [chosen(expression.alternate)], span: node.span },
+          ],
+          span: node.span,
+        };
+        return choice;
+      }
+      case "Identifier":
+        return component(expression.name);
+      default:
+        // The analyser lets only a conditional of components through (UF3044, ADR-0054).
+        throw new Error(`\`<component is>\` chooses a component by \`${is.code}\`.`);
+    }
+  };
+  return chosen(parseExpression(is.code));
+}
+
+/**
+ * Whether a component's root takes the fallthrough it passes on: an element does, and a
+ * component does unless it sets `inheritAttrs: false` (`ComponentApi.inheritAttrs`).
+ */
+export function rootTakesFallthrough(component: UfComponent, module: UfModule): boolean {
+  const { render } = component;
+  if (render.kind === "Element") return true;
+  const [root] = render.children;
+  if (root?.kind !== "Component") return false;
+  const name = root.component;
+  for (const entry of module.imports ?? []) {
+    const imported = entry.names.find((each) => each.kind === "Component" && each.local === name);
+    if (!imported) continue;
+    const api = entry.api.components.find((each) =>
+      imported.imported === "default"
+        ? each.export === "default"
+        : each.export === "named" && each.name === imported.imported,
+    );
+    return api?.inheritAttrs !== false;
+  }
+  return module.components.find((each) => each.name === name)?.inheritAttrs !== false;
+}
+
 /** Whether a component's root, an element or a component, has a style of its own. */
 export function hasOwnStyle(component: UfComponent): boolean {
   const { render } = component;
@@ -82,10 +175,14 @@ export function composedRender(
 ): ComposedRender {
   const rewrite = (nodes: readonly RenderNode[]): RenderNode[] =>
     nodes.map((node) => rewriteNode(node));
+  const rewriteElement = (element: ElementNode): ElementNode => ({
+    ...element,
+    children: rewrite(element.children),
+  });
   const rewriteNode = (node: RenderNode): RenderNode => {
     switch (node.kind) {
       case "Element":
-        return { ...node, children: rewrite(node.children) };
+        return rewriteElement(node);
       case "If":
         return {
           ...node,
@@ -94,10 +191,12 @@ export function composedRender(
             children: rewrite(branch.children),
           })),
         };
-      case "For": {
-        const body = rewriteNode(node.body) as typeof node.body;
-        return { ...node, body };
-      }
+      case "For":
+        return {
+          ...node,
+          body:
+            node.body.kind === "Element" ? rewriteElement(node.body) : composedComponent(node.body),
+        };
       case "Component":
         return composedComponent(node);
       case "SlotOutlet": {
@@ -107,15 +206,19 @@ export function composedRender(
         return { ...node, slot, fallback: rewrite(node.fallback) };
       }
       case "Dynamic": {
+        if (node.candidates.some((candidate) => candidate.kind === "Tag")) {
+          return { ...node, children: rewrite(node.children) };
+        }
+        const candidate = (name: string): ComponentNode =>
+          composedComponent({
+            kind: "Component",
+            component: name,
+            attributes: node.attributes.filter(isComponentAttribute),
+            fills: node.fills ?? [],
+            span: node.span,
+          });
         const name = dynamic.get(node);
-        if (name === undefined) return { ...node, children: rewrite(node.children) };
-        return composedComponent({
-          kind: "Component",
-          component: name,
-          attributes: node.attributes as ComponentAttribute[],
-          fills: node.fills ?? [],
-          span: node.span,
-        });
+        return name === undefined ? chosenComponent(node, candidate) : candidate(name);
       }
       case "Text":
       case "Interpolation":
@@ -150,7 +253,7 @@ export function composedRender(
 
   const { render } = component;
   if (render.kind === "Element") {
-    const element = rewriteNode(render) as ElementNode;
+    const element = rewriteElement(render);
     if (!fallthrough) return { render: element };
     return { render: rootElement(element, fallthrough, code) };
   }
