@@ -111,6 +111,24 @@ async function act(action: () => Promise<unknown>): Promise<void> {
 }
 
 describe("react output in the browser", () => {
+  it("runs a listener beside a v-model after the model's write, which it reads", async () => {
+    await start(await component("ModelReads"), ["seen"]);
+    const field = (label: string) =>
+      container.querySelector<HTMLElement>(`[aria-label="${label}"]`)!;
+    await act(() => userEvent.selectOptions(field("Size"), "s"));
+    for (let click = 0; click < 3; click++) await act(() => userEvent.click(field("Agree")));
+    await act(() => userEvent.type(field("Name"), "Al"));
+    expect(events).toEqual([
+      ["seen", "select:s"],
+      ["seen", "box:true"],
+      ["seen", "box:false"],
+      ["seen", "box:true"],
+      ["seen", "name:A"],
+      ["seen", "name:Al"],
+    ]);
+    expect(logged).toEqual([]);
+  });
+
   it("asks a parent that holds a model's value for the same value on every write", async () => {
     const changes: unknown[] = [];
     await start(await component("HeldStepper"), [], {

@@ -103,7 +103,7 @@ export class ReactListeners {
         if (this.#plan.listeners.get(attribute)!.mode === "native") {
           found.refAt ??= attribute;
         } else {
-          const prop = reactProp(attribute);
+          const prop = propOf(attribute, element);
           const group = found.props.get(prop);
           if (group) group.push(attribute);
           else found.props.set(prop, [attribute]);
@@ -137,7 +137,7 @@ export class ReactListeners {
     if (this.#plan.listeners.get(attribute)!.mode === "native") {
       return listeners.refAt === attribute ? [this.#refAttribute(listeners, context)] : [];
     }
-    const prop = reactProp(attribute);
+    const prop = propOf(attribute, element);
     const group = listeners.props.get(prop)!;
     if (group[0] !== attribute) return [];
     const handler = this.#synthetic(group, element, this.modelHeads(element, context).get(prop));
@@ -363,6 +363,22 @@ export class ReactListeners {
   #once(listener: EventAttribute): string {
     return this.#plan.onceGuards.get(listener)!;
   }
+}
+
+/**
+ * The React prop a synthetic listener is printed under. Beside a text field's \`v-model\`, whose
+ * \`onChange\` fires on \`input\` too, an \`input\` listener joins it: it runs after the model's write,
+ * as on Vue, where React would run \`onInput\` first.
+ */
+function propOf(attribute: EventAttribute, element: ElementNode): string {
+  const prop = reactProp(attribute);
+  if (prop !== "onInput") return prop;
+  const text = element.attributes.some(
+    (other) =>
+      other.kind === "Model" &&
+      (other.control === "text" || other.control === "textarea" || other.control === "number"),
+  );
+  return text ? "onChange" : prop;
 }
 
 /** The helpers the listeners of a planned component need, after it is printed. */

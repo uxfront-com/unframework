@@ -423,7 +423,9 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
       state.set(item.binding, {
         name,
         ...setter,
-        ...(isWritten ? { mirror: names.claim(`${name}Ref`) } : {}),
+        ...(isWritten || composition.mirrored.has(item.binding)
+          ? { mirror: names.claim(`${name}Ref`) }
+          : {}),
       });
     } else if (item.kind === "Derived") {
       const { name } = bindings.get(item.binding)!;

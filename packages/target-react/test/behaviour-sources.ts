@@ -7,6 +7,26 @@
 
 /** Component name → source. */
 export const BEHAVIOUR_SOURCES: Readonly<Record<string, string>> = {
+  // Listeners beside a \`v-model\` (ADR-0054): each runs after the model's write, and reads it.
+  ModelReads: `import { defineEmits, ref } from "unframework";
+
+export default function ModelReads() {
+  const emit = defineEmits<{ seen: [value: string] }>();
+  const size = ref("m");
+  const agreed = ref(false);
+  const name = ref("");
+  return (
+    <form>
+      <select aria-label="Size" v-model={size.value} onChange={() => emit("seen", "select:" + size.value)}>
+        <option value="s">S</option>
+        <option value="m">M</option>
+      </select>
+      <input type="checkbox" aria-label="Agree" v-model={agreed.value} onChange={() => emit("seen", "box:" + String(agreed.value))} />
+      <input aria-label="Name" v-model={name.value} onInput={() => emit("seen", "name:" + name.value)} />
+    </form>
+  );
+}
+`,
   // A bound model whose parent holds its value (ADR-0054): every write starts from that value.
   HeldStepper: `import { defineModel } from "unframework";
 

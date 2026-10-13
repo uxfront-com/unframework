@@ -53,6 +53,8 @@ export interface ModelPlan {
   event: string;
   /** How code calls it. */
   eventLocal: string;
+  /** Whether a write calls it: code writes the model, or a `v-model` binds it. */
+  calls: boolean;
   /**
    * The local state of an unbound model, where code writes it or a child binds it: without one,
    * the model is its prop, with its default.
@@ -97,6 +99,8 @@ export interface CompositionPlan {
   readonly interfaces: { slots?: string; models?: string; attributes?: string };
   /** The state a `v-model` binds: it needs its setter, whoever else writes it. */
   readonly bound: ReadonlySet<BindingId>;
+  /** The state a control's `v-model` writes beside a listener of the control: it needs a mirror. */
+  readonly mirrored: ReadonlySet<BindingId>;
   /**
    * Whether a child's slot is scoped, as the child declares it, by the child's local name and the
    * slot: a fill is a render prop where the slot is one, with a parameter or without.
@@ -131,18 +135,24 @@ export function planComposition(
       : names.claim(prop);
   };
 
-  // What the template and the setup bind with `v-model`: a state's setter, or a model's.
+  // What the template and the setup bind with `v-model`: a state's setter, or a model's. One a
+  // control's `v-model` writes beside a listener of the control gets a mirror: the listener runs
+  // after the write, and reads it there (ADR-0046).
   const bound = new Set<BindingId>();
+  const mirrored = new Set<BindingId>();
   walk(component.render, {
     enter(node) {
       const attributes =
         node.kind === "Element" || node.kind === "Component" || node.kind === "Dynamic"
           ? node.attributes
           : [];
+      const listened = attributes.some((attribute) => attribute.kind === "Event");
       for (const attribute of attributes) {
         if (attribute.kind === "Model" || attribute.kind === "ModelBinding") {
           const [reference] = attribute.value.refs;
-          if (reference?.kind === "Binding") bound.add(reference.binding);
+          if (reference?.kind !== "Binding") continue;
+          bound.add(reference.binding);
+          if (attribute.kind === "Model" && listened) mirrored.add(reference.binding);
         }
       }
     },
@@ -164,21 +174,29 @@ export function planComposition(
     const event = `on${pascalCase(item.name)}Change`;
     const writes = written.has(item.binding);
     // A model nothing writes is its prop, destructured under the binding's name with its
-    // default; one that is written keeps local state while it is unbound.
-    const local = writes || bound.has(item.binding) || object !== "";
+    // default; one that is written keeps local state while it is unbound. A required one is
+    // always bound: it is its prop, and its local state only makes a write render.
+    const calls = writes || bound.has(item.binding);
+    const local = calls || object !== "";
     const plan: ModelPlan = {
       item,
       name: binding.name,
       prop: item.name,
-      propLocal: local ? propLocal(item.name) : binding.name,
+      propLocal:
+        local && !item.required
+          ? propLocal(item.name)
+          : object
+            ? `${object}.${item.name}`
+            : binding.name,
       event,
-      eventLocal: local ? (object ? `${object}.${event}` : names.claim(event)) : event,
+      eventLocal: calls ? (object ? `${object}.${event}` : names.claim(event)) : event,
+      calls,
     };
     if (local) {
       const base = pascalCase(binding.name);
       plan.local = { value: names.claim(`local${base}`), setter: names.claim(`setLocal${base}`) };
     }
-    if (writes) plan.mirror = names.claim(`${binding.name}Ref`);
+    if (writes || mirrored.has(item.binding)) plan.mirror = names.claim(`${binding.name}Ref`);
     models.set(item.binding, plan);
   }
 
@@ -273,6 +291,7 @@ export function planComposition(
     dynamic,
     interfaces,
     bound,
+    mirrored,
   };
 }
 
@@ -356,11 +375,12 @@ export function refValueType(type: string): string {
 }
 
 /**
- * The type of a function the component exposes, as its handle declares it: its parameters as
- * written, and `void` where it declares no return type (a caller's own type of the handle only
- * reads what it calls).
+ * The signature of a function the component exposes, as its handle declares it: a method, whose
+ * parameters TypeScript compares both ways, so a parameter the source leaves untyped is `unknown`
+ * and the function still fits; and `void` where it declares no return type (a caller's own type
+ * of the handle only reads what it calls).
  */
 export function exposedType(fn: FunctionCode, parameters: string): string {
   const returns = fn.returnType ? fn.returnType.code : fn.async ? "Promise<void>" : "void";
-  return `(${parameters}) => ${returns}`;
+  return `(${parameters}): ${returns}`;
 }

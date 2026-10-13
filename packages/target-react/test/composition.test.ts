@@ -245,6 +245,42 @@ export default function Odd() {
     </div>
   );
 }`,
+  // Listeners that read what a `v-model` beside them writes.
+  modelReads: `import { ref } from "unframework";
+export default function Reads() {
+  const size = ref("m");
+  const agreed = ref(false);
+  const name = ref("");
+  const city = ref("Lisbon");
+  const seen = ref("");
+  return (
+    <form>
+      <select v-model={size.value} onChange={() => (seen.value = "select:" + size.value)}>
+        <option value="s">S</option>
+        <option value="m">M</option>
+      </select>
+      <input type="checkbox" v-model={agreed.value} onChange={() => (seen.value = "box:" + String(agreed.value))} />
+      <input aria-label="Name" v-model={name.value} onInput={() => (seen.value = "name:" + name.value)} />
+      <input aria-label="City" v-model_lazy={city.value} onBlur={() => (seen.value = "city:" + city.value)} />
+      <output>{seen.value}</output>
+    </form>
+  );
+}`,
+  // A required model and an untyped one, written; an exposed function with a default.
+  modelKinds: `import { defineExpose, defineModel } from "unframework";
+export default function Kinds() {
+  const count = defineModel<number>("count", { required: true });
+  const label = defineModel("label");
+  function add(step = 1) {
+    count.value += step;
+  }
+  defineExpose({ add });
+  return (
+    <button type="button" onClick={() => { add(); label.value = "added"; }}>
+      {count.value} {String(label.value)}
+    </button>
+  );
+}`,
 };
 
 describe("react composition beyond the corpus", () => {
@@ -287,7 +323,9 @@ describe("react composition beyond the corpus", () => {
   it("runs a v-model's handler first in a listener's of the same prop", () => {
     const picker = emitted.get("modelListeners")!.get("Picker")!;
     expect(picker.match(/onChange=/g)).toHaveLength(3);
-    expect(picker).toMatch(/setSize\(event\.target\.value\);\n\s*changesRef\.current\+\+;/);
+    expect(picker).toMatch(
+      /sizeRef\.current = event\.target\.value;\n\s*setSize\(sizeRef\.current\);\n\s*changesRef\.current\+\+;/,
+    );
     expect(picker).toContain("cityField.onBlur();");
     expect(picker).toContain("cityField.onFocus();");
     expect(picker).toContain('value={note ?? ""}');
@@ -299,6 +337,27 @@ describe("react composition beyond the corpus", () => {
     expect(dots).toContain("renderDefault={() => <b>x</b>}");
   });
 
+  it("reads a v-model's write in a listener beside it, through the state's mirror", () => {
+    const reads = emitted.get("modelReads")!.get("Reads")!;
+    expect(reads).toMatch(
+      /sizeRef\.current = event\.target\.value;\n\s*setSize\(sizeRef\.current\);\n\s*seenRef\.current = "select:" \+ sizeRef\.current;/,
+    );
+    expect(reads).toContain('seenRef.current = "box:" + String(agreedRef.current);');
+    expect(reads).toMatch(
+      /nameRef\.current = event\.target\.value;\n\s*setName\(nameRef\.current\);\n\s*seenRef\.current = "name:" \+ nameRef\.current;/,
+    );
+    expect(reads).not.toContain("onInput");
+    expect(reads).toContain('seenRef.current = "city:" + cityRef.current;');
+  });
+
+  it("types a required model by its prop, an untyped one unknown, and a handle by methods", () => {
+    const kinds = emitted.get("modelKinds")!.get("Kinds")!;
+    expect(kinds).toContain("count: number;");
+    expect(kinds).toContain("const [, setLocalCount] = useState({ value: count });");
+    expect(kinds).toContain("useState<{ value: unknown }>({ value: undefined })");
+    expect(kinds).toContain("add(step?: unknown): void;");
+  });
+
   it("keeps a written model's state in an object, so a held value renders again", () => {
     const odd = emitted.get("namesAndHandles")!.get("Odd")!;
     expect(odd).toContain(
@@ -307,6 +366,6 @@ describe("react composition beyond the corpus", () => {
     expect(odd).toContain("onTextChange?: (value: string | undefined) => void;");
     expect(odd).toContain("case: caseProp,");
     expect(odd).toContain("new: newProp,");
-    expect(odd).toContain("setTo: (value: { to?: number; by: number }) => void;");
+    expect(odd).toContain("setTo(value: { to?: number; by: number }): void;");
   });
 });

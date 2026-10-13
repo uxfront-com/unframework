@@ -349,10 +349,8 @@ export class ReactComposer {
       statements.push(`${model.mirror}.current = ${value}`);
       written = `${model.mirror}.current`;
     }
-    statements.push(
-      `${model.local!.setter}({ value: ${written} })`,
-      `${model.eventLocal}?.(${written})`,
-    );
+    if (model.local) statements.push(`${model.local.setter}({ value: ${written} })`);
+    statements.push(`${model.eventLocal}?.(${written})`);
     return statements;
   }
 }

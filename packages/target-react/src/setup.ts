@@ -444,24 +444,45 @@ function printItem(plan: ReactPlan, code: ReactCode, item: SetupItem): Printed {
  * callback. Client code reads and writes it through a mirror, synced with what the component
  * renders after every render. The local state holds the value in an object, new on every write,
  * so a write always renders: a parent that holds its value (a clamped stepper) then resets the
- * mirror, where React would skip setting a value equal to the last.
+ * mirror, where React would skip setting a value equal to the last. A required model is always
+ * bound: it is its prop, and its state serves only to render a write.
  */
 function printModel(plan: ReactPlan, item: ModelItem): Printed {
   const model = plan.composition.models.get(item.binding)!;
-  if (!model.local) return [];
   const hook = (name: string) => plan.names.add("react", name);
-  const valueType =
-    item.default || item.required ? item.type?.code : item.type && `${item.type.code} | undefined`;
-  const type = valueType ? `<{ value: ${valueType} }>` : "";
-  const initial = item.default ? item.default.code : "undefined";
-  const { value, setter } = model.local;
-  const printed: Printed = [
-    ["body", `const [${value}, ${setter}] = ${hook("useState")}${type}({ value: ${initial} });`],
-    [
-      "body",
-      `const ${model.name} = ${model.propLocal} === undefined ? ${value}.value : ${model.propLocal};`,
-    ],
-  ];
+  const printed: Printed = [];
+  if (item.required) {
+    // Always bound: the model is its prop, and a write renders through a state of its own.
+    if (model.propLocal !== model.name) {
+      printed.push(["body", `const ${model.name} = ${model.propLocal};`]);
+    }
+    if (model.local) {
+      const { setter } = model.local;
+      printed.push([
+        "body",
+        `const [, ${setter}] = ${hook("useState")}({ value: ${model.name} });`,
+      ]);
+    }
+  } else if (model.local) {
+    // Without a default, an unbound model starts `undefined`; without a type, it holds anything.
+    const valueType = item.type
+      ? item.default
+        ? item.type.code
+        : `${item.type.code} | undefined`
+      : "unknown";
+    const initial = item.default ? item.default.code : "undefined";
+    const { value, setter } = model.local;
+    printed.push(
+      [
+        "body",
+        `const [${value}, ${setter}] = ${hook("useState")}<{ value: ${valueType} }>({ value: ${initial} });`,
+      ],
+      [
+        "body",
+        `const ${model.name} = ${model.propLocal} === undefined ? ${value}.value : ${model.propLocal};`,
+      ],
+    );
+  }
   if (model.mirror) {
     printed.push(["body", `const ${model.mirror} = ${hook("useRef")}(${model.name});`]);
     printed.push([

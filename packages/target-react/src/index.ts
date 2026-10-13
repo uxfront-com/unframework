@@ -425,7 +425,7 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
         const fn =
           item?.kind === "Function" ? withEventTypes(plan, item.function, undefined) : undefined;
         const parameters = fn ? parametersOf(fn) : "";
-        return `${name}: ${fn ? exposedType(fn, parameters) : "() => void"};`;
+        return `${name}${fn ? exposedType(fn, parameters) : "(): void"};`;
       }),
     );
   }
@@ -568,7 +568,7 @@ function propsParameters(
   for (const model of composition.models.values()) {
     if (!model.local && !context.referenced.has(model.item.binding)) continue;
     composed.push([model.prop, model.propLocal, model.local ? undefined : model.item.default]);
-    if (model.local) composed.push([model.event, model.eventLocal]);
+    if (model.calls) composed.push([model.event, model.eventLocal]);
   }
   for (const slot of composition.slots.values()) {
     if (slot.read) composed.push([slot.prop, slot.local]);
