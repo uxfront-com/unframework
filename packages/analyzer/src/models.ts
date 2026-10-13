@@ -8,7 +8,7 @@ import { createModelAttribute, createModelBindingAttribute } from "@unframework/
 import type { ComponentApi, ModelAttribute, ModelBindingAttribute, Span } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
 
-import { closest } from "./components.ts";
+import { closest, renameFix } from "./cross-component.ts";
 import { checkExpression, isWritableRef, span } from "./expressions.ts";
 import type { CheckedExpression } from "./expressions.ts";
 import type { ComponentInfo, RenderContext } from "./render.ts";
@@ -251,7 +251,8 @@ function describe(kinds: Kinds): string {
 
 /**
  * A component's `v-model:<name>` (ADR-0054): a model the child declares (UF3037, with the model
- * it may mean), bound to a ref's value. A modifier is the control's: a model takes none.
+ * it may mean and its rename), bound to a ref's value. A modifier is the control's: a model
+ * takes none. `items` are the element's attributes, for the rename (`renameFix`).
  */
 export function lowerModelBinding(
   item: AST.JSXAttribute,
@@ -259,6 +260,7 @@ export function lowerModelBinding(
   api: ComponentApi,
   info: ComponentInfo,
   render: RenderContext,
+  items: readonly AST.JSXAttributeItem[] | undefined,
 ): ModelBindingAttribute | undefined {
   const written = `${name.namespace.name}:${name.name.name}`;
   if (name.namespace.name !== "v-model") {
@@ -277,11 +279,22 @@ export function lowerModelBinding(
       model,
       api.models.map((each) => each.name),
     );
+    const others = items?.flatMap((each) =>
+      each !== item &&
+      each.type === "JSXAttribute" &&
+      each.name.type === "JSXNamespacedName" &&
+      each.name.namespace.name === "v-model"
+        ? [each.name.name.name]
+        : [],
+    );
     render.reporter.report(
       "UF3037",
       name,
       `${info.name} declares no model \`${model}\`.${meant ? ` Did you mean \`${meant}\`?` : ""}`,
-      { help: `Bind a model ${info.name} declares with \`defineModel\`.` },
+      {
+        help: `Bind a model ${info.name} declares with \`defineModel\`.`,
+        ...(meant ? { fixes: renameFix(meant, meant, name.name, others) } : {}),
+      },
     );
     return undefined;
   }
