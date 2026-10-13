@@ -53,23 +53,6 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The react target does not emit model yet: composition lands in M3.",
-    "file": "semantics/models/Disclosure.uf.tsx",
-    "start": {
-      "line": 4,
-      "column": 3,
-      "offset": 113
-    },
-    "end": {
-      "line": 4,
-      "column": 65,
-      "offset": 175
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
     "message": "The solid target does not emit model yet: composition lands in M3.",
     "file": "semantics/models/Disclosure.uf.tsx",
     "start": {
@@ -168,23 +151,6 @@
       "offset": 260
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
-    "file": "semantics/models/Panels.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 7,
-      "offset": 199
-    },
-    "end": {
-      "line": 9,
-      "column": 68,
-      "offset": 260
-    },
-    "target": "react"
   },
   {
     "code": "UF1002",

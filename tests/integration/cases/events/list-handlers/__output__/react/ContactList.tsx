@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
 export interface Contact {
   id: string;
@@ -14,11 +14,18 @@ export interface ContactListEvents {
   onRemoved?: (name: string) => void;
 }
 
+export interface ContactListAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function ContactList({
   initial,
   onChoose,
   onRemoved,
-}: ContactListProps & ContactListEvents) {
+  className,
+  style,
+}: ContactListProps & ContactListEvents & ContactListAttributes) {
   const [contacts, setContacts] = useState(initial);
   const contactsRef = useRef(contacts);
   const [chosen, setChosen] = useState<string>();
@@ -37,7 +44,7 @@ export default function ContactList({
   }
 
   return (
-    <section className="contact-list" aria-label="Contacts">
+    <section className={cx("contact-list", className)} aria-label="Contacts" style={style}>
       <ul>
         {contacts.map((contact, index) => (
           <li key={contact.id}>
@@ -61,4 +68,19 @@ export default function ContactList({
       <p role="status">Chosen: {chosen ?? "nobody"}</p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

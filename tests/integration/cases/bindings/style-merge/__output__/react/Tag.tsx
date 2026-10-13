@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export interface TagProps {
   label: string;
   colour?: string;
@@ -5,10 +7,22 @@ export interface TagProps {
   indent?: string;
 }
 
-export default function Tag({ label, colour, weight, indent }: TagProps) {
+export interface TagAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function Tag({
+  label,
+  colour,
+  weight,
+  indent,
+  className,
+  style,
+}: TagProps & TagAttributes) {
   return (
     <span
-      className="tag"
+      className={cx("tag", className)}
       style={{
         display: "inline-block",
         padding: "2px 8px",
@@ -18,9 +32,25 @@ export default function Tag({ label, colour, weight, indent }: TagProps) {
         color: colour,
         fontWeight: weight,
         marginLeft: indent,
+        ...style,
       }}
     >
       {label}
     </span>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

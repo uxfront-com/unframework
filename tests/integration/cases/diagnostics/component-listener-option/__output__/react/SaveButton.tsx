@@ -1,10 +1,17 @@
+import type { CSSProperties } from "react";
+
 export interface SaveButtonEvents {
   onSave?: () => void;
 }
 
-export function SaveButton({ onSave }: SaveButtonEvents) {
+export interface SaveButtonAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export function SaveButton({ onSave, className, style }: SaveButtonEvents & SaveButtonAttributes) {
   return (
-    <button type="button" onClick={() => onSave?.()}>
+    <button type="button" onClick={() => onSave?.()} className={className} style={style}>
       Save
     </button>
   );

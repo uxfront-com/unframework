@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
 export interface Task {
   id: string;
@@ -9,7 +9,16 @@ export interface TaskListProps {
   initial: Task[];
 }
 
-export default function TaskList({ initial }: TaskListProps) {
+export interface TaskListAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function TaskList({
+  initial,
+  className,
+  style,
+}: TaskListProps & TaskListAttributes) {
   const [tasks, setTasks] = useState(initial);
   const tasksRef = useRef(tasks);
   const [selected, setSelected] = useState<string>();
@@ -46,7 +55,7 @@ export default function TaskList({ initial }: TaskListProps) {
   }
 
   return (
-    <section className="task-list" aria-label="Tasks">
+    <section className={cx("task-list", className)} aria-label="Tasks" style={style}>
       {tasks.length === 0 ? (
         <p>No tasks yet.</p>
       ) : (
@@ -79,4 +88,19 @@ export default function TaskList({ initial }: TaskListProps) {
       </button>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

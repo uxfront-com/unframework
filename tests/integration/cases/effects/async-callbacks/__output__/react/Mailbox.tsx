@@ -1,4 +1,12 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useReducer, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 
 export interface MailboxProps {
   folder: string;
@@ -11,13 +19,20 @@ export interface MailboxEvents {
   onNoted?: (text: string) => void;
 }
 
+export interface MailboxAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function Mailbox({
   folder,
   onLoaded,
   onProgress,
   onSeen,
   onNoted,
-}: MailboxProps & MailboxEvents) {
+  className,
+  style,
+}: MailboxProps & MailboxEvents & MailboxAttributes) {
   const folderRef = useRef(folder);
   const onSeenRef = useRef(onSeen);
   const onNotedRef = useRef(onNoted);
@@ -157,7 +172,7 @@ export default function Mailbox({
   }
 
   return (
-    <section className="mailbox" aria-label="Mailbox">
+    <section className={cx("mailbox", className)} aria-label="Mailbox" style={style}>
       <h2>{name}</h2>
       <p role="status">{summary}</p>
       <p>Status: {status}</p>
@@ -175,6 +190,21 @@ export default function Mailbox({
       </button>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /**

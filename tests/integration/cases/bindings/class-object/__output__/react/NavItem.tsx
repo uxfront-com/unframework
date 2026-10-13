@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export interface NavItemProps {
   label: string;
   href: string;
@@ -6,17 +8,29 @@ export interface NavItemProps {
   danger?: boolean;
 }
 
-export default function NavItem({ label, href, active, muted, danger = false }: NavItemProps) {
+export interface NavItemAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function NavItem({
+  label,
+  href,
+  active,
+  muted,
+  danger = false,
+  className,
+  style,
+}: NavItemProps & NavItemAttributes) {
   return (
     <a
       href={href}
-      className={cx({
-        active,
-        "nav-item-muted": muted,
-        "nav-item-danger": danger,
-        "text-danger": danger,
-      })}
+      className={cx(
+        { active, "nav-item-muted": muted, "nav-item-danger": danger, "text-danger": danger },
+        className,
+      )}
       aria-current={active ? "page" : undefined}
+      style={style}
     >
       {label}
     </a>

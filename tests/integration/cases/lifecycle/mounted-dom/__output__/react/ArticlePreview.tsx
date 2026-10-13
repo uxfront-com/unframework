@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface ArticlePreviewProps {
   title: string;
@@ -9,11 +9,18 @@ export interface ArticlePreviewEvents {
   onReady?: (characters: number) => void;
 }
 
+export interface ArticlePreviewAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function ArticlePreview({
   title,
   text,
   onReady,
-}: ArticlePreviewProps & ArticlePreviewEvents) {
+  className,
+  style,
+}: ArticlePreviewProps & ArticlePreviewEvents & ArticlePreviewAttributes) {
   const body = useRef<HTMLParagraphElement>(null);
   const [characters, setCharacters] = useState(0);
   const charactersRef = useRef(characters);
@@ -33,10 +40,25 @@ export default function ArticlePreview({
   }, []);
 
   return (
-    <article className="article-preview" aria-label={title}>
+    <article className={cx("article-preview", className)} aria-label={title} style={style}>
       <h2>{title}</h2>
       <p ref={body}>{text}</p>
       <p role="status">{counted ? `${characters} characters` : "Counting the characters"}</p>
     </article>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

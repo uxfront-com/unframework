@@ -53,23 +53,6 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The react target does not emit `defineSlots` yet: composition lands in M3.",
-    "file": "slots/named/Card.uf.tsx",
-    "start": {
-      "line": 5,
-      "column": 3,
-      "offset": 123
-    },
-    "end": {
-      "line": 5,
-      "column": 96,
-      "offset": 216
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
     "message": "The solid target does not emit `defineSlots` yet: composition lands in M3.",
     "file": "slots/named/Card.uf.tsx",
     "start": {
@@ -151,23 +134,6 @@
       "offset": 296
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
-    "file": "slots/named/Post.uf.tsx",
-    "start": {
-      "line": 5,
-      "column": 5,
-      "offset": 113
-    },
-    "end": {
-      "line": 11,
-      "column": 12,
-      "offset": 296
-    },
-    "target": "react"
   },
   {
     "code": "UF1002",

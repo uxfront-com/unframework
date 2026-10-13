@@ -1,10 +1,26 @@
-import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 
 export interface ShippingDetailsEvents {
   onToggled?: (items: number) => void;
 }
 
-export default function ShippingDetails({ onToggled }: ShippingDetailsEvents) {
+export interface ShippingDetailsAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function ShippingDetails({
+  onToggled,
+  className,
+  style,
+}: ShippingDetailsEvents & ShippingDetailsAttributes) {
   const onToggledRef = useRef(onToggled);
   useLayoutEffect(() => {
     onToggledRef.current = onToggled;
@@ -23,7 +39,7 @@ export default function ShippingDetails({ onToggled }: ShippingDetailsEvents) {
   }
 
   return (
-    <section className="shipping-details" aria-label="Shipping">
+    <section className={cx("shipping-details", className)} aria-label="Shipping" style={style}>
       <button type="button" aria-expanded={open} onClick={toggle}>
         Shipping details
       </button>
@@ -36,6 +52,21 @@ export default function ShippingDetails({ onToggled }: ShippingDetailsEvents) {
       ) : null}
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /**

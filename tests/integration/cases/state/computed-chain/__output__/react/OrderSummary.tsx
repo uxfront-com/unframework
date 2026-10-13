@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { type CSSProperties, useMemo, useRef, useState } from "react";
 
 export interface OrderSummaryProps {
   /** The unit price, in cents. */
@@ -6,7 +6,17 @@ export interface OrderSummaryProps {
   taxRate: number;
 }
 
-export default function OrderSummary({ price, taxRate }: OrderSummaryProps) {
+export interface OrderSummaryAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function OrderSummary({
+  price,
+  taxRate,
+  className,
+  style,
+}: OrderSummaryProps & OrderSummaryAttributes) {
   const [quantity, setQuantity] = useState(1);
   const quantityRef = useRef(quantity);
   const subtotal = useMemo(() => quantity * price, [quantity, price]);
@@ -18,7 +28,12 @@ export default function OrderSummary({ price, taxRate }: OrderSummaryProps) {
   }, [total]);
 
   return (
-    <section className="order-summary" aria-label="Order summary" data-tier={tier}>
+    <section
+      className={cx("order-summary", className)}
+      aria-label="Order summary"
+      data-tier={tier}
+      style={style}
+    >
       <p role="status">Quantity: {quantity}</p>
       <button
         type="button"
@@ -44,4 +59,19 @@ export default function OrderSummary({ price, taxRate }: OrderSummaryProps) {
       <p>Total: {(total / 100).toFixed(2)}</p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

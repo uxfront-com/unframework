@@ -1,10 +1,19 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface MessageListEvents {
   onRendered?: (count: number) => void;
 }
 
-export default function MessageList({ onRendered }: MessageListEvents) {
+export interface MessageListAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function MessageList({
+  onRendered,
+  className,
+  style,
+}: MessageListEvents & MessageListAttributes) {
   const [messages, setMessages] = useState(["Welcome to the team"]);
   const messagesRef = useRef(messages);
   const list = useRef<HTMLUListElement>(null);
@@ -26,7 +35,7 @@ export default function MessageList({ onRendered }: MessageListEvents) {
   }
 
   return (
-    <section className="message-list" aria-label="Messages">
+    <section className={cx("message-list", className)} aria-label="Messages" style={style}>
       <ul ref={list}>
         {messages.map((message) => (
           <li key={message}>{message}</li>
@@ -37,4 +46,19 @@ export default function MessageList({ onRendered }: MessageListEvents) {
       </button>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

@@ -1,4 +1,11 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export interface UnreadBadgeProps {
   appName: string;
@@ -9,11 +16,18 @@ export interface UnreadBadgeEvents {
   onTitleRelease?: (title: string) => void;
 }
 
+export interface UnreadBadgeAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function UnreadBadge({
   appName,
   onTitleChange,
   onTitleRelease,
-}: UnreadBadgeProps & UnreadBadgeEvents) {
+  className,
+  style,
+}: UnreadBadgeProps & UnreadBadgeEvents & UnreadBadgeAttributes) {
   const onTitleReleaseRef = useRef(onTitleRelease);
   useLayoutEffect(() => {
     onTitleReleaseRef.current = onTitleRelease;
@@ -44,7 +58,7 @@ export default function UnreadBadge({
   }, [unread, appName]);
 
   return (
-    <section className="unread-badge" aria-label="Inbox">
+    <section className={cx("unread-badge", className)} aria-label="Inbox" style={style}>
       <p role="status">{unread} unread</p>
       <button
         type="button"
@@ -66,4 +80,19 @@ export default function UnreadBadge({
       </button>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

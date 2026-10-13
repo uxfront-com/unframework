@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, useRef, useState } from "react";
 
 export interface CommandMenuProps {
   commands: string[];
@@ -9,11 +9,18 @@ export interface CommandMenuEvents {
   onDismiss?: () => void;
 }
 
+export interface CommandMenuAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function CommandMenu({
   commands,
   onRun,
   onDismiss,
-}: CommandMenuProps & CommandMenuEvents) {
+  className,
+  style,
+}: CommandMenuProps & CommandMenuEvents & CommandMenuAttributes) {
   const [active, setActive] = useState(0);
   const activeRef = useRef(active);
   const [query, setQuery] = useState("");
@@ -43,7 +50,7 @@ export default function CommandMenu({
   }
 
   return (
-    <section className="command-menu" aria-label="Command menu">
+    <section className={cx("command-menu", className)} aria-label="Command menu" style={style}>
       <form role="search" aria-label="Commands">
         <label>
           Command
@@ -74,4 +81,19 @@ export default function CommandMenu({
       </label>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

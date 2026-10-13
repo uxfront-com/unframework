@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export interface FileInfo {
   path: string;
   size: number;
@@ -16,6 +18,11 @@ export interface FileRowEvents {
   onShare?: (path: string, note?: string) => void;
 }
 
+export interface FileRowAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function FileRow({
   path,
   size,
@@ -24,14 +31,16 @@ export default function FileRow({
   onMove,
   onPick,
   onShare,
-}: FileRowProps & FileRowEvents) {
+  className,
+  style,
+}: FileRowProps & FileRowEvents & FileRowAttributes) {
   function archive() {
     onMove?.(path, `archive/${path}`);
     onRefresh?.();
   }
 
   return (
-    <div className="file-row" role="group" aria-label={path}>
+    <div className={cx("file-row", className)} role="group" aria-label={path} style={style}>
       <span>
         {path} ({size} bytes)
       </span>
@@ -55,4 +64,19 @@ export default function FileRow({
       </button>
     </div>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

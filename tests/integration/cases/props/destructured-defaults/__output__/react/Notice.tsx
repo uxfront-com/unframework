@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export interface NoticeProps {
   message: string;
   title?: string;
@@ -8,6 +10,11 @@ export interface NoticeProps {
   author?: { name: string };
 }
 
+export interface NoticeAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function Notice({
   message,
   title = "Notice",
@@ -16,9 +23,11 @@ export default function Notice({
   expanded = false,
   tags = ["general"],
   author = { name: "System" },
-}: NoticeProps) {
+  className,
+  style,
+}: NoticeProps & NoticeAttributes) {
   return (
-    <section className="notice" aria-label={title} data-tone={tone}>
+    <section className={cx("notice", className)} aria-label={title} data-tone={tone} style={style}>
       <h2>{title}</h2>
       <p>{message}</p>
       <details open={expanded}>
@@ -29,4 +38,19 @@ export default function Notice({
       </details>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

@@ -22,14 +22,6 @@ error[UF1002] (qwik): The qwik target does not emit dynamic-component yet: compo
    |
    = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (react): The react target does not emit dynamic-component yet: composition lands in M3.
-  --> dynamic/components/Tag.uf.tsx:10:7
-   |
-10 |       <component is={compact.value ? Chip : Card} label={label} />
-   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (solid): The solid target does not emit dynamic-component yet: composition lands in M3.
   --> dynamic/components/Tag.uf.tsx:10:7
    |
