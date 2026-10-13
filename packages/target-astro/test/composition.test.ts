@@ -206,6 +206,8 @@ describe("composition (ADR-0054)", () => {
       "Tree.astro":
         [
           "---",
+          "export type LocaleKey = string;",
+          "",
           "interface Props {",
           "  depth: number;",
           '  tag: "h2" | "h3";',
@@ -213,7 +215,7 @@ describe("composition (ADR-0054)", () => {
           "",
           "const { depth, tag } = Astro.props;",
           "",
-          'const locale = "en" as string;',
+          'const locale = "en" as LocaleKey;',
           "const big = true as boolean;",
           "",
           'const Tag = big ? tag : "p";',

@@ -77,13 +77,15 @@ per component (ADR-0034, ADR-0046):
   - a scoped slot is a render prop named as the slot (the `scoped-slot` cell, emulated): `Props`
     declares `item?: (props: { item: string }) => unknown`, the child calls `{item?.({ item })}`,
     or `{item ? item({ item }) : fallback}`, and tests its presence as the prop; a consumer
-    passes `item={({ item }) => <b>{item}</b>}`. The default slot's render prop is read as
-    `defaultSlot`, `default` being a keyword;
+    passes `item={({ item }) => <b>{item}</b>}`. A slot named with a reserved word is read
+    under `<slot>Slot` (`default: defaultSlot`), and one named `class` or `style` is passed as
+    `classSlot` or `styleSlot`, since those are the fallthrough's props;
   - a forwarded slot is `<slot name="title" slot="title" />`, a forwarded scoped slot
     `item={item}`. Astro's compiler gives a child every slot its content names, whatever an
     expression around it gives, so a component that forwards slots renders the child in one
-    branch per set of those slots present, largest first: the child sees no slot where the
-    component got none, and shows its fallback;
+    branch per set of those slots present, largest first, in a list's callback and around
+    `<component is>` too: the child sees no slot where the component got none, and shows its
+    fallback;
   - a model is a prop with its default (`const { value = 0 } = Astro.props;`), which renders its
     value; a component's `v-model:value={text.value}` passes `value={text}`. A control's
     `v-model` renders its initial state: `value` on a text-like `<input>`, `checked` on a checkbox
@@ -94,10 +96,13 @@ per component (ADR-0034, ADR-0046):
     `style?: Record<string, string | number | undefined>`, and the root merges them,
     `class:list={["field", className]}` and `style={{ padding: "2px", ...style }}`. Astro passes a
     component's `class:list` as `class`; a consumer passes a style as an object;
-  - `inject` is its fallback, cast to the key's type (`const locale = "en" as string;`), or
-    `undefined` typed as the key's value, whose types are imported from the providing component's
-    output; `provide`, injection keys, `defineExpose` and component refs are dropped;
-  - `<component is>` is a constant, `const Tag = big ? "h2" : "p";`, written as a tag.
+  - `inject` is its fallback, or `undefined`, cast to the key's value type, which the output of
+    the key's main component exports under the key's name (`export type ThemeKey = Theme;`), and
+    an injecting component imports (`const theme = undefined as ThemeKey | undefined;`);
+    `provide`, the key itself, `defineExpose` and component refs are dropped;
+  - `<component is>` is a constant, `const Tag = big ? "h2" : "p";`, written as a tag: in the
+    frontmatter, or, inside a list, a branch or a fill, where its bindings and guards hold, in a
+    function the markup calls at once (`{(() => { const Tag = …; return <Tag>…</Tag>; })()}`).
 
   A component whose frontmatter would declare nothing is its markup alone. Astro's
   `compressHTML` must stay `"jsx"`, its default (the M6 unplugin checks it).

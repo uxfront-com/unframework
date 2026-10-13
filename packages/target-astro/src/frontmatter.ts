@@ -6,10 +6,12 @@
 import {
   js,
   keyImports,
+  keyOwner,
   liveTypes,
   printProgram,
   rewriteExpression,
   typeDeclarationCode,
+  typeNames,
 } from "@unframework/codegen";
 import type { ChildImport, ImportSet } from "@unframework/codegen";
 import { expressionsOf, walk } from "@unframework/ir";
@@ -18,6 +20,7 @@ import type { BindingId, InjectItem, ModelItem, UfComponent, UfModule } from "@u
 import { isRenderProp } from "./composition.ts";
 import type { AstroRender } from "./composition.ts";
 import { SERVER, serverBindings, setupCode } from "./setup.ts";
+import { renderPropName } from "./spelling.ts";
 import type { Spelling } from "./spelling.ts";
 
 /** What the frontmatter declares beside the setup: the children, and the tree's own names. */
@@ -50,25 +53,6 @@ export function childTags(
   }
   return tags;
 }
-
-/**
- * The type names TypeScript declares, which an injected value's type may name and no module
- * exports.
- */
-const GLOBAL_TYPES: ReadonlySet<string> = new Set([
-  "Array",
-  "Date",
-  "Map",
-  "Omit",
-  "Partial",
-  "Pick",
-  "Promise",
-  "Readonly",
-  "ReadonlyArray",
-  "Record",
-  "Required",
-  "Set",
-]);
 
 /**
  * The frontmatter of a component, in order: the children's imports, the type declarations it
@@ -107,7 +91,8 @@ export function frontmatterOf(
       ? spelling.scope.claim("OwnProps")
       : undefined;
   const sections: string[][] = [];
-  for (const declaration of liveTypes(component, module, SERVER)) {
+  const types = liveTypes(component, module, SERVER);
+  for (const declaration of types) {
     let code =
       exported && parameter && declaration.name === "Props" && !declaration.exported
         ? `export ${declaration.code}`
@@ -116,15 +101,24 @@ export function frontmatterOf(
     if (ownProps && declaration.name === "Props") code = code.replace(/\bProps\b/, ownProps);
     sections.push([code]);
   }
+  for (const statement of keyTypes(component, module, new Set(types.map(({ name }) => name)))) {
+    sections.push([statement]);
+  }
   const alias = propsDeclaration(parameter?.type.code, extras, ownProps);
   if (alias !== undefined) sections.push([exported ? `export ${alias}` : alias]);
   if (reads.length) sections.push(reads);
   for (const helper of setup.helpers) sections.push([helper]);
   if (setup.statements.length) sections.push(setup.statements);
-  const constants = [...render.dynamics].map(
-    ([node, name]) => `const ${name} = ${rewriteExpression(node.is, component, spelling.rules)};`,
-  );
-  if (constants.length) sections.push(constants);
+  // Each hoisted `<component is>` once, though a branch per set of forwarded slots repeats it.
+  const constants = new Map<string, string>();
+  for (const [node, { name, hoisted }] of render.dynamics) {
+    if (!hoisted || constants.has(name)) continue;
+    constants.set(
+      name,
+      `const ${name} = ${rewriteExpression(node.is, component, spelling.rules)};`,
+    );
+  }
+  if (constants.size) sections.push([...constants.values()]);
   // Imported last: the setup adds the types an injected value names.
   if (imports.size) sections.unshift([printProgram(js.program(imports.toDeclarations())).trim()]);
   return frontmatterCode(sections);
@@ -143,7 +137,9 @@ function propsExtras(component: UfComponent, render: AstroRender): string[] {
     }
   }
   for (const slot of component.slots?.slots ?? []) {
-    if (slot.props) members.push(`${slot.name}?: (props: ${slot.props.code}) => unknown`);
+    if (slot.props) {
+      members.push(`${renderPropName(slot.name)}?: (props: ${slot.props.code}) => unknown`);
+    }
   }
   if (render.fallthrough) {
     members.push("class?: string", "style?: Record<string, string | number | undefined>");
@@ -187,7 +183,8 @@ function propsRead(
   }
   const read = renderPropsRead(component);
   for (const [slot, local] of spelling.renderProps) {
-    if (read.has(slot)) names.push(slot === local ? slot : `${slot}: ${local}`);
+    const prop = renderPropName(slot);
+    if (read.has(slot)) names.push(prop === local ? prop : `${prop}: ${local}`);
   }
   if (render.fallthrough) {
     const { className, style } = render.fallthrough;
@@ -225,9 +222,8 @@ function renderPropsRead(component: UfComponent): Set<string> {
 }
 
 /**
- * The type of the value an `inject` without a fallback would give: the key's, or the type of the
- * ref a key of a ref holds, which the markup reads as a value (ADR-0054). The names it takes from
- * the module that declares an imported key are imported from that module's output.
+ * The type an `inject` gives its value (ADR-0054): the type the key's owner exports under the
+ * key's name (`keyTypes`), imported from the owner's output unless it is this one.
  */
 function injectedType(
   item: InjectItem,
@@ -238,24 +234,38 @@ function injectedType(
   const key = keyImports(component, module, (name) => `${name}.astro`).find(
     (each) => each.local === item.key,
   )!;
-  let declared: { type: string; ref?: string } | undefined;
-  for (const entry of module.imports ?? []) {
-    const imported = entry.names.find((name) => name.kind === "Key" && name.local === item.key);
-    if (imported) declared = entry.api.keys.find((each) => each.name === imported.imported);
+  if (!key.specifier) return key.name;
+  return imports.add(key.specifier, key.name, { type: true, local: key.local, exact: true });
+}
+
+/**
+ * The value type of each injection key the module declares, exported by the output of its main
+ * component under the key's name (`export type ThemeKey = Theme;`), for the components that
+ * inject it (ADR-0054): Astro drops the key itself, and the type, written where the source wrote
+ * it, names what that module declares. A key of a ref gives the ref's value, which the markup
+ * reads. Each module type the alias names is declared there too.
+ */
+function keyTypes(
+  component: UfComponent,
+  module: UfModule,
+  declared: ReadonlySet<string>,
+): string[] {
+  if (!module.keys?.length || keyOwner(module.components, module.exports) !== component.name) {
+    return [];
   }
-  if (!declared) {
-    const own = module.keys!.find((each) => each.name === key.name)!;
-    declared = { type: own.type.code, ...(own.ref ? { ref: own.ref } : {}) };
+  const statements: string[] = [];
+  const named = new Set<string>();
+  for (const key of module.keys) {
+    const type = key.ref
+      ? key.type.code.slice(key.type.code.indexOf("<") + 1, key.type.code.lastIndexOf(">"))
+      : key.type.code;
+    for (const name of typeNames(type)) named.add(name);
+    statements.push(`export type ${key.name} = ${type};`);
   }
-  const type = declared.ref
-    ? declared.type.slice(declared.type.indexOf("<") + 1, declared.type.lastIndexOf(">"))
-    : declared.type;
-  if (key.specifier) {
-    for (const [name] of type.matchAll(/(?<![\w$.])[A-Z][\w$]*/g)) {
-      if (!GLOBAL_TYPES.has(name)) imports.add(key.specifier, name, { type: true, exact: true });
-    }
-  }
-  return type;
+  const types = module.types
+    .filter((each) => named.has(each.name) && !declared.has(each.name))
+    .map(typeDeclarationCode);
+  return [...types, ...statements];
 }
 
 /**
@@ -269,17 +279,19 @@ function propsDeclaration(
   extras: readonly string[],
   ownProps: string | undefined,
 ): string | undefined {
-  if (annotation === undefined) {
-    return extras.length ? `interface Props { ${extras.join("; ")} }` : undefined;
-  }
+  // Each member on a line of its own, after the source's members as written: a line break ends
+  // a member, and a comment the source ends its last member with.
+  const members = extras.map((member) => `\n  ${member};`).join("");
+  if (annotation === undefined) return extras.length ? `interface Props {${members}\n}` : undefined;
   let type = annotation.trim();
   while (type.startsWith("(") && type.endsWith(")")) type = type.slice(1, -1).trim();
   if (type.startsWith("{")) {
-    const members = type.slice(1, -1).trim().replace(/[;,]$/, "");
-    return `interface Props { ${[...(members ? [members] : []), ...extras].join("; ")} }`;
+    return extras.length
+      ? `interface Props ${type.slice(0, -1).trimEnd()}${members}\n}`
+      : `interface Props ${type}`;
   }
   if (!extras.length) return type === "Props" ? undefined : `type Props = ${type};`;
-  return `interface Props extends ${ownProps ?? type} { ${extras.join("; ")} }`;
+  return `interface Props extends ${ownProps ?? type} {${members}\n}`;
 }
 
 function bindingStart(component: UfComponent, id: BindingId): number {

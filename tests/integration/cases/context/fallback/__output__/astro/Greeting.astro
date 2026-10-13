@@ -1,4 +1,6 @@
 ---
+import type { LocaleKey } from "./LocaleProvider.astro";
+
 interface Props {
   name: string;
   class?: string;
@@ -7,7 +9,7 @@ interface Props {
 
 const { name, class: className, style } = Astro.props;
 
-const locale = "en" as string;
+const locale = "en" as LocaleKey;
 ---
 
 <p class:list={[className]} style={style}>{locale === "pt" ? "Olá" : "Hello"}, {name} ({locale})</p>

@@ -1,4 +1,6 @@
 ---
+import type { CountKey } from "./Counter.astro";
+
 interface Props {
   class?: string;
   style?: Record<string, string | number | undefined>;
@@ -7,7 +9,7 @@ interface Props {
 const { class: className, style } = Astro.props;
 
 const none = 0 as number;
-const count = none as number;
+const count = none as CountKey;
 ---
 
 <output class:list={[className]} style={style}>Count: {count}</output>

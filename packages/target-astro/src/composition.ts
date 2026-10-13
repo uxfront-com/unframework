@@ -15,13 +15,14 @@ import type {
   ElementNode,
   Expression,
   FragmentNode,
+  IfNode,
   ModelAttribute,
   RenderNode,
   SlotFill,
   UfComponent,
 } from "@unframework/ir";
 
-import { unreachable } from "./spelling.ts";
+import { renderPropName, unreachable } from "./spelling.ts";
 import type { Spelling } from "./spelling.ts";
 
 /**
@@ -41,8 +42,18 @@ export interface AstroRender {
   render: ElementNode | FragmentNode;
   /** Present where the root takes the consumer's `class` and `style` (ADR-0054). */
   fallthrough?: Fallthrough;
-  /** Each `<component is>` of the copy, with the constant the frontmatter declares it as. */
-  dynamics: Map<DynamicNode, string>;
+  /** Each `<component is>` of the copy, with the constant it is declared as. */
+  dynamics: Map<DynamicNode, DynamicTag>;
+}
+
+/**
+ * The constant `<component is>` renders as (`const Tag = …`): hoisted into the frontmatter where
+ * the expression reads only what the whole render has, or else declared in place, inside a
+ * list's callback, a branch or a fill, where its bindings are in scope and its guards hold.
+ */
+export interface DynamicTag {
+  name: string;
+  hoisted: boolean;
 }
 
 /**
@@ -75,7 +86,17 @@ export function astroRender(
   fallthrough: Fallthrough | undefined,
 ): AstroRender {
   const rules = spelling.rules;
-  const dynamics = new Map<DynamicNode, string>();
+  const dynamics = new Map<DynamicNode, DynamicTag>();
+  // How many lists, branches and fills the node being copied sits in.
+  let depth = 0;
+  const nested = <T>(copy: () => T): T => {
+    depth++;
+    try {
+      return copy();
+    } finally {
+      depth--;
+    }
+  };
   const code = (expression: Expression) => rewriteExpression(expression, component, rules);
 
   // A root component takes the fallthrough before it branches (`withFallthrough`).
@@ -83,13 +104,13 @@ export function astroRender(
     component.render.kind === "Fragment" ? component.render.children[0] : undefined;
   const nodes = (children: readonly RenderNode[]): RenderNode[] => children.map(node);
   const fills = (each: readonly SlotFill[]): SlotFill[] =>
-    each.map((fill) => ({ ...fill, children: nodes(fill.children) }));
+    each.map((fill) => ({ ...fill, children: nested(() => nodes(fill.children)) }));
   const renderProps = (each: readonly SlotFill[]): ComponentAttribute[] =>
     each
       .filter((fill) => isRenderProp(fill, component))
       .map((fill) => ({
         kind: "Prop",
-        name: fill.slot,
+        name: renderPropName(fill.slot),
         // The dialect writes the fill's function in its place (`../markup.ts`).
         value: written("undefined", fill),
         span: fill.span,
@@ -107,26 +128,33 @@ export function astroRender(
           ...each,
           branches: each.branches.map((branch) => ({
             ...branch,
-            children: nodes(branch.children),
+            children: nested(() => nodes(branch.children)),
           })),
         };
       case "For":
+        // A body that forwards slots is a conditional, which the dialect writes in the callback.
         return {
           ...each,
-          body: each.body.kind === "Element" ? element(each.body) : componentChild(each.body),
+          body: nested(() =>
+            each.body.kind === "Element" ? element(each.body) : branched(componentChild(each.body)),
+          ) as ElementNode | ComponentNode,
         };
       case "Component":
         return branched(componentChild(each));
       case "SlotOutlet":
         return { ...each, fallback: nodes(each.fallback) };
       case "Dynamic": {
-        const copy: DynamicNode = {
+        const tag: DynamicTag = { name: spelling.scope.claim("Tag"), hoisted: depth === 0 };
+        const copy = branched({
           ...each,
           attributes: [...each.attributes, ...renderProps(each.fills ?? [])],
           children: nodes(each.children),
           ...(each.fills ? { fills: fills(each.fills) } : {}),
-        };
-        dynamics.set(copy, spelling.scope.claim("Tag"));
+        });
+        // Each branch renders the same constant.
+        const copies =
+          copy.kind === "If" ? copy.branches.map((branch) => branch.children[0]!) : [copy];
+        for (const dynamic of copies) dynamics.set(dynamic as DynamicNode, tag);
         return copy;
       }
       default:
@@ -150,8 +178,8 @@ export function astroRender(
    * Each branch tests only the slots it forwards: the branches before it, which test larger
    * sets, failed.
    */
-  function branched(each: ComponentNode): RenderNode {
-    const forwarded = each.fills.filter(
+  function branched<T extends ComponentNode | DynamicNode>(each: T): T | IfNode {
+    const forwarded = (each.fills ?? []).filter(
       (fill) => fill.forward !== undefined && !isRenderProp(fill, component),
     );
     if (!forwarded.length) return each;
@@ -167,7 +195,9 @@ export function astroRender(
         children: [
           {
             ...each,
-            fills: each.fills.filter((fill) => !forwarded.includes(fill) || set.includes(fill)),
+            fills: (each.fills ?? []).filter(
+              (fill) => !forwarded.includes(fill) || set.includes(fill),
+            ),
           },
         ],
         span: each.span,

@@ -4,6 +4,7 @@
 // but for the names the compiled component already declares in the frontmatter's scope.
 import { NameScope, sourceNames } from "@unframework/codegen";
 import type { RewriteRules } from "@unframework/codegen";
+import { RESERVED_PROP_NAMES } from "@unframework/ir";
 import type { Binding, BindingId, UfComponent, UfModule } from "@unframework/ir";
 
 /**
@@ -26,9 +27,19 @@ export interface Spelling {
   scope: NameScope;
   /**
    * The name each scoped slot's render prop is read under (ADR-0054): the slot's own, or
-   * `defaultSlot` for the default one, whose name is a keyword.
+   * `<slot>Slot` where the slot's name is no prop name a frontmatter can bind (`default`, a
+   * reserved word, `class`, `style`).
    */
   renderProps: ReadonlyMap<string, string>;
+}
+
+/**
+ * The prop a scoped slot's render prop is passed as: the slot's name, or `classSlot` and
+ * `styleSlot`, since `class` and `style` are the props a component's root takes from its
+ * consumer (fallthrough, ADR-0054).
+ */
+export function renderPropName(slot: string): string {
+  return slot === "class" || slot === "style" ? `${slot}Slot` : slot;
 }
 
 /**
@@ -54,7 +65,8 @@ export function spellingOf(component: UfComponent, module: UfModule): Spelling {
   const renderProps = new Map<string, string>();
   for (const slot of component.slots?.slots ?? []) {
     if (slot.props) {
-      renderProps.set(slot.name, scope.claim(slot.name === "default" ? "defaultSlot" : slot.name));
+      const name = RESERVED_PROP_NAMES.has(slot.name) ? `${slot.name}Slot` : slot.name;
+      renderProps.set(slot.name, scope.claim(name));
     }
   }
   return {

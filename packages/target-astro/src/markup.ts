@@ -11,6 +11,7 @@ import {
 import type {
   MarkupDialect,
   MarkupOptions,
+  MarkupPiece,
   PrintedAttribute,
   RewriteRules,
 } from "@unframework/codegen";
@@ -25,7 +26,7 @@ import type {
 
 import { isRenderProp, SPREAD_STYLE } from "./composition.ts";
 import type { AstroRender } from "./composition.ts";
-import { unreachable } from "./spelling.ts";
+import { renderPropName, unreachable } from "./spelling.ts";
 import type { Spelling } from "./spelling.ts";
 
 /**
@@ -124,7 +125,7 @@ function composition(
     // A scoped fill is a render prop named as the slot, the forwarded one the component's own.
     propAttribute(prop, context) {
       const fill = context.component.fills.find(
-        (each) => each.slot === prop.name && isRenderProp(each, component),
+        (each) => renderPropName(each.slot) === prop.name && isRenderProp(each, component),
       );
       if (!fill) return dialect.propAttribute!(prop, context);
       const value =
@@ -174,30 +175,44 @@ function composition(
           return unreachable(attribute.control);
       }
     },
-    // `<component is>` is the constant the frontmatter declares (`const Tag = …`), as a tag.
-    dynamic({ node }) {
-      const tag = render.dynamics.get(node)!;
-      if (node.candidates.every((candidate) => candidate.kind === "Tag")) {
-        const element: ElementNode = {
-          kind: "Element",
-          tag,
-          attributes: node.attributes as Attribute[],
-          children: node.children,
-          span: node.span,
-        };
-        return [{ kind: "element", element, directives: [] }];
-      }
+    /**
+     * `<component is>` as the constant it renders (`const Tag = …`), a tag: the frontmatter's,
+     * or one declared in place, in a function the expression calls at once, where the list's,
+     * the branch's or the fill's bindings and guards hold (`DynamicTag`).
+     */
+    dynamic({ node, is }) {
+      const { name, hoisted } = render.dynamics.get(node)!;
+      const piece: MarkupPiece = node.candidates.every((candidate) => candidate.kind === "Tag")
+        ? {
+            kind: "element",
+            element: {
+              kind: "Element",
+              tag: name,
+              attributes: node.attributes as Attribute[],
+              children: node.children,
+              span: node.span,
+            },
+            directives: [],
+          }
+        : {
+            kind: "component",
+            component: {
+              kind: "Component",
+              component: name,
+              attributes: node.attributes as ComponentAttribute[],
+              fills: node.fills ?? [],
+              span: node.span,
+            },
+            directives: [],
+          };
+      if (hoisted) return [piece];
       return [
         {
-          kind: "component",
-          component: {
-            kind: "Component",
-            component: tag,
-            attributes: node.attributes as ComponentAttribute[],
-            fills: node.fills ?? [],
-            span: node.span,
-          },
-          directives: [],
+          kind: "block",
+          segments: [
+            { open: `{(() => { const ${name} = ${is}; return `, content: piece, parentheses: true },
+          ],
+          close: "; })()}",
         },
       ];
     },

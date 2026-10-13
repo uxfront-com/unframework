@@ -1,4 +1,6 @@
 ---
+export type DepthKey = number;
+
 interface Props {
   title: string;
   class?: string;
@@ -7,7 +9,7 @@ interface Props {
 
 const { title, class: className, style } = Astro.props;
 
-const depth = 0 as number;
+const depth = 0 as DepthKey;
 ---
 
 <section aria-label={title} class:list={[className]} style={style}>

@@ -1,5 +1,5 @@
 ---
-import type { Theme } from "./ThemeProvider.astro";
+import type { ThemeKey } from "./ThemeProvider.astro";
 
 interface Props {
   text: string;
@@ -9,7 +9,7 @@ interface Props {
 
 const { text, class: className, style } = Astro.props;
 
-const theme = undefined as Theme | undefined;
+const theme = undefined as ThemeKey | undefined;
 ---
 
 <span
