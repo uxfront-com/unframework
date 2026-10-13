@@ -1,7 +1,7 @@
 import { type CSSProperties, type Ref, useImperativeHandle, useRef } from "react";
 
 export interface SearchFieldHandle {
-  focus: () => void;
+  focus(): void;
 }
 
 export interface SearchFieldAttributes {

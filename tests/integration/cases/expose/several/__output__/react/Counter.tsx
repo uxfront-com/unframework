@@ -1,8 +1,8 @@
 import { type CSSProperties, type Ref, useImperativeHandle, useRef, useState } from "react";
 
 export interface CounterHandle {
-  increment: () => void;
-  reset: () => void;
+  increment(): void;
+  reset(): void;
 }
 
 export interface CounterAttributes {
