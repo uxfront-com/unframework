@@ -18,7 +18,7 @@ import type { LayerName, PartialMatrix, ProjectKind } from "@unframework/testing
 import { canaryCase, canaryProjects, CANARIES, findCanary } from "../harness/canaries.ts";
 import type { Canary, CanaryCase } from "../harness/canaries.ts";
 import { judgeCanary } from "../harness/canary-verdict.ts";
-import type { CanaryVerdict } from "../harness/canary-verdict.ts";
+import type { CanaryRun, CanaryVerdict } from "../harness/canary-verdict.ts";
 import { listCases } from "../harness/cases.ts";
 import { LOAD_FAILURES, readLoadFailures } from "../harness/load-failures.ts";
 import { CANARY_DIR, ROOT } from "../harness/paths.ts";
@@ -106,6 +106,48 @@ export function shardFilters(
   return shard ? ["harness/", ...cases.flatMap((info) => (info.spec ? [info.spec] : []))] : [];
 }
 
+/**
+ * The Vitest arguments of a canary's runs: one run for each kind of project, one after the
+ * other. A browser project's page must connect within Vitest's `connectTimeout` (60 s), and it
+ * connects only once the project's dependencies are optimised, Angular's through its linker.
+ * Beside the ssr projects, whose transforms hold a CI runner's CPUs for a minute or more, that
+ * missed the deadline: `browser:angular` ran no spec, and the golden guard's canary was not
+ * caught there.
+ */
+export function canaryRuns(
+  canary: Canary,
+  targets: readonly string[],
+  cases: readonly CanaryCase[],
+  shard: CanaryShard | undefined,
+): string[][] {
+  return canaryProjects(canary).map((kind) => [
+    // A canary of some targets runs their projects only: the others have nothing corrupted.
+    ...(canary.targets && kind !== "compile" && kind !== "harness"
+      ? canary.targets
+          .filter((target) => targets.includes(target))
+          .flatMap((target) => ["--project", `${kind}:${target}`])
+      : ["--project", PROJECTS[kind]]),
+    ...shardFilters(cases, shard),
+  ]);
+}
+
+/**
+ * A canary's runs as the verdict judges them: each project's cells and every spec that could
+ * not load, from runs of disjoint projects, and the first failed status. A run that wrote no
+ * matrix or no list of load failures did not finish, so the canary has neither.
+ */
+export function combineRuns(runs: readonly CanaryRun[]): CanaryRun {
+  return {
+    status: runs.find(({ status }) => status !== 0)?.status ?? 0,
+    projects: runs.every(({ projects }) => projects)
+      ? Object.assign({}, ...runs.map(({ projects }) => projects))
+      : undefined,
+    loadFailures: runs.every(({ loadFailures }) => loadFailures)
+      ? runs.flatMap(({ loadFailures }) => loadFailures!)
+      : undefined,
+  };
+}
+
 /** Runs one canary and judges whether its layer caught it everywhere it should. */
 function runCanary(
   canary: Canary,
@@ -118,27 +160,29 @@ function runCanary(
   mkdirSync(directory, { recursive: true });
   const env: NodeJS.ProcessEnv = { ...process.env, UF_CANARY: canary.id };
   delete env.UF_UPDATE;
-  const args = canaryProjects(canary).flatMap((kind) =>
-    // A canary of some targets runs their projects only: the others have nothing corrupted.
-    canary.targets && kind !== "compile" && kind !== "harness"
-      ? canary.targets
-          .filter((target) => targets.includes(target))
-          .flatMap((target) => ["--project", `${kind}:${target}`])
-      : ["--project", PROJECTS[kind]],
-  );
-  args.push(...shardFilters(cases, shard));
+  const matrixFile = join(directory, "parity-matrix.json");
+  const failuresFile = join(directory, LOAD_FAILURES);
   const started = performance.now();
-  const { status, stdout } = runVitest(args, env, "pipe");
+  const runs = canaryRuns(canary, targets, cases, shard).map((args) => {
+    // Each run writes both files afresh: one that writes neither is not read as the last one.
+    rmSync(matrixFile, { force: true });
+    rmSync(failuresFile, { force: true });
+    const { status, stdout } = runVitest(args, env, "pipe");
+    const matrix = existsSync(matrixFile)
+      ? (JSON.parse(readFileSync(matrixFile, "utf8")) as PartialMatrix)
+      : undefined;
+    return {
+      status,
+      stdout,
+      projects: matrix?.byProject,
+      loadFailures: readLoadFailures(failuresFile),
+    };
+  });
   const seconds = (performance.now() - started) / 1000;
   const log = join(directory, "vitest.log");
-  writeFileSync(log, stdout);
-  const matrixFile = join(directory, "parity-matrix.json");
-  const matrix = existsSync(matrixFile)
-    ? (JSON.parse(readFileSync(matrixFile, "utf8")) as PartialMatrix)
-    : undefined;
-  const loadFailures = readLoadFailures(join(directory, LOAD_FAILURES));
+  writeFileSync(log, runs.map(({ stdout }) => stdout).join(""));
   return {
-    ...judgeCanary(canary, { status, projects: matrix?.byProject, loadFailures }, targets, cases),
+    ...judgeCanary(canary, combineRuns(runs), targets, cases),
     log,
     seconds,
   };

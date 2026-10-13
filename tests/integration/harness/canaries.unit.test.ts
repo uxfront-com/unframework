@@ -14,7 +14,14 @@ import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
 import type { ProjectKind } from "@unframework/testing/node";
 import { describe, expect, it } from "vitest";
 
-import { parseArguments, selectCanaries, shardCases, shardFilters } from "../scripts/canaries.ts";
+import {
+  canaryRuns,
+  combineRuns,
+  parseArguments,
+  selectCanaries,
+  shardCases,
+  shardFilters,
+} from "../scripts/canaries.ts";
 import {
   addRootAttribute,
   CANARIES,
@@ -319,6 +326,40 @@ describe("canaries", () => {
     // No spec path holds the filter the other projects' files match.
     for (const info of listCases().map(canaryCase))
       expect(info.spec ?? "").not.toContain("harness/");
+  });
+
+  it("run each kind of project in a Vitest run of its own, so no browser session starts beside the ssr projects", () => {
+    const cases = shardCases(listCases().slice(0, 4).map(canaryCase), { index: 2, count: 2 });
+    const filters = shardFilters(cases, { index: 2, count: 2 });
+    for (const id of ["L6-golden-guard", "L13-console-warn"]) {
+      expect(canaryRuns(findCanary(id), TARGET_NAMES, cases, { index: 2, count: 2 }), id).toEqual([
+        ["--project", "ssr:*", ...filters],
+        ["--project", "browser:*", ...filters],
+      ]);
+    }
+    // A canary of some targets runs their projects only.
+    expect(
+      canaryRuns(findCanary("L13-qwik-handler-throws"), TARGET_NAMES, cases, undefined),
+    ).toEqual([["--project", "browser:qwik"]]);
+  });
+
+  it("judge a canary's runs as one: each project's cells, every load failure, a failed status", () => {
+    const failure = { project: "browser:vue", file: "cases/a/b/b.test.ts", errors: ["[uf guard]"] };
+    const ssr = { status: 1, projects: { "ssr:vue": {} }, loadFailures: [] };
+    const browser = { status: 0, projects: { "browser:vue": {} }, loadFailures: [failure] };
+    expect(combineRuns([ssr, browser])).toEqual({
+      status: 1,
+      projects: { "ssr:vue": {}, "browser:vue": {} },
+      loadFailures: [failure],
+    });
+    expect(combineRuns([{ ...ssr, status: 0 }, browser]).status).toBe(0);
+    // A run that wrote no matrix, or no list of load failures, leaves the canary without either.
+    const unfinished = { status: 1, projects: undefined, loadFailures: undefined };
+    expect(combineRuns([ssr, unfinished])).toEqual({
+      status: 1,
+      projects: undefined,
+      loadFailures: undefined,
+    });
   });
 
   it("are selected by id or by layer, and an unknown name or a layer without canaries throws", () => {
