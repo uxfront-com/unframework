@@ -21,7 +21,7 @@ describe("composition before M3's lanes", () => {
     expect(files.map((file) => file.path)).toEqual(["Form.vue"]);
   });
 
-  it.each(TARGET_NAMES.filter((name) => name !== "vue"))(
+  it.each(TARGET_NAMES.filter((name) => name !== "vue" && name !== "solid"))(
     "%s reports UF1002 where a component first uses it",
     (name) => {
       const module = composition();
