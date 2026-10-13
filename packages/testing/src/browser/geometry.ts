@@ -108,7 +108,9 @@ export function captureGeometry(container: Element): GeometrySnapshot {
           style[property] = computed.getPropertyValue(property);
         }
         nodes[path] = { box: toBox(child.getBoundingClientRect(), origin), style };
-        visit(child, `${path}/`);
+        // A `<textarea>`'s text is its default value, which it shows as its value, never laid out:
+        // the box holds what it shows, and L7 compares the value (`uf:value`, ADR-0058's 4d).
+        if (child.localName !== "textarea") visit(child, `${path}/`);
       }
     }
   };
