@@ -1142,7 +1142,9 @@ function anyTypeArguments(contents: string, opening: RegExp, type = "any"): stri
 
 /**
  * Adds an attribute, written in the file's own syntax, to the root element of an output file:
- * the first element of its template.
+ * the first element of its template. In JSX that is the first DOM element: an upper-case tag is a
+ * component (React's `<DepthKey value>` provider, a child), whose props no DOM rule reads. A
+ * template with no DOM element takes it on its first element.
  */
 export function addRootAttribute(file: OutputFile, attribute: string): string {
   const { path, contents } = file;
@@ -1154,7 +1156,14 @@ export function addRootAttribute(file: OutputFile, attribute: string): string {
   // a fragment's `<>`.
   const element = /<(?!(?:script|style|template)\b)[A-Za-z][A-Za-z0-9-]*(?=[\s/>])/g;
   element.lastIndex = range.start;
-  const match = element.exec(contents);
+  let match = element.exec(contents);
+  if (match && path.endsWith(".tsx")) {
+    const first = match;
+    while (match && match.index < range.end && /^<[A-Z]/.test(match[0])) {
+      match = element.exec(contents);
+    }
+    if (!match || match.index >= range.end) match = first;
+  }
   if (!match || match.index >= range.end) {
     throw new Error(`${MARKER} ${path} has no root element to add an attribute to.`);
   }

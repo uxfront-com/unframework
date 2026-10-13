@@ -974,6 +974,27 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
         "data-x={1}",
       ),
     ).toContain("<div data-x={1}>\n      <p />");
+    // A component at the root (React's context provider) is passed over for the first DOM element;
+    // without one, the first element takes it.
+    expect(
+      addRootAttribute(
+        {
+          path: "Level.tsx",
+          contents:
+            "export default function Level() {\n  return (\n    <DepthKey value={depthValue}>\n      <section>\n        <Level />\n      </section>\n    </DepthKey>\n  );\n}\n",
+        },
+        "data-x={1}",
+      ),
+    ).toContain("<DepthKey value={depthValue}>\n      <section data-x={1}>");
+    expect(
+      addRootAttribute(
+        {
+          path: "Primary.tsx",
+          contents: 'export default function Primary() {\n  return <Base text="Save" />;\n}\n',
+        },
+        "data-x={1}",
+      ),
+    ).toContain('<Base data-x={1} text="Save" />');
     expect(() =>
       addRootAttribute({ path: "Card.vue", contents: "<script setup></script>\n" }, attribute),
     ).toThrow(/no template/);
