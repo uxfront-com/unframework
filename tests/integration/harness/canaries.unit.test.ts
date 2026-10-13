@@ -475,7 +475,7 @@ describe("canaries", () => {
       /tone = "info",\n\}: TaskListProps\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
     );
     expect(contents("solid")).toMatch(
-      /function TaskList\(rawProps: TaskListProps\) \{\n {2}console\.warn/,
+      /function TaskList\(\n {2}rawProps: TaskListProps & \{ class\?: string; style\?: JSX\.CSSProperties \},\n\) \{\n {2}console\.warn/,
     );
     expect(contents("qwik")).toMatch(
       /component\$<TaskListProps>\(\n {2}\(\{ title = "Tasks \(today\)", tasks, done, tone = "info" \}\) => \{\n {4}console\.warn/,
@@ -547,7 +547,7 @@ describe("canaries", () => {
     const root = (target: string) =>
       /<section\b[^>]*>/.exec(result.outputs[target]![0]!.contents)?.[0];
     expect(root("react")).toMatch(/^<section class="uf-canary" className=/);
-    expect(root("solid")).toMatch(/^<section className="uf-canary" class=/);
+    expect(root("solid")).toMatch(/^<section\s+className="uf-canary"\s+class=/);
     expect(root("qwik")).toMatch(/^<section className="uf-canary" class=/);
     expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
     expect(root("svelte")).toMatch(/^<section style:uf-canary="1" class=/);
@@ -650,7 +650,7 @@ describe("canaries", () => {
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(1\)/g), target).toHaveLength(1);
       expect(contents, target).toMatch(
-        /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\})/,
+        /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\}|\{\{ \.\.\.\{ filter: "invert\(1\)" \}, \.\.\.props\.style \}\})/,
       );
     }
   });
