@@ -3,8 +3,8 @@
 // fills; and a component's own slots, rendered (`{slots.title?.()}`, with fallback after `??`)
 // and forwarded (`{{ title: slots.title }}`). A component element names an imported component,
 // one of the module's own, or the component itself, by the API read from its declarations
-// (`./api.ts`); what that API does not declare is reported (layer 2 of §5.6, whose did-you-mean
-// and fixes are the cross-component checks' to add).
+// (`./api.ts`); what that API does not declare is reported (layer 2 of §5.6), with the name it
+// may mean and its rename (`./cross-component.ts`).
 
 import {
   createBinding,
@@ -33,6 +33,7 @@ import type { AST } from "@unframework/parser";
 
 import { keyName, typeMembers } from "./api.ts";
 import { keyCase, lowerAttributes, misplacedKey } from "./attributes.ts";
+import { closest, literalOutsideUnion, renameFix } from "./cross-component.ts";
 import { checkPlacement } from "./elements.ts";
 import { checkExpression, shadowing, span } from "./expressions.ts";
 import { lowerComponentHandler, lowerRef } from "./listeners.ts";
@@ -104,6 +105,8 @@ export function lowerComponentAs(
   let after = name.end;
   /** Each name set so far: a component takes each once, as an element does (UF3007). */
   const seen = new Map<string, AST.JSXAttribute>();
+  // What a rename may not write over (`renameFix`): none is offered on `<component is>`.
+  const items = skip ? undefined : node.openingElement.attributes;
   for (const item of node.openingElement.attributes) {
     const previous = after;
     after = item.end;
@@ -137,7 +140,7 @@ export function lowerComponentAs(
       continue;
     }
     if (item.name.type === "JSXNamespacedName") {
-      const binding = lowerModelBinding(item, item.name, api, info, render);
+      const binding = lowerModelBinding(item, item.name, api, info, render, items);
       if (binding) attributes.push(binding);
       continue;
     }
@@ -166,15 +169,15 @@ export function lowerComponentAs(
       continue;
     }
     if (/^on[A-Z]/.test(attribute)) {
-      const listener = lowerComponentListener(item, item.name, api, info, render);
+      const listener = lowerComponentListener(item, item.name, api, info, render, items);
       if (listener) attributes.push(listener);
       continue;
     }
-    const prop = lowerProp(item, item.name, api, info, render);
+    const prop = lowerProp(item, item.name, api, info, render, items);
     if (prop) attributes.push(prop);
   }
   attributes.push(...lowerFallthrough(fallthrough, node.openingElement, api, info, render));
-  const fills = lowerFills(node, api, info, render);
+  const fills = lowerFills(node, api, info, render, items !== undefined);
   if (!fills || reporter.hasErrorsSince(mark)) return { node: undefined, key };
   return { node: createComponentNode(info.name, attributes, fills, span(node)), key };
 }
@@ -287,42 +290,10 @@ function unknownComponent(
   );
 }
 
-/** The name among `names` closest to `name`, when one is close: a likely misspelling. */
-export function closest(name: string, names: readonly string[]): string | undefined {
-  let best: { name: string; distance: number } | undefined;
-  for (const candidate of names) {
-    const distance = editDistance(name.toLowerCase(), candidate.toLowerCase());
-    if (distance <= Math.max(1, Math.floor(candidate.length / 3))) {
-      if (!best || distance < best.distance) best = { name: candidate, distance };
-    }
-  }
-  return best?.name;
-}
-
-/**
- * The edit distance between two strings, a swap of two neighbours counting as one edit, as a
- * typo makes it (`lable`, `Feild`).
- */
-function editDistance(a: string, b: string): number {
-  const rows = Array.from({ length: a.length + 1 }, (_, i) =>
-    Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
-  );
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      let best = Math.min(rows[i - 1]![j]! + 1, rows[i]![j - 1]! + 1, rows[i - 1]![j - 1]! + cost);
-      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
-        best = Math.min(best, rows[i - 2]![j - 2]! + 1);
-      }
-      rows[i]![j] = best;
-    }
-  }
-  return rows[a.length]![b.length]!;
-}
-
 /**
  * A prop (ADR-0053): a name the component declares, with a static string or an expression. Any
- * other name is UF3035.
+ * other name is UF3035, and a literal outside the prop's union of literals UF3039. `items` are
+ * the element's attributes, for the renames (`renameFix`).
  */
 function lowerProp(
   item: AST.JSXAttribute,
@@ -330,18 +301,28 @@ function lowerProp(
   api: ComponentApi,
   info: ComponentInfo,
   render: RenderContext,
+  items: readonly AST.JSXAttributeItem[] | undefined,
 ): ComponentAttribute | undefined {
   const { reporter, source } = render;
-  if (!api.props.some((prop) => prop.name === name.name)) {
+  const prop = api.props.find((each) => each.name === name.name);
+  if (!prop) {
     const meant = closest(
       name.name,
-      api.props.map((prop) => prop.name),
+      api.props.map((each) => each.name),
+    );
+    const others = items?.flatMap((each) =>
+      each !== item && each.type === "JSXAttribute" && each.name.type === "JSXIdentifier"
+        ? [each.name.name]
+        : [],
     );
     reporter.report(
       "UF3035",
       name,
       `${info.name} declares no prop \`${name.name}\`: a component takes its props, \`class\`, \`style\`, \`key\`, \`ref\`, its events' listeners and its slots.${meant ? ` Did you mean \`${meant}\`?` : ""}`,
-      { help: `Pass a prop ${info.name} declares, or declare \`${name.name}\` in its props.` },
+      {
+        help: `Pass a prop ${info.name} declares, or declare \`${name.name}\` in its props.`,
+        ...(meant ? { fixes: renameFix(meant, meant, name, others) } : {}),
+      },
     );
     return undefined;
   }
@@ -366,6 +347,9 @@ function lowerProp(
       );
       return undefined;
     }
+    if (literalOutsideUnion(value, false, prop, info.name, reporter, items !== undefined)) {
+      return undefined;
+    }
     return createPropAttribute(name.name, createExpression(raw, span(value)), span(item));
   }
   if (value.type !== "JSXExpressionContainer" || value.expression.type === "JSXEmptyExpression") {
@@ -374,12 +358,20 @@ function lowerProp(
   }
   const checked = checkExpression(value.expression, render);
   if (!checked.clean) return undefined;
+  const { expression } = value;
+  if (
+    expression.type === "Literal" &&
+    literalOutsideUnion(expression, true, prop, info.name, reporter, items !== undefined)
+  ) {
+    return undefined;
+  }
   return createPropAttribute(name.name, checked.expression, span(item));
 }
 
 /**
  * A listener of an event the component declares (ADR-0053): `onClear` for `clear`. A listener's
- * option suffix is UF3043, an event it does not declare UF3036.
+ * option suffix is UF3043, an event it does not declare UF3036. `items` are the element's
+ * attributes, for the renames (`renameFix`).
  */
 function lowerComponentListener(
   item: AST.JSXAttribute,
@@ -387,6 +379,7 @@ function lowerComponentListener(
   api: ComponentApi,
   info: ComponentInfo,
   render: RenderContext,
+  items: readonly AST.JSXAttributeItem[] | undefined,
 ): ComponentAttribute | undefined {
   const { reporter } = render;
   const event = eventName(name.name);
@@ -413,12 +406,24 @@ function lowerComponentListener(
       event,
       api.events.map((each) => each.name),
     );
+    const listener = meant && `on${meant.charAt(0).toUpperCase()}${meant.slice(1)}`;
+    // The events the element's other listeners name, as UF3043's fix leaves them.
+    const others = items?.flatMap((each) => {
+      if (each === item || each.type !== "JSXAttribute" || each.name.type !== "JSXIdentifier") {
+        return [];
+      }
+      const written = each.name.name;
+      if (!/^on[A-Z]/.test(written)) return [];
+      const suffix = OPTION_SUFFIXES.find((option) => written.endsWith(option));
+      return [eventName(suffix ? written.slice(0, -suffix.length) : written)];
+    });
     reporter.report(
       "UF3036",
       name,
-      `${info.name} declares no event \`${event}\`: a component passes no DOM listener through to its root, and \`${name.name}\` listens to an event the component emits.${meant ? ` Did you mean \`on${meant.charAt(0).toUpperCase()}${meant.slice(1)}\`?` : ""}`,
+      `${info.name} declares no event \`${event}\`: a component passes no DOM listener through to its root, and \`${name.name}\` listens to an event the component emits.${listener ? ` Did you mean \`${listener}\`?` : ""}`,
       {
         help: `Listen to an event ${info.name} declares with \`defineEmits\`, or listen on an element inside it.`,
+        ...(meant && listener ? { fixes: renameFix(meant, listener, name, others) } : {}),
       },
     );
     return undefined;
@@ -497,13 +502,15 @@ function lowerFallthrough(
 
 /**
  * A component's fills (ADR-0054): its children as the default slot's, or one slot object whose
- * members fill the named slots (UF3040), each a slot the component declares (UF3038).
+ * members fill the named slots (UF3040), each a slot the component declares (UF3038). `fixable`
+ * is false on `<component is>`, whose candidates may each mean another slot.
  */
 function lowerFills(
   node: AST.JSXElement,
   api: ComponentApi,
   info: ComponentInfo,
   render: RenderContext,
+  fixable: boolean,
 ): SlotFill[] | undefined {
   const { reporter } = render;
   const content = node.children.filter((child) => hasContent([child]));
@@ -528,7 +535,7 @@ function lowerFills(
     );
     return undefined;
   }
-  if (object) return lowerSlotObject(object, api, info, render);
+  if (object) return lowerSlotObject(object, api, info, render, fixable);
   if (!declares(api, "default")) {
     reporter.report(
       "UF3038",
@@ -583,6 +590,7 @@ function lowerSlotObject(
   api: ComponentApi,
   info: ComponentInfo,
   render: RenderContext,
+  fixable: boolean,
 ): SlotFill[] | undefined {
   const { reporter } = render;
   const fills: SlotFill[] = [];
@@ -625,11 +633,31 @@ function lowerSlotObject(
         slot,
         api.slots.map((each) => each.name),
       );
+      // A shorthand member's key is its value too, which the rename would change.
+      const others =
+        fixable && !property.shorthand
+          ? object.properties.flatMap((each) =>
+              each === property || each.type !== "Property"
+                ? []
+                : each.key.type === "Identifier"
+                  ? [each.key.name]
+                  : each.key.type === "Literal" && typeof each.key.value === "string"
+                    ? [each.key.value]
+                    : [],
+            )
+          : undefined;
+      const text =
+        meant && property.key.type === "Identifier" && /^[A-Za-z_$][\w$]*$/.test(meant)
+          ? meant
+          : JSON.stringify(meant);
       reporter.report(
         "UF3038",
         property.key,
         `${info.name} declares no slot \`${slot}\`.${meant ? ` Did you mean \`${meant}\`?` : ""}`,
-        { help: `Fill a slot ${info.name} declares with \`defineSlots\`.` },
+        {
+          help: `Fill a slot ${info.name} declares with \`defineSlots\`.`,
+          ...(meant ? { fixes: renameFix(meant, text, property.key, others) } : {}),
+        },
       );
       valid = false;
       continue;

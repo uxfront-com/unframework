@@ -14,10 +14,6 @@ export type KindFamily =
   | "watch source"
   | "code reference";
 
-// Composition's contract lands before its lowering (ADR-0055): each entry names the M3 lane
-// whose case removes it (the M3 plan's lanes).
-const LAYER_2 = "M3's G lane (layer-2 cross-component checks) adds its first case.";
-
 /**
  * Each target's M3 lane, which emits composition: until it lands, the target reports a case's
  * composition as UF1002 (its quarantine lists the cases), so its cells have no case yet.
@@ -53,11 +49,6 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
     "Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
   UF9001:
     "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
-  UF3035: LAYER_2,
-  UF3036: LAYER_2,
-  UF3037: LAYER_2,
-  UF3038: LAYER_2,
-  UF3039: LAYER_2,
 };
 
 /**

@@ -1,0 +1,51 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "diagnostics/unknown-event/Toolbar.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 27,
+      "offset": 298
+    },
+    "end": {
+      "line": 8,
+      "column": 55,
+      "offset": 326
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF3036",
+    "severity": "error",
+    "message": "SaveButton declares no event `svae`: a component passes no DOM listener through to its root, and `onSvae` listens to an event the component emits. Did you mean `onSave`?",
+    "file": "diagnostics/unknown-event/Toolbar.uf.tsx",
+    "start": {
+      "line": 18,
+      "column": 19,
+      "offset": 493
+    },
+    "end": {
+      "line": 18,
+      "column": 25,
+      "offset": 499
+    },
+    "help": "Listen to an event SaveButton declares with `defineEmits`, or listen on an element inside it.",
+    "fixes": [
+      {
+        "title": "Write `onSave`",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 493,
+              "end": 499
+            },
+            "text": "onSave"
+          }
+        ]
+      }
+    ]
+  }
+]
