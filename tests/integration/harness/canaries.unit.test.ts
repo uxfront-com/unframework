@@ -478,7 +478,7 @@ describe("canaries", () => {
       /function TaskList\(rawProps: TaskListProps\) \{\n {2}console\.warn/,
     );
     expect(contents("qwik")).toMatch(
-      /component\$<TaskListProps>\(\n {2}\(\{ title = "Tasks \(today\)", tasks, done, tone = "info" \}\) => \{\n {4}console\.warn/,
+      /component\$<TaskListProps & \{ class\?: ClassList; style\?: CSSProperties \}>\(\n {2}\(\{ title = "Tasks \(today\)", tasks, done, tone = "info", class: className, style \}\) => \{\n {4}console\.warn/,
     );
     expect(contents("vue")).toMatch(/<script setup lang="ts">\nconsole\.warn/);
     expect(contents("svelte")).toMatch(/<script lang="ts">\n {2}console\.warn/);
@@ -509,9 +509,9 @@ describe("canaries", () => {
     ].join("\n");
     // The import names what the listener calls; the listener opens the component's body.
     expect(contents).toMatch(
-      /^import \{ component\$, \$, useOnDocument \} from "@qwik\.dev\/core";$/m,
+      /^import \{ type CSSProperties, type ClassList, component\$, \$, useOnDocument \} from "@qwik\.dev\/core";$/m,
     );
-    expect(contents).toContain(`tone = "info" }) => {\n${listener}`);
+    expect(contents).toContain(`style }) => {\n${listener}`);
     // Nothing else changed: the component's own code is as it was.
     expect(contents.replace(listener, "").replace(", $, useOnDocument", "")).toBe(
       clean.outputs.qwik![0]!.contents,
@@ -548,7 +548,8 @@ describe("canaries", () => {
       /<section\b[^>]*>/.exec(result.outputs[target]![0]!.contents)?.[0];
     expect(root("react")).toMatch(/^<section class="uf-canary" className=/);
     expect(root("solid")).toMatch(/^<section className="uf-canary" class=/);
-    expect(root("qwik")).toMatch(/^<section className="uf-canary" class=/);
+    // Qwik's root also takes the fallthrough `class` and `style` (ADR-0054): oxfmt breaks it.
+    expect(root("qwik")).toMatch(/^<section\s+className="uf-canary"\s+class=/);
     expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
     expect(root("svelte")).toMatch(/^<section style:uf-canary="1" class=/);
     expect(root("angular")).toMatch(/^<section \*ngIf="true" class=/);
@@ -563,9 +564,7 @@ describe("canaries", () => {
       'export default function TaskList({ title = "Tasks (today)", tasks, done, tone = "info" }: any) {',
     ]);
     expect(lines("solid")).toEqual(["export default function TaskList(rawProps: any) {"]);
-    expect(lines("qwik")).toEqual([
-      'export default component$<any>(({ title = "Tasks (today)", tasks, done, tone = "info" }) => {',
-    ]);
+    expect(lines("qwik")).toEqual(["export default component$<any>("]);
     expect(lines("vue")).toEqual([
       'const { title = "Tasks (today)", tasks, done, tone = "info" } = defineProps<Record<string, any>>();',
     ]);
@@ -650,7 +649,10 @@ describe("canaries", () => {
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(1\)/g), target).toHaveLength(1);
       expect(contents, target).toMatch(
-        /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\})/,
+        target === "qwik"
+          ? // Qwik merges the fallthrough `style` after the root's own (ADR-0054).
+            /<section\b[^>]*\bstyle=\{\{ filter: "invert\(1\)", \.\.\.style \}\}/
+          : /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\})/,
       );
     }
   });
