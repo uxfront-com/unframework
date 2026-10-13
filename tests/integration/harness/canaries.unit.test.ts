@@ -560,6 +560,9 @@ describe("canaries", () => {
     const lines = (target: string) =>
       result.outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
     expect(lines("react")).toEqual(["}: any) {"]);
+    expect(result.outputs.react![0]!.contents).toMatch(
+      /^export default function TaskList\(\{\n[\s\S]*?\n\}: any\) \{$/m,
+    );
     expect(lines("solid")).toEqual(["export default function TaskList(rawProps: any) {"]);
     expect(lines("qwik")).toEqual([
       'export default component$<any>(({ title = "Tasks (today)", tasks, done, tone = "info" }) => {',
@@ -592,6 +595,14 @@ describe("canaries", () => {
       return outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
     };
     expect(await lines("react")).toEqual(["}: any) {"]);
+    const { outputs: react } = await compile(readFileSync(info.source, "utf8"), {
+      filename: info.filename,
+      targets: ["react"],
+      plugins: canaryPlugins("L4-consumer", "react"),
+    });
+    expect(react.react![0]!.contents).toMatch(
+      /^export default function FileRow\(\{\n[\s\S]*?\n\}: any\) \{$/m,
+    );
     expect(await lines("solid")).toEqual(["export default function FileRow(props: any) {"]);
     expect(await lines("qwik")).toEqual(["export default component$<any>("]);
     expect(await lines("vue")).toEqual([
@@ -645,8 +656,12 @@ describe("canaries", () => {
       const { outputs } = await compileWith("L10-root-inverted", target);
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(1\)/g), target).toHaveLength(1);
+      // React's root also takes a consumer's style, after its own (ADR-0054).
+      const spread = target === "react" ? ", \\.\\.\\.style" : "";
       expect(contents, target).toMatch(
-        /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)"(?:, \.\.\.style)? \}\})/,
+        new RegExp(
+          `<section\\b[^>]*\\bstyle=(?:"filter: invert\\(1\\)"|\\{\\{ filter: "invert\\(1\\)"${spread} \\}\\})`,
+        ),
       );
     }
   });
