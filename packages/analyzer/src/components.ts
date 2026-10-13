@@ -414,8 +414,8 @@ function lowerComponentListener(
       }
       const written = each.name.name;
       if (!/^on[A-Z]/.test(written)) return [];
-      const suffix = OPTION_SUFFIXES.find((option) => written.endsWith(option));
-      return [eventName(suffix ? written.slice(0, -suffix.length) : written)];
+      const option = OPTION_SUFFIXES.find((ending) => written.endsWith(ending));
+      return [eventName(option ? written.slice(0, -option.length) : written)];
     });
     reporter.report(
       "UF3036",
@@ -633,9 +633,10 @@ function lowerSlotObject(
         slot,
         api.slots.map((each) => each.name),
       );
-      // A shorthand member's key is its value too, which the rename would change.
+      // A shorthand member's key is its value too, which the rename would change; a method's
+      // fill is UF3040 once renamed.
       const others =
-        fixable && !property.shorthand
+        fixable && !property.shorthand && !property.method
           ? object.properties.flatMap((each) =>
               each === property || each.type !== "Property"
                 ? []

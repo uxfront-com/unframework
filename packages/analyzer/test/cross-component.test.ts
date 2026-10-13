@@ -100,17 +100,71 @@ describe("the renames of UF3035 to UF3038", () => {
     expect(diagnostics[0]!.fixes).toBeUndefined();
   });
 
-  it("offers no rename on <component is>, whose candidates may each mean another name", () => {
-    const source = `${CHILD}function Chip({ label }: { label: string }) { return <span>{label}</span>; }
+  it.each([
+    ['lable="x"', ["UF3035 lable", "UF3035 lable"]],
+    ['label="x">{{ hnit: () => <i /> }}</component', ["UF3038 hnit", "UF3038 hnit"]],
+    ['label="x" tone="warn"', ['UF3039 "warn"', 'UF3039 "warn"']],
+  ])(
+    "offers no fix on <component is>, whose candidates may each mean another name: %s",
+    (attributes, expected) => {
+      const source =
+        `${CHILD}function Chip({ label, tone }: { label: string; tone?: "info" | "warning" }) {
+  const slots = defineSlots<{ hint?(): Element }>();
+  return <span class={tone}>{label}{slots.hint?.()}</span>;
+}
 export function A() {
   const compact = ref(true);
-  return <component is={compact.value ? Chip : Field} lable="x" />;
-}`;
+  return <component is={compact.value ? Chip : Field} ${attributes} />;
+}`.replace("</component />", "</component>");
+      const { diagnostics } = run(source);
+      expect(problems(source, diagnostics)).toEqual(expected);
+      expect(diagnostics.every((diagnostic) => diagnostic.fixes === undefined)).toBe(true);
+    },
+  );
+
+  it.each([
+    // A shorthand member's key is its value: the rename would read another binding.
+    ["const hnit = () => <i />;", "{{ hnit }}"],
+    // A method is UF3040's once renamed.
+    ["", "{{ hnit() { return <i />; } }}"],
+  ])(
+    "offers no rename to a slot-object member whose key is more than a name: %s %s",
+    (setup, fill) => {
+      const source = `${CHILD}\nexport function Form() {\n  ${setup}\n  return <Field label="a">${fill}</Field>;\n}\n`;
+      const slot = run(source).diagnostics.find((diagnostic) => diagnostic.code === "UF3038");
+      expect(slot?.message).toContain("Did you mean `hint`?");
+      expect(slot?.fixes).toBeUndefined();
+    },
+  );
+
+  it("offers no slot rename where a string key fills that slot", () => {
+    const { diagnostics } = parent(
+      '<Field label="a">{{ hnit: () => <i />, "hint": () => <b /> }}</Field>',
+    );
+    expect(codes(diagnostics)).toEqual(["UF3038"]);
+    expect(diagnostics[0]!.fixes).toBeUndefined();
+  });
+
+  it("weighs only the element's listeners against an event rename", () => {
+    // `upClear` is a prop, though `eventName` would read it as `clear`.
+    const source = `${API}function Clearer({ upClear }: { upClear?: string }) {
+  const emit = defineEmits<{ clear: [] }>();
+  return <button type="button" onClick={() => emit("clear")}>{upClear}</button>;
+}
+export function A() { return <Clearer upClear="x" onCleer={() => {}} />; }`;
     const { diagnostics } = run(source);
-    expect(problems(source, diagnostics)).toEqual(["UF3035 lable", "UF3035 lable"]);
-    expect(diagnostics.every((diagnostic) => diagnostic.fixes === undefined)).toBe(true);
+    expect(codes(diagnostics)).toEqual(["UF3036"]);
+    expect(applyAndRecheck(source, diagnostics)).toContain(
+      '<Clearer upClear="x" onClear={() => {}} />',
+    );
   });
 });
+
+/** A child whose one prop `value` has the type `type`, and a parent that passes it `jsx`. */
+function valued(type: string, attribute: string): string {
+  return `function Badge({ value }: { value: ${type} }) { return <b class={String(value)} />; }
+export function A() { return <Badge ${attribute} />; }`;
+}
 
 describe("a literal outside a prop's union of literals (UF3039)", () => {
   it.each([
@@ -170,6 +224,45 @@ export function A() { return <Badge tone="ab" />; }`;
     expect(codes(diagnostics)).toEqual(["UF3039"]);
     expect(diagnostics[0]!.message).toContain('Did you mean "ab&"?');
     expect(diagnostics[0]!.fixes).toBeUndefined();
+  });
+
+  it.each([
+    ['"a" | true', "value={false}", "false"],
+    ['"a" | "b" | null', 'value="zzz"', '"zzz"'],
+    ['"a" | "b" | undefined', 'value="zzz"', '"zzz"'],
+  ])("checks %s against %s", (type, attribute, value) => {
+    const source = valued(type, attribute);
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual([`UF3039 ${value}`]);
+    expect(diagnostics[0]!.message).not.toContain("Did you mean");
+  });
+
+  it("accepts a boolean of the union", () => {
+    expect(run(valued('"a" | true', "value={true}")).diagnostics).toEqual([]);
+  });
+
+  it("means no literal that two literals begin alike", () => {
+    const { diagnostics } = run(valued('"warning" | "warmth"', 'value="war"'));
+    expect(codes(diagnostics)).toEqual(["UF3039"]);
+    expect(diagnostics[0]!.message).not.toContain("Did you mean");
+  });
+
+  it.each([
+    ['\'a"b\' | "zzzz"', "value='a\"'", 'a"b'],
+    ['"a\\\\b" | "zzzz"', 'value="ab"', "a\\b"],
+    ['"a\\nb" | "zzzz"', 'value="ab"', "a\nb"],
+  ])(
+    "offers no fix to a JSX string for %s, which it cannot hold as written",
+    (type, attribute, meant) => {
+      const { diagnostics } = run(valued(type, attribute));
+      expect(codes(diagnostics)).toEqual(["UF3039"]);
+      expect(diagnostics[0]!.message).toContain(`Did you mean ${JSON.stringify(meant)}?`);
+      expect(diagnostics[0]!.fixes).toBeUndefined();
+    },
+  );
+
+  it("checks no type without a literal", () => {
+    expect(codes(run(valued("undefined | null", 'value="a"')).diagnostics)).not.toContain("UF3039");
   });
 
   it("checks an imported child's union, as its module writes it", () => {

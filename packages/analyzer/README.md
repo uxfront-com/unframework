@@ -71,15 +71,18 @@ checked as the declaration its likely fix writes (`analyze.ts`).
 - **Layer 2 of §5.6** (`cross-component.ts`, ADR-0055): what a parent's compile checks against a
   child's API, before any output exists.
   - A prop, event, model or slot-object key the child does not declare is UF3035 to UF3038, with
-    the name it may mean (`closest`: case-insensitive, at most a third of its length in edits)
-    and a likely fix that renames it. No rename is offered where the element already writes that
-    name or one close to it, which the rename would set twice, nor on `<component is>`, whose
-    candidates may each mean another name.
+    the name it may mean (`closest`: case-insensitive, within a third of the declared name's
+    length in edits, and at least one) and a likely fix that renames it. No rename is offered
+    where the element already writes that name or one close to it, which the rename would set
+    twice; on a slot object's shorthand or method member, whose key is more than a name; or on
+    `<component is>`, whose candidates may each mean another name.
   - A string, number or boolean literal passed to a prop typed by a union of literals (`tone?:
 "info" | "warning"`) that is none of them is UF3039, with the closest string literal or the one
-    it begins (`"warn"` for `"warning"`), and a likely fix that writes it. The union is read from
-    the type as the child writes it: an alias or a union with a wider member is not checked, and
-    the outputs' type checks (L4) catch the rest.
+    it begins alone (`"warn"` for `"warning"`), and a likely fix that writes it. The fix is
+    withheld on `<component is>`, and in a JSX string for a literal holding `"`, `\`, `&` or a
+    line break, which the string cannot hold as written. The union is read from the type as the
+    child writes it: an alias or a union with a wider member is not checked, and the outputs'
+    type checks (L4) catch the rest.
 - **Models** (`setup.ts`, `models.ts`, ADR-0054): `const value = defineModel<T>("value", { default,
 required })` declares a `model` binding, read and written as `value.value`, as state is; the
   name is a camelCase string literal apart from the props, the other models and an event's
