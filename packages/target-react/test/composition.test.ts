@@ -323,9 +323,7 @@ describe("react composition beyond the corpus", () => {
   it("runs a v-model's handler first in a listener's of the same prop", () => {
     const picker = emitted.get("modelListeners")!.get("Picker")!;
     expect(picker.match(/onChange=/g)).toHaveLength(3);
-    expect(picker).toMatch(
-      /sizeRef\.current = event\.target\.value;\n\s*setSize\(sizeRef\.current\);\n\s*changesRef\.current\+\+;/,
-    );
+    expect(picker).toMatch(/setSize\(event\.target\.value\);\n\s*changesRef\.current\+\+;/);
     expect(picker).toContain("cityField.onBlur();");
     expect(picker).toContain("cityField.onFocus();");
     expect(picker).toContain('value={note ?? ""}');

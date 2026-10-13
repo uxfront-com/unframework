@@ -9,7 +9,7 @@
 // read with `use`. `<component is>` renders a `const` the body declares.
 import { childImports, keyImports, keyOwner, pascalCase } from "@unframework/codegen";
 import type { ChildImport, ImportSet, KeyImport } from "@unframework/codegen";
-import { walk } from "@unframework/ir";
+import { codeOf, walk } from "@unframework/ir";
 import type {
   BindingId,
   Code,
@@ -99,7 +99,7 @@ export interface CompositionPlan {
   readonly interfaces: { slots?: string; models?: string; attributes?: string };
   /** The state a `v-model` binds: it needs its setter, whoever else writes it. */
   readonly bound: ReadonlySet<BindingId>;
-  /** The state a control's `v-model` writes beside a listener of the control: it needs a mirror. */
+  /** The state a control's `v-model` writes and client code reads: it needs a mirror. */
   readonly mirrored: ReadonlySet<BindingId>;
   /**
    * Whether a child's slot is scoped, as the child declares it, by the child's local name and the
@@ -136,27 +136,36 @@ export function planComposition(
   };
 
   // What the template and the setup bind with `v-model`: a state's setter, or a model's. One a
-  // control's `v-model` writes beside a listener of the control gets a mirror: the listener runs
-  // after the write, and reads it there (ADR-0046).
+  // control's `v-model` writes and client code reads gets a mirror: a listener that runs after
+  // the write, beside the control or around it, reads it there (ADR-0046).
   const bound = new Set<BindingId>();
-  const mirrored = new Set<BindingId>();
+  const controlled = new Set<BindingId>();
   walk(component.render, {
     enter(node) {
       const attributes =
         node.kind === "Element" || node.kind === "Component" || node.kind === "Dynamic"
           ? node.attributes
           : [];
-      const listened = attributes.some((attribute) => attribute.kind === "Event");
       for (const attribute of attributes) {
         if (attribute.kind === "Model" || attribute.kind === "ModelBinding") {
           const [reference] = attribute.value.refs;
           if (reference?.kind !== "Binding") continue;
           bound.add(reference.binding);
-          if (attribute.kind === "Model" && listened) mirrored.add(reference.binding);
+          if (attribute.kind === "Model") controlled.add(reference.binding);
         }
       }
     },
   });
+
+  const mirrored = new Set<BindingId>();
+  for (const { code, context } of codeOf(component)) {
+    if (context !== "client") continue;
+    for (const reference of code.refs) {
+      if (reference.kind === "Binding" && controlled.has(reference.binding)) {
+        mirrored.add(reference.binding);
+      }
+    }
+  }
 
   const slotReads = readSlots(component);
   const slots = new Map<string, SlotPlan>();
