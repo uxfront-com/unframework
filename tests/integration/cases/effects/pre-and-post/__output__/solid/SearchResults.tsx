@@ -1,4 +1,4 @@
-import { For, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { For, type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface SearchResultsEvents {
   onReady?: (text: string) => void;
@@ -6,7 +6,9 @@ export interface SearchResultsEvents {
   onShown?: (text: string) => void;
 }
 
-export default function SearchResults(props: SearchResultsEvents) {
+export default function SearchResults(
+  props: SearchResultsEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [status, setStatus] = createSignal("Loading");
   const [query, setQuery] = createSignal("");
   const [results, setResults] = createSignal<string[]>([]);
@@ -45,7 +47,11 @@ export default function SearchResults(props: SearchResultsEvents) {
   }
 
   return (
-    <section class="search-results" aria-label="Search">
+    <section
+      class={props.class ? `search-results ${props.class}` : "search-results"}
+      aria-label="Search"
+      style={props.style}
+    >
       <p
         ref={(element) => {
           banner = element;

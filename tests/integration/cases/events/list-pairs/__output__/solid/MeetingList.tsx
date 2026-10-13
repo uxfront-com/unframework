@@ -1,4 +1,4 @@
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, type JSX, Show, createMemo, createSignal } from "solid-js";
 
 export interface Meeting {
   id: number;
@@ -21,7 +21,9 @@ export interface MeetingListEvents {
   onTrack?: (name: string, count: number) => void;
 }
 
-export default function MeetingList(props: MeetingListProps & MeetingListEvents) {
+export default function MeetingList(
+  props: MeetingListProps & MeetingListEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [rooms] = createSignal(["Atlas", "Borealis"]);
   const [log, setLog] = createSignal<string[]>([]);
   const [lastKey, setLastKey] = createSignal("none");
@@ -47,7 +49,11 @@ export default function MeetingList(props: MeetingListProps & MeetingListEvents)
   }
 
   return (
-    <section class="meeting-list" aria-label="Meetings">
+    <section
+      class={props.class ? `meeting-list ${props.class}` : "meeting-list"}
+      aria-label="Meetings"
+      style={props.style}
+    >
       <ul aria-label="Upcoming">
         <For each={upcoming()}>
           {(event) => (

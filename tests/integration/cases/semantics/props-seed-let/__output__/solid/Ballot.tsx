@@ -1,5 +1,6 @@
 import {
   For,
+  type JSX,
   createReaction,
   createSignal,
   mergeProps,
@@ -25,7 +26,9 @@ function isAnswer(value: string): value is "yes" | "no" {
   return value === "yes" || value === "no";
 }
 
-export default function Ballot(rawProps: BallotProps & BallotEvents) {
+export default function Ballot(
+  rawProps: BallotProps & BallotEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const props = mergeProps({ label: "Vote" } satisfies Partial<BallotProps>, rawProps);
   const [votes, setVotes] = createSignal(untrack(() => props.limit));
   const [picked, setPicked] = createSignal("none");
@@ -65,7 +68,11 @@ export default function Ballot(rawProps: BallotProps & BallotEvents) {
   }
 
   return (
-    <section class="ballot" aria-label={props.label}>
+    <section
+      class={props.class ? `ballot ${props.class}` : "ballot"}
+      aria-label={props.label}
+      style={props.style}
+    >
       <p role="status">{votes()} votes left</p>
       <p>Picked: {picked()}</p>
       <ul aria-label="Choices">

@@ -1,4 +1,4 @@
-import { createMemo, createSignal } from "solid-js";
+import { type JSX, createMemo, createSignal } from "solid-js";
 
 export interface SeatPickerProps {
   pricePerSeat: number;
@@ -8,7 +8,9 @@ export interface SeatPickerEvents {
   onQuote?: (seats: number, total: number, summary: string) => void;
 }
 
-export default function SeatPicker(props: SeatPickerProps & SeatPickerEvents) {
+export default function SeatPicker(
+  props: SeatPickerProps & SeatPickerEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [seats, setSeats] = createSignal(1);
   const total = createMemo(() => seats() * props.pricePerSeat);
   const summary = createMemo(() =>
@@ -28,7 +30,11 @@ export default function SeatPicker(props: SeatPickerProps & SeatPickerEvents) {
   }
 
   return (
-    <section class="seat-picker" aria-label="Seats">
+    <section
+      class={props.class ? `seat-picker ${props.class}` : "seat-picker"}
+      aria-label="Seats"
+      style={props.style}
+    >
       <p role="status">{summary()}</p>
       <button type="button" onClick={addSeat}>
         Add a seat

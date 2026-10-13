@@ -1,4 +1,4 @@
-import { For, createSignal } from "solid-js";
+import { For, type JSX, createSignal } from "solid-js";
 
 export interface Fruit {
   name: string;
@@ -13,7 +13,9 @@ export interface FruitPickerEvents {
   onKept?: (name: string, colour: string) => void;
 }
 
-export default function FruitPicker(props: FruitPickerProps & FruitPickerEvents) {
+export default function FruitPicker(
+  props: FruitPickerProps & FruitPickerEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [selected, setSelected] = createSignal<Fruit | null>(null);
   const [basket, setBasket] = createSignal<Fruit[]>([]);
 
@@ -30,7 +32,11 @@ export default function FruitPicker(props: FruitPickerProps & FruitPickerEvents)
   }
 
   return (
-    <section class="fruit-picker" aria-label="Fruit">
+    <section
+      class={props.class ? `fruit-picker ${props.class}` : "fruit-picker"}
+      aria-label="Fruit"
+      style={props.style}
+    >
       <ul aria-label="Fruits">
         <For each={props.fruits}>
           {(fruit) => (

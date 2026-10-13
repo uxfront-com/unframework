@@ -38,14 +38,6 @@ error[UF1002] (react): The react target does not emit context yet: composition l
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (solid): The solid target does not emit context yet: composition lands in M3.
- --> context/static/Badge.uf.tsx:6:3
-  |
-6 |   const theme = inject(ThemeKey);
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (svelte): The svelte target does not emit context yet: composition lands in M3.
  --> context/static/Badge.uf.tsx:6:3
   |
@@ -79,14 +71,6 @@ error[UF1002] (qwik): The qwik target does not emit an injection key yet: compos
    = see: https://unframework.dev/diagnostics/UF1002
 
 error[UF1002] (react): The react target does not emit an injection key yet: composition lands in M3.
-  --> context/static/ThemeProvider.uf.tsx:11:1
-   |
-11 | export const ThemeKey: InjectionKey<Theme> = Symbol("uf.theme");
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (solid): The solid target does not emit an injection key yet: composition lands in M3.
   --> context/static/ThemeProvider.uf.tsx:11:1
    |
 11 | export const ThemeKey: InjectionKey<Theme> = Symbol("uf.theme");

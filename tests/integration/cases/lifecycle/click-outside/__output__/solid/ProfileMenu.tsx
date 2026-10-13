@@ -1,10 +1,12 @@
-import { Show, createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, Show, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface ProfileMenuEvents {
   onClosed?: () => void;
 }
 
-export default function ProfileMenu(props: ProfileMenuEvents) {
+export default function ProfileMenu(
+  props: ProfileMenuEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [open, setOpen] = createSignal(false);
   let menu: HTMLDivElement | null = null;
 
@@ -27,7 +29,11 @@ export default function ProfileMenu(props: ProfileMenuEvents) {
   );
 
   return (
-    <section class="profile-menu" aria-label="Profile">
+    <section
+      class={props.class ? `profile-menu ${props.class}` : "profile-menu"}
+      aria-label="Profile"
+      style={props.style}
+    >
       <div
         class="menu"
         ref={(element_1) => {

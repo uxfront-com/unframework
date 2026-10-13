@@ -1,6 +1,6 @@
-import { For, createSignal } from "solid-js";
+import { For, type JSX, createSignal } from "solid-js";
 
-export default function EventLog() {
+export default function EventLog(props: { class?: string; style?: JSX.CSSProperties }) {
   const [log, setLog] = createSignal<string[]>([]);
   const [volume, setVolume] = createSignal(5);
 
@@ -17,7 +17,11 @@ export default function EventLog() {
   }
 
   return (
-    <section class="event-log" aria-label="Event options">
+    <section
+      class={props.class ? `event-log ${props.class}` : "event-log"}
+      aria-label="Event options"
+      style={props.style}
+    >
       <div
         class="panel"
         role="presentation"

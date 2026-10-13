@@ -1,4 +1,4 @@
-import { createReaction, onCleanup, onMount } from "solid-js";
+import { type JSX, createReaction, onCleanup, onMount } from "solid-js";
 
 export interface SectionHeadingProps {
   title: string;
@@ -9,7 +9,9 @@ export interface SectionHeadingEvents {
   onReady?: () => void;
 }
 
-export default function SectionHeading(props: SectionHeadingProps & SectionHeadingEvents) {
+export default function SectionHeading(
+  props: SectionHeadingProps & SectionHeadingEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   createWatcher(
     () => props.title,
     (value, previous) => {
@@ -22,7 +24,14 @@ export default function SectionHeading(props: SectionHeadingProps & SectionHeadi
     props.onReady?.();
   });
 
-  return <h2 class="section-heading">{props.title}</h2>;
+  return (
+    <h2
+      class={props.class ? `section-heading ${props.class}` : "section-heading"}
+      style={props.style}
+    >
+      {props.title}
+    </h2>
+  );
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

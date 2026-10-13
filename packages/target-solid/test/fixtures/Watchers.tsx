@@ -1,4 +1,4 @@
-import { createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface WatchersProps {
   label: string;
@@ -14,7 +14,9 @@ export interface WatchersEvents {
   onReleased?: (title: string) => void;
 }
 
-export default function Watchers(props: WatchersProps & WatchersEvents) {
+export default function Watchers(
+  props: WatchersProps & WatchersEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [query, setQuery] = createSignal("");
   const [page, setPage] = createSignal(1);
   const [low, setLow] = createSignal(10);
@@ -75,7 +77,7 @@ export default function Watchers(props: WatchersProps & WatchersEvents) {
   }
 
   return (
-    <section aria-label="Watchers">
+    <section aria-label="Watchers" class={props.class} style={props.style}>
       <p role="status">
         {query()} {page()} {low()}-{high()}
       </p>

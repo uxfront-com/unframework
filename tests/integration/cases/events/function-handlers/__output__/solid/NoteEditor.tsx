@@ -1,11 +1,13 @@
-import { createSignal, onCleanup } from "solid-js";
+import { type JSX, createSignal, onCleanup } from "solid-js";
 
 export interface NoteEditorEvents {
   onSaved?: (count: number) => void;
   onTagged?: (tag: string, via: string) => void;
 }
 
-export default function NoteEditor(props: NoteEditorEvents) {
+export default function NoteEditor(
+  props: NoteEditorEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [saves, setSaves] = createSignal(0);
   const [lastKey, setLastKey] = createSignal("none");
   const [tags, setTags] = createSignal<string[]>([]);
@@ -34,7 +36,11 @@ export default function NoteEditor(props: NoteEditorEvents) {
   }
 
   return (
-    <section class="note-editor" aria-label="Note">
+    <section
+      class={props.class ? `note-editor ${props.class}` : "note-editor"}
+      aria-label="Note"
+      style={props.style}
+    >
       <button type="button" onClick={save}>
         Save
       </button>

@@ -1,4 +1,4 @@
-import { For, Show, createSignal, onCleanup } from "solid-js";
+import { For, type JSX, Show, createSignal, onCleanup } from "solid-js";
 
 export interface TagFormEvents {
   onTagsChange?: (tags: string[]) => void;
@@ -8,7 +8,9 @@ function blockComma(event: KeyboardEvent) {
   if (event.key === ",") event.preventDefault();
 }
 
-export default function TagForm(props: TagFormEvents) {
+export default function TagForm(
+  props: TagFormEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [tags, setTags] = createSignal<string[]>([]);
   const [draft, setDraft] = createSignal("");
   const [helpOpen, setHelpOpen] = createSignal(false);
@@ -35,7 +37,12 @@ export default function TagForm(props: TagFormEvents) {
   }
 
   return (
-    <form class="tag-form" aria-label="Tags" onSubmit={addTag}>
+    <form
+      class={props.class ? `tag-form ${props.class}` : "tag-form"}
+      aria-label="Tags"
+      onSubmit={addTag}
+      style={props.style}
+    >
       <label>
         New tag
         <input

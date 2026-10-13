@@ -1,4 +1,4 @@
-import { For, createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import { For, type JSX, createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
 
 export interface ReadingListProps {
   shelves: string[];
@@ -13,7 +13,9 @@ export interface ReadingListEvents {
   onRefreshed?: (total: number) => void;
 }
 
-export default function ReadingList(props: ReadingListProps & ReadingListEvents) {
+export default function ReadingList(
+  props: ReadingListProps & ReadingListEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [query, setQuery] = createSignal("");
   const [books, setBooks] = createSignal<string[]>([]);
   const [searching, setSearching] = createSignal(false);
@@ -84,7 +86,11 @@ export default function ReadingList(props: ReadingListProps & ReadingListEvents)
   }
 
   return (
-    <section class="reading-list" aria-label="Reading list">
+    <section
+      class={props.class ? `reading-list ${props.class}` : "reading-list"}
+      aria-label="Reading list"
+      style={props.style}
+    >
       <label>
         Search
         <input

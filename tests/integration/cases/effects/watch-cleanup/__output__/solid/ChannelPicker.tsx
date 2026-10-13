@@ -1,11 +1,13 @@
-import { createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface ChannelPickerEvents {
   onJoin?: (channel: string) => void;
   onLeave?: (channel: string) => void;
 }
 
-export default function ChannelPicker(props: ChannelPickerEvents) {
+export default function ChannelPicker(
+  props: ChannelPickerEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [channel, setChannel] = createSignal("general");
 
   createWatcher(
@@ -20,7 +22,11 @@ export default function ChannelPicker(props: ChannelPickerEvents) {
   );
 
   return (
-    <section class="channel-picker" aria-label="Channels">
+    <section
+      class={props.class ? `channel-picker ${props.class}` : "channel-picker"}
+      aria-label="Channels"
+      style={props.style}
+    >
       <p role="status">Channel: #{channel()}</p>
       <button type="button" onClick={() => setChannel("random")}>
         Join #random

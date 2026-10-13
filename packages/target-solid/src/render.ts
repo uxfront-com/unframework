@@ -22,12 +22,14 @@ import {
 } from "@unframework/codegen";
 import type { RewriteRules } from "@unframework/codegen";
 import type {
+  Attribute,
   ElementNode,
   Expression,
   FragmentNode,
   IfBranch,
   InterpolationNode,
   RenderNode,
+  SlotFill,
   UfComponent,
 } from "@unframework/ir";
 
@@ -45,7 +47,19 @@ export function forSolid(
   types: BindingTypes,
 ): UfComponent["render"] {
   const element = <T extends ElementNode | FragmentNode>(node: T): T => {
-    const content = children(node.children);
+    const model =
+      node.kind === "Element"
+        ? node.attributes.find(
+            (attribute) =>
+              attribute.kind === "Model" &&
+              (attribute.control === "select" || attribute.control === "select-multiple"),
+          )
+        : undefined;
+    const content = children(
+      model?.kind === "Model"
+        ? selectedOptions(node.children, model.value, model.control === "select-multiple")
+        : node.children,
+    );
     return {
       ...node,
       ...(node.kind === "Element"
@@ -100,9 +114,15 @@ export function forSolid(
           ];
         }
         case "For":
-          // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
-          if (node.body.kind !== "Element") return [node];
-          return [{ ...node, body: element(node.body) }];
+          return [
+            {
+              ...node,
+              body:
+                node.body.kind === "Element"
+                  ? element(node.body)
+                  : { ...node.body, fills: fills(node.body.fills) },
+            },
+          ];
         case "Interpolation":
           // The `<Show>` an interpolation may become renders it as a component's content,
           // which the server escapes whole; one left as text is escaped here.
@@ -120,14 +140,86 @@ export function forSolid(
         case "Text":
           return [node];
         case "Component":
+          return [{ ...node, fills: fills(node.fills) }];
         case "SlotOutlet":
+          return [{ ...node, fallback: children(node.fallback) }];
         case "Dynamic":
-          return [node];
+          return [
+            {
+              ...node,
+              children: children(node.children),
+              ...(node.fills ? { fills: fills(node.fills) } : {}),
+            },
+          ];
         default:
           return node satisfies never;
       }
     });
+  const fills = (list: readonly SlotFill[]): SlotFill[] =>
+    list.map((fill) => ({ ...fill, children: children(fill.children) }));
   return element(component.render);
+}
+
+/**
+ * A `<select>`'s options, each `selected` where it holds the model's value, or where the model's
+ * array holds it for a `<select multiple>` (ADR-0054), as Vue's `vModelSelect` sets them: Solid's
+ * server writes a `<select>`'s `value` as an attribute, and its `value` takes one value. An option
+ * without a `value` is left as it is.
+ */
+function selectedOptions(
+  nodes: readonly RenderNode[],
+  model: Expression,
+  multiple: boolean,
+): RenderNode[] {
+  return nodes.map((node): RenderNode => {
+    if (node.kind === "For" && node.body.kind === "Element") {
+      return { ...node, body: selectedOption(node.body, model, multiple) };
+    }
+    if (node.kind !== "Element") return node;
+    if (node.tag === "optgroup") {
+      return { ...node, children: selectedOptions(node.children, model, multiple) };
+    }
+    return node.tag === "option" ? selectedOption(node, model, multiple) : node;
+  });
+}
+
+function selectedOption(option: ElementNode, model: Expression, multiple: boolean): ElementNode {
+  const value = option.attributes.find(
+    (attribute) =>
+      (attribute.kind === "Static" || attribute.kind === "Bound") && attribute.name === "value",
+  );
+  if (value?.kind !== "Static" && value?.kind !== "Bound") return option;
+  const own =
+    value.kind === "Static" ? JSON.stringify(value.value === true ? "" : value.value) : value.value;
+  const selected: Attribute = {
+    kind: "Bound",
+    name: "selected",
+    value: selects(model, own, multiple),
+    span: value.span,
+  };
+  return { ...option, attributes: [...option.attributes, selected] };
+}
+
+/**
+ * `model === value`, or `model.includes(value)`, with each reference at its place in the new
+ * code.
+ */
+function selects(model: Expression, value: Expression | string, multiple: boolean): Expression {
+  const prefix = multiple ? `${model.code}.includes(` : `${model.code} === `;
+  const own = typeof value === "string" ? value : value.code;
+  const code = `${prefix}${own}${multiple ? ")" : ""}`;
+  const start = model.span.start;
+  const moved =
+    typeof value === "string"
+      ? []
+      : value.refs.map((reference) => {
+          const by = start + prefix.length - value.span.start;
+          return {
+            ...reference,
+            span: { start: reference.span.start + by, end: reference.span.end + by },
+          };
+        });
+  return { code, span: { start, end: start + code.length }, refs: [...model.refs, ...moved] };
 }
 
 /**

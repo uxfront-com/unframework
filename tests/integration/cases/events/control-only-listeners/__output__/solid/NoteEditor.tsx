@@ -1,10 +1,12 @@
-import { createSignal } from "solid-js";
+import { type JSX, createSignal } from "solid-js";
 
 export interface NoteEditorEvents {
   onSaved?: (title: string, bold: boolean) => void;
 }
 
-export default function NoteEditor(props: NoteEditorEvents) {
+export default function NoteEditor(
+  props: NoteEditorEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [title, setTitle] = createSignal("");
   const [bold, setBold] = createSignal(false);
   const [saves, setSaves] = createSignal(0);
@@ -15,7 +17,12 @@ export default function NoteEditor(props: NoteEditorEvents) {
   }
 
   return (
-    <form class="note-editor" aria-label="Note" onSubmit={(event) => event.preventDefault()}>
+    <form
+      class={props.class ? `note-editor ${props.class}` : "note-editor"}
+      aria-label="Note"
+      onSubmit={(event) => event.preventDefault()}
+      style={props.style}
+    >
       <label>
         Title
         <input

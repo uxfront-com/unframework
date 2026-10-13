@@ -28,12 +28,15 @@ import type {
   EventAttribute,
   FunctionCode,
   FunctionItem,
+  Handler,
+  ListenerAttribute,
   RefAttribute,
   UfComponent,
 } from "@unframework/ir";
 import { walk } from "@unframework/ir";
 
 import type { Narrowings } from "./narrowing.ts";
+import { eventProp } from "./props.ts";
 import type { SolidCode } from "./setup.ts";
 
 type JsxAttributeItem = ReturnType<typeof js.jsxAttribute>;
@@ -194,6 +197,13 @@ export interface SolidListeners {
     element: ElementNode,
     context: JsxContext,
   ): JsxAttributeItem[];
+  /** A listener of a child's event, `onClear={clear}`: the handler takes its payload. */
+  componentEvent(attribute: ListenerAttribute): JsxAttributeItem[];
+  /**
+   * A component ref (ADR-0054): a `let` the `ref` callback sets to what the child exposes, and
+   * clears when the child is disposed, as an element's (ADR-0049).
+   */
+  componentRef(attribute: RefAttribute): JsxAttributeItem[];
 }
 
 /** Listeners and template refs as Solid writes them (see the module comment). */
@@ -214,12 +224,13 @@ export function solidListeners(
     return plan;
   };
   let parameter: string | undefined;
+  let api: string | undefined;
   /**
    * A listener's handler. `tracked` where `solid/reactivity` reads it as a handler (an `on…`
    * prop's value, `addEventListener`'s argument), not where it is an options object's
    * `handleEvent`, so an arrow it hands to a function needs no `untrack` (src/untracked.ts).
    */
-  const handler = ({ handler: written }: EventAttribute, tracked = true): string => {
+  const handler = ({ handler: written }: { handler: Handler }, tracked = true): string => {
     switch (written.kind) {
       case "Function":
         return code.component.bindings.find((entry) => entry.id === written.binding)!.name;
@@ -275,6 +286,15 @@ export function solidListeners(
     },
     refAttribute(_attribute, element) {
       return [refCallback(element)];
+    },
+    componentEvent(attribute) {
+      return [js.jsxAttribute(eventProp(attribute.event), expression(handler(attribute)))];
+    },
+    componentRef(attribute) {
+      api ??= imports.claim("api");
+      const { name } = code.component.bindings.find((binding) => binding.id === attribute.binding)!;
+      const body = `${name} = ${api};\n${code.solid("onCleanup")}(() => {\n${name} = null;\n});`;
+      return [js.jsxAttribute("ref", expression(`(${api}) => {\n${body}\n}`))];
     },
   };
 }

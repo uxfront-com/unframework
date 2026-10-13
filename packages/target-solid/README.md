@@ -4,7 +4,7 @@ The Solid 1.9 target of the Unframework compiler: one function component in TSX 
 component, written as a Solid developer would write it (plan §6).
 
 ```tsx
-import { Show, createMemo, createSignal, mergeProps, untrack } from "solid-js";
+import { type JSX, Show, createMemo, createSignal, mergeProps, untrack } from "solid-js";
 
 export interface CounterProps {
   initial?: number;
@@ -15,7 +15,9 @@ export interface CounterEvents {
   onChange?: (value: number) => void;
 }
 
-export default function Counter(rawProps: CounterProps & CounterEvents) {
+export default function Counter(
+  rawProps: CounterProps & CounterEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const props = mergeProps({ initial: 0, step: 1 } satisfies Partial<CounterProps>, rawProps);
   const [count, setCount] = createSignal(untrack(() => props.initial));
   const doubled = createMemo(() => count() * 2);
@@ -26,7 +28,7 @@ export default function Counter(rawProps: CounterProps & CounterEvents) {
   }
 
   return (
-    <div class="counter">
+    <div class={props.class ? `counter ${props.class}` : "counter"} style={props.style}>
       <output>{count()}</output>
       <Show when={doubled() > 10}>
         <span>Big</span>
@@ -291,12 +293,70 @@ what Solid cannot render as the other targets do is the analyser's to reject (AD
 | `class-binding`                                | emulated: `cx`                                                                                               |
 | `model-array`                                  | emulated: `toggle`, and `selectedValues` for a multiple select                                               |
 | `model-modifiers`                              | emulated: `modelText`                                                                                        |
-| `reactive-context`                             | emulated: `refObject`                                                                                        |
+| `reactive-context`                             | emulated: `refObject`, an object whose `value` getter reads the signal                                       |
 | everything else                                | native                                                                                                       |
 
-Composition's cells (ADR-0055) are declared before Solid emits composition: until M3's lane for
-Solid lands, `emit` reports UF1002 where a component first uses it, and emits nothing for that
-component.
+## Composition (ADR-0053, ADR-0054)
+
+Everything a parent passes is a prop, read through the props object (`src/composition.ts`):
+
+| Source                                      | Solid                                                                                                         |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `import Field from "./Field.uf.tsx"`        | `import Field from "./Field"`; a component that renders itself calls its own function                         |
+| `<Field label="Name" tone={tone.value} />`  | `<Field label="Name" tone={tone()} />`                                                                        |
+| `onClear={clear}` on a component            | `onClear={clear}`, the handler taking the event's payload                                                     |
+| a component as a `.map` root                | `<For>`, as an element                                                                                        |
+| `defineSlots<{ … }>()`                      | an interface of props: `children?: JSX.Element`, `title?: JSX.Element`, `item?: (props: P) => JSX.Element`    |
+| `{slots.default?.()}`, `{slots.title?.()}`  | `{props.children}`, `{props.title}`; `{props.item?.({ item })}` for a scoped slot                             |
+| `{slots.title?.() ?? <em>None</em>}`        | `{props.title ?? <em>None</em>}`                                                                              |
+| `slots.title` as a condition                | `props.title`                                                                                                 |
+| a fill, `{{ title: () => <h2 />, item }}`   | `title={<h2 />}`, `item={({ item }) => …}`; the default slot's fill is the children, or `children={…}`        |
+| forwarding, `{{ title: slots.title }}`      | `title={props.title}`, `children={props.children}`                                                            |
+| `defineModel<number>("value", { default })` | `value?` and `onValueChange?` props; a local signal while `props.value === undefined`                         |
+| `value.value = x`                           | `setValue(x)`: writes the local signal and calls `props.onValueChange?.(x)`                                   |
+| `v-model:value={count.value}`               | `value={count()} onValueChange={setCount}`                                                                    |
+| `class` and `style` on a component          | merged into its root: ``class={props.class ? `card ${props.class}` : "card"}``, `style={props.style}`         |
+| `defineOptions({ inheritAttrs: false })`    | no `class` or `style` prop                                                                                    |
+| `defineExpose({ focus })`                   | a `ref` prop, `untrack(() => props.ref?.({ focus }))`                                                         |
+| `ref={field}` on a component                | `let field: T \| null = null`, set by the `ref` callback and emptied on cleanup, as an element's              |
+| `InjectionKey<Theme> = Symbol("…")`         | `export const ThemeKey = createContext<Theme>()` in the output of its module's main component                 |
+| `provide(ThemeKey, value)`                  | `<ThemeKey.Provider value={…}>` around the template, the value read once in `untrack` where it reads a prop   |
+| `inject(ThemeKey, fallback)`                | `useContext(ThemeKey) ?? fallback`                                                                            |
+| a provided ref, `provide(CountKey, count)`  | `{ get value() { return count(); } }` (`refObject`); the key is `createContext<{ readonly value: number }>()` |
+| `<component is={…}>`                        | `<Dynamic component={…}>`                                                                                     |
+
+`v-model` on a form control is the control's state and Vue's event for it (`src/models.ts`):
+
+| Control                                 | Solid                                                                                                  |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| a text-like `<input>`                   | `value={text()}` and `onInput`                                                                         |
+| a `<textarea>`                          | `value` in the browser and its text on the server (`isServer`), and `onInput`                          |
+| a `<select>`                            | each option `selected={size() === "m"}`, and `onChange`                                                |
+| a checkbox, a radio                     | `checked={agreed()}`, `checked={plan() === "monthly"}`, and `onChange`                                 |
+| checkboxes into an array                | `checked={drinks().includes("tea")}`, and `onChange` writes `toggle(drinks(), "tea", checked)`         |
+| a `<select multiple>`                   | each option `selected={toppings().includes("cheese")}`, and `onChange` writes `selectedValues(select)` |
+| a number or range input, `trim`, `lazy` | `{...modelText(weight, setWeight, { number: true })}`                                                  |
+
+- Reading `props.children` creates the children again, so a default slot that is tested or
+  falls back is resolved once: `const content = children(() => props.children);`, read
+  `content()`.
+- Fallthrough reaches the root element, or the root component, which passes it on. Solid
+  compiles a static style declaration into the element's template, where no later value could
+  remove it, so a root's own style is spread before the consumer's:
+  `style={{ ...{ padding: "2px" }, ...props.style }}`, and a consumer's `undefined` removes the
+  root's declaration, as Vue's merge does. A root's static class merges with a conditional
+  rather than `cx`, so two components of one module, which the unplugin joins into one file,
+  declare no helper twice.
+- Solid's server writes a `<select>`'s and a `<textarea>`'s `value` as an attribute, so a
+  `<select>` marks its options and a `<textarea>` holds its text there.
+- `modelText` reproduces Vue's `vModelText`: the field's initial value is a prop, which the
+  server renders, and its `ref` writes what the user types, trimmed or cast as `looseToNumber`
+  casts it, on `input` or, lazy, on `change`, and shows each new value of the state, except
+  where the text already reads as it, or while the user types in a trimmed field what it reads
+  as trimmed.
+- `solid/reactivity` (L5) reports a signal handed to a function in the component or a provider's
+  value, so a provided ref is an object literal with a getter, and what is read once is read in
+  `untrack`.
 
 ## Toolchain
 

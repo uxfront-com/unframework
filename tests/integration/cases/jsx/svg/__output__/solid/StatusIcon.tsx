@@ -1,4 +1,4 @@
-import { mergeProps } from "solid-js";
+import { type JSX, mergeProps } from "solid-js";
 
 export interface StatusIconProps {
   label: string;
@@ -6,19 +6,22 @@ export interface StatusIconProps {
   colour?: string;
 }
 
-export default function StatusIcon(rawProps: StatusIconProps) {
+export default function StatusIcon(
+  rawProps: StatusIconProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const props = mergeProps(
     { size: 24, colour: "#1f6feb" } satisfies Partial<StatusIconProps>,
     rawProps,
   );
   return (
     <svg
-      class="status-icon"
+      class={props.class ? `status-icon ${props.class}` : "status-icon"}
       role="img"
       viewBox="0 0 24 24"
       width={props.size}
       height={props.size}
       fill="none"
+      style={props.style}
     >
       <title>{props.label}</title>
       <defs>

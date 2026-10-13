@@ -20,13 +20,16 @@
 //   (ADR-0045, `unicorn/consistent-function-scoping`).
 import { functionSource, functionText, rewriteCode, writtenValue } from "@unframework/codegen";
 import type { ImportSet, Placeholders, RewriteRules } from "@unframework/codegen";
-import { summarizeCode, summarizeTracked } from "@unframework/ir";
+import { summarizeCode, summarizeTracked, walk } from "@unframework/ir";
 import type {
   Binding,
   BindingId,
   Code,
   CodeReference,
   FunctionCode,
+  InjectItem,
+  ModelItem,
+  RefType,
   SetupItem,
   Span,
   UfComponent,
@@ -35,6 +38,7 @@ import type {
 } from "@unframework/ir";
 
 import { assertedCode, assertedFunction, assertedWhole } from "./asserted.ts";
+import type { SolidComposition } from "./composition.ts";
 import {
   NEXT_TICK_HELPER,
   nextTickHelperCode,
@@ -57,8 +61,11 @@ export class SolidCode {
   readonly rules: RewriteRules;
   readonly #imports: ImportSet;
   readonly #props: SolidProps;
+  readonly #composition: SolidComposition;
   readonly #bindings: ReadonlyMap<BindingId, Binding>;
   readonly #setters = new Map<BindingId, string>();
+  /** A model's local signal, `[localValue, setLocalValue]`, by its binding. */
+  readonly #locals = new Map<BindingId, { value: string; setter: string }>();
   readonly #uses: WatcherUses = {
     single: { lazy: false, immediate: false },
     array: { lazy: false, immediate: false },
@@ -70,13 +77,19 @@ export class SolidCode {
   #watchEffect: string | undefined;
   #nextTick: string | undefined;
 
-  constructor(component: UfComponent, imports: ImportSet, props: SolidProps) {
+  constructor(
+    component: UfComponent,
+    imports: ImportSet,
+    props: SolidProps,
+    composition: SolidComposition,
+  ) {
     this.component = component;
     this.#imports = imports;
     this.#props = props;
+    this.#composition = composition;
     this.#bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
-    // The setters of the state client code writes, claimed in source order; state nothing writes
-    // takes none (an unused setter fails L5).
+    // The setters of the state and the models client code writes, or a `v-model` binds, claimed
+    // in source order; those nothing writes take none (an unused setter fails L5).
     const written = new Set<BindingId>();
     for (const item of component.setup) {
       for (const code of itemCode(item)) {
@@ -86,10 +99,18 @@ export class SolidCode {
     for (const handler of inlineHandlers(component)) {
       for (const ref of handler.body.refs) if (ref.kind === "Write") written.add(ref.binding);
     }
+    for (const id of modelTargets(component)) written.add(id);
     for (const item of component.setup) {
-      if (item.kind === "State" && written.has(item.binding)) {
+      if ((item.kind === "State" || item.kind === "Model") && written.has(item.binding)) {
         const { name } = this.#binding(item.binding);
         this.#setters.set(item.binding, imports.claim(`set${capitalised(name)}`));
+      }
+      if (item.kind === "Model") {
+        const { name } = this.#binding(item.binding);
+        this.#locals.set(item.binding, {
+          value: imports.claim(`local${capitalised(name)}`),
+          setter: imports.claim(`setLocal${capitalised(name)}`),
+        });
       }
     }
     // Whether watchers run before the DOM updates, after it, or both, which decides whether a
@@ -120,6 +141,7 @@ export class SolidCode {
             return indexes.has(binding.id) ? `${text}()` : text;
           case "state":
           case "derived":
+          case "model":
             return `${binding.name}()${asserted}`;
           case "templateRef":
             return binding.name;
@@ -128,8 +150,8 @@ export class SolidCode {
           case "localVar":
           case "emit":
             return text;
-          // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
-          case "model":
+          // A slot reads as a prop (src/composition.ts), an injected value and a slot's props as
+          // written, and a component by its import's name.
           case "slots":
           case "slotScope":
           case "context":
@@ -142,6 +164,7 @@ export class SolidCode {
       write: (write, binding, parts) => {
         switch (binding.kind) {
           case "state":
+          case "model":
             return `${this.#setters.get(binding.id)!}(${writtenValue(write, parts)})`;
           case "localVar":
             return undefined;
@@ -152,13 +175,11 @@ export class SolidCode {
           case "localConst":
           case "localFn":
           case "emit":
-            throw new Error(`A write of the ${binding.kind} ${binding.name}: invalid IR.`);
-          case "model":
           case "slots":
           case "slotScope":
           case "context":
           case "component":
-            return undefined;
+            throw new Error(`A write of the ${binding.kind} ${binding.name}: invalid IR.`);
           default:
             return unreachable(binding.kind);
         }
@@ -166,12 +187,72 @@ export class SolidCode {
       emit: (emit, _binding, parts) =>
         `${props.object!}.${eventProp(emit.event)}?.(${parts.arguments.join(", ")})`,
       api: () => (this.#nextTick ??= this.#imports.claim(NEXT_TICK_HELPER)),
+      slot: (reference) => this.slot(reference.slot),
     };
   }
 
-  /** The setter of a state binding client code writes: none for one nothing writes. */
+  /** The setter of a state or model binding code writes: none for one nothing writes. */
   setter(id: BindingId): string | undefined {
     return this.#setters.get(id);
+  }
+
+  /**
+   * One of the component's slots as a value: the prop that holds it (`props.title`), the
+   * default slot's `children`, or its content resolved once (`content()`).
+   */
+  slot(name: string): string {
+    if (name === "default" && this.#composition.resolved) return `${this.#composition.content()}()`;
+    return `${this.#props.object!}.${name === "default" ? "children" : name}`;
+  }
+
+  /**
+   * A model (ADR-0054): a local signal seeded by its default, the model's value read from its
+   * prop while the parent binds it and from the signal otherwise, and, where code writes it, a
+   * setter that writes the signal and asks the parent to change its value.
+   */
+  model(item: ModelItem): string {
+    const { name } = this.#binding(item.binding);
+    const local = this.#locals.get(item.binding)!;
+    const setter = this.#setters.get(item.binding);
+    const object = this.#props.object!;
+    const prop = `${object}.${item.name}`;
+    const initial = item.default ? item.default.code : "";
+    const pattern = setter ? `[${local.value}, ${local.setter}]` : `[${local.value}]`;
+    const lines = [
+      `const ${pattern} = ${this.solid("createSignal")}${typeArgument(item.type)}(${initial});`,
+      `const ${name} = () => (${prop} === undefined ? ${local.value}() : ${prop});`,
+    ];
+    if (setter) {
+      const type = item.type?.code ?? `ReturnType<typeof ${local.value}>`;
+      lines.push(
+        `\nfunction ${setter}(next: ${type}) {\n${local.setter}(next);\n${object}.${eventProp(`${item.name}Change`)}?.(next);\n}`,
+      );
+    }
+    return lines.join("\n");
+  }
+
+  /** `const theme = useContext(ThemeKey) ?? fallback;` (ADR-0054). */
+  inject(item: InjectItem): string {
+    const { name } = this.#binding(item.binding);
+    const read = `${this.solid("useContext")}(${item.key})`;
+    if (!item.fallback) return `const ${name} = ${read};`;
+    return `const ${name} = ${read} ?? ${this.provided(item.key, item.fallback)};`;
+  }
+
+  /**
+   * What a component provides, or injects as a fallback, for a key: a key of a ref takes the
+   * ref itself, as `refObject` (src/composition.ts); anything else its value.
+   */
+  provided(key: string, value: Code): string {
+    const whole = wholeBinding(value);
+    if (whole && keyRef(this.#composition, key)) {
+      const binding = this.#binding(whole);
+      if (binding.kind === "state" || binding.kind === "derived" || binding.kind === "model") {
+        return this.#composition.refObject(binding.name);
+      }
+    }
+    // A provider reads its value once, as `inject`'s fallback is read: in `untrack`.
+    return this.value(value);
   }
 
   /** A Solid import's local name. */
@@ -372,6 +453,7 @@ function tracked(kind: Binding["kind"]): boolean {
     case "prop":
     case "state":
     case "derived":
+    case "model":
       return true;
     case "loopVar":
     case "templateRef":
@@ -380,7 +462,6 @@ function tracked(kind: Binding["kind"]): boolean {
     case "localVar":
     case "emit":
       return false;
-    case "model":
     case "slots":
     case "slotScope":
     case "context":
@@ -407,15 +488,22 @@ export function solidSetup(code: SolidCode, placeholders: Placeholders): SolidSe
   const body: Statement[] = [];
   const bindingOf = (id: BindingId) => component.bindings.find((binding) => binding.id === id)!;
   // Printed in source order, so names are claimed in it.
-  const texts = new Map(component.setup.map((item) => [item, itemText(item, code, bindingOf)]));
+  const texts = new Map<SetupItem, string>(
+    component.setup.flatMap((item) =>
+      item.kind === "Provide" ? [] : [[item, itemText(item, code, bindingOf)] as const],
+    ),
+  );
   for (const item of component.setup) {
     if ("binding" in item && hoisted.has(item.binding)) {
       // A blank line after each: a module's declarations stand apart.
       module.push(placeholders.statements(`${texts.get(item)!}\n`));
     }
   }
+  // A `provide` wraps the template in its context's provider (src/composition.ts).
   const kept = teardownFirst(
-    component.setup.filter((item) => !("binding" in item && hoisted.has(item.binding))),
+    component.setup.filter(
+      (item) => item.kind !== "Provide" && !("binding" in item && hoisted.has(item.binding)),
+    ),
   );
   for (const [index, item] of kept.entries()) {
     // A blank line around a block (a function, a watcher, an effect, a hook) and before the
@@ -456,6 +544,7 @@ function unmounted(item: SetupItem): boolean {
 /** The setup items that print as blocks, set apart by blank lines. */
 const BLOCKS: ReadonlySet<SetupItem["kind"]> = new Set([
   "Function",
+  "Model",
   "Watch",
   "WatchEffect",
   "Lifecycle",
@@ -523,9 +612,11 @@ function itemText(item: SetupItem, code: SolidCode, bindingOf: (id: BindingId) =
         : `${onMount}(() => ${code.solid("onCleanup")}(${callback}));`;
     }
     case "Model":
-    case "Provide":
+      return code.model(item);
     case "Inject":
-      return "";
+      return code.inject(item);
+    case "Provide":
+      throw new Error("A provide prints in the template, never in the setup.");
     default:
       return unreachable(item);
   }
@@ -638,8 +729,20 @@ function inlineHandlers(component: UfComponent): FunctionCode[] {
       case "Interpolation":
         return;
       case "Component":
-      case "SlotOutlet":
       case "Dynamic":
+        for (const attribute of node.attributes) {
+          if (
+            (attribute.kind === "Listener" || attribute.kind === "Event") &&
+            attribute.handler.kind === "Inline"
+          ) {
+            found.push(attribute.handler.function);
+          }
+        }
+        if (node.kind === "Dynamic") node.children.forEach(visit);
+        for (const fill of node.fills ?? []) fill.children.forEach(visit);
+        return;
+      case "SlotOutlet":
+        node.fallback.forEach(visit);
         return;
       default:
         unreachable(node);
@@ -647,6 +750,46 @@ function inlineHandlers(component: UfComponent): FunctionCode[] {
   };
   visit(component.render);
   return found;
+}
+
+/** The state and models a `v-model` binds: an element's, or a component's `v-model:<name>`. */
+function modelTargets(component: UfComponent): BindingId[] {
+  const found: BindingId[] = [];
+  walk(component.render, {
+    enter(node) {
+      const attributes =
+        node.kind === "Element" || node.kind === "Component" || node.kind === "Dynamic"
+          ? node.attributes
+          : [];
+      for (const attribute of attributes) {
+        if (attribute.kind !== "Model" && attribute.kind !== "ModelBinding") continue;
+        const [ref] = attribute.value.refs;
+        if (ref?.kind === "Binding") found.push(ref.binding);
+      }
+    },
+  });
+  return found;
+}
+
+/** The binding code is a whole reference to (`count`, `count.value`), or none. */
+function wholeBinding(code: Code): BindingId | undefined {
+  const [only] = code.refs;
+  if (code.refs.length !== 1 || only?.kind !== "Binding") return undefined;
+  return only.span.start === code.span.start && only.span.end === code.span.end
+    ? only.binding
+    : undefined;
+}
+
+/** The ref type a key holds (`InjectionKey<Ref<number>>`), by its local name, or none. */
+function keyRef(composition: SolidComposition, local: string): RefType | undefined {
+  const { module } = composition;
+  const own = module.keys?.find((key) => key.name === local);
+  if (own) return own.ref;
+  for (const entry of module.imports ?? []) {
+    const name = entry.names.find((each) => each.kind === "Key" && each.local === local);
+    if (name) return entry.api.keys.find((key) => key.name === name.imported)?.ref;
+  }
+  return undefined;
 }
 
 /** An arrow's expression body: an object literal in parentheses. */

@@ -168,7 +168,11 @@ export default function Swatch({ colour, turn, paint, order }: SwatchProps) {
   );
 }
 `,
-  Plain: `export default function Plain(_: { note?: string }) {
+  // Without fallthrough, nothing reads its props: `_props`.
+  Plain: `import { defineOptions } from "unframework";
+
+export default function Plain(_: { note?: string }) {
+  defineOptions({ inheritAttrs: false });
   return <p>Nothing to read.</p>;
 }
 `,

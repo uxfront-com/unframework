@@ -1,6 +1,5 @@
 import {
   componentTypes,
-  compositionUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
@@ -13,9 +12,10 @@ import {
   printComponentModule,
   sourceNames,
 } from "@unframework/codegen";
-import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
+import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
+import { SolidComposition } from "./composition.ts";
 import { NEXT_TICK_HELPER, WATCHER_HELPER } from "./helpers.ts";
 import { CLASS_HELPER, solidJsx } from "./jsx.ts";
 import { solidListeners } from "./listeners.ts";
@@ -23,6 +23,10 @@ import { BindingTypes, Narrowings } from "./narrowing.ts";
 import { solidProps } from "./props.ts";
 import { forSolid } from "./render.ts";
 import { SolidCode, solidSetup } from "./setup.ts";
+
+// The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
+type JsxExpression = ReturnType<typeof jsxNode>;
+type JsxAttribute = ReturnType<typeof js.jsxAttribute>;
 
 /** The Solid 1.9 target. Solid's JSX takes HTML attribute names as they are. */
 export const solid: Target = defineTarget({
@@ -112,26 +116,18 @@ export const solid: Target = defineTarget({
     "dynamic-component": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // Composition's cells are declared before this target emits it (ADR-0055): until M3's lane
-    // for Solid lands, a component that uses it is reported, never emitted without it (P2).
-    const composition = compositionUse(context.module, component);
-    if (composition) {
-      context.report({
-        code: "UF1002",
-        severity: "error",
-        message: `The solid target does not emit ${composition.what} yet: composition lands in M3.`,
-        span: composition.span,
-      });
-      return [];
-    }
     // Every name the source declares or reads is taken before the output claims its own
     // (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035).
     const names = sourceNames(component, context.module);
     for (const name of freeNames(component, names)) names.delete(name);
     const imports = new ImportSet(new NameScope(names));
     const placeholders = new Placeholders();
-    const props = solidProps(component, imports, placeholders);
-    const code = new SolidCode(component, imports, props);
+    const composition = new SolidComposition(component, context.module, imports);
+    const props = solidProps(component, imports, placeholders, {
+      types: composition.parameterTypes(),
+      reads: composition.reads,
+    });
+    const code = new SolidCode(component, imports, props, composition);
     const setup = solidSetup(code, placeholders);
     const types = componentTypes(component, context.module);
     // The branch callbacks around what prints, which listeners read through too.
@@ -142,11 +138,12 @@ export const solid: Target = defineTarget({
       new BindingTypes(component, context.module.types),
     );
     const listeners = solidListeners(code, imports, placeholders, narrowings);
-    const { dialect, helpers } = solidJsx(
+    const { dialect, helpers, fallthrough } = solidJsx(
       imports,
       narrowings,
       [component.propsParameter?.type.code ?? "", ...types.map((declaration) => declaration.code)],
       listeners,
+      { code, composition, object: props.object },
     );
     const jsx = jsxContext({
       component,
@@ -155,24 +152,29 @@ export const solid: Target = defineTarget({
       placeholders,
       includeKeys: false,
     });
+    const object = props.object ?? "";
+    const exposed = composition.expose(object);
     const fn = js.functionDeclaration(component.name, props.parameters, [
       ...props.statements,
+      ...composition.statements(object).map((text) => placeholders.statements(text)),
       ...setup.statements,
-      js.returnStatement(jsxNode(forSolid(component, code.rules, narrowings.types), jsx)),
+      ...(exposed ? [placeholders.statements(`${exposed}\n`)] : []),
+      js.returnStatement(rendered(component, code, narrowings.types, jsx, fallthrough)),
     ]);
     const statements = exportDeclaration(
       component.name,
       fn,
       exportsOf(component.name, context.module.exports),
     );
+    const keys = composition.keys().map((text) => placeholders.statements(`${text}\n`));
     return [
       {
         path: `${component.name}.tsx`,
         contents: printComponentModule(
           {
             imports,
-            types: props.events ? [...types, props.events] : types,
-            body: [...setup.hoisted, ...statements],
+            types: [...types, ...(props.events ? [props.events] : []), ...composition.types],
+            body: [...keys, ...setup.hoisted, ...statements],
             helpers: [...helpers(), ...code.helpers()],
             placeholders,
           },
@@ -182,6 +184,47 @@ export const solid: Target = defineTarget({
     ];
   },
 });
+
+/**
+ * What the component returns: its template, with what falls through added to its root where
+ * the root has no `class` or `style` of its own, inside the providers of what it provides, the
+ * first outermost (ADR-0054). A root that is one component, or one `<component is>`, is printed
+ * as it is, not in a fragment.
+ */
+function rendered(
+  component: UfComponent,
+  code: SolidCode,
+  types: BindingTypes,
+  context: JsxContext,
+  fallthrough: (context: JsxContext) => JsxAttribute[],
+): JsxExpression {
+  const render = forSolid(component, code.rules, types);
+  const [only] = render.children;
+  const root =
+    render.kind === "Fragment" &&
+    render.children.length === 1 &&
+    (only?.kind === "Component" || only?.kind === "Dynamic")
+      ? only
+      : render;
+  const printed = jsxNode(root, context);
+  if (printed.type === "JSXElement")
+    printed.openingElement.attributes.push(...fallthrough(context));
+  let wrapped: JsxExpression = printed;
+  for (const item of component.setup.toReversed()) {
+    if (item.kind !== "Provide") continue;
+    const value = context.placeholders.expression(code.provided(item.key, item.value));
+    wrapped = js.jsxElement(
+      `${item.key}.Provider`,
+      [js.jsxAttribute("value", js.jsxExpressionContainer(value))],
+      [
+        wrapped.type === "JSXElement" || wrapped.type === "JSXFragment"
+          ? wrapped
+          : js.jsxExpressionContainer(wrapped),
+      ],
+    );
+  }
+  return wrapped;
+}
 
 /**
  * The source names an output may take for its own (ADR-0045): `onCleanup`, the name a watcher's

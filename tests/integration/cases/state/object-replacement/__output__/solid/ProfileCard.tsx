@@ -1,4 +1,4 @@
-import { createSignal, untrack } from "solid-js";
+import { type JSX, createSignal, untrack } from "solid-js";
 
 export interface Profile {
   name: string;
@@ -10,7 +10,9 @@ export interface ProfileCardProps {
   initial: Profile;
 }
 
-export default function ProfileCard(props: ProfileCardProps) {
+export default function ProfileCard(
+  props: ProfileCardProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const [profile, setProfile] = createSignal(untrack(() => props.initial));
 
   function rename(name: string) {
@@ -22,7 +24,11 @@ export default function ProfileCard(props: ProfileCardProps) {
   }
 
   return (
-    <article class="profile-card" aria-label="Profile">
+    <article
+      class={props.class ? `profile-card ${props.class}` : "profile-card"}
+      aria-label="Profile"
+      style={props.style}
+    >
       <h2>{profile().name}</h2>
       <p>{profile().title}</p>
       <p role="status">{profile().available ? "Available" : "Away"}</p>
