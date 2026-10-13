@@ -1,7 +1,12 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
   import { on } from "svelte/events";
+
+  type Props = { class?: ClassValue; style?: string };
+
+  let { class: className, style }: Props = $props();
 
   let started = $state(false);
   let suggesting = $state(false);
@@ -23,7 +28,7 @@
   }
 </script>
 
-<section class="reply-box" aria-label="Reply">
+<section class={["reply-box", className]} aria-label="Reply" {style}>
   <label>Message<textarea
     name="message"
     {@attach (node) => on(node, "keydown", once((event) => {

@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface Profile {
     name: string;
@@ -13,7 +14,9 @@
     initial: Profile;
   }
 
-  let { initial }: ProfileCardProps = $props();
+  type Props = ProfileCardProps & { class?: ClassValue; style?: string };
+
+  let { initial, class: className, style }: Props = $props();
 
   let profile = $state.raw(untrack(() => initial));
 
@@ -26,7 +29,7 @@
   }
 </script>
 
-<article class="profile-card" aria-label="Profile">
+<article class={["profile-card", className]} aria-label="Profile" {style}>
   <h2>{profile.name}</h2
   ><p>{profile.title}</p
   ><p role="status">{profile.available ? "Available" : "Away"}</p

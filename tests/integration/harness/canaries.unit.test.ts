@@ -569,9 +569,8 @@ describe("canaries", () => {
     expect(lines("vue")).toEqual([
       'const { title = "Tasks (today)", tasks, done, tone = "info" } = defineProps<Record<string, any>>();',
     ]);
-    expect(lines("svelte")).toEqual([
-      '  let { title = "Tasks (today)", tasks, done, tone = "info" }: any = $props();',
-    ]);
+    // The pattern runs over several lines, beside the fallthrough props (ADR-0054).
+    expect(lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(lines("astro")).toEqual(["type Props = any;"]);
     expect(lines("angular")).toEqual([
       '  readonly title = input<any>("Tasks (today)", {',
@@ -602,9 +601,7 @@ describe("canaries", () => {
       "const { path, size } = defineProps<Record<string, any>>();",
       "const emit = defineEmits<Record<string, any[]>>();",
     ]);
-    expect(await lines("svelte")).toEqual([
-      "  let { path, size, onrefresh, onopen, onmove, onpick, onshare }: any = $props();",
-    ]);
+    expect(await lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(await lines("astro")).toEqual(["type Props = any;"]);
     expect(await lines("angular")).toEqual([
       "  readonly path = input.required<any>();",
@@ -650,7 +647,7 @@ describe("canaries", () => {
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(0\.8\)/g), target).toHaveLength(1);
       expect(contents, target).toMatch(
-        /<section\b[^>]*\bstyle=(?:"filter: invert\(0\.8\)"|\{\{ filter: "invert\(0\.8\)" \}\})/,
+        /<section\b[^>]*\bstyle=(?:"filter: invert\(0\.8\)"|\{\{ filter: "invert\(0\.8\)" \}\}|\{mergeStyle\(\{ filter: "invert\(0\.8\)" \}, style\)\})/,
       );
     }
   });

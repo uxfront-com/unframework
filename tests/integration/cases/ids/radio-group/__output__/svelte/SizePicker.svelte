@@ -1,12 +1,16 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface SizePickerProps {
     legend: string;
     sizes: string[];
   }
 
-  let { legend, sizes }: SizePickerProps = $props();
+  type Props = SizePickerProps & { class?: ClassValue; style?: string };
+
+  let { legend, sizes, class: className, style }: Props = $props();
 
   const uid = $props.id();
   const group = `uf-id-${uid}-0`;
@@ -18,7 +22,7 @@
   }
 </script>
 
-<fieldset class="size-picker" aria-describedby={hintId}>
+<fieldset class={["size-picker", className]} aria-describedby={hintId} {style}>
   <legend>{legend}</legend
   ><p id={hintId}>Pick one size.</p
   >{#each sizes as size, index (size)}

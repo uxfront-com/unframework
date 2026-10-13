@@ -1,7 +1,11 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  let { text, tone }: { text: string; tone: "info" | "quiet" } = $props();
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = { text: string; tone: "info" | "quiet"; class?: ClassValue; style?: string };
+
+  let { text, tone, class: className, style }: Props = $props();
 </script>
 
-<p role="status" class={["notice", tone]}>{text}</p>
+<p role="status" class={["notice", tone, className]} {style}>{text}</p>

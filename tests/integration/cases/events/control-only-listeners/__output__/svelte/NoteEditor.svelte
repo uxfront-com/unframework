@@ -1,9 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  type Props = { onsaved?: (title: string, bold: boolean) => void };
+  import type { ClassValue } from "svelte/elements";
 
-  let { onsaved }: Props = $props();
+  type Props = {
+    onsaved?: (title: string, bold: boolean) => void;
+    class?: ClassValue;
+    style?: string;
+  };
+
+  let { onsaved, class: className, style }: Props = $props();
 
   let title = $state("");
   let bold = $state(false);
@@ -15,7 +21,12 @@
   }
 </script>
 
-<form class="note-editor" aria-label="Note" onsubmit={(event) => event.preventDefault()}>
+<form
+  class={["note-editor", className]}
+  aria-label="Note"
+  onsubmit={(event) => event.preventDefault()}
+  {style}
+>
   <label>Title<input
     name="title"
     oninput={(event) => (title = (event.currentTarget as HTMLInputElement).value)}

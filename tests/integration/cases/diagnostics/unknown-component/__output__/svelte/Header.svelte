@@ -1,3 +1,11 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<header class="header">Site</header>
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = { class?: ClassValue; style?: string };
+
+  let { class: className, style }: Props = $props();
+</script>
+
+<header class={["header", className]} {style}>Site</header>

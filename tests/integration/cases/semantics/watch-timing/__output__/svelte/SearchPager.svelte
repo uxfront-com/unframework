@@ -2,14 +2,17 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = {
     onqueryrun?: (value: string, previous: string) => void;
     onpagerun?: (value: number, previous: number) => void;
     oncleanedup?: (watcher: string) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { onqueryrun, onpagerun, oncleanedup }: Props = $props();
+  let { onqueryrun, onpagerun, oncleanedup, class: className, style }: Props = $props();
 
   let query = $state("");
   let page = $state(1);
@@ -65,7 +68,7 @@
   }
 </script>
 
-<section class="search-pager" aria-label="Search">
+<section class={["search-pager", className]} aria-label="Search" {style}>
   <p role="status">{query === "" ? "All results" : `Results for ${query}`}, page {page}</p
   ><button type="button" onclick={() => search("Boots")}>Search boots</button
   ><button type="button" onclick={() => search("Sandals")}>Search sandals</button

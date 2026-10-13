@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface InboxSummaryProps {
     folder: string;
     unread: number;
@@ -8,10 +10,12 @@
     signature: string;
   }
 
-  let { folder, unread, flagged, signature }: InboxSummaryProps = $props();
+  type Props = InboxSummaryProps & { class?: ClassValue; style?: string };
+
+  let { folder, unread, flagged, signature, class: className, style }: Props = $props();
 </script>
 
-<section class="inbox-summary" aria-label="Inbox summary">
+<section class={["inbox-summary", className]} aria-label="Inbox summary" {style}>
   <h2>{folder || "Inbox"}</h2
   >{#if unread}
     <p>{unread} unread</p>

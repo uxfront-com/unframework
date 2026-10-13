@@ -1,7 +1,11 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  let { symbol }: { symbol: string } = $props();
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = { symbol: string; class?: ClassValue; style?: string };
+
+  let { symbol, class: className, style }: Props = $props();
 </script>
 
-<span class="icon" aria-hidden="true">{symbol}</span>
+<span class={["icon", className]} aria-hidden="true" {style}>{symbol}</span>

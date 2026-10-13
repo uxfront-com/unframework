@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export type ShippingMethod = "standard" | "express";
 
   export interface CheckoutTotalProps {
@@ -8,9 +10,13 @@
     subtotal: number;
   }
 
-  type Props = CheckoutTotalProps & { onshippingchange?: (method: ShippingMethod) => void };
+  type Props = CheckoutTotalProps & {
+    onshippingchange?: (method: ShippingMethod) => void;
+    class?: ClassValue;
+    style?: string;
+  };
 
-  let { subtotal, onshippingchange }: Props = $props();
+  let { subtotal, onshippingchange, class: className, style }: Props = $props();
 
   const rates = { standard: 0, express: 1200 };
 
@@ -36,7 +42,7 @@
   }
 </script>
 
-<section class="checkout-total" aria-label="Order total">
+<section class={["checkout-total", className]} aria-label="Order total" {style}>
   <p>Subtotal: {formatCents(subtotal)}</p
   ><p>Shipping: {formatCents(shipping)}</p
   ><p role="status">Total: {total}</p

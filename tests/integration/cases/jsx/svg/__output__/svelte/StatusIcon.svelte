@@ -1,16 +1,28 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface StatusIconProps {
     label: string;
     size?: number;
     colour?: string;
   }
 
-  let { label, size = 24, colour = "#1f6feb" }: StatusIconProps = $props();
+  type Props = StatusIconProps & { class?: ClassValue; style?: string };
+
+  let { label, size = 24, colour = "#1f6feb", class: className, style }: Props = $props();
 </script>
 
-<svg class="status-icon" role="img" viewBox="0 0 24 24" width={size} height={size} fill="none">
+<svg
+  class={["status-icon", className]}
+  role="img"
+  viewBox="0 0 24 24"
+  width={size}
+  height={size}
+  fill="none"
+  {style}
+>
   <title>{label}</title
   ><defs>
     <linearGradient id="status-icon-fill" x1="0" y1="0" x2="1" y2="1">

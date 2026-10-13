@@ -2,15 +2,20 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface PageCountProps {
     page?: number;
     total: number;
   }
 
-  type Props = PageCountProps & { onpagechange?: (page: number, previous: number) => void };
+  type Props = PageCountProps & {
+    onpagechange?: (page: number, previous: number) => void;
+    class?: ClassValue;
+    style?: string;
+  };
 
-  let { page = 1, total, onpagechange }: Props = $props();
+  let { page = 1, total, onpagechange, class: className, style }: Props = $props();
 
   const label = $derived(`Page ${page} of ${total}`);
 
@@ -26,7 +31,7 @@
   });
 </script>
 
-<nav class="page-count" aria-label="Pages">
+<nav class={["page-count", className]} aria-label="Pages" {style}>
   <p role="status">{label}</p
   ><p>Direct: {page}</p>
 </nav>

@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface ShippingLabelProps {
     recipient: string;
     street: string;
@@ -8,10 +10,12 @@
     postcode: string;
   }
 
-  let { recipient, street, city, postcode }: ShippingLabelProps = $props();
+  type Props = ShippingLabelProps & { class?: ClassValue; style?: string };
+
+  let { recipient, street, city, postcode, class: className, style }: Props = $props();
 </script>
 
-<article class="shipping-label" aria-label="Shipping label">
+<article class={["shipping-label", className]} aria-label="Shipping label" {style}>
   <p><strong>To:</strong> {recipient}</p
   ><p>
     <span class="shipping-label-city">{city}</span> <span

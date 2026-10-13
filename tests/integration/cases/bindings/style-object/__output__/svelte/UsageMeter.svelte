@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface UsageMeterProps {
     label: string;
     percent: number;
@@ -8,10 +10,12 @@
     thickness: number;
   }
 
-  let { label, percent, colour, thickness }: UsageMeterProps = $props();
+  type Props = UsageMeterProps & { class?: ClassValue; style?: string };
+
+  let { label, percent, colour, thickness, class: className, style }: Props = $props();
 </script>
 
-<div class="usage-meter">
+<div class={["usage-meter", className]} {style}>
   <p
     style:color={colour}
     style:font-weight={700}

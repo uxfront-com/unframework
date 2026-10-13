@@ -1,9 +1,16 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  type Props = { onsaved?: (count: number) => void; ontagged?: (tag: string, via: string) => void };
+  import type { ClassValue } from "svelte/elements";
 
-  let { onsaved, ontagged }: Props = $props();
+  type Props = {
+    onsaved?: (count: number) => void;
+    ontagged?: (tag: string, via: string) => void;
+    class?: ClassValue;
+    style?: string;
+  };
+
+  let { onsaved, ontagged, class: className, style }: Props = $props();
 
   let saves = $state(0);
   let lastKey = $state("none");
@@ -33,7 +40,7 @@
   }
 </script>
 
-<section class="note-editor" aria-label="Note">
+<section class={["note-editor", className]} aria-label="Note" {style}>
   <button type="button" onclick={save}>Save</button
   ><label>Title<input name="title" onkeydown={recordKey} /></label
   ><label>Body<textarea name="body" onkeydown={recordKey}></textarea></label

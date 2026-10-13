@@ -85,23 +85,6 @@
     "target": "solid"
   },
   {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The svelte target does not emit model yet: composition lands in M3.",
-    "file": "models/several/PriceRange.uf.tsx",
-    "start": {
-      "line": 4,
-      "column": 3,
-      "offset": 113
-    },
-    "end": {
-      "line": 4,
-      "column": 58,
-      "offset": 168
-    },
-    "target": "svelte"
-  },
-  {
     "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
@@ -202,23 +185,6 @@
       "offset": 293
     },
     "target": "solid"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The svelte target does not emit component yet: composition lands in M3.",
-    "file": "models/several/Search.uf.tsx",
-    "start": {
-      "line": 10,
-      "column": 7,
-      "offset": 216
-    },
-    "end": {
-      "line": 10,
-      "column": 84,
-      "offset": 293
-    },
-    "target": "svelte"
   },
   {
     "code": "UF4001",

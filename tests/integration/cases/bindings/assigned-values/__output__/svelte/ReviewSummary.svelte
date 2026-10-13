@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface ReviewSummaryProps {
     steps: string[];
     score: number;
@@ -8,10 +10,12 @@
     product: string;
   }
 
-  let { steps, score, sku, product }: ReviewSummaryProps = $props();
+  type Props = ReviewSummaryProps & { class?: ClassValue; style?: string };
+
+  let { steps, score, sku, product, class: className, style }: Props = $props();
 </script>
 
-<section class="review-summary" aria-label="Review">
+<section class={["review-summary", className]} aria-label="Review" {style}>
   <ol>
     {#each steps as step, index (step)}
       <li {...{ value: index }}>{step}</li>

@@ -2,10 +2,15 @@
 
 <script lang="ts">
   import { tick } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
-  type Props = { onsaved?: (attempt: number, status: string) => void };
+  type Props = {
+    onsaved?: (attempt: number, status: string) => void;
+    class?: ClassValue;
+    style?: string;
+  };
 
-  let { onsaved }: Props = $props();
+  let { onsaved, class: className, style }: Props = $props();
 
   let status = $state("Not saved");
   let attempts = $state(0);
@@ -21,7 +26,7 @@
   }
 </script>
 
-<section class="save-draft" aria-label="Draft">
+<section class={["save-draft", className]} aria-label="Draft" {style}>
   <p role="status">{status}</p
   ><button type="button" onclick={save}>Save the draft</button>
 </section>

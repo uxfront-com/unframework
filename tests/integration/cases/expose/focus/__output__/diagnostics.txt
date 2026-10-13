@@ -38,14 +38,6 @@ error[UF1002] (solid): The solid target does not emit component yet: composition
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (svelte): The svelte target does not emit component yet: composition lands in M3.
- --> expose/focus/Header.uf.tsx:9:7
-  |
-9 |       <SearchField ref={search} label="Find" />
-  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
  --> expose/focus/Header.uf.tsx:9:20
   |
@@ -87,14 +79,6 @@ error[UF1002] (react): The react target does not emit expose yet: composition la
   = see: https://unframework.dev/diagnostics/UF1002
 
 error[UF1002] (solid): The solid target does not emit expose yet: composition lands in M3.
- --> expose/focus/SearchField.uf.tsx:8:3
-  |
-8 |   defineExpose({ focus });
-  |   ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (svelte): The svelte target does not emit expose yet: composition lands in M3.
  --> expose/focus/SearchField.uf.tsx:8:3
   |
 8 |   defineExpose({ focus });

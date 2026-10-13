@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface InboxMessage {
     id: string;
     subject: string;
@@ -12,10 +14,18 @@
     emptyText?: string;
   }
 
-  let { messages, archived = [], emptyText = "Nothing here yet." }: MessageListProps = $props();
+  type Props = MessageListProps & { class?: ClassValue; style?: string };
+
+  let {
+    messages,
+    archived = [],
+    emptyText = "Nothing here yet.",
+    class: className,
+    style,
+  }: Props = $props();
 </script>
 
-<section class="message-list" aria-label="Messages">
+<section class={["message-list", className]} aria-label="Messages" {style}>
   <h2>Inbox</h2
   ><ul>
     {#each messages as message (message.id)}

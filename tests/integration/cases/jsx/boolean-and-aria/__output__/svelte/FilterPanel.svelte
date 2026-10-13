@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface FilterPanelProps {
     heading: string;
     hint: string;
@@ -14,6 +16,8 @@
     current?: "page" | "step";
   }
 
+  type Props = FilterPanelProps & { class?: ClassValue; style?: string };
+
   let {
     heading,
     hint,
@@ -25,10 +29,18 @@
     loading,
     invalid,
     current,
-  }: FilterPanelProps = $props();
+    class: className,
+    style,
+  }: Props = $props();
 </script>
 
-<section class="filter-panel" aria-label={heading} data-category={category} data-layout="stacked">
+<section
+  class={["filter-panel", className]}
+  aria-label={heading}
+  data-category={category}
+  data-layout="stacked"
+  {style}
+>
   <button
     type="button"
     aria-expanded={expanded}

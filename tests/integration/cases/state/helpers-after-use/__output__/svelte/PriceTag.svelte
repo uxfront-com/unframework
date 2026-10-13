@@ -2,13 +2,16 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface PriceTagProps {
     /** The unit price, in cents. */
     price: number;
   }
 
-  let { price }: PriceTagProps = $props();
+  type Props = PriceTagProps & { class?: ClassValue; style?: string };
+
+  let { price, class: className, style }: Props = $props();
 
   let quantity = $state(1);
   let unit = $state(untrack(() => formatCents(price)));
@@ -39,7 +42,7 @@
   }
 </script>
 
-<section class="price-tag" aria-label="Price">
+<section class={["price-tag", className]} aria-label="Price" {style}>
   <p>Unit: {unit}</p
   ><p role="status">{summary}</p
   ><p>Total: {total}</p
