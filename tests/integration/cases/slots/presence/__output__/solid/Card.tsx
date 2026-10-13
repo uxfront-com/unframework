@@ -8,6 +8,7 @@ export interface CardSlots {
 export default function Card(
   props: { label: string } & CardSlots & { class?: string; style?: JSX.CSSProperties },
 ) {
+  const title = children(() => props.title);
   const content = children(() => props.children);
   return (
     <section
@@ -15,8 +16,8 @@ export default function Card(
       aria-label={props.label}
       style={props.style}
     >
-      <Show when={props.title}>
-        <header class="title">{props.title}</header>
+      <Show when={title()}>
+        <header class="title">{title()}</header>
       </Show>
       <Show when={content()} fallback={<p>Empty card</p>}>
         <div class="body">{content()}</div>

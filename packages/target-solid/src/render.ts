@@ -163,8 +163,9 @@ export function forSolid(
 /**
  * A `<select>`'s options, each `selected` where it holds the model's value, or where the model's
  * array holds it for a `<select multiple>` (ADR-0054), as Vue's `vModelSelect` sets them: Solid's
- * server writes a `<select>`'s `value` as an attribute, and its `value` takes one value. An option
- * without a `value` is left as it is.
+ * server writes a `<select>`'s `value` as an attribute, and its `value` takes one value. Options
+ * are found in groups, lists and conditionals; one without a `value` holds its text, as the DOM
+ * reads it.
  */
 function selectedOptions(
   nodes: readonly RenderNode[],
@@ -172,14 +173,27 @@ function selectedOptions(
   multiple: boolean,
 ): RenderNode[] {
   return nodes.map((node): RenderNode => {
-    if (node.kind === "For" && node.body.kind === "Element") {
-      return { ...node, body: selectedOption(node.body, model, multiple) };
+    switch (node.kind) {
+      case "For":
+        return node.body.kind === "Element" && node.body.tag === "option"
+          ? { ...node, body: selectedOption(node.body, model, multiple) }
+          : node;
+      case "If":
+        return {
+          ...node,
+          branches: node.branches.map((branch) => ({
+            ...branch,
+            children: selectedOptions(branch.children, model, multiple),
+          })),
+        };
+      case "Element":
+        if (node.tag === "optgroup") {
+          return { ...node, children: selectedOptions(node.children, model, multiple) };
+        }
+        return node.tag === "option" ? selectedOption(node, model, multiple) : node;
+      default:
+        return node;
     }
-    if (node.kind !== "Element") return node;
-    if (node.tag === "optgroup") {
-      return { ...node, children: selectedOptions(node.children, model, multiple) };
-    }
-    return node.tag === "option" ? selectedOption(node, model, multiple) : node;
   });
 }
 
@@ -188,16 +202,69 @@ function selectedOption(option: ElementNode, model: Expression, multiple: boolea
     (attribute) =>
       (attribute.kind === "Static" || attribute.kind === "Bound") && attribute.name === "value",
   );
-  if (value?.kind !== "Static" && value?.kind !== "Bound") return option;
   const own =
-    value.kind === "Static" ? JSON.stringify(value.value === true ? "" : value.value) : value.value;
+    value?.kind === "Static"
+      ? JSON.stringify(value.value === true ? "" : value.value)
+      : value?.kind === "Bound"
+        ? value.value
+        : optionText(option);
   const selected: Attribute = {
     kind: "Bound",
     name: "selected",
     value: selects(model, own, multiple),
-    span: value.span,
+    span: value?.span ?? option.span,
   };
   return { ...option, attributes: [...option.attributes, selected] };
+}
+
+/**
+ * The value of an option without a `value`: its text, the static text as a string and each
+ * interpolation as written, joined with `+`, the whitespace at its ends trimmed as the DOM's
+ * `value` strips and collapses it (a static text's own).
+ */
+function optionText(option: ElementNode): Expression | string {
+  const parts = option.children.flatMap((child): (Expression | string)[] => {
+    if (child.kind === "Text") return [child.value];
+    if (child.kind === "Interpolation") return [child.value];
+    return [];
+  });
+  if (parts.every((part) => typeof part === "string")) {
+    return JSON.stringify(
+      parts
+        .join("")
+        .replace(/[\t\n\f\r ]+/g, " ")
+        .trim(),
+    );
+  }
+  return joined(parts.map((part) => (typeof part === "string" ? JSON.stringify(part) : part)));
+}
+
+/**
+ * Expressions and string literals joined with `+` into a string, `String("a " + (x))`, each
+ * reference at its place in the new code.
+ */
+function joined(parts: readonly (Expression | string)[]): Expression {
+  const start = parts.find((part): part is Expression => typeof part !== "string")!.span.start;
+  let code = "String(";
+  const refs: Expression["refs"] = [];
+  for (const [index, part] of parts.entries()) {
+    if (index) code += " + ";
+    if (typeof part === "string") {
+      code += part;
+      continue;
+    }
+    code += "(";
+    const by = start + code.length - part.span.start;
+    code += `${part.code})`;
+    refs.push(...part.refs.map((reference) => shifted(reference, by)));
+  }
+  code += ")";
+  return { code, span: { start, end: start + code.length }, refs };
+}
+
+/** A reference moved by `by` characters. */
+function shifted<T extends { span: { start: number; end: number } }>(reference: T, by: number): T {
+  return { ...reference, span: { start: reference.span.start + by, end: reference.span.end + by } };
 }
 
 /**
@@ -209,17 +276,10 @@ function selects(model: Expression, value: Expression | string, multiple: boolea
   const own = typeof value === "string" ? value : value.code;
   const code = `${prefix}${own}${multiple ? ")" : ""}`;
   const start = model.span.start;
-  const moved =
-    typeof value === "string"
-      ? []
-      : value.refs.map((reference) => {
-          const by = start + prefix.length - value.span.start;
-          return {
-            ...reference,
-            span: { start: reference.span.start + by, end: reference.span.end + by },
-          };
-        });
-  return { code, span: { start, end: start + code.length }, refs: [...model.refs, ...moved] };
+  const by = start + prefix.length - (typeof value === "string" ? 0 : value.span.start);
+  const ownRefs =
+    typeof value === "string" ? [] : value.refs.map((reference) => shifted(reference, by));
+  return { code, span: { start, end: start + code.length }, refs: [...model.refs, ...ownRefs] };
 }
 
 /**

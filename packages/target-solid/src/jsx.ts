@@ -160,6 +160,10 @@ export function solidJsx(
         .filter((key) => !(merged && key.name === "class"))
         .flatMap((key) => {
           const value = spreadRead(attribute, key, context);
+          // On a root without a `class` of its own, what falls through merges with the key.
+          if (key.name === "class" && isRoot(element)) {
+            return [classCall(classHelper(), [value, ...rootClass(element, context)])];
+          }
           return isUntyped(element.tag, key.name)
             ? untypedJsxAttribute(element, key.name, value)
             : [js.jsxAttribute(key.name, js.jsxExpressionContainer(value))];

@@ -105,7 +105,8 @@ export class SolidCode {
         const { name } = this.#binding(item.binding);
         this.#setters.set(item.binding, imports.claim(`set${capitalised(name)}`));
       }
-      if (item.kind === "Model") {
+      // A required model has no local state: its parent always binds it.
+      if (item.kind === "Model" && !item.required) {
         const { name } = this.#binding(item.binding);
         this.#locals.set(item.binding, {
           value: imports.claim(`local${capitalised(name)}`),
@@ -198,10 +199,11 @@ export class SolidCode {
 
   /**
    * One of the component's slots as a value: the prop that holds it (`props.title`), the
-   * default slot's `children`, or its content resolved once (`content()`).
+   * default slot's `children`, or its content resolved once (`content()`, `title()`).
    */
   slot(name: string): string {
-    if (name === "default" && this.#composition.resolved) return `${this.#composition.content()}()`;
+    const resolved = this.#composition.resolved.get(name);
+    if (resolved) return `${resolved}()`;
     return `${this.#props.object!}.${name === "default" ? "children" : name}`;
   }
 
@@ -212,10 +214,20 @@ export class SolidCode {
    */
   model(item: ModelItem): string {
     const { name } = this.#binding(item.binding);
-    const local = this.#locals.get(item.binding)!;
+    const local = this.#locals.get(item.binding);
     const setter = this.#setters.get(item.binding);
     const object = this.#props.object!;
     const prop = `${object}.${item.name}`;
+    const change = `${object}.${eventProp(`${item.name}Change`)}?.(next);`;
+    if (!local) {
+      // Required: the parent always binds it, so it reads the prop alone, typed as declared.
+      const lines = [`const ${name} = () => ${prop};`];
+      if (setter) {
+        const type = item.type?.code ?? `ReturnType<typeof ${name}>`;
+        lines.push(`\nfunction ${setter}(next: ${type}) {\n${change}\n}`);
+      }
+      return lines.join("\n");
+    }
     const initial = item.default ? item.default.code : "";
     const pattern = setter ? `[${local.value}, ${local.setter}]` : `[${local.value}]`;
     const lines = [
@@ -224,9 +236,7 @@ export class SolidCode {
     ];
     if (setter) {
       const type = item.type?.code ?? `ReturnType<typeof ${local.value}>`;
-      lines.push(
-        `\nfunction ${setter}(next: ${type}) {\n${local.setter}(next);\n${object}.${eventProp(`${item.name}Change`)}?.(next);\n}`,
-      );
+      lines.push(`\nfunction ${setter}(next: ${type}) {\n${local.setter}(next);\n${change}\n}`);
     }
     return lines.join("\n");
   }

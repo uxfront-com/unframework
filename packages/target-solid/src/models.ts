@@ -8,11 +8,13 @@
 // - Checkboxes into an array: `checked={drinks().includes("tea")}`, and `onChange` writes
 //   `toggle(drinks(), "tea", checked)`; a `<select multiple>`: each option's `selected`
 //   (src/render.ts), and `onChange` writes `selectedValues(select)` (`model-array`, emulated).
-// - A number or range input, and the `trim`, `lazy` and `number` modifiers: `modelText`, which
-//   reproduces Vue's `vModelText`, its focus rules included (`model-modifiers`, emulated).
+// - A number or range input, and the `trim`, `lazy` and `number` modifiers: the initial value, and
+//   `ref={modelText(…)}`, which reproduces Vue's `vModelText`, its focus rules included
+//   (`model-modifiers`, emulated).
+// - A value that may be `null` or `undefined` shows as no text: `value={name() ?? ""}`.
 import { js, jsxBinding, jsxExpression } from "@unframework/codegen";
 import type { ImportSet, JsxContext } from "@unframework/codegen";
-import type { ElementNode, ModelAttribute } from "@unframework/ir";
+import type { ElementNode, ModelAttribute, UfComponent } from "@unframework/ir";
 
 import type { SolidCode } from "./setup.ts";
 
@@ -42,6 +44,11 @@ export class ModelHelpers {
     return this.#imports.add("solid-js/web", "isServer");
   }
 
+  /** A Solid import's local name. */
+  solid(name: string): string {
+    return this.#imports.add("solid-js", name);
+  }
+
   toggle(): string {
     return (this.#toggle ??= this.#imports.claim("toggle"));
   }
@@ -58,12 +65,7 @@ export class ModelHelpers {
   helpers(): string[] {
     const helpers: string[] = [];
     if (this.#modelText) {
-      helpers.push(
-        modelTextHelperCode(this.#modelText, {
-          untrack: this.#imports.add("solid-js", "untrack"),
-          createRenderEffect: this.#imports.add("solid-js", "createRenderEffect"),
-        }),
-      );
+      helpers.push(modelTextHelperCode(this.#modelText, this.solid("createRenderEffect")));
     }
     if (this.#toggle) helpers.push(toggleHelperCode(this.#toggle));
     if (this.#selectedValues) helpers.push(selectedValuesHelperCode(this.#selectedValues));
@@ -90,35 +92,45 @@ export function modelAttribute(
   const set = (argument: AstExpression) => js.callExpression(js.identifier(setter), [argument]);
   const listener = (body: AstExpression) => js.arrowFunction([js.bindingIdentifier(event)], body);
   const number = attribute.number || attribute.control === "number";
+  // A value that may be `null` or `undefined` shows as no text, as Vue's `vModelText` writes it.
+  const nullish = mayBeNullish(context.component, ref.binding);
+  const text = (expression: AstExpression) =>
+    nullish ? js.logicalExpression("??", expression, js.stringLiteral("")) : expression;
+  const server = () => js.identifier(helpers.isServer());
+  // Solid's server writes a `<textarea>`'s `value` as an attribute: there the state is its text,
+  // and in the browser its value, as Vue renders it.
+  const textarea = (shown: () => AstExpression) => [
+    prop("value", js.conditionalExpression(server(), nothing(), text(shown()))),
+    prop("children", js.conditionalExpression(server(), value(), nothing())),
+  ];
   if (attribute.trim || attribute.lazy || number) {
+    // The field's initial value, which the server renders; `modelText` keeps it in step after.
+    const initial = () =>
+      text(
+        js.callExpression(js.identifier(helpers.solid("untrack")), [js.identifier(binding.name)]),
+      );
     const options = [
       ...(attribute.trim ? [js.property("trim", js.booleanLiteral(true))] : []),
       ...(attribute.lazy ? [js.property("lazy", js.booleanLiteral(true))] : []),
       ...(number ? [js.property("number", js.booleanLiteral(true))] : []),
     ];
-    return [
-      js.jsxSpreadAttribute(
-        js.callExpression(js.identifier(helpers.modelText()), [
-          js.identifier(binding.name),
-          js.identifier(setter),
-          js.objectExpression(options),
-        ]),
-      ),
-    ];
+    const bound = prop(
+      "ref",
+      js.callExpression(js.identifier(helpers.modelText()), [
+        js.identifier(binding.name),
+        js.identifier(setter),
+        js.objectExpression(options),
+      ]),
+    );
+    return attribute.control === "textarea"
+      ? [...textarea(initial), bound]
+      : [prop("value", initial()), bound];
   }
   switch (attribute.control) {
     case "text":
-      return [prop("value", value()), prop("onInput", listener(set(target("value"))))];
-    case "textarea": {
-      // Solid's server writes a `<textarea>`'s `value` as an attribute: there the state is its
-      // text, and in the browser its value, as Vue renders it.
-      const server = helpers.isServer();
-      return [
-        prop("value", js.conditionalExpression(js.identifier(server), nothing(), value())),
-        prop("children", js.conditionalExpression(js.identifier(server), value(), nothing())),
-        prop("onInput", listener(set(target("value")))),
-      ];
-    }
+      return [prop("value", text(value())), prop("onInput", listener(set(target("value"))))];
+    case "textarea":
+      return [...textarea(value), prop("onInput", listener(set(target("value"))))];
     case "select":
       // Each option is `selected` where it holds the state's value (src/render.ts): Solid's
       // server writes a `<select>`'s `value` as an attribute.
@@ -169,6 +181,25 @@ export function modelAttribute(
   }
 }
 
+/**
+ * Whether a state or a model may hold `null` or `undefined`, by what the source writes: its type
+ * argument names either, or it has no initial value, or its initial value is either.
+ */
+function mayBeNullish(component: UfComponent, id: string): boolean {
+  const item = component.setup.find((each) => "binding" in each && each.binding === id);
+  if (item?.kind === "State") {
+    if (named(item.type) || !item.initial) return true;
+    return !item.type && /^(?:null|undefined)$/.test(item.initial.code.trim());
+  }
+  if (item?.kind === "Model") return named(item.type) || (!item.default && !item.required);
+  return false;
+}
+
+/** Whether a type names `null` or `undefined`. */
+function named(type: { code: string } | undefined): boolean {
+  return type !== undefined && /\b(?:null|undefined)\b/.test(type.code);
+}
+
 /** `name={expression}`. */
 function prop(name: string, expression: AstExpression): JsxAttribute {
   return js.jsxAttribute(name, js.jsxExpressionContainer(expression));
@@ -193,49 +224,44 @@ function own(element: ElementNode, context: JsxContext): AstExpression {
 }
 
 /**
- * The inline `modelText` helper (emulated `model-modifiers`, ADR-0054): Vue's `vModelText`. The
- * field shows the state's initial value from its props, which the server renders, and its `ref`
- * listens to the field and keeps it in step: it writes what the user types, trimmed or cast as
- * Vue's `looseToNumber` casts it, on `input` or, when lazy, on `change`, and a trimmed field shows
- * its trimmed text once it changes; it shows each new value of the state, except where the text
- * already reads as it, or while the user is typing in a trimmed field what it reads as trimmed.
+ * The inline `modelText` helper (emulated `model-modifiers`, ADR-0054): Vue's `vModelText`, as a
+ * field's `ref`. The field's initial value is its `value` prop, which the server renders; the
+ * helper writes what the user types, trimmed or cast as Vue's `looseToNumber` casts it, on
+ * `input` or, when lazy, on `change`, and a trimmed field shows its trimmed text once it
+ * changes; it shows each new value of the state (no text for `null` or `undefined`), except
+ * where the text already reads as it, or while the user is typing in a trimmed field what it
+ * reads as trimmed.
  */
-function modelTextHelperCode(
-  name: string,
-  solid: { untrack: string; createRenderEffect: string },
-): string {
+function modelTextHelperCode(name: string, createRenderEffect: string): string {
   return `/** Binds a text field to a signal as Vue's \`vModelText\` does: see its modifiers. */
-function ${name}<T extends string | number>(
+function ${name}<T extends string | number | null | undefined>(
   value: () => T,
   setValue: (value: T) => void,
   modifiers: { trim?: boolean; lazy?: boolean; number?: boolean },
-): { value: T; ref: (field: HTMLInputElement | HTMLTextAreaElement) => void } {
+): (field: HTMLInputElement | HTMLTextAreaElement) => void {
   const cast = (text: string): string | number => {
     const number = Number.parseFloat(text);
     return Number.isNaN(number) ? text : number;
   };
-  return {
-    value: ${solid.untrack}(value),
-    ref(field) {
-      field.addEventListener(modifiers.lazy ? "change" : "input", () => {
-        const text = modifiers.trim ? field.value.trim() : field.value;
-        setValue((modifiers.number ? cast(text) : text) as T);
+  return (field) => {
+    field.addEventListener(modifiers.lazy ? "change" : "input", () => {
+      const text = modifiers.trim ? field.value.trim() : field.value;
+      setValue((modifiers.number ? cast(text) : text) as T);
+    });
+    if (modifiers.trim) {
+      field.addEventListener("change", () => {
+        field.value = field.value.trim();
       });
-      if (modifiers.trim) {
-        field.addEventListener("change", () => {
-          field.value = field.value.trim();
-        });
-      }
-      ${solid.createRenderEffect}(() => {
-        const next = value();
-        const shown =
-          modifiers.number && !/^0\\d/.test(field.value) ? cast(field.value) : field.value;
-        if (shown === next) return;
-        const typing = document.activeElement === field && field.type !== "range";
-        if (typing && modifiers.trim && field.value.trim() === next) return;
-        field.value = String(next);
-      });
-    },
+    }
+    ${createRenderEffect}(() => {
+      const next = value() ?? "";
+      const shown =
+        modifiers.number && !/^0\\d/.test(field.value) ? cast(field.value) : field.value;
+      if (shown === next) return;
+      const typing = document.activeElement === field && field.type !== "range";
+      if (typing && modifiers.trim && field.value.trim() === next) return;
+      field.value = String(next);
+    });
   };
 }`;
 }

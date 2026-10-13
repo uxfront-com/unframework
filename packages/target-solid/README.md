@@ -335,11 +335,14 @@ Everything a parent passes is a prop, read through the props object (`src/compos
 | a checkbox, a radio                     | `checked={agreed()}`, `checked={plan() === "monthly"}`, and `onChange`                                 |
 | checkboxes into an array                | `checked={drinks().includes("tea")}`, and `onChange` writes `toggle(drinks(), "tea", checked)`         |
 | a `<select multiple>`                   | each option `selected={toppings().includes("cheese")}`, and `onChange` writes `selectedValues(select)` |
-| a number or range input, `trim`, `lazy` | `{...modelText(weight, setWeight, { number: true })}`                                                  |
+| a number or range input, `trim`, `lazy` | `value={untrack(weight)} ref={modelText(weight, setWeight, { number: true })}`                         |
 
-- Reading `props.children` creates the children again, so a default slot that is tested or
-  falls back is resolved once: `const content = children(() => props.children);`, read
-  `content()`.
+- Reading a slot's prop creates its content again, so a slot without props that is tested
+  anywhere (a condition, an attribute), or a default slot with a fallback, is resolved once:
+  `const content = children(() => props.children);`, `const title = children(() => props.title);`,
+  read `content()` and `title()`. A required model reads its prop alone, with no local signal.
+- A text model that may be `null` or `undefined` (its type names either, or it has no initial
+  value) shows no text: `value={name() ?? ""}`.
 - Fallthrough reaches the root element, or the root component, which passes it on. Solid
   compiles a static style declaration into the element's template, where no later value could
   remove it, so a root's own style is spread before the consumer's:
@@ -348,10 +351,12 @@ Everything a parent passes is a prop, read through the props object (`src/compos
   rather than `cx`, so two components of one module, which the unplugin joins into one file,
   declare no helper twice.
 - Solid's server writes a `<select>`'s and a `<textarea>`'s `value` as an attribute, so a
-  `<select>` marks its options and a `<textarea>` holds its text there.
-- `modelText` reproduces Vue's `vModelText`: the field's initial value is a prop, which the
-  server renders, and its `ref` writes what the user types, trimmed or cast as `looseToNumber`
-  casts it, on `input` or, lazy, on `change`, and shows each new value of the state, except
+  `<select>` marks its options, in groups, lists and conditionals alike, an option without a
+  `value` by its text, and a `<textarea>` holds its text there, a modified one's too.
+- `modelText` reproduces Vue's `vModelText`: the field's initial value is its `value` prop, which
+  the server renders, and the `ref` it returns writes what the user types, trimmed or cast as `looseToNumber`
+  casts it, on `input` or, lazy, on `change`, and shows each new value of the state (no text for
+  `null` or `undefined`), except
   where the text already reads as it, or while the user types in a trimmed field what it reads
   as trimmed.
 - `solid/reactivity` (L5) reports a signal handed to a function in the component or a provider's

@@ -5,8 +5,9 @@
 //   itself calls its own function.
 // - Slots are props: the default slot is `children`, a named one `title`, a scoped one a function
 //   of its props, `item?: (props) => JSX.Element`. A slot reads as `props.title`, and a scoped one
-//   is called, `props.item?.({ item })`. Reading `props.children` creates its content again, so a
-//   default slot that is tested or has a fallback is resolved once with `children()`.
+//   is called, `props.item?.({ item })`. Reading a slot's prop creates its content again, so a
+//   slot without props that is tested anywhere, or a default slot with a fallback, is resolved
+//   once with `children()`.
 // - A model is a `value` prop and an `onValueChange` callback; unbound (`value === undefined`), the
 //   child keeps a local signal seeded by its default.
 // - `class` and `style` fall through to the root, merged with its own (`fallthrough`), unless
@@ -20,12 +21,11 @@
 //   `solid/reactivity` (L5) reports a signal handed to a function there.
 import { childImports, keyImports, keyOwner } from "@unframework/codegen";
 import type { ImportSet } from "@unframework/codegen";
-import { walk } from "@unframework/ir";
+import { expressionsOf, walk } from "@unframework/ir";
 import type {
   Binding,
   InjectionKeyDeclaration,
   ModelItem,
-  RenderNode,
   Span,
   TypeDeclaration,
   UfComponent,
@@ -48,10 +48,11 @@ export class SolidComposition {
    * none (a fragment, a conditional, `inheritAttrs: false`).
    */
   readonly fallthrough: Span | undefined;
-  /** Whether the default slot is resolved once with `children()`: it is tested or falls back. */
-  readonly resolved: boolean;
-  /** The name of the default slot's resolved content, once claimed. */
-  #content: string | undefined;
+  /**
+   * The slots resolved once with `children()`, by name, with the name of their content: those
+   * without props that are tested anywhere, and the default slot where it falls back.
+   */
+  readonly resolved: ReadonlyMap<string, string>;
 
   constructor(component: UfComponent, module: UfModule, imports: ImportSet) {
     this.component = component;
@@ -98,8 +99,12 @@ export class SolidComposition {
     if (this.fallthrough) inline.push(`class?: string`, `style?: ${jsx()}.CSSProperties`);
     if (component.exposes) inline.push(`ref?: (api: ${this.exposedType()}) => void`);
     this.inline = inline.length ? `{ ${inline.join("; ")} }` : undefined;
-    const defaultSlot = slots?.slots.find((slot) => slot.name === "default");
-    this.resolved = Boolean(defaultSlot && !defaultSlot.props && testsOrFallsBack(component));
+    const used = resolvedSlots(component);
+    this.resolved = new Map(
+      (slots?.slots ?? [])
+        .filter((slot) => !slot.props && used.has(slot.name))
+        .map((slot) => [slot.name, imports.claim(slot.name === "default" ? "content" : slot.name)]),
+    );
   }
 
   /** The type texts the props parameter takes beside the props type and the events. */
@@ -118,18 +123,16 @@ export class SolidComposition {
   }
 
   /**
-   * The statements before the setup: the default slot's content, resolved once
+   * The statements before the setup: each resolved slot's content
    * (`const content = children(() => props.children);`).
    */
   statements(object: string): string[] {
-    if (!this.resolved) return [];
+    if (!this.resolved.size) return [];
     const children = this.#imports.add("solid-js", "children");
-    return [`const ${this.content()} = ${children}(() => ${object}.children);`];
-  }
-
-  /** The name of the default slot's resolved content. */
-  content(): string {
-    return (this.#content ??= this.#imports.claim("content"));
+    return [...this.resolved].map(
+      ([slot, name]) =>
+        `const ${name} = ${children}(() => ${object}.${slot === "default" ? "children" : slot});`,
+    );
   }
 
   /** The statement that hands the exposed functions to the `ref` prop, or none. */
@@ -223,34 +226,23 @@ function fallthroughRoot(component: UfComponent): Span | undefined {
   return render.children.length === 1 && only?.kind === "Component" ? only.span : undefined;
 }
 
-/** Whether a component tests its default slot, or renders it with a fallback. */
-function testsOrFallsBack(component: UfComponent): boolean {
-  let found = false;
-  const visit = (nodes: readonly (RenderNode | UfComponent["render"])[]) => {
-    for (const node of nodes) {
-      walk(node, {
-        enter(visited) {
-          if (
-            visited.kind === "SlotOutlet" &&
-            visited.slot === "default" &&
-            visited.fallback.length
-          ) {
-            found = true;
-          }
-          if (visited.kind === "If") {
-            for (const branch of visited.branches) {
-              if (
-                branch.condition?.refs.some((ref) => ref.kind === "Slot" && ref.slot === "default")
-              ) {
-                found = true;
-              }
-            }
-          }
-        },
-      });
-    }
-  };
-  visit([component.render]);
+/**
+ * The slots a component would read more than once: each one an expression tests
+ * (`slots.title`, in a condition or an attribute alike), and the default slot where it falls
+ * back.
+ */
+function resolvedSlots(component: UfComponent): Set<string> {
+  const found = new Set<string>();
+  for (const { expression } of expressionsOf(component)) {
+    for (const ref of expression.refs) if (ref.kind === "Slot") found.add(ref.slot);
+  }
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "SlotOutlet" && node.slot === "default" && node.fallback.length) {
+        found.add("default");
+      }
+    },
+  });
   return found;
 }
 

@@ -1429,4 +1429,70 @@ export default function NarrowedState({ member }: NarrowedStateProps) {
   );
 }
 `,
+  // Composition's forms the corpus does not reach (src/composition.ts, src/models.ts): slots
+  // tested in a condition and in an attribute, a required model, text models that may be
+  // nullish, a `<textarea>` with a modifier, a root spread's `class`, and a `<select>`'s options
+  // in a conditional and without a `value`.
+  TestedSlots: `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+export default function TestedSlots() {
+  const slots = defineSlots<{ title?(): Element; default?(): Element }>();
+  return (
+    <section data-filled={slots.default ? "yes" : "no"}>
+      {slots.title ? <h2>{slots.title?.()}</h2> : null}
+      {slots.default?.()}
+    </section>
+  );
+}
+`,
+  RequiredModel: `import { defineModel } from "unframework";
+
+export default function RequiredModel() {
+  const text = defineModel<string>("text", { required: true });
+  return (
+    <button type="button" onClick={() => (text.value = text.value + "!")}>
+      {text.value.length}
+    </button>
+  );
+}
+`,
+  NullableFields: `import { ref } from "unframework";
+
+export default function NullableFields() {
+  const name = ref<string | null>(null);
+  const note = ref<string>();
+  const memo = ref("Buy milk");
+  return (
+    <form>
+      <input aria-label="Name" v-model={name.value} />
+      <input aria-label="Note" v-model_trim={note.value} />
+      <textarea aria-label="Memo" v-model_trim={memo.value} />
+    </form>
+  );
+}
+`,
+  SpreadRoot: `export default function SpreadRoot({ attrs }: { attrs: { class: string; title: string } }) {
+  return <div {...attrs}>x</div>;
+}
+`,
+  ConditionalOptions: `import { ref } from "unframework";
+
+export default function ConditionalOptions({ extra }: { extra: boolean }) {
+  const size = ref("l");
+  const fruit = ref("pear");
+  return (
+    <form>
+      <select aria-label="Size" v-model={size.value}>
+        <option value="s">S</option>
+        {extra && <option value="l">L</option>}
+      </select>
+      <select aria-label="Fruit" v-model={fruit.value}>
+        <option>apple</option>
+        <option>pear</option>
+      </select>
+    </form>
+  );
+}
+`,
 };
