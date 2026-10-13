@@ -117,16 +117,16 @@ export interface NextTickHooks {
 
 /**
  * `reactive-context`: a provided ref (ADR-0054). Consumers read a ref's `value`, so the provider
- * passes an object whose `value` getter reads the state, through its mirror where client code
- * writes it, so code that runs later reads the latest. The object is new each time the state
- * changes, so the context's consumers render again with it.
+ * passes the state behind a `value` getter, a new object each time the state changes: the
+ * context's consumers render again with it. The getter reads the rendered state, never the
+ * mirror: React Compiler and `react/refs` reject a ref read during render (L3, L5).
  */
 export function refObjectHelper(name: string): string {
   return `/** A provided ref as its consumers read it: a \`value\` getter over the state. */
-function ${name}<T>(value: T, read: () => T = () => value): { readonly value: T } {
+function ${name}<T>(value: T): { readonly value: T } {
   return {
     get value() {
-      return read();
+      return value;
     },
   };
 }`;

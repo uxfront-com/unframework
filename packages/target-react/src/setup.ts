@@ -482,14 +482,7 @@ function printProvide(plan: ReactPlan, code: ReactCode, item: ProvideItem): Prin
   const local = plan.composition.provided.get(item)!;
   const value = code.code(item.value, "pure");
   if (keyRef(plan.module, item.key) && wholeReference(item.value)) {
-    const [reference] = item.value.refs;
-    const mirror =
-      reference?.kind === "Binding"
-        ? (plan.state.get(reference.binding)?.mirror ??
-          plan.composition.models.get(reference.binding)?.mirror)
-        : undefined;
-    const read = mirror ? `, () => ${mirror}.current` : "";
-    return [["body", `const ${local} = ${refObject(plan)}(${value}${read});`]];
+    return [["body", `const ${local} = ${refObject(plan)}(${value});`]];
   }
   return [["body", `const [${local}] = ${plan.names.add("react", "useState")}(${once(value)});`]];
 }
