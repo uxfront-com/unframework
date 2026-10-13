@@ -14,10 +14,6 @@ export type KindFamily =
   | "watch source"
   | "code reference";
 
-// Layer 2's misuse cases (ADR-0055): each fix compiles again to a component element, which a
-// target reports until its composition lane lands, so the cases follow the lanes.
-const LAYER_2 = "Its case lands after the composition lanes merge.";
-
 /**
  * Each target's M3 lane, which emits composition: until it lands, the target reports a case's
  * composition as UF1002 (its quarantine lists the cases), so its cells have no case yet.
@@ -53,11 +49,6 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
     "Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
   UF9001:
     "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
-  UF3035: LAYER_2,
-  UF3036: LAYER_2,
-  UF3037: LAYER_2,
-  UF3038: LAYER_2,
-  UF3039: LAYER_2,
 };
 
 /**

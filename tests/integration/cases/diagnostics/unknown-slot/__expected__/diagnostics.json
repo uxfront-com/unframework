@@ -1,0 +1,136 @@
+[
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The angular target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "diagnostics/unknown-slot/Page.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 256
+    },
+    "end": {
+      "line": 7,
+      "column": 75,
+      "offset": 328
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The astro target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "diagnostics/unknown-slot/Page.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 256
+    },
+    "end": {
+      "line": 7,
+      "column": 75,
+      "offset": 328
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "diagnostics/unknown-slot/Page.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 256
+    },
+    "end": {
+      "line": 7,
+      "column": 75,
+      "offset": 328
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The react target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "diagnostics/unknown-slot/Page.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 256
+    },
+    "end": {
+      "line": 7,
+      "column": 75,
+      "offset": 328
+    },
+    "target": "react"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The solid target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "diagnostics/unknown-slot/Page.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 256
+    },
+    "end": {
+      "line": 7,
+      "column": 75,
+      "offset": 328
+    },
+    "target": "solid"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The svelte target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "diagnostics/unknown-slot/Page.uf.tsx",
+    "start": {
+      "line": 7,
+      "column": 3,
+      "offset": 256
+    },
+    "end": {
+      "line": 7,
+      "column": 75,
+      "offset": 328
+    },
+    "target": "svelte"
+  },
+  {
+    "code": "UF3038",
+    "severity": "error",
+    "message": "Layout declares no slot `tilte`. Did you mean `title`?",
+    "file": "diagnostics/unknown-slot/Page.uf.tsx",
+    "start": {
+      "line": 17,
+      "column": 21,
+      "offset": 483
+    },
+    "end": {
+      "line": 17,
+      "column": 26,
+      "offset": 488
+    },
+    "help": "Fill a slot Layout declares with `defineSlots`.",
+    "fixes": [
+      {
+        "title": "Write `title`",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 483,
+              "end": 488
+            },
+            "text": "title"
+          }
+        ]
+      }
+    ]
+  }
+]
