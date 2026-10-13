@@ -1,6 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts" module>
+  export type CountKeyValue = { readonly value: number };
   export const CountKey = Symbol("uf.count");
 </script>
 

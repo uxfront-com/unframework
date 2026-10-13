@@ -6,6 +6,7 @@
     label: string;
   }
 
+  export type ThemeKeyValue = Theme;
   export const ThemeKey = Symbol("uf.theme");
 </script>
 

@@ -1,6 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts" module>
+  export type DepthKeyValue = number;
   export const DepthKey = Symbol("uf.depth");
 </script>
 
@@ -12,7 +13,7 @@
 
   let { title, children, class: className, style }: Props = $props();
 
-  const depth = hasContext(DepthKey) ? getContext<number>(DepthKey) : 0;
+  const depth = hasContext(DepthKey) ? getContext<DepthKeyValue>(DepthKey) : 0;
 
   setContext(DepthKey, depth + 1);
 </script>

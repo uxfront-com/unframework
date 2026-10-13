@@ -267,7 +267,7 @@ describe("every toolchain's oxlint configuration", () => {
       // An excepted rule is off where it is excepted, and on everywhere else.
       for (const rule of Object.values(BASELINE_EXCEPTIONS).flat()) {
         const off = BASELINE_EXCEPTIONS[target]?.includes(rule) ?? false;
-        expect(baselineRules[rule] === "allow", `${target}: ${rule}`).toBe(off);
+        expect(baselineRules[rule], `${target}: ${rule}`).toBe(off ? "allow" : "deny");
         delete baselineRules[rule];
       }
       return { target, baseline: { ...rest, rules: baselineRules } };

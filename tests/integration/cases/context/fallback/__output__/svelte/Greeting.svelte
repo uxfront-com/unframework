@@ -1,7 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import { LocaleKey } from "./LocaleProvider.svelte";
+  import { LocaleKey, type LocaleKeyValue } from "./LocaleProvider.svelte";
   import { getContext, hasContext } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
@@ -9,7 +9,7 @@
 
   let { name, class: className, style }: Props = $props();
 
-  const locale = hasContext(LocaleKey) ? getContext<string>(LocaleKey) : "en";
+  const locale = hasContext(LocaleKey) ? getContext<LocaleKeyValue>(LocaleKey) : "en";
 </script>
 
 <p class={className} {style}>{locale === "pt" ? "Olá" : "Hello"}, {name} ({locale})</p>

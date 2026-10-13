@@ -1,7 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import { CountKey } from "./Counter.svelte";
+  import { CountKey, type CountKeyValue } from "./Counter.svelte";
   import { getContext, hasContext } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
@@ -10,9 +10,7 @@
   let { class: className, style }: Props = $props();
 
   let none = $state(0);
-  const count = hasContext(CountKey)
-    ? getContext<{ readonly value: number }>(CountKey)
-    : refObject(() => none);
+  const count = hasContext(CountKey) ? getContext<CountKeyValue>(CountKey) : refObject(() => none);
 
   function refObject<T>(get: () => T): { readonly value: T } {
     return {

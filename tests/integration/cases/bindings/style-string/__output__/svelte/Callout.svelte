@@ -17,15 +17,31 @@
     consumer: string | undefined,
   ): string {
     const merged = { ...own };
-    for (const declaration of (consumer ?? "").split(/;(?![^(]*\))/)) {
+    const text = consumer ?? "";
+    const add = (declaration: string) => {
       const colon = declaration.indexOf(":");
       if (colon > 0)
         merged[declaration.slice(0, colon).trim()] = declaration.slice(colon + 1).trim();
+    };
+    let start = 0;
+    let depth = 0;
+    let quote = "";
+    for (let index = 0; index < text.length; index++) {
+      const char = text[index];
+      if (quote) {
+        if (char === "\\") index++;
+        else if (char === quote) quote = "";
+      } else if (char === '"' || char === "'") quote = char;
+      else if (char === "(") depth++;
+      else if (char === ")") depth--;
+      else if (char === ";" && depth === 0) {
+        add(text.slice(start, index));
+        start = index + 1;
+      }
     }
+    add(text.slice(start));
     return Object.entries(merged)
-      .flatMap(([property, value]) =>
-        value == null || value === "" ? [] : [`${property}: ${value}`],
-      )
+      .map(([property, value]) => `${property}: ${value ?? ""}`)
       .join("; ");
   }
 </script>

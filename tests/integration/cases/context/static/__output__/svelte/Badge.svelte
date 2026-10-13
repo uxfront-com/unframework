@@ -1,7 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import { type Theme, ThemeKey } from "./ThemeProvider.svelte";
+  import { ThemeKey, type ThemeKeyValue } from "./ThemeProvider.svelte";
   import { getContext } from "svelte";
   import type { ClassValue } from "svelte/elements";
 
@@ -9,7 +9,7 @@
 
   let { text, class: className, style }: Props = $props();
 
-  const theme = getContext<Theme | undefined>(ThemeKey);
+  const theme = getContext<ThemeKeyValue | undefined>(ThemeKey);
 </script>
 
 <span
