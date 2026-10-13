@@ -472,7 +472,7 @@ describe("canaries", () => {
     const result = await compileWith("L13-console-warn");
     const contents = (target: string) => result.outputs[target]![0]!.contents;
     expect(contents("react")).toMatch(
-      /tone = "info",\n\}: TaskListProps\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
+      /style,\n\}: TaskListProps & TaskListAttributes\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
     );
     expect(contents("solid")).toMatch(
       /function TaskList\(rawProps: TaskListProps\) \{\n {2}console\.warn/,
@@ -546,7 +546,7 @@ describe("canaries", () => {
     const result = await compileWith("L5-framework-rule");
     const root = (target: string) =>
       /<section\b[^>]*>/.exec(result.outputs[target]![0]!.contents)?.[0];
-    expect(root("react")).toMatch(/^<section class="uf-canary" className=/);
+    expect(root("react")).toMatch(/^<section\s+class="uf-canary"\s+className=/);
     expect(root("solid")).toMatch(/^<section className="uf-canary" class=/);
     expect(root("qwik")).toMatch(/^<section className="uf-canary" class=/);
     expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
@@ -559,9 +559,7 @@ describe("canaries", () => {
     const result = await compileWith("L4-consumer");
     const lines = (target: string) =>
       result.outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
-    expect(lines("react")).toEqual([
-      'export default function TaskList({ title = "Tasks (today)", tasks, done, tone = "info" }: any) {',
-    ]);
+    expect(lines("react")).toEqual(["}: any) {"]);
     expect(lines("solid")).toEqual(["export default function TaskList(rawProps: any) {"]);
     expect(lines("qwik")).toEqual([
       'export default component$<any>(({ title = "Tasks (today)", tasks, done, tone = "info" }) => {',
@@ -593,9 +591,7 @@ describe("canaries", () => {
       });
       return outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
     };
-    expect(await lines("react")).toEqual([
-      "export default function FileRow({ path, size, onRefresh, onOpen, onMove, onPick, onShare }: any) {",
-    ]);
+    expect(await lines("react")).toEqual(["}: any) {"]);
     expect(await lines("solid")).toEqual(["export default function FileRow(props: any) {"]);
     expect(await lines("qwik")).toEqual(["export default component$<any>("]);
     expect(await lines("vue")).toEqual([
@@ -650,7 +646,7 @@ describe("canaries", () => {
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(1\)/g), target).toHaveLength(1);
       expect(contents, target).toMatch(
-        /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\})/,
+        /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)"(?:, \.\.\.style)? \}\})/,
       );
     }
   });
