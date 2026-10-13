@@ -38,6 +38,8 @@ import type {
   UfModule,
 } from "@unframework/ir";
 
+import { planComposition } from "./composition.ts";
+import type { CompositionPlan } from "./composition.ts";
 import { elementInterface } from "./elements.ts";
 import { synthetic } from "./events.ts";
 
@@ -130,7 +132,16 @@ export interface ReactPlan {
   /** The local `nextTick`, from `useNextTick()`, when code calls it. */
   readonly nextTick?: string;
   /** The inline helpers, claimed as they are needed. */
-  readonly helpers: { listen?: string; once?: string; nextTick?: string };
+  readonly helpers: {
+    listen?: string;
+    once?: string;
+    nextTick?: string;
+    refObject?: string;
+    toggle?: string;
+    modelText?: string;
+  };
+  /** Children, slots, models, fallthrough, expose, context and `<component is>` (ADR-0054). */
+  readonly composition: CompositionPlan;
 }
 
 /** Plans a component's React output. */
@@ -142,6 +153,14 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
   const listeners = listenerModes(component);
   const eventModes = eventParameterModes(component, listeners);
   const names = new ImportSet(reservedNames(component, module, listeners, eventModes));
+  // A source's components are joined into one module where it is loaded (ADR-0053): each after
+  // the first takes its helpers under names of its own (`cx_1`), so no two declare one name.
+  const index = module.components.findIndex((each) => each.name === component.name);
+  for (const helper of HELPER_NAMES) {
+    for (let suffix = 0; suffix < index; suffix++) {
+      names.reserve(suffix ? `${helper}_${suffix}` : helper);
+    }
+  }
   const nativeElements = nativeElementsOf(listeners);
   const narrowedReads = narrowedReadsOf(component);
   const stable = (groups: readonly EventAttribute[][]) =>
@@ -168,6 +187,8 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
   for (const [id, summary] of summaries) {
     if (summary.escapes) clientFunctions.add(functionItems.get(id)!);
   }
+  // What the component exposes runs when its parent calls it, as a handler does (ADR-0054).
+  for (const id of component.exposes?.functions ?? []) clientFunctions.add(functionItems.get(id)!);
   // What client code calls, transitively.
   for (const fn of clientFunctions) {
     for (const reference of fn.body.refs) {
@@ -180,11 +201,13 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
   // State that client code writes gets a mirror: every write updates it before the setter, and
   // every client read reads it (ADR-0046).
   const written = new Set<BindingId>();
+  // Models that client code writes: local state while unbound, and a mirror (ADR-0054).
+  const writtenModels = new Set<BindingId>();
   for (const { code } of codeOf(component)) {
     for (const reference of code.refs) {
-      if (reference.kind === "Write" && kindOf(reference.binding) === "state") {
-        written.add(reference.binding);
-      }
+      if (reference.kind !== "Write") continue;
+      if (kindOf(reference.binding) === "state") written.add(reference.binding);
+      if (kindOf(reference.binding) === "model") writtenModels.add(reference.binding);
     }
   }
 
@@ -366,6 +389,7 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
   const taken = new Set(eventProps.filter((prop) => names.scope.has(prop)));
   // Every event's prop is taken, destructured or not, so no name the output claims reads like one.
   names.reserve(...eventProps);
+  const composition = planComposition(component, module, names, writtenModels);
   const eventsInterface = component.emits ? names.claim(`${component.name}Events`) : undefined;
   const emitted = new Set<string>();
   for (const { code } of codeOf(component)) {
@@ -391,14 +415,15 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
     if (item.kind === "State") {
       const { name } = bindings.get(item.binding)!;
       const isWritten = written.has(item.binding);
+      // A `v-model` writes it through its setter, whoever else does (ADR-0054).
+      const setter =
+        isWritten || composition.bound.has(item.binding)
+          ? { setter: names.claim(`set${pascalCase(name)}`) }
+          : {};
       state.set(item.binding, {
         name,
-        ...(isWritten
-          ? {
-              setter: names.claim(`set${pascalCase(name)}`),
-              mirror: names.claim(`${name}Ref`),
-            }
-          : {}),
+        ...setter,
+        ...(isWritten ? { mirror: names.claim(`${name}Ref`) } : {}),
       });
     } else if (item.kind === "Derived") {
       const { name } = bindings.get(item.binding)!;
@@ -516,8 +541,21 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
     writePositions: writePositions(component),
     ...(nextTick ? { nextTick } : {}),
     helpers,
+    composition,
   };
 }
+
+/** The inline helpers' names, as the target claims them. */
+const HELPER_NAMES = [
+  "cx",
+  "listen",
+  "useOnce",
+  "useNextTick",
+  "refObject",
+  "toggle",
+  "useModelText",
+  "looseToNumber",
+];
 
 /** Whether a binding's value changes as the component runs: a prop, state or a derived value. */
 export function reactive(kind: BindingKind): boolean {

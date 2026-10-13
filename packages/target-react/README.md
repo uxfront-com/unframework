@@ -8,7 +8,8 @@ component, written as a React developer would write it (plan §6):
   `function Plain(props: PlainProps)` with `props.label` kept. A prop that no expression reads is
   left out with its default, and a parameter nothing reads is `_props` (an object form's keeps a
   name that is `_` and more, and takes `_` before any other: `_props`, `__`): unused bindings
-  fail L5.
+  fail L5. Every component but one that turns fallthrough off also takes `className` and `style`
+  (see Composition below), so only such a component has nothing to read.
 - expressions as the source writes them, a ref's value read as React's (`count.value` is
   `count`); conditionals as ternary chains ending in `null` (never `&&`, which renders a `0`);
   lists as `.map((item, index) => <li key={…}>…)`, with the index only when something reads it;
@@ -108,14 +109,43 @@ and `use-id` are native;
 `event-once` (`useOnce`), `event-semantics` (`listen`) and `next-tick` (`useNextTick`) are
 emulated with inline helpers, and `class-binding` with `cx`. Of composition's cells,
 `model-array` (`toggle`), `model-modifiers` (`modelText`) and `reactive-context` (`refObject`)
-are emulated, and the others native. Composition's cells (ADR-0055) are declared before React emits
-composition: until M3's lane for React lands, `emit` reports UF1002 where a component first uses it,
-and emits nothing for that component.
+are emulated, and the others native.
 
 Every name the output introduces (`cx`, `setCount`, `countRef`, `CounterEvents`, `listen`,
 `CSSProperties`, `_props`) is claimed around the source's own names, so none captures another.
 The target reports nothing: what React cannot render as the other targets do is the analyser's
 to reject (ADR-0033).
+
+## Composition (M3)
+
+Each component is its own file, `Field.tsx`, which its parent imports as the source does
+(`import Field from "./Field"`); a component that renders itself calls its own function, and the
+components of one source each take their inline helpers under names of their own (`cx_1`), since
+a source's outputs are joined into one module where it is loaded (ADR-0053). What composition adds
+to a component's props is declared in generated interfaces beside its events', all exported
+(`src/composition.ts` plans them, `src/compose.ts` prints the template's side; ADR-0054 records
+the mapping):
+
+| Source                                                      | React output                                                                                                                                                                                                                                   |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `defineSlots<{ default?(): Element; title?(): Element }>()` | `children?: ReactNode`, `title?: ReactNode` in `<Name>Slots`; a scoped slot is a render prop, `renderItem?: (props: P) => ReactNode` (oxlint's `react/no-unstable-nested-components` exempts `render…` props)                                  |
+| `{slots.title?.() ?? "Untitled"}`, `slots.title ? … : …`    | `{title ?? "Untitled"}`, `{renderItem?.({ item })}`; presence is `title != null`                                                                                                                                                               |
+| A consumer's fills                                          | the children, `title={<h2 />}`, `renderItem={({ item }) => …}`; a forwarded slot passes the component's own (`title={title}`), and a forwarded default slot is the children (`<Box>{children}</Box>`)                                          |
+| `defineModel<number>("value", { default: 0 })`              | `value?` and `onValueChange?` in `<Name>Models`. A model nothing writes is its prop with its default; a written one keeps local state while unbound (`valueProp === undefined`), a write sets it and calls `onValueChange`, through a mirror   |
+| `v-model:value={cups.value}`                                | `value={cups} onValueChange={setCups}`                                                                                                                                                                                                         |
+| `v-model` on a control                                      | `value` or `checked` with `onChange`; a checkbox group through `toggle`, a `<select multiple>` from its `selectedOptions`; a number or range input, and `trim`, `lazy` and `number`, through the `useModelText` hook, spread on the field      |
+| `class` and `style` on a component                          | `className?` and `style?` in `<Name>Attributes`, merged into the root: `className={cx("tag", className)}`, `style={{ color: "red", ...style }}` (the consumer's declarations win), or passed on to a root component                            |
+| `defineExpose({ focus })`, `ref={field}`                    | a `ref?: Ref<NameHandle>` prop, set with `useImperativeHandle`; the parent's ref is `useRef<T>(null)`                                                                                                                                          |
+| `InjectionKey<T>`, `provide`, `inject`                      | `export const Key = createContext<T \| undefined>(undefined)` in the output of its module's main component, `<Key value={keyValue}>` around the template (a snapshot `useState`), `use(Key) ?? fallback`; a provided ref is `refObject(count)` |
+| `<component is={…}>`                                        | `const Tag = …;` before the return, `<Tag>`                                                                                                                                                                                                    |
+
+The `useModelText` hook keeps what the person typed as state of its own, so a controlled field
+shows it while the model holds the trimmed or cast value, as Vue's `vModelText` does; it writes on
+every edit, or as the field loses focus for `lazy`. Two cells of ADR-0058's open item are measured
+here: react-dom writes a controlled checkbox's and radio's `checked` attribute and a controlled
+`<textarea>`'s text in step with their state, so `models/checkbox-group`, `models/radio` and
+`models/textarea` are quarantined until the normaliser leaves those out as it does an input's
+`value`.
 
 ## Toolchain
 

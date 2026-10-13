@@ -15,8 +15,11 @@ import type {
   DerivedItem,
   FunctionCode,
   FunctionItem,
+  InjectItem,
   LifecycleItem,
+  ModelItem,
   Parameter,
+  ProvideItem,
   SetupItem,
   StateItem,
   WatchEffectItem,
@@ -24,6 +27,7 @@ import type {
   WatchSource,
 } from "@unframework/ir";
 
+import { keyRef, wholeReference } from "./composition.ts";
 import { reactEventType } from "./events.ts";
 import { reactive } from "./plan.ts";
 import type { ListenerMode, ReactPlan } from "./plan.ts";
@@ -369,6 +373,8 @@ const COMPACT = new Set<SetupItem["kind"]>([
   "Id",
   "Const",
   "Variable",
+  "Provide",
+  "Inject",
 ]);
 
 /**
@@ -420,14 +426,79 @@ function printItem(plan: ReactPlan, code: ReactCode, item: SetupItem): Printed {
       return printWatchEffect(plan, code, item);
     case "Lifecycle":
       return printLifecycle(plan, code, item);
-    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
     case "Model":
+      return printModel(plan, item);
     case "Provide":
+      return printProvide(plan, code, item);
     case "Inject":
-      return [];
+      return printInject(plan, code, item);
     default:
       return item satisfies never;
   }
+}
+
+/**
+ * A model (ADR-0054): controllable, as §4.5 asks. A model nothing writes is its prop, destructured
+ * with its default. One that is written keeps local state, seeded by its default, which shows while
+ * the parent binds nothing (`value === undefined`); a write sets it and calls the change
+ * callback. Client code reads and writes it through a mirror, synced with what the component
+ * renders after every render, so a write of the parent's reaches it too.
+ */
+function printModel(plan: ReactPlan, item: ModelItem): Printed {
+  const model = plan.composition.models.get(item.binding)!;
+  if (!model.local) return [];
+  const hook = (name: string) => plan.names.add("react", name);
+  const type = item.type ? `<${item.type.code}>` : "";
+  const initial = item.default ? item.default.code : "";
+  const { value, setter } = model.local;
+  const printed: Printed = [
+    ["body", `const [${value}, ${setter}] = ${hook("useState")}${type}(${initial});`],
+    [
+      "body",
+      `const ${model.name} = ${model.propLocal} === undefined ? ${value} : ${model.propLocal};`,
+    ],
+  ];
+  if (model.mirror) {
+    printed.push(["body", `const ${model.mirror} = ${hook("useRef")}(${model.name});`]);
+    printed.push([
+      "body",
+      `${hook("useLayoutEffect")}(() => {\n${model.mirror}.current = ${model.name};\n});`,
+      "mirror",
+    ]);
+  }
+  return printed;
+}
+
+/**
+ * A provided value (ADR-0054): the context's value around the template. The setup provides it
+ * once, as Vue's does (ADR-0046), so it is a snapshot; a ref the key holds is passed as an object
+ * with its `value` (`refObject`), new when the state changes, so its consumers render again.
+ */
+function printProvide(plan: ReactPlan, code: ReactCode, item: ProvideItem): Printed {
+  const local = plan.composition.provided.get(item)!;
+  const value = code.code(item.value, "pure");
+  if (keyRef(plan.module, item.key) && wholeReference(item.value)) {
+    return [["body", `const ${local} = ${refObject(plan)}(${value});`]];
+  }
+  return [["body", `const [${local}] = ${plan.names.add("react", "useState")}(${once(value)});`]];
+}
+
+/** An injected value (ADR-0054): the nearest provider's, read with `use`, or the fallback. */
+function printInject(plan: ReactPlan, code: ReactCode, item: InjectItem): Printed {
+  const { name } = plan.bindings.get(item.binding)!;
+  const read = `${plan.names.add("react", "use")}(${item.key})`;
+  if (!item.fallback) return [["body", `const ${name} = ${read};`]];
+  const fallback = code.code(item.fallback, "pure");
+  const value =
+    keyRef(plan.module, item.key) && wholeReference(item.fallback)
+      ? `${refObject(plan)}(${fallback})`
+      : fallback;
+  return [["body", `const ${name} = ${read} ?? ${value};`]];
+}
+
+/** The `refObject` helper's local name, claimed once a ref is provided. */
+function refObject(plan: ReactPlan): string {
+  return (plan.helpers.refObject ??= plan.names.claim("refObject"));
 }
 
 function printState(plan: ReactPlan, code: ReactCode, item: StateItem): Printed {
@@ -917,6 +988,11 @@ function dependencies(plan: ReactPlan, body: Code): string[] {
       case "derived":
         found.push(renderRead(plan, reference.binding));
         break;
+      // A model and an injected value are locals of the render (ADR-0054).
+      case "model":
+      case "context":
+        found.push(binding.name);
+        break;
       case "localConst":
       case "localFn":
         if (!plan.hoisted.has(reference.binding)) found.push(binding.name);
@@ -925,10 +1001,8 @@ function dependencies(plan: ReactPlan, body: Code): string[] {
       case "templateRef":
       case "localVar":
       case "emit":
-      case "model":
       case "slots":
       case "slotScope":
-      case "context":
       case "component":
         break;
       default:

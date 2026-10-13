@@ -1,10 +1,10 @@
 import {
   bindingOf,
   componentTypes,
-  compositionUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
+  expressionCode,
   js,
   jsxContext,
   jsxNode,
@@ -14,9 +14,16 @@ import {
 import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework/codegen";
 import type {
   Attribute,
+  ClassAttribute,
+  ComponentAttribute,
+  ComponentNode,
   ElementNode,
+  Expression,
   FragmentNode,
+  FunctionCode,
   RenderNode,
+  SlotFill,
+  StyleAttribute,
   TextNode,
   TypeDeclaration,
   UfComponent,
@@ -25,15 +32,17 @@ import type {
 import { compilerBailout, declaredNames } from "./bailouts.ts";
 import type { ComponentCode } from "./bailouts.ts";
 import { placeConditionals } from "./branches.ts";
+import { ReactComposer } from "./compose.ts";
+import { exposedType, refValueType, slotProp } from "./composition.ts";
 import { cxHelper, reactDialect } from "./dialect.ts";
 import type { ReactNames } from "./dialect.ts";
-import { nextTickHelper } from "./helpers.ts";
+import { modelTextHelper, nextTickHelper, refObjectHelper, toggleHelper } from "./helpers.ts";
 import type { NextTickHooks } from "./helpers.ts";
 import { listenerHelpers, ReactListeners } from "./listeners.ts";
 import { planComponent } from "./plan.ts";
 import type { ReactPlan } from "./plan.ts";
 import { reactCode } from "./rules.ts";
-import { printSetup } from "./setup.ts";
+import { printSetup, withEventTypes } from "./setup.ts";
 import { titleChildren } from "./title.ts";
 
 type Parameter = Parameters<typeof js.functionDeclaration>[1][number];
@@ -124,40 +133,52 @@ export const react: Target = defineTarget({
   // declarations and the events' props, the setup's hooks in source order, and the render tree in
   // React's JSX.
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // Composition's cells are declared before this target emits it (ADR-0055): until M3's lane
-    // for React lands, a component that uses it is reported, never emitted without it (P2).
-    const composition = compositionUse(context.module, component);
-    if (composition) {
-      context.report({
-        code: "UF1002",
-        severity: "error",
-        message: `The react target does not emit ${composition.what} yet: composition lands in M3.`,
-        span: composition.span,
-      });
-      return [];
-    }
     const { module } = context;
     // Every name the source declares or reads is taken before the output claims its own
     // (`cx`, `setCount`, `CSSProperties`, `_props`), so none captures another (ADR-0035).
     const plan = planComponent(component, module);
+    const { composition } = plan;
     const code = reactCode(plan);
-    const names: ReactNames = { imports: plan.names };
+    const names: ReactNames = {
+      imports: plan.names,
+      ...(composition.fallthrough ? { style: composition.fallthrough.style } : {}),
+    };
     const listeners = new ReactListeners(plan, code);
+    const composer = new ReactComposer(plan, code);
     const jsx = jsxContext({
       component,
-      dialect: reactDialect(names, listeners),
+      dialect: reactDialect(names, listeners, composer),
       rules: code.rules,
     });
+    importChildren(plan);
     const setup = printSetup(plan, code);
     const hooks = hookCalls(plan).map((text) => ({ text, group: -1, compact: true }));
     // The ref callbacks declared once, after the guards their listeners call.
     const callbacks = listeners
       .declarations()
       .map((text, index) => ({ text, group: -2 - index, compact: false }));
-    const body = [...setup.body, ...hooks, ...callbacks];
     // The returned JSX first, while its placeholders are the only ones: it prints on its own for
-    // the opt-out check below.
-    const tree = jsxNode(rootForReact(component.render, jsx), jsx);
+    // the opt-out check below. Its `modelText` fields and `<component is>`'s `const`s follow the
+    // setup, and the handle of what the component exposes comes last (ADR-0054).
+    const root = rootForReact(withFallthrough(component.render, plan, composer), jsx);
+    // A lone component or `<component is>` is the root itself, never in a fragment.
+    const [only] = root.kind === "Fragment" && root.children.length === 1 ? root.children : [];
+    const lone = only?.kind === "Component" || only?.kind === "Dynamic" ? only : root;
+    const tree = provided(plan, jsxNode(lone, jsx));
+    const rendered = [
+      ...[...composition.dynamic.values()].map(
+        ({ node, name }) => `const ${name} = ${expressionCode(node.is, jsx)};`,
+      ),
+      ...composer.fields,
+    ].map((text, index) => ({ text, group: -100 - index, compact: true }));
+    const handle = exposeHandle(plan);
+    const body = [
+      ...setup.body,
+      ...hooks,
+      ...callbacks,
+      ...rendered,
+      ...(handle ? [{ text: handle, group: -200, compact: false }] : []),
+    ];
     const optOut = compilerOptOut(component, plan, jsx, [
       ...body.map(({ text }) => ({ code: text, kind: "statements" as const })),
       { code: jsx.placeholders.print(() => printExpression(tree)), kind: "expression" },
@@ -174,14 +195,20 @@ export const react: Target = defineTarget({
       ...statements,
       js.returnStatement(tree),
     ]);
-    const hoisted = setup.module.map((statement) => jsx.placeholders.statements(`${statement}\n`));
+    const hoisted = [...keyDeclarations(plan), ...setup.module].map((statement) =>
+      jsx.placeholders.statements(`${statement}\n`),
+    );
     return [
       {
         path: `${component.name}.tsx`,
         contents: printComponentModule(
           {
             imports: names.imports,
-            types: [...componentTypes(component, module), ...eventsInterface(plan)],
+            types: [
+              ...componentTypes(component, module),
+              ...eventsInterface(plan),
+              ...compositionInterfaces(plan),
+            ],
             body: [
               ...hoisted,
               ...exportDeclaration(component.name, fn, exportsOf(component.name, module.exports)),
@@ -192,6 +219,7 @@ export const react: Target = defineTarget({
               ...(plan.helpers.nextTick
                 ? [nextTickHelper(plan.helpers.nextTick, nextTickHooks(plan))]
                 : []),
+              ...compositionHelpers(plan),
             ],
             placeholders: jsx.placeholders,
           },
@@ -201,6 +229,226 @@ export const react: Target = defineTarget({
     ];
   },
 });
+
+/**
+ * The children's outputs and the keys' (ADR-0053, ADR-0054): each is the sibling file its
+ * component names (`./Field`), imported as the source imports it. A component that renders
+ * itself calls its own function.
+ */
+function importChildren(plan: ReactPlan): void {
+  const { names, composition } = plan;
+  for (const child of composition.children) {
+    if (child.self) continue;
+    if (child.export === "default") names.addDefault(child.specifier, child.local, { exact: true });
+    else names.add(child.specifier, child.name, { local: child.local, exact: true });
+  }
+  for (const key of composition.keys) {
+    if (key.specifier) names.add(key.specifier, key.name, { local: key.local, exact: true });
+  }
+}
+
+/**
+ * The module's injection keys, declared by the output of its main component (ADR-0054): each a
+ * React context of the key's type, `undefined` where nothing provides it; a ref the key holds is
+ * passed as `{ value }` (`refObject`).
+ */
+function keyDeclarations(plan: ReactPlan): string[] {
+  if (!plan.composition.ownsKeys) return [];
+  const createContext = plan.names.add("react", "createContext");
+  return plan.module.keys!.map((key) => {
+    const value = refValueType(key.type.code);
+    const type = key.ref ? `{ readonly value: ${value} }` : key.type.code;
+    return `export const ${key.name} = ${createContext}<${type} | undefined>(undefined);`;
+  });
+}
+
+/**
+ * The root with what it takes from a consumer (ADR-0054): the `className` prop joined to its
+ * `class`, and the `style` prop spread after its own declarations, so the consumer's win.
+ */
+function withFallthrough(
+  root: ElementNode | FragmentNode,
+  plan: ReactPlan,
+  composer: ReactComposer,
+): ElementNode | FragmentNode {
+  const { fallthrough } = plan.composition;
+  if (!fallthrough) return root;
+  const target = fallthrough.root;
+  const span = target.span;
+  const consumer: Expression = { code: fallthrough.className, span, refs: [] };
+  const attributes: (Attribute | ComponentAttribute)[] = [];
+  let classed = false;
+  let styled = false;
+  for (const attribute of target.attributes) {
+    if (attribute.kind === "Class") {
+      classed = true;
+      attributes.push({
+        ...attribute,
+        items: [...attribute.items, { kind: "Dynamic", value: consumer, span }],
+      });
+    } else if (attribute.kind === "Static" && attribute.name === "class") {
+      classed = true;
+      attributes.push({
+        kind: "Class",
+        items: [
+          { kind: "Static", value: String(attribute.value), span: attribute.span },
+          { kind: "Dynamic", value: consumer, span },
+        ],
+        span: attribute.span,
+      });
+    } else if (attribute.kind === "Style") {
+      styled = true;
+      const merged: StyleAttribute = { ...attribute };
+      composer.fallthroughStyles.add(merged);
+      attributes.push(merged);
+    } else {
+      attributes.push(attribute);
+    }
+  }
+  if (!classed) {
+    const bare: ClassAttribute = {
+      kind: "Class",
+      items: [{ kind: "Dynamic", value: consumer, span }],
+      span,
+    };
+    composer.bareClasses.add(bare);
+    attributes.push(bare);
+  }
+  if (!styled) {
+    const bare: StyleAttribute = { kind: "Style", declarations: [], span };
+    composer.fallthroughStyles.add(bare);
+    attributes.push(bare);
+  }
+  if (target.kind === "Element") return { ...target, attributes: attributes as Attribute[] };
+  return { ...root, children: [{ ...target, attributes: attributes as ComponentAttribute[] }] };
+}
+
+/**
+ * The template inside the providers of what the setup provides, the first outermost
+ * (`<ThemeKey value={themeValue}>`, React 19's context provider, ADR-0054).
+ */
+function provided(plan: ReactPlan, tree: ReturnType<typeof jsxNode>): ReturnType<typeof jsxNode> {
+  let wrapped = tree;
+  for (const [item, local] of [...plan.composition.provided].toReversed()) {
+    const children =
+      wrapped.type === "JSXFragment"
+        ? wrapped.children
+        : [wrapped.type === "JSXElement" ? wrapped : js.jsxExpressionContainer(wrapped)];
+    wrapped = js.jsxElement(
+      item.key,
+      [js.jsxAttribute("value", js.jsxExpressionContainer(js.identifier(local)))],
+      children,
+    );
+  }
+  return wrapped;
+}
+
+/** `useImperativeHandle(ref, () => ({ focus }));`: what the component exposes (ADR-0054). */
+function exposeHandle(plan: ReactPlan): string | undefined {
+  const { expose } = plan.composition;
+  const exposes = plan.component.exposes;
+  if (!expose || !exposes) return undefined;
+  const useImperativeHandle = plan.names.add("react", "useImperativeHandle");
+  const members = exposes.functions.map((id) => {
+    const { name } = plan.bindings.get(id)!;
+    const variant = plan.clientVariants.get(id);
+    return variant ? `${name}: ${variant}` : name;
+  });
+  return `${useImperativeHandle}(${expose.ref}, () => ({ ${members.join(", ")} }));`;
+}
+
+/**
+ * The interfaces of what composition adds to the props (ADR-0054): the slots (a node each, a
+ * render prop for a scoped one), the models (each with its change callback), and the root's
+ * `className`, `style` and the `ref` that holds the handle; and the handle's own interface.
+ */
+function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
+  const { composition, component } = plan;
+  const type = (name: string) => plan.names.add("react", name, { type: true });
+  const declarations: TypeDeclaration[] = [];
+  const declare = (name: string, members: string[]) => {
+    const text = `interface ${name} {\n${members.map((member) => `  ${member}`).join("\n")}\n}`;
+    declarations.push({ name, exported: true, code: text, span: component.span });
+  };
+  const { interfaces } = composition;
+  if (interfaces.models) {
+    declare(
+      interfaces.models,
+      [...composition.models.values()].flatMap(({ item, prop, event }) => {
+        const valueType = item.type?.code ?? "unknown";
+        return [
+          `${prop}${item.required ? "" : "?"}: ${valueType};`,
+          `${event}?: (${prop}: ${valueType}) => void;`,
+        ];
+      }),
+    );
+  }
+  if (interfaces.slots) {
+    const node = type("ReactNode");
+    declare(
+      interfaces.slots,
+      component.slots!.slots.map((slot) =>
+        slot.props
+          ? `${slotProp(slot.name, true)}?: (props: ${slot.props.code}) => ${node};`
+          : `${slotProp(slot.name, false)}?: ${node};`,
+      ),
+    );
+  }
+  if (composition.expose && component.exposes) {
+    declare(
+      composition.expose.handle,
+      component.exposes.functions.map((id) => {
+        const { name } = plan.bindings.get(id)!;
+        const item = component.setup.find(
+          (entry) => entry.kind === "Function" && entry.binding === id,
+        );
+        const fn =
+          item?.kind === "Function" ? withEventTypes(plan, item.function, undefined) : undefined;
+        const parameters = fn ? parametersOf(fn) : "";
+        return `${name}: ${fn ? exposedType(fn, parameters) : "() => void"};`;
+      }),
+    );
+  }
+  if (interfaces.attributes) {
+    const members: string[] = [];
+    if (composition.fallthrough) {
+      members.push("className?: string;", `style?: ${type("CSSProperties")};`);
+    }
+    if (composition.expose) members.push(`ref?: ${type("Ref")}<${composition.expose.handle}>;`);
+    declare(interfaces.attributes, members);
+  }
+  return declarations;
+}
+
+/** A function's parameters as a type writes them: each with its annotation, `unknown` without. */
+function parametersOf(fn: FunctionCode): string {
+  return fn.parameters
+    .map((parameter) => {
+      const name = parameter.name ?? parameter.pattern!.code;
+      const rest = parameter.rest ? "..." : "";
+      const optional = parameter.optional || parameter.default ? "?" : "";
+      return `${rest}${name}${optional}: ${parameter.type?.code ?? (parameter.rest ? "unknown[]" : "unknown")}`;
+    })
+    .join(", ");
+}
+
+/** The inline helpers composition needs, after the component (ADR-0055). */
+function compositionHelpers(plan: ReactPlan): string[] {
+  const { helpers, names } = plan;
+  return [
+    ...(helpers.refObject ? [refObjectHelper(helpers.refObject)] : []),
+    ...(helpers.toggle ? [toggleHelper(helpers.toggle)] : []),
+    ...(helpers.modelText
+      ? [
+          modelTextHelper(helpers.modelText, {
+            useState: names.add("react", "useState"),
+            ChangeEvent: names.add("react", "ChangeEvent", { type: true }),
+            looseToNumber: names.claim("looseToNumber"),
+          }),
+        ]
+      : []),
+  ];
+}
 
 /** The hooks the listeners call, after the setup's: one guard per listener that runs once. */
 function hookCalls(plan: ReactPlan): string[] {
@@ -280,24 +528,36 @@ function propsParameters(
   plan: ReactPlan,
 ): Parameter[] {
   const parameter = component.propsParameter;
-  const { names } = plan;
-  const events = plan.eventsInterface;
-  const typeCode = parameter
-    ? events
-      ? `${parameter.type.code} & ${events}`
-      : parameter.type.code
-    : events;
+  const { names, composition } = plan;
+  const { slots, models, attributes } = composition.interfaces;
+  const typeCode = [parameter?.type.code, plan.eventsInterface, models, slots, attributes]
+    .filter((part) => part !== undefined)
+    .join(" & ");
   if (!typeCode) return [];
   const type = context.placeholders.type(typeCode);
   const read = (parameter ? component.props : []).filter(
     (prop) => prop.binding !== undefined && context.referenced.has(prop.binding),
   );
+  // What composition reads of the props (ADR-0054), each as `[prop, local, default]`.
+  const composed: [string, string, Expression?][] = [];
+  for (const model of composition.models.values()) {
+    if (!model.local && !context.referenced.has(model.item.binding)) continue;
+    composed.push([model.prop, model.propLocal, model.local ? undefined : model.item.default]);
+    if (model.local) composed.push([model.event, model.eventLocal]);
+  }
+  for (const slot of composition.slots.values()) {
+    if (slot.read) composed.push([slot.prop, slot.local]);
+  }
+  const { fallthrough, expose } = composition;
+  if (fallthrough)
+    composed.push(["className", fallthrough.className], ["style", fallthrough.style]);
+  if (expose) composed.push(["ref", expose.ref]);
   if (parameter?.form === "object") {
     // A name `_` and more says it is unused already: it stays the source's (oxlint still
     // reports a bare `_`).
     const emitted = [...plan.events.values()].some((event) => event.emitted);
     const name =
-      read.length || emitted || /^_./.test(parameter.name!)
+      read.length || emitted || composed.length || /^_./.test(parameter.name!)
         ? parameter.name!
         : names.claim(`_${parameter.name!}`);
     return [js.bindingIdentifier(name, type)];
@@ -314,15 +574,32 @@ function propsParameters(
   for (const event of plan.events.values()) {
     if (event.emitted) properties.push(renamedProperty(event.prop, event.local));
   }
+  for (const [prop, local, initial] of composed) {
+    properties.push(
+      renamedProperty(prop, local, initial && context.placeholders.expression(initial.code)),
+    );
+  }
   if (!properties.length) return [js.bindingIdentifier(names.claim("_props"), type)];
   return [js.objectPattern(properties, type)];
 }
 
-/** A property of an object pattern, `onChange` or `onChange: onChange_1` where the name is taken. */
-function renamedProperty(key: string, local: string): BindingProperty {
-  if (key === local) return js.bindingProperty(key);
+/**
+ * A property of an object pattern, `onChange` or `onChange: onChange_1` where the name is taken,
+ * with its default where it has one (`expanded: open = false`).
+ */
+function renamedProperty(
+  key: string,
+  local: string,
+  initial?: ReturnType<typeof js.identifier>,
+): BindingProperty {
+  if (key === local) return js.bindingProperty(key, initial);
   const property = js.bindingProperty(key);
-  return { ...property, shorthand: false, value: js.bindingIdentifier(local) };
+  const value = js.bindingIdentifier(local);
+  return {
+    ...property,
+    shorthand: false,
+    value: initial ? js.assignmentPattern(value, initial) : value,
+  };
 }
 
 /** {@link forReact} over the render root: an element, or a fragment's roots. */
@@ -340,8 +617,10 @@ function placed(children: RenderNode[]): RenderNode[] {
   return children;
 }
 
-/** {@link forReact} over a node, inside conditionals and lists too. */
+/** {@link forReact} over a node, inside conditionals, lists, and composition's content too. */
 function childForReact(node: RenderNode, context: JsxContext): RenderNode {
+  const children = (nodes: readonly RenderNode[]) =>
+    placed(nodes.map((child) => childForReact(child, context)));
   switch (node.kind) {
     case "Element":
       return forReact(node, context);
@@ -354,17 +633,53 @@ function childForReact(node: RenderNode, context: JsxContext): RenderNode {
         })),
       };
     case "For":
-      return node.body.kind === "Element" ? { ...node, body: forReact(node.body, context) } : node;
+      return {
+        ...node,
+        body:
+          node.body.kind === "Element"
+            ? forReact(node.body, context)
+            : (childForReact(node.body, context) as ComponentNode),
+      };
+    case "Component":
+      return { ...node, fills: node.fills.map((fill) => fillForReact(fill, context, children)) };
+    case "SlotOutlet":
+      return { ...node, fallback: children(node.fallback) };
+    case "Dynamic":
+      return {
+        ...node,
+        children: children(node.children),
+        ...(node.fills
+          ? { fills: node.fills.map((fill) => fillForReact(fill, context, children)) }
+          : {}),
+      };
     case "Text":
     case "Interpolation":
-    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
-    case "Component":
-    case "SlotOutlet":
-    case "Dynamic":
       return node;
     default:
       return node satisfies never;
   }
+}
+
+/**
+ * A fill as React passes it. A forwarded default slot is the children React renders, so it is
+ * written as the component's own slot rendered there (`<Box>{children}</Box>`): JSX passes
+ * children as content, never as a `children` prop. A scoped one stays a render prop.
+ */
+function fillForReact(
+  fill: SlotFill,
+  context: JsxContext,
+  children: (nodes: readonly RenderNode[]) => RenderNode[],
+): SlotFill {
+  const own =
+    fill.forward && context.component.slots?.slots.find((slot) => slot.name === fill.forward);
+  if (fill.slot === "default" && own && !own.props) {
+    const { forward: _forward, ...rest } = fill;
+    return {
+      ...rest,
+      children: [{ kind: "SlotOutlet", slot: own.name, fallback: [], span: fill.span }],
+    };
+  }
+  return { ...fill, children: children(fill.children) };
 }
 
 /**

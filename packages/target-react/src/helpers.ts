@@ -114,3 +114,100 @@ export interface NextTickHooks {
   useReducer: string;
   useEffect: string;
 }
+
+/**
+ * `reactive-context`: a provided ref (ADR-0054). Consumers read a ref's `value`, so the provider
+ * passes the state as one, a new object each time the state changes: the context's consumers
+ * render again with it.
+ */
+export function refObjectHelper(name: string): string {
+  return `/** A provided ref's value, as its consumers read it: \`{ value }\`. */
+function ${name}<T>(value: T): { readonly value: T } {
+  return { value };
+}`;
+}
+
+/**
+ * `model-array`: a checkbox's `v-model` of an array (ADR-0054), as Vue's `vModelCheckbox`
+ * writes it: checked adds the box's value where it is missing, unchecked removes it, each time
+ * into a new array.
+ */
+export function toggleHelper(name: string): string {
+  return `/** The array with \`value\` added when \`checked\`, and without it otherwise. */
+function ${name}<T>(values: T[], value: T, checked: boolean): T[] {
+  const index = values.indexOf(value);
+  if (checked && index === -1) return [...values, value];
+  if (!checked && index !== -1) return values.filter((_, at) => at !== index);
+  return values;
+}`;
+}
+
+/** The local names of the React hooks and types the `modelText` helper uses, and of its cast. */
+export interface ModelTextNames {
+  useState: string;
+  ChangeEvent: string;
+  looseToNumber: string;
+}
+
+/**
+ * `model-modifiers`: a text field's `v-model` with its modifiers, and a number or a range input's
+ * (ADR-0054), as Vue's `vModelText` binds them. The field shows what the person typed, which
+ * `trim` and `number` change before they write it, so the hook keeps the field's text as state of
+ * its own and gives back the props of a controlled field (React keeps its `value` attribute in
+ * step, ADR-0058). It writes on every edit, or as the field loses focus for `lazy` (where a
+ * text field's `change` fires), trims there too, and shows a new state unless the focused field already means it.
+ */
+export function modelTextHelper(name: string, names: ModelTextNames): string {
+  return `/**
+ * Binds a text field to state as Vue's \`v-model\` does with its modifiers: it writes on each edit
+ * (as the field loses focus when \`lazy\`), trimmed and cast to a number as asked, and shows a new
+ * state unless the focused field already means it. Gives back the field's props.
+ */
+function ${name}<T>(
+  value: T,
+  write: (value: T) => void,
+  options: { lazy?: boolean; trim?: boolean; number?: boolean } = {},
+): {
+  value: string;
+  onChange: (event: ${names.ChangeEvent}<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onFocus: () => void;
+  onBlur: () => void;
+} {
+  const [text, setText] = ${names.useState}(() => String(value ?? ""));
+  const [shown, setShown] = ${names.useState}(value);
+  const [focused, setFocused] = ${names.useState}(false);
+  const read = (typed: string): T => {
+    const trimmed = options.trim ? typed.trim() : typed;
+    return (options.number ? ${names.looseToNumber}(trimmed) : trimmed) as T;
+  };
+  if (!Object.is(shown, value)) {
+    setShown(value);
+    const current =
+      options.number && !/^0\\d/.test(text) ? ${names.looseToNumber}(text) : text;
+    // The focused field keeps what the person typed where it already means the state.
+    const kept =
+      current === (value ?? "") || (focused && options.trim && text.trim() === (value ?? ""));
+    if (!kept) setText(String(value ?? ""));
+  }
+  return {
+    value: text,
+    onChange: (event: ${names.ChangeEvent}<HTMLInputElement | HTMLTextAreaElement>) => {
+      setText(event.target.value);
+      if (!options.lazy) write(read(event.target.value));
+    },
+    onFocus: () => setFocused(true),
+    onBlur: () => {
+      setFocused(false);
+      // The native \`change\` of a text field: it fires as the field loses focus.
+      if (options.trim) setText(text.trim());
+      if (options.lazy) write(read(text));
+    },
+  };
+}
+
+/** Vue's \`looseToNumber\`: the number a text starts with, or the text where it starts with none. */
+function ${names.looseToNumber}(text: string): number | string {
+  const number = Number.parseFloat(text);
+  return Number.isNaN(number) ? text : number;
+}`;
+}

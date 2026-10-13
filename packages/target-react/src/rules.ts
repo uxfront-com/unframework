@@ -87,10 +87,14 @@ export function reactCode(plan: ReactPlan): ReactCode {
         return `${binding.name}.current`;
       case "localFn":
         return client ? (plan.clientVariants.get(binding.id) ?? binding.name) : binding.name;
+      case "model": {
+        // The model's value as the component renders it, or its mirror (ADR-0054).
+        const model = plan.composition.models.get(binding.id)!;
+        return client && model.mirror ? `${model.mirror}.current` : model.name;
+      }
       case "loopVar":
       case "localConst":
       case "emit":
-      case "model":
       case "slots":
       case "slotScope":
       case "context":
@@ -122,11 +126,11 @@ export function reactCode(plan: ReactPlan): ReactCode {
       // React Compiler 1.0 does not lower a logical assignment (`??=`, `||=`, `&&=`, a `Todo`
       // bailout that fails L3): it is written out, `x = x ?? y`.
       const logical = LOGICAL.has(write.operator);
-      if (binding.kind !== "state") {
+      const model = binding.kind === "model" ? plan.composition.models.get(binding.id) : undefined;
+      if (binding.kind !== "state" && !model) {
         return logical ? `${parts.target} = ${writtenValue(write, parts)}` : undefined;
       }
-      const state = plan.state.get(binding.id)!;
-      const mirror = `${state.mirror!}.current`;
+      const mirror = `${model ? model.mirror! : plan.state.get(binding.id)!.mirror!}.current`;
       const update =
         write.operator === "++" || write.operator === "--"
           ? `${mirror}${write.operator}`
@@ -135,8 +139,12 @@ export function reactCode(plan: ReactPlan): ReactCode {
             : `${mirror} ${write.operator} ${parts.value!}`;
       const marker = `${prefix}${expansions.size}__`;
       const single = plan.writePositions.get(original(write.span.start)) === "single";
+      // A model keeps its local state while unbound, and asks its parent to change (ADR-0054).
+      const sets = model
+        ? [`${model.local!.setter}(${mirror})`, `${model.eventLocal}?.(${mirror})`]
+        : [`${plan.state.get(binding.id)!.setter!}(${mirror})`];
       expansions.set(marker, {
-        statements: [update, `${state.setter!}(${mirror})`],
+        statements: [update, ...sets],
         block: write.arrowBody === true || single,
         ownsSemicolon: write.arrowBody !== true && single,
       });
@@ -148,6 +156,8 @@ export function reactCode(plan: ReactPlan): ReactCode {
       return `${callee}?.(${parts.arguments.join(", ")})`;
     },
     api: () => plan.nextTick!,
+    // Whether the parent passed the slot: a prop that holds a node (ADR-0054).
+    slot: (reference) => `(${plan.composition.slots.get(reference.slot)!.local} != null)`,
   };
 
   /**

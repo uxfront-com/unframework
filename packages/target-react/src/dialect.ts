@@ -9,6 +9,7 @@ import {
   isNumberTypedAttribute,
   js,
   jsxAttributeName,
+  jsxAttributeValue,
   jsxExpression,
   spreadClassReads,
   spreadRead,
@@ -19,6 +20,7 @@ import type { ImportSet, JsxContext, JsxDialect } from "@unframework/codegen";
 import type { ClassAttribute, ElementNode } from "@unframework/ir";
 
 import { keyedTernary } from "./branches.ts";
+import type { ReactComposer } from "./compose.ts";
 import type { ReactListeners } from "./listeners.ts";
 import { formControlProp, REACT_PROP_NAMES } from "./props.ts";
 
@@ -32,13 +34,19 @@ export interface ReactNames {
   readonly imports: ImportSet;
   /** The local name of the `cx` helper, once a `className` needs it. */
   cx?: string;
+  /** The `style` prop's local, where the root takes a consumer's (ADR-0054). */
+  style?: string;
 }
 
 /**
  * The React dialect of the JSX printer, claiming names in `names` as it needs them; `listeners`
- * prints the listeners and template refs.
+ * prints the listeners and template refs, and `composer` composition (ADR-0054).
  */
-export function reactDialect(names: ReactNames, listeners: ReactListeners): JsxDialect {
+export function reactDialect(
+  names: ReactNames,
+  listeners: ReactListeners,
+  composer: ReactComposer,
+): JsxDialect {
   return {
     attributeName: (name, element) =>
       formControlProp(name, element) ?? REACT_PROP_NAMES[name] ?? name,
@@ -62,12 +70,45 @@ export function reactDialect(names: ReactNames, listeners: ReactListeners): JsxD
       prop(attribute.name, element, context, jsxExpression(attribute.value, context)),
     ],
 
-    classAttribute: (attribute, element, context) => [
-      className([...classParts(attribute, context), ...spreadClassReads(element, context)], names),
-    ],
+    classAttribute(attribute, element, context) {
+      // The root's `class` is the consumer's alone: as it is (ADR-0054).
+      if (composer.bareClasses.has(attribute) && !spreadClassReads(element, context).length) {
+        const [only] = attribute.items;
+        if (only?.kind === "Dynamic") {
+          return [
+            js.jsxAttribute(
+              "className",
+              js.jsxExpressionContainer(jsxExpression(only.value, context)),
+            ),
+          ];
+        }
+      }
+      // A component's static `class` is a string, as an element's (`className="wide"`).
+      if (/^[A-Z]/.test(element.tag) && attribute.items.every((item) => item.kind === "Static")) {
+        const value = attribute.items
+          .map((item) => (item.kind === "Static" ? item.value : ""))
+          .join(" ");
+        return [js.jsxAttribute("className", jsxAttributeValue(value))];
+      }
+      return [
+        className(
+          [...classParts(attribute, context), ...spreadClassReads(element, context)],
+          names,
+        ),
+      ];
+    },
 
     styleAttribute(attribute, _element, context) {
+      const fallthrough = composer.fallthroughStyles.has(attribute);
+      const own = names.style;
+      if (fallthrough && attribute.declarations.length === 0) {
+        return [js.jsxAttribute("style", js.jsxExpressionContainer(js.identifier(own!)))];
+      }
       const object: Expression = styleObject(attribute, context, "camel");
+      // A consumer's declarations win over the root's own (ADR-0054).
+      if (fallthrough) {
+        (object as ObjectExpression).properties.push(js.spreadElement(js.identifier(own!)));
+      }
       // React's `CSSProperties` declares no custom properties, so an object holding one is
       // typed as its own (tsgo rejects the literal otherwise).
       const custom = attribute.declarations.some(({ property }) => property.startsWith("--"));
@@ -95,7 +136,30 @@ export function reactDialect(names: ReactNames, listeners: ReactListeners): JsxD
 
     eventAttribute: (attribute, element, context) => listeners.event(attribute, element, context),
 
-    refAttribute: (attribute, element, context) => listeners.ref(attribute, element, context),
+    // A component's `ref` holds what it exposes (ADR-0054): the ref object itself.
+    refAttribute: (attribute, element, context) =>
+      /^[A-Z]/.test(element.tag)
+        ? [
+            js.jsxAttribute(
+              "ref",
+              js.jsxExpressionContainer(
+                js.identifier(
+                  context.component.bindings.find((binding) => binding.id === attribute.binding)!
+                    .name,
+                ),
+              ),
+            ),
+          ]
+        : listeners.ref(attribute, element, context),
+
+    slotOutlet: (node, context) => composer.slotOutlet(node, context),
+    slotValue: (slot, context) => composer.slotValue(slot, context),
+    fillAttribute: (fill, node, context) => composer.fillAttribute(fill, node, context),
+    componentEvent: (attribute, node, context) => composer.componentEvent(attribute, node, context),
+    modelAttribute: (attribute, element, context) =>
+      composer.modelAttribute(attribute, element, context),
+    modelBinding: (attribute, node, context) => composer.modelBinding(attribute, node, context),
+    dynamic: (node, context) => composer.dynamic(node, context),
   };
 }
 
