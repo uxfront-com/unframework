@@ -2,9 +2,9 @@ import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
 
 export interface PriceRangeModels {
   min?: number;
-  onMinChange?: (min: number) => void;
+  onMinChange?: (value: number) => void;
   max?: number;
-  onMaxChange?: (max: number) => void;
+  onMaxChange?: (value: number) => void;
 }
 
 export interface PriceRangeAttributes {
@@ -21,16 +21,16 @@ export default function PriceRange({
   className,
   style,
 }: { label: string } & PriceRangeModels & PriceRangeAttributes) {
-  const [localMin, setLocalMin] = useState<number>(0);
-  const min = minProp === undefined ? localMin : minProp;
+  const [localMin, setLocalMin] = useState<{ value: number }>({ value: 0 });
+  const min = minProp === undefined ? localMin.value : minProp;
   const minRef = useRef(min);
 
   useLayoutEffect(() => {
     minRef.current = min;
   });
 
-  const [localMax, setLocalMax] = useState<number>(100);
-  const max = maxProp === undefined ? localMax : maxProp;
+  const [localMax, setLocalMax] = useState<{ value: number }>({ value: 100 });
+  const max = maxProp === undefined ? localMax.value : maxProp;
   const maxRef = useRef(max);
 
   useLayoutEffect(() => {
@@ -39,10 +39,10 @@ export default function PriceRange({
 
   function widen() {
     minRef.current -= 10;
-    setLocalMin(minRef.current);
+    setLocalMin({ value: minRef.current });
     onMinChange?.(minRef.current);
     maxRef.current += 10;
-    setLocalMax(maxRef.current);
+    setLocalMax({ value: maxRef.current });
     onMaxChange?.(maxRef.current);
   }
 

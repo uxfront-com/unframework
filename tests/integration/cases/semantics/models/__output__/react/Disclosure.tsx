@@ -2,7 +2,7 @@ import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
 
 export interface DisclosureModels {
   open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  onOpenChange?: (value: boolean) => void;
 }
 
 export interface DisclosureAttributes {
@@ -17,8 +17,8 @@ export default function Disclosure({
   className,
   style,
 }: { title: string } & DisclosureModels & DisclosureAttributes) {
-  const [localOpen, setLocalOpen] = useState<boolean>(false);
-  const open = openProp === undefined ? localOpen : openProp;
+  const [localOpen, setLocalOpen] = useState<{ value: boolean }>({ value: false });
+  const open = openProp === undefined ? localOpen.value : openProp;
   const openRef = useRef(open);
 
   useLayoutEffect(() => {
@@ -32,7 +32,7 @@ export default function Disclosure({
         aria-expanded={open}
         onClick={() => {
           openRef.current = !openRef.current;
-          setLocalOpen(openRef.current);
+          setLocalOpen({ value: openRef.current });
           onOpenChange?.(openRef.current);
         }}
       >

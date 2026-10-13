@@ -31,7 +31,11 @@ export default function Counter({ className, style }: CounterAttributes) {
   );
 }
 
-/** A provided ref's value, as its consumers read it: `{ value }`. */
+/** A provided ref as its consumers read it: a `value` getter over the state. */
 function refObject<T>(value: T): { readonly value: T } {
-  return { value };
+  return {
+    get value() {
+      return value;
+    },
+  };
 }

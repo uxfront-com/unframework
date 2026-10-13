@@ -17,8 +17,8 @@ export default function Stepper({
   className,
   style,
 }: { label: string } & StepperModels & StepperAttributes) {
-  const [localValue, setLocalValue] = useState<number>(0);
-  const value = valueProp === undefined ? localValue : valueProp;
+  const [localValue, setLocalValue] = useState<{ value: number }>({ value: 0 });
+  const value = valueProp === undefined ? localValue.value : valueProp;
   const valueRef = useRef(value);
 
   useLayoutEffect(() => {
@@ -32,7 +32,7 @@ export default function Stepper({
         aria-label={`Fewer ${label}`}
         onClick={() => {
           valueRef.current -= 1;
-          setLocalValue(valueRef.current);
+          setLocalValue({ value: valueRef.current });
           onValueChange?.(valueRef.current);
         }}
       >
@@ -46,7 +46,7 @@ export default function Stepper({
         aria-label={`More ${label}`}
         onClick={() => {
           valueRef.current += 1;
-          setLocalValue(valueRef.current);
+          setLocalValue({ value: valueRef.current });
           onValueChange?.(valueRef.current);
         }}
       >

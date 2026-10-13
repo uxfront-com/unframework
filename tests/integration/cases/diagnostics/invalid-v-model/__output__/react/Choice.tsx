@@ -2,7 +2,7 @@ import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
 
 export interface ChoiceModels {
   picked?: string;
-  onPickedChange?: (picked: string) => void;
+  onPickedChange?: (value: string) => void;
 }
 
 export interface ChoiceAttributes {
@@ -16,8 +16,8 @@ export function Choice({
   className,
   style,
 }: ChoiceModels & ChoiceAttributes) {
-  const [localPicked, setLocalPicked] = useState<string>("");
-  const picked = pickedProp === undefined ? localPicked : pickedProp;
+  const [localPicked, setLocalPicked] = useState<{ value: string }>({ value: "" });
+  const picked = pickedProp === undefined ? localPicked.value : pickedProp;
   const pickedRef = useRef(picked);
 
   useLayoutEffect(() => {
@@ -29,7 +29,7 @@ export function Choice({
       type="button"
       onClick={() => {
         pickedRef.current = "yes";
-        setLocalPicked(pickedRef.current);
+        setLocalPicked({ value: pickedRef.current });
         onPickedChange?.(pickedRef.current);
       }}
       className={className}
