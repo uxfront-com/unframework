@@ -551,14 +551,16 @@ export const CANARIES: readonly Canary[] = [
     id: "L10-root-inverted",
     layer: "L10",
     description:
-      "Inverts the colours of every component's root on every target but the reference, with a style no geometry property captures: only the pixels differ.",
+      "Inverts most of the colours of every component's root on every target but the reference, with a style no geometry property captures: only the pixels differ.",
     evidence: { browser: { pixels: /pixel-mismatch \(/ } },
     followersOnly: true,
     plugin: () => ({
       name: "uf-canary-L10-pixels",
       ir: (module) =>
         mapRoots(module, (root) => {
-          setStyle(root, createStaticStyle("filter", "invert(1)", root.span));
+          // Not `invert(1)`, which is its own inverse: a child's root inside a parent's would
+          // render its pixels as they were.
+          setStyle(root, createStaticStyle("filter", "invert(0.8)", root.span));
         }),
     }),
   },
