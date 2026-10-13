@@ -1,4 +1,11 @@
-import { $, type QRL, component$, useSignal } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type QRL,
+  component$,
+  useSignal,
+} from "@qwik.dev/core";
 
 export interface Fruit {
   name: string;
@@ -13,7 +20,9 @@ export interface FruitPickerEvents {
   onKept$?: QRL<(name: string, colour: string) => void>;
 }
 
-export default component$<FruitPickerProps & FruitPickerEvents>(({ fruits, onKept$ }) => {
+export default component$<
+  FruitPickerProps & FruitPickerEvents & { class?: ClassList; style?: CSSProperties }
+>(({ fruits, onKept$, class: className, style }) => {
   const selected = useSignal<Fruit | null>(null);
   const basket = useSignal<Fruit[]>([]);
 
@@ -30,7 +39,7 @@ export default component$<FruitPickerProps & FruitPickerEvents>(({ fruits, onKep
   });
 
   return (
-    <section class="fruit-picker" aria-label="Fruit">
+    <section class={["fruit-picker", className]} aria-label="Fruit" style={style}>
       <ul aria-label="Fruits">
         {fruits.map((fruit) => (
           <li key={fruit.name}>

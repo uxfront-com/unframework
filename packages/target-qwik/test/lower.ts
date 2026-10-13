@@ -20,9 +20,15 @@ export function lower(source: string, file = "Card.uf.tsx"): UfModule {
 /**
  * A source's first component as the Qwik target emits it, formatted as the compiler formats
  * it. The target reports nothing (ADR-0033: what it cannot render, its capabilities declare).
+ * Fallthrough gives every component `class` and `style` props (ADR-0054): the shape tests leave
+ * it out, as `defineOptions({ inheritAttrs: false })` does, unless `fallthrough` asks for it.
  */
-export async function emitSource(source: string): Promise<string> {
+export async function emitSource(
+  source: string,
+  options: { fallthrough?: boolean } = {},
+): Promise<string> {
   const module = lower(source);
+  if (!options.fallthrough) module.components[0]!.inheritAttrs = false;
   const reported: unknown[] = [];
   const context: EmitContext = {
     module,

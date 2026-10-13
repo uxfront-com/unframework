@@ -1,5 +1,7 @@
 import {
   $,
+  type CSSProperties,
+  type ClassList,
   type QRL,
   component$,
   noSerialize,
@@ -22,8 +24,20 @@ export interface ReadingListEvents {
   onRefreshed$?: QRL<(total: number) => void>;
 }
 
-export default component$<ReadingListProps & ReadingListEvents>(
-  ({ shelves, onRequested$, onCancelled$, onFound$, onStarted$, onChecked$, onRefreshed$ }) => {
+export default component$<
+  ReadingListProps & ReadingListEvents & { class?: ClassList; style?: CSSProperties }
+>(
+  ({
+    shelves,
+    onRequested$,
+    onCancelled$,
+    onFound$,
+    onStarted$,
+    onChecked$,
+    onRefreshed$,
+    class: className,
+    style,
+  }) => {
     const query = useSignal("");
     const books = useSignal<string[]>([]);
     const searching = useSignal(false);
@@ -138,7 +152,7 @@ export default component$<ReadingListProps & ReadingListEvents>(
     });
 
     return (
-      <section class="reading-list" aria-label="Reading list">
+      <section class={["reading-list", className]} aria-label="Reading list" style={style}>
         <label>
           Search
           <input

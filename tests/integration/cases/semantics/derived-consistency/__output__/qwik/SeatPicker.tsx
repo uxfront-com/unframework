@@ -1,4 +1,12 @@
-import { $, type QRL, component$, useComputed$, useSignal } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type QRL,
+  component$,
+  useComputed$,
+  useSignal,
+} from "@qwik.dev/core";
 
 export interface SeatPickerProps {
   pricePerSeat: number;
@@ -8,7 +16,9 @@ export interface SeatPickerEvents {
   onQuote$?: QRL<(seats: number, total: number, summary: string) => void>;
 }
 
-export default component$<SeatPickerProps & SeatPickerEvents>(({ pricePerSeat, onQuote$ }) => {
+export default component$<
+  SeatPickerProps & SeatPickerEvents & { class?: ClassList; style?: CSSProperties }
+>(({ pricePerSeat, onQuote$, class: className, style }) => {
   const seats = useSignal(1);
   const total = useComputed$(() => seats.value * pricePerSeat);
   const summary = useComputed$(() =>
@@ -28,7 +38,7 @@ export default component$<SeatPickerProps & SeatPickerEvents>(({ pricePerSeat, o
   });
 
   return (
-    <section class="seat-picker" aria-label="Seats">
+    <section class={["seat-picker", className]} aria-label="Seats" style={style}>
       <p role="status">{summary.value}</p>
       <button type="button" onClick$={addSeat}>
         Add a seat

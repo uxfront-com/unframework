@@ -4,7 +4,7 @@
 // handler, a task, a `useComputed$` getter) can capture only serialisable values: never a plain
 // function (optimizer C02), so a function a `$` scope calls is a QRL, whose calls are awaited
 // (./calls.ts), or, when it captures nothing of the component, a module-level function.
-import { bindingOf, parseCodeSource } from "@unframework/codegen";
+import { bindingOf, parseCodeSource, writtenValue } from "@unframework/codegen";
 import type { CodeKind, ImportSet, RewriteRules, RewriteSite } from "@unframework/codegen";
 import { expressionsOf, functionsOf, summarizeCode, walk } from "@unframework/ir";
 import type {
@@ -18,11 +18,14 @@ import type {
   EventAttribute,
   FunctionCode,
   FunctionItem,
+  ListenerAttribute,
   RenderNode,
   UfComponent,
   UfModule,
 } from "@unframework/ir";
 
+import { fillExpressions, planComposition } from "./composition.ts";
+import type { CompositionPlan } from "./composition.ts";
 import { qwikEventProp } from "./events.ts";
 import { elementParameter, handlerOnlyFunctions, splitHandler, usedFunctions } from "./handlers.ts";
 import type { SplitHandler } from "./handlers.ts";
@@ -188,6 +191,8 @@ export interface SetupPlan {
   readonly qrlFunctions: ReadonlyMap<string, BindingId>;
   /** The functions that keep one identity for the instance's life (see {@link StablePlan}). */
   readonly stable: StablePlan;
+  /** What composition adds: slots as render props, models, fallthrough, expose. */
+  readonly composition: CompositionPlan;
   /**
    * The reads of a template ref's value that client code uses whole (stored, passed on, compared,
    * returned), by their offset in the source: \`T | null\` there, as the source's type is, where
@@ -240,6 +245,8 @@ export function planSetup(component: UfComponent, module: UfModule, names: Outpu
   }
   const stable = planStable(component, functions, names);
   const wholeRefReads = refReadsUsedWhole(component);
+  const composition = planComposition(component, module, names);
+  for (const model of composition.models.values()) if (model.written) qrls.add(model.setter);
   const plan: SetupPlan = {
     component,
     module,
@@ -259,6 +266,7 @@ export function planSetup(component: UfComponent, module: UfModule, names: Outpu
     qrlFunctions,
     stable,
     wholeRefReads,
+    composition,
     rules: (event) => rewriteRules(plan, event),
     functionCode: (id) => eventFunctions.get(id)?.code,
   };
@@ -718,10 +726,17 @@ function planListeners(component: UfComponent): ListenerPlan {
       case "Text":
       case "Interpolation":
         return;
-      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+      // What a component's fills render sits in the child's elements, which the component cannot
+      // see: its listeners are ordered as the component's own around it.
       case "Component":
+        for (const fill of node.fills) for (const child of fill.children) visit(child, path);
+        return;
       case "SlotOutlet":
+        for (const child of node.fallback) visit(child, path);
+        return;
       case "Dynamic":
+        for (const child of node.children) visit(child, path);
+        for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, path);
         return;
       default:
         unreachable(node);
@@ -825,6 +840,22 @@ function declaredQrls(
       }
     }
   }
+  // A listener of a child's event is a QRL prop the child calls: its calls are awaited, and a
+  // function it names passes on as a QRL.
+  for (const listener of componentListeners(component)) {
+    if (listener.handler.kind === "Inline") {
+      const fn = listener.handler.function;
+      visit(fn.body, kindOf(fn), false, true);
+    } else if (client(listener.handler.binding)) {
+      need(listener.handler.binding);
+    }
+  }
+  // A fill calls a setup function through its QRL.
+  for (const expression of fillExpressions(component)) {
+    visit(expression, "expression", false, false);
+  }
+  // What a component exposes, its consumer calls as QRLs (./composition.ts).
+  for (const id of component.exposes?.functions ?? []) if (client(id)) need(id);
   for (const item of component.setup) {
     switch (item.kind) {
       // A task's calls run in place (./setup.ts `bodyStatements`).
@@ -918,6 +949,16 @@ function rewriteRules(plan: SetupPlan, event: string | undefined): RewriteRules 
     },
     emit(emit, _binding, parts) {
       return `${plan.eventProp(emit.event)}?.(${parts.arguments.join(", ")})`;
+    },
+    // A model's write asks its setter, which a call awaits (./composition.ts).
+    write(write, binding, parts) {
+      const model = plan.composition.models.get(binding.id);
+      return model && `${model.setter}(${writtenValue(write, parts)})`;
+    },
+    // A named slot's presence is its render prop's (`named-slot`). The default slot's is
+    // `default-slot-presence`, an error on Qwik: the output reads as if it were never filled.
+    slot(reference) {
+      return plan.composition.slots.get(reference.slot) ?? "false";
     },
     api() {
       return names.once("nextTick");
@@ -1027,7 +1068,11 @@ function planFunctions(
         target.add(reference.binding);
     }
   };
-  for (const { expression } of expressionsOf(component)) mark(render, expression.refs);
+  // A fill's code runs as a `$` scope (./composition.ts `fillExpressions`): client code.
+  const fills = fillExpressions(component);
+  for (const { expression } of expressionsOf(component)) {
+    mark(fills.has(expression) ? client : render, expression.refs);
+  }
   for (const item of component.setup) {
     switch (item.kind) {
       case "State":
@@ -1077,6 +1122,12 @@ function planFunctions(
       }
     },
   });
+  for (const listener of componentListeners(component)) {
+    if (listener.handler.kind === "Function") client.add(listener.handler.binding);
+    else mark(client, listener.handler.function.body.refs);
+  }
+  // A function a component exposes is one its consumer calls: a QRL.
+  for (const id of component.exposes?.functions ?? []) client.add(id);
   // A function's calls take the forms of its callers.
   for (let changed = true; changed;) {
     changed = false;
@@ -1218,6 +1269,23 @@ function emittedEvents(component: UfComponent): Set<string> {
       }
     },
   });
+  for (const listener of componentListeners(component)) {
+    if (listener.handler.kind === "Inline") visit(listener.handler.function.body.refs);
+  }
+  return found;
+}
+
+/** The listeners of child components' events, on components and on `<component is>`. */
+export function componentListeners(component: UfComponent): ListenerAttribute[] {
+  const found: ListenerAttribute[] = [];
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Component" && node.kind !== "Dynamic") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Listener") found.push(attribute);
+      }
+    },
+  });
   return found;
 }
 
@@ -1245,9 +1313,16 @@ function refsInConditionals(component: UfComponent): Set<BindingId> {
       case "Text":
       case "Interpolation":
         return;
+      // A fill renders where its child puts it, which may be under a condition.
       case "Component":
+        for (const fill of node.fills) for (const child of fill.children) visit(child, true);
+        return;
       case "SlotOutlet":
+        for (const child of node.fallback) visit(child, true);
+        return;
       case "Dynamic":
+        for (const child of node.children) visit(child, conditional);
+        for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, true);
         return;
       default:
         unreachable(node);

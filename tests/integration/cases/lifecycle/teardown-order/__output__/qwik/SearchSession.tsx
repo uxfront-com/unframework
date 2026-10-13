@@ -1,4 +1,6 @@
 import {
+  type CSSProperties,
+  type ClassList,
   type QRL,
   component$,
   noSerialize,
@@ -17,7 +19,7 @@ export interface SearchSessionEvents {
   onSummary$?: QRL<(text: string) => void>;
 }
 
-export default component$<SearchSessionEvents>(
+export default component$<SearchSessionEvents & { class?: ClassList; style?: CSSProperties }>(
   ({
     onUnmounted$,
     onEffectCleaned$,
@@ -25,6 +27,8 @@ export default component$<SearchSessionEvents>(
     onSearched$,
     onSearchCleaned$,
     onSummary$,
+    class: className,
+    style,
   }) => {
     const query = useSignal("");
     const results = useSignal<string[]>([]);
@@ -138,7 +142,7 @@ export default component$<SearchSessionEvents>(
     );
 
     return (
-      <section class="search-session" aria-label="Search">
+      <section class={["search-session", className]} aria-label="Search" style={style}>
         <label>
           Query
           <input

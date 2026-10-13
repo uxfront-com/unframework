@@ -1,4 +1,12 @@
-import { $, type QRL, component$, useComputed$, useSignal } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type QRL,
+  component$,
+  useComputed$,
+  useSignal,
+} from "@qwik.dev/core";
 
 export interface CounterProps {
   initial?: number;
@@ -9,7 +17,9 @@ export interface CounterEvents {
   onChange$?: QRL<(value: number) => void>;
 }
 
-export default component$<CounterProps & CounterEvents>(({ initial = 0, step = 1, onChange$ }) => {
+export default component$<
+  CounterProps & CounterEvents & { class?: ClassList; style?: CSSProperties }
+>(({ initial = 0, step = 1, onChange$, class: className, style }) => {
   const count = useSignal(initial);
   const doubled = useComputed$(() => count.value * 2);
 
@@ -19,9 +29,9 @@ export default component$<CounterProps & CounterEvents>(({ initial = 0, step = 1
   });
 
   return (
-    <div class="counter">
+    <div class={["counter", className]} style={style}>
       <output>{count.value}</output>
-      {doubled.value > 10 ? <span>Big</span> : null}
+      <>{doubled.value > 10 ? <span>Big</span> : null}</>
       <button type="button" onClick$={increment}>
         +{step}
       </button>

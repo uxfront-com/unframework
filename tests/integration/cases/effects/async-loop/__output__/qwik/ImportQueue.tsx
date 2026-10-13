@@ -1,4 +1,12 @@
-import { $, type QRL, component$, useSignal, useTask$ } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type QRL,
+  component$,
+  useSignal,
+  useTask$,
+} from "@qwik.dev/core";
 
 export interface ImportQueueProps {
   files: string[];
@@ -8,7 +16,9 @@ export interface ImportQueueEvents {
   onProgress$?: QRL<(status: string, attempts: number) => void>;
 }
 
-export default component$<ImportQueueProps & ImportQueueEvents>(({ files, onProgress$ }) => {
+export default component$<
+  ImportQueueProps & ImportQueueEvents & { class?: ClassList; style?: CSSProperties }
+>(({ files, onProgress$, class: className, style }) => {
   const status = useSignal("idle");
   const attempts = useSignal(0);
 
@@ -38,7 +48,7 @@ export default component$<ImportQueueProps & ImportQueueEvents>(({ files, onProg
   });
 
   return (
-    <section class="import-queue" aria-label="Import">
+    <section class={["import-queue", className]} aria-label="Import" style={style}>
       <button type="button" onClick$={importAll}>
         Import all
       </button>

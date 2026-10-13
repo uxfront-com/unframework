@@ -1,5 +1,11 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
-export default component$<{ step: string }>(({ step }) => {
-  return <p class="step">Step: {step}</p>;
-});
+export default component$<{ step: string } & { class?: ClassList; style?: CSSProperties }>(
+  ({ step, class: className, style }) => {
+    return (
+      <p class={["step", className]} style={style}>
+        Step: {step}
+      </p>
+    );
+  },
+);

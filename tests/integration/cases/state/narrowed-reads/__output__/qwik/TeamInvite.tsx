@@ -1,4 +1,13 @@
-import { $, type QRL, component$, useComputed$, useSignal, useVisibleTask$ } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type QRL,
+  component$,
+  useComputed$,
+  useSignal,
+  useVisibleTask$,
+} from "@qwik.dev/core";
 
 export interface Member {
   id: number;
@@ -27,8 +36,20 @@ export interface TeamInviteEvents {
   onMoved$?: QRL<(page: number) => void>;
 }
 
-export default component$<TeamInviteProps & TeamInviteEvents>(
-  ({ inviter, members, onSelect$, onRemoved$, onSubmitted$, onTagged$, onMoved$ }) => {
+export default component$<
+  TeamInviteProps & TeamInviteEvents & { class?: ClassList; style?: CSSProperties }
+>(
+  ({
+    inviter,
+    members,
+    onSelect$,
+    onRemoved$,
+    onSubmitted$,
+    onTagged$,
+    onMoved$,
+    class: className,
+    style,
+  }) => {
     const greeting = useComputed$(() =>
       inviter ? `Invite as ${inviter.name}` : "Invite as a guest",
     );
@@ -92,7 +113,7 @@ export default component$<TeamInviteProps & TeamInviteEvents>(
     );
 
     return (
-      <section class="team-invite" aria-label="Invite">
+      <section class={["team-invite", className]} aria-label="Invite" style={style}>
         <h2>{greeting.value}</h2>
         <ul aria-label="Members">
           {visible.value.map((member) => (
@@ -108,17 +129,19 @@ export default component$<TeamInviteProps & TeamInviteEvents>(
           ))}
         </ul>
         <div class="pager" role="group" aria-label="Pages">
-          {page.value > 1 ? (
-            <button
-              type="button"
-              onClick$={() => {
-                page.value -= 1;
-                onMoved$?.(page.value);
-              }}
-            >
-              Previous
-            </button>
-          ) : null}
+          <>
+            {page.value > 1 ? (
+              <button
+                type="button"
+                onClick$={() => {
+                  page.value -= 1;
+                  onMoved$?.(page.value);
+                }}
+              >
+                Previous
+              </button>
+            ) : null}
+          </>
           <span>
             Page {page.value} of {pageCount.value}
           </span>

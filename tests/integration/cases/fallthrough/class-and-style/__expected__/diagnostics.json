@@ -36,23 +36,6 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The qwik target does not emit component yet: composition lands in M3.",
-    "file": "fallthrough/class-and-style/Tags.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 7,
-      "offset": 171
-    },
-    "end": {
-      "line": 9,
-      "column": 28,
-      "offset": 192
-    },
-    "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
     "message": "The react target does not emit component yet: composition lands in M3.",
     "file": "fallthrough/class-and-style/Tags.uf.tsx",
     "start": {

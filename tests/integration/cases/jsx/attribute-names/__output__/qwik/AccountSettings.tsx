@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export interface AccountSettingsProps {
   charset: string;
@@ -10,10 +10,20 @@ export interface AccountSettingsProps {
   helpOrder: number;
 }
 
-export default component$<AccountSettingsProps>(
-  ({ charset, bioId, bioLimit, locked, bannerCors, seatColumns, helpOrder }) => {
+export default component$<AccountSettingsProps & { class?: ClassList; style?: CSSProperties }>(
+  ({
+    charset,
+    bioId,
+    bioLimit,
+    locked,
+    bannerCors,
+    seatColumns,
+    helpOrder,
+    class: className,
+    style,
+  }) => {
     return (
-      <div class="account-settings">
+      <div class={["account-settings", className]} style={style}>
         <form accept-charset="utf-8" aria-label="Profile">
           <img
             src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23345'/%3E%3C/svg%3E"

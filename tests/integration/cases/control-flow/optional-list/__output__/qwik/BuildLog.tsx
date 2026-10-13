@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 interface LogLine {
   id: string;
@@ -12,25 +12,27 @@ export interface BuildLogProps {
   warnings?: string[];
 }
 
-export default component$<BuildLogProps>(({ target, failed, lines, warnings }) => {
-  return (
-    <section class="build-log" aria-label="Build log">
-      <pre>
-        $ make {target}
-        {failed ? <strong> (failed)</strong> : null}
-        {"\n"}
-        {(lines ?? []).map((line) => (
-          <code key={line.id}>
-            {line.text}
-            {"\n"}
-          </code>
-        ))}
-      </pre>
-      <ul aria-label="Warnings">
-        {(warnings ?? []).map((warning) => (
-          <li key={warning}>{warning}</li>
-        ))}
-      </ul>
-    </section>
-  );
-});
+export default component$<BuildLogProps & { class?: ClassList; style?: CSSProperties }>(
+  ({ target, failed, lines, warnings, class: className, style }) => {
+    return (
+      <section class={["build-log", className]} aria-label="Build log" style={style}>
+        <pre>
+          $ make {target}
+          <>{failed ? <strong> (failed)</strong> : null}</>
+          {"\n"}
+          {(lines ?? []).map((line) => (
+            <code key={line.id}>
+              {line.text}
+              {"\n"}
+            </code>
+          ))}
+        </pre>
+        <ul aria-label="Warnings">
+          {(warnings ?? []).map((warning) => (
+            <li key={warning}>{warning}</li>
+          ))}
+        </ul>
+      </section>
+    );
+  },
+);

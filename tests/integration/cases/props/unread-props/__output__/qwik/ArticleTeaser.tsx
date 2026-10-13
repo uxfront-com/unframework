@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export interface ArticleTeaserProps {
   title: string;
@@ -11,12 +11,14 @@ export interface ArticleTeaserProps {
   layout?: "row" | "column";
 }
 
-export default component$<ArticleTeaserProps>(({ title, summary, minutes = 5 }) => {
-  return (
-    <article class="article-teaser" aria-label={title}>
-      <h2>{title}</h2>
-      <p>{summary}</p>
-      <p class="article-teaser-meta">{minutes} min read</p>
-    </article>
-  );
-});
+export default component$<ArticleTeaserProps & { class?: ClassList; style?: CSSProperties }>(
+  ({ title, summary, minutes = 5, class: className, style }) => {
+    return (
+      <article class={["article-teaser", className]} aria-label={title} style={style}>
+        <h2>{title}</h2>
+        <p>{summary}</p>
+        <p class="article-teaser-meta">{minutes} min read</p>
+      </article>
+    );
+  },
+);

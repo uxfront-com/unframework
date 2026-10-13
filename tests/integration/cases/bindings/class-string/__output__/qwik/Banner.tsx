@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export interface BannerProps {
   message: string;
@@ -6,11 +6,13 @@ export interface BannerProps {
   emphasis?: string | null;
 }
 
-export default component$<BannerProps>(({ message, tone, emphasis }) => {
-  return (
-    <div class={["banner", tone]} role="note">
-      <p class={emphasis}>{message}</p>
-      <p class={`banner-footer banner-footer-${tone}`}>Shown to every visitor.</p>
-    </div>
-  );
-});
+export default component$<BannerProps & { class?: ClassList; style?: CSSProperties }>(
+  ({ message, tone, emphasis, class: className, style }) => {
+    return (
+      <div class={["banner", tone, className]} role="note" style={style}>
+        <p class={emphasis}>{message}</p>
+        <p class={`banner-footer banner-footer-${tone}`}>Shown to every visitor.</p>
+      </div>
+    );
+  },
+);

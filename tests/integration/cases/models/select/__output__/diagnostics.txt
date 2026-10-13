@@ -22,14 +22,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF1002] (qwik): The qwik target does not emit two-way-binding yet: composition lands in M3.
- --> models/select/SizePicker.uf.tsx:9:17
-  |
-9 |         <select v-model={size.value}>
-  |                 ^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (react): The react target does not emit two-way-binding yet: composition lands in M3.
  --> models/select/SizePicker.uf.tsx:9:17
   |

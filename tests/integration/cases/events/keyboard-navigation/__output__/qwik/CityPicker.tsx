@@ -1,4 +1,14 @@
-import { $, type QRL, component$, sync$, useComputed$, useId, useSignal } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type QRL,
+  component$,
+  sync$,
+  useComputed$,
+  useId,
+  useSignal,
+} from "@qwik.dev/core";
 
 export interface CityPickerProps {
   cities: string[];
@@ -9,7 +19,9 @@ export interface CityPickerEvents {
   onNoted$?: QRL<(text: string) => void>;
 }
 
-export default component$<CityPickerProps & CityPickerEvents>(({ cities, onChose$, onNoted$ }) => {
+export default component$<
+  CityPickerProps & CityPickerEvents & { class?: ClassList; style?: CSSProperties }
+>(({ cities, onChose$, onNoted$, class: className, style }) => {
   const listId = "uf-id-" + useId();
   const query = useSignal("");
   const open = useSignal(false);
@@ -63,7 +75,7 @@ export default component$<CityPickerProps & CityPickerEvents>(({ cities, onChose
   });
 
   return (
-    <section class="city-picker" aria-label="Trip">
+    <section class={["city-picker", className]} aria-label="Trip" style={style}>
       <form
         role="search"
         aria-label="Destination"
@@ -93,27 +105,29 @@ export default component$<CityPickerProps & CityPickerEvents>(({ cities, onChose
             onBlur$={() => (open.value = false)}
           />
         </label>
-        {open.value ? (
-          <div id={listId} role="listbox" aria-label="Cities">
-            {matches.value.map((city, index) => (
-              <button
-                key={city}
-                type="button"
-                id={`${listId}-${index}`}
-                role="option"
-                tabIndex={-1}
-                aria-selected={index === active.value}
-                preventdefault:mousedown
-                onMouseDown$={sync$((event: MouseEvent) => {
-                  event.preventDefault();
-                })}
-                onClick$={() => choose(city)}
-              >
-                {city}
-              </button>
-            ))}
-          </div>
-        ) : null}
+        <>
+          {open.value ? (
+            <div id={listId} role="listbox" aria-label="Cities">
+              {matches.value.map((city, index) => (
+                <button
+                  key={city}
+                  type="button"
+                  id={`${listId}-${index}`}
+                  role="option"
+                  tabIndex={-1}
+                  aria-selected={index === active.value}
+                  preventdefault:mousedown
+                  onMouseDown$={sync$((event: MouseEvent) => {
+                    event.preventDefault();
+                  })}
+                  onClick$={() => choose(city)}
+                >
+                  {city}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </>
         <button type="submit">Search</button>
       </form>
       <p role="status">{chosen.value === "" ? "No city chosen" : `Chosen: ${chosen.value}`}</p>

@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 interface FieldAttributes {
   name: string;
@@ -22,23 +22,25 @@ export interface TextFieldProps {
   hint?: HintAttributes;
 }
 
-export default component$<TextFieldProps>(({ label, inputId, hintText, field, hint }) => {
-  return (
-    <div class="text-field">
-      <label for={inputId}>{label}</label>
-      <input
-        id={inputId}
-        type="text"
-        name={field.name}
-        placeholder={field.placeholder}
-        autocomplete={field.autocomplete}
-        maxLength={field.maxlength}
-        required={field.required}
-        title={field.title}
-      />
-      <p class="text-field-hint" id={hint?.id} title={hint?.title}>
-        {hintText}
-      </p>
-    </div>
-  );
-});
+export default component$<TextFieldProps & { class?: ClassList; style?: CSSProperties }>(
+  ({ label, inputId, hintText, field, hint, class: className, style }) => {
+    return (
+      <div class={["text-field", className]} style={style}>
+        <label for={inputId}>{label}</label>
+        <input
+          id={inputId}
+          type="text"
+          name={field.name}
+          placeholder={field.placeholder}
+          autocomplete={field.autocomplete}
+          maxLength={field.maxlength}
+          required={field.required}
+          title={field.title}
+        />
+        <p class="text-field-hint" id={hint?.id} title={hint?.title}>
+          {hintText}
+        </p>
+      </div>
+    );
+  },
+);

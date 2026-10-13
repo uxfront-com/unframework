@@ -1,4 +1,11 @@
-import { $, type QRL, component$, useSignal } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type QRL,
+  component$,
+  useSignal,
+} from "@qwik.dev/core";
 
 interface User {
   name: string;
@@ -12,7 +19,9 @@ export interface AccountMenuEvents {
   onGreeted$?: QRL<(name: string) => void>;
 }
 
-export default component$<AccountMenuProps & AccountMenuEvents>(({ owner, onGreeted$ }) => {
+export default component$<
+  AccountMenuProps & AccountMenuEvents & { class?: ClassList; style?: CSSProperties }
+>(({ owner, onGreeted$, class: className, style }) => {
   const step = useSignal("intro");
   const user = useSignal<User | null>(null);
 
@@ -33,21 +42,23 @@ export default component$<AccountMenuProps & AccountMenuEvents>(({ owner, onGree
   });
 
   return (
-    <section class="account-menu" aria-label="Account">
-      {step.value === "intro" ? (
-        <button type="button" onClick$={start}>
-          Start
-        </button>
-      ) : user.value === null ? (
-        <button type="button" onClick$={signIn}>
-          Sign in
-        </button>
-      ) : (
-        <button type="button" onClick$={signOut}>
-          Sign out
-        </button>
-      )}
-      {user.value !== null ? <p>Signed in as {user.value.name}</p> : <p>Nobody signed in</p>}
+    <section class={["account-menu", className]} aria-label="Account" style={style}>
+      <>
+        {step.value === "intro" ? (
+          <button type="button" onClick$={start}>
+            Start
+          </button>
+        ) : user.value === null ? (
+          <button type="button" onClick$={signIn}>
+            Sign in
+          </button>
+        ) : (
+          <button type="button" onClick$={signOut}>
+            Sign out
+          </button>
+        )}
+      </>
+      <>{user.value !== null ? <p>Signed in as {user.value.name}</p> : <p>Nobody signed in</p>}</>
       {owner ? (
         <button type="button" onClick$={() => greet(owner.name)}>{`Greet ${owner.name}`}</button>
       ) : (

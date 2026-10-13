@@ -1,4 +1,13 @@
-import { $, type QRL, component$, useSignal, useTask$, useVisibleTask$ } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type QRL,
+  component$,
+  useSignal,
+  useTask$,
+  useVisibleTask$,
+} from "@qwik.dev/core";
 
 export interface BallotProps {
   limit: number;
@@ -17,8 +26,20 @@ function isAnswer(value: string): value is "yes" | "no" {
   return value === "yes" || value === "no";
 }
 
-export default component$<BallotProps & BallotEvents>(
-  ({ limit, label = "Vote", choices, onVoted$, onMoved$, onReport$, onCounted$ }) => {
+export default component$<
+  BallotProps & BallotEvents & { class?: ClassList; style?: CSSProperties }
+>(
+  ({
+    limit,
+    label = "Vote",
+    choices,
+    onVoted$,
+    onMoved$,
+    onReport$,
+    onCounted$,
+    class: className,
+    style,
+  }) => {
     const votes = useSignal(limit);
     const picked = useSignal("none");
     const remaining = useSignal(limit);
@@ -74,7 +95,7 @@ export default component$<BallotProps & BallotEvents>(
     });
 
     return (
-      <section class="ballot" aria-label={label}>
+      <section class={["ballot", className]} aria-label={label} style={style}>
         <p role="status">{votes.value} votes left</p>
         <p>Picked: {picked.value}</p>
         <ul aria-label="Choices">
