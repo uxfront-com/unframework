@@ -14,6 +14,8 @@ import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
 import type { ProjectKind } from "@unframework/testing/node";
 import { describe, expect, it } from "vitest";
 
+// The unplugin's join, by path: it is internal to the package, and the canary must survive it.
+import { joinModules } from "../../../packages/unplugin/src/assemble.ts";
 import { parseArguments, selectCanaries, shardCases, shardFilters } from "../scripts/canaries.ts";
 import {
   addRootAttribute,
@@ -34,7 +36,7 @@ import {
 import type { Canary, CanaryCase } from "./canaries.ts";
 import { listCases } from "./cases.ts";
 import { checkFixes, formattingProblems, nondeterminism } from "./compile-checks.ts";
-import { REPO_ROOT } from "./paths.ts";
+import { CASES_DIR, REPO_ROOT } from "./paths.ts";
 import { LIVE_LAYERS } from "./quarantine.ts";
 import { REFERENCE } from "./targets.ts";
 
@@ -222,6 +224,32 @@ describe("canaries", () => {
   it("refuse an unknown canary", () => {
     expect(() => findCanary("L5-lint")).toThrow(/Unknown canary "L5-lint"/);
     expect(canaryPlugins(null)).toEqual([]);
+  });
+
+  it("corrupt each output of a joined module apart with L6-golden-guard, so the join keeps it", async () => {
+    // Two components of one `.uf.tsx`, whose outputs the unplugin joins into one module.
+    const path = "components/local-sibling/Card.uf.tsx";
+    const input = readFileSync(join(CASES_DIR, path), "utf8");
+    const compiled = (id: string | null) =>
+      compile(canarySource(id, input), {
+        filename: path,
+        targets: ["solid"],
+        plugins: canaryPlugins(id, "solid"),
+        format: canaryFormats(id),
+      });
+    const [clean, guarded] = await Promise.all([compiled(null), compiled("L6-golden-guard")]);
+    const files = guarded.outputs.solid!;
+    expect(files).toHaveLength(2);
+    for (const [index, file] of files.entries()) {
+      expect(file.contents).not.toBe(clean.outputs.solid![index]!.contents);
+    }
+    expect(
+      joinModules(
+        files,
+        path,
+        files.map((file) => file.path),
+      ),
+    ).not.toHaveProperty("error");
   });
 
   it("keep the golden guard on, except under a canary that changes outputs on purpose", () => {
