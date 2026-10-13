@@ -2,12 +2,19 @@
 // render props, a forwarded default slot as children, context, `<component is>` and the root's
 // `className` and `style`. Each test lowers a source with the analyser and pins the shapes that
 // matter, so a change shows here as well as in the corpus' goldens.
+import { randomUUID } from "node:crypto";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { formatOutput } from "@unframework/codegen";
-import { describe, expect, it } from "vitest";
+import type { ToolchainContext } from "@unframework/codegen";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { analyze } from "../../analyzer/src/index.ts";
 import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
+import { toolchain } from "../src/toolchain/index.ts";
+import { packageDir, toolchainDir } from "./fixtures.ts";
 
 /** The formatted React output of each component of a source, by component name. */
 async function outputs(source: string): Promise<Map<string, string>> {
@@ -42,11 +49,13 @@ export default function Toggle() {
 }`);
     const toggle = files.get("Toggle")!;
     expect(toggle).toContain("export interface ToggleModels {\n  on?: boolean;");
-    expect(toggle).toContain("onOnChange?: (on: boolean) => void;");
-    expect(toggle).toContain("const [localOn, setLocalOn] = useState<boolean>(false);");
-    expect(toggle).toContain("const on = onProp === undefined ? localOn : onProp;");
+    expect(toggle).toContain("onOnChange?: (value: boolean) => void;");
     expect(toggle).toContain(
-      "onRef.current = !onRef.current;\n        setLocalOn(onRef.current);\n        onOnChange?.(onRef.current);",
+      "const [localOn, setLocalOn] = useState<{ value: boolean }>({ value: false });",
+    );
+    expect(toggle).toContain("const on = onProp === undefined ? localOn.value : onProp;");
+    expect(toggle).toContain(
+      "onRef.current = !onRef.current;\n        setLocalOn({ value: onRef.current });\n        onOnChange?.(onRef.current);",
     );
   });
 
@@ -158,5 +167,146 @@ export function Pill({ on }: { on: boolean }) {
 }`);
     expect(files.get("Badge")).toContain("function cx(");
     expect(files.get("Pill")).toContain("function cx_1(");
+  });
+});
+
+/**
+ * Composition the corpus does not reach, each part combined with another: every component of each
+ * source passes L3, L4 and L5 as an output must, and the shape that once broke is pinned.
+ */
+const PROBES: Readonly<Record<string, string>> = {
+  // A root spread that may hold `class`, beside the root's fallthrough `class`.
+  rootSpread: `export default function Box({ attrs, text }: { attrs: { class?: string; title?: string }; text: string }) {
+  return <div {...attrs}>{text}</div>;
+}`,
+  // `<component is>` reading a list's row, and a value a branch narrows.
+  dynamicScopes: `export interface Row { id: number; big: boolean; label: string }
+export default function Rows({ rows, first }: { rows: Row[]; first?: Row }) {
+  return (
+    <div>
+      {rows.map((row) => (
+        <section key={row.id}>
+          <component is={row.big ? "h2" : "h3"} class="title">{row.label}</component>
+        </section>
+      ))}
+      {first ? <component is={first.big ? "h2" : "h3"}>{first.label}</component> : <p>None</p>}
+    </div>
+  );
+}`,
+  // A `v-model` beside a listener of the same React prop, and a nullable one.
+  modelListeners: `import { ref } from "unframework";
+export default function Picker() {
+  const size = ref("m");
+  const changes = ref(0);
+  const city = ref("Lisbon");
+  const blurs = ref(0);
+  const note = ref<string | null>(null);
+  return (
+    <form>
+      <select v-model={size.value} onChange={() => changes.value++}>
+        <option value="s">S</option>
+        <option value="m">M</option>
+      </select>
+      <input v-model_lazy={city.value} onBlur={() => blurs.value++} onFocus={() => (blurs.value = 0)} />
+      <input aria-label="Note" v-model={note.value} />
+      <button type="button" onClick={() => (note.value = null)}>Clear</button>
+      <output>{size.value} {changes.value} {city.value} {blurs.value}</output>
+    </form>
+  );
+}`,
+  // Scoped slots filled without a parameter, named and default.
+  scopedFills: `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+function List({ items }: { items: number[] }) {
+  const slots = defineSlots<{ default?(props: { n: number }): Element; item?(props: { n: number }): Element }>();
+  return <ul>{items.map((n) => <li key={n}>{slots.item?.({ n })}{slots.default?.({ n })}</li>)}</ul>;
+}
+export default function Dots() {
+  return <List items={[1, 2]}>{{ item: () => <i>dot</i>, default: () => <b>x</b> }}</List>;
+}`,
+  // A model without a default, written; slots and models named with keywords; and an exposed
+  // function whose parameter is a pattern with a default.
+  namesAndHandles: `import { defineExpose, defineModel, defineSlots, ref } from "unframework";
+import type { Element } from "unframework";
+export default function Odd() {
+  const slots = defineSlots<{ case?(): Element }>();
+  const text = defineModel<string>("text");
+  const fresh = defineModel<string>("new", { default: "" });
+  const total = ref(0);
+  function setTo({ to = 1, by }: { to?: number; by: number }) {
+    total.value = to + by;
+  }
+  defineExpose({ setTo });
+  return (
+    <div>
+      {slots.case ? <header>{slots.case?.()}</header> : null}
+      <button type="button" onClick={() => (text.value = "x")}>{text.value}</button>
+      <button type="button" onClick={() => (fresh.value = "y")}>{fresh.value} {total.value}</button>
+    </div>
+  );
+}`,
+};
+
+describe("react composition beyond the corpus", () => {
+  const context: ToolchainContext = { toolchainDir, root: packageDir };
+  const scratch = join(packageDir, ".uf-tmp", `composition-${randomUUID()}`);
+  beforeAll(() => mkdirSync(scratch, { recursive: true }));
+  afterAll(() => rmSync(scratch, { recursive: true, force: true }));
+
+  const emitted = new Map<string, Map<string, string>>();
+  beforeAll(async () => {
+    for (const [name, source] of Object.entries(PROBES)) emitted.set(name, await outputs(source));
+  });
+
+  it("passes L3, L4 and L5 on every probe", { timeout: 60_000 }, async () => {
+    const files = [...emitted].flatMap(([probe, components]) => {
+      mkdirSync(join(scratch, probe), { recursive: true });
+      return [...components].map(([component, contents]) => {
+        const path = join(scratch, probe, `${component}.tsx`);
+        writeFileSync(path, contents);
+        return { path, contents };
+      });
+    });
+    const paths = files.map((file) => file.path);
+    const empty = Object.fromEntries(paths.map((path) => [path, []]));
+    const compiled = await toolchain.frameworkCompile(files, context);
+    expect(Object.fromEntries(compiled)).toEqual(
+      Object.fromEntries(paths.map((path) => [path, { errors: [], warnings: [] }])),
+    );
+    expect(Object.fromEntries(await toolchain.typecheck(paths, context))).toEqual(empty);
+    expect(Object.fromEntries(await toolchain.lint(paths, context))).toEqual(empty);
+  });
+
+  it("declares <component is> where its list or branch is", () => {
+    const rows = emitted.get("dynamicScopes")!.get("Rows")!;
+    expect(rows).not.toMatch(/^ {2}const Tag/m);
+    expect(rows).toContain('const Tag = row.big ? "h2" : "h3";');
+    expect(rows).toContain('const Tag_1 = first.big ? "h2" : "h3";');
+  });
+
+  it("runs a v-model's handler first in a listener's of the same prop", () => {
+    const picker = emitted.get("modelListeners")!.get("Picker")!;
+    expect(picker.match(/onChange=/g)).toHaveLength(3);
+    expect(picker).toMatch(/setSize\(event\.target\.value\);\n\s*changesRef\.current\+\+;/);
+    expect(picker).toContain("cityField.onBlur();");
+    expect(picker).toContain("cityField.onFocus();");
+    expect(picker).toContain('value={note ?? ""}');
+  });
+
+  it("passes a scoped slot's fill as a render prop, with a parameter or without", () => {
+    const dots = emitted.get("scopedFills")!.get("Dots")!;
+    expect(dots).toContain("renderItem={() => <i>dot</i>}");
+    expect(dots).toContain("renderDefault={() => <b>x</b>}");
+  });
+
+  it("keeps a written model's state in an object, so a held value renders again", () => {
+    const odd = emitted.get("namesAndHandles")!.get("Odd")!;
+    expect(odd).toContain(
+      "const [localText, setLocalText] = useState<{ value: string | undefined }>({ value: undefined });",
+    );
+    expect(odd).toContain("onTextChange?: (value: string | undefined) => void;");
+    expect(odd).toContain("case: caseProp,");
+    expect(odd).toContain("new: newProp,");
+    expect(odd).toContain("setTo: (value: { to?: number; by: number }) => void;");
   });
 });

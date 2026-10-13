@@ -20,6 +20,7 @@ import type {
   ModelItem,
   ProvideItem,
   RefType,
+  RenderNode,
   UfComponent,
   UfModule,
 } from "@unframework/ir";
@@ -88,13 +89,19 @@ export interface CompositionPlan {
   readonly provided: ReadonlyMap<ProvideItem, string>;
   /**
    * The `const` each `<component is>` is rendered through, by the node's start: the printer's
-   * node may be a copy.
+   * node may be a copy. One the body declares is `hoisted`; one inside a list, a branch or a
+   * scoped fill reads what only that scope has, and is declared where it renders.
    */
-  readonly dynamic: ReadonlyMap<number, { node: DynamicNode; name: string }>;
+  readonly dynamic: ReadonlyMap<number, { node: DynamicNode; name: string; hoisted: boolean }>;
   /** The generated interfaces of the slots' and the models' props, and of the root's. */
   readonly interfaces: { slots?: string; models?: string; attributes?: string };
   /** The state a `v-model` binds: it needs its setter, whoever else writes it. */
   readonly bound: ReadonlySet<BindingId>;
+  /**
+   * Whether a child's slot is scoped, as the child declares it, by the child's local name and the
+   * slot: a fill is a render prop where the slot is one, with a parameter or without.
+   */
+  scoped(component: string, slot: string): boolean;
 }
 
 /**
@@ -119,7 +126,9 @@ export function planComposition(
   // A prop's own name where nothing takes it, `<name>Prop` otherwise.
   const propLocal = (prop: string) => {
     if (object) return `${object}.${prop}`;
-    return names.scope.has(prop) ? names.claim(`${prop}Prop`) : names.claim(prop);
+    return names.scope.has(prop) || RESERVED_WORDS.has(prop)
+      ? names.claim(`${prop}Prop`)
+      : names.claim(prop);
   };
 
   // What the template and the setup bind with `v-model`: a state's setter, or a model's.
@@ -191,22 +200,71 @@ export function planComposition(
     provided.set(item, names.claim(`${base.charAt(0).toLowerCase()}${base.slice(1)}Value`));
   }
 
-  const dynamic = new Map<number, { node: DynamicNode; name: string }>();
-  walk(component.render, {
-    enter(node) {
-      if (node.kind === "Dynamic") dynamic.set(node.span.start, { node, name: names.claim("Tag") });
-    },
-  });
+  const dynamic = new Map<number, { node: DynamicNode; name: string; hoisted: boolean }>();
+  const visit = (nodes: readonly RenderNode[], scoped: boolean): void => {
+    for (const node of nodes) {
+      switch (node.kind) {
+        case "Element":
+          visit(node.children, scoped);
+          break;
+        case "If":
+          for (const branch of node.branches) visit(branch.children, true);
+          break;
+        case "For":
+          visit([node.body], true);
+          break;
+        case "Component":
+          for (const fill of node.fills)
+            visit(fill.children, scoped || fill.parameter !== undefined);
+          break;
+        case "SlotOutlet":
+          visit(node.fallback, scoped);
+          break;
+        case "Dynamic":
+          dynamic.set(node.span.start, { node, name: names.claim("Tag"), hoisted: !scoped });
+          visit(node.children, scoped);
+          for (const fill of node.fills ?? []) {
+            visit(fill.children, scoped || fill.parameter !== undefined);
+          }
+          break;
+        case "Text":
+        case "Interpolation":
+          break;
+        default:
+          node satisfies never;
+      }
+    }
+  };
+  visit(
+    component.render.kind === "Element" ? [component.render] : component.render.children,
+    false,
+  );
 
   const interfaces: CompositionPlan["interfaces"] = {};
   if (slots.size) interfaces.slots = names.claim(`${component.name}Slots`);
   if (models.size) interfaces.models = names.claim(`${component.name}Models`);
   if (fallthrough || expose) interfaces.attributes = names.claim(`${component.name}Attributes`);
 
+  // The slots each child declares: its module's own components, or the resolver's API.
+  const childSlots = new Map<string, Set<string>>();
+  for (const child of children) {
+    const own = module.components.find((each) => each.name === child.name);
+    const imported = module.imports
+      ?.find((entry) =>
+        entry.names.some((name) => name.kind === "Component" && name.local === child.local),
+      )
+      ?.api.components.find((each) => each.name === child.name);
+    const scopedSlots = imported
+      ? imported.slots.filter((slot) => slot.props !== undefined).map((slot) => slot.name)
+      : (own?.slots?.slots ?? []).filter((slot) => slot.props).map((slot) => slot.name);
+    childSlots.set(child.local, new Set(scopedSlots));
+  }
+
   return {
     children,
     keys,
     ownsKeys,
+    scoped: (child, slot) => childSlots.get(child)?.has(slot) ?? false,
     slots,
     models,
     ...(fallthrough ? { fallthrough } : {}),
@@ -217,6 +275,17 @@ export function planComposition(
     bound,
   };
 }
+
+/**
+ * The words a binding may not be named in strict-mode modules: a prop named so (a slot `case`, a
+ * model `new`) is destructured under another local (`case: caseProp`).
+ */
+const RESERVED_WORDS: ReadonlySet<string> = new Set(
+  `arguments await break case catch class const continue debugger default delete do else enum
+  eval export extends false finally for function if implements import in instanceof interface let
+  new null package private protected public return static super switch this throw true try typeof
+  var void while with yield`.split(/\s+/),
+);
 
 /** The prop a slot is passed as: `children`, its own name, or `render<Slot>` for a scoped one. */
 export function slotProp(slot: string, scoped: boolean): string {

@@ -17,6 +17,7 @@ import type {
   ClassAttribute,
   ComponentAttribute,
   ComponentNode,
+  DynamicNode,
   ElementNode,
   Expression,
   FragmentNode,
@@ -145,6 +146,8 @@ export const react: Target = defineTarget({
     };
     const listeners = new ReactListeners(plan, code);
     const composer = new ReactComposer(plan, code);
+    composer.connect(listeners);
+    listeners.connect(composer);
     const jsx = jsxContext({
       component,
       dialect: reactDialect(names, listeners, composer),
@@ -160,15 +163,15 @@ export const react: Target = defineTarget({
     // The returned JSX first, while its placeholders are the only ones: it prints on its own for
     // the opt-out check below. Its `modelText` fields and `<component is>`'s `const`s follow the
     // setup, and the handle of what the component exposes comes last (ADR-0054).
-    const root = rootForReact(withFallthrough(component.render, plan, composer), jsx);
+    const root = rootForReact(withFallthrough(component.render, plan, composer), jsx, plan);
     // A lone component or `<component is>` is the root itself, never in a fragment.
     const [only] = root.kind === "Fragment" && root.children.length === 1 ? root.children : [];
     const lone = only?.kind === "Component" || only?.kind === "Dynamic" ? only : root;
     const tree = provided(plan, jsxNode(lone, jsx));
     const rendered = [
-      ...[...composition.dynamic.values()].map(
-        ({ node, name }) => `const ${name} = ${expressionCode(node.is, jsx)};`,
-      ),
+      ...[...composition.dynamic.values()]
+        .filter(({ hoisted }) => hoisted)
+        .map(({ node, name }) => `const ${name} = ${expressionCode(node.is, jsx)};`),
       ...composer.fields,
     ].map((text, index) => ({ text, group: -100 - index, compact: true }));
     const handle = exposeHandle(plan);
@@ -274,9 +277,25 @@ function withFallthrough(
   const { fallthrough } = plan.composition;
   if (!fallthrough) return root;
   const target = fallthrough.root;
-  const span = target.span;
-  const consumer: Expression = { code: fallthrough.className, span, refs: [] };
-  const attributes: (Attribute | ComponentAttribute)[] = [];
+  const consumer: Expression = { code: fallthrough.className, span: target.span, refs: [] };
+  if (target.kind === "Element") {
+    return { ...target, attributes: fallthroughAttributes(target, consumer, composer) };
+  }
+  const attributes = fallthroughAttributes(target, consumer, composer);
+  return { ...root, children: [{ ...target, attributes }] };
+}
+
+/**
+ * The root's attributes with the consumer's `class` joined to its own and its `style` marked to
+ * take the consumer's last: added where it has none.
+ */
+function fallthroughAttributes<T extends Attribute | ComponentAttribute>(
+  target: { attributes: readonly T[]; span: ElementNode["span"] },
+  consumer: Expression,
+  composer: ReactComposer,
+): (T | ClassAttribute | StyleAttribute)[] {
+  const { span } = target;
+  const attributes: (T | ClassAttribute | StyleAttribute)[] = [];
   let classed = false;
   let styled = false;
   for (const attribute of target.attributes) {
@@ -319,8 +338,7 @@ function withFallthrough(
     composer.fallthroughStyles.add(bare);
     attributes.push(bare);
   }
-  if (target.kind === "Element") return { ...target, attributes: attributes as Attribute[] };
-  return { ...root, children: [{ ...target, attributes: attributes as ComponentAttribute[] }] };
+  return attributes;
 }
 
 /**
@@ -376,9 +394,11 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
       interfaces.models,
       [...composition.models.values()].flatMap(({ item, prop, event }) => {
         const valueType = item.type?.code ?? "unknown";
+        // Without a default, an unbound model starts \`undefined\`, which a write may hand on.
+        const written = item.default || item.required ? valueType : `${valueType} | undefined`;
         return [
           `${prop}${item.required ? "" : "?"}: ${valueType};`,
-          `${event}?: (${prop}: ${valueType}) => void;`,
+          `${event}?: (${PARAMETER}: ${written}) => void;`,
         ];
       }),
     );
@@ -420,11 +440,16 @@ function compositionInterfaces(plan: ReactPlan): TypeDeclaration[] {
   return declarations;
 }
 
+/** The name a callback's type gives its one parameter: any name, never a keyword's. */
+const PARAMETER = "value";
+
 /** A function's parameters as a type writes them: each with its annotation, `unknown` without. */
 function parametersOf(fn: FunctionCode): string {
   return fn.parameters
-    .map((parameter) => {
-      const name = parameter.name ?? parameter.pattern!.code;
+    .map((parameter, index) => {
+      // A type takes no pattern with a default (TS2371): a pattern is a placeholder's name.
+      const name =
+        parameter.name ?? (fn.parameters.length > 1 ? `${PARAMETER}${index + 1}` : PARAMETER);
       const rest = parameter.rest ? "..." : "";
       const optional = parameter.optional || parameter.default ? "?" : "";
       return `${rest}${name}${optional}: ${parameter.type?.code ?? (parameter.rest ? "unknown[]" : "unknown")}`;
@@ -606,9 +631,13 @@ function renamedProperty(
 function rootForReact(
   root: ElementNode | FragmentNode,
   context: JsxContext,
+  plan: ReactPlan,
 ): ElementNode | FragmentNode {
-  if (root.kind === "Element") return forReact(root, context);
-  return { ...root, children: placed(root.children.map((child) => childForReact(child, context))) };
+  if (root.kind === "Element") return forReact(root, context, plan);
+  return {
+    ...root,
+    children: placed(root.children.map((child) => childForReact(child, context, plan))),
+  };
 }
 
 /** Children as their parent prints them, their keyed conditionals placed (`placeConditionals`). */
@@ -618,18 +647,18 @@ function placed(children: RenderNode[]): RenderNode[] {
 }
 
 /** {@link forReact} over a node, inside conditionals, lists, and composition's content too. */
-function childForReact(node: RenderNode, context: JsxContext): RenderNode {
+function childForReact(node: RenderNode, context: JsxContext, plan: ReactPlan): RenderNode {
   const children = (nodes: readonly RenderNode[]) =>
-    placed(nodes.map((child) => childForReact(child, context)));
+    placed(nodes.map((child) => childForReact(child, context, plan)));
   switch (node.kind) {
     case "Element":
-      return forReact(node, context);
+      return forReact(node, context, plan);
     case "If":
       return {
         ...node,
         branches: node.branches.map((branch) => ({
           ...branch,
-          children: branch.children.map((child) => childForReact(child, context)),
+          children: branch.children.map((child) => childForReact(child, context, plan)),
         })),
       };
     case "For":
@@ -637,11 +666,11 @@ function childForReact(node: RenderNode, context: JsxContext): RenderNode {
         ...node,
         body:
           node.body.kind === "Element"
-            ? forReact(node.body, context)
-            : (childForReact(node.body, context) as ComponentNode),
+            ? forReact(node.body, context, plan)
+            : componentForReact(node.body, context, plan),
       };
     case "Component":
-      return { ...node, fills: node.fills.map((fill) => fillForReact(fill, context, children)) };
+      return componentForReact(node, context, plan);
     case "SlotOutlet":
       return { ...node, fallback: children(node.fallback) };
     case "Dynamic":
@@ -649,7 +678,7 @@ function childForReact(node: RenderNode, context: JsxContext): RenderNode {
         ...node,
         children: children(node.children),
         ...(node.fills
-          ? { fills: node.fills.map((fill) => fillForReact(fill, context, children)) }
+          ? { fills: node.fills.map((fill) => fillForReact(fill, node, context, plan, children)) }
           : {}),
       };
     case "Text":
@@ -660,6 +689,20 @@ function childForReact(node: RenderNode, context: JsxContext): RenderNode {
   }
 }
 
+/** A component with its fills as React passes them ({@link fillForReact}). */
+function componentForReact(
+  node: ComponentNode,
+  context: JsxContext,
+  plan: ReactPlan,
+): ComponentNode {
+  const children = (nodes: readonly RenderNode[]) =>
+    placed(nodes.map((child) => childForReact(child, context, plan)));
+  return {
+    ...node,
+    fills: node.fills.map((fill) => fillForReact(fill, node, context, plan, children)),
+  };
+}
+
 /**
  * A fill as React passes it. A forwarded default slot is the children React renders, so it is
  * written as the component's own slot rendered there (`<Box>{children}</Box>`): JSX passes
@@ -667,7 +710,9 @@ function childForReact(node: RenderNode, context: JsxContext): RenderNode {
  */
 function fillForReact(
   fill: SlotFill,
+  node: ComponentNode | DynamicNode,
   context: JsxContext,
+  plan: ReactPlan,
   children: (nodes: readonly RenderNode[]) => RenderNode[],
 ): SlotFill {
   const own =
@@ -678,6 +723,21 @@ function fillForReact(
       ...rest,
       children: [{ kind: "SlotOutlet", slot: own.name, fallback: [], span: fill.span }],
     };
+  }
+  const component =
+    node.kind === "Component"
+      ? node.component
+      : node.candidates.find((candidate) => candidate.kind === "Component")?.component;
+  // A scoped default slot filled without a parameter is a render prop all the same: a parameter
+  // with no name marks it, so the printer passes it as one (`fillAttribute`).
+  if (
+    fill.slot === "default" &&
+    !fill.parameter &&
+    !fill.forward &&
+    component !== undefined &&
+    plan.composition.scoped(component, "default")
+  ) {
+    return { ...fill, parameter: { span: fill.span }, children: children(fill.children) };
   }
   return { ...fill, children: children(fill.children) };
 }
@@ -692,12 +752,12 @@ function fillForReact(
  * and the target throws on one rather than drop it (a target that throws is reported by the
  * compiler).
  */
-function forReact(node: ElementNode, context: JsxContext): ElementNode {
+function forReact(node: ElementNode, context: JsxContext, plan: ReactPlan): ElementNode {
   if (node.tag === "title") return { ...node, children: titleChildren(node.children, context) };
   if (node.tag !== "textarea" || node.children.length === 0) {
     return {
       ...node,
-      children: placed(node.children.map((child) => childForReact(child, context))),
+      children: placed(node.children.map((child) => childForReact(child, context, plan))),
     };
   }
   const texts = node.children.filter((child): child is TextNode => child.kind === "Text");

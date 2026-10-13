@@ -8,8 +8,8 @@ component, written as a React developer would write it (plan §6):
   `function Plain(props: PlainProps)` with `props.label` kept. A prop that no expression reads is
   left out with its default, and a parameter nothing reads is `_props` (an object form's keeps a
   name that is `_` and more, and takes `_` before any other: `_props`, `__`): unused bindings
-  fail L5. Every component but one that turns fallthrough off also takes `className` and `style`
-  (see Composition below), so only such a component has nothing to read.
+  fail L5. A component whose root is an element or a component, and that keeps fallthrough on,
+  also takes `className` and `style` (see Composition below).
 - expressions as the source writes them, a ref's value read as React's (`count.value` is
   `count`); conditionals as ternary chains ending in `null` (never `&&`, which renders a `0`);
   lists as `.map((item, index) => <li key={…}>…)`, with the index only when something reads it;
@@ -126,26 +126,31 @@ to a component's props is declared in generated interfaces beside its events', a
 (`src/composition.ts` plans them, `src/compose.ts` prints the template's side; ADR-0054 records
 the mapping):
 
-| Source                                                      | React output                                                                                                                                                                                                                                   |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `defineSlots<{ default?(): Element; title?(): Element }>()` | `children?: ReactNode`, `title?: ReactNode` in `<Name>Slots`; a scoped slot is a render prop, `renderItem?: (props: P) => ReactNode` (oxlint's `react/no-unstable-nested-components` exempts `render…` props)                                  |
-| `{slots.title?.() ?? "Untitled"}`, `slots.title ? … : …`    | `{title ?? "Untitled"}`, `{renderItem?.({ item })}`; presence is `title != null`                                                                                                                                                               |
-| A consumer's fills                                          | the children, `title={<h2 />}`, `renderItem={({ item }) => …}`; a forwarded slot passes the component's own (`title={title}`), and a forwarded default slot is the children (`<Box>{children}</Box>`)                                          |
-| `defineModel<number>("value", { default: 0 })`              | `value?` and `onValueChange?` in `<Name>Models`. A model nothing writes is its prop with its default; a written one keeps local state while unbound (`valueProp === undefined`), a write sets it and calls `onValueChange`, through a mirror   |
-| `v-model:value={cups.value}`                                | `value={cups} onValueChange={setCups}`                                                                                                                                                                                                         |
-| `v-model` on a control                                      | `value` or `checked` with `onChange`; a checkbox group through `toggle`, a `<select multiple>` from its `selectedOptions`; a number or range input, and `trim`, `lazy` and `number`, through the `useModelText` hook, spread on the field      |
-| `class` and `style` on a component                          | `className?` and `style?` in `<Name>Attributes`, merged into the root: `className={cx("tag", className)}`, `style={{ color: "red", ...style }}` (the consumer's declarations win), or passed on to a root component                            |
-| `defineExpose({ focus })`, `ref={field}`                    | a `ref?: Ref<NameHandle>` prop, set with `useImperativeHandle`; the parent's ref is `useRef<T>(null)`                                                                                                                                          |
-| `InjectionKey<T>`, `provide`, `inject`                      | `export const Key = createContext<T \| undefined>(undefined)` in the output of its module's main component, `<Key value={keyValue}>` around the template (a snapshot `useState`), `use(Key) ?? fallback`; a provided ref is `refObject(count)` |
-| `<component is={…}>`                                        | `const Tag = …;` before the return, `<Tag>`                                                                                                                                                                                                    |
+| Source                                                      | React output                                                                                                                                                                                                                                                                             |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `defineSlots<{ default?(): Element; title?(): Element }>()` | `children?: ReactNode`, `title?: ReactNode` in `<Name>Slots`; a scoped slot is a render prop, `renderItem?: (props: P) => ReactNode` (oxlint's `react/no-unstable-nested-components` exempts `render…` props)                                                                            |
+| `{slots.title?.() ?? "Untitled"}`, `slots.title ? … : …`    | `{title ?? "Untitled"}`, `{renderItem?.({ item })}`; presence is `title != null`                                                                                                                                                                                                         |
+| A consumer's fills                                          | the children, `title={<h2 />}`, `renderItem={({ item }) => …}`; a forwarded slot passes the component's own (`title={title}`), and a forwarded default slot is the children (`<Box>{children}</Box>`)                                                                                    |
+| `defineModel<number>("value", { default: 0 })`              | `value?` and `onValueChange?` in `<Name>Models`. A model nothing writes is its prop with its default; a written one keeps local state while unbound (`valueProp === undefined`), a write sets it and calls `onValueChange`, through a mirror                                             |
+| `v-model:value={cups.value}`                                | `value={cups} onValueChange={setCups}`                                                                                                                                                                                                                                                   |
+| `v-model` on a control                                      | `value` or `checked` with `onChange`; a checkbox group through `toggle`, a `<select multiple>` from its `selectedOptions`; a number or range input, and `trim`, `lazy` and `number`, through the `useModelText` hook, spread on the field                                                |
+| `class` and `style` on a component                          | `className?` and `style?` in `<Name>Attributes`, merged into the root: `className={cx("tag", className)}`, `style={{ color: "red", ...style }}` (the consumer's declarations win), or passed on to a root component                                                                      |
+| `defineExpose({ focus })`, `ref={field}`                    | a `ref?: Ref<NameHandle>` prop, set with `useImperativeHandle`; the parent's ref is `useRef<T>(null)`                                                                                                                                                                                    |
+| `InjectionKey<T>`, `provide`, `inject`                      | `export const Key = createContext<T \| undefined>(undefined)` in the output of its module's main component, `<Key value={keyValue}>` around the template (a snapshot `useState`), `use(Key) ?? fallback`; a provided ref is `refObject(count)`, a `value` getter over the state's mirror |
+| `<component is={…}>`                                        | `const Tag = …;` before the return, `<Tag>`; in a list, a branch or a scoped fill, an arrow called in place that declares it                                                                                                                                                             |
 
 The `useModelText` hook keeps what the person typed as state of its own, so a controlled field
 shows it while the model holds the trimmed or cast value, as Vue's `vModelText` does; it writes on
-every edit, or as the field loses focus for `lazy`. Two cells of ADR-0058's open item are measured
-here: react-dom writes a controlled checkbox's and radio's `checked` attribute and a controlled
-`<textarea>`'s text in step with their state, so `models/checkbox-group`, `models/radio` and
-`models/textarea` are quarantined until the normaliser leaves those out as it does an input's
-`value`.
+every edit, or as the field loses focus for `lazy` (Enter in a text field writes nothing then). A
+`v-model`'s handler that shares a React prop with a listener of the element (a `<select>`'s
+`onChange`, a field's `onBlur`) runs first in the listener's handler, as Vue adds the model's
+listener first. A written model's local state holds its value in an object, new on every write, so
+a write always renders: a parent that holds its value resets the model's mirror. Two cells of
+ADR-0058's open item are measured here: react-dom writes a controlled checkbox's or radio's first
+`checked` state as its attribute and never updates it, and keeps a controlled `<textarea>`'s text
+in step with its state, so `models/checkbox-group`, `models/radio` and `models/textarea` are
+quarantined until the shared normaliser rule for a native control's initial state lands. A
+`<textarea>` filled from its text also starts the caret at the text's start on focus.
 
 ## Toolchain
 

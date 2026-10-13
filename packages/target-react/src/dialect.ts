@@ -72,7 +72,7 @@ export function reactDialect(
 
     classAttribute(attribute, element, context) {
       // The root's `class` is the consumer's alone: as it is (ADR-0054).
-      if (composer.bareClasses.has(attribute) && !spreadClassReads(element, context).length) {
+      if (composer.bareClasses.has(attribute) && !spreadsClass(element)) {
         const [only] = attribute.items;
         if (only?.kind === "Dynamic") {
           return [
@@ -104,11 +104,9 @@ export function reactDialect(
       if (fallthrough && attribute.declarations.length === 0) {
         return [js.jsxAttribute("style", js.jsxExpressionContainer(js.identifier(own!)))];
       }
-      const object: Expression = styleObject(attribute, context, "camel");
+      const object = styleObject(attribute, context, "camel");
       // A consumer's declarations win over the root's own (ADR-0054).
-      if (fallthrough) {
-        (object as ObjectExpression).properties.push(js.spreadElement(js.identifier(own!)));
-      }
+      if (fallthrough) object.properties.push(js.spreadElement(js.identifier(own!)));
       // React's `CSSProperties` declares no custom properties, so an object holding one is
       // typed as its own (tsgo rejects the literal otherwise).
       const custom = attribute.declarations.some(({ property }) => property.startsWith("--"));
@@ -161,6 +159,14 @@ export function reactDialect(
     modelBinding: (attribute, node, context) => composer.modelBinding(attribute, node, context),
     dynamic: (node, context) => composer.dynamic(node, context),
   };
+}
+
+/** Whether a spread on the element carries a `class`, which the element's `class` merges. */
+function spreadsClass(element: ElementNode): boolean {
+  return element.attributes.some(
+    (attribute) =>
+      attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "class"),
+  );
 }
 
 /** `name={value}`, under the name React spells the attribute with. */

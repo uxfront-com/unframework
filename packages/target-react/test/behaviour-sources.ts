@@ -7,6 +7,18 @@
 
 /** Component name → source. */
 export const BEHAVIOUR_SOURCES: Readonly<Record<string, string>> = {
+  // A bound model whose parent holds its value (ADR-0054): every write starts from that value.
+  HeldStepper: `import { defineModel } from "unframework";
+
+export default function HeldStepper() {
+  const value = defineModel<number>("value", { default: 0 });
+  return (
+    <button type="button" onClick={() => (value.value -= 1)}>
+      Fewer
+    </button>
+  );
+}
+`,
   Phases: `import { defineEmits, ref } from "unframework";
 
 export default function Phases() {

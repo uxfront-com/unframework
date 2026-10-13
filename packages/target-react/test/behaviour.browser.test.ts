@@ -111,6 +111,17 @@ async function act(action: () => Promise<unknown>): Promise<void> {
 }
 
 describe("react output in the browser", () => {
+  it("asks a parent that holds a model's value for the same value on every write", async () => {
+    const changes: unknown[] = [];
+    await start(await component("HeldStepper"), [], {
+      value: 5,
+      onValueChange: (value: unknown) => void changes.push(value),
+    });
+    for (let click = 0; click < 4; click++) await act(() => userEvent.click(button("Fewer")));
+    expect(changes).toEqual([4, 4, 4, 4]);
+    expect(logged).toEqual([]);
+  });
+
   it("reads a write in another listener of the same event and after a called function", async () => {
     await start(await component("Phases"), ["logged", "total"]);
     await act(() => userEvent.click(button("Log")));

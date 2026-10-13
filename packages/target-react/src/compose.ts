@@ -7,6 +7,7 @@ import {
   expressionCode,
   handlerText,
   js,
+  jsxAttributeValue,
   jsxBranch,
   jsxDynamic,
   jsxFillValue,
@@ -30,6 +31,7 @@ import type {
 } from "@unframework/ir";
 
 import { slotProp } from "./composition.ts";
+import type { ReactListeners } from "./listeners.ts";
 import type { ReactPlan } from "./plan.ts";
 import type { ReactCode } from "./rules.ts";
 import { locals } from "./setup.ts";
@@ -38,6 +40,20 @@ type JsxAttributeItem =
   | ReturnType<typeof js.jsxAttribute>
   | ReturnType<typeof js.jsxSpreadAttribute>;
 type AstExpression = Parameters<typeof js.jsxExpressionContainer>[0];
+
+/** A handler a `v-model` adds: as a function, and as statements given the event's name. */
+export interface ModelHandler {
+  code: string;
+  statements: (event: string) => string[];
+}
+
+/** What a control's `v-model` writes on its element (ReactComposer.modelParts). */
+export interface ModelParts {
+  state: [string, string][];
+  handlers: Map<string, ModelHandler>;
+  /** The `modelText` field, whose props spread where no listener shares one. */
+  field?: string;
+}
 
 /** Prints the composition of a planned component's template. */
 export class ReactComposer {
@@ -49,6 +65,8 @@ export class ReactComposer {
   readonly fallthroughStyles: WeakSet<StyleAttribute> = new WeakSet();
   /** The `modelText` fields, in render order. */
   readonly fields: string[] = [];
+  readonly #parts = new WeakMap<ModelAttribute, ModelParts>();
+  #listeners: ReactListeners | undefined;
 
   constructor(plan: ReactPlan, code: ReactCode) {
     this.#plan = plan;
@@ -79,14 +97,21 @@ export class ReactComposer {
    * A fill of a child's slot as its prop: `title={<h2 />}`, a scoped one as a render prop,
    * `renderItem={({ item }) => …}`, and a forwarded one the component's own slot.
    */
-  fillAttribute(fill: SlotFill, _node: ComponentNode, context: JsxContext): JsxAttributeItem[] {
-    const scoped =
-      fill.parameter !== undefined ||
-      (fill.forward !== undefined && this.#plan.composition.slots.get(fill.forward)!.scoped);
+  fillAttribute(fill: SlotFill, node: ComponentNode, context: JsxContext): JsxAttributeItem[] {
+    // The child's declaration decides: a scoped slot takes a function, with a parameter or not.
+    const scoped = this.#plan.composition.scoped(node.component, fill.slot);
+    const unnamed = fill.parameter && !fill.parameter.name && !fill.parameter.pattern;
+    const value =
+      scoped && !fill.forward && (!fill.parameter || unnamed)
+        ? js.arrowFunction([], jsxBranch(fill.children, context))
+        : jsxFillValue(fill, context);
+    // A fill that is text alone is the prop's value as written (`title="Sunset"`).
+    const text =
+      value.type === "Literal" && typeof value.value === "string" ? value.value : undefined;
     return [
       js.jsxAttribute(
         slotProp(fill.slot, scoped),
-        js.jsxExpressionContainer(jsxFillValue(fill, context)),
+        text === undefined ? js.jsxExpressionContainer(value) : jsxAttributeValue(text),
       ),
     ];
   }
@@ -120,11 +145,39 @@ export class ReactComposer {
     element: ElementNode,
     context: JsxContext,
   ): JsxAttributeItem[] {
-    const read = expressionCode(attribute.value, context);
-    const binding = this.#bound(attribute.value);
+    const parts = this.modelParts(attribute, element, context);
+    // A handler a listener of the element shares runs first in the listener's (ReactListeners).
+    const merged = this.#listeners!.modelHeads(element, context);
     const container = (code: string) =>
       js.jsxExpressionContainer(context.placeholders.expression(code));
+    if (parts.field && ![...parts.handlers.keys()].some((prop) => merged.has(prop))) {
+      return [js.jsxSpreadAttribute(js.identifier(parts.field))];
+    }
+    return [
+      ...parts.state.map(([name, code]) => js.jsxAttribute(name, container(code))),
+      ...[...parts.handlers]
+        .filter(([prop]) => !merged.has(prop))
+        .map(([prop, handler]) => js.jsxAttribute(prop, container(handler.code))),
+    ];
+  }
+
+  /** Connects the listeners, which run a `v-model`'s handler first where they share its prop. */
+  connect(listeners: ReactListeners): void {
+    this.#listeners = listeners;
+  }
+
+  /**
+   * What a form control's `v-model` writes on the element, once: its state props, and its
+   * handlers by React prop, each as a function and as the statements a listener's handler that
+   * shares the prop runs first (Vue adds the model's listener before the element's own).
+   */
+  modelParts(attribute: ModelAttribute, element: ElementNode, context: JsxContext): ModelParts {
+    const known = this.#parts.get(attribute);
+    if (known) return known;
+    const read = expressionCode(attribute.value, context);
+    const binding = this.#bound(attribute.value);
     const { control } = attribute;
+    let parts: ModelParts;
     if (control === "number" || attribute.trim || attribute.lazy || attribute.number) {
       const options = [
         ...(attribute.lazy ? ["lazy: true"] : []),
@@ -137,52 +190,79 @@ export class ReactComposer {
       const { value } = locals([read, ...this.#assign(binding, "")], ["value"]);
       const write = this.#writer(binding, value);
       this.fields.push(`const ${field} = ${helper}(${read}, ${write}, { ${options.join(", ")} });`);
-      return [js.jsxSpreadAttribute(js.identifier(field))];
-    }
-    const current = this.#clientRead(attribute.value);
-    const box = boxValue(element, context);
-    let state: [string, string];
-    let written: string;
-    switch (control) {
-      case "checkbox":
-        state = ["checked", read];
-        written = "EVENT.target.checked";
-        break;
-      case "checkbox-group": {
-        const toggle = (this.#plan.helpers.toggle ??= this.#plan.names.claim("toggle"));
-        state = ["checked", `${read}.includes(${box})`];
-        written = `${toggle}(${current}, ${box}, EVENT.target.checked)`;
-        break;
+      parts = {
+        state: [["value", `${field}.value`]],
+        handlers: new Map<string, ModelHandler>([
+          [
+            "onChange",
+            { code: `${field}.onChange`, statements: (event) => [`${field}.onChange(${event})`] },
+          ],
+          ["onFocus", { code: `${field}.onFocus`, statements: () => [`${field}.onFocus()`] }],
+          ["onBlur", { code: `${field}.onBlur`, statements: () => [`${field}.onBlur()`] }],
+        ]),
+        field,
+      };
+    } else {
+      const current = this.#clientRead(attribute.value);
+      const box = boxValue(element, context);
+      // Vue's `vModelText` and `vModelSelect` show `null` and `undefined` as nothing.
+      const shown = this.#nullish(binding) ? `${read} ?? ""` : read;
+      let state: [string, string];
+      let written: string;
+      switch (control) {
+        case "checkbox":
+          state = ["checked", read];
+          written = "EVENT.target.checked";
+          break;
+        case "checkbox-group": {
+          const toggle = (this.#plan.helpers.toggle ??= this.#plan.names.claim("toggle"));
+          state = ["checked", `${read}.includes(${box})`];
+          written = `${toggle}(${current}, ${box}, EVENT.target.checked)`;
+          break;
+        }
+        case "radio":
+          state = ["checked", `${read} === ${box}`];
+          written = box;
+          break;
+        case "select-multiple":
+          state = ["value", read];
+          written = "Array.from(EVENT.target.selectedOptions, (option) => option.value)";
+          break;
+        case "text":
+        case "textarea":
+        case "select":
+          state = ["value", shown];
+          written = "EVENT.target.value";
+          break;
+        default:
+          return control satisfies never;
       }
-      case "radio":
-        state = ["checked", `${read} === ${box}`];
-        written = box;
-        break;
-      case "select-multiple":
-        state = ["value", read];
-        written = "Array.from(EVENT.target.selectedOptions, (option) => option.value)";
-        break;
-      case "text":
-      case "textarea":
-      case "select":
-        state = ["value", read];
-        written = "EVENT.target.value";
-        break;
-      default:
-        return control satisfies never;
+      const statements = (event: string) =>
+        this.#assign(binding, written.replaceAll("EVENT", event));
+      const { event } = locals([read, current, box, ...this.#assign(binding, "")], ["event"]);
+      const lines = statements(event);
+      const body =
+        lines.length === 1 ? lines[0]! : `{\n${lines.map((line) => `${line};`).join("\n")}\n}`;
+      const code = `(${written.includes("EVENT") ? event : ""}) => ${body}`;
+      parts = {
+        state: [state],
+        handlers: new Map<string, ModelHandler>([["onChange", { code, statements }]]),
+      };
     }
-    const { event } = locals([read, current, box, ...this.#assign(binding, "")], ["event"]);
-    const statements = this.#assign(binding, written.replaceAll("EVENT", event));
-    const uses = written.includes("EVENT");
-    const body =
-      statements.length === 1
-        ? statements[0]!
-        : `{\n${statements.map((s) => `${s};`).join("\n")}\n}`;
-    const handler = `(${uses ? event : ""}) => ${body}`;
-    return [
-      js.jsxAttribute(state[0], container(state[1])),
-      js.jsxAttribute("onChange", container(handler)),
-    ];
+    this.#parts.set(attribute, parts);
+    return parts;
+  }
+
+  /** Whether a state or a model may hold `null` or `undefined`, as its declaration says. */
+  #nullish(binding: BindingId): boolean {
+    const item = this.#plan.component.setup.find(
+      (entry) => (entry.kind === "State" || entry.kind === "Model") && entry.binding === binding,
+    );
+    const type = item && "type" in item ? (item.type?.code ?? "") : "";
+    if (/\b(?:null|undefined)\b/.test(type)) return true;
+    if (item?.kind === "State")
+      return !item.initial || /^(?:null|undefined)$/.test(item.initial.code);
+    return item?.kind === "Model" && !item.default && !item.required;
   }
 
   /**
@@ -214,7 +294,15 @@ export class ReactComposer {
 
   /** `<component is>` (ADR-0054): the element under the `const` the body declares. */
   dynamic(node: DynamicNode, context: JsxContext): AstExpression {
-    return jsxDynamic(node, this.#plan.composition.dynamic.get(node.span.start)!.name, context);
+    const { name, hoisted } = this.#plan.composition.dynamic.get(node.span.start)!;
+    const element = jsxDynamic(node, name, context);
+    if (hoisted) return element;
+    // In a list, a branch or a scoped fill, what chooses the candidate is that scope's: the
+    // `const` is declared where it renders.
+    const declaration = context.placeholders.statements(
+      `const ${name} = ${expressionCode(node.is, context)};`,
+    );
+    return js.callExpression(js.arrowFunction([], [declaration, js.returnStatement(element)]), []);
   }
 
   /** The state or model a `v-model`'s value names. */
@@ -261,7 +349,10 @@ export class ReactComposer {
       statements.push(`${model.mirror}.current = ${value}`);
       written = `${model.mirror}.current`;
     }
-    statements.push(`${model.local!.setter}(${written})`, `${model.eventLocal}?.(${written})`);
+    statements.push(
+      `${model.local!.setter}({ value: ${written} })`,
+      `${model.eventLocal}?.(${written})`,
+    );
     return statements;
   }
 }

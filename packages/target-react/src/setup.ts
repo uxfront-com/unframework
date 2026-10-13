@@ -442,20 +442,24 @@ function printItem(plan: ReactPlan, code: ReactCode, item: SetupItem): Printed {
  * with its default. One that is written keeps local state, seeded by its default, which shows while
  * the parent binds nothing (`value === undefined`); a write sets it and calls the change
  * callback. Client code reads and writes it through a mirror, synced with what the component
- * renders after every render, so a write of the parent's reaches it too.
+ * renders after every render. The local state holds the value in an object, new on every write,
+ * so a write always renders: a parent that holds its value (a clamped stepper) then resets the
+ * mirror, where React would skip setting a value equal to the last.
  */
 function printModel(plan: ReactPlan, item: ModelItem): Printed {
   const model = plan.composition.models.get(item.binding)!;
   if (!model.local) return [];
   const hook = (name: string) => plan.names.add("react", name);
-  const type = item.type ? `<${item.type.code}>` : "";
-  const initial = item.default ? item.default.code : "";
+  const valueType =
+    item.default || item.required ? item.type?.code : item.type && `${item.type.code} | undefined`;
+  const type = valueType ? `<{ value: ${valueType} }>` : "";
+  const initial = item.default ? item.default.code : "undefined";
   const { value, setter } = model.local;
   const printed: Printed = [
-    ["body", `const [${value}, ${setter}] = ${hook("useState")}${type}(${initial});`],
+    ["body", `const [${value}, ${setter}] = ${hook("useState")}${type}({ value: ${initial} });`],
     [
       "body",
-      `const ${model.name} = ${model.propLocal} === undefined ? ${value} : ${model.propLocal};`,
+      `const ${model.name} = ${model.propLocal} === undefined ? ${value}.value : ${model.propLocal};`,
     ],
   ];
   if (model.mirror) {
@@ -472,13 +476,20 @@ function printModel(plan: ReactPlan, item: ModelItem): Printed {
 /**
  * A provided value (ADR-0054): the context's value around the template. The setup provides it
  * once, as Vue's does (ADR-0046), so it is a snapshot; a ref the key holds is passed as an object
- * with its `value` (`refObject`), new when the state changes, so its consumers render again.
+ * with a `value` getter (`refObject`), new when the state changes, so its consumers render again.
  */
 function printProvide(plan: ReactPlan, code: ReactCode, item: ProvideItem): Printed {
   const local = plan.composition.provided.get(item)!;
   const value = code.code(item.value, "pure");
   if (keyRef(plan.module, item.key) && wholeReference(item.value)) {
-    return [["body", `const ${local} = ${refObject(plan)}(${value});`]];
+    const [reference] = item.value.refs;
+    const mirror =
+      reference?.kind === "Binding"
+        ? (plan.state.get(reference.binding)?.mirror ??
+          plan.composition.models.get(reference.binding)?.mirror)
+        : undefined;
+    const read = mirror ? `, () => ${mirror}.current` : "";
+    return [["body", `const ${local} = ${refObject(plan)}(${value}${read});`]];
   }
   return [["body", `const [${local}] = ${plan.names.add("react", "useState")}(${once(value)});`]];
 }

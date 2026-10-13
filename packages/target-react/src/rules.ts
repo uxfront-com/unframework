@@ -141,7 +141,7 @@ export function reactCode(plan: ReactPlan): ReactCode {
       const single = plan.writePositions.get(original(write.span.start)) === "single";
       // A model keeps its local state while unbound, and asks its parent to change (ADR-0054).
       const sets = model
-        ? [`${model.local!.setter}(${mirror})`, `${model.eventLocal}?.(${mirror})`]
+        ? [`${model.local!.setter}({ value: ${mirror} })`, `${model.eventLocal}?.(${mirror})`]
         : [`${plan.state.get(binding.id)!.setter!}(${mirror})`];
       expansions.set(marker, {
         statements: [update, ...sets],
