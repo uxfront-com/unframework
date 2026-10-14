@@ -653,7 +653,7 @@ describe("canaries", () => {
       const { outputs } = await compileWith("L10-root-inverted", target);
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(1\)/g), target).toHaveLength(1);
-      // Angular binds the root's style, which merges the consumer's (ADR-0056).
+      // Angular binds the root's style, so that it can merge the consumer's (ADR-0056).
       expect(contents, target).toMatch(
         target === "angular"
           ? /<section\b[^>]*\[style\]="\{ filter: 'invert\(1\)'/
