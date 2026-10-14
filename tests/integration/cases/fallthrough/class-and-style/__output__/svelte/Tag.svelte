@@ -26,6 +26,10 @@
       if (quote) {
         if (char === "\\") index++;
         else if (char === quote) quote = "";
+      } else if (char === "\\") index++;
+      else if (char === "/" && text[index + 1] === "*") {
+        const close = text.indexOf("*/", index + 2);
+        index = close === -1 ? text.length : close + 1;
       } else if (char === '"' || char === "'") quote = char;
       else if (char === "(") depth++;
       else if (char === ")") depth--;
