@@ -535,8 +535,8 @@ describe("children (ADR-0053)", () => {
           id: form,
         });
         // A file that only starts with the module's name is no segment: its imports are its own.
-        for (const importer of [`${form}_helpers.ts`, `${form}_assets/util.js`]) {
-          expect(await client.pluginContainer.resolveId("./Field", importer)).toBeNull();
+        for (const lookalike of [`${form}_helpers.ts`, `${form}_assets/util.js`]) {
+          expect(await client.pluginContainer.resolveId("./Field", lookalike)).toBeNull();
         }
       } finally {
         await server.close();
