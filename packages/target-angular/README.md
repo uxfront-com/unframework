@@ -248,9 +248,10 @@ above, helper `uf<Event><Option>`), `use-id` (emulated, `nextId`), `next-tick` (
 output still compiles: default-slot presence reads `true`, and the forwarded default slot
 re-projects `<ng-content />`.
 
-Chrome's accessible name puts a space at every `display: contents` element, the host included, so
-two components rendered side by side as inline content read `Build passing` where the other
-targets read `Buildpassing`: `harness/quarantine/angular.ts` lists the cells, pending a decision.
+Inline content on either side of a child component's host reads with a space in the accessible
+name: Chrome adds one at every `display: contents` element, so Angular reads `Build passing` where
+the other targets read `Buildpassing`. `harness/quarantine/angular.ts` lists the cells until M3's follow-up on
+Angular's host settles the difference.
 
 ## Toolchain
 

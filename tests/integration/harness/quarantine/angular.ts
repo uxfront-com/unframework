@@ -6,10 +6,11 @@ import type { QuarantineEntry } from "@unframework/testing/node";
  * Chrome's accessible name puts a space at every `display: contents` element, and Angular's host
  * element is one (ADR-0010): two components rendered side by side as inline content read
  * "Build passing" where every other target reads "Buildpassing". The DOM, the pixels and the
- * behaviour match; the host strategy, or a declared difference, needs a decision.
+ * behaviour match. M3's follow-up on Angular's host settles it: a difference declared per target,
+ * or attribute selectors for a single-root component.
  */
 const HOST_NAME_SPACE =
-  "Chrome's accessible name puts a space at Angular's `display: contents` host (ADR-0010) between inline siblings.";
+  "Chrome's accessible name puts a space at Angular's `display: contents` host (ADR-0010) between inline siblings, until M3's follow-up on Angular's host declares the difference or changes the host.";
 
 export const QUARANTINE: readonly QuarantineEntry[] = [
   {
