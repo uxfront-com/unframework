@@ -850,9 +850,9 @@ function declaredQrls(
       need(listener.handler.binding);
     }
   }
-  // A fill calls a setup function through its QRL.
+  // A fill writes its calls of setup functions in place (./composition.ts `fillExpressions`).
   for (const expression of fillExpressions(component)) {
-    visit(expression, "expression", false, false);
+    visit(expression, "expression", true, false);
   }
   // What a component exposes, its consumer calls as QRLs (./composition.ts).
   for (const id of component.exposes?.functions ?? []) if (client(id)) need(id);

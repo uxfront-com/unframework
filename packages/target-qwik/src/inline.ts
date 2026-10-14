@@ -301,7 +301,7 @@ export function callSites(code: string, kind: CodeKind, discarded = false): Map<
  * assertion function as a `function` (TypeScript asserts through a `const` only when its type is
  * written, TS2775).
  */
-function localDeclaration(name: string, target: InlineFunction): string {
+export function localDeclaration(name: string, target: InlineFunction): string {
   const fn: FunctionCode = { ...target.fn, parameters: [...target.parameters] };
   const asserts = /^asserts\s/.test(fn.returnType?.code.trim() ?? "");
   if (target.declaration || asserts) return functionSource(fn, target.body, { name });

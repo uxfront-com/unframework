@@ -221,7 +221,7 @@ describe("qwik target: render callbacks", () => {
     expect(contents).toContain("{items.map((item) => {\n          const Tag = item.tag;");
   });
 
-  it("calls a setup function from a fill through its QRL", async () => {
+  it("declares a setup function a fill calls in the fill, so the fill renders at once", async () => {
     const contents = await emitSource(
       `import { defineSlots, ref } from "unframework";
 import type { Element } from "unframework";
@@ -231,17 +231,88 @@ export default function Names() {
   function format(name: string) {
     return prefix.value + name;
   }
-  return <List>{{ item: ({ item }) => <b>{format(item)}</b> }}</List>;
+  function ok(name: string) {
+    return name.length > prefix.value.length;
+  }
+  return (
+    <List>
+      {{
+        item: ({ item }) => (
+          <b class={{ on: ok(item) }} style={{ color: format(item) }}>
+            {format(item).toUpperCase()}
+            {ok(item) ? <i>long</i> : null}
+          </b>
+        ),
+        group: ({ items }) => (
+          <ul>
+            {items.map((each) => (
+              <li key={each}>{format(each).toUpperCase()}</li>
+            ))}
+          </ul>
+        ),
+      }}
+    </List>
+  );
 }
 
 function List() {
-  const slots = defineSlots<{ item?(props: { item: string }): Element }>();
-  return <ul><li>{slots.item?.({ item: "Ada" })}</li></ul>;
+  const slots = defineSlots<{
+    item?(props: { item: string }): Element;
+    group?(props: { items: string[] }): Element;
+  }>();
+  return (
+    <div>
+      {slots.item?.({ item: "Ada" })}
+      {slots.group?.({ items: ["Ada"] })}
+    </div>
+  );
 }`,
     );
-    expect(contents).toContain("const format = $((name: string) => {");
-    expect(contents).toContain("item$={({ item }) => <b>{format(item)}</b>}");
-    expect(contents).not.toContain("function format(");
+    // A `$` scope captures no plain function (optimizer C02), and a QRL's call is a promise until
+    // it loads: each fill declares what it calls, written in place, and nothing is awaited.
+    expect(contents).not.toContain("$((name: string)");
+    expect(contents).not.toContain("await");
+    expect(contents).not.toContain("async");
+    expect(contents).toContain(
+      "item$={({ item }) => {\n          function ok(name: string) {\n            return name.length > prefix.value.length;\n          }\n          function format(",
+    );
+    expect(contents).toContain(
+      "function format(name: string) {\n            return prefix.value + name;",
+    );
+    expect(contents).toContain(
+      "<b class={{ on: Boolean(ok(item)) }} style={{ color: format(item) }}>",
+    );
+    expect(contents).toContain("{format(each).toUpperCase()}");
+    expect(contents.match(/function format\(/g)).toHaveLength(2);
+  });
+
+  it("declares a `<component is>` in a list inside a fill in the list's callback", async () => {
+    // A fill's own props cannot name the candidates: the analyser reports UF3044 for them.
+    const contents = await emitSource(
+      `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+export interface Cell {
+  id: string;
+  tag: "h2" | "p";
+}
+
+export default function Page({ cells }: { cells: Cell[] }) {
+  return (
+    <Row>
+      {{ cell: () => <div>{cells.map((cell) => <section key={cell.id}><component is={cell.tag}>Cell</component></section>)}</div> }}
+    </Row>
+  );
+}
+
+function Row() {
+  const slots = defineSlots<{ cell?(): Element }>();
+  return <div>{slots.cell?.()}</div>;
+}`,
+    );
+    expect(contents).toContain("{cells.map((cell) => {\n");
+    expect(contents).toContain("const Tag = cell.tag;");
+    expect(contents).not.toMatch(/=> \{\n {4}const Tag/);
   });
 
   it("selects an option without a value by its text", async () => {
@@ -255,6 +326,27 @@ export default function Pick() {
     );
     expect(contents).toContain('<option selected={currentLetter === "a"}>a</option>');
     expect(contents).toContain('<option selected={currentLetter === "b"}>b</option>');
+  });
+
+  it("selects an option by the text its expressions render, as the DOM reads it", async () => {
+    const contents = await emitSource(
+      `import { ref } from "unframework";
+
+export default function Pick({ sizes, label }: { sizes: number[]; label: string }) {
+  const size = ref("2");
+  return (
+    <select v-model={size.value}>
+      {sizes.map((n) => (
+        <option key={n}>{n}</option>
+      ))}
+      <option> {label}! </option>
+    </select>
+  );
+}`,
+    );
+    const read = '.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
+    expect(contents).toContain(`selected={currentSize === \`\${n}\`${read}}`);
+    expect(contents).toContain(`selected={currentSize === \` \${label}! \`${read}}`);
   });
 });
 

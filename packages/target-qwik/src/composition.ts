@@ -336,7 +336,11 @@ export class RenderLocals {
   readonly #declared = new Map<string, string>();
   readonly statements: string[] = [];
   /** The callbacks being printed (a list's, a fill's), innermost last, with what they declare. */
-  readonly #scopes: { statements: string[]; fill: boolean; async: boolean }[] = [];
+  readonly #scopes: {
+    statements: string[];
+    fill: boolean;
+    functions: Map<string, string>;
+  }[] = [];
 
   constructor(plan: SetupPlan) {
     this.#plan = plan;
@@ -362,12 +366,13 @@ export class RenderLocals {
 
   /** Starts printing a callback: a list's, or a fill's (a `$` scope). */
   enter(fill: boolean): void {
-    this.#scopes.push({ statements: [], fill, async: false });
+    this.#scopes.push({ statements: [], fill, functions: new Map() });
   }
 
-  /** Ends the callback {@link enter} started: what it declares, and whether it awaits. */
-  leave(): { statements: string[]; async: boolean } {
-    return this.#scopes.pop()!;
+  /** Ends the callback {@link enter} started: what it declares, its functions first. */
+  leave(): string[] {
+    const scope = this.#scopes.pop()!;
+    return [...scope.functions.values(), ...scope.statements];
   }
 
   /** Whether a fill's callback is being printed: its code runs as a `$` scope. */
@@ -375,10 +380,11 @@ export class RenderLocals {
     return this.#scopes.some((scope) => scope.fill);
   }
 
-  /** Marks the innermost fill's callback async: its code awaits a QRL. */
-  awaits(): void {
+  /** Declares a setup function in the innermost fill's callback, once. */
+  declareInFill(name: string, declaration: () => string): void {
     const fill = this.#scopes.findLast((scope) => scope.fill);
-    if (fill) fill.async = true;
+    if (!fill || fill.functions.has(name)) return;
+    fill.functions.set(name, declaration());
   }
 }
 
@@ -388,21 +394,15 @@ export class RenderLocals {
  */
 export function withLocals(
   arrow: ReturnType<typeof js.arrowFunction>,
-  scope: { statements: string[]; async: boolean },
+  statements: readonly string[],
   context: JsxContext,
 ): ReturnType<typeof js.arrowFunction> {
   const { body } = arrow;
-  if ((!scope.statements.length && !scope.async) || body.type === "BlockStatement") return arrow;
-  return js.arrowFunction(
-    arrow.params,
-    scope.statements.length
-      ? [
-          context.placeholders.statements(`${scope.statements.join("\n")}\n`),
-          js.returnStatement(body),
-        ]
-      : body,
-    { async: scope.async },
-  );
+  if (!statements.length || body.type === "BlockStatement") return arrow;
+  return js.arrowFunction(arrow.params, [
+    context.placeholders.statements(`${statements.join("\n")}\n`),
+    js.returnStatement(body),
+  ]);
 }
 
 /** Whether an expression reads a binding only a callback of the render declares. */
@@ -629,9 +629,9 @@ export function keyType(type: string, names: OutputNames): string {
 
 /**
  * The `selected` of an option without a `value`, whose value is its text, as the DOM's is
- * (whitespace stripped and collapsed): compared with the model as written, or as the one
- * expression the option renders. `undefined` for any other text, which the option then shows
- * unselected.
+ * (ASCII whitespace collapsed and stripped): compared with the model as written, or, where the
+ * text holds expressions, as the option renders it. `undefined` for an option holding anything
+ * else (a conditional), which then shows unselected.
  */
 export function textOptionSelected(
   option: ElementNode,
@@ -647,29 +647,36 @@ export function textOptionSelected(
   const [prefix, suffix] =
     model.control === "select-multiple" ? [`${read}.includes(`, ")"] : [`${read} === `, ""];
   const at = option.span;
-  const texts = option.children.filter((child) => child.kind === "Text");
-  if (texts.length === option.children.length) {
-    const text = texts
-      .map((child) => child.value)
-      .join("")
-      .replace(/[\t\n\f\r ]+/g, " ")
-      .trim();
-    const code = `${prefix}${JSON.stringify(text)}${suffix}`;
-    return bound(code, [], { start: at.start, end: at.start + code.length }, at);
+  const parts: (string | Expression)[] = [];
+  for (const child of option.children) {
+    if (child.kind === "Text") parts.push(child.value);
+    else if (child.kind === "Interpolation") parts.push(child.value);
+    else return undefined;
   }
-  const [only] = option.children;
-  if (option.children.length !== 1 || only?.kind !== "Interpolation") return undefined;
-  // The interpolation's own references keep their offsets in the comparison's code.
-  const { value } = only;
-  const span = { start: value.span.start - prefix.length, end: value.span.end + suffix.length };
-  return bound(`${prefix}${value.code}${suffix}`, value.refs, span, at);
+  let compared: string;
+  if (parts.every((part) => typeof part === "string")) {
+    compared = JSON.stringify(optionText(parts.join("")));
+  } else {
+    // The text the option renders, read as the DOM reads an option's value.
+    const template = parts
+      .map((part) =>
+        typeof part === "string"
+          ? part.replace(/[`\\]|\$\{/g, (found) => `\\${found}`)
+          : `\${${expressionCode(part, context)}}`,
+      )
+      .join("");
+    compared = `\`${template}\`.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")`;
+  }
+  const code = `${prefix}${compared}${suffix}`;
+  return {
+    kind: "Bound",
+    name: "selected",
+    value: { code, refs: [], span: { start: at.start, end: at.start + code.length } },
+    span: at,
+  };
 }
 
-function bound(
-  code: string,
-  refs: Expression["refs"],
-  span: Expression["span"],
-  at: Expression["span"],
-): BoundAttribute {
-  return { kind: "Bound", name: "selected", value: { code, refs, span }, span: at };
+/** An option's value from its text, as the DOM reads it: ASCII whitespace collapsed and stripped. */
+function optionText(text: string): string {
+  return text.replace(/[\t\n\f\r ]+/g, " ").replace(/^ | $/g, "");
 }

@@ -45,7 +45,6 @@ import {
   qwikStaticValue,
 } from "./attributes.ts";
 import type { Namespace } from "./attributes.ts";
-import { awaitQrlCalls } from "./calls.ts";
 import { qwikClassAttribute } from "./class.ts";
 import {
   componentHandler,
@@ -69,7 +68,7 @@ import { qwikEventProp } from "./events.ts";
 import { Listeners } from "./listeners.ts";
 import { OutputNames, planSetup } from "./plan.ts";
 import type { SetupPlan } from "./plan.ts";
-import { exposeStatement, printSetup } from "./setup.ts";
+import { exposeStatement, fillFunction, printSetup } from "./setup.ts";
 import { qwikTitles } from "./title.ts";
 import { isPrimitiveValue } from "./values.ts";
 
@@ -761,20 +760,20 @@ function qwikDialect(
       if (arrow?.type !== "ArrowFunctionExpression") return call;
       return { ...call, arguments: [withLocals(arrow, scope, context)] };
     },
-    // A fill's code runs as a `$` scope: a setup function is called through its QRL, awaited
-    // where its value is used in the code (./calls.ts).
+    // A fill's code runs as a `$` scope, which captures no plain function: a setup function it
+    // calls is declared in the fill's callback, its own calls written in place (./inline.ts), so
+    // the fill renders at once, with no promise in a condition, a class or a style.
     expression(expression, context, site) {
-      const fill = locals.inFill && fills.has(expression);
-      const code = rewriteExpression(
-        expression,
-        component,
-        context.rules!,
-        fill && site === "render" ? "client" : site,
-      );
-      if (!fill) return code;
-      const awaited = awaitQrlCalls(code, "expression", plan.qrls, plan.promiseQrls);
-      if (awaited.async) locals.awaits();
-      return awaited.code;
+      if (locals.inFill && fills.has(expression)) {
+        for (const reference of expression.refs) {
+          if (reference.kind !== "Binding" || !reference.call) continue;
+          const fn = plan.functions.get(reference.binding);
+          if (fn && fn.form !== "module") {
+            locals.declareInFill(fn.binding.name, () => fillFunction(plan, fn.item.binding));
+          }
+        }
+      }
+      return rewriteExpression(expression, component, context.rules!, site);
     },
     slotOutlet: (node, context) =>
       slotOutlet(node, context, composition, () => plan.names.core("Slot")),

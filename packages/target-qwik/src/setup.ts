@@ -36,7 +36,7 @@ import type {
 import { summarizeTracked } from "@unframework/ir";
 
 import { awaitQrlCalls, passElement } from "./calls.ts";
-import { inlineCalls } from "./inline.ts";
+import { inlineCalls, localDeclaration } from "./inline.ts";
 import type { InlineFunction, Inliner } from "./inline.ts";
 import {
   eventCallees,
@@ -554,6 +554,14 @@ export function inliner(plan: SetupPlan, synchronous: boolean): Inliner {
       return found;
     },
   };
+}
+
+/**
+ * A setup function as a fill declares it (./composition.ts): written in place, its own calls in
+ * place too, so the fill's `$` scope captures no plain function and renders at once.
+ */
+export function fillFunction(plan: SetupPlan, id: BindingId): string {
+  return localDeclaration(plan.functions.get(id)!.binding.name, inlineFunction(plan, id));
 }
 
 /** A client function as it is written in place: its own calls in place too. */
