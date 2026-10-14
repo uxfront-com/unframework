@@ -59,6 +59,19 @@ const CHIP =
 const CARD =
   "export default function Card({ label }: { label: string }) {\n  return <b>{label}</b>;\n}\n";
 
+/** A component that exposes one function and renders its label in a tag. */
+const exposing = (name: string, tag: string): string =>
+  [
+    'import { defineExpose } from "unframework";',
+    "",
+    `export default function ${name}({ label }: { label: string }) {`,
+    "  function bump() {}",
+    "  defineExpose({ bump });",
+    `  return <${tag}>{label}</${tag}>;`,
+    "}",
+    "",
+  ].join("\n");
+
 describe("svelte composition across files", () => {
   // `<component is>` whose condition reads a list's item or a fill's parameter: a `$derived` in
   // the script cannot see them, so the component renders under the condition where it sits.
@@ -404,17 +417,6 @@ describe("svelte composition across files", () => {
   // A template ref on `<component is>` chosen where it sits changes after the first render,
   // which Svelte wants declared with `$state` (`non_reactive_update`).
   it("declares a ref on a <component is> chosen in a block with $state", async () => {
-    const exposing = (name: string, tag: string) =>
-      [
-        'import { defineExpose } from "unframework";',
-        "",
-        `export default function ${name}({ label }: { label: string }) {`,
-        "  function bump() {}",
-        "  defineExpose({ bump });",
-        `  return <${tag}>{label}</${tag}>;`,
-        "}",
-        "",
-      ].join("\n");
     const rows = [
       'import { defineSlots } from "unframework";',
       'import type { Element } from "unframework";',
