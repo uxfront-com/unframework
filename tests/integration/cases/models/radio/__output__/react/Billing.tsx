@@ -17,10 +17,17 @@ export default function Billing({ className, style }: BillingAttributes) {
           type="radio"
           name="plan"
           value="monthly"
-          checked={plan === "monthly"}
-          onChange={() => {
-            planRef.current = "monthly";
-            setPlan(planRef.current);
+          defaultChecked={plan === "monthly"}
+          ref={(element) => {
+            if (!element) return undefined;
+            element.checked = plan === "monthly";
+            const stop = listen(element, "change", () => {
+              planRef.current = "monthly";
+              setPlan(planRef.current);
+            });
+            return () => {
+              stop();
+            };
           }}
         />{" "}
         Monthly
@@ -30,10 +37,17 @@ export default function Billing({ className, style }: BillingAttributes) {
           type="radio"
           name="plan"
           value="yearly"
-          checked={plan === "yearly"}
-          onChange={() => {
-            planRef.current = "yearly";
-            setPlan(planRef.current);
+          defaultChecked={plan === "yearly"}
+          ref={(element) => {
+            if (!element) return undefined;
+            element.checked = plan === "yearly";
+            const stop = listen(element, "change", () => {
+              planRef.current = "yearly";
+              setPlan(planRef.current);
+            });
+            return () => {
+              stop();
+            };
           }}
         />{" "}
         Yearly
@@ -50,4 +64,18 @@ export default function Billing({ className, style }: BillingAttributes) {
       </button>
     </fieldset>
   );
+}
+
+/**
+ * Listens to a DOM event natively, where React's synthetic event would not keep the DOM's
+ * semantics, and gives back what stops it: the cleanup a ref callback returns.
+ */
+function listen<K extends keyof HTMLElementEventMap>(
+  element: EventTarget | null,
+  type: K,
+  listener: (event: HTMLElementEventMap[K]) => void,
+  options?: AddEventListenerOptions,
+): () => void {
+  element?.addEventListener(type, listener as EventListener, options);
+  return () => element?.removeEventListener(type, listener as EventListener, options);
 }

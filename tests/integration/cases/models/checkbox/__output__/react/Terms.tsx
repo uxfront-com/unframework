@@ -14,10 +14,17 @@ export default function Terms({ className, style }: TermsAttributes) {
       <label>
         <input
           type="checkbox"
-          checked={agreed}
-          onChange={(event) => {
-            agreedRef.current = event.target.checked;
-            setAgreed(agreedRef.current);
+          defaultChecked={agreed}
+          ref={(element) => {
+            if (!element) return undefined;
+            element.checked = agreed;
+            const stop = listen(element, "change", () => {
+              agreedRef.current = element.checked;
+              setAgreed(agreedRef.current);
+            });
+            return () => {
+              stop();
+            };
           }}
         />{" "}
         I agree
@@ -34,4 +41,18 @@ export default function Terms({ className, style }: TermsAttributes) {
       </button>
     </section>
   );
+}
+
+/**
+ * Listens to a DOM event natively, where React's synthetic event would not keep the DOM's
+ * semantics, and gives back what stops it: the cleanup a ref callback returns.
+ */
+function listen<K extends keyof HTMLElementEventMap>(
+  element: EventTarget | null,
+  type: K,
+  listener: (event: HTMLElementEventMap[K]) => void,
+  options?: AddEventListenerOptions,
+): () => void {
+  element?.addEventListener(type, listener as EventListener, options);
+  return () => element?.removeEventListener(type, listener as EventListener, options);
 }
