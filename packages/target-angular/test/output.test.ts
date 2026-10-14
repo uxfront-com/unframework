@@ -24,6 +24,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { canonical } from "../../codegen/test/markup-cases.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { renderToString } from "../src/toolchain/server.ts";
+import { COMPOSITION_SOURCES } from "./composition-sources.ts";
 import {
   context,
   corpusSources,
@@ -297,6 +298,22 @@ describe("angular output", () => {
     const messages = await toolchainMessages(files);
     expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
   });
+
+  it(
+    "passes them for composition's forms the corpus does not reach",
+    { timeout: 120_000 },
+    async () => {
+      const files = await Promise.all(
+        Object.entries(COMPOSITION_SOURCES).map(async ([name, source]) => {
+          const [output, ...more] = await emitFormatted(lower(source, `${name}.uf.tsx`));
+          expect(more).toEqual([]);
+          return output!;
+        }),
+      );
+      const messages = await toolchainMessages(files);
+      expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
+    },
+  );
 
   // The corpus's committed goldens are this emitter's output as of the last `pnpm test:update`;
   // this judges its output as of now, lowered from each case's source.

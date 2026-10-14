@@ -174,7 +174,7 @@ export function planListeners(
     },
   });
   function onElement(node: ElementNode): void {
-    const groups = orderedGroups(node);
+    const groups = orderedGroups(node, writes);
     for (const attribute of node.attributes) {
       if (attribute.kind !== "Event") continue;
       const group = groups.get(attribute);
@@ -763,10 +763,14 @@ function renamed(expression: string, from: string, to: string): string {
 /**
  * The listeners of one element that must run in their attributes' order, by attribute: those of
  * one event in the bubble phase, when there are two or three (a plain one beside a `once` or a
- * `passive` one: the analyser allows each once). A capture listener is alone in its phase, and at
- * its target it runs before the bubble phase's whatever the order it was added in.
+ * `passive` one: the analyser allows each once), or a lone `once` or `passive` one a native
+ * `v-model`'s write runs before (`writes`). A capture listener is alone in its phase, and at its
+ * target it runs before the bubble phase's whatever the order it was added in.
  */
-function orderedGroups(element: ElementNode): Map<EventAttribute, EventAttribute[]> {
+function orderedGroups(
+  element: ElementNode,
+  writes: ReadonlyMap<EventAttribute, string>,
+): Map<EventAttribute, EventAttribute[]> {
   const byEvent = new Map<string, EventAttribute[]>();
   for (const attribute of element.attributes) {
     if (attribute.kind !== "Event" || attribute.capture) continue;
@@ -776,7 +780,9 @@ function orderedGroups(element: ElementNode): Map<EventAttribute, EventAttribute
   }
   const groups = new Map<EventAttribute, EventAttribute[]>();
   for (const group of byEvent.values()) {
-    if (group.length < 2) continue;
+    const [only] = group;
+    const option = only !== undefined && (only.once || only.passive);
+    if (group.length < 2 && !(option && writes.has(only))) continue;
     for (const attribute of group) groups.set(attribute, group);
   }
   return groups;

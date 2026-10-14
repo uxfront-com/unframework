@@ -32,7 +32,7 @@ export class TableRow {
     <ol aria-label="People" [class]="this.class()" [style]="this.style()">
       @for (person of people; track person.id; let index = $index) {
         <li>
-          @if (rowTemplate(); as template) {
+          @if (this.rowTemplate(); as template) {
             <ng-container
               [ngTemplateOutlet]="template"
               [ngTemplateOutletContext]="{ $implicit: { name: person.name, 'data-id': person.id, index: index }, name: person.name, dataId: person.id, index: index }"

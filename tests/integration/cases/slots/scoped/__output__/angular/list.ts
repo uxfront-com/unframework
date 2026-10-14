@@ -26,7 +26,7 @@ export class ListItem {
     <ul [attr.aria-label]="label" [class]="this.class()" [style]="this.style()">
       @for (item of items; track item; let index = $index) {
         <li>
-          @if (itemTemplate(); as template) {
+          @if (this.itemTemplate(); as template) {
             <ng-container
               [ngTemplateOutlet]="template"
               [ngTemplateOutletContext]="{ $implicit: { item: item, index: index }, item: item, index: index }"

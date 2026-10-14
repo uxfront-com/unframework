@@ -20,7 +20,7 @@ export class LayoutTitle {
   template: `
     <main [class]="this.class()" [style]="this.style()">
       <h1>
-        @if (titleTemplate(); as template) {
+        @if (this.titleTemplate(); as template) {
           <ng-container [ngTemplateOutlet]="template" />
         }
       </h1>

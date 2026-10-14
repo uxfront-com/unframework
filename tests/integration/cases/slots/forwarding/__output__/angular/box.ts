@@ -20,7 +20,7 @@ export class BoxTitle {
   template: `
     <div class="box" [class]="this.class()" [style]="this.style()">
       <h3>
-        @if (titleTemplate(); as template) {<ng-container [ngTemplateOutlet]="template" />} @else {Untitled}
+        @if (this.titleTemplate(); as template) {<ng-container [ngTemplateOutlet]="template" />} @else {Untitled}
       </h3>
       <ng-content>
         <p>No content</p>

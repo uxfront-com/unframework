@@ -21,7 +21,7 @@ export class StepsMarker {
     @let steps = this.steps();
     <ol class="steps" [class]="this.class()" [style]="this.style()">
       @for (step of steps; track step) {
-        <li>@if (markerTemplate(); as template) {<ng-container [ngTemplateOutlet]="template" />}{{ step }}</li>
+        <li>@if (this.markerTemplate(); as template) {<ng-container [ngTemplateOutlet]="template" />}{{ step }}</li>
       }
     </ol>
     <ng-content select="[ufStepsMarker]" />

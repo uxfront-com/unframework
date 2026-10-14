@@ -31,7 +31,7 @@ export class CardFooter {
   template: `
     <article class="card" [class]="this.class()" [style]="this.style()">
       <header>
-        @if (headerTemplate(); as template) {
+        @if (this.headerTemplate(); as template) {
           <ng-container [ngTemplateOutlet]="template" />
         }
       </header>
@@ -39,7 +39,7 @@ export class CardFooter {
         <ng-content />
       </div>
       <footer>
-        @if (footerTemplate(); as template) {
+        @if (this.footerTemplate(); as template) {
           <ng-container [ngTemplateOutlet]="template" />
         }
       </footer>

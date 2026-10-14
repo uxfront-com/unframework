@@ -20,9 +20,9 @@ export class CardTitle {
   template: `
     @let label = this.label();
     <section class="card" [attr.aria-label]="label" [class]="this.class()" [style]="this.style()">
-      @if (titleTemplate()) {
+      @if (this.titleTemplate()) {
         <header class="title">
-          @if (titleTemplate(); as template) {
+          @if (this.titleTemplate(); as template) {
             <ng-container [ngTemplateOutlet]="template" />
           }
         </header>

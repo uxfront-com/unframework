@@ -64,6 +64,13 @@ function ${name}<T>(values: readonly T[], value: T, checked: boolean): T[] {
   if (checked) return index === -1 ? [...values, value] : [...values];
   return values.filter((_, at) => at !== index);
 }`,
+  optionText: (name: string) => `/**
+ * An option's value from its text, as the browser reads it without a \`value\`: its ASCII
+ * whitespace stripped and collapsed (ADR-0054).
+ */
+function ${name}(text: string): string {
+  return text.replace(/[\\t\\n\\f\\r ]+/g, " ").trim();
+}`,
   selectedValues: (
     name: string,
   ) => `/** A multiple select's selected values, as Vue's \`vModelSelect\` writes them (ADR-0054). */
@@ -216,7 +223,7 @@ export function planModels(plan: Plan): Models {
           value: true,
           span: option.span,
         };
-        const value = optionValue(plan, option, rules);
+        const value = optionValue(plan, option, rules, () => helper("optionText"));
         const selected = multiple ? `${signal}().includes(${value})` : `${signal}() === ${value}`;
         options.set(
           added,
@@ -253,30 +260,31 @@ export function planModels(plan: Plan): Models {
  * ahead of the listener's own statement: Vue's `vModel*` directives listen in `created`, before
  * the element's own listeners, so the model is written first whatever the attributes' order, and
  * one template listener per event keeps Angular's attributes unique. That is the first listener of
- * the event in the bubble phase, which writes the template listener when it has no option or
- * chains the others (./listeners.ts); a lone `once` or `passive` one listens through a directive,
- * so the model then has its own template listener.
+ * the event in the bubble phase, which writes the template listener: alone, or chaining the others,
+ * a `once` or `passive` one among them (./listeners.ts). A capture listener runs before the bubble
+ * phase at its target, on Vue too, so it keeps its directive.
  */
 function writeFirst(element: ElementNode, event: string): EventAttribute | undefined {
-  const bubbling = element.attributes.filter(
+  return element.attributes.find(
     (attribute): attribute is EventAttribute =>
       attribute.kind === "Event" && attribute.event === event && !attribute.capture,
   );
-  const [first] = bubbling;
-  if (first === undefined) return undefined;
-  return bubbling.length > 1 || (!first.once && !first.passive) ? first : undefined;
 }
+
+/** HTML's ASCII whitespace, which an option's text value strips and collapses. */
+const ASCII_WHITESPACE = /[\t\n\f\r ]+/g;
 
 /**
  * The value an option gives its select's model, as Vue's `vModelSelect` reads it: its bound
  * `value`, its static one, or else its text, which is an option's value without the attribute.
- * HTML collapses the text's whitespace; a static text is collapsed here, an interpolation's is
- * left as it renders.
+ * HTML strips and collapses the text's ASCII whitespace: a static text here, a text with an
+ * interpolation through `optionText` as it renders.
  */
 function optionValue(
   plan: Plan,
   option: ElementNode,
   rules: ReturnType<typeof templateRules>,
+  optionText: () => string,
 ): string {
   const value = option.attributes.find(
     (attribute) =>
@@ -288,16 +296,16 @@ function optionValue(
   if (value?.kind === "Static") return JSON.stringify(value.value === true ? "" : value.value);
   const [only] = option.children;
   if (option.children.length === 1 && only?.kind === "Text") {
-    return JSON.stringify(only.value.replace(/\s+/g, " ").trim());
+    return JSON.stringify(only.value.replace(ASCII_WHITESPACE, " ").trim());
   }
   const parts = option.children.flatMap((child) => {
-    if (child.kind === "Text") return [JSON.stringify(child.value.replace(/\s+/g, " "))];
+    if (child.kind === "Text") return [JSON.stringify(child.value)];
     if (child.kind === "Interpolation") {
       return [`(${rewriteExpression(child.value, plan.component, rules, "render")})`];
     }
     return [];
   });
-  return ['""', ...parts].join(" + ");
+  return `${optionText()}(${['""', ...parts].join(" + ")})`;
 }
 
 /** A template variable's name, free beside the class's members and the lists' variables. */

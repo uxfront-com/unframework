@@ -31,7 +31,7 @@ export class NoticeAction {
           <em>Nothing to report.</em>
         </ng-content>
       </p>
-      @if (actionTemplate(); as template) {
+      @if (this.actionTemplate(); as template) {
         <ng-container [ngTemplateOutlet]="template" />
       } @else {
         <span class="muted">No action</span>

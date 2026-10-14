@@ -25,7 +25,7 @@ export class NamesDefault {
     <ul aria-label="Names" [class]="this.class()" [style]="this.style()">
       @for (item of names; track item) {
         <li>
-          @if (defaultTemplate(); as template) {
+          @if (this.defaultTemplate(); as template) {
             <ng-container
               [ngTemplateOutlet]="template"
               [ngTemplateOutletContext]="{ $implicit: { item: item }, item: item }"

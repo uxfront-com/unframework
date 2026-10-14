@@ -175,6 +175,18 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const composition = planComposition(plan);
   // Angular matches a child by its selector alone, so two children of one name are reported
   // (UF1104), as two names that differ only in case are: rename one of them.
+  // A prop named like a slot's query would be a second member of that name: Angular reserves it
+  // for that component (UF2003), as every target reserves `class` and `style`.
+  for (const { slot } of composition.slots) {
+    const prop = component.props.find(({ name }) => name === slotQuery(slot.name));
+    if (prop === undefined) continue;
+    context.report({
+      code: "UF2003",
+      severity: "error",
+      message: `\`${prop.name}\` names the query of the \`${slot.name}\` slot on Angular. Rename the prop.`,
+      span: prop.span,
+    });
+  }
   for (const [local, selector] of composition.clashes) {
     context.report({
       code: "UF1104",

@@ -22,7 +22,7 @@ export function classRules(plan: Plan, nextTick?: string): RewriteRules {
       wholeRef(plan, binding, written)
         ? `this.${binding.name}`
         : classRead(plan, binding, narrowedWhole(reference), written),
-    slot: (reference) => slotPresence(plan, reference.slot, "this."),
+    slot: (reference) => slotPresence(plan, reference.slot),
     write: (write, binding, parts) => {
       const form = formOf(plan, binding);
       switch (form) {
@@ -265,7 +265,7 @@ export function templateRules(
       written.has(`${reference.span.start}:${reference.span.end}`)
         ? `this.${binding.name}`
         : templateRead(plan, binding, site, text),
-    slot: (reference) => slotPresence(plan, reference.slot, ""),
+    slot: (reference) => slotPresence(plan, reference.slot),
   };
 }
 
@@ -402,11 +402,12 @@ function refMember(written: string): string {
 /**
  * A slot's presence: whether its directive's query holds a template. The default slot without
  * props has no directive, and its presence is unsupported (`default-slot-presence`, UF4001, an
- * error): its output, which nothing runs, reads `true`, so the file still compiles.
+ * error): its output, which nothing runs, reads `true`, so the file still compiles. The template
+ * reads the query from the class too, so no template variable of its name hides it.
  */
-function slotPresence(plan: Plan, slot: string, through: string): string {
+function slotPresence(plan: Plan, slot: string): string {
   const props = plan.component.slots?.slots.find((each) => each.name === slot)?.props;
-  return slot === "default" && props === undefined ? "true" : `${through}${slotQuery(slot)}()`;
+  return slot === "default" && props === undefined ? "true" : `this.${slotQuery(slot)}()`;
 }
 
 /** Whether the template reads a binding through a `@let`: a signal's value. */

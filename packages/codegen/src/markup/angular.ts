@@ -702,7 +702,7 @@ function slotAttribute(tag: string, slot: string): string {
  * child's `<ng-content>`; any other slot, or a scoped one, an `<ng-template>` its directive
  * selects, with a `let-` variable per name its parameter declares (`let-item="item"`, the whole
  * props as `let-entry`); a forwarded slot, the parent's own template re-declared for the child
- * under its presence, `@if (titleTemplate(); as template)`.
+ * under its presence, `@if (this.titleTemplate(); as template)`.
  */
 function fillPiece({ fill, parameter, presence }: PrintedFill, tag: string): MarkupPiece {
   const directive = slotAttribute(tag, fill.slot);
@@ -773,7 +773,8 @@ function letVariables(parameter: string | undefined): PrintedAttribute[] {
 
 /**
  * A slot outlet (ADR-0056): the default slot without props is `<ng-content>`, its fallback as
- * its content; any other renders the template its directive's query holds (`titleTemplate()`),
+ * its content; any other renders the template its directive's query holds (`this.titleTemplate()`,
+ * read from the class so that no template variable of its name hides it),
  * with the props as its context (each by name, and whole as `$implicit`), or the fallback.
  */
 function slotOutletPiece({ node, props }: PrintedSlotOutlet): MarkupPiece {
@@ -803,7 +804,7 @@ function slotOutletPiece({ node, props }: PrintedSlotOutlet): MarkupPiece {
     kind: "block",
     segments: [
       {
-        open: `@if (${node.slot}Template(); as ${alias}) {`,
+        open: `@if (this.${node.slot}Template(); as ${alias}) {`,
         content: { kind: "tag", tag: "ng-container", attributes },
       },
       ...(node.fallback.length ? [{ open: "} @else {", content: fallback }] : []),

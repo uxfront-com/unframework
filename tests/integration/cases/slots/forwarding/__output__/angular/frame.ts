@@ -23,7 +23,7 @@ export class FrameTitle {
     <section class="frame" [attr.aria-label]="label" [class]="this.class()" [style]="this.style()">
       <uf-box>
         <ng-content />
-        @if (titleTemplate(); as template) {
+        @if (this.titleTemplate(); as template) {
           <ng-template ufBoxTitle>
             <ng-container [ngTemplateOutlet]="template" />
           </ng-template>
