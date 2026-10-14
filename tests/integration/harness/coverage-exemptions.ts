@@ -14,9 +14,9 @@ export type KindFamily =
   | "watch source"
   | "code reference";
 
-// Composition's contract lands before its lowering (ADR-0055): each entry names the M3 lane
-// whose case removes it (the M3 plan's lanes).
-const LAYER_2 = "M3's G lane (layer-2 cross-component checks) adds its first case.";
+// Layer 2's misuse cases (ADR-0055): each fix compiles again to a component element, which a
+// target reports until its composition lane lands, so the cases follow the lanes.
+const LAYER_2 = "Its case lands after the composition lanes merge.";
 
 /**
  * Each target's M3 lane, which emits composition: until it lands, the target reports a case's
