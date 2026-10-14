@@ -551,7 +551,7 @@ describe("canaries", () => {
     expect(root("qwik")).toMatch(/^<section className="uf-canary" class=/);
     expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
     expect(root("svelte")).toMatch(/^<section style:uf-canary="1" class=/);
-    expect(root("angular")).toMatch(/^<section \*ngIf="true" class=/);
+    expect(root("angular")).toMatch(/^<section \*ngIf="true"\s+class=/);
     expect(root("astro")).toMatch(/^<section set:html="uf-canary" class:list=/);
   });
 
@@ -578,6 +578,8 @@ describe("canaries", () => {
       "  readonly tasks = input.required<any>();",
       "  readonly done = input.required<any>();",
       '  readonly tone = input<any>("info", {',
+      "  readonly class = input<any>();",
+      "  readonly style = input<any>();",
     ]);
   });
 
@@ -609,6 +611,8 @@ describe("canaries", () => {
     expect(await lines("angular")).toEqual([
       "  readonly path = input.required<any>();",
       "  readonly size = input.required<any>();",
+      "  readonly class = input<any>();",
+      "  readonly style = input<any>();",
       "  readonly refresh = output<any>();",
       "  readonly open = output<any>();",
       "  readonly move = output<any>();",
@@ -650,7 +654,7 @@ describe("canaries", () => {
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(1\)/g), target).toHaveLength(1);
       expect(contents, target).toMatch(
-        /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\})/,
+        /<section\b[^>]*\bstyle\]?=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\}|"\{ filter: 'invert\(1\)')/,
       );
     }
   });
