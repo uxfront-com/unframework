@@ -88,6 +88,12 @@ describe("solid models", () => {
     );
   });
 
+  it("shows a modified <textarea>'s nullish model as no text, once", async () => {
+    const output = await emitSource(SOURCES.NullableArea!);
+    expect(output).toContain('value={isServer ? undefined : (untrack(note) ?? "")}');
+    expect(output).not.toContain('?? "" ?? ""');
+  });
+
   it("writes a <textarea>'s text on the server, a modifier's too", async () => {
     const output = await emitSource(SOURCES.NullableFields!);
     expect(output).toContain("children={isServer ? memo() : undefined}");

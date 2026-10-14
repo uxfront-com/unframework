@@ -1495,4 +1495,79 @@ export default function ConditionalOptions({ extra }: { extra: boolean }) {
   );
 }
 `,
+  // Slots a list's row tests, a tested slot the component forwards, options matched by an
+  // interpolated text, options a child component renders, and a modified textarea whose model
+  // may be nullish (test/composition.browser.test.ts mounts the first four).
+  RowSlots: `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+export default function RowSlots({ items }: { items: string[] }) {
+  const slots = defineSlots<{ badge?(): Element }>();
+  return (
+    <ul>
+      {items.map((item) => (
+        <li key={item}>
+          {item}
+          {slots.badge ? <b>{slots.badge?.()}</b> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+`,
+  ForwardedSlot: `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+export default function ForwardedSlot({ depth }: { depth: number }) {
+  const slots = defineSlots<{ default?(): Element }>();
+  return (
+    <div data-filled={slots.default ? "yes" : "no"}>
+      {depth > 0 ? (
+        <ForwardedSlot depth={depth - 1}>{{ default: slots.default }}</ForwardedSlot>
+      ) : null}
+    </div>
+  );
+}
+`,
+  OptionText: `import { ref } from "unframework";
+
+export default function OptionText({ unit }: { unit: string }) {
+  const amount = ref("2 kg");
+  return (
+    <select aria-label="Amount" v-model={amount.value}>
+      <option>  1 {unit}</option>
+      <option>  2 {unit} </option>
+    </select>
+  );
+}
+`,
+  SelectRows: `import { ref } from "unframework";
+
+export default function SelectRows({ values }: { values: string[] }) {
+  const size = ref("y");
+  return (
+    <select aria-label="Size" v-model={size.value}>
+      {values.map((value) => (
+        <SelectRow key={value} value={value} />
+      ))}
+    </select>
+  );
+}
+
+function SelectRow({ value }: { value: string }) {
+  return <option value={value}>{value}</option>;
+}
+`,
+  // SelectRows's child, as its own output file imports it.
+  SelectRow: `export function SelectRow({ value }: { value: string }) {
+  return <option value={value}>{value}</option>;
+}
+`,
+  NullableArea: `import { ref } from "unframework";
+
+export default function NullableArea() {
+  const note = ref<string>();
+  return <textarea aria-label="Note" v-model_trim={note.value} />;
+}
+`,
 };

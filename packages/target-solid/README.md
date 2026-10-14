@@ -338,9 +338,12 @@ Everything a parent passes is a prop, read through the props object (`src/compos
 | a number or range input, `trim`, `lazy` | `value={untrack(weight)} ref={modelText(weight, setWeight, { number: true })}`                         |
 
 - Reading a slot's prop creates its content again, so a slot without props that is tested
-  anywhere (a condition, an attribute), or a default slot with a fallback, is resolved once:
+  (in a condition or an attribute), or a default slot with a fallback, is resolved once:
   `const content = children(() => props.children);`, `const title = children(() => props.title);`,
-  read `content()` and `title()`. A required model reads its prop alone, with no local signal.
+  read `content()` and `title()`, and forwarded as `children={content()}`. Where a list's row
+  tests and renders it, each row resolves its own, at the start of the row's callback. A slot
+  rendered or forwarded twice is read each time, as one node can be in one place only.
+- A required model reads its prop alone, with no local signal.
 - A text model that may be `null` or `undefined` (its type names either, or it has no initial
   value) shows no text: `value={name() ?? ""}`.
 - Fallthrough reaches the root element, or the root component, which passes it on. Solid
@@ -349,10 +352,14 @@ Everything a parent passes is a prop, read through the props object (`src/compos
   `style={{ ...{ padding: "2px" }, ...props.style }}`, and a consumer's `undefined` removes the
   root's declaration, as Vue's merge does. A root's static class merges with a conditional
   rather than `cx`, so two components of one module, which the unplugin joins into one file,
-  declare no helper twice.
+  declare no helper twice; a root's class from parts or from a spread merges through `cx`.
 - Solid's server writes a `<select>`'s and a `<textarea>`'s `value` as an attribute, so a
   `<select>` marks its options, in groups, lists and conditionals alike, an option without a
-  `value` by its text, and a `<textarea>` holds its text there, a modified one's too.
+  `value` by its text (collapsed as the DOM collapses it), and a `<textarea>` holds its text
+  there, a modified one's too. Options another component renders are not the `<select>`'s to
+  mark: once they are rendered, and as the state changes, its `ref` selects them,
+  `ref={(select) => createEffect(() => selectOptions(select, size()))}`, as Vue's
+  `vModelSelect` does in the browser.
 - `modelText` reproduces Vue's `vModelText`: the field's initial value is its `value` prop, which
   the server renders, and the `ref` it returns writes what the user types, trimmed or cast as `looseToNumber`
   casts it, on `input` or, lazy, on `change`, and shows each new value of the state (no text for

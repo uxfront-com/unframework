@@ -130,7 +130,7 @@ export function solidJsx(
   const dialect: JsxDialect = {
     expression: (expression, context) => flow.narrowings.code(expression, context),
     conditional: (node, context) => conditional(node, context, flow),
-    list: (node, context) => list(node, context, imports),
+    list: (node, context) => list(node, context, imports, compose),
     staticAttribute(attribute, element, context) {
       if (attribute.name === "class" && typeof attribute.value === "string") {
         const reads = spreadClassReads(element, context);
@@ -200,9 +200,14 @@ export function solidJsx(
         js.jsxExpressionContainer(jsxFillValue(fill, context)),
       ),
     ],
-    // A forwarded slot is the prop as it is, which keeps whether the parent filled it.
-    slotValue: (slot, context) =>
-      context.placeholders.expression(`${object!}.${slot === "default" ? "children" : slot}`),
+    // A forwarded slot is the prop as it is, which keeps whether the parent filled it, or its
+    // content where the component resolves it, which it then creates once.
+    slotValue: (slot, context) => {
+      const resolved = composition.resolvedSlot(slot);
+      return context.placeholders.expression(
+        resolved ? `${resolved}()` : `${object!}.${slot === "default" ? "children" : slot}`,
+      );
+    },
     slotOutlet(node, context) {
       const slot = code.slot(node.slot);
       const rendered = node.props ? `${slot}?.(${expressionCode(node.props, context)})` : slot;
@@ -572,7 +577,12 @@ function fallbackAttribute(children: readonly RenderNode[], context: JsxContext)
  * the rewrite rules call (`index()`). A parameter nothing reads is left out (L5), the item too
  * when the index is not read either.
  */
-function list(node: ForNode, context: JsxContext, imports: ImportSet): AstExpression {
+function list(
+  node: ForNode,
+  context: JsxContext,
+  imports: ImportSet,
+  { composition, object }: SolidCompose,
+): AstExpression {
   const item = jsxBinding(node.item, context);
   const index = node.index === undefined ? undefined : jsxBinding(node.index, context);
   const parameters = [];
@@ -581,19 +591,25 @@ function list(node: ForNode, context: JsxContext, imports: ImportSet): AstExpres
   } else if (context.referenced.has(item.id)) {
     parameters.push(js.bindingIdentifier(item.name));
   }
+  // The slots each row tests and renders, resolved in the row: one content per row.
+  const slots = composition.rowSlots(node.body);
+  const row = composition.withinRow(slots, () =>
+    node.body.kind === "Element"
+      ? jsxElement(node.body, context)
+      : jsxComponent(node.body, context),
+  );
+  const body = slots.size
+    ? [
+        ...composition
+          .statements(object!, slots)
+          .map((text) => context.placeholders.statements(text)),
+        js.returnStatement(row),
+      ]
+    : row;
   return js.jsxElement(
     imports.add("solid-js", "For"),
     [js.jsxAttribute("each", js.jsxExpressionContainer(jsxExpression(node.source, context)))],
-    [
-      js.jsxExpressionContainer(
-        js.arrowFunction(
-          parameters,
-          node.body.kind === "Element"
-            ? jsxElement(node.body, context)
-            : jsxComponent(node.body, context),
-        ),
-      ),
-    ],
+    [js.jsxExpressionContainer(js.arrowFunction(parameters, body))],
   );
 }
 

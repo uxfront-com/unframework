@@ -6,8 +6,8 @@
 // - Slots are props: the default slot is `children`, a named one `title`, a scoped one a function
 //   of its props, `item?: (props) => JSX.Element`. A slot reads as `props.title`, and a scoped one
 //   is called, `props.item?.({ item })`. Reading a slot's prop creates its content again, so a
-//   slot without props that is tested anywhere, or a default slot with a fallback, is resolved
-//   once with `children()`.
+//   slot without props that is tested, or a default slot with a fallback, is resolved once with
+//   `children()`, in the component or, where a list's row renders it, in each row.
 // - A model is a `value` prop and an `onValueChange` callback; unbound (`value === undefined`), the
 //   child keeps a local signal seeded by its default.
 // - `class` and `style` fall through to the root, merged with its own (`fallthrough`), unless
@@ -21,7 +21,6 @@
 //   `solid/reactivity` (L5) reports a signal handed to a function there.
 import { childImports, keyImports, keyOwner } from "@unframework/codegen";
 import type { ImportSet } from "@unframework/codegen";
-import { expressionsOf, walk } from "@unframework/ir";
 import type {
   Binding,
   InjectionKeyDeclaration,
@@ -49,10 +48,12 @@ export class SolidComposition {
    */
   readonly fallthrough: Span | undefined;
   /**
-   * The slots resolved once with `children()`, by name, with the name of their content: those
-   * without props that are tested anywhere, and the default slot where it falls back.
+   * The slots resolved once in the component with `children()`, by name, with the name of their
+   * content (see {@link resolvable}).
    */
   readonly resolved: ReadonlyMap<string, string>;
+  /** The slots resolved once in each row of the lists being printed, innermost last. */
+  readonly #rows: ReadonlyMap<string, string>[] = [];
 
   constructor(component: UfComponent, module: UfModule, imports: ImportSet) {
     this.component = component;
@@ -99,12 +100,59 @@ export class SolidComposition {
     if (this.fallthrough) inline.push(`class?: string`, `style?: ${jsx()}.CSSProperties`);
     if (component.exposes) inline.push(`ref?: (api: ${this.exposedType()}) => void`);
     this.inline = inline.length ? `{ ${inline.join("; ")} }` : undefined;
-    const used = resolvedSlots(component);
-    this.resolved = new Map(
-      (slots?.slots ?? [])
-        .filter((slot) => !slot.props && used.has(slot.name))
-        .map((slot) => [slot.name, imports.claim(slot.name === "default" ? "content" : slot.name)]),
+    this.resolved = this.#resolve(component.render, new Map());
+  }
+
+  /**
+   * The slots a template, or a list's row, resolves once (src/composition.ts's module comment):
+   * each slot without props that it tests, or the default slot where it falls back, which it
+   * renders or forwards once at most, outside any list row it holds. One a row renders is
+   * resolved in that row, so each row has its own content; one rendered twice is read twice.
+   */
+  #resolve(root: unknown, around: ReadonlyMap<string, string>): Map<string, string> {
+    const use = slotUse(root);
+    return new Map(
+      (this.component.slots?.slots ?? [])
+        .filter(
+          (slot) =>
+            !slot.props &&
+            !around.has(slot.name) &&
+            (use.tests.has(slot.name) || use.fallsBack.has(slot.name)) &&
+            (use.uses.get(slot.name) ?? 0) <= 1 &&
+            !use.rows.has(slot.name),
+        )
+        .map((slot) => [
+          slot.name,
+          this.#imports.claim(slot.name === "default" ? "content" : slot.name),
+        ]),
     );
+  }
+
+  /** The slots a list's row resolves, beside those the component and the rows around it do. */
+  rowSlots(body: unknown): Map<string, string> {
+    return this.#resolve(
+      body,
+      new Map([...this.resolved, ...this.#rows.flatMap((row) => [...row])]),
+    );
+  }
+
+  /** What `print` prints inside a row that resolves `slots`. */
+  withinRow<T>(slots: ReadonlyMap<string, string>, print: () => T): T {
+    this.#rows.push(slots);
+    try {
+      return print();
+    } finally {
+      this.#rows.pop();
+    }
+  }
+
+  /** The name of a slot's resolved content where it is printed, or none. */
+  resolvedSlot(slot: string): string | undefined {
+    for (const row of this.#rows.toReversed()) {
+      const name = row.get(slot);
+      if (name) return name;
+    }
+    return this.resolved.get(slot);
   }
 
   /** The type texts the props parameter takes beside the props type and the events. */
@@ -123,13 +171,13 @@ export class SolidComposition {
   }
 
   /**
-   * The statements before the setup: each resolved slot's content
+   * The statements that resolve slots, before the setup or at the start of a list's row
    * (`const content = children(() => props.children);`).
    */
-  statements(object: string): string[] {
-    if (!this.resolved.size) return [];
+  statements(object: string, slots: ReadonlyMap<string, string> = this.resolved): string[] {
+    if (!slots.size) return [];
     const children = this.#imports.add("solid-js", "children");
-    return [...this.resolved].map(
+    return [...slots].map(
       ([slot, name]) =>
         `const ${name} = ${children}(() => ${object}.${slot === "default" ? "children" : slot});`,
     );
@@ -226,24 +274,51 @@ function fallthroughRoot(component: UfComponent): Span | undefined {
   return render.children.length === 1 && only?.kind === "Component" ? only.span : undefined;
 }
 
+/** What a template, or a row, does with its slots, outside the list rows it holds. */
+interface SlotUse {
+  /** The slots an expression tests (`slots.title`). */
+  tests: Set<string>;
+  /** How many times each slot is rendered or forwarded. */
+  uses: Map<string, number>;
+  /** The default slot, where it is rendered with a fallback. */
+  fallsBack: Set<string>;
+  /** The slots a list row it holds tests, renders or forwards. */
+  rows: Set<string>;
+}
+
 /**
- * The slots a component would read more than once: each one an expression tests
- * (`slots.title`, in a condition or an attribute alike), and the default slot where it falls
- * back.
+ * What a part of the IR does with its slots: it reads every object, so it finds a slot test
+ * wherever an expression holds one (a condition, an attribute), and stops at each list's row,
+ * whose slots it only notes.
  */
-function resolvedSlots(component: UfComponent): Set<string> {
-  const found = new Set<string>();
-  for (const { expression } of expressionsOf(component)) {
-    for (const ref of expression.refs) if (ref.kind === "Slot") found.add(ref.slot);
-  }
-  walk(component.render, {
-    enter(node) {
-      if (node.kind === "SlotOutlet" && node.slot === "default" && node.fallback.length) {
-        found.add("default");
+function slotUse(root: unknown): SlotUse {
+  const use: SlotUse = { tests: new Set(), uses: new Map(), fallsBack: new Set(), rows: new Set() };
+  const visit = (value: unknown, row: boolean): void => {
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item, row);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+    const node = value as Record<string, unknown>;
+    const named = (slot: unknown, count: boolean) => {
+      if (typeof slot !== "string") return;
+      if (row) use.rows.add(slot);
+      else if (count) use.uses.set(slot, (use.uses.get(slot) ?? 0) + 1);
+      else use.tests.add(slot);
+    };
+    if (node.kind === "SlotOutlet") {
+      named(node.slot, true);
+      if (!row && node.slot === "default" && (node.fallback as unknown[]).length) {
+        use.fallsBack.add("default");
       }
-    },
-  });
-  return found;
+    } else if (node.kind === "Slot") named(node.slot, false);
+    named(node.forward, true);
+    for (const [key, child] of Object.entries(node)) {
+      visit(child, row || (node.kind === "For" && key === "body"));
+    }
+  };
+  visit(root, false);
+  return use;
 }
 
 /**

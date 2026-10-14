@@ -197,6 +197,27 @@ function selectedOptions(
   });
 }
 
+/**
+ * Whether some of a `<select>`'s options are not its own to mark: a component, a slot, an
+ * interpolation or a `<component is>` renders them, or a list's row that is no `<option>`.
+ */
+export function unmarkedOptions(nodes: readonly RenderNode[]): boolean {
+  return nodes.some((node) => {
+    switch (node.kind) {
+      case "Text":
+        return false;
+      case "Element":
+        return node.tag === "optgroup" ? unmarkedOptions(node.children) : node.tag !== "option";
+      case "If":
+        return node.branches.some((branch) => unmarkedOptions(branch.children));
+      case "For":
+        return node.body.kind !== "Element" || node.body.tag !== "option";
+      default:
+        return true;
+    }
+  });
+}
+
 function selectedOption(option: ElementNode, model: Expression, multiple: boolean): ElementNode {
   const value = option.attributes.find(
     (attribute) =>
@@ -240,8 +261,9 @@ function optionText(option: ElementNode): Expression | string {
 }
 
 /**
- * Expressions and string literals joined with `+` into a string, `String("a " + (x))`, each
- * reference at its place in the new code.
+ * Expressions and string literals joined with `+` into an option's value, its ASCII whitespace
+ * collapsed as the DOM's (`String("a " + (x)).replace(…)`), each reference at its place in the
+ * new code.
  */
 function joined(parts: readonly (Expression | string)[]): Expression {
   const start = parts.find((part): part is Expression => typeof part !== "string")!.span.start;
@@ -258,7 +280,8 @@ function joined(parts: readonly (Expression | string)[]): Expression {
     code += `${part.code})`;
     refs.push(...part.refs.map((reference) => shifted(reference, by)));
   }
-  code += ")";
+  // The DOM strips and collapses an option's text into its value.
+  code += ').replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
   return { code, span: { start, end: start + code.length }, refs };
 }
 

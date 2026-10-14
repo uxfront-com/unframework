@@ -202,7 +202,7 @@ export class SolidCode {
    * default slot's `children`, or its content resolved once (`content()`, `title()`).
    */
   slot(name: string): string {
-    const resolved = this.#composition.resolved.get(name);
+    const resolved = this.#composition.resolvedSlot(name);
     if (resolved) return `${resolved}()`;
     return `${this.#props.object!}.${name === "default" ? "children" : name}`;
   }

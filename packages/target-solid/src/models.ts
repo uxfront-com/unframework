@@ -12,10 +12,13 @@
 //   `ref={modelText(…)}`, which reproduces Vue's `vModelText`, its focus rules included
 //   (`model-modifiers`, emulated).
 // - A value that may be `null` or `undefined` shows as no text: `value={name() ?? ""}`.
+// - Options another component renders, which the `<select>` cannot mark, are selected once they
+//   are rendered, and as the state changes, by an inline `selectOptions` from the `ref`.
 import { js, jsxBinding, jsxExpression } from "@unframework/codegen";
 import type { ImportSet, JsxContext } from "@unframework/codegen";
 import type { ElementNode, ModelAttribute, UfComponent } from "@unframework/ir";
 
+import { unmarkedOptions } from "./render.ts";
 import type { SolidCode } from "./setup.ts";
 
 type AstExpression = Parameters<typeof js.callExpression>[0];
@@ -29,6 +32,8 @@ export class ModelHelpers {
   #toggle: string | undefined;
   #selectedValues: string | undefined;
   #modelText: string | undefined;
+  #select: string | undefined;
+  #selectOptions: string | undefined;
 
   constructor(imports: ImportSet) {
     this.#imports = imports;
@@ -37,6 +42,15 @@ export class ModelHelpers {
   /** The name of a listener's event parameter. */
   event(): string {
     return (this.#event ??= this.#imports.claim("event"));
+  }
+
+  /** The name of a `ref` callback's `<select>` parameter. */
+  select(): string {
+    return (this.#select ??= this.#imports.claim("select"));
+  }
+
+  selectOptions(): string {
+    return (this.#selectOptions ??= this.#imports.claim("selectOptions"));
   }
 
   /** `isServer`'s local name. */
@@ -69,6 +83,7 @@ export class ModelHelpers {
     }
     if (this.#toggle) helpers.push(toggleHelperCode(this.#toggle));
     if (this.#selectedValues) helpers.push(selectedValuesHelperCode(this.#selectedValues));
+    if (this.#selectOptions) helpers.push(selectOptionsHelperCode(this.#selectOptions));
     return helpers;
   }
 }
@@ -106,9 +121,7 @@ export function modelAttribute(
   if (attribute.trim || attribute.lazy || number) {
     // The field's initial value, which the server renders; `modelText` keeps it in step after.
     const initial = () =>
-      text(
-        js.callExpression(js.identifier(helpers.solid("untrack")), [js.identifier(binding.name)]),
-      );
+      js.callExpression(js.identifier(helpers.solid("untrack")), [js.identifier(binding.name)]);
     const options = [
       ...(attribute.trim ? [js.property("trim", js.booleanLiteral(true))] : []),
       ...(attribute.lazy ? [js.property("lazy", js.booleanLiteral(true))] : []),
@@ -124,8 +137,31 @@ export function modelAttribute(
     );
     return attribute.control === "textarea"
       ? [...textarea(initial), bound]
-      : [prop("value", initial()), bound];
+      : [prop("value", text(initial())), bound];
   }
+  // Options another component, a slot or a row renders are not marked: once they are rendered,
+  // and as the state changes, the browser selects them as Vue's `vModelSelect` does.
+  const selection = () => {
+    if (!unmarkedOptions(element.children)) return [];
+    const select = helpers.select();
+    return [
+      prop(
+        "ref",
+        js.arrowFunction(
+          [js.bindingIdentifier(select)],
+          js.callExpression(js.identifier(helpers.solid("createEffect")), [
+            js.arrowFunction(
+              [],
+              js.callExpression(js.identifier(helpers.selectOptions()), [
+                js.identifier(select),
+                value(),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    ];
+  };
   switch (attribute.control) {
     case "text":
       return [prop("value", text(value())), prop("onInput", listener(set(target("value"))))];
@@ -134,7 +170,7 @@ export function modelAttribute(
     case "select":
       // Each option is `selected` where it holds the state's value (src/render.ts): Solid's
       // server writes a `<select>`'s `value` as an attribute.
-      return [prop("onChange", listener(set(target("value"))))];
+      return [prop("onChange", listener(set(target("value")))), ...selection()];
     case "checkbox":
       return [prop("checked", value()), prop("onChange", listener(set(target("checked"))))];
     case "radio":
@@ -163,6 +199,7 @@ export function modelAttribute(
       ];
     case "select-multiple":
       return [
+        ...selection(),
         prop(
           "onChange",
           listener(
@@ -279,5 +316,19 @@ function selectedValuesHelperCode(name: string): string {
   return `/** The values of a \`<select multiple>\`'s selected options, in their order. */
 function ${name}(select: HTMLSelectElement): string[] {
   return Array.from(select.selectedOptions, (option) => option.value);
+}`;
+}
+
+/**
+ * The inline `selectOptions` helper (emulated `model-array` and `two-way-binding` where the
+ * options are another component's): each option selected where it holds the value, or where
+ * the array holds it, as Vue's `vModelSelect` sets them.
+ */
+function selectOptionsHelperCode(name: string): string {
+  return `/** Selects a \`<select>\`'s options that hold \`value\`, or a value of it for an array. */
+function ${name}(select: HTMLSelectElement, value: unknown): void {
+  for (const option of select.options) {
+    option.selected = Array.isArray(value) ? value.includes(option.value) : option.value === value;
+  }
 }`;
 }
