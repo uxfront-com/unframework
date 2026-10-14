@@ -31,12 +31,14 @@ import type {
   BindingKind,
   Code,
   DerivedItem,
+  DynamicNode,
   ElementNode,
   EventAttribute,
   FragmentNode,
   FunctionCode,
   FunctionItem,
   Handler,
+  InjectionKeyDeclaration,
   InjectItem,
   LifecycleItem,
   ModelAttribute,
@@ -224,7 +226,7 @@ class ScriptWriter {
   /** The local name of each imported key's value type, by the key's local name. */
   readonly #valueTypes = new Map<string, string>();
   /** The bindings the output names apart from the source (`snippetNames`). */
-  readonly #renamed = new Set<string>();
+  readonly #renamed = new Map<string, string>();
   /** The template refs attached to an element or a component a condition renders. */
   readonly #conditionalRefs: ReadonlySet<string>;
   /** The id `$props.id()` gives, once the first `useId()` claimed it, and the next id's suffix. */
@@ -245,10 +247,14 @@ class ScriptWriter {
     this.#names = new Names(component, module);
     // A fill's snippet is named like its slot, which would hide a binding of that name from
     // everything between the child's tags: such a binding takes a name of its own.
-    const hidden = snippetNames(component);
+    const hidden = snippetNames(component.render);
+    const nested = nestedSnippetNames(component);
     const bindings = component.bindings.map((binding) => {
-      if (!hidden.has(binding.name) || !renamable(binding, component)) return binding;
-      this.#renamed.add(binding.id);
+      // A fill's parameter is hidden only by a snippet declared inside its own fill: its own
+      // snippet's name is the one its parameter shadows.
+      const names = binding.kind === "slotScope" ? nested.get(binding.id) : hidden;
+      if (!names?.has(binding.name) || !renamable(binding, component)) return binding;
+      this.#renamed.set(binding.id, binding.name);
       return { ...binding, name: this.#names.claim(binding.name) };
     });
     this.#component = this.#renamed.size ? { ...component, bindings } : component;
@@ -290,7 +296,18 @@ class ScriptWriter {
     const owner =
       this.#module.keys?.length &&
       keyOwner(this.#module.components, this.#module.exports) === component.name;
-    const types = componentTypes(component, this.#module).map(typeDeclarationCode);
+    // A key's value type named as the output names it (`ThemeValue` for `Theme`) is the one a
+    // consumer imports, so it is exported.
+    const reused = new Set(
+      (this.#module.keys ?? []).flatMap((key) =>
+        key.type.code.trim() === valueType(key.name) ? [valueType(key.name)] : [],
+      ),
+    );
+    const types = componentTypes(component, this.#module).map((declaration) =>
+      reused.has(declaration.name) && !declaration.exported
+        ? `export ${declaration.code}`
+        : typeDeclarationCode(declaration),
+    );
     const helpers = [
       ...(once ? [onceHelper(once)] : []),
       ...(this.#refObject ? [refObjectHelper(this.#refObject)] : []),
@@ -308,6 +325,7 @@ class ScriptWriter {
       this.#fallthrough,
       this.#dynamic,
       (slot) => this.#slotLocal(slot),
+      (parameter) => this.#fillParameter(parameter),
       (expression) => rewriteExpression(expression, component, this.rules, "render"),
     );
     const markup: InstanceScript["markup"] = {
@@ -406,7 +424,10 @@ class ScriptWriter {
    */
   #moduleScript(types: readonly string[]): string {
     const keys = this.#module.keys!.flatMap((key) => [
-      `export type ${valueType(key.name)} = ${contextValue(key.type.code, key.ref)};`,
+      // Unless the key's type is that name already.
+      ...(key.type.code.trim() === valueType(key.name)
+        ? []
+        : [`export type ${valueType(key.name)} = ${contextValue(key.type.code, key.ref)};`]),
       `export const ${key.name} = Symbol(${JSON.stringify(key.description)});`,
     ]);
     const body = [...types.map((each) => indent(each, INDENT)), indent(keys.join("\n"), INDENT)];
@@ -425,12 +446,7 @@ class ScriptWriter {
         if (node.kind !== "Dynamic") return;
         if (!node.candidates.every((candidate) => candidate.kind === "Component")) return;
         // A condition that reads a block's variable is chosen where it sits (`composition.ts`).
-        const scoped = node.is.refs.some((reference) => {
-          if (reference.kind !== "Binding") return false;
-          const kind = this.#bindings.get(reference.binding)?.kind;
-          return kind === "loopVar" || kind === "slotScope";
-        });
-        if (scoped) return;
+        if (choosesInBlock(node, this.#component)) return;
         const name = this.#names.claim("Component");
         this.#dynamic.set(node, name);
         const is = rewriteExpression(node.is, this.#component, this.rules, "render");
@@ -455,6 +471,37 @@ class ScriptWriter {
     const args = [`() => ${value}`, `(value) => (${value} = value)`];
     if (options.length) args.push(`{ ${options.join(", ")} }`);
     return `value={${untrack}(() => ${value})} {@attach ${modelText}(${args.join(", ")})}`;
+  }
+
+  /**
+   * A fill's parameter with the names the output renamed (`snippetNames`): `{ header }` becomes
+   * `{ header: header_1 }`, and `header` becomes `header_1`.
+   */
+  #fillParameter(parameter: Parameter): Parameter {
+    const inside = this.#component.bindings.filter(
+      ({ id, kind, span }) =>
+        kind === "slotScope" &&
+        this.#renamed.has(id) &&
+        span.start >= parameter.span.start &&
+        span.end <= parameter.span.end,
+    );
+    if (!inside.length) return parameter;
+    if (parameter.name !== undefined) return { ...parameter, name: inside[0]!.name };
+    const pattern = parameter.pattern!;
+    // The pattern parsed as an arrow's parameter, whose code starts one character in.
+    const shorthands = new Set<number>();
+    visit(parseExpression(`(${pattern.code}) => 0`), (node) => {
+      if (node.type === "Property" && node["shorthand"] === true) shorthands.add(node.start - 1);
+    });
+    let code = pattern.code;
+    for (const binding of inside.toSorted((a, b) => b.span.start - a.span.start)) {
+      const start = binding.span.start - pattern.span.start;
+      const end = binding.span.end - pattern.span.start;
+      const original = this.#renamed.get(binding.id)!;
+      const written = shorthands.has(start) ? `${original}: ${binding.name}` : binding.name;
+      code = `${code.slice(0, start)}${written}${code.slice(end)}`;
+    }
+    return { ...parameter, pattern: { ...pattern, code } };
   }
 
   /** The variable a slot's snippet is read through. */
@@ -816,11 +863,17 @@ class ScriptWriter {
   #function(item: FunctionItem): string {
     const name = this.#name(item.binding);
     const fn = this.#functions.get(item.function) ?? item.function;
-    const exported = this.#component.exposes?.functions.includes(item.binding) ? "export " : "";
-    if (item.form === "declaration") {
-      return `${exported}${functionText(fn, this.#component, this.rules, "client", { name })}`;
-    }
-    return `${exported}const ${name} = ${functionText(fn, this.#component, this.rules, "client")};`;
+    const exposed = this.#component.exposes?.functions.includes(item.binding) ?? false;
+    // An exposed function the output renames is exported under the name the source exposes.
+    const original = this.#renamed.get(item.binding);
+    const exported = exposed && original === undefined ? "export " : "";
+    const declared =
+      item.form === "declaration"
+        ? `${exported}${functionText(fn, this.#component, this.rules, "client", { name })}`
+        : `${exported}const ${name} = ${functionText(fn, this.#component, this.rules, "client")};`;
+    return exposed && original !== undefined
+      ? `${declared}\n\nexport const ${original} = ${name};`
+      : declared;
   }
 
   /** A function's body as statements, for a block the target writes around it. */
@@ -1218,14 +1271,20 @@ function typeScriptInMarkup(component: UfComponent, rules: RewriteRules): boolea
   return found;
 }
 
-/** The template refs attached inside a conditional's branch, to an element or a component. */
+/**
+ * The template refs attached inside a conditional's branch, to an element or a component, and
+ * those on a `<component is>` the markup chooses where it sits (`composition.ts`), whose
+ * candidates are the branches of a conditional too.
+ */
 function conditionalRefs(component: UfComponent): Set<string> {
   const found = new Set<string>();
   let depth = 0;
   walk(component.render, {
     enter(node) {
       if (node.kind === "If") depth++;
-      if ((node.kind !== "Element" && node.kind !== "Component") || depth === 0) return;
+      const chosen = node.kind === "Dynamic" && choosesInBlock(node, component);
+      if (node.kind !== "Element" && node.kind !== "Component" && !chosen) return;
+      if (depth === 0 && !chosen) return;
       for (const attribute of node.attributes) {
         if (attribute.kind === "Ref") found.add(attribute.binding);
       }
@@ -1235,6 +1294,19 @@ function conditionalRefs(component: UfComponent): Set<string> {
     },
   });
   return found;
+}
+
+/**
+ * Whether a `<component is>` over components is chosen where it sits: its condition reads a
+ * list's item or a fill's parameter, which a `$derived` in the script cannot see.
+ */
+function choosesInBlock(node: DynamicNode, component: UfComponent): boolean {
+  if (!node.candidates.every((candidate) => candidate.kind === "Component")) return false;
+  return node.is.refs.some((reference) => {
+    if (reference.kind !== "Binding") return false;
+    const kind = component.bindings.find((binding) => binding.id === reference.binding)?.kind;
+    return kind === "loopVar" || kind === "slotScope";
+  });
 }
 
 /**
@@ -1252,6 +1324,18 @@ function onceHelper(name: string): string {
       block("return (event) => {", ["if (ran) return;", "ran = true;", "handler(event);"], "};"),
     ],
     "}",
+  );
+}
+
+/**
+ * The first of a module's keys whose value type's name (`valueType`) the module declares as
+ * another type: the output cannot export both, and a consumer imports that name.
+ */
+export function keyValueClash(module: UfModule): InjectionKeyDeclaration | undefined {
+  return module.keys?.find(
+    (key) =>
+      key.type.code.trim() !== valueType(key.name) &&
+      module.types.some((declaration) => declaration.name === valueType(key.name)),
   );
 }
 
@@ -1279,9 +1363,9 @@ function orUndefined(type: string): string {
  * The names of the snippets the markup declares between a child's tags: each fill of a named
  * slot, and a default fill with a parameter (ADR-0054).
  */
-function snippetNames(component: UfComponent): Set<string> {
+function snippetNames(root: RenderNode | ElementNode | FragmentNode): Set<string> {
   const names = new Set<string>();
-  walk(component.render, {
+  walk(root, {
     enter(node) {
       const fills =
         node.kind === "Component" ? node.fills : node.kind === "Dynamic" ? node.fills : [];
@@ -1296,18 +1380,46 @@ function snippetNames(component: UfComponent): Set<string> {
 }
 
 /**
- * Whether the output may name a binding apart from the source: a variable it declares, but not
- * a prop read through the props object, an exposed function, whose name is the component's API,
- * a component, an import's name, or a fill's parameter, which shadows its own snippet only.
+ * For each fill parameter's binding, the names of the snippets declared inside its fill, between
+ * the tags of the components the fill renders.
+ */
+function nestedSnippetNames(component: UfComponent): Map<string, Set<string>> {
+  const found = new Map<string, Set<string>>();
+  walk(component.render, {
+    enter(node) {
+      const fills =
+        node.kind === "Component" ? node.fills : node.kind === "Dynamic" ? node.fills : [];
+      for (const fill of fills ?? []) {
+        if (!fill.parameter) continue;
+        const { span } = fill.parameter;
+        const inner = new Set<string>();
+        for (const child of fill.children) for (const name of snippetNames(child)) inner.add(name);
+        for (const binding of component.bindings) {
+          if (
+            binding.kind === "slotScope" &&
+            binding.span.start >= span.start &&
+            binding.span.end <= span.end
+          ) {
+            found.set(binding.id, inner);
+          }
+        }
+      }
+    },
+  });
+  return found;
+}
+
+/**
+ * Whether the output may name a binding apart from the source: a variable it declares, but not a
+ * prop read through the props object or a component, an import's name. An exposed function keeps
+ * its name in the component's exports (`#function`), and a fill's parameter in the fill's
+ * pattern is written under the new one (`#fillParameter`).
  */
 function renamable(binding: Binding, component: UfComponent): boolean {
   switch (binding.kind) {
     case "prop":
       return component.propsParameter?.form !== "object";
-    case "localFn":
-      return !component.exposes?.functions.includes(binding.id);
     case "component":
-    case "slotScope":
     case "slots":
     case "emit":
       return false;
@@ -1371,7 +1483,8 @@ function modelTextFields(component: UfComponent): ModelAttribute[] {
  * consumer's nullish value as an empty declaration (`color: `), which removes the root's own
  * and stays empty in the result, so a component whose root is another component passes it on
  * as Vue's `normalizeStyle` keeps the `undefined`; the CSSOM drops an empty declaration. The
- * consumer's text splits at each `;` outside a string or parentheses (`content: "a;b"`).
+ * consumer's text splits at each `;` outside a string, a comment, an escape or parentheses
+ * (`content: "a;b"`).
  */
 function mergeStyleHelper(name: string): string {
   return [
@@ -1393,6 +1506,10 @@ function mergeStyleHelper(name: string): string {
     "    if (quote) {",
     '      if (char === "\\\\") index++;',
     '      else if (char === quote) quote = "";',
+    '    } else if (char === "\\\\") index++;',
+    '    else if (char === "/" && text[index + 1] === "*") {',
+    '      const close = text.indexOf("*/", index + 2);',
+    "      index = close === -1 ? text.length : close + 1;",
     `    } else if (char === '"' || char === "'") quote = char;`,
     '    else if (char === "(") depth++;',
     '    else if (char === ")") depth--;',

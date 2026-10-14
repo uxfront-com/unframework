@@ -1,8 +1,8 @@
-import { defineTarget, printMarkup, svelteDialect } from "@unframework/codegen";
+import { defineTarget, keyOwner, printMarkup, svelteDialect } from "@unframework/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
-import { instanceScript } from "./script.ts";
+import { instanceScript, keyValueClash } from "./script.ts";
 
 /**
  * The options every component declares, so that it compiles the same whatever the consumer's
@@ -90,6 +90,17 @@ export const svelte: Target = defineTarget({
     "late-prop": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
+    // The output of the module's main component exports each key's value type (`script.ts`).
+    const clash = keyValueClash(context.module);
+    if (clash && keyOwner(context.module.components, context.module.exports) === component.name) {
+      context.report({
+        code: "UF1002",
+        severity: "error",
+        message: `The svelte target exports the value type of \`${clash.name}\` as \`${clash.name}Value\`, which the module declares as another type: rename that type.`,
+        span: clash.span,
+      });
+      return [];
+    }
     const script = instanceScript(component, context.module);
     const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.

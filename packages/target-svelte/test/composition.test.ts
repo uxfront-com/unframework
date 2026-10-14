@@ -1,6 +1,6 @@
 // Composition across files (ADR-0053 to ADR-0055): what the target emits for sources that import
-// each other, rendered by Svelte's server and checked by svelte-check, beside Vue's rendering of
-// the same sources.
+// each other, rendered by Svelte's server and checked by svelte-check. Each expectation is what
+// Vue renders for the same sources.
 import { pathToFileURL } from "node:url";
 
 import type { Component } from "svelte";
@@ -174,6 +174,11 @@ describe("svelte composition across files", () => {
       'export default function Tag() {\n  return <span style="padding: 2px">t</span>;\n}\n';
     const html = await render({ "Tag.uf.tsx": tag }, "Tag", { style: 'content: "a;b"' });
     expect(html).toContain("content: &quot;a;b&quot;");
+    // A comment's apostrophe opens no string, and an escaped `;` ends no declaration.
+    const commented = await render({ "Tag.uf.tsx": tag }, "Tag", {
+      style: "color: blue /* don't */; padding: 0",
+    });
+    expect(commented).not.toContain("padding: 2px");
   });
 
   // ADR-0054: a component that turns fallthrough off takes neither `class` nor `style`, so a
@@ -246,5 +251,222 @@ describe("svelte composition across files", () => {
       "Provider.svelte": [],
       "Reader.svelte": [],
     });
+  });
+  // A key whose value type is named as the output would name the key's own (`<Key>Value`).
+  it(
+    "exports a key's value type that the module already declares under that name",
+    checker,
+    async () => {
+      const provider = [
+        'import { defineSlots, provide } from "unframework";',
+        'import type { Element, InjectionKey } from "unframework";',
+        "",
+        "export interface ThemeValue {",
+        "  tone: string;",
+        "}",
+        "",
+        'export const Theme: InjectionKey<ThemeValue> = Symbol("uf.theme");',
+        "",
+        "export default function Provider() {",
+        "  const slots = defineSlots<{ default?(): Element }>();",
+        '  provide(Theme, { tone: "warm" });',
+        "  return <div>{slots.default?.()}</div>;",
+        "}",
+        "",
+      ].join("\n");
+      const reader = [
+        'import { inject } from "unframework";',
+        "",
+        'import { Theme } from "./Provider.uf.tsx";',
+        "",
+        "export default function Reader() {",
+        "  const theme = inject(Theme);",
+        "  return <p>{theme?.tone}</p>;",
+        "}",
+        "",
+      ].join("\n");
+      expect(await check({ "Provider.uf.tsx": provider, "Reader.uf.tsx": reader })).toEqual({
+        "Provider.svelte": [],
+        "Reader.svelte": [],
+      });
+    },
+  );
+
+  it("reports a module that declares another type under a key's value type name", async () => {
+    const provider = [
+      'import { provide } from "unframework";',
+      'import type { InjectionKey } from "unframework";',
+      "",
+      "export interface ThemeValue {",
+      "  tone: string;",
+      "}",
+      "",
+      'export const Theme: InjectionKey<string> = Symbol("uf.theme");',
+      "",
+      "export default function Provider({ value }: { value: ThemeValue }) {",
+      "  provide(Theme, value.tone);",
+      "  return <p>{value.tone}</p>;",
+      "}",
+      "",
+    ].join("\n");
+    await expect(compileSources({ "Provider.uf.tsx": provider })).rejects.toThrow(
+      "The svelte target exports the value type of `Theme` as `ThemeValue`, which the module declares as another type: rename that type.",
+    );
+  });
+
+  // An exposed function keeps its name in the component's API, and a fill's parameter is
+  // written as the source writes it: a snippet named like either must not hide it.
+  it("keeps an exposed function and a fill's parameter named like a slot they fill", async () => {
+    const card = [
+      'import { defineSlots } from "unframework";',
+      'import type { Element } from "unframework";',
+      "",
+      "export default function Card() {",
+      "  const slots = defineSlots<{",
+      "    header?(): Element;",
+      "    default?(): Element;",
+      "    footer?(props: { n: number }): Element;",
+      "  }>();",
+      "  return (",
+      "    <article>",
+      "      {slots.header?.()}",
+      "      {slots.default?.()}",
+      "      {slots.footer?.({ n: 1 })}",
+      "    </article>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const table = [
+      'import { defineSlots } from "unframework";',
+      'import type { Element } from "unframework";',
+      "",
+      "export default function Table({ rows }: { rows: string[] }) {",
+      "  const slots = defineSlots<{ row?(props: { header: string }): Element }>();",
+      "  return (",
+      "    <div>",
+      "      {rows.map((header) => (",
+      "        <section key={header}>{slots.row?.({ header })}</section>",
+      "      ))}",
+      "    </div>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const page = [
+      'import { defineExpose } from "unframework";',
+      "",
+      'import Card from "./Card.uf.tsx";',
+      'import Table from "./Table.uf.tsx";',
+      "",
+      "export default function Page() {",
+      "  function footer() {",
+      '    return "F";',
+      "  }",
+      "  defineExpose({ footer });",
+      "  return (",
+      "    <main>",
+      "      <Card>{{ default: () => <p>{footer()}</p>, footer: ({ n }) => <small>{n}</small> }}</Card>",
+      '      <Table rows={["x"]}>',
+      "        {{",
+      "          row: ({ header }) => (",
+      "            <Card>{{ header: () => <h3>{header}</h3>, default: () => <p>{header}</p> }}</Card>",
+      "          ),",
+      "        }}",
+      "      </Table>",
+      "    </main>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const html = await render(
+      { "Card.uf.tsx": card, "Page.uf.tsx": page, "Table.uf.tsx": table },
+      "Page",
+    );
+    const outputs = await compileSources({
+      "Card.uf.tsx": card,
+      "Page.uf.tsx": page,
+      "Table.uf.tsx": table,
+    });
+    // The exposed function keeps its name in the component's exports.
+    expect(outputs["Page.svelte"]).toContain("export const footer = footer_1;");
+    const { warnings } = compile(outputs["Page.svelte"]!, {
+      filename: "Page.svelte",
+      generate: "client",
+    });
+    expect(warnings.map(({ code }) => code)).toEqual([]);
+    expect(html).toContain("<p>F</p>");
+    expect(html).toContain("<small>1</small>");
+    expect(html).toContain("<h3>x</h3>");
+    expect(html).toContain("<p>x</p>");
+  });
+
+  // A template ref on `<component is>` chosen where it sits changes after the first render,
+  // which Svelte wants declared with `$state` (`non_reactive_update`).
+  it("declares a ref on a <component is> chosen in a block with $state", async () => {
+    const exposing = (name: string, tag: string) =>
+      [
+        'import { defineExpose } from "unframework";',
+        "",
+        `export default function ${name}({ label }: { label: string }) {`,
+        "  function bump() {}",
+        "  defineExpose({ bump });",
+        `  return <${tag}>{label}</${tag}>;`,
+        "}",
+        "",
+      ].join("\n");
+    const rows = [
+      'import { defineSlots } from "unframework";',
+      'import type { Element } from "unframework";',
+      "",
+      "export default function Rows({ rows }: { rows: string[] }) {",
+      "  const slots = defineSlots<{ row?(props: { row: string; index: number }): Element }>();",
+      "  return (",
+      "    <ul>",
+      "      {rows.map((row, index) => (",
+      "        <li key={row}>{slots.row?.({ row, index })}</li>",
+      "      ))}",
+      "    </ul>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const list = [
+      'import { useTemplateRef } from "unframework";',
+      "",
+      'import Card from "./Card.uf.tsx";',
+      'import Chip from "./Chip.uf.tsx";',
+      'import Rows from "./Rows.uf.tsx";',
+      "",
+      "export default function List({ rows }: { rows: string[] }) {",
+      "  const last = useTemplateRef<{ bump(): void }>();",
+      "  return (",
+      "    <div>",
+      "      <Rows rows={rows}>",
+      "        {{",
+      "          row: ({ row, index }) => (",
+      "            <component is={index > 0 ? Card : Chip} ref={last} label={row} />",
+      "          ),",
+      "        }}",
+      "      </Rows>",
+      '      <button type="button" onClick={() => last.value?.bump()}>',
+      "        Bump",
+      "      </button>",
+      "    </div>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const outputs = await compileSources({
+      "Card.uf.tsx": exposing("Card", "b"),
+      "Chip.uf.tsx": exposing("Chip", "i"),
+      "List.uf.tsx": list,
+      "Rows.uf.tsx": rows,
+    });
+    const { warnings } = compile(outputs["List.svelte"]!, {
+      filename: "List.svelte",
+      generate: "client",
+    });
+    expect(warnings.map(({ code }) => code)).toEqual([]);
   });
 });

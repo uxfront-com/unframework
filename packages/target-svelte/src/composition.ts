@@ -13,6 +13,7 @@ import type {
   Expression,
   FragmentNode,
   IfNode,
+  Parameter,
   RenderNode,
   StyleAttribute,
   UfComponent,
@@ -171,6 +172,7 @@ export function composedRender(
   fallthrough: Fallthrough | undefined,
   dynamic: ReadonlyMap<RenderNode, string>,
   slotLocal: (slot: string) => string,
+  fillParameter: (parameter: Parameter) => Parameter,
   code: (expression: Expression) => string,
 ): ComposedRender {
   const rewrite = (nodes: readonly RenderNode[]): RenderNode[] =>
@@ -247,7 +249,11 @@ export function composedRender(
       attributes: [...node.attributes, ...forwarded],
       fills: node.fills
         .filter((fill) => fill.forward === undefined)
-        .map((fill) => ({ ...fill, children: rewrite(fill.children) })),
+        .map((fill) => ({
+          ...fill,
+          ...(fill.parameter ? { parameter: fillParameter(fill.parameter) } : {}),
+          children: rewrite(fill.children),
+        })),
     };
   };
 
