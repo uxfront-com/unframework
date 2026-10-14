@@ -27,9 +27,9 @@ import type { EffectCode, EffectNames } from "./effects.ts";
 import type { HandlerMethod } from "./listeners.ts";
 import type { ModelHelper } from "./models.ts";
 import { outputName } from "./outputs.ts";
-import { bindingById, formOf, unreachable } from "./plan.ts";
+import { bindingById, formOf, slotQuery, unreachable } from "./plan.ts";
 import type { Plan } from "./plan.ts";
-import { outputType, slotQuery, tidied } from "./rules.ts";
+import { outputType, tidied } from "./rules.ts";
 import { parenthesised, valueType } from "./seeded.ts";
 import { withoutUndefined } from "./types.ts";
 
@@ -454,12 +454,12 @@ export function classMembers(context: MemberContext): {
             : fallback;
         // Read once the inputs are set: a consumer projected into its provider is created
         // before the provider's inputs are set, which a provided value may read (NG0950).
-        const injected = `this.${names.member("injector")}.get(${key}, null, { optional: true, skipSelf: true }) ?? ${value}`;
+        const read = `this.${names.member("injector")}.get(${key}, null, { optional: true, skipSelf: true }) ?? ${value}`;
         fields.push(
           js.propertyDefinition(
             name,
             js.callExpression(js.identifier(core("computed")), [
-              expression(arrow(`${core("untracked")}(${arrow(injected)})`)),
+              expression(arrow(`${core("untracked")}(${arrow(read)})`)),
             ]),
             { accessibility: visibility(name), readonly: true },
           ),

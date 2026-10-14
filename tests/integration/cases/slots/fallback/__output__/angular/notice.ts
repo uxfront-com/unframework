@@ -1,9 +1,16 @@
 import { NgTemplateOutlet } from "@angular/common";
 import { Component, Directive, TemplateRef, contentChild, input } from "@angular/core";
 
-/** A template of `Notice`'s `action` slot (ADR-0056). */
+/** A template of `Notice`'s `action` slot, which takes no `let-` variable (ADR-0056). */
 @Directive({ selector: "ng-template[ufNoticeAction]" })
-export class NoticeAction {}
+export class NoticeAction {
+  static ngTemplateContextGuard(
+    _directive: NoticeAction,
+    _context: unknown,
+  ): _context is Record<never, never> {
+    return true;
+  }
+}
 
 @Component({
   selector: "uf-notice",

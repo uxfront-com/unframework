@@ -1,9 +1,16 @@
 import { NgTemplateOutlet } from "@angular/common";
 import { Component, Directive, TemplateRef, contentChild, input } from "@angular/core";
 
-/** A template of `Layout`'s `title` slot (ADR-0056). */
+/** A template of `Layout`'s `title` slot, which takes no `let-` variable (ADR-0056). */
 @Directive({ selector: "ng-template[ufLayoutTitle]" })
-export class LayoutTitle {}
+export class LayoutTitle {
+  static ngTemplateContextGuard(
+    _directive: LayoutTitle,
+    _context: unknown,
+  ): _context is Record<never, never> {
+    return true;
+  }
+}
 
 @Component({
   selector: "uf-layout",

@@ -11,6 +11,8 @@ import type {
   RenderNode,
   SlotDeclaration,
   SlotFill,
+  Span,
+  UfComponent,
 } from "@unframework/ir";
 
 import type { Plan } from "./plan.ts";
@@ -40,6 +42,12 @@ export interface Composition {
   keys: InjectionKeyDeclaration[];
   /** The local name of each key the setup names, by that name. */
   keyNames: ReadonlyMap<string, string>;
+  /**
+   * The children whose selector the component's own or an earlier child's already is, by local
+   * name: two components of one name, from two files (`./a/Button.uf.tsx` and
+   * `./b/Button.uf.tsx`), match one element (NG8023).
+   */
+  clashes: ReadonlyMap<string, string>;
 }
 
 /** The output file a component's output is named by, without `./` (ADR-0053). */
@@ -64,14 +72,37 @@ export function usesDirective(slot: string, scoped: boolean): boolean {
   return slot !== "default" || scoped;
 }
 
+/** Where the template first renders a child, by its local name: the component's span if nowhere. */
+export function firstUse(component: UfComponent, local: string): Span {
+  let found: Span | undefined;
+  walk(component.render, {
+    enter(node: RenderNode) {
+      if (found) return;
+      const names =
+        node.kind === "Component"
+          ? [node.component]
+          : node.kind === "Dynamic"
+            ? node.candidates.flatMap((each) => (each.kind === "Component" ? [each.component] : []))
+            : [];
+      if (names.includes(local)) found = node.span;
+    },
+  });
+  return found ?? component.span;
+}
+
 /** Plans the component's composition: its children, its slots and its keys. */
 export function planComposition(plan: Plan): Composition {
   const { component, module, imports } = plan;
   const tags = new Map<string, string>();
   const classes: string[] = [];
   const specifiers = new Map<string, { specifier: string; name: string; self: boolean }>();
+  const clashes = new Map<string, string>();
+  const selectors = new Set([selectorOf(component.name)]);
   for (const child of childImports(component, module, outputFile)) {
-    tags.set(child.local, selectorOf(child.name));
+    const selector = selectorOf(child.name);
+    if (!child.self && selectors.has(selector)) clashes.set(child.local, selector);
+    selectors.add(selector);
+    tags.set(child.local, selector);
     specifiers.set(child.local, child);
     // A component that renders itself uses its own selector, with nothing in `imports`.
     if (child.self) continue;
@@ -100,10 +131,10 @@ export function planComposition(plan: Plan): Composition {
       if (fill.forward !== undefined && fill.slot !== "default") outlet = true;
       if (!usesDirective(fill.slot, fill.parameter !== undefined)) continue;
       const name = `${child.name}${pascalCase(fill.slot)}`;
-      const local = child.self
+      const directive = child.self
         ? slots.find((slot) => slot.slot.name === fill.slot)!.className
         : imports.add(child.specifier, name);
-      if (!classes.includes(local)) classes.push(local);
+      if (!classes.includes(directive)) classes.push(directive);
     }
   };
   walk(component.render, {
@@ -133,7 +164,7 @@ export function planComposition(plan: Plan): Composition {
     module.keys?.length && keyOwner(module.components, module.exports) === component.name
       ? module.keys
       : [];
-  return { tags, imports: classes, slots, outlet, keys, keyNames };
+  return { tags, imports: classes, slots, outlet, keys, keyNames, clashes };
 }
 
 /**
@@ -205,20 +236,23 @@ export function slotDirectiveCode(
 ): string {
   const { slot, className, attribute, context } = directive;
   const selector = `@${decorator}({ selector: "ng-template[${attribute}]" })`;
-  if (!context) {
-    return `/** A template of \`${component}\`'s \`${slot.name}\` slot (ADR-0056). */\n${selector}\nexport class ${className} {}\n`;
-  }
+  // A slot without props passes an empty context, so a consumer's `let-` variable is an error.
+  const type = context ? `${context} & { $implicit: ${context} }` : "Record<never, never>";
   return [
-    `/** What a template of \`${component}\`'s \`${slot.name}\` slot reads: the slot's props. */`,
-    `export type ${context} = ${slot.props!.code}${aliases(slot.props!.code)};`,
-    "",
-    `/** A template of \`${component}\`'s \`${slot.name}\` slot, its \`let-\` variables typed (ADR-0056). */`,
+    ...(context
+      ? [
+          `/** What a template of \`${component}\`'s \`${slot.name}\` slot reads: the slot's props. */`,
+          `export type ${context} = ${slot.props!.code}${aliases(slot.props!.code)};`,
+          "",
+        ]
+      : []),
+    `/** A template of \`${component}\`'s \`${slot.name}\` slot, ${context ? "its `let-` variables typed" : "which takes no `let-` variable"} (ADR-0056). */`,
     selector,
     `export class ${className} {`,
     `  static ngTemplateContextGuard(`,
     `    _directive: ${className},`,
     `    _context: unknown,`,
-    `  ): _context is ${context} & { $implicit: ${context} } {`,
+    `  ): _context is ${type} {`,
     `    return true;`,
     `  }`,
     `}`,

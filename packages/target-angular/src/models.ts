@@ -5,7 +5,7 @@
 // select through `selectedValues`: inline helpers the template reads as members.
 import { angularCode, rewriteExpression } from "@unframework/codegen";
 import type { PrintedAttribute } from "@unframework/codegen";
-import type { Attribute, ElementNode, ModelAttribute } from "@unframework/ir";
+import type { Attribute, ElementNode, EventAttribute, ModelAttribute } from "@unframework/ir";
 
 import { bindingById } from "./plan.ts";
 import type { Plan } from "./plan.ts";
@@ -77,6 +77,11 @@ export interface Models {
   /** The attributes each `v-model` writes, by its IR attribute. */
   attributes: ReadonlyMap<ModelAttribute, PrintedAttribute[]>;
   /**
+   * The model's write that runs first in the template listener of an author's listener of the
+   * same element and event, by that listener's attribute (`writeFirst`).
+   */
+  writes: ReadonlyMap<EventAttribute, string>;
+  /**
    * The `[selected]` binding of each option of a multiple select, by the attribute the template
    * adds to the option (`withSelectedOptions`).
    */
@@ -94,6 +99,7 @@ export interface Models {
 /** Plans every native control's `v-model` of the component's template. */
 export function planModels(plan: Plan): Models {
   const attributes = new Map<ModelAttribute, PrintedAttribute[]>();
+  const writes = new Map<EventAttribute, string>();
   const options = new Map<Attribute, string>();
   const helpers = new Map<keyof typeof HELPERS, ModelHelper>();
   const helper = (base: keyof typeof HELPERS): string => {
@@ -140,8 +146,15 @@ export function planModels(plan: Plan): Models {
     const printed: PrintedAttribute[] = [];
     const bind = (name: string, code: string) =>
       printed.push({ name, text: `${name}="${angularCode(code, "attribute")}"` });
-    const listen = (event: string, statement: string) =>
-      printed.push({ name: `(${event})`, text: `(${event})="${angularCode(statement, "event")}"` });
+    const listen = (event: string, statement: string) => {
+      const first = writeFirst(element, event);
+      if (first) writes.set(first, statement);
+      else
+        printed.push({
+          name: `(${event})`,
+          text: `(${event})="${angularCode(statement, "event")}"`,
+        });
+    };
     const text = model.control === "text" || model.control === "textarea";
     const number = model.control === "number" || model.number === true;
     if ((text || model.control === "number") && (model.trim || number)) {
@@ -193,34 +206,30 @@ export function planModels(plan: Plan): Models {
       server ??= claimVariable(plan, "onServer");
       if (variable !== undefined) printed.unshift({ name: `#${variable}`, text: `#${variable}` });
       attributes.set(model, printed);
+      // Every option of the select, wherever it sits: in a list, a conditional or an
+      // `<optgroup>`, its value bound or its text's.
+      const withSelected = (option: ElementNode): ElementNode => {
+        if (option.tag !== "option") return option;
+        const added: Attribute = {
+          kind: "Static",
+          name: "selected",
+          value: true,
+          span: option.span,
+        };
+        const value = optionValue(plan, option, rules);
+        const selected = multiple ? `${signal}().includes(${value})` : `${signal}() === ${value}`;
+        options.set(
+          added,
+          `[selected]="${angularCode(selected, "attribute")}" [defaultSelected]="${angularCode(
+            `${server} && ${selected}`,
+            "attribute",
+          )}"`,
+        );
+        return { ...option, attributes: [...option.attributes, added] };
+      };
       return {
         ...element,
-        children: element.children.map((child) => {
-          if (child.kind !== "Element" || child.tag !== "option") return child;
-          const added: Attribute = {
-            kind: "Static",
-            name: "selected",
-            value: true,
-            span: child.span,
-          };
-          const value = child.attributes.find(
-            (attribute) => attribute.kind === "Static" && attribute.name === "value",
-          );
-          const literal = JSON.stringify(
-            value?.kind === "Static" && value.value !== true ? value.value : "",
-          );
-          const selected = multiple
-            ? `${signal}().includes(${literal})`
-            : `${signal}() === ${literal}`;
-          options.set(
-            added,
-            `[selected]="${angularCode(selected, "attribute")}" [defaultSelected]="${angularCode(
-              `${server} && ${selected}`,
-              "attribute",
-            )}"`,
-          );
-          return { ...child, attributes: [...child.attributes, added] };
-        }),
+        children: element.children.map((child) => mapElements(child, withSelected)),
       };
     }
     if (variable !== undefined) printed.unshift({ name: `#${variable}`, text: `#${variable}` });
@@ -230,12 +239,65 @@ export function planModels(plan: Plan): Models {
   const used = [...helpers.entries()];
   return {
     attributes,
+    writes,
     options,
     render,
     ...(server === undefined ? {} : { server }),
     helpers: used.filter(([base]) => base !== "looseToNumber").map(([, each]) => each),
     support: used.filter(([base]) => base === "looseToNumber").map(([, each]) => each),
   };
+}
+
+/**
+ * The author's listener of the element's event whose template listener the model's write joins,
+ * ahead of the listener's own statement: Vue's `vModel*` directives listen in `created`, before
+ * the element's own listeners, so the model is written first whatever the attributes' order, and
+ * one template listener per event keeps Angular's attributes unique. That is the first listener of
+ * the event in the bubble phase, which writes the template listener when it has no option or
+ * chains the others (./listeners.ts); a lone `once` or `passive` one listens through a directive,
+ * so the model then has its own template listener.
+ */
+function writeFirst(element: ElementNode, event: string): EventAttribute | undefined {
+  const bubbling = element.attributes.filter(
+    (attribute): attribute is EventAttribute =>
+      attribute.kind === "Event" && attribute.event === event && !attribute.capture,
+  );
+  const [first] = bubbling;
+  if (first === undefined) return undefined;
+  return bubbling.length > 1 || (!first.once && !first.passive) ? first : undefined;
+}
+
+/**
+ * The value an option gives its select's model, as Vue's `vModelSelect` reads it: its bound
+ * `value`, its static one, or else its text, which is an option's value without the attribute.
+ * HTML collapses the text's whitespace; a static text is collapsed here, an interpolation's is
+ * left as it renders.
+ */
+function optionValue(
+  plan: Plan,
+  option: ElementNode,
+  rules: ReturnType<typeof templateRules>,
+): string {
+  const value = option.attributes.find(
+    (attribute) =>
+      (attribute.kind === "Static" || attribute.kind === "Bound") && attribute.name === "value",
+  );
+  if (value?.kind === "Bound") {
+    return rewriteExpression(value.value, plan.component, rules, "render");
+  }
+  if (value?.kind === "Static") return JSON.stringify(value.value === true ? "" : value.value);
+  const [only] = option.children;
+  if (option.children.length === 1 && only?.kind === "Text") {
+    return JSON.stringify(only.value.replace(/\s+/g, " ").trim());
+  }
+  const parts = option.children.flatMap((child) => {
+    if (child.kind === "Text") return [JSON.stringify(child.value.replace(/\s+/g, " "))];
+    if (child.kind === "Interpolation") {
+      return [`(${rewriteExpression(child.value, plan.component, rules, "render")})`];
+    }
+    return [];
+  });
+  return ['""', ...parts].join(" + ");
 }
 
 /** A template variable's name, free beside the class's members and the lists' variables. */

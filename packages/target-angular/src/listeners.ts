@@ -88,8 +88,15 @@ export interface Listeners {
   once?: string;
 }
 
-/** Plans every listener of a component's template, in document order. */
-export function planListeners(plan: Plan, nextTick: string | undefined): Listeners {
+/**
+ * Plans every listener of a component's template, in document order. A native `v-model`'s write
+ * runs first in the template listener of the attribute `writes` gives it (./models.ts).
+ */
+export function planListeners(
+  plan: Plan,
+  nextTick: string | undefined,
+  writes: ReadonlyMap<EventAttribute, string>,
+): Listeners {
   const { component } = plan;
   const statements = new Map<EventAttribute, string>();
   const outputs = new Map<ListenerAttribute, string>();
@@ -173,8 +180,11 @@ export function planListeners(plan: Plan, nextTick: string | undefined): Listene
       const group = groups.get(attribute);
       if (group !== undefined) {
         // The group's first attribute writes its one listener; the others print nothing.
-        const statement =
+        const chained =
           group[0] === attribute ? groupStatement(plan, node, group, context) : undefined;
+        const write = writes.get(attribute);
+        const statement =
+          chained === undefined || write === undefined ? chained : `${write}; ${chained}`;
         attributes.set(
           attribute,
           statement === undefined
@@ -185,7 +195,8 @@ export function planListeners(plan: Plan, nextTick: string | undefined): Listene
       }
       const name = () => handlerName(plan, node, attribute.event, optionOf(attribute));
       const { code, valued } = listenerStatement(plan, attribute, name, methods, collected);
-      const statement = valued ? `void ${code}` : code;
+      const write = writes.get(attribute);
+      const statement = `${write === undefined ? "" : `${write}; `}${valued ? `void ${code}` : code}`;
       const option = optionOf(attribute);
       if (option === undefined) {
         statements.set(attribute, statement);
@@ -271,7 +282,7 @@ function outputStatement(
         parameters: fn.parameters.map((parameter, index) =>
           parameter.type || event.parameters[index] === undefined
             ? parameterText(parameter)
-            : `${parameterText(parameter)}: ${event.parameters[index]!.type}`,
+            : `${parameterText(parameter)}: ${event.parameters[index].type}`,
         ),
         async: fn.async === true,
         body,

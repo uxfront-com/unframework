@@ -214,7 +214,7 @@ describe("angular target", () => {
     expect(file!.contents).toMatch(
       /^import \{ Component, input \} from "@angular\/core";\n\n@Component\(\{/,
     );
-    expect(file!.contents).toMatch(/\nexport default class Component_1 \{\n/);
+    expect(file!.contents).toMatch(/\nexport default class Component_1 \{\n[\s\S]*\n\}\n$/);
     const [named] = emitModule(moduleOf(greeting, "Component", "named"));
     expect(named!.contents).toMatch(
       /\nclass Component_1 \{\n[\s\S]*\n\}\nexport \{ Component_1 as Component \};\n$/,

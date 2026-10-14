@@ -174,6 +174,10 @@ export function templateReads(plan: Plan, listeners: Listeners): TemplateReads {
         slots.add(node.slot);
       }
       if (node.kind !== "Element" && node.kind !== "Component" && node.kind !== "Dynamic") return;
+      // A forwarded named slot tests the parent's own template, through its query.
+      for (const fill of node.kind === "Element" ? [] : (node.fills ?? [])) {
+        if (fill.forward !== undefined && fill.forward !== "default") slots.add(fill.forward);
+      }
       for (const attribute of node.attributes) {
         if (attribute.kind === "Spread" && attribute.keys.length === 0) {
           unprinted.add(attribute.value);

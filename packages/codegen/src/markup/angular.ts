@@ -679,7 +679,7 @@ function componentStyle(parts: readonly StylePart[]): PrintedAttribute {
           .map((part) =>
             part.kind === "Bound" && part.property === ""
               ? `...${operand(part.value)}`
-              : property({
+              : objectProperty({
                   key: part.property,
                   value: part.kind === "Static" ? JSON.stringify(part.value) : part.value,
                 }),
@@ -786,15 +786,14 @@ function slotOutletPiece({ node, props }: PrintedSlotOutlet): MarkupPiece {
       ...(node.fallback.length ? { content: [fallback] } : {}),
     };
   }
+  // The template's alias reads before any name the context does, so it takes a name the context
+  // reads none of: a loop's item or a `@let` called `template` stays the source's.
+  const context = props && slotContext(props);
+  const alias = unreadName("template", context ?? "");
   const attributes: PrintedAttribute[] = [
-    { name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="template"` },
+    { name: "[ngTemplateOutlet]", text: `[ngTemplateOutlet]="${alias}"` },
   ];
-  if (props) {
-    const context = props.entries
-      ? `{ $implicit: { ${props.entries.map(property).join(", ")} }, ${props.entries
-          .map(({ key, value }) => `${contextKey(key)}: ${value}`)
-          .join(", ")} }`
-      : `{ $implicit: ${props.code}, ...${operand(props.code)} }`;
+  if (context !== undefined) {
     attributes.push({
       name: "[ngTemplateOutletContext]",
       text: `[ngTemplateOutletContext]="${angularCode(context, "attribute")}"`,
@@ -804,7 +803,7 @@ function slotOutletPiece({ node, props }: PrintedSlotOutlet): MarkupPiece {
     kind: "block",
     segments: [
       {
-        open: `@if (${node.slot}Template(); as template) {`,
+        open: `@if (${node.slot}Template(); as ${alias}) {`,
         content: { kind: "tag", tag: "ng-container", attributes },
       },
       ...(node.fallback.length ? [{ open: "} @else {", content: fallback }] : []),
@@ -813,8 +812,25 @@ function slotOutletPiece({ node, props }: PrintedSlotOutlet): MarkupPiece {
   };
 }
 
+/** A slot outlet's context: the props each by name, and whole as `$implicit`. */
+function slotContext(props: NonNullable<PrintedSlotOutlet["props"]>): string {
+  return props.entries
+    ? `{ $implicit: { ${props.entries.map(objectProperty).join(", ")} }, ${props.entries
+        .map(({ key, value }) => `${contextKey(key)}: ${value}`)
+        .join(", ")} }`
+    : `{ $implicit: ${props.code}, ...${operand(props.code)} }`;
+}
+
+/** `base`, or `base` with a number, that `code` reads no identifier of. */
+function unreadName(base: string, code: string): string {
+  const reads = (name: string) => new RegExp(`(?<![\\w$.])${name}(?![\\w$])`).test(code);
+  let name = base;
+  for (let suffix = 2; reads(name); suffix += 1) name = `${base}${suffix}`;
+  return name;
+}
+
 /** A property of an object literal: `item: item`, `"data-id": person.id`. */
-function property({ key, value }: { key: string; value: string }): string {
+function objectProperty({ key, value }: { key: string; value: string }): string {
   return `${IDENTIFIER.test(key) ? key : JSON.stringify(key)}: ${value}`;
 }
 

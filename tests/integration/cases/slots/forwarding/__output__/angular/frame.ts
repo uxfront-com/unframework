@@ -2,9 +2,16 @@ import Box, { BoxTitle } from "./box";
 import { NgTemplateOutlet } from "@angular/common";
 import { Component, Directive, TemplateRef, contentChild, input } from "@angular/core";
 
-/** A template of `Frame`'s `title` slot (ADR-0056). */
+/** A template of `Frame`'s `title` slot, which takes no `let-` variable (ADR-0056). */
 @Directive({ selector: "ng-template[ufFrameTitle]" })
-export class FrameTitle {}
+export class FrameTitle {
+  static ngTemplateContextGuard(
+    _directive: FrameTitle,
+    _context: unknown,
+  ): _context is Record<never, never> {
+    return true;
+  }
+}
 
 @Component({
   selector: "uf-frame",
@@ -30,5 +37,5 @@ export default class Frame {
   readonly label = input.required<string>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
-  private readonly titleTemplate = contentChild(FrameTitle, { read: TemplateRef });
+  protected readonly titleTemplate = contentChild(FrameTitle, { read: TemplateRef });
 }

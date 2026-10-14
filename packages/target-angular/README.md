@@ -136,30 +136,31 @@ none is read: its `return x;` keeps only what `x` changes.
 
 ### Composition (ADR-0053 to ADR-0056)
 
-| Source                                          | Angular output                                                                                                         |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `import Field from "./Field.uf.tsx"`, `<Field>` | `import Field from "./field"`, `imports: [Field]`, `<uf-field>`; a component that renders itself uses its own selector |
-| `label="Name"`, `tone={tone.value}`             | `[label]="'Name'"`, `[tone]="tone"`: a static prop is bound too, so the host keeps no attribute                        |
-| `onClear={clear}`                               | `(clear)="clear($event)"`, the payload spread by the tuple rule; any other handler a method (`onPickedURL($event)`)    |
-| `{slots.default?.()}`, with fallback            | `<ng-content />`, `<ng-content>fallback</ng-content>`                                                                  |
-| `{slots.title?.()}`, `{slots.item?.({ item })}` | `@if (itemTemplate(); as template) { <ng-container [ngTemplateOutlet]="template" [ngTemplateOutletContext]="…" /> }`   |
-| `defineSlots<…>()`                              | a directive per named or scoped slot, `ng-template[ufListItem]`, with `ngTemplateContextGuard`, read by `contentChild` |
-| a fill, `{{ item: ({ item }) => … }}`           | `<ng-template ufListItem let-item="item">`, its directive in `imports`                                                 |
-| `slots.title` as a condition                    | `titleTemplate()`                                                                                                      |
-| `defineModel("value", { default: 0 })`          | `readonly value = model<number>(0)`, read and written as a signal                                                      |
-| `v-model:value={cups.value}`                    | `[(value)]="this.cups"`, on the signal                                                                                 |
-| `v-model` on a control                          | `#nameField [value]="this.name()" (input)="this.name.set(nameField.value)"`, `[checked]` and `(change)` for a box      |
-| `class` and `style` on a component              | `[class]`, `[style]`: the child's `class` and `style` inputs, merged into its root; the host clears both               |
-| `defineExpose({ focus })`, `ref={search}`       | `focus` public; `viewChild<{ focus(): void }>("search")`, read as `this.search()?.focus()`                             |
-| `export const LocaleKey: InjectionKey<T>`       | `export const LocaleKey = new InjectionToken<T>("…")` in the module's main component's file                            |
-| `provide(LocaleKey, locale)`                    | `providers: [{ provide: LocaleKey, useFactory: () => inject(LocaleProvider).locale() }]`; `useValue` for a constant    |
-| `inject(LocaleKey, "en")`                       | `computed(() => untracked(() => this.injector.get(LocaleKey, null, { optional: true, skipSelf: true }) ?? "en"))`      |
-| `<component is={nested.value ? "h3" : "h2"}>`   | `@switch (nested ? 'h3' : 'h2') { @case ('h2') { <h2>…</h2> } … }`; a component candidate is matched by its name       |
+| Source                                          | Angular output                                                                                                                                                   |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `import Field from "./Field.uf.tsx"`, `<Field>` | `import Field from "./field"`, `imports: [Field]`, `<uf-field>`; a component that renders itself uses its own selector; two children of one name are UF1104      |
+| `label="Name"`, `tone={tone.value}`             | `[label]="'Name'"`, `[tone]="tone"`: a static prop is bound too, so the host keeps no attribute                                                                  |
+| `onClear={clear}`                               | `(clear)="clear($event)"`, the payload spread by the tuple rule; any other handler a method (`onPickedURL($event)`)                                              |
+| `{slots.default?.()}`, with fallback            | `<ng-content />`, `<ng-content>fallback</ng-content>`                                                                                                            |
+| `{slots.title?.()}`, `{slots.item?.({ item })}` | `@if (itemTemplate(); as template) { <ng-container [ngTemplateOutlet]="template" [ngTemplateOutletContext]="…" /> }`, the alias a name the context reads none of |
+| `defineSlots<…>()`                              | a directive per named or scoped slot, `ng-template[ufListItem]`, with `ngTemplateContextGuard`, read by `contentChild`                                           |
+| a fill, `{{ item: ({ item }) => … }}`           | `<ng-template ufListItem let-item="item">`, its directive in `imports`                                                                                           |
+| `slots.title` as a condition                    | `titleTemplate()`                                                                                                                                                |
+| `defineModel("value", { default: 0 })`          | `readonly value = model<number>(0)`, read and written as a signal                                                                                                |
+| `v-model:value={cups.value}`                    | `[(value)]="this.cups"`, on the signal                                                                                                                           |
+| `v-model` on a control                          | `#nameField [value]="this.name()" (input)="this.name.set(nameField.value)"`, `[checked]` and `(change)` for a box, `[selected]` on a select's options            |
+| `class` and `style` on a component              | `[class]`, `[style]`: the child's `class` and `style` inputs, merged into its root; the host clears both                                                         |
+| `defineExpose({ focus })`, `ref={search}`       | `focus` public; `viewChild<{ focus(): void }>("search")`, read as `this.search()?.focus()`                                                                       |
+| `export const LocaleKey: InjectionKey<T>`       | `export const LocaleKey = new InjectionToken<T>("…")` in the module's main component's file                                                                      |
+| `provide(LocaleKey, locale)`                    | `providers: [{ provide: LocaleKey, useFactory: () => inject(LocaleProvider).locale() }]`; `useValue` for a constant                                              |
+| `inject(LocaleKey, "en")`                       | `computed(() => untracked(() => this.injector.get(LocaleKey, null, { optional: true, skipSelf: true }) ?? "en"))`                                                |
+| `<component is={nested.value ? "h3" : "h2"}>`   | `@switch (nested ? 'h3' : 'h2') { @case ('h2') { <h2>…</h2> } … }`; a component candidate is matched by its name                                                 |
 
 - **Slots.** The default slot without props is `<ng-content>`; every other slot is a directive the
   file exports, `<Component><Slot>` with the selector `ng-template[uf<Component><Slot>]`, whose
   context guard types the consumer's `let-` variables (its props by name, and whole as
-  `$implicit`; a prop no template variable can read, `"data-id"`, also as `dataId`). The template
+  `$implicit`; a prop no template variable can read, `"data-id"`, also as `dataId`). A slot without
+  props has an empty context, so a `let-` variable on its template is an error. The template
   ends with `<ng-content select="[ufListItem]" />` per directive, so a slot's template never counts
   as the default slot's content. A forwarded named slot re-declares the child's template under
   `@if (titleTemplate(); as template)`.
@@ -167,8 +168,12 @@ none is read: its `return x;` keeps only what `x` changes.
   of the control, which types its value. Vue's `vModelText` (trim, lazy, a number's cast) goes
   through `modelText`, which keeps the field's own text where it already means the value
   (`12.5kg` for `12.5`), and `writeModelText`; a checkbox group through `toggle`; a multiple select
-  through `selectedValues`. A select's options bind `[selected]`, and on the server, whose DOM has
-  no selectedness, `[defaultSelected]` too (`onServer`), so the server HTML marks the option.
+  through `selectedValues`. Each option of a select binds `[selected]` from its own value (bound,
+  static or its text), wherever it sits: in a list, a conditional or an `<optgroup>`. On the
+  server, whose DOM has no selectedness, it binds `[defaultSelected]` too (`onServer`), so the
+  server HTML marks the option. Vue's `vModel*` directives listen before the element's own
+  listeners, so the model's write runs first in the element's one template listener of its event,
+  ahead of an author's listener there.
 - **Fallthrough.** A component whose root is an element or a component, and that does not set
   `inheritAttrs: false`, declares `class` and `style` inputs and merges them into its root: the
   class among its parts, the style in one map after the root's own, so a property the consumer
@@ -250,8 +255,8 @@ re-projects `<ng-content />`.
 
 Inline content on either side of a child component's host reads with a space in the accessible
 name: Chrome adds one at every `display: contents` element, so Angular reads `Build passing` where
-the other targets read `Buildpassing`. `harness/quarantine/angular.ts` lists the cells until M3's follow-up on
-Angular's host settles the difference.
+the other targets read `Buildpassing`. `harness/quarantine/angular.ts` lists the cells until M3's
+follow-up on Angular's host settles the difference.
 
 ## Toolchain
 

@@ -1,9 +1,16 @@
 import { NgTemplateOutlet } from "@angular/common";
 import { Component, Directive, TemplateRef, contentChild, input } from "@angular/core";
 
-/** A template of `Steps`'s `marker` slot (ADR-0056). */
+/** A template of `Steps`'s `marker` slot, which takes no `let-` variable (ADR-0056). */
 @Directive({ selector: "ng-template[ufStepsMarker]" })
-export class StepsMarker {}
+export class StepsMarker {
+  static ngTemplateContextGuard(
+    _directive: StepsMarker,
+    _context: unknown,
+  ): _context is Record<never, never> {
+    return true;
+  }
+}
 
 @Component({
   selector: "uf-steps",

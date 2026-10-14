@@ -187,18 +187,31 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
  * (angular-eslint's `no-output-rename` rules out an alias). The binding is the class's own, so it
  * takes another name: a local function `onSave`, as Angular names a method that handles and emits,
  * a template ref `fieldElement`, any other value `currentPage`. Every read and write of a binding is
- * a reference the rules spell by its binding's name, so the new name reaches each one.
+ * a reference the rules spell by its binding's name, so the new name reaches each one. A binding
+ * named like a member composition declares (the `class` and `style` inputs, a slot's query) is
+ * renamed the same way.
  */
 function withOutputNames(component: UfComponent, module: UfModule): UfComponent {
   const events = new Set(component.emits?.events.map(({ name }) => outputName(name)) ?? []);
+  // The members the emitter declares for composition: the `class` and `style` inputs a root
+  // takes from its consumer, and each slot's query (ADR-0056).
+  const declared = new Set([
+    "class",
+    "style",
+    ...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
+  ]);
   const clashing = component.bindings.filter(
     ({ name, kind }) =>
-      events.has(name) && kind !== "prop" && kind !== "emit" && !isLoopVariable(kind),
+      (events.has(name) || declared.has(name)) &&
+      kind !== "prop" &&
+      kind !== "emit" &&
+      !isLoopVariable(kind),
   );
   if (clashing.length === 0) return component;
   const taken = new NameScope([
     ...sourceNames(component, module),
     ...events,
+    ...declared,
     ...ANGULAR_MEMBERS,
     ...ANGULAR_IMPORTS,
   ]);
@@ -214,7 +227,12 @@ function withOutputNames(component: UfComponent, module: UfModule): UfComponent 
   };
 }
 
-/** The name a binding takes beside an event of its own name. */
+/** The member that queries a slot's template, `titleTemplate` (`angularDialect`'s outlet). */
+export function slotQuery(slot: string): string {
+  return `${slot}Template`;
+}
+
+/** The name a binding takes beside an event or a declared member of its own name. */
 function outputSafeName(name: string, kind: BindingKind): string {
   const pascal = `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
   switch (kind) {

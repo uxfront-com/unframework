@@ -20,6 +20,7 @@ import { codeOf, functionsOf } from "@unframework/ir";
 import type { UfComponent, UfModule } from "@unframework/ir";
 
 import {
+  firstUse,
   keyOf,
   planComposition,
   refObjectCode,
@@ -31,9 +32,9 @@ import { directiveCode } from "./directives.ts";
 import { planListeners } from "./listeners.ts";
 import { classMembers } from "./members.ts";
 import { planModels } from "./models.ts";
-import { bindingById, planComponent } from "./plan.ts";
+import { bindingById, planComponent, slotQuery } from "./plan.ts";
 import type { Plan } from "./plan.ts";
-import { classRules, slotQuery } from "./rules.ts";
+import { classRules } from "./rules.ts";
 import { fallthroughRoot, template, templateReads } from "./template.ts";
 import { declaredTypes } from "./types.ts";
 
@@ -160,17 +161,28 @@ export const angular: Target = defineTarget({
     },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    return [emitComponent(component, context.module)];
+    return [emitComponent(component, context)];
   },
 });
 
 export default angular;
 
 /** A component's output file. */
-function emitComponent(component: UfComponent, module: UfModule): OutputFile {
+function emitComponent(component: UfComponent, context: EmitContext): OutputFile {
+  const { module } = context;
   const plan = planComponent(component, module);
   const { imports } = plan;
   const composition = planComposition(plan);
+  // Angular matches a child by its selector alone, so two children of one name are reported
+  // (UF1104), as two names that differ only in case are: rename one of them.
+  for (const [local, selector] of composition.clashes) {
+    context.report({
+      code: "UF1104",
+      severity: "error",
+      message: `\`${local}\` is written \`<${selector}>\` on Angular, as another component of its name is: Angular would match both. Rename one of them.`,
+      span: firstUse(component, local),
+    });
+  }
   const models = planModels(plan);
   // The module's types keep their names, which consumers import. Angular's own names come
   // next: its compiler accepts a signal input only in a class whose decorator is imported as
@@ -186,7 +198,7 @@ function emitComponent(component: UfComponent, module: UfModule): OutputFile {
   const nextTick = callsNextTick ? plan.members.claim("nextTick") : undefined;
   const rules = classRules(plan, nextTick);
   const closure = componentTypes(component, module);
-  const listeners = planListeners(plan, nextTick);
+  const listeners = planListeners(plan, nextTick, models.writes);
   const reads = templateReads(plan, listeners);
   const templateMembers = new Set<string>(
     [...reads.read, ...reads.keyed, ...listeners.members].map((id) => bindingById(plan, id).name),
@@ -287,7 +299,7 @@ function emitComponent(component: UfComponent, module: UfModule): OutputFile {
   );
   const types = declaredTypes(closure, typeRoots(component, module));
   // The file's own declarations, before the imports print: each adds the imports it needs.
-  const declared = [
+  const declarations = [
     ...composition.keys.map(
       (key) =>
         `export const ${key.name} = new ${imports.add("@angular/core", "InjectionToken")}<${tokenType(key)}>(${JSON.stringify(key.description)});\n`,
@@ -306,7 +318,7 @@ function emitComponent(component: UfComponent, module: UfModule): OutputFile {
       printProgram(js.program(imports.toDeclarations())),
       ...types.map((declaration) => `${typeDeclarationCode(declaration)}\n`),
       ...(nextId === undefined ? [] : [`let ${nextId} = 0;\n`]),
-      ...declared,
+      ...declarations,
       ...directives.map(
         ({ decorator: written, statements: declared }) =>
           `${written}\n${spaced(printProgram(js.program(declared)))}`,

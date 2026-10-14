@@ -1,13 +1,27 @@
 import { NgTemplateOutlet } from "@angular/common";
 import { Component, Directive, TemplateRef, contentChild, input } from "@angular/core";
 
-/** A template of `Card`'s `header` slot (ADR-0056). */
+/** A template of `Card`'s `header` slot, which takes no `let-` variable (ADR-0056). */
 @Directive({ selector: "ng-template[ufCardHeader]" })
-export class CardHeader {}
+export class CardHeader {
+  static ngTemplateContextGuard(
+    _directive: CardHeader,
+    _context: unknown,
+  ): _context is Record<never, never> {
+    return true;
+  }
+}
 
-/** A template of `Card`'s `footer` slot (ADR-0056). */
+/** A template of `Card`'s `footer` slot, which takes no `let-` variable (ADR-0056). */
 @Directive({ selector: "ng-template[ufCardFooter]" })
-export class CardFooter {}
+export class CardFooter {
+  static ngTemplateContextGuard(
+    _directive: CardFooter,
+    _context: unknown,
+  ): _context is Record<never, never> {
+    return true;
+  }
+}
 
 @Component({
   selector: "uf-card",

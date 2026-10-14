@@ -7,7 +7,7 @@ import type { Binding, EmitReference, EventDeclaration, Expression } from "@unfr
 
 import { narrowedWhole } from "./narrowing.ts";
 import { outputName } from "./outputs.ts";
-import { formOf, isSignal, unreachable } from "./plan.ts";
+import { formOf, isSignal, slotQuery, unreachable } from "./plan.ts";
 import type { MemberForm, Plan } from "./plan.ts";
 
 /**
@@ -407,11 +407,6 @@ function refMember(written: string): string {
 function slotPresence(plan: Plan, slot: string, through: string): string {
   const props = plan.component.slots?.slots.find((each) => each.name === slot)?.props;
   return slot === "default" && props === undefined ? "true" : `${through}${slotQuery(slot)}()`;
-}
-
-/** The member that queries a slot's template, `titleTemplate` (`angularDialect`'s outlet). */
-export function slotQuery(slot: string): string {
-  return `${slot}Template`;
 }
 
 /** Whether the template reads a binding through a `@let`: a signal's value. */
