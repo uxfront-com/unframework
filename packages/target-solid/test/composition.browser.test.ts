@@ -2,6 +2,7 @@
 // src/models.ts): the fixtures are the emitter's own output (test/output.test.ts pins them). Each
 // is rendered as a parent's compiled JSX passes its props, a slot's prop a getter that creates its
 // content on every read, so a test counts how many times the output creates it.
+import { createSignal } from "solid-js";
 import type { Component, JSX } from "solid-js";
 import { createComponent, render } from "solid-js/web";
 import { afterEach, expect, it } from "vitest";
@@ -85,4 +86,18 @@ it("selects the option whose text, collapsed as the DOM's, is the state", async 
 it("selects the option a child component renders", async () => {
   await mount("SelectRows", { values: ["x", "y"] });
   expect(container.querySelector("select")!.value).toBe("y");
+});
+
+it("selects the option a child component renders after the mount", async () => {
+  const [values, setValues] = createSignal(["x"]);
+  await mount("SelectRows", {
+    get values() {
+      return values();
+    },
+  });
+  const select = container.querySelector("select")!;
+  setValues(["x", "y"]);
+  // The browser reports added options in a microtask (MutationObserver).
+  await new Promise((resolve) => setTimeout(resolve));
+  expect([select.value, select.selectedIndex]).toEqual(["y", 1]);
 });

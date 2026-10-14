@@ -42,7 +42,8 @@ import type {
 import { isUntyped, untypedAttribute } from "./attributes.ts";
 import type { SolidComposition } from "./composition.ts";
 import type { SolidListeners } from "./listeners.ts";
-import { modelAttribute, ModelHelpers } from "./models.ts";
+import { modelAttribute } from "./models.ts";
+import type { ModelHelpers } from "./models.ts";
 import {
   carriedPaths,
   declaresFalsyLiteral,
@@ -83,6 +84,8 @@ export interface SolidCompose {
   composition: SolidComposition;
   /** The props object's name: absent where the output reads no prop. */
   object: string | undefined;
+  /** The inline helpers the file's `v-model`s call. */
+  models: ModelHelpers;
 }
 
 /**
@@ -101,8 +104,7 @@ export function solidJsx(
   let helper: string | undefined;
   const classHelper = () => (helper ??= imports.claim(CLASS_HELPER));
   const flow: Flow = { imports, narrowings, falsy: declaresFalsyLiteral(types) };
-  const models = new ModelHelpers(imports);
-  const { code, composition, object } = compose;
+  const { code, composition, object, models } = compose;
   // What falls through to the root (ADR-0054), merged into its own `class` and `style`, or
   // added after them where it has none.
   const root = composition.fallthrough;
@@ -216,7 +218,7 @@ export function solidJsx(
       return js.logicalExpression("??", value, jsxBranch(node.fallback, context));
     },
     modelAttribute: (attribute, element, context) =>
-      modelAttribute(attribute, element, context, code, models),
+      modelAttribute(attribute, element, context, code, models, listeners.carries(element)),
     modelBinding(attribute, _node, context) {
       const setter = code.setter(bindingOfValue(attribute.value)!)!;
       return [

@@ -1,4 +1,4 @@
-import { For, type JSX, createEffect, createSignal } from "solid-js";
+import { For, type JSX, createEffect, createSignal, onCleanup } from "solid-js";
 
 import { SelectRow } from "./SelectRow";
 
@@ -11,7 +11,7 @@ export default function SelectRows(
     <select
       aria-label="Size"
       onChange={(event) => setSize(event.currentTarget.value)}
-      ref={(select) => createEffect(() => selectOptions(select, size()))}
+      ref={(select) => selectOptions(select, size)}
       class={props.class}
       style={props.style}
     >
@@ -20,9 +20,21 @@ export default function SelectRows(
   );
 }
 
-/** Selects a `<select>`'s options that hold `value`, or a value of it for an array. */
-function selectOptions(select: HTMLSelectElement, value: unknown): void {
-  for (const option of select.options) {
-    option.selected = Array.isArray(value) ? value.includes(option.value) : option.value === value;
-  }
+/**
+ * Selects a `<select>`'s options that hold `value`, or a value of it for an array: as the value
+ * changes, and as options come and go.
+ */
+function selectOptions(select: HTMLSelectElement, value: () => unknown): void {
+  const choose = () => {
+    const current = value();
+    for (const option of select.options) {
+      option.selected = Array.isArray(current)
+        ? current.includes(option.value)
+        : option.value === current;
+    }
+  };
+  createEffect(choose);
+  const observer = new MutationObserver(choose);
+  observer.observe(select, { childList: true, subtree: true, attributeFilter: ["value"] });
+  onCleanup(() => observer.disconnect());
 }

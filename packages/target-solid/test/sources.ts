@@ -1570,4 +1570,43 @@ export default function NullableArea() {
   return <textarea aria-label="Note" v-model_trim={note.value} />;
 }
 `,
+  // A template ref beside a `v-model` that needs the element's `ref` too: one `ref` callback.
+  TemplateRefModel: `import { ref, useTemplateRef } from "unframework";
+
+export default function TemplateRefModel() {
+  const box = useTemplateRef<HTMLInputElement>();
+  const name = ref("");
+  return (
+    <form>
+      <input aria-label="Name" ref={box} v-model_trim={name.value} />
+      <button type="button" onClick={() => box.value?.focus()}>
+        Edit
+      </button>
+    </form>
+  );
+}
+`,
+  RefSelect: `import { ref, useTemplateRef } from "unframework";
+
+export default function RefSelect({ values }: { values: string[] }) {
+  const field = useTemplateRef<HTMLSelectElement>();
+  const size = ref("y");
+  return (
+    <form>
+      <select aria-label="Size" ref={field} v-model={size.value}>
+        {values.map((value) => (
+          <SelectRow key={value} value={value} />
+        ))}
+      </select>
+      <button type="button" onClick={() => field.value?.focus()}>
+        Pick
+      </button>
+    </form>
+  );
+}
+
+function SelectRow({ value }: { value: string }) {
+  return <option value={value}>{value}</option>;
+}
+`,
 };

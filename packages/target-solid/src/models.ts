@@ -12,8 +12,11 @@
 //   `ref={modelText(…)}`, which reproduces Vue's `vModelText`, its focus rules included
 //   (`model-modifiers`, emulated).
 // - A value that may be `null` or `undefined` shows as no text: `value={name() ?? ""}`.
-// - Options another component renders, which the `<select>` cannot mark, are selected once they
-//   are rendered, and as the state changes, by an inline `selectOptions` from the `ref`.
+// - Options another component renders, which the `<select>` cannot mark, are selected by an
+//   inline `selectOptions` from the `ref`: once they are rendered, as the state changes, and as
+//   options come and go.
+// - A helper that needs the element (`modelText`, `selectOptions`) is called from the element's
+//   own `ref` callback where it has one (a template ref, an added listener): one `ref` an element.
 import { js, jsxBinding, jsxExpression } from "@unframework/codegen";
 import type { ImportSet, JsxContext } from "@unframework/codegen";
 import type { ElementNode, ModelAttribute, UfComponent } from "@unframework/ir";
@@ -83,7 +86,14 @@ export class ModelHelpers {
     }
     if (this.#toggle) helpers.push(toggleHelperCode(this.#toggle));
     if (this.#selectedValues) helpers.push(selectedValuesHelperCode(this.#selectedValues));
-    if (this.#selectOptions) helpers.push(selectOptionsHelperCode(this.#selectOptions));
+    if (this.#selectOptions) {
+      helpers.push(
+        selectOptionsHelperCode(this.#selectOptions, {
+          createEffect: this.solid("createEffect"),
+          onCleanup: this.solid("onCleanup"),
+        }),
+      );
+    }
     return helpers;
   }
 }
@@ -95,6 +105,7 @@ export function modelAttribute(
   context: JsxContext,
   code: SolidCode,
   helpers: ModelHelpers,
+  carried: boolean,
 ): JsxAttributeItem[] {
   const [ref] = attribute.value.refs;
   if (ref?.kind !== "Binding") throw new Error("A v-model binds a binding's value: invalid IR.");
@@ -122,42 +133,31 @@ export function modelAttribute(
     // The field's initial value, which the server renders; `modelText` keeps it in step after.
     const initial = () =>
       js.callExpression(js.identifier(helpers.solid("untrack")), [js.identifier(binding.name)]);
-    const options = [
-      ...(attribute.trim ? [js.property("trim", js.booleanLiteral(true))] : []),
-      ...(attribute.lazy ? [js.property("lazy", js.booleanLiteral(true))] : []),
-      ...(number ? [js.property("number", js.booleanLiteral(true))] : []),
-    ];
-    const bound = prop(
-      "ref",
-      js.callExpression(js.identifier(helpers.modelText()), [
-        js.identifier(binding.name),
-        js.identifier(setter),
-        js.objectExpression(options),
-      ]),
-    );
+    // The element's own `ref` callback calls the helper's where it has one (src/listeners.ts).
+    const bound = carried
+      ? []
+      : [
+          prop(
+            "ref",
+            context.placeholders.expression(
+              modelTextCall(attribute, binding.name, setter, helpers),
+            ),
+          ),
+        ];
     return attribute.control === "textarea"
-      ? [...textarea(initial), bound]
-      : [prop("value", text(initial())), bound];
+      ? [...textarea(initial), ...bound]
+      : [prop("value", text(initial())), ...bound];
   }
-  // Options another component, a slot or a row renders are not marked: once they are rendered,
-  // and as the state changes, the browser selects them as Vue's `vModelSelect` does.
+  // Options another component, a slot or a row renders are not marked: the browser selects them
+  // (`selectOptions`), from the element's own `ref` callback where it has one.
   const selection = () => {
-    if (!unmarkedOptions(element.children)) return [];
+    if (carried || !unmarkedOptions(element.children)) return [];
     const select = helpers.select();
     return [
       prop(
         "ref",
-        js.arrowFunction(
-          [js.bindingIdentifier(select)],
-          js.callExpression(js.identifier(helpers.solid("createEffect")), [
-            js.arrowFunction(
-              [],
-              js.callExpression(js.identifier(helpers.selectOptions()), [
-                js.identifier(select),
-                value(),
-              ]),
-            ),
-          ]),
+        context.placeholders.expression(
+          `(${select}) => ${helpers.selectOptions()}(${select}, ${binding.name})`,
         ),
       ),
     ];
@@ -216,6 +216,51 @@ export function modelAttribute(
     default:
       return attribute.control satisfies never;
   }
+}
+
+/**
+ * What a `v-model` does in its element's `ref`, as a statement of the element's own `ref` callback
+ * (src/listeners.ts) given its parameter, where the element has one: `modelText`'s binding, or
+ * `selectOptions`' selection; none for any other `v-model`.
+ */
+export function modelRef(
+  element: ElementNode,
+  context: JsxContext,
+  code: SolidCode,
+  helpers: ModelHelpers,
+): ((parameter: string) => string) | undefined {
+  const attribute = element.attributes.find(
+    (each): each is ModelAttribute => each.kind === "Model",
+  );
+  const [ref] = attribute?.value.refs ?? [];
+  if (!attribute || ref?.kind !== "Binding") return undefined;
+  const { name } = jsxBinding(ref.binding, context);
+  if (attribute.trim || attribute.lazy || attribute.number || attribute.control === "number") {
+    const call = modelTextCall(attribute, name, code.setter(ref.binding)!, helpers);
+    return (parameter) => `${call}(${parameter});`;
+  }
+  if (
+    (attribute.control === "select" || attribute.control === "select-multiple") &&
+    unmarkedOptions(element.children)
+  ) {
+    return (parameter) => `${helpers.selectOptions()}(${parameter}, ${name});`;
+  }
+  return undefined;
+}
+
+/** `modelText(name, setName, { trim: true })`: the `ref` callback of a field's `v-model`. */
+function modelTextCall(
+  attribute: ModelAttribute,
+  name: string,
+  setter: string,
+  helpers: ModelHelpers,
+): string {
+  const options = [
+    ...(attribute.trim ? ["trim: true"] : []),
+    ...(attribute.lazy ? ["lazy: true"] : []),
+    ...(attribute.number || attribute.control === "number" ? ["number: true"] : []),
+  ];
+  return `${helpers.modelText()}(${name}, ${setter}, { ${options.join(", ")} })`;
 }
 
 /**
@@ -321,14 +366,30 @@ function ${name}(select: HTMLSelectElement): string[] {
 
 /**
  * The inline `selectOptions` helper (emulated `model-array` and `two-way-binding` where the
- * options are another component's): each option selected where it holds the value, or where
- * the array holds it, as Vue's `vModelSelect` sets them.
+ * options are another component's): each option selected where it holds the state, or where
+ * the state's array holds it, as Vue's `vModelSelect` sets them, once they are rendered, as the
+ * state changes, and as options come and go or change their value.
  */
-function selectOptionsHelperCode(name: string): string {
-  return `/** Selects a \`<select>\`'s options that hold \`value\`, or a value of it for an array. */
-function ${name}(select: HTMLSelectElement, value: unknown): void {
-  for (const option of select.options) {
-    option.selected = Array.isArray(value) ? value.includes(option.value) : option.value === value;
-  }
+function selectOptionsHelperCode(
+  name: string,
+  solid: { createEffect: string; onCleanup: string },
+): string {
+  return `/**
+ * Selects a \`<select>\`'s options that hold \`value\`, or a value of it for an array: as the value
+ * changes, and as options come and go.
+ */
+function ${name}(select: HTMLSelectElement, value: () => unknown): void {
+  const choose = () => {
+    const current = value();
+    for (const option of select.options) {
+      option.selected = Array.isArray(current)
+        ? current.includes(option.value)
+        : option.value === current;
+    }
+  };
+  ${solid.createEffect}(choose);
+  const observer = new MutationObserver(choose);
+  observer.observe(select, { childList: true, subtree: true, attributeFilter: ["value"] });
+  ${solid.onCleanup}(() => observer.disconnect());
 }`;
 }

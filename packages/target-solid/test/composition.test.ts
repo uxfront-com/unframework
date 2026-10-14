@@ -111,6 +111,22 @@ describe("solid models", () => {
   });
 });
 
+describe("solid refs", () => {
+  it("prints one ref callback for a template ref and a modified v-model on one element", async () => {
+    const output = await emitSource(SOURCES.TemplateRefModel!);
+    expect(output.match(/\bref=/g)).toHaveLength(1);
+    expect(output).toContain("modelText(name, setName, { trim: true })(element);");
+    expect(output).toContain("box = element;");
+  });
+
+  it("prints one ref callback for a template ref and a <select>'s option selection", async () => {
+    const output = await emitSource(SOURCES.RefSelect!);
+    expect(output.match(/\bref=/g)).toHaveLength(1);
+    expect(output).toContain("selectOptions(element, size);");
+    expect(output).toContain("field = element;");
+  });
+});
+
 describe("solid fallthrough", () => {
   it("merges what falls through with a root spread's class", async () => {
     const output = await emitSource(SOURCES.SpreadRoot!);

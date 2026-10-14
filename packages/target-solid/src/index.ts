@@ -19,6 +19,7 @@ import { SolidComposition } from "./composition.ts";
 import { NEXT_TICK_HELPER, WATCHER_HELPER } from "./helpers.ts";
 import { CLASS_HELPER, solidJsx } from "./jsx.ts";
 import { solidListeners } from "./listeners.ts";
+import { ModelHelpers, modelRef } from "./models.ts";
 import { BindingTypes, Narrowings } from "./narrowing.ts";
 import { solidProps } from "./props.ts";
 import { forSolid } from "./render.ts";
@@ -137,13 +138,16 @@ export const solid: Target = defineTarget({
       component,
       new BindingTypes(component, context.module.types),
     );
-    const listeners = solidListeners(code, imports, placeholders, narrowings);
+    const models = new ModelHelpers(imports);
+    const listeners = solidListeners(code, imports, placeholders, narrowings, (element, context) =>
+      modelRef(element, context, code, models),
+    );
     const { dialect, helpers, fallthrough } = solidJsx(
       imports,
       narrowings,
       [component.propsParameter?.type.code ?? "", ...types.map((declaration) => declaration.code)],
       listeners,
-      { code, composition, object: props.object },
+      { code, composition, object: props.object, models },
     );
     const jsx = jsxContext({
       component,

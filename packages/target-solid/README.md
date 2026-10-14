@@ -357,9 +357,12 @@ Everything a parent passes is a prop, read through the props object (`src/compos
   `<select>` marks its options, in groups, lists and conditionals alike, an option without a
   `value` by its text (collapsed as the DOM collapses it), and a `<textarea>` holds its text
   there, a modified one's too. Options another component renders are not the `<select>`'s to
-  mark: once they are rendered, and as the state changes, its `ref` selects them,
-  `ref={(select) => createEffect(() => selectOptions(select, size()))}`, as Vue's
+  mark: its `ref` selects them, `ref={(select) => selectOptions(select, size)}`, once they are
+  rendered, as the state changes, and as options come and go (a `MutationObserver`), as Vue's
   `vModelSelect` does in the browser.
+- A helper that needs the element (`modelText`, `selectOptions`) is called from the element's own
+  `ref` callback where it has one (a template ref, an added listener), so an element has one
+  `ref`: `ref={(element) => { box = element; …; modelText(name, setName, { trim: true })(element); }}`.
 - `modelText` reproduces Vue's `vModelText`: the field's initial value is its `value` prop, which
   the server renders, and the `ref` it returns writes what the user types, trimmed or cast as `looseToNumber`
   casts it, on `input` or, lazy, on `change`, and shows each new value of the state (no text for
