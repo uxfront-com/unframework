@@ -8,6 +8,7 @@ import {
   keyImports,
   keyOwner,
   liveTypes,
+  parseStatementsSource,
   printProgram,
   rewriteExpression,
   typeDeclarationCode,
@@ -17,7 +18,7 @@ import type { ChildImport, ImportSet } from "@unframework/codegen";
 import { expressionsOf, walk } from "@unframework/ir";
 import type { BindingId, InjectItem, ModelItem, UfComponent, UfModule } from "@unframework/ir";
 
-import { isRenderProp } from "./composition.ts";
+import { isRenderProp, ownProps } from "./composition.ts";
 import type { AstroRender } from "./composition.ts";
 import { SERVER, serverBindings, setupCode } from "./setup.ts";
 import { renderPropName } from "./spelling.ts";
@@ -138,7 +139,9 @@ function propsExtras(component: UfComponent, render: AstroRender): string[] {
   }
   for (const slot of component.slots?.slots ?? []) {
     if (slot.props) {
-      members.push(`${renderPropName(slot.name)}?: (props: ${slot.props.code}) => unknown`);
+      members.push(
+        `${renderPropName(slot.name, ownProps(component))}?: (props: ${slot.props.code}) => unknown`,
+      );
     }
   }
   if (render.fallthrough) {
@@ -183,7 +186,7 @@ function propsRead(
   }
   const read = renderPropsRead(component);
   for (const [slot, local] of spelling.renderProps) {
-    const prop = renderPropName(slot);
+    const prop = renderPropName(slot, ownProps(component));
     if (read.has(slot)) names.push(prop === local ? prop : `${prop}: ${local}`);
   }
   if (render.fallthrough) {
@@ -243,7 +246,7 @@ function injectedType(
  * component under the key's name (`export type ThemeKey = Theme;`), for the components that
  * inject it (ADR-0054): Astro drops the key itself, and the type, written where the source wrote
  * it, names what that module declares. A key of a ref gives the ref's value, which the markup
- * reads. Each module type the alias names is declared there too.
+ * reads. Each module type the alias reaches is declared there too.
  */
 function keyTypes(
   component: UfComponent,
@@ -262,10 +265,55 @@ function keyTypes(
     for (const name of typeNames(type)) named.add(name);
     statements.push(`export type ${key.name} = ${type};`);
   }
+  // The module types the aliases reach, through the types they name in turn, as `liveTypes`
+  // follows a component's: the analyser lists them in the owner's `types`.
+  const owned = new Map(
+    module.types
+      .filter((each) => component.types.includes(each.name))
+      .map((each) => [each.name, each]),
+  );
+  const pending = [...named];
+  for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
+    const declaration = owned.get(name);
+    if (!declaration) continue;
+    for (const next of declarationNames(declaration.code)) {
+      if (!named.has(next)) {
+        named.add(next);
+        pending.push(next);
+      }
+    }
+  }
   const types = module.types
-    .filter((each) => named.has(each.name) && !declared.has(each.name))
+    .filter((each) => named.has(each.name) && owned.has(each.name) && !declared.has(each.name))
     .map(typeDeclarationCode);
   return [...types, ...statements];
+}
+
+/** The type names a declaration's code refers to: its references and what it extends. */
+function declarationNames(code: string): Set<string> {
+  const names = new Set<string>();
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const each of node) visit(each);
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    const record = node as Record<string, unknown>;
+    const reference =
+      record.type === "TSTypeReference"
+        ? record.typeName
+        : record.type === "TSInterfaceHeritage"
+          ? record.expression
+          : undefined;
+    let head = reference as Record<string, unknown> | undefined;
+    while (head?.type === "TSQualifiedName" || head?.type === "MemberExpression") {
+      head = (head.left ?? head.object) as Record<string, unknown>;
+    }
+    if (head?.type === "Identifier") names.add(head.name as string);
+    for (const [key, value] of Object.entries(record)) if (key !== "parent") visit(value);
+  };
+  visit(parseStatementsSource(code).statements);
+  return names;
 }
 
 /**

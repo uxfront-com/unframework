@@ -36,10 +36,15 @@ export interface Spelling {
 /**
  * The prop a scoped slot's render prop is passed as: the slot's name, or `classSlot` and
  * `styleSlot`, since `class` and `style` are the props a component's root takes from its
- * consumer (fallthrough, ADR-0054).
+ * consumer (fallthrough, ADR-0054). `taken` holds the component's props and models, which the
+ * analyser keeps apart from its slots' names but not from these (`styleSlot2` then). The
+ * component and its consumers compute the same name from its API.
  */
-export function renderPropName(slot: string): string {
-  return slot === "class" || slot === "style" ? `${slot}Slot` : slot;
+export function renderPropName(slot: string, taken: ReadonlySet<string>): string {
+  if (slot !== "class" && slot !== "style") return slot;
+  let name = `${slot}Slot`;
+  for (let index = 2; taken.has(name); index++) name = `${slot}Slot${index}`;
+  return name;
 }
 
 /**

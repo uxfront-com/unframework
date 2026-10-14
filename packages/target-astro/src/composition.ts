@@ -20,6 +20,7 @@ import type {
   RenderNode,
   SlotFill,
   UfComponent,
+  UfModule,
 } from "@unframework/ir";
 
 import { renderPropName, unreachable } from "./spelling.ts";
@@ -44,6 +45,8 @@ export interface AstroRender {
   fallthrough?: Fallthrough;
   /** Each `<component is>` of the copy, with the constant it is declared as. */
   dynamics: Map<DynamicNode, DynamicTag>;
+  /** The prop each fill the copy passes as a render prop is passed as (`renderPropName`). */
+  renderProps: Map<SlotFill, string>;
 }
 
 /**
@@ -79,9 +82,37 @@ export function isRenderProp(fill: SlotFill, component: UfComponent): boolean {
   return component.slots?.slots.find((slot) => slot.name === fill.forward)?.props !== undefined;
 }
 
+/** The names a component's props and models take, which its render props keep apart from. */
+export function ownProps(component: UfComponent): Set<string> {
+  return new Set([
+    ...component.props.map((prop) => prop.name),
+    ...component.setup.flatMap((item) => (item.kind === "Model" ? [item.name] : [])),
+  ]);
+}
+
+/**
+ * The props and models of a component a template renders, by its local name, from its API: one
+ * of the module's own, or an imported one's, as the resolver gave it (ADR-0053).
+ */
+function childProps(module: UfModule, local: string): Set<string> {
+  for (const entry of module.imports ?? []) {
+    const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
+    if (!imported) continue;
+    const api = entry.api.components.find((each) =>
+      imported.imported === "default"
+        ? each.export === "default"
+        : each.export === "named" && each.name === imported.imported,
+    );
+    return new Set([...(api?.props ?? []), ...(api?.models ?? [])].map(({ name }) => name));
+  }
+  const own = module.components.find((each) => each.name === local);
+  return own ? ownProps(own) : new Set();
+}
+
 /** A component's render tree in Astro's shape. */
 export function astroRender(
   component: UfComponent,
+  module: UfModule,
   spelling: Spelling,
   fallthrough: Fallthrough | undefined,
 ): AstroRender {
@@ -105,16 +136,20 @@ export function astroRender(
   const nodes = (children: readonly RenderNode[]): RenderNode[] => children.map(node);
   const fills = (each: readonly SlotFill[]): SlotFill[] =>
     each.map((fill) => ({ ...fill, children: nested(() => nodes(fill.children)) }));
-  const renderProps = (each: readonly SlotFill[]): ComponentAttribute[] =>
+  const renderPropNames = new Map<SlotFill, string>();
+  // The render props of a component's fills, named as the child names them (`taken`: its props).
+  const renderProps = (
+    each: readonly SlotFill[],
+    taken: ReadonlySet<string>,
+  ): ComponentAttribute[] =>
     each
       .filter((fill) => isRenderProp(fill, component))
-      .map((fill) => ({
-        kind: "Prop",
-        name: renderPropName(fill.slot),
+      .map((fill) => {
+        const name = renderPropName(fill.slot, taken);
+        renderPropNames.set(fill, name);
         // The dialect writes the fill's function in its place (`../markup.ts`).
-        value: written("undefined", fill),
-        span: fill.span,
-      }));
+        return { kind: "Prop", name, value: written("undefined", fill), span: fill.span };
+      });
 
   function node(each: RenderNode): RenderNode {
     switch (each.kind) {
@@ -145,11 +180,18 @@ export function astroRender(
         return { ...each, fallback: nodes(each.fallback) };
       case "Dynamic": {
         const tag: DynamicTag = { name: spelling.scope.claim("Tag"), hoisted: depth === 0 };
+        // Each candidate declares the dynamic's props and slots: a name none of them takes.
+        const taken = new Set(
+          each.candidates.flatMap((candidate) =>
+            candidate.kind === "Component" ? [...childProps(module, candidate.component)] : [],
+          ),
+        );
+        const copied = each.fills ? fills(each.fills) : undefined;
         const copy = branched({
           ...each,
-          attributes: [...each.attributes, ...renderProps(each.fills ?? [])],
+          attributes: [...each.attributes, ...renderProps(copied ?? [], taken)],
           children: nodes(each.children),
-          ...(each.fills ? { fills: fills(each.fills) } : {}),
+          ...(copied ? { fills: copied } : {}),
         });
         // Each branch renders the same constant.
         const copies =
@@ -164,10 +206,11 @@ export function astroRender(
 
   function componentChild(each: ComponentNode): ComponentNode {
     const root = each === rootComponent && fallthrough ? withFallthrough(each, fallthrough) : each;
+    const copied = fills(root.fills);
     return {
       ...root,
-      attributes: [...root.attributes, ...renderProps(root.fills)],
-      fills: fills(root.fills),
+      attributes: [...root.attributes, ...renderProps(copied, childProps(module, root.component))],
+      fills: copied,
     };
   }
 
@@ -257,11 +300,12 @@ export function astroRender(
     component.render.kind === "Element"
       ? element(component.render)
       : { ...component.render, children: nodes(component.render.children) };
-  if (!fallthrough) return { render, dynamics };
+  if (!fallthrough) return { render, dynamics, renderProps: renderPropNames };
   return {
     render: render.kind === "Element" ? withFallthrough(render, fallthrough) : render,
     fallthrough,
     dynamics,
+    renderProps: renderPropNames,
   };
 }
 

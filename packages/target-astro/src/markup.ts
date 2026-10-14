@@ -26,7 +26,7 @@ import type {
 
 import { isRenderProp, SPREAD_STYLE } from "./composition.ts";
 import type { AstroRender } from "./composition.ts";
-import { renderPropName, unreachable } from "./spelling.ts";
+import { unreachable } from "./spelling.ts";
 import type { Spelling } from "./spelling.ts";
 
 /**
@@ -125,7 +125,7 @@ function composition(
     // A scoped fill is a render prop named as the slot, the forwarded one the component's own.
     propAttribute(prop, context) {
       const fill = context.component.fills.find(
-        (each) => renderPropName(each.slot) === prop.name && isRenderProp(each, component),
+        (each) => render.renderProps.get(each) === prop.name,
       );
       if (!fill) return dialect.propAttribute!(prop, context);
       const value =

@@ -85,6 +85,51 @@ const SOURCES: Record<string, string> = {
     '  return <div><List items={["a"]} style="color: red">{{ style: ({ item }) => <b>{item}</b>, case: ({ item: value }) => <i>{value}</i> }}</List></div>;',
     "}",
   ].join("\n"),
+  ThemeKeys: [
+    'import { inject, provide } from "unframework";',
+    'import type { InjectionKey } from "unframework";',
+    'type Mode = "light" | "dark";',
+    "interface Theme {",
+    "  mode: Mode;",
+    "  size: number;",
+    "}",
+    'export const ThemeKey: InjectionKey<Theme> = Symbol("uf.theme");',
+    "function Badge() {",
+    "  const theme = inject(ThemeKey);",
+    '  return <p>{theme?.mode ?? "none"}</p>;',
+    "}",
+    "export default function Provider() {",
+    '  provide(ThemeKey, { mode: "dark", size: 1 });',
+    "  return (",
+    "    <div>",
+    "      <Badge />",
+    "    </div>",
+    "  );",
+    "}",
+  ].join("\n"),
+  Page: [
+    'import { defineSlots } from "unframework";',
+    'import type { Element } from "unframework";',
+    "function List({ items, styleSlot }: { items: string[]; styleSlot: string }) {",
+    "  const slots = defineSlots<{ style?(props: { item: string }): Element }>();",
+    "  return (",
+    "    <ul title={styleSlot}>",
+    "      {items.map((entry) => (",
+    "        <li key={entry}>{slots.style?.({ item: entry })}</li>",
+    "      ))}",
+    "    </ul>",
+    "  );",
+    "}",
+    "export default function Page() {",
+    "  return (",
+    "    <div>",
+    '      <List items={["a"]} styleSlot="S">',
+    "        {{ style: ({ item }) => <b>{item}</b> }}",
+    "      </List>",
+    "    </div>",
+    "  );",
+    "}",
+  ].join("\n"),
 };
 
 const scratch = scratchDirectory("composition-probes");
@@ -151,5 +196,11 @@ describe("composition shapes the corpus has no case for", { timeout: 60_000 }, (
     const html = await render("Dyn", { items: [{ label: "x", strong: true }] });
     expect(html).toContain("<strong>x</strong>");
     expect(html).toContain("<em>Guest</em>");
+  });
+
+  it("name a render prop apart from the child's own props, on both sides", async () => {
+    const html = await render("Page", {});
+    expect(html).toContain('<ul title="S">');
+    expect(html).toContain("<b>a</b>");
   });
 });

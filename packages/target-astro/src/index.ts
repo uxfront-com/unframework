@@ -114,7 +114,7 @@ export const astro: Target = defineTarget({
     const fallthrough = takesFallthrough(component)
       ? { className: spelling.scope.claim("className"), style: spelling.scope.claim("style") }
       : undefined;
-    const render = astroRender(component, spelling, fallthrough);
+    const render = astroRender(component, module, spelling, fallthrough);
     const markup = printComponentMarkup(component, spelling.rules, { spelling, render, tags });
     const code = frontmatterOf(component, module, {
       spelling,
