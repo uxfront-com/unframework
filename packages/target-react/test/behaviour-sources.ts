@@ -15,6 +15,8 @@ export default function ModelReads() {
   const size = ref("m");
   const agreed = ref(false);
   const name = ref("");
+  const notify = ref(false);
+  const plan = ref("a");
   return (
     <form>
       <select aria-label="Size" v-model={size.value} onChange={() => emit("seen", "select:" + size.value)}>
@@ -23,6 +25,9 @@ export default function ModelReads() {
       </select>
       <input type="checkbox" aria-label="Agree" v-model={agreed.value} onChange={() => emit("seen", "box:" + String(agreed.value))} />
       <input aria-label="Name" v-model={name.value} onInput={() => emit("seen", "name:" + name.value)} />
+      <input type="checkbox" aria-label="Notify" v-model={notify.value} onInput={() => emit("seen", "boxin:" + String(notify.value))} />
+      <input type="radio" name="plan" value="a" aria-label="A" v-model={plan.value} />
+      <input type="radio" name="plan" value="b" aria-label="B" v-model={plan.value} onInput={() => emit("seen", "radio:" + plan.value)} />
     </form>
   );
 }

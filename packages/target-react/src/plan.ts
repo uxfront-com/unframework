@@ -501,7 +501,15 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
   const helpers: ReactPlan["helpers"] = {};
   if (onceGuards.size) helpers.once = names.claim("useOnce");
   for (const [element, native] of nativeElements) {
-    if (stable(native.groups)) {
+    // A checkbox's or a radio's `v-model` is shown from the callback on every render: in place.
+    const checked = element.attributes.some(
+      (attribute) =>
+        attribute.kind === "Model" &&
+        (attribute.control === "checkbox" ||
+          attribute.control === "checkbox-group" ||
+          attribute.control === "radio"),
+    );
+    if (stable(native.groups) && !checked) {
       native.callback = names.claim(`${callbackBase(element, bindings)}Listeners`);
     }
   }

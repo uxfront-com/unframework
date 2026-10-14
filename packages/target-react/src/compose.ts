@@ -158,6 +158,7 @@ export class ReactComposer {
       ...[...parts.handlers]
         .filter(([prop]) => !merged.has(prop))
         .map(([prop, handler]) => js.jsxAttribute(prop, container(handler.code))),
+      ...this.#listeners!.model(attribute, element, context),
     ];
   }
 
@@ -203,54 +204,68 @@ export class ReactComposer {
         field,
       };
     } else {
-      const current = this.#clientRead(attribute.value);
-      const box = boxValue(element, context);
-      // Vue's `vModelText` and `vModelSelect` show `null` and `undefined` as nothing.
-      const shown = this.#nullish(binding) ? `${read} ?? ""` : read;
-      let state: [string, string];
-      let written: string;
-      switch (control) {
-        case "checkbox":
-          state = ["checked", read];
-          written = "EVENT.target.checked";
-          break;
-        case "checkbox-group": {
-          const toggle = (this.#plan.helpers.toggle ??= this.#plan.names.claim("toggle"));
-          state = ["checked", `${read}.includes(${box})`];
-          written = `${toggle}(${current}, ${box}, EVENT.target.checked)`;
-          break;
-        }
-        case "radio":
-          state = ["checked", `${read} === ${box}`];
-          written = box;
-          break;
-        case "select-multiple":
-          state = ["value", read];
-          written = "Array.from(EVENT.target.selectedOptions, (option) => option.value)";
-          break;
-        case "text":
-        case "textarea":
-        case "select":
-          state = ["value", shown];
-          written = "EVENT.target.value";
-          break;
-        default:
-          return control satisfies never;
+      const checkedModel = this.checkedModel(attribute, element, context);
+      if (checkedModel) {
+        // Written from the native `change` the element's ref callback adds (ReactListeners).
+        parts = { state: [["defaultChecked", checkedModel.checked]], handlers: new Map() };
+      } else {
+        // Vue's `vModelText` and `vModelSelect` show `null` and `undefined` as nothing.
+        const shown = this.#nullish(binding) ? `${read} ?? ""` : read;
+        const written =
+          control === "select-multiple"
+            ? "Array.from(EVENT.target.selectedOptions, (option) => option.value)"
+            : "EVENT.target.value";
+        const statements = (event: string) =>
+          this.#assign(binding, written.replaceAll("EVENT", event));
+        const { event } = locals([read, ...this.#assign(binding, "")], ["event"]);
+        const lines = statements(event);
+        const body =
+          lines.length === 1 ? lines[0]! : `{\n${lines.map((line) => `${line};`).join("\n")}\n}`;
+        const code = `(${event}) => ${body}`;
+        parts = {
+          state: [["value", control === "select-multiple" ? read : shown]],
+          handlers: new Map<string, ModelHandler>([["onChange", { code, statements }]]),
+        };
       }
-      const statements = (event: string) =>
-        this.#assign(binding, written.replaceAll("EVENT", event));
-      const { event } = locals([read, current, box, ...this.#assign(binding, "")], ["event"]);
-      const lines = statements(event);
-      const body =
-        lines.length === 1 ? lines[0]! : `{\n${lines.map((line) => `${line};`).join("\n")}\n}`;
-      const code = `(${written.includes("EVENT") ? event : ""}) => ${body}`;
-      parts = {
-        state: [state],
-        handlers: new Map<string, ModelHandler>([["onChange", { code, statements }]]),
-      };
     }
     this.#parts.set(attribute, parts);
     return parts;
+  }
+
+  /**
+   * A checkbox's or a radio's `v-model` (ADR-0054): whether the control is checked, and the
+   * statements that write it from the control (`element` its local). React's `onChange` on a
+   * checkbox or a radio fires on `click`, before the DOM's `input`; Vue writes on `change`, after
+   * it, so the element listens natively (ADR-0047). `undefined` for any other control.
+   */
+  checkedModel(
+    attribute: ModelAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): { checked: string; statements: (target: string) => string[] } | undefined {
+    const { control } = attribute;
+    if (control !== "checkbox" && control !== "checkbox-group" && control !== "radio") {
+      return undefined;
+    }
+    const read = expressionCode(attribute.value, context);
+    const binding = this.#bound(attribute.value);
+    const box = boxValue(element, context);
+    if (control === "checkbox") {
+      return {
+        checked: read,
+        statements: (target) => this.#assign(binding, `${target}.checked`),
+      };
+    }
+    if (control === "radio") {
+      return { checked: `${read} === ${box}`, statements: () => this.#assign(binding, box) };
+    }
+    const toggle = (this.#plan.helpers.toggle ??= this.#plan.names.claim("toggle"));
+    const current = this.#clientRead(attribute.value);
+    return {
+      checked: `${read}.includes(${box})`,
+      statements: (target) =>
+        this.#assign(binding, `${toggle}(${current}, ${box}, ${target}.checked)`),
+    };
   }
 
   /** Whether a state or a model may hold `null` or `undefined`, as its declaration says. */

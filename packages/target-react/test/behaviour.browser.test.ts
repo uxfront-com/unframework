@@ -118,6 +118,9 @@ describe("react output in the browser", () => {
     await act(() => userEvent.selectOptions(field("Size"), "s"));
     for (let click = 0; click < 3; click++) await act(() => userEvent.click(field("Agree")));
     await act(() => userEvent.type(field("Name"), "Al"));
+    // A checkbox's and a radio's `input` comes before their `change`, which writes the model.
+    for (let click = 0; click < 2; click++) await act(() => userEvent.click(field("Notify")));
+    await act(() => userEvent.click(field("B")));
     expect(events).toEqual([
       ["seen", "select:s"],
       ["seen", "box:true"],
@@ -125,6 +128,9 @@ describe("react output in the browser", () => {
       ["seen", "box:true"],
       ["seen", "name:A"],
       ["seen", "name:Al"],
+      ["seen", "boxin:false"],
+      ["seen", "boxin:true"],
+      ["seen", "radio:a"],
     ]);
     expect(logged).toEqual([]);
   });

@@ -17,6 +17,7 @@ import type {
   ElementNode,
   EventAttribute,
   FunctionCode,
+  ModelAttribute,
   RefAttribute,
 } from "@unframework/ir";
 
@@ -40,6 +41,8 @@ interface ElementListeners {
   refAt?: Attribute;
   /** The ref callback declared once in the component's body, by name. */
   callback?: string;
+  /** A checkbox's or a radio's `v-model`, which the ref callback writes from `change`. */
+  model?: { attribute: ModelAttribute; element: ElementNode };
 }
 
 /** Prints the listeners and template refs of a planned component's elements. */
@@ -98,6 +101,9 @@ export class ReactListeners {
     for (const attribute of element.attributes) {
       if (attribute.kind === "Ref") {
         found.ref = attribute;
+        found.refAt ??= attribute;
+      } else if (attribute.kind === "Model" && CHECKED_CONTROLS.has(attribute.control)) {
+        found.model = { attribute, element };
         found.refAt ??= attribute;
       } else if (attribute.kind === "Event") {
         if (this.#plan.listeners.get(attribute)!.mode === "native") {
@@ -173,11 +179,20 @@ export class ReactListeners {
     return [this.#refAttribute(listeners, context)];
   }
 
+  /**
+   * A checkbox's or a radio's `v-model`'s attributes from the listeners: the element's ref
+   * callback, where it is printed at the model.
+   */
+  model(attribute: ModelAttribute, element: ElementNode, context: JsxContext): JsxAttributeItem[] {
+    const listeners = this.#of(element);
+    return listeners.refAt === attribute ? [this.#refAttribute(listeners, context)] : [];
+  }
+
   /** The `ref` of an element with native listeners: its declared callback, or one in place. */
   #refAttribute(listeners: ElementListeners, context: JsxContext): JsxAttributeItem {
     const value = listeners.callback
       ? js.identifier(listeners.callback)
-      : context.placeholders.expression(this.#callback(listeners));
+      : context.placeholders.expression(this.#callback(listeners, undefined, context));
     return js.jsxAttribute("ref", js.jsxExpressionContainer(value));
   }
 
@@ -296,15 +311,43 @@ export class ReactListeners {
    * The ref callback that adds an element's native listeners, one `listen` call for each event
    * and phase, and sets its template ref; `type` types its parameter where no prop does.
    */
-  #callback(listeners: ElementListeners, type?: string): string {
+  #callback(listeners: ElementListeners, type?: string, context?: JsxContext): string {
     const listen = this.#listen;
-    const handlers = listeners.native.map((group) => this.#nativeHandler(group));
-    const ref = listeners.ref && this.#plan.bindings.get(listeners.ref.binding)!.name;
-    const local = locals(
-      [...handlers, listen, ref ?? ""],
-      ["element", "stop", "cleanups", "cleanup"],
+    // A checkbox's or a radio's model: shown on every render, as the callback is written in place,
+    // and written from `change` before the element's own listeners of it, as Vue adds it first. It
+    // runs in their one listener: a write renders, and the callback written in place is replaced,
+    // between two listeners, which would remove the second before it ran.
+    const model =
+      listeners.model &&
+      this.#composer!.checkedModel(listeners.model.attribute, listeners.model.element, context!);
+    const change = listeners.native.findIndex(
+      ([first]) => first!.event === "change" && !first!.capture && !first!.passive,
     );
-    const calls = listeners.native.map(([first], index) => {
+    const ref = listeners.ref && this.#plan.bindings.get(listeners.ref.binding)!.name;
+    const plain = listeners.native.map((group) => this.#nativeHandler(group));
+    const { element } = locals(
+      [...plain, listen, ref ?? "", model?.checked ?? "", ...(model?.statements("") ?? [])],
+      ["element"],
+    );
+    const head = model
+      ? () =>
+          model
+            .statements(element)
+            .map((line) => `${line};`)
+            .join("\n")
+      : undefined;
+    const handlers = listeners.native.map((group, index) =>
+      index === change && head ? this.#nativeHandler(group, head) : plain[index]!,
+    );
+    const local = {
+      element,
+      ...locals([...handlers, listen, ref ?? "", element], ["stop", "cleanups", "cleanup"]),
+    };
+    const modelCall =
+      model && change === -1
+        ? `${listen}(${local.element}, "change", () => {\n${head!()}\n})`
+        : undefined;
+    const nativeCalls = listeners.native.map(([first], index) => {
       const options = first!.capture
         ? ", { capture: true }"
         : first!.passive
@@ -312,9 +355,16 @@ export class ReactListeners {
           : "";
       return `${listen}(${local.element}, "${first!.event}", ${handlers[index]!}${options})`;
     });
+    const calls = [...(modelCall ? [modelCall] : []), ...nativeCalls];
     const parameter = type ? `(${local.element}: ${type})` : `(${local.element})`;
-    if (!ref && calls.length === 1) return `${parameter} => ${calls[0]!}`;
+    if (!ref && !model && calls.length === 1) return `${parameter} => ${calls[0]!}`;
     const lines = ref ? [`${ref}.current = ${local.element};`] : [];
+    if (model) {
+      lines.push(
+        `if (!${local.element}) return undefined;`,
+        `${local.element}.checked = ${model.checked};`,
+      );
+    }
     const stops = [ref ? `${ref}.current = null;` : undefined];
     if (calls.length === 1) {
       lines.push(`const ${local.stop} = ${calls[0]!};`);
@@ -327,11 +377,14 @@ export class ReactListeners {
     return `${parameter} => {\n${lines.join("\n")}\nreturn () => {\n${cleanup}\n};\n}`;
   }
 
-  /** The handler of one native event and phase: its listeners in attribute order, guarded. */
-  #nativeHandler(group: EventAttribute[]): string {
+  /**
+   * The handler of one native event and phase: its listeners in attribute order, guarded, after
+   * what a `v-model` on the element writes there (`head`).
+   */
+  #nativeHandler(group: EventAttribute[], head?: () => string): string {
     const [first] = group;
-    if (group.length === 1 && !first!.once) return this.#handler(first!, "native");
-    return this.#wrapped(group, "native", () => undefined);
+    if (group.length === 1 && !first!.once && !head) return this.#handler(first!, "native");
+    return this.#wrapped(group, "native", () => head?.());
   }
 
   /** A listener's handler as code: the function it names, or the one it writes. */
@@ -380,6 +433,13 @@ function propOf(attribute: EventAttribute, element: ElementNode): string {
   );
   return text ? "onChange" : prop;
 }
+
+/** The controls whose `v-model` writes from the native `change`: a checkbox's and a radio's. */
+const CHECKED_CONTROLS: ReadonlySet<ModelAttribute["control"]> = new Set([
+  "checkbox",
+  "checkbox-group",
+  "radio",
+]);
 
 /** The helpers the listeners of a planned component need, after it is printed. */
 export function listenerHelpers(plan: ReactPlan): string[] {
