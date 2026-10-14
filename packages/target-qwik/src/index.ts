@@ -26,8 +26,9 @@ import {
 } from "@unframework/codegen";
 import type { EmitContext, JsxContext, JsxDialect, OutputFile, Target } from "@unframework/codegen";
 import { codeOf } from "@unframework/ir";
-import { walk } from "@unframework/ir";
+import { childrenOf, walk } from "@unframework/ir";
 import type {
+  BindingId,
   ElementNode,
   EventDeclaration,
   FragmentNode,
@@ -236,6 +237,7 @@ export const qwik: Target = defineTarget({
       if (selected) option.attributes = [selected, ...option.attributes];
     }
     for (const node of replacedBeforeSiblings(render)) followed.add(node);
+    for (const element of listsInFills(render)) listeners.explicit.add(element);
     const setup = printSetup(plan);
     const root = jsxNode(render, jsx);
     if (plan.composition.fallthrough) mergeFallthrough(root, plan.composition.fallthrough);
@@ -736,6 +738,8 @@ function qwikDialect(
   const namespaceOf = (element: ElementNode) => namespaces.get(element) ?? "html";
   const { composition } = plan;
   const fills = fillExpressions(component);
+  /** The name of each setup function's copy in the fills that call it. */
+  const fillCopies = new Map<BindingId, string>();
   return {
     conditional(node, context) {
       const chain = ternaryChain(node, context);
@@ -763,17 +767,39 @@ function qwikDialect(
     // A fill's code runs as a `$` scope, which captures no plain function: a setup function it
     // calls is declared in the fill's callback, its own calls written in place (./inline.ts), so
     // the fill renders at once, with no promise in a condition, a class or a style.
+    // Where the component declares the function too (its QRL, or a plain one render calls), the
+    // fill's copy takes a name of its own: a listener in the fill keeps calling the QRL.
     expression(expression, context, site) {
-      if (locals.inFill && fills.has(expression)) {
-        for (const reference of expression.refs) {
-          if (reference.kind !== "Binding" || !reference.call) continue;
-          const fn = plan.functions.get(reference.binding);
-          if (fn && fn.form !== "module") {
-            locals.declareInFill(fn.binding.name, () => fillFunction(plan, fn.item.binding));
-          }
-        }
+      const rules = context.rules!;
+      if (!(locals.inFill && fills.has(expression))) {
+        return rewriteExpression(expression, component, rules, site);
       }
-      return rewriteExpression(expression, component, context.rules!, site);
+      const copies = new Map<BindingId, string>();
+      for (const reference of expression.refs) {
+        if (reference.kind !== "Binding" || !reference.call) continue;
+        const fn = plan.functions.get(reference.binding);
+        if (!fn || fn.form === "module") continue;
+        const id = fn.item.binding;
+        let name = fillCopies.get(id);
+        if (name === undefined) {
+          const declared = plan.declared.has(id) || fn.form === "render" || fn.form === "both";
+          name = declared ? plan.names.fresh(`${fn.binding.name}InFill`) : fn.binding.name;
+          fillCopies.set(id, name);
+        }
+        copies.set(id, name);
+        locals.declareInFill(name, () => fillFunction(plan, id, name));
+      }
+      return rewriteExpression(
+        expression,
+        component,
+        {
+          ...rules,
+          binding: (reference, binding, written, at) =>
+            (reference.call && copies.get(binding.id)) ||
+            rules.binding(reference, binding, written, at),
+        },
+        site,
+      );
     },
     slotOutlet: (node, context) =>
       slotOutlet(node, context, composition, () => plan.names.core("Slot")),
@@ -793,9 +819,11 @@ function qwikDialect(
     },
     modelAttribute: (attribute, element, context) =>
       modelAttribute(attribute, element, context, plan, locals),
-    // A `<component is>` that reads a list's item or a fill's props is declared in that callback.
+    // A `<component is>` that reads a list's item, or sits in a fill, is declared in that
+    // callback.
     dynamic(node, context) {
-      const local = readsRenderLocal(node.is, component);
+      // In a fill, it may call a function only the fill declares (./composition.ts).
+      const local = readsRenderLocal(node.is, component) || locals.inFill;
       const name = locals.declare("Tag", expressionCode(node.is, context), local);
       const element = jsxDynamic(node, name, context);
       return followed.has(node) ? js.jsxFragment([element]) : element;
@@ -862,6 +890,31 @@ function qwikDialect(
         isPrimitiveValue(condition, component, module),
       ),
   };
+}
+
+/** The elements inside a list inside a render-prop fill (see `Listeners.explicit`). */
+function listsInFills(root: ElementNode | FragmentNode): Set<ElementNode> {
+  const found = new Set<ElementNode>();
+  const visit = (node: RenderNode, fill: boolean, list: boolean): void => {
+    if (node.kind === "Element" && fill && list) found.add(node);
+    if (node.kind === "Component" || node.kind === "Dynamic") {
+      const fills = node.kind === "Component" ? node.fills : (node.fills ?? []);
+      for (const each of fills) {
+        // The default slot's plain fill is projected: it renders in the component's own segment.
+        const own = each.slot === "default" && !each.parameter;
+        for (const child of each.children) {
+          if (own) visit(child, fill, list);
+          else visit(child, true, false);
+        }
+      }
+      if (node.kind === "Dynamic") for (const child of node.children) visit(child, fill, list);
+      return;
+    }
+    if (node.kind === "For") return visit(node.body, fill, fill);
+    for (const child of childrenOf(node)) visit(child, fill, list);
+  };
+  for (const child of root.kind === "Fragment" ? root.children : [root]) visit(child, false, false);
+  return found;
 }
 
 /**

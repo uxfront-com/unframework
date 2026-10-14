@@ -135,14 +135,16 @@ Composition follows ADR-0053 to ADR-0055 (`src/composition.ts`, `src/index.ts`).
 | A consumer's `class` and `style`              | `class` and `style` props, merged after the root's own (`class={["tag", className]}`, `style={{ …, ...style }}`), on every component whose root is one element or a component that takes them                                        |
 | `defineExpose({ focus })`                     | the consumer's `ref` signal holds the exposed QRLs from the component's render on (a `useTask$`), so a consumer's `onMounted` finds them, and is emptied when it goes (the inline `exposeRef`)                                       |
 | `InjectionKey`, `provide`, `inject`           | `createContextId<T>(description)`, a ref key holding Qwik's `Signal`; `useContextProvider`; `useContext(key, (provided?) => …)`, which gives the fallback, or `undefined` without one: Qwik throws for a default that is `undefined` |
-| `<component is={…}>`                          | `const Tag = …;` before the return, or in the callback of the list whose item it reads, rendered `<Tag …>`                                                                                                                           |
+| `<component is={…}>`                          | `const Tag = …;` before the return, or in the callback of the list whose item it reads, or of the fill it sits in, rendered `<Tag …>`                                                                                                |
 
 Known limit, not yet diagnosed: Qwik projects a default slot once, so a default slot rendered
 inside a list, twice, or inside a fill the component passes to a child shows its content once
 or not at all, where Vue renders it each time.
 
 A fill is a `$` scope, which captures no plain function: a setup function it calls is declared
-in the fill's callback, its own calls written in place. An option
+in the fill's callback, its own calls written in place, under a name of its own where the
+component declares the function too. A listener in a list inside a fill is written `$(…)`: Qwik
+2.0.0-beta.47's optimizer would hoist an arrow's capture out of the fill. An option
 without a `value` is selected by its text and expressions, as the DOM reads its value; one
 that holds anything else (a conditional) shows unselected.
 

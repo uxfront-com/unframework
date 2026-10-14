@@ -416,7 +416,7 @@ export function readsRenderLocal(expression: Expression, component: UfComponent)
 
 /**
  * The expressions of the fills a component passes as render props: Qwik's optimizer makes each
- * fill a `$` scope, which calls a setup function through its QRL, as a listener does.
+ * fill a `$` scope, which declares a copy of each setup function it calls, as a listener does.
  */
 export function fillExpressions(component: UfComponent): Set<Expression> {
   const found = new Set<Expression>();
@@ -662,7 +662,8 @@ export function textOptionSelected(
       .map((part) =>
         typeof part === "string"
           ? part.replace(/[`\\]|\$\{/g, (found) => `\\${found}`)
-          : `\${${expressionCode(part, context)}}`,
+          : // A nullish value renders nothing, as in Vue's text.
+            `\${${nullishOperand(expressionCode(part, context))} ?? ""}`,
       )
       .join("");
     compared = `\`${template}\`.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")`;
@@ -674,6 +675,11 @@ export function textOptionSelected(
     value: { code, refs: [], span: { start: at.start, end: at.start + code.length } },
     span: at,
   };
+}
+
+/** Code as the left operand of `??`: in parentheses unless it is a name or a member. */
+function nullishOperand(code: string): string {
+  return /^[\w$]+(?:(?:\?\.|\.)[\w$]+)*$/.test(code) ? code : `(${code})`;
 }
 
 /** An option's value from its text, as the DOM reads it: ASCII whitespace collapsed and stripped. */

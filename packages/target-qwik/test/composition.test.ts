@@ -1,8 +1,17 @@
 // Composition's shapes in Qwik (ADR-0053 to ADR-0055, ./src/composition.ts): what each construct
 // emits. The corpus runs them through every layer; these pin the forms.
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
+import { toolchain } from "../src/toolchain/index.ts";
 import { emitSource } from "./lower.ts";
+
+const repo = fileURLToPath(new URL("../../..", import.meta.url));
+const context = {
+  toolchainDir: `${repo}tests/toolchains/qwik`,
+  root: `${repo}tests/integration`,
+};
 
 describe("qwik target: components and fallthrough", () => {
   it("merges a consumer's class and style after the root's own", async () => {
@@ -345,8 +354,8 @@ export default function Pick({ sizes, label }: { sizes: number[]; label: string 
 }`,
     );
     const read = '.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
-    expect(contents).toContain(`selected={currentSize === \`\${n}\`${read}}`);
-    expect(contents).toContain(`selected={currentSize === \` \${label}! \`${read}}`);
+    expect(contents).toContain(`currentSize === \`\${n ?? ""}\`${read}`);
+    expect(contents).toContain(`currentSize === \` \${label ?? ""}! \`${read}`);
   });
 });
 
@@ -363,5 +372,123 @@ function Base({ text }: { text: string }) {
       { fallthrough: true },
     );
     expect(contents).toContain('<Base text={text} class={["primary", className]} style={style} />');
+  });
+});
+
+describe("qwik target: fills, listeners and the optimizer", () => {
+  const board = `import { defineSlots, ref } from "unframework";
+import type { Element } from "unframework";
+
+export default function Board() {
+  const chosen = ref("none");
+  function choose(name: string) {
+    chosen.value = name;
+  }
+  function label(name: string) {
+    return name === chosen.value ? \`[\${name}]\` : name;
+  }
+  function tagOf(name: string): "b" | "i" {
+    return name === chosen.value ? "b" : "i";
+  }
+  return (
+    <Groups>
+      {{
+        group: ({ items }) => (
+          <ul>
+            {items.map((name) => (
+              <li key={name}>
+                <button type="button" onClick={() => choose(name)}>
+                  Pick {label(name)}
+                </button>
+                <button type="button" onClick={() => label(name)}>
+                  {name.split("").map((c) => label(c)).join(",")}
+                </button>
+              </li>
+            ))}
+            <li>
+              <component is={tagOf("Ada")}>Ada</component>
+            </li>
+          </ul>
+        ),
+      }}
+    </Groups>
+  );
+}
+
+function Groups() {
+  const slots = defineSlots<{ group?(props: { items: string[] }): Element }>();
+  return <div>{slots.group?.({ items: ["Ada"] })}</div>;
+}`;
+
+  it("names a fill's copy apart from the QRL a listener in the fill calls", async () => {
+    const contents = await emitSource(board);
+    expect(contents).toContain("const label = $((name: string) => {");
+    expect(contents).toContain("function labelInFill(name: string) {");
+    expect(contents).toContain("Pick {labelInFill(name)}");
+    expect(contents).toContain(".map((c) => labelInFill(c))");
+    expect(contents).toContain("onClick$={$(() => label(name))}");
+  });
+
+  it("writes a listener in a list in a fill `$(…)`, and the optimizer accepts the fill", async () => {
+    const contents = await emitSource(board);
+    expect(contents).toContain("onClick$={$(() => choose(name))}");
+    expect(contents).toContain('const Tag = tagOf("Ada");');
+    expect(contents).not.toMatch(/=> \{\n {4}const Tag/);
+    const file = { path: "/virtual/Board.tsx", contents };
+    const result = (await toolchain.frameworkCompile([file], context)).get(file.path);
+    expect(result).toEqual({ errors: [], warnings: [] });
+  });
+
+  it("declares no QRL for a function only a fill's callback calls", async () => {
+    const contents = await emitSource(`import { defineSlots, ref } from "unframework";
+import type { Element } from "unframework";
+
+export default function Spelled() {
+  const mark = ref("*");
+  function format(c: string) {
+    return mark.value + c;
+  }
+  return <Rows>{{ item: ({ item }) => <b>{item.split("").map((c) => format(c)).join(",")}</b> }}</Rows>;
+}
+
+function Rows() {
+  const slots = defineSlots<{ item?(props: { item: string }): Element }>();
+  return <ul><li>{slots.item?.({ item: "Ada" })}</li></ul>;
+}`);
+    expect(contents).not.toContain("$((c: string)");
+    expect(contents).toContain("function format(c: string) {");
+    expect(contents).toContain(".map((c) => format(c))");
+  });
+});
+
+describe("qwik target: options read as the DOM reads them", () => {
+  it("renders a nullish expression as no text, and keeps a non-ASCII space", async () => {
+    const contents = await emitSource(`import { ref } from "unframework";
+
+export default function Pick({ hint, sizes }: { hint?: string; sizes: string[] }) {
+  const picked = ref("");
+  const many = ref<string[]>([]);
+  return (
+    <div>
+      <select v-model={picked.value}>
+        <option>{hint}</option>
+        <option>&nbsp;sp&nbsp;</option>
+        <option>{hint ? "Yes" : "No"}</option>
+      </select>
+      <select multiple v-model={many.value}>
+        {sizes.map((n) => (
+          <option key={n}>{n}</option>
+        ))}
+      </select>
+    </div>
+  );
+}`);
+    const read = '.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
+    expect(contents).toContain(`currentPicked === \`\${hint ?? ""}\`${read}`);
+    // The DOM strips ASCII whitespace only.
+    expect(contents).toContain('currentPicked === "\u00a0sp\u00a0"');
+    // A conditional of strings is one expression, in parentheses before `??`.
+    expect(contents).toContain(`\`\${(hint ? "Yes" : "No") ?? ""}\`${read}`);
+    expect(contents).toMatch(/currentMany\.includes\(\s*`\$\{n \?\? ""\}`/);
   });
 });

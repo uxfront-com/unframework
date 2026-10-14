@@ -850,9 +850,15 @@ function declaredQrls(
       need(listener.handler.binding);
     }
   }
-  // A fill writes its calls of setup functions in place (./composition.ts `fillExpressions`).
+  // A fill declares a copy of each setup function it calls (./composition.ts `fillExpressions`).
   for (const expression of fillExpressions(component)) {
-    visit(expression, "expression", true, false);
+    for (const reference of expression.refs) {
+      if (reference.kind !== "Binding" || !client(reference.binding)) continue;
+      // Every call, a callback's included, runs the fill's own copy; a function passed on is a
+      // QRL.
+      if (reference.call) inline(reference.binding);
+      else need(reference.binding);
+    }
   }
   // What a component exposes, its consumer calls as QRLs (./composition.ts).
   for (const id of component.exposes?.functions ?? []) if (client(id)) need(id);

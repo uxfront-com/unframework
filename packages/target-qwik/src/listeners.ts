@@ -90,6 +90,13 @@ export class Listeners {
   readonly #printed = new Set<EventAttribute>();
   /** The `once` listeners' WeakSets, declared after the component. */
   readonly helpers: string[] = [];
+  /**
+   * The elements in a list inside a fill, whose `$` handler is written `$(…)` in place: Qwik
+   * 2.0.0-beta.47's optimizer hoists the capture of an arrow on a list's element out of the
+   * fill's segment, which then reads a name it does not declare; an explicit `$()` captures the
+   * item where it is (./composition.ts).
+   */
+  readonly explicit: Set<ElementNode> = new Set();
 
   constructor(plan: SetupPlan) {
     this.#plan = plan;
@@ -103,10 +110,15 @@ export class Listeners {
     const [first] = listeners;
     if (first !== attribute || this.#printed.has(first)) return [];
     this.#printed.add(first);
-    return this.#event(attribute.event, listeners, context);
+    return this.#event(attribute.event, listeners, context, this.explicit.has(element));
   }
 
-  #event(event: string, listeners: readonly EventAttribute[], context: JsxContext): JsxAttribute[] {
+  #event(
+    event: string,
+    listeners: readonly EventAttribute[],
+    context: JsxContext,
+    explicit: boolean,
+  ): JsxAttribute[] {
     const plan = this.#plan;
     const groups = [
       ...new Set(listeners.map((listener) => plan.listeners.groups.get(listener)!)),
@@ -146,7 +158,11 @@ export class Listeners {
       if (!entries.length) continue;
       const value =
         entries.length === 1
-          ? context.placeholders.expression(entries[0]!.code(false))
+          ? context.placeholders.expression(
+              explicit && entries[0]!.inline
+                ? `${plan.names.core("$")}(${entries[0]!.code(true)})`
+                : entries[0]!.code(false),
+            )
           : js.arrayExpression(
               entries.map(({ code, inline }) =>
                 context.placeholders.expression(
