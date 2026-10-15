@@ -868,13 +868,13 @@ describe("svelte composition", () => {
     const outputs = await caseOutputs("context/static");
     expect(outputs["ThemeProvider.svelte"]).toContain('<script lang="ts" module>');
     expect(outputs["ThemeProvider.svelte"]).toContain(
-      'export const ThemeKey = Symbol("uf.theme");',
+      'export const ThemeKey = Symbol("uf.theme") as symbol & { readonly __value: Theme };',
     );
     expect(outputs["ThemeProvider.svelte"]).toContain("setContext(ThemeKey, {");
+    expect(outputs["Badge.svelte"]).toContain('import { ThemeKey } from "./ThemeProvider.svelte";');
     expect(outputs["Badge.svelte"]).toContain(
-      'import { ThemeKey, type ThemeKeyValue } from "./ThemeProvider.svelte";',
+      'getContext<(typeof ThemeKey)["__value"] | undefined>(ThemeKey)',
     );
-    expect(outputs["Badge.svelte"]).toContain("getContext<ThemeKeyValue | undefined>(ThemeKey)");
   });
 
   it("provides a ref through refObject, and falls back to one", async () => {
@@ -882,7 +882,7 @@ describe("svelte composition", () => {
       await caseOutputs("context/reactive");
     expect(counter).toMatch(/setContext\(\s*CountKey,\s*refObject\(\(\) => count\),?\s*\);/);
     expect(display).toMatch(
-      /hasContext\(CountKey\)\s*\? getContext<CountKeyValue>\(CountKey\)\s*: refObject\(\(\) => none\)/,
+      /hasContext\(CountKey\)\s*\? getContext<\(typeof CountKey\)\["__value"\]>\(CountKey\)\s*: refObject\(\(\) => none\)/,
     );
   });
 
