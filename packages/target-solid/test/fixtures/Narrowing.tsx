@@ -1,4 +1,4 @@
-import { For, Match, Show, Switch, mergeProps } from "solid-js";
+import { For, type JSX, Match, Show, Switch, mergeProps } from "solid-js";
 
 interface Account {
   name: string;
@@ -55,11 +55,13 @@ export interface NarrowingProps {
   attrs?: Attrs;
 }
 
-export default function Narrowing(rawProps: NarrowingProps) {
+export default function Narrowing(
+  rawProps: NarrowingProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const defaults: Required<Pick<NarrowingProps, "attrs">> = { attrs: { title: "t" } };
   const props = mergeProps(defaults, rawProps);
   return (
-    <div>
+    <div class={props.class} style={props.style}>
       <Show when={props.user || undefined}>{(user) => <p>{user().name}</p>}</Show>
       <Show when={props.user || undefined} fallback={<i>anon</i>}>
         {(user) => <b title={user().name}>{user().name}</b>}

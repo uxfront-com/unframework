@@ -1,4 +1,4 @@
-import { For, untrack } from "solid-js";
+import { For, type JSX, untrack } from "solid-js";
 
 export interface WelcomeBannerProps {
   name: string;
@@ -6,11 +6,17 @@ export interface WelcomeBannerProps {
 
 const tips = ["Set up your profile", "Invite your team"];
 
-export default function WelcomeBanner(props: WelcomeBannerProps) {
+export default function WelcomeBanner(
+  props: WelcomeBannerProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const greeting = untrack(() => `Welcome, ${props.name}`);
 
   return (
-    <section class="welcome-banner" aria-label="Welcome">
+    <section
+      class={props.class ? `welcome-banner ${props.class}` : "welcome-banner"}
+      aria-label="Welcome"
+      style={props.style}
+    >
       <h2>{greeting}</h2>
       <p>Signed in as {props.name}</p>
       <ul>

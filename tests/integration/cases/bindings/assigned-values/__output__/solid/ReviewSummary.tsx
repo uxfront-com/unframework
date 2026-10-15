@@ -1,4 +1,4 @@
-import { For } from "solid-js";
+import { For, type JSX } from "solid-js";
 
 export interface ReviewSummaryProps {
   steps: string[];
@@ -7,9 +7,15 @@ export interface ReviewSummaryProps {
   product: string;
 }
 
-export default function ReviewSummary(props: ReviewSummaryProps) {
+export default function ReviewSummary(
+  props: ReviewSummaryProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <section class="review-summary" aria-label="Review">
+    <section
+      class={props.class ? `review-summary ${props.class}` : "review-summary"}
+      aria-label="Review"
+      style={props.style}
+    >
       <ol>
         <For each={props.steps}>{(step, index) => <li value={index()}>{step}</li>}</For>
       </ol>

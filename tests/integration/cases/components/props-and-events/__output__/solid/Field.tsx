@@ -1,4 +1,4 @@
-import { mergeProps } from "solid-js";
+import { type JSX, mergeProps } from "solid-js";
 
 export interface FieldProps {
   label: string;
@@ -9,10 +9,12 @@ export interface FieldEvents {
   onClear?: (label: string) => void;
 }
 
-export default function Field(rawProps: FieldProps & FieldEvents) {
+export default function Field(
+  rawProps: FieldProps & FieldEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const props = mergeProps({ tone: "info" } satisfies Partial<FieldProps>, rawProps);
   return (
-    <div class={cx("field", props.tone)}>
+    <div class={cx("field", props.tone, props.class)} style={props.style}>
       <span>{props.label}</span>
       <button type="button" onClick={() => props.onClear?.(props.label)}>
         Clear {props.label}

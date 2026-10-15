@@ -1,4 +1,4 @@
-import { Show, createSignal } from "solid-js";
+import { type JSX, Show, createSignal } from "solid-js";
 
 interface User {
   name: string;
@@ -12,7 +12,9 @@ export interface NarrowedStateEvents {
   onPicked?: (name: string) => void;
 }
 
-export default function NarrowedState(props: NarrowedStateProps & NarrowedStateEvents) {
+export default function NarrowedState(
+  props: NarrowedStateProps & NarrowedStateEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [user, setUser] = createSignal<User | null>(null);
   const [draft, setDraft] = createSignal<string | null>(null);
 
@@ -22,7 +24,7 @@ export default function NarrowedState(props: NarrowedStateProps & NarrowedStateE
   }
 
   return (
-    <div>
+    <div class={props.class} style={props.style}>
       <Show
         when={((user) => (user !== null ? { user } : undefined))(user())}
         fallback={<p>Nobody</p>}

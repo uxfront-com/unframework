@@ -1,4 +1,4 @@
-import { Match, Switch } from "solid-js";
+import { type JSX, Match, Switch } from "solid-js";
 
 type LookupResult = { ok: true; match: string } | { ok: false; error: string };
 
@@ -8,9 +8,15 @@ export interface FilterSummaryProps {
   result: LookupResult;
 }
 
-export default function FilterSummary(props: FilterSummaryProps) {
+export default function FilterSummary(
+  props: FilterSummaryProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <section class="filter-summary" aria-label="Filters">
+    <section
+      class={props.class ? `filter-summary ${props.class}` : "filter-summary"}
+      aria-label="Filters"
+      style={props.style}
+    >
       <p>Tags: {Array.isArray(props.tags) ? props.tags.join(", ") : props.tags}</p>
       <p>
         Limit:{" "}

@@ -1,3 +1,5 @@
+import type { JSX } from "solid-js";
+
 export interface FileInfo {
   path: string;
   size: number;
@@ -16,14 +18,21 @@ export interface FileRowEvents {
   onShare?: (path: string, note?: string) => void;
 }
 
-export default function FileRow(props: FileRowProps & FileRowEvents) {
+export default function FileRow(
+  props: FileRowProps & FileRowEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   function archive() {
     props.onMove?.(props.path, `archive/${props.path}`);
     props.onRefresh?.();
   }
 
   return (
-    <div class="file-row" role="group" aria-label={props.path}>
+    <div
+      class={props.class ? `file-row ${props.class}` : "file-row"}
+      role="group"
+      aria-label={props.path}
+      style={props.style}
+    >
       <span>
         {props.path} ({props.size} bytes)
       </span>

@@ -1,10 +1,12 @@
-import { For, createSignal } from "solid-js";
+import { For, type JSX, createSignal } from "solid-js";
 
 export interface PickerEvents {
   onDone?: (step: number, status: string) => void;
 }
 
-export default function Picker(props: PickerEvents) {
+export default function Picker(
+  props: PickerEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [selected, setSelected] = createSignal("none");
   const [hits, setHits] = createSignal(0);
   const [log, setLog] = createSignal<string[]>([]);
@@ -44,7 +46,11 @@ export default function Picker(props: PickerEvents) {
   }
 
   return (
-    <section class="picker" aria-label="Picker">
+    <section
+      class={props.class ? `picker ${props.class}` : "picker"}
+      aria-label="Picker"
+      style={props.style}
+    >
       <div class="choices" role="presentation" onClick={report}>
         <button type="button" onClick={() => pick("alpha")}>
           Alpha

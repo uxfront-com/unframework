@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface AutoRefreshProps {
   /** Milliseconds between two refreshes. */
@@ -9,7 +9,9 @@ export interface AutoRefreshEvents {
   onRefresh?: (count: number) => void;
 }
 
-export default function AutoRefresh(props: AutoRefreshProps & AutoRefreshEvents) {
+export default function AutoRefresh(
+  props: AutoRefreshProps & AutoRefreshEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [enabled, setEnabled] = createSignal(false);
   let timer: ReturnType<typeof setInterval> | undefined;
   let refreshes = 0;
@@ -36,7 +38,11 @@ export default function AutoRefresh(props: AutoRefreshProps & AutoRefreshEvents)
   );
 
   return (
-    <section class="auto-refresh" aria-label="Auto-refresh">
+    <section
+      class={props.class ? `auto-refresh ${props.class}` : "auto-refresh"}
+      aria-label="Auto-refresh"
+      style={props.style}
+    >
       <button type="button" aria-pressed={enabled()} onClick={toggle}>
         Auto-refresh
       </button>

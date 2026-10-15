@@ -1,4 +1,4 @@
-import { For, Show, mergeProps } from "solid-js";
+import { For, type JSX, Show, mergeProps } from "solid-js";
 
 interface LabelAttributes {
   id: string;
@@ -22,10 +22,16 @@ export interface ShipmentCardProps {
   signature?: LabelAttributes;
 }
 
-export default function ShipmentCard(rawProps: ShipmentCardProps) {
+export default function ShipmentCard(
+  rawProps: ShipmentCardProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const props = mergeProps({ eta: null } satisfies Partial<ShipmentCardProps>, rawProps);
   return (
-    <section class="shipment-card" aria-label={props.reference}>
+    <section
+      class={props.class ? `shipment-card ${props.class}` : "shipment-card"}
+      aria-label={props.reference}
+      style={props.style}
+    >
       <p id={props.carrier?.id} title={props.carrier?.title}>
         Carrier
       </p>

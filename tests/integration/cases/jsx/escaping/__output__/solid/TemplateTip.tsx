@@ -1,12 +1,19 @@
+import type { JSX } from "solid-js";
+
 export interface TemplateTipProps {
   example: string;
   note: string;
   path: string;
 }
 
-export default function TemplateTip(props: TemplateTipProps) {
+export default function TemplateTip(
+  props: TemplateTipProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <figure class="template-tip">
+    <figure
+      class={props.class ? `template-tip ${props.class}` : "template-tip"}
+      style={props.style}
+    >
       <figcaption title={"Vue {{ name }}, Svelte {#if ok}, Angular @if (ok) & JSX {name}"}>
         Template syntax &amp; escaping
       </figcaption>

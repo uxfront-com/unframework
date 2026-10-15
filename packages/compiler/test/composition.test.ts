@@ -21,8 +21,7 @@ describe("composition before M3's lanes", () => {
     expect(files.map((file) => file.path)).toEqual(["Form.vue"]);
   });
 
-  // Each target's M3 lane removes its target here once it emits composition: Astro's has.
-  it.each(TARGET_NAMES.filter((name) => name !== "vue" && name !== "astro"))(
+  it.each(TARGET_NAMES.filter((name) => name !== "vue" && name !== "astro" && name !== "solid"))(
     "%s reports UF1002 where a component first uses it",
     (name) => {
       const module = composition();

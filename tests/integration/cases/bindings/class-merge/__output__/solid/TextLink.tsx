@@ -1,3 +1,5 @@
+import type { JSX } from "solid-js";
+
 interface LinkAttributes {
   class?: string;
   title?: string;
@@ -17,11 +19,14 @@ export interface TextLinkProps {
   row: RowAttributes;
 }
 
-export default function TextLink(props: TextLinkProps) {
+export default function TextLink(
+  props: TextLinkProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
     <p
       id={props.row.id}
-      class={cx("link-row", { "link-row-strong": props.strong }, props.row.class)}
+      class={cx("link-row", { "link-row-strong": props.strong }, props.row.class, props.class)}
+      style={props.style}
     >
       <a
         href={props.href}

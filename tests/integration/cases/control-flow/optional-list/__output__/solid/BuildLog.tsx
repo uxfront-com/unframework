@@ -1,4 +1,4 @@
-import { For, Show } from "solid-js";
+import { For, type JSX, Show } from "solid-js";
 
 interface LogLine {
   id: string;
@@ -12,9 +12,15 @@ export interface BuildLogProps {
   warnings?: string[];
 }
 
-export default function BuildLog(props: BuildLogProps) {
+export default function BuildLog(
+  props: BuildLogProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <section class="build-log" aria-label="Build log">
+    <section
+      class={props.class ? `build-log ${props.class}` : "build-log"}
+      aria-label="Build log"
+      style={props.style}
+    >
       <pre>
         $ make {props.target}
         <Show when={props.failed}>

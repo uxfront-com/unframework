@@ -1,4 +1,4 @@
-import { Show, createSignal, createUniqueId, onCleanup, onMount } from "solid-js";
+import { type JSX, Show, createSignal, createUniqueId, onCleanup, onMount } from "solid-js";
 
 export interface LifecycleProps {
   title: string;
@@ -17,7 +17,9 @@ function format(value: number): string {
   return `${value}${units[0]}`;
 }
 
-export default function Lifecycle(props: LifecycleProps & LifecycleEvents) {
+export default function Lifecycle(
+  props: LifecycleProps & LifecycleEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const id = `uf-id-${createUniqueId()}`;
   let heading: HTMLHeadingElement | null = null;
   let details: HTMLUListElement | null = null;
@@ -66,7 +68,7 @@ export default function Lifecycle(props: LifecycleProps & LifecycleEvents) {
   );
 
   return (
-    <section aria-labelledby={id}>
+    <section aria-labelledby={id} class={props.class} style={props.style}>
       <h2
         id={id}
         ref={(element) => {
