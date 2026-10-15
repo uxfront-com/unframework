@@ -66,10 +66,11 @@ function ${name}<T>(values: readonly T[], value: T, checked: boolean): T[] {
 }`,
   optionText: (name: string) => `/**
  * An option's value from its text, as the browser reads it without a \`value\`: its ASCII
- * whitespace stripped and collapsed (ADR-0054).
+ * whitespace stripped and collapsed (ADR-0054). A no-break space is no ASCII whitespace, so it
+ * stays.
  */
 function ${name}(text: string): string {
-  return text.replace(/[\\t\\n\\f\\r ]+/g, " ").trim();
+  return text.replace(/^[\\t\\n\\f\\r ]+|[\\t\\n\\f\\r ]+$/g, "").replace(/[\\t\\n\\f\\r ]+/g, " ");
 }`,
   selectedValues: (
     name: string,
@@ -271,8 +272,9 @@ function writeFirst(element: ElementNode, event: string): EventAttribute | undef
   );
 }
 
-/** HTML's ASCII whitespace, which an option's text value strips and collapses. */
+/** HTML's ASCII whitespace, which an option's text value strips at its edges and collapses. */
 const ASCII_WHITESPACE = /[\t\n\f\r ]+/g;
+const ASCII_EDGES = /^[\t\n\f\r ]+|[\t\n\f\r ]+$/g;
 
 /**
  * The value an option gives its select's model, as Vue's `vModelSelect` reads it: its bound
@@ -296,12 +298,13 @@ function optionValue(
   if (value?.kind === "Static") return JSON.stringify(value.value === true ? "" : value.value);
   const [only] = option.children;
   if (option.children.length === 1 && only?.kind === "Text") {
-    return JSON.stringify(only.value.replace(ASCII_WHITESPACE, " ").trim());
+    return JSON.stringify(only.value.replace(ASCII_EDGES, "").replace(ASCII_WHITESPACE, " "));
   }
   const parts = option.children.flatMap((child) => {
     if (child.kind === "Text") return [JSON.stringify(child.value)];
     if (child.kind === "Interpolation") {
-      return [`(${rewriteExpression(child.value, plan.component, rules, "render")})`];
+      // `{{ }}` renders `null` and `undefined` as no text.
+      return [`((${rewriteExpression(child.value, plan.component, rules, "render")}) ?? "")`];
     }
     return [];
   });

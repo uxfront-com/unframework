@@ -2,13 +2,14 @@
 // checks what the emitter writes for each, and test/output.test.ts runs them through L3 to L5.
 
 export const COMPOSITION_SOURCES: Readonly<Record<string, string>> = {
-  // A select's options in a list and a group, their values bound, static or their text.
+  // A select's options in a list and a group, their values bound, static or their text, with
+  // no-break spaces at a text's edges and a label that may be `null`.
   Picker: `import { ref } from "unframework";
 export default function Picker() {
   const choice = ref("b");
   const options = ref(["a", "b"]);
   const two = "y";
-  const items = ref([{ id: 1, label: "One" }, { id: 2, label: "Two" }]);
+  const items = ref<{ id: number; label: string | null }[]>([{ id: 1, label: "One" }, { id: 2, label: null }]);
   return (
     <select v-model={choice.value}>
       {options.value.map((option) => <option key={option} value={option}>{option}</option>)}
@@ -16,6 +17,8 @@ export default function Picker() {
         <option value={two}>Two</option>
         <option>  Plain   text </option>
         {items.value.map((item) => <option key={item.id}> {item.label} </option>)}
+        <option>&nbsp;&nbsp;Child</option>
+        {items.value.map((item) => <option key={item.id}>&nbsp;{item.label}</option>)}
       </optgroup>
     </select>
   );

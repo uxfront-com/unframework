@@ -25,6 +25,29 @@ function lowerWith(source: string, children: Record<string, string>): UfModule {
 
 const emittedOf = (name: string) => emitted(COMPOSITION_SOURCES[name]!);
 
+/** A component that declares the events `class` and `style`, with `root` as its render. */
+const emitting = (root: string) => `import { defineEmits } from "unframework";
+export default function Card() {
+  const emit = defineEmits<{ class: []; style: [] }>();
+  return ${root};
+}`;
+
+/** What the emitter reports for a source, each with the source text at its span. */
+function reportedFor(source: string) {
+  const module = lower(source);
+  const reported: Parameters<EmitContext["report"]>[0][] = [];
+  target.emit(module.components[0]!, {
+    module,
+    options: undefined,
+    report: (diagnostic) => reported.push(diagnostic),
+  });
+  return reported.map(({ code, message, span }) => ({
+    code,
+    message,
+    at: source.slice(span.start, span.end),
+  }));
+}
+
 describe("a select's v-model", () => {
   it("selects each option by its own value, in a list, in a group, bound or from its text", () => {
     const output = emittedOf("Picker");
@@ -37,9 +60,23 @@ describe("a select's v-model", () => {
   it("strips and collapses a text with an interpolation as it renders, as the browser does", () => {
     const output = emittedOf("Picker");
     expect(output).toContain(
-      `[selected]="this.choice() === optionText('' + ' ' + (item.label) + ' ')"`,
+      `[selected]="this.choice() === optionText('' + ' ' + ((item.label) ?? '') + ' ')"`,
     );
-    expect(output).toContain('return text.replace(/[\\t\\n\\f\\r ]+/g, " ").trim();');
+    expect(output).toContain(
+      'return text.replace(/^[\\t\\n\\f\\r ]+|[\\t\\n\\f\\r ]+$/g, "").replace(/[\\t\\n\\f\\r ]+/g, " ");',
+    );
+  });
+
+  it("keeps the no-break spaces at a text's edges, which the browser keeps", () => {
+    const output = emittedOf("Picker");
+    expect(output).toContain(`[selected]="this.choice() === '\u00a0\u00a0Child'"`);
+    expect(output).toContain(
+      `[selected]="this.choice() === optionText('' + '\u00a0' + ((item.label) ?? ''))"`,
+    );
+  });
+
+  it("reads a nullish interpolation as no text, as Angular renders it", () => {
+    expect(emittedOf("Picker")).not.toMatch(/optionText\([^)]*\(item\.label\) \+/);
   });
 });
 
@@ -92,26 +129,50 @@ describe("the names composition declares", () => {
   });
 
   it("reports a prop named like a slot's query (UF2003)", () => {
-    const source = `import { defineSlots } from "unframework";
+    const reported = reportedFor(`import { defineSlots } from "unframework";
 import type { Element } from "unframework";
 export default function Card({ titleTemplate }: { titleTemplate: string }) {
   const slots = defineSlots<{ title?(): Element }>();
   return <div>{slots.title?.()}{titleTemplate}</div>;
-}`;
-    const module = lower(source);
-    const reported: Parameters<EmitContext["report"]>[0][] = [];
-    target.emit(module.components[0]!, {
-      module,
-      options: undefined,
-      report: (diagnostic) => reported.push(diagnostic),
-    });
+}`);
     expect(reported.map(({ code, message }) => ({ code, message }))).toEqual([
       {
         code: "UF2003",
         message: "`titleTemplate` names the query of the `title` slot on Angular. Rename the prop.",
       },
     ]);
-    expect(source.slice(reported[0]!.span.start, reported[0]!.span.end)).toContain("titleTemplate");
+    expect(reported[0]!.at).toContain("titleTemplate");
+  });
+
+  it("reports an event named like a slot's query (UF2003)", () => {
+    const reported = reportedFor(`import { defineEmits, defineSlots } from "unframework";
+import type { Element } from "unframework";
+export default function Card() {
+  const slots = defineSlots<{ title?(): Element }>();
+  const emit = defineEmits<{ titleTemplate: [] }>();
+  return <button type="button" onClick={() => emit("titleTemplate")}>{slots.title?.()}</button>;
+}`);
+    expect(reported.map(({ code, message }) => ({ code, message }))).toEqual([
+      {
+        code: "UF2003",
+        message:
+          "`titleTemplate` names the query of the `title` slot on Angular. Rename the event.",
+      },
+    ]);
+    expect(reported[0]!.at).toContain("titleTemplate");
+  });
+
+  it("reports an event named like the class or style input of a root that takes them (UF2003)", () => {
+    expect(
+      reportedFor(emitting(`<button type="button" onClick={() => emit("class")}>x</button>`)).map(
+        ({ message }) => message,
+      ),
+    ).toEqual([
+      "`class` names the input of the consumer's `class` on Angular. Rename the event.",
+      "`style` names the input of the consumer's `style` on Angular. Rename the event.",
+    ]);
+    // A component that takes neither declares neither input.
+    expect(reportedFor(emitting(`<><b>x</b><i>y</i></>`))).toEqual([]);
   });
 });
 

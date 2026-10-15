@@ -32,6 +32,7 @@ import { directiveCode } from "./directives.ts";
 import { planListeners } from "./listeners.ts";
 import { classMembers } from "./members.ts";
 import { planModels } from "./models.ts";
+import { outputName } from "./outputs.ts";
 import { bindingById, planComponent, slotQuery } from "./plan.ts";
 import type { Plan } from "./plan.ts";
 import { classRules } from "./rules.ts";
@@ -175,18 +176,6 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
   const composition = planComposition(plan);
   // Angular matches a child by its selector alone, so two children of one name are reported
   // (UF1104), as two names that differ only in case are: rename one of them.
-  // A prop named like a slot's query would be a second member of that name: Angular reserves it
-  // for that component (UF2003), as every target reserves `class` and `style`.
-  for (const { slot } of composition.slots) {
-    const prop = component.props.find(({ name }) => name === slotQuery(slot.name));
-    if (prop === undefined) continue;
-    context.report({
-      code: "UF2003",
-      severity: "error",
-      message: `\`${prop.name}\` names the query of the \`${slot.name}\` slot on Angular. Rename the prop.`,
-      span: prop.span,
-    });
-  }
   for (const [local, selector] of composition.clashes) {
     context.report({
       code: "UF1104",
@@ -227,6 +216,38 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     root !== undefined &&
     (root.kind === "Component" || angularDialect.literalRegion?.(root) === undefined);
   const clearsHost = fallthrough || component.inheritAttrs === false;
+  // A prop or an event named like a member composition declares would be a second member of
+  // that name. Both are the component's API, which a binding is not (./plan.ts renames it), so
+  // Angular reserves the name for that component (UF2003), as every target reserves `class` and
+  // `style` for a prop.
+  const reservedMembers = new Map<string, string>(
+    composition.slots.map(({ slot }) => [
+      slotQuery(slot.name),
+      `the query of the \`${slot.name}\` slot`,
+    ]),
+  );
+  if (fallthrough) {
+    for (const name of ["class", "style"])
+      reservedMembers.set(name, `the input of the consumer's \`${name}\``);
+  }
+  const api = [
+    ...component.props.map(({ name, span }) => ({ name, span, kind: "prop" })),
+    ...(component.emits?.events ?? []).map(({ name, span }) => ({
+      name: outputName(name),
+      span,
+      kind: "event",
+    })),
+  ];
+  for (const { name, span, kind } of api) {
+    const member = reservedMembers.get(name);
+    if (member === undefined) continue;
+    context.report({
+      code: "UF2003",
+      severity: "error",
+      message: `\`${name}\` names ${member} on Angular. Rename the ${kind}.`,
+      span,
+    });
+  }
   const usesRefObject = component.setup.some(
     (item) =>
       (item.kind === "Provide" || (item.kind === "Inject" && item.fallback)) &&
