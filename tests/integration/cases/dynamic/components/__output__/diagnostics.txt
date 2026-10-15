@@ -6,14 +6,6 @@ error[UF1002] (angular): The angular target does not emit dynamic-component yet:
    |
    = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (qwik): The qwik target does not emit dynamic-component yet: composition lands in M3.
-  --> dynamic/components/Tag.uf.tsx:10:7
-   |
-10 |       <component is={compact.value ? Chip : Card} label={label} />
-   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (svelte): The svelte target does not emit dynamic-component yet: composition lands in M3.
   --> dynamic/components/Tag.uf.tsx:10:7
    |

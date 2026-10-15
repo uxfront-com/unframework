@@ -14,14 +14,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF1002] (qwik): The qwik target does not emit two-way-binding yet: composition lands in M3.
- --> models/select-multiple/ToppingPicker.uf.tsx:9:26
-  |
-9 |         <select multiple v-model={toppings.value}>
-  |                          ^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (svelte): The svelte target does not emit two-way-binding yet: composition lands in M3.
  --> models/select-multiple/ToppingPicker.uf.tsx:9:26
   |
