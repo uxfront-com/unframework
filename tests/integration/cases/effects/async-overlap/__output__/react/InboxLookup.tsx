@@ -1,4 +1,12 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useReducer, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 
 export interface InboxLookupEvents {
   onLooked?: (sender: string) => void;
@@ -10,6 +18,11 @@ export interface InboxLookupEvents {
   onCounted?: (count: number) => void;
 }
 
+export interface InboxLookupAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function InboxLookup({
   onLooked,
   onDropped,
@@ -18,7 +31,9 @@ export default function InboxLookup({
   onBusy,
   onFailed,
   onCounted,
-}: InboxLookupEvents) {
+  className,
+  style,
+}: InboxLookupEvents & InboxLookupAttributes) {
   const onDroppedRef = useRef(onDropped);
   const onScaledRef = useRef(onScaled);
   useLayoutEffect(() => {
@@ -216,7 +231,7 @@ export default function InboxLookup({
   }
 
   return (
-    <section className="inbox-lookup" aria-label="Inbox">
+    <section className={cx("inbox-lookup", className)} aria-label="Inbox" style={style}>
       <button
         type="button"
         onClick={() => {
@@ -278,6 +293,21 @@ export default function InboxLookup({
       <p>Unread: {unread}</p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /**

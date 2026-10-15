@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, useRef, useState } from "react";
 
 export interface QuickActionsProps {
   actions: string[];
@@ -10,12 +10,19 @@ export interface QuickActionsEvents {
   onChosen?: (action: string, scope: string) => void;
 }
 
+export interface QuickActionsAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function QuickActions({
   actions,
   onWelcomed,
   onSubscribed,
   onChosen,
-}: QuickActionsProps & QuickActionsEvents) {
+  className,
+  style,
+}: QuickActionsProps & QuickActionsEvents & QuickActionsAttributes) {
   const [query, setQuery] = useState("");
   const queryRef = useRef(query);
   const [lastKey, setLastKey] = useState("none");
@@ -50,7 +57,7 @@ export default function QuickActions({
   const submitOnce = useOnce();
 
   return (
-    <section className="quick-actions" aria-label="Quick actions">
+    <section className={cx("quick-actions", className)} aria-label="Quick actions" style={style}>
       <label>
         Search
         <input
@@ -116,6 +123,21 @@ export default function QuickActions({
       </form>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /** The guard of a listener that runs once per element, as `{ once: true }` makes it. */

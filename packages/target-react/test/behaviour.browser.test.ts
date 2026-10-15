@@ -111,6 +111,60 @@ async function act(action: () => Promise<unknown>): Promise<void> {
 }
 
 describe("react output in the browser", () => {
+  it("runs a listener beside a v-model after the model's write, which it reads", async () => {
+    await start(await component("ModelReads"), ["seen"]);
+    const field = (label: string) =>
+      container.querySelector<HTMLElement>(`[aria-label="${label}"]`)!;
+    await act(() => userEvent.selectOptions(field("Size"), "s"));
+    for (let click = 0; click < 3; click++) await act(() => userEvent.click(field("Agree")));
+    await act(() => userEvent.type(field("Name"), "Al"));
+    // React's onChange on a checkbox or a radio fires on click, before the DOM's input: a listener
+    // of input reads the model after its write, where Vue's reads it before (the declared
+    // difference of two-way-binding).
+    for (let click = 0; click < 2; click++) await act(() => userEvent.click(field("Notify")));
+    await act(() => userEvent.click(field("B")));
+    expect(events).toEqual([
+      ["seen", "select:s"],
+      ["seen", "box:true"],
+      ["seen", "box:false"],
+      ["seen", "box:true"],
+      ["seen", "name:A"],
+      ["seen", "name:Al"],
+      ["seen", "boxin:true"],
+      ["seen", "boxin:false"],
+      ["seen", "radio:b"],
+    ]);
+    expect(logged).toEqual([]);
+  });
+
+  it("keeps a checked control's click beside listeners that write state, and unchecks a vetoed one", async () => {
+    await start(await component("DirtyForm"), []);
+    const field = (label: string) =>
+      container.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
+    for (const label of ["Agree", "B", "Solo", "Veto"])
+      await act(() => userEvent.click(field(label)));
+    expect(container.querySelector("output")!.textContent).toBe("true|b|true|2|1|false");
+    expect([field("Agree").checked, field("A").checked, field("B").checked]).toEqual([
+      true,
+      false,
+      true,
+    ]);
+    expect(field("Solo").checked).toBe(true);
+    expect(field("Veto").checked).toBe(false);
+    expect(logged).toEqual([]);
+  });
+
+  it("asks a parent that holds a model's value for the same value on every write", async () => {
+    const changes: unknown[] = [];
+    await start(await component("HeldStepper"), [], {
+      value: 5,
+      onValueChange: (value: unknown) => void changes.push(value),
+    });
+    for (let click = 0; click < 4; click++) await act(() => userEvent.click(button("Fewer")));
+    expect(changes).toEqual([4, 4, 4, 4]);
+    expect(logged).toEqual([]);
+  });
+
   it("reads a write in another listener of the same event and after a called function", async () => {
     await start(await component("Phases"), ["logged", "total"]);
     await act(() => userEvent.click(button("Log")));
@@ -412,6 +466,28 @@ describe("react output in the browser", () => {
   // An app renders without `act`, which drains every update before a promise's continuation
   // runs: these mount with `createRoot` alone and click as a user does.
   describe("outside act", () => {
+    it("keeps a checked control's click beside listeners that write state, and unchecks a vetoed one", async () => {
+      const root = createRoot(container);
+      const field = (label: string) =>
+        container.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
+      const output = () => container.querySelector("output")?.textContent;
+      try {
+        root.render(createElement(await component("DirtyForm")));
+        await vi.waitFor(() => expect(output()).toBe("false|a|false|0|0|false"));
+        for (const label of ["Agree", "B", "Solo", "Veto"]) await userEvent.click(field(label));
+        await vi.waitFor(() => expect(output()).toBe("true|b|true|2|1|false"));
+        expect(["Agree", "B", "Solo", "Veto"].map((label) => field(label).checked)).toEqual([
+          true,
+          true,
+          true,
+          false,
+        ]);
+        expect(logged).toEqual([]);
+      } finally {
+        root.unmount();
+      }
+    });
+
     it("resolves nextTick once the writes before it, and those of the watchers they run, render", async () => {
       const root = createRoot(container);
       try {

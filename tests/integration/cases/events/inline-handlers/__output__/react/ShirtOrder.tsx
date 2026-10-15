@@ -1,6 +1,11 @@
-import { useRef, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
-export default function ShirtOrder() {
+export interface ShirtOrderAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function ShirtOrder({ className, style }: ShirtOrderAttributes) {
   const [size, setSize] = useState("M");
   const sizeRef = useRef(size);
   const [quantity, setQuantity] = useState(1);
@@ -10,7 +15,7 @@ export default function ShirtOrder() {
   const noteField = useRef<HTMLInputElement>(null);
 
   return (
-    <section className="shirt-order" aria-label="Shirt order">
+    <section className={cx("shirt-order", className)} aria-label="Shirt order" style={style}>
       <p role="status">{`${quantity} x size ${size}`}</p>
       <div role="group" aria-label="Size">
         <button
@@ -85,4 +90,19 @@ export default function ShirtOrder() {
       </button>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

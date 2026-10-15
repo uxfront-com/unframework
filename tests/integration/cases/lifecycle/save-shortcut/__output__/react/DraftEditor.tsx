@@ -1,10 +1,26 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export interface DraftEditorEvents {
   onSaved?: (count: number) => void;
 }
 
-export default function DraftEditor({ onSaved }: DraftEditorEvents) {
+export interface DraftEditorAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function DraftEditor({
+  onSaved,
+  className,
+  style,
+}: DraftEditorEvents & DraftEditorAttributes) {
   const onSavedRef = useRef(onSaved);
   useLayoutEffect(() => {
     onSavedRef.current = onSaved;
@@ -34,7 +50,7 @@ export default function DraftEditor({ onSaved }: DraftEditorEvents) {
   useEffect(() => () => onUnmount(), []);
 
   return (
-    <section className="draft-editor" aria-label="Draft">
+    <section className={cx("draft-editor", className)} aria-label="Draft" style={style}>
       <label>
         Draft
         <textarea name="draft" />
@@ -42,4 +58,19 @@ export default function DraftEditor({ onSaved }: DraftEditorEvents) {
       <p role="status">Saved: {saves}</p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

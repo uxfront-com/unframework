@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export interface ActionButtonProps {
   label: string;
   size: "small" | "medium" | "large";
@@ -6,13 +8,20 @@ export interface ActionButtonProps {
   badge: number;
 }
 
+export interface ActionButtonAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function ActionButton({
   label,
   size,
   primary,
   busy = false,
   badge,
-}: ActionButtonProps) {
+  className,
+  style,
+}: ActionButtonProps & ActionButtonAttributes) {
   return (
     <button
       type="button"
@@ -21,7 +30,9 @@ export default function ActionButton({
         `button-${size}`,
         { "button-primary": primary, "is-busy": busy, "button-waiting": busy, "has-badge": badge },
         primary ? "solid" : "outline",
+        className,
       )}
+      style={style}
     >
       {label}
     </button>

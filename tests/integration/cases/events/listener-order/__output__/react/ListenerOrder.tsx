@@ -1,6 +1,11 @@
-import { useRef, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
-export default function ListenerOrder() {
+export interface ListenerOrderAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function ListenerOrder({ className, style }: ListenerOrderAttributes) {
   const [log, setLog] = useState<string[]>([]);
   const logRef = useRef(log);
   const [resets, setResets] = useState(0);
@@ -26,7 +31,7 @@ export default function ListenerOrder() {
   );
 
   return (
-    <section className="listener-order" aria-label="Listener order">
+    <section className={cx("listener-order", className)} aria-label="Listener order" style={style}>
       <div className="toolbar" role="presentation" onClick={() => record("toolbar")}>
         <button
           type="button"
@@ -113,6 +118,21 @@ export default function ListenerOrder() {
       </ol>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /**

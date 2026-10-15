@@ -132,9 +132,11 @@ async function typecheck(
   const children = pairs.map((pair) =>
     createElement(pair[0], [createStaticAttribute(pair[1], value(pair), at)], [], at),
   );
+  // The root takes no consumer's `class` or `style` (ADR-0054): its children are the subject.
+  const component = createComponent(name, createElement(root, [], children, at), at);
   const module = createModule(
     `${name}.uf.tsx`,
-    [createComponent(name, createElement(root, [], children, at), at)],
+    [{ ...component, inheritAttrs: false }],
     [createExport("default", name, at)],
   );
   const [file] = target.emit(module.components[0]!, {

@@ -556,7 +556,7 @@ describe("canaries", () => {
     const result = await compileWith("L13-console-warn");
     const contents = (target: string) => result.outputs[target]![0]!.contents;
     expect(contents("react")).toMatch(
-      /tone = "info",\n\}: TaskListProps\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
+      /style,\n\}: TaskListProps & TaskListAttributes\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
     );
     expect(contents("solid")).toMatch(
       /function TaskList\(\n {2}rawProps: TaskListProps & \{ class\?: string; style\?: JSX\.CSSProperties \},\n\) \{\n {2}console\.warn/,
@@ -630,7 +630,7 @@ describe("canaries", () => {
     const result = await compileWith("L5-framework-rule");
     const root = (target: string) =>
       /<section\b[^>]*>/.exec(result.outputs[target]![0]!.contents)?.[0];
-    expect(root("react")).toMatch(/^<section class="uf-canary" className=/);
+    expect(root("react")).toMatch(/^<section\s+class="uf-canary"\s+className=/);
     expect(root("solid")).toMatch(/^<section\s+className="uf-canary"\s+class=/);
     expect(root("qwik")).toMatch(/^<section className="uf-canary" class=/);
     expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
@@ -643,9 +643,10 @@ describe("canaries", () => {
     const result = await compileWith("L4-consumer");
     const lines = (target: string) =>
       result.outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
-    expect(lines("react")).toEqual([
-      'export default function TaskList({ title = "Tasks (today)", tasks, done, tone = "info" }: any) {',
-    ]);
+    expect(lines("react")).toEqual(["}: any) {"]);
+    expect(result.outputs.react![0]!.contents).toMatch(
+      /^export default function TaskList\(\{\n[\s\S]*?\n\}: any\) \{$/m,
+    );
     expect(lines("solid")).toEqual(["export default function TaskList(rawProps: any) {"]);
     expect(lines("qwik")).toEqual([
       'export default component$<any>(({ title = "Tasks (today)", tasks, done, tone = "info" }) => {',
@@ -677,9 +678,15 @@ describe("canaries", () => {
       });
       return outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
     };
-    expect(await lines("react")).toEqual([
-      "export default function FileRow({ path, size, onRefresh, onOpen, onMove, onPick, onShare }: any) {",
-    ]);
+    expect(await lines("react")).toEqual(["}: any) {"]);
+    const { outputs: react } = await compile(readFileSync(info.source, "utf8"), {
+      filename: info.filename,
+      targets: ["react"],
+      plugins: canaryPlugins("L4-consumer", "react"),
+    });
+    expect(react.react![0]!.contents).toMatch(
+      /^export default function FileRow\(\{\n[\s\S]*?\n\}: any\) \{$/m,
+    );
     expect(await lines("solid")).toEqual(["export default function FileRow(props: any) {"]);
     expect(await lines("qwik")).toEqual(["export default component$<any>("]);
     expect(await lines("vue")).toEqual([
@@ -733,8 +740,12 @@ describe("canaries", () => {
       const { outputs } = await compileWith("L10-root-inverted", target);
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(1\)/g), target).toHaveLength(1);
+      // React's root also takes a consumer's style, after its own (ADR-0054).
+      const spread = target === "react" ? ", \\.\\.\\.style" : "";
       expect(contents, target).toMatch(
-        /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\}|\{\{ \.\.\.\{ filter: "invert\(1\)" \}, \.\.\.props\.style \}\})/,
+        new RegExp(
+          `<section\\b[^>]*\\bstyle=(?:"filter: invert\\(1\\)"|\\{\\{ filter: "invert\\(1\\)"${spread} \\}\\}|\\{\\{ \\.\\.\\.\\{ filter: "invert\\(1\\)" \\}, \\.\\.\\.props\\.style \\}\\})`,
+        ),
       );
     }
   });
@@ -1047,6 +1058,27 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
         "data-x={1}",
       ),
     ).toContain("<div data-x={1}>\n      <p />");
+    // A component at the root (React's context provider) is passed over for the first DOM element;
+    // without one, the first element takes it.
+    expect(
+      addRootAttribute(
+        {
+          path: "Level.tsx",
+          contents:
+            "export default function Level() {\n  return (\n    <DepthKey value={depthValue}>\n      <section>\n        <Level />\n      </section>\n    </DepthKey>\n  );\n}\n",
+        },
+        "data-x={1}",
+      ),
+    ).toContain("<DepthKey value={depthValue}>\n      <section data-x={1}>");
+    expect(
+      addRootAttribute(
+        {
+          path: "Primary.tsx",
+          contents: 'export default function Primary() {\n  return <Base text="Save" />;\n}\n',
+        },
+        "data-x={1}",
+      ),
+    ).toContain('<Base data-x={1} text="Save" />');
     expect(() =>
       addRootAttribute({ path: "Card.vue", contents: "<script setup></script>\n" }, attribute),
     ).toThrow(/no template/);

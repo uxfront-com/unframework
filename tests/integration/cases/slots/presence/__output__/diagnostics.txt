@@ -22,14 +22,6 @@ error[UF1002] (qwik): The qwik target does not emit `defineSlots` yet: compositi
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (react): The react target does not emit `defineSlots` yet: composition lands in M3.
- --> slots/presence/Card.uf.tsx:5:3
-  |
-5 |   const slots = defineSlots<{ title?(): Element; default?(): Element }>();
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (svelte): The svelte target does not emit `defineSlots` yet: composition lands in M3.
  --> slots/presence/Card.uf.tsx:5:3
   |
@@ -77,17 +69,6 @@ error[UF1002] (astro): The astro target does not emit component yet: composition
   = see: https://unframework.dev/diagnostics/UF1002
 
 error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
- --> slots/presence/Cards.uf.tsx:6:7
-  |
-6 |       <Card label="Full">
-  |       ^^^^^^^^^^^^^^^^^^^
-  | ...
-8 |       </Card>
-  | ^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
  --> slots/presence/Cards.uf.tsx:6:7
   |
 6 |       <Card label="Full">

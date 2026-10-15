@@ -22,14 +22,6 @@ error[UF1002] (qwik): The qwik target does not emit model yet: composition lands
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (react): The react target does not emit model yet: composition lands in M3.
- --> diagnostics/invalid-v-model/Survey.uf.tsx:6:3
-  |
-6 |   const picked = defineModel<string>("picked", { default: "" });
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (svelte): The svelte target does not emit model yet: composition lands in M3.
  --> diagnostics/invalid-v-model/Survey.uf.tsx:6:3
   |
