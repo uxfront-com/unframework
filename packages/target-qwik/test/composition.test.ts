@@ -1,17 +1,27 @@
 // Composition's shapes in Qwik (ADR-0053 to ADR-0055, ./src/composition.ts): what each construct
 // emits. The corpus runs them through every layer; these pin the forms.
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { formatOutput } from "@unframework/codegen";
+import type { EmitContext } from "@unframework/codegen";
+import { afterAll, describe, expect, it } from "vitest";
 
+import target from "../src/index.ts";
 import { toolchain } from "../src/toolchain/index.ts";
-import { emitSource } from "./lower.ts";
+import { emitSource, lower } from "./lower.ts";
 
 const repo = fileURLToPath(new URL("../../..", import.meta.url));
 const context = {
   toolchainDir: `${repo}tests/toolchains/qwik`,
   root: `${repo}tests/integration`,
 };
+// Scratch components live inside this package, so `@qwik.dev/core` resolves from them.
+const scratchRoot = fileURLToPath(new URL("../.uf-tmp", import.meta.url));
+mkdirSync(scratchRoot, { recursive: true });
+const scratch = mkdtempSync(join(scratchRoot, "composition-test-"));
+afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 describe("qwik target: components and fallthrough", () => {
   it("merges a consumer's class and style after the root's own", async () => {
@@ -439,8 +449,7 @@ function Groups() {
     expect(result).toEqual({ errors: [], warnings: [] });
   });
 
-  it("declares no QRL for a function only a fill's callback calls", async () => {
-    const contents = await emitSource(`import { defineSlots, ref } from "unframework";
+  const spelled = `import { defineSlots, ref } from "unframework";
 import type { Element } from "unframework";
 
 export default function Spelled() {
@@ -454,10 +463,39 @@ export default function Spelled() {
 function Rows() {
   const slots = defineSlots<{ item?(props: { item: string }): Element }>();
   return <ul><li>{slots.item?.({ item: "Ada" })}</li></ul>;
-}`);
+}`;
+
+  it("declares no QRL for a function only a fill's callback calls", async () => {
+    const contents = await emitSource(spelled);
     expect(contents).not.toContain("$((c: string)");
     expect(contents).toContain("function format(c: string) {");
     expect(contents).toContain(".map((c) => format(c))");
+  });
+
+  it("emits fills that type-check and lint clean (L4, L5)", async () => {
+    const paths = [];
+    for (const [index, source] of [board, spelled].entries()) {
+      const dir = join(scratch, `fills-${index}`);
+      mkdirSync(dir);
+      const module = lower(source);
+      for (const component of module.components) {
+        const emit: EmitContext = { module, options: undefined, report: () => {} };
+        for (const file of target.emit(component, emit)) {
+          const { file: formatted } = await formatOutput(file);
+          const path = join(dir, formatted.path);
+          writeFileSync(path, formatted.contents);
+          paths.push(path);
+        }
+      }
+    }
+    const [types, lint] = await Promise.all([
+      toolchain.typecheck(paths, context),
+      toolchain.lint(paths, context),
+    ]);
+    for (const path of paths) {
+      expect(types.get(path), path).toEqual([]);
+      expect(lint.get(path), path).toEqual([]);
+    }
   });
 });
 
