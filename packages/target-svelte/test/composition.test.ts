@@ -382,6 +382,47 @@ describe("svelte composition across files", () => {
     ).toEqual({ "Provider.svelte": [], "ThemeValue.svelte": [], "Reader.svelte": [] });
   });
 
+  // A key imported under two names is imported under both, as the source writes it.
+  it("injects a key imported under two names", checker, async () => {
+    const provider = [
+      'import { defineSlots, provide } from "unframework";',
+      'import type { Element, InjectionKey } from "unframework";',
+      "",
+      'export const Theme: InjectionKey<string> = Symbol("uf.theme");',
+      "",
+      "export default function Provider() {",
+      "  const slots = defineSlots<{ default?(): Element }>();",
+      '  provide(Theme, "dark");',
+      "  return <div>{slots.default?.()}</div>;",
+      "}",
+      "",
+    ].join("\n");
+    const reader = [
+      'import { inject } from "unframework";',
+      "",
+      'import { Theme, Theme as Mode } from "./Provider.uf.tsx";',
+      "",
+      "export default function Reader() {",
+      '  const theme = inject(Theme, "light");',
+      "  const mode = inject(Mode);",
+      "  return (",
+      "    <p>",
+      "      {theme} {mode}",
+      "    </p>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const outputs = await compileSources({ "Provider.uf.tsx": provider, "Reader.uf.tsx": reader });
+    expect(outputs["Reader.svelte"]).toContain(
+      'import { Theme, Theme as Mode } from "./Provider.svelte";',
+    );
+    expect(await check({ "Provider.uf.tsx": provider, "Reader.uf.tsx": reader })).toEqual({
+      "Provider.svelte": [],
+      "Reader.svelte": [],
+    });
+  });
+
   // An exposed function keeps its name in the component's API, and a fill's parameter is
   // written as the source writes it: a snippet named like either must not hide it.
   it("keeps an exposed function and a fill's parameter named like a slot they fill", async () => {

@@ -94,8 +94,8 @@ type Module = "svelte" | "svelte/elements" | "svelte/events";
 interface LocalImport {
   specifier: string;
   default?: string;
-  /** Named imports, by exported name: the local name, and whether only a type reads it. */
-  names: Map<string, { local: string; type: boolean }>;
+  /** Named imports, by local name: the name the sibling output exports, imported under each. */
+  names: Map<string, string>;
 }
 
 /**
@@ -138,16 +138,12 @@ class Names {
     return entry.default;
   }
 
-  /** A name a sibling output exports, under the source's local name or a claimed one. */
-  importNamed(specifier: string, name: string, local?: string, { type = false } = {}): string {
+  /** A name a sibling output exports, under the source's local name: `Theme as Mode`. */
+  importNamed(specifier: string, name: string, local: string): void {
     const entry = this.#local(specifier);
-    let named = entry.names.get(name);
-    if (named === undefined) {
-      if (local !== undefined) this.scope.reserve(local);
-      named = { local: local ?? this.claim(name), type };
-      entry.names.set(name, named);
-    } else if (!type) named.type = false;
-    return named.local;
+    if (entry.names.has(local)) return;
+    this.scope.reserve(local);
+    entry.names.set(local, name);
   }
 
   #local(specifier: string): LocalImport {
@@ -162,7 +158,12 @@ class Names {
    */
   declarations(): string[] {
     const locals = [...this.#locals.values()].map(({ specifier, default: local, names }) => {
-      const named = specifiers(names);
+      const named = names.size
+        ? `{ ${[...names]
+            .map(([alias, name]) => (name === alias ? name : `${name} as ${alias}`))
+            .toSorted()
+            .join(", ")} }`
+        : "";
       const clause = [...(local === undefined ? [] : [local]), ...(named ? [named] : [])];
       return `import ${clause.join(", ")} from "${specifier}";`;
     });
