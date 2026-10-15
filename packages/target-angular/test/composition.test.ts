@@ -223,6 +223,26 @@ describe("the component's API", () => {
     );
   });
 
+  it("types a model with no type, no default and an alias as `model()` types it", () => {
+    expect(composedOf("Score").get("tally.ts")).toContain(
+      'readonly total = model<unknown>(undefined, { alias: "count" });',
+    );
+  });
+
+  it("names a key's owner's import of a child's directive apart from the key", () => {
+    const files = composedOf("Shelf");
+    expect(files.get("shelf.ts")).toContain(
+      'import { Card, CardTitle as CardTitle_1 } from "./card";',
+    );
+    expect(files.get("shelf.ts")).toContain("export const CardTitle = new InjectionToken<string>(");
+  });
+
+  it("names a context type apart from a sibling slot's directive", () => {
+    const output = emittedOf("Tabs");
+    expect(output).toContain("export class TabsTabContext {");
+    expect(output).toContain("export type TabsTabContext_1 = { text: string };");
+  });
+
   it("names a helper apart from an output", () => {
     const output = emittedOf("Chooser");
     expect(output).toContain("readonly selectedValues = output<string[]>();");

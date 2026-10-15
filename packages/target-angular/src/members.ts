@@ -134,11 +134,15 @@ export function classMembers(context: MemberContext): {
     const alias =
       name === item.name ? [] : [js.objectExpression([["alias", js.stringLiteral(item.name)]])];
     // An alias needs an initial value before it: with no default, `undefined`, which the type
-    // takes as `model<T>()` gives it (`T | undefined`).
+    // takes as `model<T>()` gives it (`T | undefined`, or `unknown` with no type argument).
     const unset = !item.default && !item.required && alias.length > 0;
-    const type = item.type
-      ? [placeholders.type(unset ? `(${item.type.code}) | undefined` : item.type.code)]
-      : [];
+    const written = item.type?.code;
+    const type =
+      written === undefined
+        ? unset
+          ? [placeholders.type("unknown")]
+          : []
+        : [placeholders.type(unset ? `(${written}) | undefined` : written)];
     const initial = item.default
       ? [placeholders.expression(item.default.code)]
       : unset

@@ -70,6 +70,39 @@ export default function Steps() {
   );
 }
 `,
+  // A slot named like another's context type, beside a local type named like its directive.
+  Card: `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+type CardTitle = "h1" | "h2";
+export default function Card({ level }: { level: CardTitle }) {
+  const slots = defineSlots<{
+    title?(props: { text: string }): Element;
+    titleContext?(props: { text: string }): Element;
+  }>();
+  return (
+    <section data-level={level}>
+      {slots.title?.({ text: "a" })}
+      {slots.titleContext?.({ text: "b" })}
+    </section>
+  );
+}
+`,
+  // The same pair of slots, with no type.
+  Tabs: `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+export default function Tabs() {
+  const slots = defineSlots<{
+    tab?(props: { text: string }): Element;
+    tabContext?(props: { text: string }): Element;
+  }>();
+  return (
+    <section>
+      {slots.tab?.({ text: "a" })}
+      {slots.tabContext?.({ text: "b" })}
+    </section>
+  );
+}
+`,
   // An event named like a helper the template calls.
   Chooser: `import { defineEmits, ref } from "unframework";
 export default function Chooser() {
@@ -133,6 +166,31 @@ function Qty() {
 export default function Order() {
   const n = ref(1);
   return <Qty v-model:value={n.value} />;
+}
+`,
+  // A model with no type, no default and an alias, written by its component and bound by a
+  // consumer.
+  Score: `import { defineModel, ref } from "unframework";
+function Tally() {
+  const total = defineModel("count");
+  return <button type="button" onClick={() => (total.value = 1)}>Set</button>;
+}
+export default function Score() {
+  const n = ref<unknown>(0);
+  return <Tally v-model:count={n.value} />;
+}
+`,
+  // A key's owner filling a child's slot whose directive is named like the key.
+  Shelf: `import { defineSlots, provide } from "unframework";
+import type { Element, InjectionKey } from "unframework";
+export const CardTitle: InjectionKey<string> = Symbol("uf.title");
+function Card() {
+  const slots = defineSlots<{ title?(): Element }>();
+  return <article>{slots.title?.()}</article>;
+}
+export default function Shelf() {
+  provide(CardTitle, "x");
+  return <Card>{{ title: () => <em>Filled</em> }}</Card>;
 }
 `,
   // A slot whose directive is named like a child the component imports.

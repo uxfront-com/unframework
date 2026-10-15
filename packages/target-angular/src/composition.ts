@@ -104,6 +104,13 @@ export function firstUse(component: UfComponent, local: string): Span {
 /** Plans the component's composition: its children, its slots and its keys. */
 export function planComposition(plan: Plan): Composition {
   const { component, module, imports } = plan;
+  // The file is one scope: every name it imports, declares or exports is claimed in `imports`.
+  // The keys it declares are the source's names, which a child's import takes apart from.
+  const keys =
+    module.keys?.length && keyOwner(module.components, module.exports) === component.name
+      ? module.keys
+      : [];
+  imports.reserve(...keys.map(({ name }) => name));
   const tags = new Map<string, string>();
   const classes: string[] = [];
   const specifiers = new Map<string, { specifier: string; name: string; self: boolean }>();
@@ -133,19 +140,23 @@ export function planComposition(plan: Plan): Composition {
         : key.local,
     );
   }
+  // Every directive's class before any context type: consumers import a directive under the
+  // name they compute (`CardTitleContext` for a `titleContext` slot), and nothing imports a
+  // context type, so a context takes the name a directive leaves it.
   const slots: SlotDirective[] = (component.slots?.slots ?? [])
     .filter((slot) => usesDirective(slot.name, slot.props !== undefined))
     .map((slot) => {
       const exported = `${component.name}${pascalCase(slot.name)}`;
-      const className = imports.claim(exported);
       return {
         slot,
-        className,
+        className: imports.claim(exported),
         exported,
         attribute: slotAttribute(component.name, slot.name),
-        ...(slot.props ? { context: imports.claim(`${exported}Context`) } : {}),
       };
     });
+  for (const directive of slots) {
+    if (directive.slot.props) directive.context = imports.claim(`${directive.exported}Context`);
+  }
   const attributes = new Map<string, string>();
   const slotClashes: Composition["slotClashes"] = [];
   let outlet = false;
@@ -181,10 +192,6 @@ export function planComposition(plan: Plan): Composition {
     },
   });
   if (outlet) classes.push(imports.add("@angular/common", "NgTemplateOutlet"));
-  const keys =
-    module.keys?.length && keyOwner(module.components, module.exports) === component.name
-      ? module.keys
-      : [];
   return { tags, imports: classes, slots, outlet, keys, keyNames, clashes, slotClashes };
 }
 
