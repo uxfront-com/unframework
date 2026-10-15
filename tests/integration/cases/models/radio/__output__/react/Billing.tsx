@@ -20,7 +20,7 @@ export default function Billing({ className, style }: BillingAttributes) {
           defaultChecked={plan === "monthly"}
           ref={(element) => {
             if (!element) return undefined;
-            element.checked = plan === "monthly";
+            setChecked(element, plan, plan === "monthly");
             const stop = listen(element, "change", () => {
               planRef.current = "monthly";
               setPlan(planRef.current);
@@ -40,7 +40,7 @@ export default function Billing({ className, style }: BillingAttributes) {
           defaultChecked={plan === "yearly"}
           ref={(element) => {
             if (!element) return undefined;
-            element.checked = plan === "yearly";
+            setChecked(element, plan, plan === "yearly");
             const stop = listen(element, "change", () => {
               planRef.current = "yearly";
               setPlan(planRef.current);
@@ -79,3 +79,16 @@ function listen<K extends keyof HTMLElementEventMap>(
   element?.addEventListener(type, listener as EventListener, options);
   return () => element?.removeEventListener(type, listener as EventListener, options);
 }
+
+/**
+ * Sets a checkbox's or a radio's `checked` when its model's value changed since the element last
+ * showed it, as Vue's `v-model` does: a render between the control's `input` and its `change`
+ * keeps what was clicked.
+ */
+function setChecked(element: HTMLInputElement, value: unknown, checked: boolean): void {
+  if (checkedValues.has(element) && checkedValues.get(element) === value) return;
+  checkedValues.set(element, value);
+  element.checked = checked;
+}
+
+const checkedValues = new WeakMap<HTMLInputElement, unknown>();
