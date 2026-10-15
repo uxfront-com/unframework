@@ -30,14 +30,6 @@ error[UF1002] (react): The react target does not emit two-way-binding yet: compo
    |
    = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (solid): The solid target does not emit two-way-binding yet: composition lands in M3.
-  --> models/modifiers/Profile.uf.tsx:10:21
-   |
-10 |         Name <input v-model_trim={name.value} />
-   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (svelte): The svelte target does not emit two-way-binding yet: composition lands in M3.
   --> models/modifiers/Profile.uf.tsx:10:21
    |

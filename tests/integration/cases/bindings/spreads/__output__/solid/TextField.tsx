@@ -1,3 +1,5 @@
+import type { JSX } from "solid-js";
+
 interface FieldAttributes {
   name: string;
   placeholder?: string;
@@ -20,9 +22,11 @@ export interface TextFieldProps {
   hint?: HintAttributes;
 }
 
-export default function TextField(props: TextFieldProps) {
+export default function TextField(
+  props: TextFieldProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <div class="text-field">
+    <div class={props.class ? `text-field ${props.class}` : "text-field"} style={props.style}>
       <label for={props.inputId}>{props.label}</label>
       <input
         id={props.inputId}

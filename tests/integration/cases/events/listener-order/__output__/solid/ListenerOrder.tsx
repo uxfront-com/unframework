@@ -1,6 +1,6 @@
-import { For, createSignal } from "solid-js";
+import { For, type JSX, createSignal } from "solid-js";
 
-export default function ListenerOrder() {
+export default function ListenerOrder(props: { class?: string; style?: JSX.CSSProperties }) {
   const [log, setLog] = createSignal<string[]>([]);
   const [resets, setResets] = createSignal(0);
 
@@ -9,7 +9,11 @@ export default function ListenerOrder() {
   }
 
   return (
-    <section class="listener-order" aria-label="Listener order">
+    <section
+      class={props.class ? `listener-order ${props.class}` : "listener-order"}
+      aria-label="Listener order"
+      style={props.style}
+    >
       <div class="toolbar" role="presentation" on:click={() => record("toolbar")}>
         <button
           type="button"

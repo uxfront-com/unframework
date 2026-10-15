@@ -1,11 +1,19 @@
+import type { JSX } from "solid-js";
+
 export interface DraftNoticeProps {
   author: string;
   saved: boolean;
 }
 
-export default function DraftNotice(props: DraftNoticeProps) {
+export default function DraftNotice(
+  props: DraftNoticeProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <section class="draft-notice" aria-label="Draft">
+    <section
+      class={props.class ? `draft-notice ${props.class}` : "draft-notice"}
+      aria-label="Draft"
+      style={props.style}
+    >
       <img
         src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Crect width='32' height='32' fill='%23345'/%3E%3C/svg%3E"
         alt={`${props.author}'s avatar`}

@@ -1,4 +1,4 @@
-import { createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface SearchPagerEvents {
   onQueryRun?: (value: string, previous: string) => void;
@@ -6,7 +6,9 @@ export interface SearchPagerEvents {
   onCleanedUp?: (watcher: string) => void;
 }
 
-export default function SearchPager(props: SearchPagerEvents) {
+export default function SearchPager(
+  props: SearchPagerEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [query, setQuery] = createSignal("");
   const [page, setPage] = createSignal(1);
 
@@ -37,7 +39,11 @@ export default function SearchPager(props: SearchPagerEvents) {
   }
 
   return (
-    <section class="search-pager" aria-label="Search">
+    <section
+      class={props.class ? `search-pager ${props.class}` : "search-pager"}
+      aria-label="Search"
+      style={props.style}
+    >
       <p role="status">
         {query() === "" ? "All results" : `Results for ${query()}`}, page {page()}
       </p>

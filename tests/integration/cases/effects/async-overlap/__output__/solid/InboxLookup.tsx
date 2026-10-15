@@ -1,4 +1,4 @@
-import { For, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { For, type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface InboxLookupEvents {
   onLooked?: (sender: string) => void;
@@ -10,7 +10,9 @@ export interface InboxLookupEvents {
   onCounted?: (count: number) => void;
 }
 
-export default function InboxLookup(props: InboxLookupEvents) {
+export default function InboxLookup(
+  props: InboxLookupEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [sender, setSender] = createSignal("");
   const [order, setOrder] = createSignal("newest");
   const [answers, setAnswers] = createSignal<string[]>([]);
@@ -114,7 +116,11 @@ export default function InboxLookup(props: InboxLookupEvents) {
   }
 
   return (
-    <section class="inbox-lookup" aria-label="Inbox">
+    <section
+      class={props.class ? `inbox-lookup ${props.class}` : "inbox-lookup"}
+      aria-label="Inbox"
+      style={props.style}
+    >
       <button type="button" onClick={() => setSender("Ann")}>
         Find Ann
       </button>

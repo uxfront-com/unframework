@@ -1,6 +1,6 @@
-import { createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
-export default function NetworkBadge() {
+export default function NetworkBadge(props: { class?: string; style?: JSX.CSSProperties }) {
   const [online, setOnline] = createSignal<boolean>();
   const [label, setLabel] = createSignal("Checking the connection");
 
@@ -13,7 +13,12 @@ export default function NetworkBadge() {
   });
 
   return (
-    <p class="network-badge" role="status" data-checked={online() === undefined ? "no" : "yes"}>
+    <p
+      class={props.class ? `network-badge ${props.class}` : "network-badge"}
+      role="status"
+      data-checked={online() === undefined ? "no" : "yes"}
+      style={props.style}
+    >
       {label()}
     </p>
   );

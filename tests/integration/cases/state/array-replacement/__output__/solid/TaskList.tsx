@@ -1,4 +1,4 @@
-import { For, Show, createSignal, untrack } from "solid-js";
+import { For, type JSX, Show, createSignal, untrack } from "solid-js";
 
 export interface Task {
   id: string;
@@ -9,7 +9,9 @@ export interface TaskListProps {
   initial: Task[];
 }
 
-export default function TaskList(props: TaskListProps) {
+export default function TaskList(
+  props: TaskListProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const [tasks, setTasks] = createSignal(untrack(() => props.initial));
   const [selected, setSelected] = createSignal<string>();
   let added = 0;
@@ -37,7 +39,11 @@ export default function TaskList(props: TaskListProps) {
   }
 
   return (
-    <section class="task-list" aria-label="Tasks">
+    <section
+      class={props.class ? `task-list ${props.class}` : "task-list"}
+      aria-label="Tasks"
+      style={props.style}
+    >
       <Show
         when={tasks().length === 0}
         fallback={

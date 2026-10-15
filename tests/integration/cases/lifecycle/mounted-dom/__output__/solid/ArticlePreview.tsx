@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface ArticlePreviewProps {
   title: string;
@@ -9,7 +9,9 @@ export interface ArticlePreviewEvents {
   onReady?: (characters: number) => void;
 }
 
-export default function ArticlePreview(props: ArticlePreviewProps & ArticlePreviewEvents) {
+export default function ArticlePreview(
+  props: ArticlePreviewProps & ArticlePreviewEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   let body: HTMLParagraphElement | null = null;
   const [characters, setCharacters] = createSignal(0);
   const [counted, setCounted] = createSignal(false);
@@ -22,7 +24,11 @@ export default function ArticlePreview(props: ArticlePreviewProps & ArticlePrevi
   });
 
   return (
-    <article class="article-preview" aria-label={props.title}>
+    <article
+      class={props.class ? `article-preview ${props.class}` : "article-preview"}
+      aria-label={props.title}
+      style={props.style}
+    >
       <h2>{props.title}</h2>
       <p
         ref={(element) => {

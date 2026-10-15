@@ -31,17 +31,6 @@ error[UF1002] (react): The react target does not emit component yet: composition
    |
    = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (solid): The solid target does not emit component yet: composition lands in M3.
-  --> slots/prop-names/Directory.uf.tsx:10:5
-   |
-10 |     <Table people={people}>
-   |     ^^^^^^^^^^^^^^^^^^^^^^^
-   | ...
-18 |     </Table>
-   | ^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (svelte): The svelte target does not emit component yet: composition lands in M3.
   --> slots/prop-names/Directory.uf.tsx:10:5
    |
@@ -76,17 +65,6 @@ error[UF1002] (astro): The astro target does not emit `defineSlots` yet: composi
    = see: https://unframework.dev/diagnostics/UF1002
 
 error[UF1002] (react): The react target does not emit `defineSlots` yet: composition lands in M3.
-  --> slots/prop-names/Table.uf.tsx:10:3
-   |
-10 |   const slots = defineSlots<{
-   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   | ...
-12 |   }>();
-   | ^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (solid): The solid target does not emit `defineSlots` yet: composition lands in M3.
   --> slots/prop-names/Table.uf.tsx:10:3
    |
 10 |   const slots = defineSlots<{

@@ -1,4 +1,4 @@
-import { Show, createSignal } from "solid-js";
+import { type JSX, Show, createSignal } from "solid-js";
 
 interface User {
   name: string;
@@ -12,7 +12,9 @@ export interface AccountMenuEvents {
   onGreeted?: (name: string) => void;
 }
 
-export default function AccountMenu(props: AccountMenuProps & AccountMenuEvents) {
+export default function AccountMenu(
+  props: AccountMenuProps & AccountMenuEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [step, setStep] = createSignal("intro");
   const [user, setUser] = createSignal<User | null>(null);
 
@@ -33,7 +35,11 @@ export default function AccountMenu(props: AccountMenuProps & AccountMenuEvents)
   }
 
   return (
-    <section class="account-menu" aria-label="Account">
+    <section
+      class={props.class ? `account-menu ${props.class}` : "account-menu"}
+      aria-label="Account"
+      style={props.style}
+    >
       <Show
         when={step() === "intro"}
         fallback={

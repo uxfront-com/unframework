@@ -1,4 +1,4 @@
-import { For, createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import { For, type JSX, createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
 
 export interface RunsProps {
   label: string;
@@ -10,7 +10,9 @@ export interface RunsEvents {
   onSaved?: (text: string) => void;
 }
 
-export default function Runs(props: RunsProps & RunsEvents) {
+export default function Runs(
+  props: RunsProps & RunsEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [low, setLow] = createSignal(0);
   const [high, setHigh] = createSignal(10);
   const [query, setQuery] = createSignal("");
@@ -86,7 +88,7 @@ export default function Runs(props: RunsProps & RunsEvents) {
   }
 
   return (
-    <section aria-label="Runs">
+    <section aria-label="Runs" class={props.class} style={props.style}>
       <p role="status">
         {low()}-{high()}
       </p>

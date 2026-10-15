@@ -1,4 +1,4 @@
-import { For } from "solid-js";
+import { For, type JSX } from "solid-js";
 
 type Availability = "in-stock" | "backorder" | "discontinued";
 
@@ -14,9 +14,15 @@ export interface ProductSpecProps {
   finishes: Finish[];
 }
 
-export default function ProductSpec(props: ProductSpecProps) {
+export default function ProductSpec(
+  props: ProductSpecProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <section class="product-spec" aria-label={props.name}>
+    <section
+      class={props.class ? `product-spec ${props.class}` : "product-spec"}
+      aria-label={props.name}
+      style={props.style}
+    >
       <h2>{props.name}</h2>
       <dl>
         <dt>Availability</dt>

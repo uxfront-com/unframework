@@ -28,12 +28,15 @@ import type {
   EventAttribute,
   FunctionCode,
   FunctionItem,
+  Handler,
+  ListenerAttribute,
   RefAttribute,
   UfComponent,
 } from "@unframework/ir";
 import { walk } from "@unframework/ir";
 
 import type { Narrowings } from "./narrowing.ts";
+import { eventProp } from "./props.ts";
 import type { SolidCode } from "./setup.ts";
 
 type JsxAttributeItem = ReturnType<typeof js.jsxAttribute>;
@@ -194,6 +197,18 @@ export interface SolidListeners {
     element: ElementNode,
     context: JsxContext,
   ): JsxAttributeItem[];
+  /**
+   * Whether an element prints a `ref` callback of its own (a template ref, an added listener),
+   * which a `v-model`'s helper then joins.
+   */
+  carries(element: ElementNode): boolean;
+  /** A listener of a child's event, `onClear={clear}`: the handler takes its payload. */
+  componentEvent(attribute: ListenerAttribute): JsxAttributeItem[];
+  /**
+   * A component ref (ADR-0054): a `let` the `ref` callback sets to what the child exposes, and
+   * clears when the child is disposed, as an element's (ADR-0049).
+   */
+  componentRef(attribute: RefAttribute): JsxAttributeItem[];
 }
 
 /** Listeners and template refs as Solid writes them (see the module comment). */
@@ -202,6 +217,10 @@ export function solidListeners(
   imports: ImportSet,
   placeholders: Placeholders,
   narrowings: Narrowings,
+  modelRef: (
+    element: ElementNode,
+    context: JsxContext,
+  ) => ((parameter: string) => string) | undefined,
 ): SolidListeners {
   const native = nativeEvents(code.component);
   const plans = new WeakMap<ElementNode, ElementPlan>();
@@ -214,12 +233,13 @@ export function solidListeners(
     return plan;
   };
   let parameter: string | undefined;
+  let api: string | undefined;
   /**
    * A listener's handler. `tracked` where `solid/reactivity` reads it as a handler (an `on…`
    * prop's value, `addEventListener`'s argument), not where it is an options object's
    * `handleEvent`, so an arrow it hands to a function needs no `untrack` (src/untracked.ts).
    */
-  const handler = ({ handler: written }: EventAttribute, tracked = true): string => {
+  const handler = ({ handler: written }: { handler: Handler }, tracked = true): string => {
     switch (written.kind) {
       case "Function":
         return code.component.bindings.find((entry) => entry.id === written.binding)!.name;
@@ -232,7 +252,7 @@ export function solidListeners(
   };
   const expression = (text: string) => js.jsxExpressionContainer(placeholders.expression(text));
   /** The `ref` callback of an element: its template ref set and cleared, its added listeners. */
-  const refCallback = (element: ElementNode): JsxAttributeItem => {
+  const refCallback = (element: ElementNode, context: JsxContext): JsxAttributeItem => {
     parameter ??= imports.claim("element");
     const statements: string[] = [];
     const ref = element.attributes.find((attribute) => attribute.kind === "Ref");
@@ -249,16 +269,19 @@ export function solidListeners(
         `${parameter}.addEventListener(${JSON.stringify(added.event)}, ${handler(added)}${option ? `, { ${option} }` : ""});`,
       );
     }
+    // A `v-model`'s helper that needs the element (src/models.ts), in the same callback.
+    const model = modelRef(element, context);
+    if (model) statements.push(model(parameter));
     const [only] = statements;
     const body =
       statements.length === 1 && !ref ? only!.slice(0, -1) : `{\n${statements.join("\n")}\n}`;
     return js.jsxAttribute("ref", expression(`(${parameter}) => ${body}`));
   };
   return {
-    eventAttribute(attribute, element) {
+    eventAttribute(attribute, element, context) {
       const plan = planOf(element);
       if (plan.added.includes(attribute)) {
-        return plan.carrier === attribute ? [refCallback(element)] : [];
+        return plan.carrier === attribute ? [refCallback(element, context)] : [];
       }
       const option = options(attribute);
       if (option) {
@@ -273,8 +296,18 @@ export function solidListeners(
       const name = prop && !native.has(attribute.event) ? prop : `on:${attribute.event}`;
       return [js.jsxAttribute(name, expression(handler(attribute)))];
     },
-    refAttribute(_attribute, element) {
-      return [refCallback(element)];
+    refAttribute(_attribute, element, context) {
+      return [refCallback(element, context)];
+    },
+    carries: (element) => planOf(element).carrier !== undefined,
+    componentEvent(attribute) {
+      return [js.jsxAttribute(eventProp(attribute.event), expression(handler(attribute)))];
+    },
+    componentRef(attribute) {
+      api ??= imports.claim("api");
+      const { name } = code.component.bindings.find((binding) => binding.id === attribute.binding)!;
+      const body = `${name} = ${api};\n${code.solid("onCleanup")}(() => {\n${name} = null;\n});`;
+      return [js.jsxAttribute("ref", expression(`(${api}) => {\n${body}\n}`))];
     },
   };
 }

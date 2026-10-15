@@ -117,12 +117,15 @@ export function lower(source: string, file = "Fixture.uf.tsx"): UfModule {
 }
 
 /**
- * The formatted Solid output of a source's first component, as `compile()` would write it.
+ * The formatted Solid output of a source's first component, or of the one `name` names, as
+ * `compile()` would write it.
  * Throws when the target reports anything: it never reports (ADR-0033).
  */
-export async function emitSource(source: string): Promise<string> {
+export async function emitSource(source: string, name?: string): Promise<string> {
   const module = lower(source);
-  const component = module.components[0]!;
+  const component = name
+    ? module.components.find((each) => each.name === name)!
+    : module.components[0]!;
   const reported: Omit<Diagnostic, "file" | "target">[] = [];
   const context: EmitContext = {
     module,

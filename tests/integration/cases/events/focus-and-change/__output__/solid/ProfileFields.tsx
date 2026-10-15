@@ -1,10 +1,12 @@
-import { For, createSignal } from "solid-js";
+import { For, type JSX, createSignal } from "solid-js";
 
 export interface ProfileFieldsEvents {
   onFirstNickname?: (nickname: string) => void;
 }
 
-export default function ProfileFields(props: ProfileFieldsEvents) {
+export default function ProfileFields(
+  props: ProfileFieldsEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [log, setLog] = createSignal<string[]>([]);
   const [nickname, setNickname] = createSignal("");
   const [cardFocuses, setCardFocuses] = createSignal(0);
@@ -20,7 +22,11 @@ export default function ProfileFields(props: ProfileFieldsEvents) {
   }
 
   return (
-    <section class="profile-fields" aria-label="Profile">
+    <section
+      class={props.class ? `profile-fields ${props.class}` : "profile-fields"}
+      aria-label="Profile"
+      style={props.style}
+    >
       <div
         class="name-group"
         role="group"

@@ -1,4 +1,4 @@
-import { createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface UnreadBadgeProps {
   appName: string;
@@ -9,7 +9,9 @@ export interface UnreadBadgeEvents {
   onTitleRelease?: (title: string) => void;
 }
 
-export default function UnreadBadge(props: UnreadBadgeProps & UnreadBadgeEvents) {
+export default function UnreadBadge(
+  props: UnreadBadgeProps & UnreadBadgeEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [unread, setUnread] = createSignal(0);
 
   createWatchEffect([unread, () => props.appName], (onCleanup) => {
@@ -21,7 +23,11 @@ export default function UnreadBadge(props: UnreadBadgeProps & UnreadBadgeEvents)
   });
 
   return (
-    <section class="unread-badge" aria-label="Inbox">
+    <section
+      class={props.class ? `unread-badge ${props.class}` : "unread-badge"}
+      aria-label="Inbox"
+      style={props.style}
+    >
       <p role="status">{unread()} unread</p>
       <button type="button" onClick={() => setUnread(unread() + 1)}>
         Receive a message

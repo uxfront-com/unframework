@@ -1,4 +1,4 @@
-import { For, Show, createMemo, createSignal, createUniqueId } from "solid-js";
+import { For, type JSX, Show, createMemo, createSignal, createUniqueId } from "solid-js";
 
 export interface CityPickerProps {
   cities: string[];
@@ -9,7 +9,9 @@ export interface CityPickerEvents {
   onNoted?: (text: string) => void;
 }
 
-export default function CityPicker(props: CityPickerProps & CityPickerEvents) {
+export default function CityPicker(
+  props: CityPickerProps & CityPickerEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const listId = `uf-id-${createUniqueId()}`;
   const [query, setQuery] = createSignal("");
   const [open, setOpen] = createSignal(false);
@@ -63,7 +65,11 @@ export default function CityPicker(props: CityPickerProps & CityPickerEvents) {
   }
 
   return (
-    <section class="city-picker" aria-label="Trip">
+    <section
+      class={props.class ? `city-picker ${props.class}` : "city-picker"}
+      aria-label="Trip"
+      style={props.style}
+    >
       <form role="search" aria-label="Destination" onSubmit={(event) => event.preventDefault()}>
         <label>
           City
