@@ -131,12 +131,17 @@ export function classMembers(context: MemberContext): {
     if (item.kind !== "Model") continue;
     const { name } = bindingById(plan, item.binding);
     const callee = js.identifier(core("model"));
-    const type = item.type ? [placeholders.type(item.type.code)] : [];
     const alias =
       name === item.name ? [] : [js.objectExpression([["alias", js.stringLiteral(item.name)]])];
+    // An alias needs an initial value before it: with no default, `undefined`, which the type
+    // takes as `model<T>()` gives it (`T | undefined`).
+    const unset = !item.default && !item.required && alias.length > 0;
+    const type = item.type
+      ? [placeholders.type(unset ? `(${item.type.code}) | undefined` : item.type.code)]
+      : [];
     const initial = item.default
       ? [placeholders.expression(item.default.code)]
-      : alias.length
+      : unset
         ? [js.identifier("undefined")]
         : [];
     members.push(

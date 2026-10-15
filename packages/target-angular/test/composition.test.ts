@@ -204,6 +204,12 @@ describe("the component's API", () => {
     expect(files.get("basket.ts")).toContain('[(titleTemplate)]="this.open"');
   });
 
+  it("types a model with no default and an alias as `model<T>()` types it", () => {
+    expect(composedOf("Order").get("qty.ts")).toContain(
+      'readonly amount = model<(number) | undefined>(undefined, { alias: "value" });',
+    );
+  });
+
   it("names a helper apart from an output", () => {
     const output = emittedOf("Chooser");
     expect(output).toContain("readonly selectedValues = output<string[]>();");
@@ -267,6 +273,59 @@ export default function Card() {
   return <p>{tone.value}</p>;
 }`).map(({ message }) => message),
     ).toEqual(["`class` names the input of the consumer's `class` on Angular. Rename the model."]);
+  });
+
+  it("reports a slot's directive named like a type or a key the file exports (UF2003)", () => {
+    const card = (
+      declaration: string,
+      setup: string,
+    ) => `import { defineSlots${setup ? ", provide" : ""} } from "unframework";
+import type { Element${setup ? ", InjectionKey" : ""} } from "unframework";
+${declaration}
+export default function Card({ level }: { level: CardTitle${setup ? " | undefined" : ""} }) {
+  const slots = defineSlots<{ title?(props: { text: string }): Element }>();
+${setup}
+  return <h2 data-level={level}>{slots.title?.({ text: "x" })}</h2>;
+}`;
+    expect(
+      reportedFor(card('export type CardTitle = "h1" | "h2";', "")).map(({ message }) => message),
+    ).toEqual([
+      "`CardTitle` names the directive of `Card`'s `title` slot on Angular, and the type `CardTitle` too. Rename one of them.",
+    ]);
+    const keyed = reportedFor(
+      card(
+        'type Level = "h1";\nexport const CardTitle: InjectionKey<string> = Symbol("uf.title");',
+        '  provide(CardTitle, "x");',
+      ).replace("level: CardTitle | undefined", "level: Level"),
+    );
+    expect(keyed.map(({ message }) => message)).toEqual([
+      "`CardTitle` names the directive of `Card`'s `title` slot on Angular, and the injection key `CardTitle` too. Rename one of them.",
+    ]);
+    expect(keyed[0]!.at).toContain("title?(props");
+  });
+
+  it("names a slot's directive apart from a key it imports", () => {
+    const module = lowerWith(
+      `import { defineSlots, provide } from "unframework";
+import type { Element } from "unframework";
+import { CardTitle } from "./Keys.uf.tsx";
+export default function Card() {
+  const slots = defineSlots<{ title?(): Element }>();
+  provide(CardTitle, "x");
+  return <h2>{slots.title?.()}</h2>;
+}`,
+      {
+        "./Keys.uf.tsx": `import type { Element, InjectionKey } from "unframework";
+export const CardTitle: InjectionKey<string> = Symbol("uf.title");
+export default function Keys() {
+  return <p>Keys</p>;
+}`,
+      },
+    );
+    const [output] = emitModule(module);
+    expect(output!.contents).toContain('import { CardTitle } from "./keys";');
+    expect(output!.contents).toContain("class CardTitle_1 {");
+    expect(output!.contents).toContain("export { CardTitle_1 as CardTitle };");
   });
 
   it("reports two slots of two children filled through one attribute (UF1104)", () => {

@@ -310,6 +310,25 @@ function emitComponent(component: UfComponent, context: EmitContext): OutputFile
     exportsOf(component.name, module.exports),
   );
   const types = declaredTypes(closure, typeRoots(component, module));
+  // A slot's directive is exported under the name its consumers compute (`CardTitle`), which
+  // nothing else the file exports may take: a type, a key or the component (UF2003).
+  const exported = new Map<string, string>([
+    ...types.filter((type) => type.exported).map(({ name }) => [name, `the type`] as const),
+    ...composition.keys.map(({ name }) => [name, `the injection key`] as const),
+    ...exportsOf(component.name, module.exports).map(
+      ({ name }) => [name, `the component`] as const,
+    ),
+  ]);
+  for (const { slot, exported: name } of composition.slots) {
+    const other = exported.get(name);
+    if (other === undefined) continue;
+    context.report({
+      code: "UF2003",
+      severity: "error",
+      message: `\`${name}\` names the directive of \`${component.name}\`'s \`${slot.name}\` slot on Angular, and ${other} \`${name}\` too. Rename one of them.`,
+      span: slot.span,
+    });
+  }
   // The file's own declarations, before the imports print: each adds the imports it needs.
   const declarations = [
     ...composition.keys.map(

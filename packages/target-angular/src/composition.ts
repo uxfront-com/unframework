@@ -123,6 +123,16 @@ export function planComposition(plan: Plan): Composition {
         : imports.add(child.specifier, child.name, { local: child.local, exact: true });
     if (!classes.includes(local)) classes.push(local);
   }
+  // The keys first: a slot's directive takes a name apart from an imported key's.
+  const keyNames = new Map<string, string>();
+  for (const key of keyImports(component, module, outputFile)) {
+    keyNames.set(
+      key.local,
+      key.specifier
+        ? imports.add(key.specifier, key.name, { local: key.local, exact: true })
+        : key.local,
+    );
+  }
   const slots: SlotDirective[] = (component.slots?.slots ?? [])
     .filter((slot) => usesDirective(slot.name, slot.props !== undefined))
     .map((slot) => {
@@ -133,7 +143,7 @@ export function planComposition(plan: Plan): Composition {
         className,
         exported,
         attribute: slotAttribute(component.name, slot.name),
-        ...(slot.props ? { context: imports.claim(`${className}Context`) } : {}),
+        ...(slot.props ? { context: imports.claim(`${exported}Context`) } : {}),
       };
     });
   const attributes = new Map<string, string>();
@@ -171,15 +181,6 @@ export function planComposition(plan: Plan): Composition {
     },
   });
   if (outlet) classes.push(imports.add("@angular/common", "NgTemplateOutlet"));
-  const keyNames = new Map<string, string>();
-  for (const key of keyImports(component, module, outputFile)) {
-    keyNames.set(
-      key.local,
-      key.specifier
-        ? imports.add(key.specifier, key.name, { local: key.local, exact: true })
-        : key.local,
-    );
-  }
   const keys =
     module.keys?.length && keyOwner(module.components, module.exports) === component.name
       ? module.keys

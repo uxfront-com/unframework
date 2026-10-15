@@ -124,6 +124,17 @@ export default function Basket() {
   );
 }
 `,
+  // A model with no default, its binding named apart from it, bound by a consumer.
+  Order: `import { defineModel, ref } from "unframework";
+function Qty() {
+  const amount = defineModel<number>("value");
+  return <output>{amount.value ?? "None"}</output>;
+}
+export default function Order() {
+  const n = ref(1);
+  return <Qty v-model:value={n.value} />;
+}
+`,
   // A slot whose directive is named like a child the component imports.
   Page: `import { defineSlots } from "unframework";
 import type { Element } from "unframework";
