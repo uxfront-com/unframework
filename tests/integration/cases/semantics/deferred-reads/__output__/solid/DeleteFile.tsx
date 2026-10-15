@@ -1,4 +1,4 @@
-import { Show, createSignal } from "solid-js";
+import { type JSX, Show, createSignal } from "solid-js";
 
 export interface DeleteFileProps {
   fileName: string;
@@ -8,7 +8,9 @@ export interface DeleteFileEvents {
   onDeleted?: (fileName: string, copies: number) => void;
 }
 
-export default function DeleteFile(props: DeleteFileProps & DeleteFileEvents) {
+export default function DeleteFile(
+  props: DeleteFileProps & DeleteFileEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [copies, setCopies] = createSignal(1);
   const [confirming, setConfirming] = createSignal(false);
   let resolveConfirmation: (() => void) | undefined;
@@ -31,7 +33,11 @@ export default function DeleteFile(props: DeleteFileProps & DeleteFileEvents) {
   }
 
   return (
-    <section class="delete-file" aria-label="File">
+    <section
+      class={props.class ? `delete-file ${props.class}` : "delete-file"}
+      aria-label="File"
+      style={props.style}
+    >
       <p>
         {props.fileName}, {copies()} {copies() === 1 ? "copy" : "copies"}
       </p>

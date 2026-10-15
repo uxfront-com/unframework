@@ -1,4 +1,4 @@
-import { createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface CoalescedEvents {
   onState?: (step: string, count: number, busy: boolean) => void;
@@ -11,7 +11,9 @@ function parse(text: string): number {
   return value;
 }
 
-export default function Coalesced(props: CoalescedEvents) {
+export default function Coalesced(
+  props: CoalescedEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [step, setStep] = createSignal("idle");
   const [count, setCount] = createSignal(0);
   const [busy, setBusy] = createSignal(false);
@@ -131,7 +133,7 @@ export default function Coalesced(props: CoalescedEvents) {
   }
 
   return (
-    <section aria-label="Coalesced">
+    <section aria-label="Coalesced" class={props.class} style={props.style}>
       <p role="status">
         {step()} {count()} {busy() ? "busy" : "idle"}
       </p>

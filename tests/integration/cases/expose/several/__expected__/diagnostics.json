@@ -70,7 +70,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit component yet: composition lands in M3.",
+    "message": "The svelte target does not emit component yet: composition lands in M3.",
     "file": "expose/several/Controls.uf.tsx",
     "start": {
       "line": 9,
@@ -82,7 +82,7 @@
       "column": 43,
       "offset": 279
     },
-    "target": "solid"
+    "target": "svelte"
   },
   {
     "code": "UF4001",
@@ -189,7 +189,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit expose yet: composition lands in M3.",
+    "message": "The svelte target does not emit expose yet: composition lands in M3.",
     "file": "expose/several/Counter.uf.tsx",
     "start": {
       "line": 11,
@@ -201,6 +201,6 @@
       "column": 37,
       "offset": 280
     },
-    "target": "solid"
+    "target": "svelte"
   }
 ]

@@ -1,4 +1,4 @@
-import { createMemo, createSignal } from "solid-js";
+import { type JSX, createMemo, createSignal } from "solid-js";
 
 export interface OrderSummaryProps {
   /** The unit price, in cents. */
@@ -6,7 +6,9 @@ export interface OrderSummaryProps {
   taxRate: number;
 }
 
-export default function OrderSummary(props: OrderSummaryProps) {
+export default function OrderSummary(
+  props: OrderSummaryProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const [quantity, setQuantity] = createSignal(1);
   const subtotal = createMemo(() => quantity() * props.price);
   const tax = createMemo(() => Math.round(subtotal() * props.taxRate));
@@ -17,7 +19,12 @@ export default function OrderSummary(props: OrderSummaryProps) {
   });
 
   return (
-    <section class="order-summary" aria-label="Order summary" data-tier={tier()}>
+    <section
+      class={props.class ? `order-summary ${props.class}` : "order-summary"}
+      aria-label="Order summary"
+      data-tier={tier()}
+      style={props.style}
+    >
       <p role="status">Quantity: {quantity()}</p>
       <button type="button" disabled={quantity() === 1} onClick={() => setQuantity(quantity() - 1)}>
         Remove one

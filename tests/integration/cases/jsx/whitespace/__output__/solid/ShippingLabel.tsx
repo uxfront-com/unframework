@@ -1,3 +1,5 @@
+import type { JSX } from "solid-js";
+
 export interface ShippingLabelProps {
   recipient: string;
   street: string;
@@ -5,9 +7,15 @@ export interface ShippingLabelProps {
   postcode: string;
 }
 
-export default function ShippingLabel(props: ShippingLabelProps) {
+export default function ShippingLabel(
+  props: ShippingLabelProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <article class="shipping-label" aria-label="Shipping label">
+    <article
+      class={props.class ? `shipping-label ${props.class}` : "shipping-label"}
+      aria-label="Shipping label"
+      style={props.style}
+    >
       <p>
         <strong>To:</strong> {props.recipient}
       </p>

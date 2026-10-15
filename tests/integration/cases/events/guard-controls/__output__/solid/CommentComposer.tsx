@@ -1,4 +1,4 @@
-import { For, Show, createSignal } from "solid-js";
+import { For, type JSX, Show, createSignal } from "solid-js";
 
 export interface CommentComposerEvents {
   onSent?: (text: string) => void;
@@ -6,7 +6,9 @@ export interface CommentComposerEvents {
   onFirstSave?: () => void;
 }
 
-export default function CommentComposer(props: CommentComposerEvents) {
+export default function CommentComposer(
+  props: CommentComposerEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [tags, setTags] = createSignal<string[]>([]);
   const [query, setQuery] = createSignal("");
   const [panelOpen, setPanelOpen] = createSignal(true);
@@ -47,7 +49,11 @@ export default function CommentComposer(props: CommentComposerEvents) {
   }
 
   return (
-    <section class="comment-composer" aria-label="Composer">
+    <section
+      class={props.class ? `comment-composer ${props.class}` : "comment-composer"}
+      aria-label="Composer"
+      style={props.style}
+    >
       <label>
         Comment
         <textarea name="comment" onKeyDown={send} />

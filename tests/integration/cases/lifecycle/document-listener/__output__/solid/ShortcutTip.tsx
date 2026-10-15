@@ -1,11 +1,13 @@
-import { createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface ShortcutTipEvents {
   onDismissed?: () => void;
   onShortcut?: (key: string, count: number) => void;
 }
 
-export default function ShortcutTip(props: ShortcutTipEvents) {
+export default function ShortcutTip(
+  props: ShortcutTipEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [open, setOpen] = createSignal(true);
   const [enabled, setEnabled] = createSignal(false);
   const [count, setCount] = createSignal(0);
@@ -48,7 +50,11 @@ export default function ShortcutTip(props: ShortcutTipEvents) {
   });
 
   return (
-    <section class="shortcut-tip" aria-label="Shortcuts">
+    <section
+      class={props.class ? `shortcut-tip ${props.class}` : "shortcut-tip"}
+      aria-label="Shortcuts"
+      style={props.style}
+    >
       <p>{open() ? "Press Escape to hide this tip." : "Tip hidden."}</p>
       <button type="button" aria-pressed={enabled()} onClick={toggle}>
         Shortcut K

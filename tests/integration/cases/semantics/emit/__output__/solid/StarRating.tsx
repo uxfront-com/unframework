@@ -1,4 +1,4 @@
-import { For, createSignal } from "solid-js";
+import { For, type JSX, createSignal } from "solid-js";
 
 export interface StarRatingEvents {
   onPreview?: (stars: number) => void;
@@ -8,7 +8,9 @@ export interface StarRatingEvents {
 
 const choices = [1, 2, 3, 4, 5];
 
-export default function StarRating(props: StarRatingEvents) {
+export default function StarRating(
+  props: StarRatingEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [stars, setStars] = createSignal(0);
 
   function choose(next: number) {
@@ -27,7 +29,12 @@ export default function StarRating(props: StarRatingEvents) {
   }
 
   return (
-    <div class="star-rating" role="group" aria-label="Rating">
+    <div
+      class={props.class ? `star-rating ${props.class}` : "star-rating"}
+      role="group"
+      aria-label="Rating"
+      style={props.style}
+    >
       <ul>
         <For each={choices}>
           {(choice) => (

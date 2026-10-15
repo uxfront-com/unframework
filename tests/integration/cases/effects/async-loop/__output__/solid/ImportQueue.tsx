@@ -1,4 +1,4 @@
-import { createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface ImportQueueProps {
   files: string[];
@@ -8,7 +8,9 @@ export interface ImportQueueEvents {
   onProgress?: (status: string, attempts: number) => void;
 }
 
-export default function ImportQueue(props: ImportQueueProps & ImportQueueEvents) {
+export default function ImportQueue(
+  props: ImportQueueProps & ImportQueueEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [status, setStatus] = createSignal("idle");
   const [attempts, setAttempts] = createSignal(0);
 
@@ -27,7 +29,11 @@ export default function ImportQueue(props: ImportQueueProps & ImportQueueEvents)
   }
 
   return (
-    <section class="import-queue" aria-label="Import">
+    <section
+      class={props.class ? `import-queue ${props.class}` : "import-queue"}
+      aria-label="Import"
+      style={props.style}
+    >
       <button type="button" onClick={importAll}>
         Import all
       </button>

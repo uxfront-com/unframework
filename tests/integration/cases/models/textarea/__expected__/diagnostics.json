@@ -87,7 +87,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit two-way-binding yet: composition lands in M3.",
+    "message": "The svelte target does not emit two-way-binding yet: composition lands in M3.",
     "file": "models/textarea/NoteEditor.uf.tsx",
     "start": {
       "line": 7,
@@ -99,6 +99,6 @@
       "column": 55,
       "offset": 204
     },
-    "target": "solid"
+    "target": "svelte"
   }
 ]

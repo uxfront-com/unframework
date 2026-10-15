@@ -1,10 +1,12 @@
-import { createSignal, onCleanup } from "solid-js";
+import { type JSX, createSignal, onCleanup } from "solid-js";
 
 export interface ListenersEvents {
   onLogged?: (entries: string[]) => void;
 }
 
-export default function Listeners(props: ListenersEvents) {
+export default function Listeners(
+  props: ListenersEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [log, setLog] = createSignal<string[]>([]);
   const [volume, setVolume] = createSignal(0);
   let field: HTMLInputElement | null = null;
@@ -23,7 +25,7 @@ export default function Listeners(props: ListenersEvents) {
   }
 
   return (
-    <section aria-label="Listeners">
+    <section aria-label="Listeners" class={props.class} style={props.style}>
       <div
         role="presentation"
         ref={(element) =>

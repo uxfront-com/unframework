@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { type JSX, createSignal } from "solid-js";
 
 export interface TallyEvents {
   onTotal?: (value: number) => void;
@@ -6,7 +6,7 @@ export interface TallyEvents {
   onLogged?: (entries: string[]) => void;
 }
 
-export default function Tally(props: TallyEvents) {
+export default function Tally(props: TallyEvents & { class?: string; style?: JSX.CSSProperties }) {
   const [count, setCount] = createSignal(0);
   const [trail, setTrail] = createSignal<string[]>([]);
 
@@ -49,7 +49,11 @@ export default function Tally(props: TallyEvents) {
   }
 
   return (
-    <section class="tally" aria-label="Tally">
+    <section
+      class={props.class ? `tally ${props.class}` : "tally"}
+      aria-label="Tally"
+      style={props.style}
+    >
       <p role="status">Count: {count()}</p>
       <button type="button" onClick={addTwice}>
         Add two

@@ -87,7 +87,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit two-way-binding yet: composition lands in M3.",
+    "message": "The svelte target does not emit two-way-binding yet: composition lands in M3.",
     "file": "models/modifiers/Profile.uf.tsx",
     "start": {
       "line": 10,
@@ -99,6 +99,6 @@
       "column": 46,
       "offset": 253
     },
-    "target": "solid"
+    "target": "svelte"
   }
 ]

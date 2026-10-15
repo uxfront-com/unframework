@@ -1,4 +1,4 @@
-import { For, createSignal } from "solid-js";
+import { For, type JSX, createSignal } from "solid-js";
 
 export interface QuickActionsProps {
   actions: string[];
@@ -10,7 +10,9 @@ export interface QuickActionsEvents {
   onChosen?: (action: string, scope: string) => void;
 }
 
-export default function QuickActions(props: QuickActionsProps & QuickActionsEvents) {
+export default function QuickActions(
+  props: QuickActionsProps & QuickActionsEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [query, setQuery] = createSignal("");
   const [lastKey, setLastKey] = createSignal("none");
   const [scope, setScope] = createSignal("mine");
@@ -36,7 +38,11 @@ export default function QuickActions(props: QuickActionsProps & QuickActionsEven
   }
 
   return (
-    <section class="quick-actions" aria-label="Quick actions">
+    <section
+      class={props.class ? `quick-actions ${props.class}` : "quick-actions"}
+      aria-label="Quick actions"
+      style={props.style}
+    >
       <label>
         Search
         <input

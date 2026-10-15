@@ -447,12 +447,19 @@ export const CANARIES: readonly Canary[] = [
     evidence: { ssr: { "golden guard": guardFailure } },
     loadEvidence: { browser: { "golden guard": guardFailure } },
     guard: true,
+    // Each file declares its own name: the unplugin joins the outputs of one `.uf.tsx` into one
+    // module for a script target, and rejects a name two of them declare before the guard runs.
     plugin: () => ({
       name: "uf-canary-guard",
       output: (files, { target }) =>
         files.map((file) => ({
           ...file,
-          contents: injectScript(file, target, `const ufCanaryGuard = "${MARKER}";`, "module"),
+          contents: injectScript(
+            file,
+            target,
+            `const ufCanaryGuard_${file.path.replace(/\W/g, "_")} = "${MARKER}";`,
+            "module",
+          ),
         })),
     }),
   },

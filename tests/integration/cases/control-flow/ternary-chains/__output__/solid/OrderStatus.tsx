@@ -1,4 +1,4 @@
-import { Match, Switch } from "solid-js";
+import { type JSX, Match, Switch } from "solid-js";
 
 export interface OrderStatusProps {
   status: "pending" | "shipped" | "delivered" | "cancelled";
@@ -6,9 +6,11 @@ export interface OrderStatusProps {
   eta?: string;
 }
 
-export default function OrderStatus(props: OrderStatusProps) {
+export default function OrderStatus(
+  props: OrderStatusProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <p class="order-status">
+    <p class={props.class ? `order-status ${props.class}` : "order-status"} style={props.style}>
       <Switch fallback={<em>Cancelled</em>}>
         <Match when={props.status === "pending"}>Waiting for payment.</Match>
         <Match when={props.status === "shipped"}>

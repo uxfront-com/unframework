@@ -1,10 +1,12 @@
-import { For, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { For, type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface MessageListEvents {
   onRendered?: (count: number) => void;
 }
 
-export default function MessageList(props: MessageListEvents) {
+export default function MessageList(
+  props: MessageListEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [messages, setMessages] = createSignal(["Welcome to the team"]);
   let list: HTMLUListElement | null = null;
 
@@ -17,7 +19,11 @@ export default function MessageList(props: MessageListEvents) {
   }
 
   return (
-    <section class="message-list" aria-label="Messages">
+    <section
+      class={props.class ? `message-list ${props.class}` : "message-list"}
+      aria-label="Messages"
+      style={props.style}
+    >
       <ul
         ref={(element) => {
           list = element;

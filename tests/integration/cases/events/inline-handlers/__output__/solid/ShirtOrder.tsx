@@ -1,13 +1,17 @@
-import { createSignal, onCleanup } from "solid-js";
+import { type JSX, createSignal, onCleanup } from "solid-js";
 
-export default function ShirtOrder() {
+export default function ShirtOrder(props: { class?: string; style?: JSX.CSSProperties }) {
   const [size, setSize] = createSignal("M");
   const [quantity, setQuantity] = createSignal(1);
   const [note, setNote] = createSignal("");
   let noteField: HTMLInputElement | null = null;
 
   return (
-    <section class="shirt-order" aria-label="Shirt order">
+    <section
+      class={props.class ? `shirt-order ${props.class}` : "shirt-order"}
+      aria-label="Shirt order"
+      style={props.style}
+    >
       <p role="status">{`${quantity()} x size ${size()}`}</p>
       <div role="group" aria-label="Size">
         <button

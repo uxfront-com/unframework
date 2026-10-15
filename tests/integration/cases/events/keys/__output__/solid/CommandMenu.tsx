@@ -1,4 +1,4 @@
-import { For, createSignal, onCleanup } from "solid-js";
+import { For, type JSX, createSignal, onCleanup } from "solid-js";
 
 export interface CommandMenuProps {
   commands: string[];
@@ -9,7 +9,9 @@ export interface CommandMenuEvents {
   onDismiss?: () => void;
 }
 
-export default function CommandMenu(props: CommandMenuProps & CommandMenuEvents) {
+export default function CommandMenu(
+  props: CommandMenuProps & CommandMenuEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [active, setActive] = createSignal(0);
   const [query, setQuery] = createSignal("");
   let shortcutField: HTMLInputElement | null = null;
@@ -34,7 +36,11 @@ export default function CommandMenu(props: CommandMenuProps & CommandMenuEvents)
   }
 
   return (
-    <section class="command-menu" aria-label="Command menu">
+    <section
+      class={props.class ? `command-menu ${props.class}` : "command-menu"}
+      aria-label="Command menu"
+      style={props.style}
+    >
       <form role="search" aria-label="Commands">
         <label>
           Command

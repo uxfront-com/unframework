@@ -1,4 +1,4 @@
-import { For, Match, Switch } from "solid-js";
+import { For, type JSX, Match, Switch } from "solid-js";
 
 export interface UploadStep {
   id: string;
@@ -13,14 +13,19 @@ export interface UploadStatusProps {
   error?: string;
 }
 
-export default function UploadStatus(props: UploadStatusProps) {
+export default function UploadStatus(
+  props: UploadStatusProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
     <section
-      class={cx("upload", `upload-${props.state}`)}
+      class={cx("upload", `upload-${props.state}`, props.class)}
       aria-label={`Upload of ${props.fileName}`}
       style={{
-        color: props.state === "failed" ? "#8a1c1c" : "#1f3d5c",
-        "--upload-percent": props.percent,
+        ...{
+          color: props.state === "failed" ? "#8a1c1c" : "#1f3d5c",
+          "--upload-percent": props.percent,
+        },
+        ...props.style,
       }}
     >
       <h2>{props.fileName}</h2>

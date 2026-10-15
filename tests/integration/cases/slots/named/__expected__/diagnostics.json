@@ -70,7 +70,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit `defineSlots` yet: composition lands in M3.",
+    "message": "The svelte target does not emit `defineSlots` yet: composition lands in M3.",
     "file": "slots/named/Card.uf.tsx",
     "start": {
       "line": 5,
@@ -82,7 +82,7 @@
       "column": 96,
       "offset": 216
     },
-    "target": "solid"
+    "target": "svelte"
   },
   {
     "code": "UF1002",
@@ -155,7 +155,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit component yet: composition lands in M3.",
+    "message": "The svelte target does not emit component yet: composition lands in M3.",
     "file": "slots/named/Post.uf.tsx",
     "start": {
       "line": 5,
@@ -167,6 +167,6 @@
       "column": 12,
       "offset": 296
     },
-    "target": "solid"
+    "target": "svelte"
   }
 ]

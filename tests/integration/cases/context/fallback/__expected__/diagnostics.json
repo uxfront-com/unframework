@@ -87,7 +87,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit context yet: composition lands in M3.",
+    "message": "The svelte target does not emit context yet: composition lands in M3.",
     "file": "context/fallback/Greeting.uf.tsx",
     "start": {
       "line": 6,
@@ -99,7 +99,7 @@
       "column": 42,
       "offset": 197
     },
-    "target": "solid"
+    "target": "svelte"
   },
   {
     "code": "UF1002",
@@ -172,7 +172,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit an injection key yet: composition lands in M3.",
+    "message": "The svelte target does not emit an injection key yet: composition lands in M3.",
     "file": "context/fallback/LocaleProvider.uf.tsx",
     "start": {
       "line": 4,
@@ -184,7 +184,7 @@
       "column": 68,
       "offset": 178
     },
-    "target": "solid"
+    "target": "svelte"
   },
   {
     "code": "UF4001",
@@ -274,7 +274,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit component yet: composition lands in M3.",
+    "message": "The svelte target does not emit component yet: composition lands in M3.",
     "file": "context/fallback/Page.uf.tsx",
     "start": {
       "line": 7,
@@ -286,6 +286,6 @@
       "column": 30,
       "offset": 181
     },
-    "target": "solid"
+    "target": "svelte"
   }
 ]

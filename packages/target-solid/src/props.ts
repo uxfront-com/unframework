@@ -48,7 +48,8 @@ export interface SolidProps {
  * A component that declares events takes their listeners as props too (ADR-0047), typed by a
  * generated interface beside its props type (`props: CounterProps & CounterEvents`, or
  * `props: CounterEvents` alone), and calls them through the props object, never destructured:
- * `props.onChange?.(value)`.
+ * `props.onChange?.(value)`. Its models, slots, fallthrough and `ref` are props too, typed by
+ * `composition.types` (src/composition.ts), and read through the props object.
  *
  * Props the output never reads take no default (ADR-0034: their defaults are dead code), and
  * a props object the output never reads is `_props`, the name oxlint's `no-unused-vars` leaves
@@ -59,13 +60,16 @@ export function solidProps(
   component: UfComponent,
   imports: ImportSet,
   placeholders: Placeholders,
+  composition: { types: readonly string[]; reads: boolean },
 ): SolidProps {
   const parameter = component.propsParameter;
   const events = eventsInterface(component, imports);
   const emitted = component.emits !== undefined && emitsAny(component);
-  const typeCode = [parameter?.type.code, events?.name].filter(Boolean).join(" & ");
+  const typeCode = [parameter?.type.code, events?.name, ...composition.types]
+    .filter(Boolean)
+    .join(" & ");
   const type = () => placeholders.type(typeCode);
-  if (!parameter && !events) {
+  if (!parameter && !events && !composition.types.length) {
     return { parameters: [], statements: [], read: asWritten };
   }
   const referenced = referencedBindings(component, { includeKeys: false });
@@ -86,11 +90,14 @@ export function solidProps(
       ...(events ? { events } : {}),
     };
   };
-  if (read.length === 0 && !emitted) return unread();
+  if (read.length === 0 && !emitted && !composition.reads) return unread();
   if (!parameter || parameter.form === "object") {
     // The source's own name, which every reference already spells (`props.label`), or `props`
-    // for a component that takes only its events' listeners.
-    const name = parameter?.name ?? imports.claim("props");
+    // for a component that takes only its events' listeners. An object form only composition
+    // reads (fallthrough, slots, models) and whose name says it is unused (`_`, `_unused`) takes
+    // `props`: no source code spells it.
+    const kept = parameter && (read.length || emitted || !parameter.name!.startsWith("_"));
+    const name = kept ? parameter.name! : imports.claim("props");
     return {
       parameters: [js.bindingIdentifier(name, type())],
       statements: [],

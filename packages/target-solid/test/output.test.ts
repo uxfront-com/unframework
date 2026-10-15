@@ -8,6 +8,8 @@ import { join } from "node:path";
 
 import { transformSync } from "@babel/core";
 import type { ToolchainContext } from "@unframework/codegen";
+import { format } from "oxfmt";
+import type { FormatConfig } from "oxfmt";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { toolchain } from "../src/toolchain/index.ts";
@@ -66,7 +68,7 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
     for (const shape of [
       "mergeProps(",
       "satisfies Partial<",
-      "(props: LinkCardProps)",
+      "(props: LinkCardProps & { class?: string; style?: JSX.CSSProperties })",
       "(_props: { note?: string })",
       "<Show when={!props.busy}>",
       "<Switch",
@@ -114,7 +116,7 @@ describe("solid output, checked by Solid's own tools", { timeout: 60_000 }, () =
       // helpers (src/helpers.ts).
       "export interface WatchersEvents {",
       "onLabelled?: (value: string, previous?: string) => void;",
-      "(props: WatchersProps & WatchersEvents)",
+      "(\n  props: WatchersProps & WatchersEvents & { class?: string; style?: JSX.CSSProperties },\n)",
       'const [query, setQuery] = createSignal("");',
       "const [fixed] = createSignal(format(1));",
       "createWatcher(query, (value, previous, onCleanup) => {",
@@ -202,10 +204,26 @@ describe("solid output where Solid needs a rewrite (src/render.ts, src/attribute
     "AsyncRuns",
     "NarrowedState",
     "Coalesced",
+    "RowSlots",
+    "ForwardedSlot",
+    "OptionText",
+    "SelectRow",
   ])("is test/fixtures/%s.tsx, which the browser test mounts", async (name) => {
     expect(await emitSource(SOURCES[name]!)).toBe(
       readFileSync(new URL(`./fixtures/${name}.tsx`, import.meta.url), "utf8"),
     );
+  });
+
+  // The repo's formatter puts a relative import after the packages' (format:check reads the
+  // fixtures), where the emitter writes its imports by specifier: the code is the same.
+  it("is test/fixtures/SelectRows.tsx, which imports its child, as the repo formats it", async () => {
+    // The repo's own oxfmt config, by URL: it is no module of this package's to type-check.
+    const config = new URL("../../../oxfmt.config.ts", import.meta.url).href;
+    const { default: repo } = (await import(/* @vite-ignore */ config)) as {
+      default: FormatConfig;
+    };
+    const { code } = await format("SelectRows.tsx", await emitSource(SOURCES.SelectRows!), repo);
+    expect(code).toBe(readFileSync(new URL("./fixtures/SelectRows.tsx", import.meta.url), "utf8"));
   });
 
   it("renders every line feed of a <pre> whose text follows expressions on the server", async () => {
@@ -226,7 +244,7 @@ describe("solid output where Solid needs a rewrite (src/render.ts, src/attribute
       format: { separator: null },
     };
     expect(await narrowingHtml(absent)).toBe(
-      '<div><i>anon</i><i>none</i><i>anon</i><ul><li>-</li></ul><i>none</i><svg><rect width="3"></rect></svg><p>E</p><ul><li></li></ul>&lt;anonymous><p title="t">a</p><p>anon</p><p></p><p></p></div>',
+      '<div style=""><i>anon</i><i>none</i><i>anon</i><ul><li>-</li></ul><i>none</i><svg><rect width="3"></rect></svg><p>E</p><ul><li></li></ul>&lt;anonymous><p title="t">a</p><p>anon</p><p></p><p></p></div>',
     );
     const user = {
       name: "Ada",
@@ -252,7 +270,7 @@ describe("solid output where Solid needs a rewrite (src/render.ts, src/attribute
       attrs: { title: "T", id: "I" },
     });
     expect(html).toContain(
-      '<div><p>Ada</p><b title="Ada">Ada</b><p>Ada</p><b>Ada</b><b>Ada</b><p>Ada</p><p title="A" class="grown"',
+      '<div style=""><p>Ada</p><b title="Ada">Ada</b><p>Ada</p><b>Ada</b><b>Ada</b><p>Ada</p><p title="A" class="grown"',
     );
     expect(html).toContain('>30<b>Ada</b></p><p>C</p><a href="#a" data-json="{&quot;user&quot;');
     expect(html).toContain(

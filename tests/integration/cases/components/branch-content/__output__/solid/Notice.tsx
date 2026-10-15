@@ -1,6 +1,10 @@
-export default function Notice(props: { text: string; tone: "info" | "quiet" }) {
+import type { JSX } from "solid-js";
+
+export default function Notice(
+  props: { text: string; tone: "info" | "quiet" } & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <p role="status" class={cx("notice", props.tone)}>
+    <p role="status" class={cx("notice", props.tone, props.class)} style={props.style}>
       {props.text}
     </p>
   );

@@ -1,4 +1,4 @@
-import { For, createSignal, untrack } from "solid-js";
+import { For, type JSX, createSignal, untrack } from "solid-js";
 
 export interface Contact {
   id: string;
@@ -14,7 +14,9 @@ export interface ContactListEvents {
   onRemoved?: (name: string) => void;
 }
 
-export default function ContactList(props: ContactListProps & ContactListEvents) {
+export default function ContactList(
+  props: ContactListProps & ContactListEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [contacts, setContacts] = createSignal(untrack(() => props.initial));
   const [chosen, setChosen] = createSignal<string>();
 
@@ -29,7 +31,11 @@ export default function ContactList(props: ContactListProps & ContactListEvents)
   }
 
   return (
-    <section class="contact-list" aria-label="Contacts">
+    <section
+      class={props.class ? `contact-list ${props.class}` : "contact-list"}
+      aria-label="Contacts"
+      style={props.style}
+    >
       <ul>
         <For each={contacts()}>
           {(contact, index) => (
