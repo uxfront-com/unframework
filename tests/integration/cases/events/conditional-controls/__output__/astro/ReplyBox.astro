@@ -1,10 +1,17 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const started = false as boolean;
 const suggesting = false as boolean;
 const accepted = 0 as number;
 ---
 
-<section class="reply-box" aria-label="Reply">
+<section class:list={["reply-box", className]} aria-label="Reply" style={style}>
   <label>Message<textarea name="message"></textarea></label>
   <p>{started ? "Started" : "Not started"}</p>
   <label>Answer<textarea name="answer"></textarea></label>

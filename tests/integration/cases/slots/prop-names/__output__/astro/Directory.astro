@@ -1,0 +1,23 @@
+---
+import Table from "./Table.astro";
+
+export interface Person {
+  id: string;
+  name: string;
+}
+
+interface Props {
+  people: Person[];
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { people, class: className, style } = Astro.props;
+---
+
+<Table
+  people={people}
+  class:list={[className]}
+  style={style}
+  row={({ name, "data-id": id, index }) => <span>{index + 1}: {name} ({id})</span>}
+/>

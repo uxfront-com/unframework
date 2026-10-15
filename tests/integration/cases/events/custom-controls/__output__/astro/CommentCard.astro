@@ -1,9 +1,16 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const text = "" as string;
 const liked = false as boolean;
 ---
 
-<section class="comment-card" aria-label="Comment">
+<section class:list={["comment-card", className]} aria-label="Comment" style={style}>
   <label>Comment<textarea name="comment" rows="2"></textarea></label>
   <div class="meter" role="presentation">
     <div class="fill" style={{ width: `${Math.min(text.length, 100)}%` }}></div>

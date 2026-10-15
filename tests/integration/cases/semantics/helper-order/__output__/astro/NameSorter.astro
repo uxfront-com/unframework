@@ -1,4 +1,11 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const names = ["Cy", "Al"].toSorted((a, b) => compare(a, b));
 const count = 0 as number;
 
@@ -7,7 +14,7 @@ function compare(a: string, b: string): number {
 }
 ---
 
-<section class="name-sorter" aria-label="Names">
+<section class:list={["name-sorter", className]} aria-label="Names" style={style}>
   <p>Names: {names.join(", ")}</p>
   <p>Added: {count}</p>
   <button type="button">Add Bo</button>

@@ -1,0 +1,18 @@
+---
+import Greeting from "./Greeting.astro";
+import LocaleProvider from "./LocaleProvider.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<main class:list={[className]} style={style}>
+  <Greeting name="Ada" />
+  <LocaleProvider locale="pt">
+    <Greeting name="Inês" />
+  </LocaleProvider>
+</main>

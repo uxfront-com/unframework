@@ -5,12 +5,23 @@ export interface StatusIconProps {
   colour?: string;
 }
 
-type Props = StatusIconProps;
+interface Props extends StatusIconProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { label, size = 24, colour = "#1f6feb" } = Astro.props;
+const { label, size = 24, colour = "#1f6feb", class: className, style } = Astro.props;
 ---
 
-<svg class="status-icon" role="img" viewBox="0 0 24 24" width={size} height={size} fill="none">
+<svg
+  class:list={["status-icon", className]}
+  role="img"
+  viewBox="0 0 24 24"
+  width={size}
+  height={size}
+  fill="none"
+  style={style}
+>
   <title>{label}</title>
   <defs>
     <linearGradient id="status-icon-fill" x1="0" y1="0" x2="1" y2="1">

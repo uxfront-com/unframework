@@ -1,0 +1,21 @@
+---
+export interface Person {
+  id: string;
+  name: string;
+}
+
+interface Props {
+  people: Person[];
+  row?: (props: { name: string; "data-id": string; index: number }) => unknown;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { people, row, class: className, style } = Astro.props;
+---
+
+<ol aria-label="People" class:list={[className]} style={style}>
+  {people.map((person, index) => (
+    <li>{row?.({ name: person.name, "data-id": person.id, index })}</li>
+  ))}
+</ol>

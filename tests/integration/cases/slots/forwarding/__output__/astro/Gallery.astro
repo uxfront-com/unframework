@@ -1,0 +1,18 @@
+---
+import Frame from "./Frame.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<div class:list={[className]} style={style}>
+  <Frame label="Filled">
+    <p>Taken at dusk.</p>
+    <Fragment slot="title">Sunset</Fragment>
+  </Frame>
+  <Frame label="Empty" />
+</div>

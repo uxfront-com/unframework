@@ -1,0 +1,22 @@
+---
+import Notice from "./Notice.astro";
+
+interface Props {
+  unread: number;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { unread, class: className, style } = Astro.props;
+
+const count = unread;
+---
+
+<div class:list={["inbox", className]} style={style}>
+  {count > 0 ? (
+    <Notice text={`${count} unread`} tone="info" />
+  ) : (
+    <Notice text="All read" tone="quiet" />
+  )}
+  <button type="button">Mark all read</button>
+</div>

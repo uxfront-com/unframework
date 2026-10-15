@@ -3,14 +3,17 @@ export interface CommandMenuProps {
   commands: string[];
 }
 
-type Props = CommandMenuProps;
+interface Props extends CommandMenuProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { commands } = Astro.props;
+const { commands, class: className, style } = Astro.props;
 
 const active = 0 as number;
 ---
 
-<section class="command-menu" aria-label="Command menu">
+<section class:list={["command-menu", className]} aria-label="Command menu" style={style}>
   <form role="search" aria-label="Commands">
     <label>Command<input name="command" /></label>
   </form>

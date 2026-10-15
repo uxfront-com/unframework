@@ -1,8 +1,15 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const colour = "none" as string;
 ---
 
-<section aria-label="Colours">
+<section aria-label="Colours" class:list={[className]} style={style}>
   <select size="3" aria-label="Colour">
     <option value="red">Red</option>
     <option value="green">Green</option>

@@ -1,0 +1,16 @@
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+const note = "Buy milk" as string;
+---
+
+<section aria-label="Note" class:list={[className]} style={style}>
+  <textarea aria-label="Text">{note}</textarea>
+  <output>{note.length} characters</output>
+  <button type="button">Discard</button>
+</section>

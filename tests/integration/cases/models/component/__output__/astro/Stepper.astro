@@ -1,0 +1,16 @@
+---
+interface Props {
+  label: string;
+  value?: number;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, value = 0, class: className, style } = Astro.props;
+---
+
+<div class:list={["stepper", className]} style={style}>
+  <button type="button" aria-label={`Fewer ${label}`}>-</button>
+  <span>{label}: {value}</span>
+  <button type="button" aria-label={`More ${label}`}>+</button>
+</div>

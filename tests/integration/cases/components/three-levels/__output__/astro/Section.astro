@@ -1,0 +1,17 @@
+---
+import Heading from "./Heading.astro";
+
+interface Props {
+  title: string;
+  body: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { title, body, class: className, style } = Astro.props;
+---
+
+<section class:list={["section", className]} style={style}>
+  <Heading text={title} />
+  <p>{body}</p>
+</section>

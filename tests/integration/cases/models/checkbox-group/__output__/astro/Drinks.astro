@@ -1,0 +1,19 @@
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+const drinks = ["tea"] as string[];
+---
+
+<fieldset class:list={[className]} style={style}>
+  <legend>Drinks</legend>
+  <label><input type="checkbox" value="tea" checked={drinks.includes("tea")} /> Tea</label>
+  <label><input type="checkbox" value="coffee" checked={drinks.includes("coffee")} /> Coffee</label>
+  <label><input type="checkbox" value="juice" checked={drinks.includes("juice")} /> Juice</label>
+  <output>Ordered: {drinks.join(", ") || "nothing"}</output>
+  <button type="button">Only juice</button>
+</fieldset>

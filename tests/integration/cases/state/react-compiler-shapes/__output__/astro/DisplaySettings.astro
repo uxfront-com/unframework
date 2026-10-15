@@ -4,13 +4,20 @@ export interface Settings {
   size: number;
 }
 
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const settings = { theme: "light", size: 14 } as Settings;
 const saving = false as boolean;
 const label = "Never saved" as string;
 const failure = "" as string;
 ---
 
-<section class="display-settings" aria-label="Display">
+<section class:list={["display-settings", className]} aria-label="Display" style={style}>
   <p role="status">Theme {settings.theme}, size {settings.size}</p>
   <button type="button">Dark</button>
   <button type="button">Larger</button>

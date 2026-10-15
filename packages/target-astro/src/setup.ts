@@ -21,6 +21,7 @@ import type {
   DerivedItem,
   FunctionItem,
   IdItem,
+  InjectItem,
   StateItem,
   UfComponent,
 } from "@unframework/ir";
@@ -49,6 +50,7 @@ export function setupCode(
   component: UfComponent,
   live: ReadonlySet<BindingId>,
   spelling: Spelling,
+  injectedType: (item: InjectItem) => string,
 ): SetupCode {
   const helpers: string[] = [];
   const statements: string[] = [];
@@ -97,16 +99,39 @@ export function setupCode(
       case "Lifecycle":
         // Browser-only: an element is never attached on the server, and Astro has no client.
         break;
-      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+      // A model is a prop (`./frontmatter.ts`), and nothing writes it. A provided value reaches
+      // no descendant: each component renders on its own (ADR-0054, `context` unsupported).
       case "Model":
       case "Provide":
+        break;
       case "Inject":
+        if (live.has(item.binding))
+          statements.push(injected(item, component, spelling, injectedType));
         break;
       default:
         unreachable(item);
     }
   }
   return { helpers, statements, readsAstro: uniqueId !== undefined };
+}
+
+/**
+ * `inject` as the fallback it gives where no ancestor provides the key, which is everywhere on
+ * Astro (ADR-0054): `const locale = "en" as string;`, cast to the key's value type as a `ref` is
+ * to its own, since a `const` keeps a literal's type (TS2367 in the markup's comparisons).
+ * Without one it is `undefined`, typed as the key's value may be, so that the markup's reads
+ * (`theme?.label`) type-check as the source's do.
+ */
+function injected(
+  item: InjectItem,
+  component: UfComponent,
+  spelling: Spelling,
+  injectedType: (item: InjectItem) => string,
+): string {
+  const name = spelling.name(item.binding);
+  const type = injectedType(item);
+  if (!item.fallback) return `const ${name} = undefined as ${unionWithUndefined(type)};`;
+  return `const ${name} = ${cast(initialiser(item.fallback, component, spelling), type)};`;
 }
 
 /** The bindings the server render reaches. */

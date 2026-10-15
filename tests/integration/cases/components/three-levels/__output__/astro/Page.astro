@@ -1,0 +1,16 @@
+---
+import Section from "./Section.astro";
+
+interface Props {
+  name: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { name, class: className, style } = Astro.props;
+---
+
+<article aria-label="Profile" class:list={[className]} style={style}>
+  <Section title={`About ${name}`} body="Three components deep." />
+  <Section title="Contact" body={`Write to ${name}.`} />
+</article>

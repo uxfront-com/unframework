@@ -1,8 +1,15 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const channel = "general" as string;
 ---
 
-<section class="channel-picker" aria-label="Channels">
+<section class:list={["channel-picker", className]} aria-label="Channels" style={style}>
   <p role="status">Channel: #{channel}</p>
   <button type="button">Join #random</button>
   <button type="button">Join #General</button>

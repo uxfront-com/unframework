@@ -25,7 +25,6 @@ const LAYER_2 = "Its case lands after the composition lanes merge.";
 const LANES: Readonly<Partial<Record<Exclude<TargetName, "vue">, string>>> = {
   angular: "Angular's M3 lane (UXF-318) emits composition, and its cases cover the cell.",
   qwik: "Qwik's M3 lane (UXF-319) emits composition, and its cases cover the cell.",
-  astro: "Astro's M3 lane (UXF-320) emits composition, and its cases cover the cell.",
 };
 
 /** The lanes of every target but those whose cell is unsupported. */

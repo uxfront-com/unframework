@@ -1,4 +1,11 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const fullName = "" as string;
 const email = "" as string;
 const plan = "free" as string;
@@ -6,7 +13,7 @@ const newsletter = false as boolean;
 const focused = "none" as string;
 ---
 
-<form class="signup-form" aria-label="Sign up">
+<form class:list={["signup-form", className]} aria-label="Sign up" style={style}>
   <label>Name<input name="name" /></label>
   <label>Email<input name="email" type="email" /></label>
   <label>Plan<select

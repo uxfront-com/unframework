@@ -1,0 +1,17 @@
+---
+interface Props {
+  label: string;
+  min?: number;
+  max?: number;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, min = 0, max = 100, class: className, style } = Astro.props;
+---
+
+<fieldset class:list={[className]} style={style}>
+  <legend>{label}</legend>
+  <p>From {min} to {max}</p>
+  <button type="button">Widen</button>
+</fieldset>

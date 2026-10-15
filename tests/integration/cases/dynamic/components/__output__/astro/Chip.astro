@@ -1,9 +1,11 @@
 ---
 interface Props {
   label: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
 }
 
-const { label } = Astro.props;
+const { label, class: className, style } = Astro.props;
 ---
 
-<span class="chip">{label}</span>
+<span class:list={["chip", className]} style={style}>{label}</span>

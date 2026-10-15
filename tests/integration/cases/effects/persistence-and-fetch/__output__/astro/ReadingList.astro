@@ -3,9 +3,12 @@ export interface ReadingListProps {
   shelves: string[];
 }
 
-type Props = ReadingListProps;
+interface Props extends ReadingListProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { shelves } = Astro.props;
+const { shelves, class: className, style } = Astro.props;
 
 const books = [] as string[];
 const searching = false as boolean;
@@ -17,7 +20,7 @@ const counts = {} as Record<string, number>;
 const refreshing = false as boolean;
 ---
 
-<section class="reading-list" aria-label="Reading list">
+<section class:list={["reading-list", className]} aria-label="Reading list" style={style}>
   <label>Search<input type="search" name="query" /></label>
   <p
     role="status"

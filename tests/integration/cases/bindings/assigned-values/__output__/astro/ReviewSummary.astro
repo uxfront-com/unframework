@@ -6,12 +6,15 @@ export interface ReviewSummaryProps {
   product: string;
 }
 
-type Props = ReviewSummaryProps;
+interface Props extends ReviewSummaryProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { steps, score, sku, product } = Astro.props;
+const { steps, score, sku, product, class: className, style } = Astro.props;
 ---
 
-<section class="review-summary" aria-label="Review">
+<section class:list={["review-summary", className]} aria-label="Review" style={style}>
   <ol>
     {steps.map((step, index) => (
       <li value={index}>{step}</li>

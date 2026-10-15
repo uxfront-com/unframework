@@ -1,0 +1,6 @@
+---
+import Table from "../../../../../integration/cases/slots/prop-names/__output__/astro/Table.astro";
+---
+
+<!-- @uf-expect TS2339 Table.slot:row -->
+<Table people={[{ id: "a", name: "Ada" }]} row={({ size }) => <b>{size}</b>} />

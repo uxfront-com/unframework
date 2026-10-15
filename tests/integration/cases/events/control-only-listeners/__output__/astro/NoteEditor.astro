@@ -1,9 +1,16 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const bold = false as boolean;
 const saves = 0 as number;
 ---
 
-<form class="note-editor" aria-label="Note">
+<form class:list={["note-editor", className]} aria-label="Note" style={style}>
   <label>Title<input name="title" /></label>
   <label>Text<textarea name="text"></textarea></label>
   <div class="format" role="group" aria-label="Format">

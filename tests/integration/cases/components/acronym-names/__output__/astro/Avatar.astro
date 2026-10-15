@@ -2,9 +2,16 @@
 interface Props {
   imageURL: string;
   userID: number;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
 }
 
-const { imageURL, userID } = Astro.props;
+const { imageURL, userID, class: className, style } = Astro.props;
 ---
 
-<button type="button" data-user={userID}>User {userID}: {imageURL}</button>
+<button
+  type="button"
+  data-user={userID}
+  class:list={[className]}
+  style={style}
+>User {userID}: {imageURL}</button>

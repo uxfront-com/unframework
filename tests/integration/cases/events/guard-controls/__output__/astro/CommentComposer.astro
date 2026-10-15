@@ -1,4 +1,11 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const tags = [] as string[];
 const query = "" as string;
 const panelOpen = true as boolean;
@@ -7,7 +14,7 @@ const tipShown = true as boolean;
 const log = [] as string[];
 ---
 
-<section class="comment-composer" aria-label="Composer">
+<section class:list={["comment-composer", className]} aria-label="Composer" style={style}>
   <label>Comment<textarea name="comment"></textarea></label>
   <form aria-label="Tags">
     <label>Tag<input name="tag" /></label>

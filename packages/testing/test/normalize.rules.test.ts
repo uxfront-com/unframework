@@ -251,6 +251,56 @@ describe("rule 4d: removeSettledValues", () => {
       '<data uf:value="x" value="x">d</data><textarea uf:value="x" value="x"></textarea>';
     expect(apply(html, removeSettledValues)).toBe(apply(html));
   });
+
+  it("removes a checked box's checked attribute and a selected option's selected attribute", () => {
+    expect(apply('<input type="checkbox" checked="" uf:checked="true">', removeSettledValues)).toBe(
+      '<input type="checkbox" uf:checked="true">\n',
+    );
+    expect(apply('<option selected="" uf:selected="true">o</option>', removeSettledValues)).toBe(
+      '<option uf:selected="true">\n  "o"\n</option>\n',
+    );
+    // React's `defaultChecked` and Astro's markup against Vue's v-model, on every target.
+    for (const target of NORMALIZE_TARGETS) {
+      expect(
+        normalizeHtml(
+          '<input type="radio" checked uf:checked="true"><select><option selected uf:selected="true">a</option></select>',
+          { target },
+        ),
+      ).toBe(
+        normalizeHtml(
+          '<input type="radio" uf:checked="true"><select><option uf:selected="true">a</option></select>',
+          { target },
+        ),
+      );
+    }
+  });
+
+  it("keeps a checked or selected attribute the state no longer holds, or without the state", () => {
+    const cleared =
+      '<input type="checkbox" checked uf:checked="false"><option selected uf:selected="false">o</option>';
+    expect(apply(cleared, removeSettledValues)).toBe(apply(cleared));
+    const server = '<input type="checkbox" checked><option selected>o</option>';
+    expect(apply(server, removeSettledValues)).toBe(apply(server));
+  });
+
+  it("removes a textarea's text that equals its uf:value", () => {
+    expect(apply('<textarea uf:value="Buy milk">Buy milk</textarea>', removeSettledValues)).toBe(
+      '<textarea uf:value="Buy milk"></textarea>\n',
+    );
+    // React's `defaultValue` and Astro's text against Vue's v-model, on every target.
+    for (const target of NORMALIZE_TARGETS) {
+      expect(normalizeHtml('<textarea uf:value="a b">a b</textarea>', { target })).toBe(
+        normalizeHtml('<textarea uf:value="a b"></textarea>', { target }),
+      );
+    }
+  });
+
+  it("keeps a textarea's text that differs from its uf:value, or without one", () => {
+    const typed = '<textarea uf:value="typed">initial</textarea>';
+    expect(apply(typed, removeSettledValues)).toBe(apply(typed));
+    const server = "<textarea>initial</textarea>";
+    expect(apply(server, removeSettledValues)).toBe(apply(server));
+  });
 });
 
 describe("rule 3: unwrapAngularHosts", () => {

@@ -4,12 +4,15 @@ export interface CommentQuoteProps {
   comment: string;
 }
 
-type Props = CommentQuoteProps;
+interface Props extends CommentQuoteProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { author, comment } = Astro.props;
+const { author, comment, class: className, style } = Astro.props;
 ---
 
-<figure class="comment-quote">
+<figure class:list={["comment-quote", className]} style={style}>
   <blockquote style="margin: 0; padding: 0">
     <p dir="auto">{comment}</p>
   </blockquote>

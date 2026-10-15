@@ -1,1 +1,10 @@
-<button type="button">Save</button>
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<button type="button" class:list={[className]} style={style}>Save</button>

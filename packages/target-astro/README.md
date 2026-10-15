@@ -65,6 +65,45 @@ per component (ADR-0034, ADR-0046):
   - a state's or a computed's `count.value` as the constant `count`; listeners and `ref={…}`
     print nothing (the dialect is inert), and a list's index only a handler reads is left out.
 
+- **Composition** (ADR-0053, ADR-0054), in Astro's shape (`src/composition.ts` copies the render
+  tree with what the printer cannot write where the source does):
+  - a child is a default import of its own file, `import Field from "./Field.astro";`, a named
+    or a non-exported one included (one file per component), and the component itself is
+    `Astro.self`; its props are attributes, `label="Name"` or `tone={tone}`, and its listeners
+    are dropped (`component-event`, inert);
+  - a slot is `<slot />` or `<slot name="title" />`, its fallback as the `<slot>`'s content, and
+    a named slot's presence is `Astro.slots.has("title")`. A consumer fills the default slot with
+    its children and a named one with `<Fragment slot="title">`;
+  - a scoped slot is a render prop named as the slot (the `scoped-slot` cell, emulated): `Props`
+    declares `item?: (props: { item: string }) => unknown`, the child calls `{item?.({ item })}`,
+    or `{item ? item({ item }) : fallback}`, and tests its presence as the prop; a consumer
+    passes `item={({ item }) => <b>{item}</b>}`. A slot named with a reserved word is read
+    under `<slot>Slot` (`default: defaultSlot`), and one named `class` or `style` is passed as
+    `classSlot` or `styleSlot`, since those are the fallthrough's props;
+  - a forwarded slot is `<slot name="title" slot="title" />`, a forwarded scoped slot
+    `item={item}`. Astro's compiler gives a child every slot its content names, whatever an
+    expression around it gives, so a component that forwards slots renders the child in one
+    branch per set of those slots present, largest first, in a list's callback and around
+    `<component is>` too: the child sees no slot where the component got none, and shows its
+    fallback;
+  - a model is a prop with its default (`const { value = 0 } = Astro.props;`), which renders its
+    value; a component's `v-model:value={text.value}` passes `value={text}`. A control's
+    `v-model` renders its initial state: `value` on a text-like `<input>`, `checked` on a checkbox
+    (`includes` for an array) or a radio (`===`), `selected` on each option of a `<select>`, and a
+    `<textarea>`'s text. Nothing writes it (`two-way-binding`, inert);
+  - a component whose root is one element, or one component, takes a consumer's `class` and
+    `style` unless `inheritAttrs` is off: `Props` declares `class?: string` and
+    `style?: Record<string, string | number | undefined>`, and the root merges them,
+    `class:list={["field", className]}` and `style={{ padding: "2px", ...style }}`. Astro passes a
+    component's `class:list` as `class`; a consumer passes a style as an object;
+  - `inject` is its fallback, or `undefined`, cast to the key's value type, which the output of
+    the key's main component exports under the key's name (`export type ThemeKey = Theme;`), and
+    an injecting component imports (`const theme = undefined as ThemeKey | undefined;`);
+    `provide`, the key itself, `defineExpose` and component refs are dropped;
+  - `<component is>` is a constant, `const Tag = big ? "h2" : "p";`, written as a tag: in the
+    frontmatter, or, inside a list, a branch or a fill, where its bindings and guards hold, in a
+    function the markup calls at once (`{(() => { const Tag = …; return <Tag>…</Tag>; })()}`).
+
   A component whose frontmatter would declare nothing is its markup alone. Astro's
   `compressHTML` must stay `"jsx"`, its default (the M6 unplugin checks it).
 
@@ -76,9 +115,7 @@ refs, watchers and hooks never run and state keeps its initial value; the compil
 `model-array`, `model-modifiers` and `expose` refine `interactivity` and are unsupported in the
 same way; `context` and `reactive-context` are unsupported (UF4001, warnings: `inject` gives its
 fallback, and a provided ref reaches no descendant). `use-id` is emulated (`uniqueId`), and so is
-`scoped-slot` (a render prop named as the slot). Every other capability is native. Composition's
-cells (ADR-0055) are declared before Astro emits composition: until M3's lane for Astro lands,
-`emit` reports UF1002 where a component first uses it, and emits nothing for that component.
+`scoped-slot` (a render prop named as the slot). Every other capability is native.
 
 Its toolchain, for tests and tooling (the target's main entry never loads it):
 
@@ -94,6 +131,9 @@ Its toolchain, for tests and tooling (the target's main entry never loads it):
     every file;
   - L5 (ADR-0042) runs oxlint's shared baseline over the frontmatter and ESLint with
     eslint-plugin-astro over the whole file.
+    A component other than a file's main one has a component id (`X.uf.tsx.Icon.astro`,
+    ADR-0053), which the browser project's reference and the render server take as they take a
+    main id.
 - **`…/toolchain/client`**: inserts the server HTML into the container and moves the
   component's styles to `<head>`; nothing is hydrated, so there is nothing to settle. Props travel
   as JSON. It takes no listeners (`on`): nothing emits. `rerender` is a new server render with

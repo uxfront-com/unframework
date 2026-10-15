@@ -5,9 +5,19 @@ export interface ArticleSkeletonProps {
   minutes?: number;
 }
 
-export type Props = ArticleSkeletonProps;
+interface Props extends ArticleSkeletonProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
 ---
 
-<article class="article-skeleton" aria-busy="true" aria-label="Loading article">
+<article
+  class:list={["article-skeleton", className]}
+  aria-busy="true"
+  aria-label="Loading article"
+  style={style}
+>
   <p>Loading the article</p>
 </article>

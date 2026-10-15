@@ -6,12 +6,15 @@ export interface FileTransferProps {
   eta?: string;
 }
 
-type Props = FileTransferProps;
+interface Props extends FileTransferProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { fileName, percent, paused, eta } = Astro.props;
+const { fileName, percent, paused, eta, class: className, style } = Astro.props;
 ---
 
-<div class="file-transfer">
+<div class:list={["file-transfer", className]} style={style}>
   <svg class="file-transfer-progress" role="img" viewBox="0 0 36 36" width="36" height="36">
     <title>{fileName}: {percent}% sent. {eta}</title>
     <circle cx="18" cy="18" r="16" fill="none" stroke="#0969da" stroke-width="4" />

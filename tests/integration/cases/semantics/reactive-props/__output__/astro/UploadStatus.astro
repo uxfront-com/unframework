@@ -12,15 +12,18 @@ export interface UploadStatusProps {
   error?: string;
 }
 
-type Props = UploadStatusProps;
+interface Props extends UploadStatusProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { fileName, state, percent, steps, error } = Astro.props;
+const { fileName, state, percent, steps, error, class: className, style } = Astro.props;
 ---
 
 <section
-  class:list={["upload", `upload-${state}`]}
+  class:list={["upload", `upload-${state}`, className]}
   aria-label={`Upload of ${fileName}`}
-  style={{ color: state === "failed" ? "#8a1c1c" : "#1f3d5c", "--upload-percent": percent }}
+  style={{ color: state === "failed" ? "#8a1c1c" : "#1f3d5c", "--upload-percent": percent, ...style }}
 >
   <h2>{fileName}</h2>
   <div
