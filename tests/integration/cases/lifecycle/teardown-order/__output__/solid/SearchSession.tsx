@@ -1,4 +1,4 @@
-import { For, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { For, type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface SearchSessionEvents {
   onUnmounted?: () => void;
@@ -9,7 +9,9 @@ export interface SearchSessionEvents {
   onSummary?: (text: string) => void;
 }
 
-export default function SearchSession(props: SearchSessionEvents) {
+export default function SearchSession(
+  props: SearchSessionEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [query, setQuery] = createSignal("");
   const [results, setResults] = createSignal<string[]>([]);
 
@@ -56,7 +58,11 @@ export default function SearchSession(props: SearchSessionEvents) {
   });
 
   return (
-    <section class="search-session" aria-label="Search">
+    <section
+      class={props.class ? `search-session ${props.class}` : "search-session"}
+      aria-label="Search"
+      style={props.style}
+    >
       <label>
         Query
         <input

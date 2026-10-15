@@ -1,10 +1,12 @@
-import { createSignal } from "solid-js";
+import { type JSX, createSignal } from "solid-js";
 
 export interface SignupFormEvents {
   onSignup?: (fullName: string, email: string, plan: string, newsletter: boolean) => void;
 }
 
-export default function SignupForm(props: SignupFormEvents) {
+export default function SignupForm(
+  props: SignupFormEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [fullName, setFullName] = createSignal("");
   const [email, setEmail] = createSignal("");
   const [plan, setPlan] = createSignal("free");
@@ -17,7 +19,12 @@ export default function SignupForm(props: SignupFormEvents) {
   }
 
   return (
-    <form class="signup-form" aria-label="Sign up" onSubmit={submit}>
+    <form
+      class={props.class ? `signup-form ${props.class}` : "signup-form"}
+      aria-label="Sign up"
+      onSubmit={submit}
+      style={props.style}
+    >
       <label>
         Name
         <input

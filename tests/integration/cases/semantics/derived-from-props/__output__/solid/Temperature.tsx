@@ -1,4 +1,4 @@
-import { createMemo, createReaction, onCleanup, onMount } from "solid-js";
+import { type JSX, createMemo, createReaction, onCleanup, onMount } from "solid-js";
 
 export interface TemperatureProps {
   celsius: number;
@@ -8,7 +8,9 @@ export interface TemperatureEvents {
   onReading?: (celsius: number, previous: number) => void;
 }
 
-export default function Temperature(props: TemperatureProps & TemperatureEvents) {
+export default function Temperature(
+  props: TemperatureProps & TemperatureEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const fahrenheit = createMemo(() => Math.round((props.celsius * 9) / 5 + 32));
   const level = createMemo(() =>
     props.celsius >= 30 ? "hot" : props.celsius <= 5 ? "cold" : "mild",
@@ -22,7 +24,11 @@ export default function Temperature(props: TemperatureProps & TemperatureEvents)
   );
 
   return (
-    <figure class="temperature" data-level={level()}>
+    <figure
+      class={props.class ? `temperature ${props.class}` : "temperature"}
+      data-level={level()}
+      style={props.style}
+    >
       <p>{props.celsius} °C</p>
       <p>{fahrenheit()} °F</p>
       <figcaption>Feels {level()}</figcaption>

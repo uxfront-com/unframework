@@ -1,4 +1,4 @@
-import { Show } from "solid-js";
+import { type JSX, Show } from "solid-js";
 
 export interface SaveIndicatorProps {
   saving: boolean;
@@ -6,9 +6,15 @@ export interface SaveIndicatorProps {
   savedAt?: string;
 }
 
-export default function SaveIndicator(props: SaveIndicatorProps) {
+export default function SaveIndicator(
+  props: SaveIndicatorProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <p class="save-indicator" role="status">
+    <p
+      class={props.class ? `save-indicator ${props.class}` : "save-indicator"}
+      role="status"
+      style={props.style}
+    >
       <Show when={props.saving} fallback="Saved">
         <em>Saving</em>
       </Show>

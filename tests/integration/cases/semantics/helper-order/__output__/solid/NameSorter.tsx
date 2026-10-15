@@ -1,4 +1,4 @@
-import { createMemo, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createMemo, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface NameSorterEvents {
   onStarted?: (text: string) => void;
@@ -11,7 +11,9 @@ function compare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-export default function NameSorter(props: NameSorterEvents) {
+export default function NameSorter(
+  props: NameSorterEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [names, setNames] = createSignal(["Cy", "Al"].toSorted((a, b) => compare(a, b)));
   const [count, setCount] = createSignal(0);
 
@@ -48,7 +50,11 @@ export default function NameSorter(props: NameSorterEvents) {
   }
 
   return (
-    <section class="name-sorter" aria-label="Names">
+    <section
+      class={props.class ? `name-sorter ${props.class}` : "name-sorter"}
+      aria-label="Names"
+      style={props.style}
+    >
       <p>Names: {names().join(", ")}</p>
       <p>Added: {count()}</p>
       <button type="button" onClick={() => add("Bo")}>

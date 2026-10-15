@@ -53,7 +53,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit an injection key yet: composition lands in M3.",
+    "message": "The react target does not emit an injection key yet: composition lands in M3.",
     "file": "context/reactive/Counter.uf.tsx",
     "start": {
       "line": 6,
@@ -65,7 +65,7 @@
       "column": 71,
       "offset": 210
     },
-    "target": "solid"
+    "target": "react"
   },
   {
     "code": "UF1002",
@@ -189,7 +189,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit context yet: composition lands in M3.",
+    "message": "The react target does not emit context yet: composition lands in M3.",
     "file": "context/reactive/Display.uf.tsx",
     "start": {
       "line": 7,
@@ -201,7 +201,7 @@
       "column": 40,
       "offset": 188
     },
-    "target": "solid"
+    "target": "react"
   },
   {
     "code": "UF1002",

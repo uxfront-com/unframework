@@ -1,4 +1,4 @@
-import { For, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { For, type JSX, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface Member {
   id: number;
@@ -27,7 +27,9 @@ export interface TeamInviteEvents {
   onMoved?: (page: number) => void;
 }
 
-export default function TeamInvite(props: TeamInviteProps & TeamInviteEvents) {
+export default function TeamInvite(
+  props: TeamInviteProps & TeamInviteEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const greeting = createMemo(() =>
     props.inviter ? `Invite as ${props.inviter.name}` : "Invite as a guest",
   );
@@ -91,7 +93,11 @@ export default function TeamInvite(props: TeamInviteProps & TeamInviteEvents) {
   );
 
   return (
-    <section class="team-invite" aria-label="Invite">
+    <section
+      class={props.class ? `team-invite ${props.class}` : "team-invite"}
+      aria-label="Invite"
+      style={props.style}
+    >
       <h2>{greeting()}</h2>
       <ul aria-label="Members">
         <For each={visible()}>

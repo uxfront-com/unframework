@@ -1,4 +1,4 @@
-import { mergeProps } from "solid-js";
+import { type JSX, mergeProps } from "solid-js";
 
 export interface StatusPillProps {
   status: "active" | "paused" | "archived";
@@ -6,14 +6,23 @@ export interface StatusPillProps {
   level?: 1 | 2 | 3;
 }
 
-export default function StatusPill(rawProps: StatusPillProps) {
+export default function StatusPill(
+  rawProps: StatusPillProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const props = mergeProps(
     { size: "small", level: 1 } satisfies Partial<StatusPillProps>,
     rawProps,
   );
   return (
     <span
-      class={cx("pill", `pill-${props.status}`, `pill-${props.size}`, `pill-level-${props.level}`)}
+      class={cx(
+        "pill",
+        `pill-${props.status}`,
+        `pill-${props.size}`,
+        `pill-level-${props.level}`,
+        props.class,
+      )}
+      style={props.style}
     >
       {props.status === "active" ? "Active" : props.status === "paused" ? "Paused" : "Archived"}
       {props.level === 3 ? " (critical)" : ""}

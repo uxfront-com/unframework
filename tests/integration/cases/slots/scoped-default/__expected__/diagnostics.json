@@ -53,7 +53,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit `defineSlots` yet: composition lands in M3.",
+    "message": "The react target does not emit `defineSlots` yet: composition lands in M3.",
     "file": "slots/scoped-default/Names.uf.tsx",
     "start": {
       "line": 5,
@@ -65,7 +65,7 @@
       "column": 79,
       "offset": 230
     },
-    "target": "solid"
+    "target": "react"
   },
   {
     "code": "UF1002",
@@ -138,7 +138,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit component yet: composition lands in M3.",
+    "message": "The react target does not emit component yet: composition lands in M3.",
     "file": "slots/scoped-default/Roster.uf.tsx",
     "start": {
       "line": 4,
@@ -150,7 +150,7 @@
       "column": 82,
       "offset": 183
     },
-    "target": "solid"
+    "target": "react"
   },
   {
     "code": "UF1002",

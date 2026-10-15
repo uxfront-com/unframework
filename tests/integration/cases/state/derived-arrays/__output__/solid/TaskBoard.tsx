@@ -1,4 +1,4 @@
-import { For, createMemo, createSignal, onCleanup, untrack } from "solid-js";
+import { For, type JSX, createMemo, createSignal, onCleanup, untrack } from "solid-js";
 
 export interface Task {
   id: number;
@@ -24,7 +24,9 @@ function sizeSummary(event: Event) {
   area.classList.toggle("tall", lines > 3);
 }
 
-export default function TaskBoard(props: TaskBoardProps) {
+export default function TaskBoard(
+  props: TaskBoardProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const [tasks, setTasks] = createSignal(untrack(() => props.initial));
   const [filters, setFilters] = createSignal<Filters>({ query: "", tags: [] });
   let notes: HTMLTextAreaElement | null = null;
@@ -101,7 +103,11 @@ export default function TaskBoard(props: TaskBoardProps) {
   }
 
   return (
-    <section class="task-board" aria-label="Tasks">
+    <section
+      class={props.class ? `task-board ${props.class}` : "task-board"}
+      aria-label="Tasks"
+      style={props.style}
+    >
       <ol aria-label="Open">
         <For each={open()}>
           {(task) => (

@@ -1,4 +1,4 @@
-import { createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import { type JSX, createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
 
 export interface MailboxProps {
   folder: string;
@@ -11,7 +11,9 @@ export interface MailboxEvents {
   onNoted?: (text: string) => void;
 }
 
-export default function Mailbox(props: MailboxProps & MailboxEvents) {
+export default function Mailbox(
+  props: MailboxProps & MailboxEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [name, setName] = createSignal("Loading");
   const [unread, setUnread] = createSignal(0);
   const [status, setStatus] = createSignal("idle");
@@ -84,7 +86,11 @@ export default function Mailbox(props: MailboxProps & MailboxEvents) {
   }
 
   return (
-    <section class="mailbox" aria-label="Mailbox">
+    <section
+      class={props.class ? `mailbox ${props.class}` : "mailbox"}
+      aria-label="Mailbox"
+      style={props.style}
+    >
       <h2>{name()}</h2>
       <p role="status">{summary()}</p>
       <p>Status: {status()}</p>

@@ -30,7 +30,7 @@ error[UF1002] (qwik): The qwik target does not emit component yet: composition l
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (solid): The solid target does not emit component yet: composition lands in M3.
+error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
  --> components/acronym-names/Profile.uf.tsx:9:7
   |
 9 |       <Avatar imageURL="/a.png" userID={7} onPickedURL={(url) => (picked.value = url)} />

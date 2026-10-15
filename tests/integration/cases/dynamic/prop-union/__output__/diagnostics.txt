@@ -31,7 +31,7 @@ error[UF1002] (qwik): The qwik target does not emit dynamic-component yet: compo
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (solid): The solid target does not emit dynamic-component yet: composition lands in M3.
+error[UF1002] (react): The react target does not emit dynamic-component yet: composition lands in M3.
  --> dynamic/prop-union/Heading.uf.tsx:3:5
   |
 3 |     <component is={tag} class="heading">
@@ -77,7 +77,7 @@ error[UF1002] (qwik): The qwik target does not emit component yet: composition l
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (solid): The solid target does not emit component yet: composition lands in M3.
+error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
  --> dynamic/prop-union/Outline.uf.tsx:6:7
   |
 6 |       <Heading tag="h1" text="Guide" />

@@ -53,7 +53,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit `defineOptions` yet: composition lands in M3.",
+    "message": "The react target does not emit `defineOptions` yet: composition lands in M3.",
     "file": "fallthrough/inherit-attrs-false/Field.uf.tsx",
     "start": {
       "line": 4,
@@ -65,7 +65,7 @@
       "column": 2,
       "offset": 330
     },
-    "target": "solid"
+    "target": "react"
   },
   {
     "code": "UF1002",
@@ -138,7 +138,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The solid target does not emit component yet: composition lands in M3.",
+    "message": "The react target does not emit component yet: composition lands in M3.",
     "file": "fallthrough/inherit-attrs-false/Form.uf.tsx",
     "start": {
       "line": 6,
@@ -150,7 +150,7 @@
       "column": 30,
       "offset": 142
     },
-    "target": "solid"
+    "target": "react"
   },
   {
     "code": "UF1002",

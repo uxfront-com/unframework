@@ -22,7 +22,7 @@ error[UF1002] (qwik): The qwik target does not emit component yet: composition l
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (solid): The solid target does not emit component yet: composition lands in M3.
+error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
  --> models/component/Order.uf.tsx:9:7
   |
 9 |       <Stepper label="Cups" v-model:value={cups.value} />
@@ -70,7 +70,7 @@ error[UF1002] (qwik): The qwik target does not emit model yet: composition lands
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (solid): The solid target does not emit model yet: composition lands in M3.
+error[UF1002] (react): The react target does not emit model yet: composition lands in M3.
  --> models/component/Stepper.uf.tsx:4:3
   |
 4 |   const value = defineModel<number>("value", { default: 0 });

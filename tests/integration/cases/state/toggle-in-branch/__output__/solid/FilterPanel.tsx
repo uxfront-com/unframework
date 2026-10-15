@@ -1,12 +1,16 @@
-import { Match, Show, Switch, createSignal } from "solid-js";
+import { type JSX, Match, Show, Switch, createSignal } from "solid-js";
 
-export default function FilterPanel() {
+export default function FilterPanel(props: { class?: string; style?: JSX.CSSProperties }) {
   const [open, setOpen] = createSignal(false);
   const [colour, setColour] = createSignal<string | null>(null);
   const [note, setNote] = createSignal<string | null>(null);
 
   return (
-    <section class="filter-panel" aria-label="Filters">
+    <section
+      class={props.class ? `filter-panel ${props.class}` : "filter-panel"}
+      aria-label="Filters"
+      style={props.style}
+    >
       <Show
         when={open()}
         fallback={

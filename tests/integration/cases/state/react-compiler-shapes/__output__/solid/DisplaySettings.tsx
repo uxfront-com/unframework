@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { type JSX, createSignal } from "solid-js";
 
 export interface Settings {
   theme: string;
@@ -15,7 +15,9 @@ export interface DisplaySettingsEvents {
   onSaved?: (id: number) => void;
 }
 
-export default function DisplaySettings(props: DisplaySettingsEvents) {
+export default function DisplaySettings(
+  props: DisplaySettingsEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [settings, setSettings] = createSignal<Settings>({ theme: "light", size: 14 });
   const [maxSize, setMaxSize] = createSignal(20);
   const [saving, setSaving] = createSignal(false);
@@ -53,7 +55,11 @@ export default function DisplaySettings(props: DisplaySettingsEvents) {
   }
 
   return (
-    <section class="display-settings" aria-label="Display">
+    <section
+      class={props.class ? `display-settings ${props.class}` : "display-settings"}
+      aria-label="Display"
+      style={props.style}
+    >
       <p role="status">
         Theme {settings().theme}, size {settings().size}
       </p>

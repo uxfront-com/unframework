@@ -1,4 +1,4 @@
-import { createMemo, createSignal } from "solid-js";
+import { type JSX, createMemo, createSignal } from "solid-js";
 
 export type ShippingMethod = "standard" | "express";
 
@@ -17,7 +17,9 @@ function formatCents(cents: number): string {
   return `EUR ${(cents / 100).toFixed(2)}`;
 }
 
-export default function CheckoutTotal(props: CheckoutTotalProps & CheckoutTotalEvents) {
+export default function CheckoutTotal(
+  props: CheckoutTotalProps & CheckoutTotalEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [method, setMethod] = createSignal<ShippingMethod>("standard");
   const shipping = createMemo(() => rates[method()]);
   const total = createMemo(() => formatCents(props.subtotal + shipping()));
@@ -36,7 +38,11 @@ export default function CheckoutTotal(props: CheckoutTotalProps & CheckoutTotalE
   }
 
   return (
-    <section class="checkout-total" aria-label="Order total">
+    <section
+      class={props.class ? `checkout-total ${props.class}` : "checkout-total"}
+      aria-label="Order total"
+      style={props.style}
+    >
       <p>Subtotal: {formatCents(props.subtotal)}</p>
       <p>Shipping: {formatCents(shipping())}</p>
       <p role="status">Total: {total()}</p>

@@ -1,4 +1,4 @@
-import { createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface PriceRangeProps {
   currency: string;
@@ -10,7 +10,9 @@ export interface PriceRangeEvents {
   onCurrencyUpdate?: (currency: string) => void;
 }
 
-export default function PriceRange(props: PriceRangeProps & PriceRangeEvents) {
+export default function PriceRange(
+  props: PriceRangeProps & PriceRangeEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [low, setLow] = createSignal(10);
   const [high, setHigh] = createSignal(50);
 
@@ -33,7 +35,11 @@ export default function PriceRange(props: PriceRangeProps & PriceRangeEvents) {
   );
 
   return (
-    <section class="price-range" aria-label="Price range">
+    <section
+      class={props.class ? `price-range ${props.class}` : "price-range"}
+      aria-label="Price range"
+      style={props.style}
+    >
       <p role="status">
         {low()} to {high()} {props.currency}
       </p>

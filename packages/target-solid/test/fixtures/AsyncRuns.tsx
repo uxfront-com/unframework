@@ -1,4 +1,4 @@
-import { createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import { type JSX, createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
 
 export interface AsyncRunsEvents {
   onPair?: (low: number, high: number) => void;
@@ -6,7 +6,9 @@ export interface AsyncRunsEvents {
   onStopped?: (low: number) => void;
 }
 
-export default function AsyncRuns(props: AsyncRunsEvents) {
+export default function AsyncRuns(
+  props: AsyncRunsEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [low, setLow] = createSignal(0);
   const [high, setHigh] = createSignal(0);
   const [limit] = createSignal(3);
@@ -103,7 +105,7 @@ export default function AsyncRuns(props: AsyncRunsEvents) {
   }
 
   return (
-    <section aria-label="Async runs">
+    <section aria-label="Async runs" class={props.class} style={props.style}>
       <p role="status">
         {low()}/{high()}
       </p>

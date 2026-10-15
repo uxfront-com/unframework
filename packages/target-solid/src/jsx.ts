@@ -9,13 +9,17 @@
 import {
   boundJsxAttribute,
   classArrayItems,
+  expressionCode,
   js,
   jsxAttributeValue,
   jsxBinding,
   jsxBranch,
   jsxChildren,
+  jsxComponent,
+  jsxDynamic,
   jsxElement,
   jsxExpression,
+  jsxFillValue,
   parseExpression,
   spreadClassReads,
   spreadRead,
@@ -30,12 +34,16 @@ import type {
   ForNode,
   IfNode,
   RenderNode,
+  Span,
   StyleAttribute,
   UfComponent,
 } from "@unframework/ir";
 
 import { isUntyped, untypedAttribute } from "./attributes.ts";
+import type { SolidComposition } from "./composition.ts";
 import type { SolidListeners } from "./listeners.ts";
+import { modelAttribute } from "./models.ts";
+import type { ModelHelpers } from "./models.ts";
 import {
   carriedPaths,
   declaresFalsyLiteral,
@@ -45,7 +53,9 @@ import {
   wholePath,
 } from "./narrowing.ts";
 import type { Frame, Narrowings, ReferencePath } from "./narrowing.ts";
+import { eventProp } from "./props.ts";
 import { escapedOnServer } from "./render.ts";
+import type { SolidCode } from "./setup.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type AstExpression = Parameters<typeof js.callExpression>[0];
@@ -61,6 +71,21 @@ export interface SolidJsx {
   dialect: JsxDialect;
   /** The inline helpers to print after the component, as source code. */
   helpers: () => string[];
+  /**
+   * The fallthrough attributes the root has not printed with its own (`class={props.class}`,
+   * `style={props.style}`), to add once it is printed: none without fallthrough.
+   */
+  fallthrough: (context: JsxContext) => JsxAttribute[];
+}
+
+/** What a file's composition prints with: its code, its composition and its props object. */
+export interface SolidCompose {
+  code: SolidCode;
+  composition: SolidComposition;
+  /** The props object's name: absent where the output reads no prop. */
+  object: string | undefined;
+  /** The inline helpers the file's `v-model`s call. */
+  models: ModelHelpers;
 }
 
 /**
@@ -74,20 +99,48 @@ export function solidJsx(
   narrowings: Narrowings,
   types: readonly string[],
   listeners: SolidListeners,
+  compose: SolidCompose,
 ): SolidJsx {
   let helper: string | undefined;
   const classHelper = () => (helper ??= imports.claim(CLASS_HELPER));
   const flow: Flow = { imports, narrowings, falsy: declaresFalsyLiteral(types) };
+  const { code, composition, object, models } = compose;
+  // What falls through to the root (ADR-0054), merged into its own `class` and `style`, or
+  // added after them where it has none.
+  const root = composition.fallthrough;
+  const printed = { class: false, style: false };
+  const isRoot = (element: ElementNode) => isSpan(root, element.span);
+  const passed = (name: "class" | "style", context: JsxContext): AstExpression =>
+    context.placeholders.expression(`${object!}.${name}`, "argument");
+  // `class={props.class ? \`card ${props.class}\` : "card"}` for static names: no helper, which
+  // two components joined into one module would both declare (the unplugin's `joinModules`).
+  const mergedClass = (names: string, context: JsxContext): JsxAttribute => {
+    printed.class = true;
+    const own = names.replace(/[`\\]|\$\{/g, (match) => `\\${match}`);
+    const read = `${object!}.class`;
+    const merged = `${read} ? \`${own} \${${read}}\` : ${JSON.stringify(names)}`;
+    return js.jsxAttribute(
+      "class",
+      js.jsxExpressionContainer(context.placeholders.expression(merged)),
+    );
+  };
+  const rootClass = (element: ElementNode, context: JsxContext): AstExpression[] => {
+    if (!isRoot(element)) return [];
+    printed.class = true;
+    return [passed("class", context)];
+  };
   const dialect: JsxDialect = {
     expression: (expression, context) => flow.narrowings.code(expression, context),
     conditional: (node, context) => conditional(node, context, flow),
-    list: (node, context) => list(node, context, imports),
+    list: (node, context) => list(node, context, imports, compose),
     staticAttribute(attribute, element, context) {
       if (attribute.name === "class" && typeof attribute.value === "string") {
         const reads = spreadClassReads(element, context);
         if (reads.length) {
-          return [classCall(classHelper(), [js.stringLiteral(attribute.value), ...reads])];
+          const all = [...reads, ...rootClass(element, context)];
+          return [classCall(classHelper(), [js.stringLiteral(attribute.value), ...all])];
         }
+        if (isRoot(element)) return [mergedClass(attribute.value, context)];
       }
       if (!isUntyped(element.tag, attribute.name)) {
         return staticJsxAttribute(attribute, element, context);
@@ -109,20 +162,108 @@ export function solidJsx(
         .filter((key) => !(merged && key.name === "class"))
         .flatMap((key) => {
           const value = spreadRead(attribute, key, context);
+          // On a root without a `class` of its own, what falls through merges with the key.
+          if (key.name === "class" && isRoot(element)) {
+            return [classCall(classHelper(), [value, ...rootClass(element, context)])];
+          }
           return isUntyped(element.tag, key.name)
             ? untypedJsxAttribute(element, key.name, value)
             : [js.jsxAttribute(key.name, js.jsxExpressionContainer(value))];
         });
     },
-    classAttribute: (attribute, element, context) =>
-      classAttribute(attribute, element, context, classHelper),
-    styleAttribute: (attribute, element, context) => [styleAttribute(attribute, context)],
+    classAttribute(attribute, element, context) {
+      const names = attribute.items.flatMap((item) => (item.kind === "Static" ? [item.value] : []));
+      if (
+        isRoot(element) &&
+        names.length === attribute.items.length &&
+        !spreadClassReads(element, context).length
+      ) {
+        return [mergedClass(names.join(" "), context)];
+      }
+      return classAttribute(attribute, element, context, classHelper, rootClass(element, context));
+    },
+    styleAttribute(attribute, element, context) {
+      if (!isRoot(element)) return [styleAttribute(attribute, context)];
+      printed.style = true;
+      return [styleAttribute(attribute, context, () => passed("style", context))];
+    },
     eventAttribute: (attribute, element, context) =>
       listeners.eventAttribute(attribute, element, context),
     refAttribute: (attribute, element, context) =>
-      listeners.refAttribute(attribute, element, context),
+      isComponentTag(element.tag)
+        ? listeners.componentRef(attribute)
+        : listeners.refAttribute(attribute, element, context),
+    componentEvent: (attribute) => listeners.componentEvent(attribute),
+    // A slot's fill is a prop named like it: the default slot's is `children`, which a scoped or
+    // forwarded fill passes as a prop too.
+    fillAttribute: (fill, _node, context) => [
+      js.jsxAttribute(
+        fill.slot === "default" ? "children" : fill.slot,
+        js.jsxExpressionContainer(jsxFillValue(fill, context)),
+      ),
+    ],
+    // A forwarded slot is the prop as it is, which keeps whether the parent filled it, or its
+    // content where the component resolves it, which it then creates once.
+    slotValue: (slot, context) => {
+      const resolved = composition.resolvedSlot(slot);
+      return context.placeholders.expression(
+        resolved ? `${resolved}()` : `${object!}.${slot === "default" ? "children" : slot}`,
+      );
+    },
+    slotOutlet(node, context) {
+      const slot = code.slot(node.slot);
+      const rendered = node.props ? `${slot}?.(${expressionCode(node.props, context)})` : slot;
+      const value = context.placeholders.expression(rendered, "operand");
+      if (!node.fallback.length) return value;
+      return js.logicalExpression("??", value, jsxBranch(node.fallback, context));
+    },
+    modelAttribute: (attribute, element, context) =>
+      modelAttribute(attribute, element, context, code, models, listeners.carries(element)),
+    modelBinding(attribute, _node, context) {
+      const setter = code.setter(bindingOfValue(attribute.value)!)!;
+      return [
+        js.jsxAttribute(
+          attribute.model,
+          js.jsxExpressionContainer(jsxExpression(attribute.value, context)),
+        ),
+        js.jsxAttribute(
+          eventProp(`${attribute.model}Change`),
+          js.jsxExpressionContainer(js.identifier(setter)),
+        ),
+      ];
+    },
+    dynamic: (node, context) =>
+      jsxDynamic(node, imports.add("solid-js/web", "Dynamic"), context, [
+        js.jsxAttribute("component", js.jsxExpressionContainer(jsxExpression(node.is, context))),
+      ]),
   };
-  return { dialect, helpers: () => (helper ? [classHelperCode(helper)] : []) };
+  return {
+    dialect,
+    helpers: () => [...(helper ? [classHelperCode(helper)] : []), ...models.helpers()],
+    fallthrough(context) {
+      if (!root) return [];
+      const missing = (["class", "style"] as const).filter((name) => !printed[name]);
+      return missing.map((name) =>
+        js.jsxAttribute(name, js.jsxExpressionContainer(passed(name, context))),
+      );
+    },
+  };
+}
+
+/** Whether a tag names a component (`Field`, Solid's `Dynamic`): an element's is lower case. */
+function isComponentTag(tag: string): boolean {
+  return /^[A-Z]/.test(tag);
+}
+
+/** Whether a span is the one given. */
+function isSpan(span: Span | undefined, other: Span): boolean {
+  return span !== undefined && span.start === other.start && span.end === other.end;
+}
+
+/** The binding a `v-model`'s value reads: a state's or a model's `.value`. */
+function bindingOfValue(value: Expression): string | undefined {
+  const [ref] = value.refs;
+  return ref?.kind === "Binding" ? ref.binding : undefined;
 }
 
 /** What a file's control flow prints with: its imports, and the branch callbacks around it. */
@@ -438,9 +579,12 @@ function fallbackAttribute(children: readonly RenderNode[], context: JsxContext)
  * the rewrite rules call (`index()`). A parameter nothing reads is left out (L5), the item too
  * when the index is not read either.
  */
-function list(node: ForNode, context: JsxContext, imports: ImportSet): AstExpression {
-  // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
-  if (node.body.kind !== "Element") return js.nullLiteral();
+function list(
+  node: ForNode,
+  context: JsxContext,
+  imports: ImportSet,
+  { composition, object }: SolidCompose,
+): AstExpression {
   const item = jsxBinding(node.item, context);
   const index = node.index === undefined ? undefined : jsxBinding(node.index, context);
   const parameters = [];
@@ -449,10 +593,25 @@ function list(node: ForNode, context: JsxContext, imports: ImportSet): AstExpres
   } else if (context.referenced.has(item.id)) {
     parameters.push(js.bindingIdentifier(item.name));
   }
+  // The slots each row tests and renders, resolved in the row: one content per row.
+  const slots = composition.rowSlots(node.body);
+  const row = composition.withinRow(slots, () =>
+    node.body.kind === "Element"
+      ? jsxElement(node.body, context)
+      : jsxComponent(node.body, context),
+  );
+  const body = slots.size
+    ? [
+        ...composition
+          .statements(object!, slots)
+          .map((text) => context.placeholders.statements(text)),
+        js.returnStatement(row),
+      ]
+    : row;
   return js.jsxElement(
     imports.add("solid-js", "For"),
     [js.jsxAttribute("each", js.jsxExpressionContainer(jsxExpression(node.source, context)))],
-    [js.jsxExpressionContainer(js.arrowFunction(parameters, jsxElement(node.body, context)))],
+    [js.jsxExpressionContainer(js.arrowFunction(parameters, body))],
   );
 }
 
@@ -516,8 +675,9 @@ function classAttribute(
   element: ElementNode,
   context: JsxContext,
   helper: () => string,
+  passed: readonly AstExpression[],
 ): JsxAttribute[] {
-  const reads = spreadClassReads(element, context);
+  const reads = [...spreadClassReads(element, context), ...passed];
   const [only] = attribute.items;
   if (
     attribute.items.length === 1 &&
@@ -529,7 +689,13 @@ function classAttribute(
     const value = jsxExpression(escapedOnServer(only.value, "attribute"), context);
     return [js.jsxAttribute("class", js.jsxExpressionContainer(value))];
   }
-  if (reads.length || attribute.items.some((item) => item.kind === "Dynamic")) {
+  // A component takes `class` as one string prop: no `classList` (ADR-0054).
+  if (
+    reads.length ||
+    attribute.items.some(
+      (item) => item.kind === "Dynamic" || (item.kind === "Toggle" && isComponentTag(element.tag)),
+    )
+  ) {
     return [classCall(helper(), [...classArrayItems(attribute, context), ...reads])];
   }
   const names = attribute.items.flatMap((item) => (item.kind === "Static" ? [item.value] : []));
@@ -670,14 +836,30 @@ function isGlobalCall(node: AstExpression, name: string): boolean {
  * `solid/style-prop` asks for a unit on any number whose property names a length
  * (`line-height` included).
  */
-function styleAttribute(attribute: StyleAttribute, context: JsxContext): JsxAttribute {
-  const declarations = attribute.declarations.map((declaration): [string, AstExpression] => [
-    declaration.property,
-    declaration.kind === "Static"
-      ? js.stringLiteral(declaration.value)
-      : (numberLiteral(declaration.value) ?? jsxExpression(declaration.value, context)),
+function styleAttribute(
+  attribute: StyleAttribute,
+  context: JsxContext,
+  passed?: () => AstExpression,
+): JsxAttribute {
+  const declarations = () =>
+    attribute.declarations.map((declaration): [string, AstExpression] => [
+      declaration.property,
+      declaration.kind === "Static"
+        ? js.stringLiteral(declaration.value)
+        : (numberLiteral(declaration.value) ?? jsxExpression(declaration.value, context)),
+    ]);
+  if (!passed) {
+    return js.jsxAttribute("style", js.jsxExpressionContainer(js.objectExpression(declarations())));
+  }
+  // What falls through comes last, so the consumer's declaration wins, an `undefined` one
+  // included, which removes the root's own (ADR-0054). The root's own declarations are spread
+  // too: Solid compiles a static declaration into the element's template, where no later value
+  // could remove it.
+  const merged = js.objectExpression([
+    js.spreadElement(js.objectExpression(declarations())),
+    js.spreadElement(passed()),
   ]);
-  return js.jsxAttribute("style", js.jsxExpressionContainer(js.objectExpression(declarations)));
+  return js.jsxAttribute("style", js.jsxExpressionContainer(merged));
 }
 
 /** A number literal (`1.5`, `-1`) as the string it renders as, or `undefined`. */

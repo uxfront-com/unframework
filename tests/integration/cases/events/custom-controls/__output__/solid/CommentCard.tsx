@@ -1,10 +1,12 @@
-import { createSignal } from "solid-js";
+import { type JSX, createSignal } from "solid-js";
 
 export interface CommentCardEvents {
   onLiked?: (liked: boolean, by: string) => void;
 }
 
-export default function CommentCard(props: CommentCardEvents) {
+export default function CommentCard(
+  props: CommentCardEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [text, setText] = createSignal("");
   const [liked, setLiked] = createSignal(false);
 
@@ -25,7 +27,11 @@ export default function CommentCard(props: CommentCardEvents) {
   }
 
   return (
-    <section class="comment-card" aria-label="Comment">
+    <section
+      class={props.class ? `comment-card ${props.class}` : "comment-card"}
+      aria-label="Comment"
+      style={props.style}
+    >
       <label>
         Comment
         <textarea name="comment" rows="2" onInput={autosize} />

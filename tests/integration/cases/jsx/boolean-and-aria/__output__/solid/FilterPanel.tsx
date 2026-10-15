@@ -1,3 +1,5 @@
+import type { JSX } from "solid-js";
+
 export interface FilterPanelProps {
   heading: string;
   hint: string;
@@ -11,13 +13,16 @@ export interface FilterPanelProps {
   current?: "page" | "step";
 }
 
-export default function FilterPanel(props: FilterPanelProps) {
+export default function FilterPanel(
+  props: FilterPanelProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
     <section
-      class="filter-panel"
+      class={props.class ? `filter-panel ${props.class}` : "filter-panel"}
       aria-label={props.heading}
       data-category={props.category}
       data-layout="stacked"
+      style={props.style}
     >
       <button type="button" aria-expanded={props.expanded} aria-describedby="filter-panel-hint">
         Price filters
