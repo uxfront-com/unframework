@@ -917,7 +917,7 @@ function candidateBranches(
     candidate.kind === "Tag" ? [candidate.tag] : [],
   );
   const branches = tags.map((tag) => {
-    listeners.reprint(node.attributes);
+    listeners.reprint(node);
     return jsxElement(
       {
         kind: "Element",

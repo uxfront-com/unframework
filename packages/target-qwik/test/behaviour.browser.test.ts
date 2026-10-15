@@ -488,10 +488,14 @@ describe("composition (ADR-0054)", () => {
     expect(status()).toBe("y1 Ada");
   });
 
-  it("runs the listeners of a `<component is>`", async () => {
-    await start("DynamicListeners", { props: { link: false } });
-    await click("Count 0");
-    await act(() => userEvent.keyboard("{Enter}"));
-    expect(container.querySelector("button")?.textContent).toBe("Count 3");
-  });
+  it.each([true, false])(
+    "runs a `<component is>`'s listeners and its child's, on each candidate (boxed: %s)",
+    async (boxed) => {
+      await start("DynamicListeners", { props: { boxed } });
+      expect(container.querySelector("[role=group]")?.tagName).toBe(boxed ? "SECTION" : "DIV");
+      // The click focuses the child, whose focusin bubbles to the tag's listener.
+      await click("Add 0");
+      expect(container.querySelector("button")?.textContent).toBe("Add 11");
+    },
+  );
 });

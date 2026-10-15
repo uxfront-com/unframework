@@ -516,6 +516,20 @@ export default function Pick({ hint, sizes }: { hint?: string; sizes: string[] }
     expect(contents).toMatch(/currentMany\.includes\(\s*`\$\{n \?\? ""\}`/);
   });
 
+  it("renders an expression that is always nullish as no text, with no `??` (TS2871)", async () => {
+    const contents = await emitSource(`import { ref } from "unframework";
+
+export default function Pick({ hint }: { hint?: string }) {
+  const picked = ref("");
+  return (
+    <select v-model={picked.value}>
+      <option>A{hint ? null : undefined}</option>
+    </select>
+  );
+}`);
+    expect(contents).toContain("currentPicked === `A`.replace(");
+  });
+
   it("emits options that type-check and lint clean (L4, L5)", async () => {
     await expectCheckedClean([pick]);
   });
@@ -547,6 +561,20 @@ export default function Toggle({ link }: { link: boolean }) {
     expect(contents).not.toContain("<Tag");
   });
 
+  it("plans a tag's listeners as an element's: named, called, capture, control and emitting ones", async () => {
+    const plain = await emitSource(listening("button", "button"));
+    const dynamic = await emitSource(
+      listening('component is={link ? "a" : "button"}', "component"),
+    );
+    const setup = (code: string) => lines(code.slice(0, code.indexOf("return (")));
+    expect(setup(dynamic)).toBe(`${setup(plain)}\nconst Tag = link ? "a" : "button";`);
+    const button = plain.slice(plain.indexOf("<button"), plain.indexOf("</button>") + 9);
+    expect(lines(dynamic)).toContain(lines(button));
+    expect(lines(dynamic)).toContain(
+      lines(button).replace("<button", "<a").replace("</button>", "</a>"),
+    );
+  });
+
   it("emits a `<component is>` with listeners that compiles, type-checks and lints clean", async () => {
     const file = { path: "/virtual/Toggle.tsx", contents: await emitSource(toggle) };
     const compiled = (await toolchain.frameworkCompile([file], context)).get(file.path);
@@ -554,6 +582,47 @@ export default function Toggle({ link }: { link: boolean }) {
     await expectCheckedClean([toggle]);
   });
 });
+
+/** A source whose tag, an element or a `<component is>`, holds every kind of listener. */
+function listening(open: string, close: string): string {
+  return `import { defineEmits, ref } from "unframework";
+
+export default function Toggle({ link }: { link: boolean }) {
+  const emit = defineEmits<{ pressed: [key: string] }>();
+  const count = ref(0);
+  // Only a listener names it: its control moves to the listener.
+  function save(event: MouseEvent) {
+    event.preventDefault();
+    count.value += 1;
+  }
+  // A listener names it and another calls it: it keeps its control.
+  function mark(event: MouseEvent) {
+    event.preventDefault();
+    count.value += 5;
+  }
+  // Empty once its control is lifted: the call goes, and so does the function.
+  function prevent(event: KeyboardEvent) {
+    event.preventDefault();
+  }
+  function step(n: number) {
+    count.value += n;
+  }
+  return (
+    <${open} role="button" tabindex="0" onClick={save} onDblclick={mark} onContextmenu={(event) => mark(event)} onClickCapture={() => step(2)} onKeydown={(event) => { prevent(event); emit("pressed", event.key); }}>
+      {link ? "on" : "off"} {count.value}
+    </${close}>
+  );
+}`;
+}
+
+/** Code's lines without their indentation, and without blank ones. */
+function lines(code: string): string {
+  return code
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join("\n");
+}
 
 /**
  * Emits every component of each source, as the compiler does, and runs L4 and L5 on the

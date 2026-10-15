@@ -30,9 +30,9 @@ import {
   rewriteCode,
 } from "@unframework/codegen";
 import type { CodeKind, JsxContext, LiftedControl } from "@unframework/codegen";
+import { walk } from "@unframework/ir";
 import type {
-  Attribute,
-  ComponentAttribute,
+  DynamicNode,
   ElementNode,
   EventAttribute,
   FunctionCode,
@@ -110,11 +110,19 @@ export class Listeners {
     this.#plan = plan;
   }
 
-  /** Prints these attributes' listeners again: a `<component is>` prints one tag per candidate. */
-  reprint(attributes: readonly (Attribute | ComponentAttribute)[]): void {
-    for (const attribute of attributes) {
-      if (attribute.kind === "Event") this.#printed.delete(attribute);
-    }
+  /**
+   * Prints the listeners in `node` again, its own and its descendants': a `<component is>`
+   * prints its tag and its children once per candidate (./index.ts).
+   */
+  reprint(node: DynamicNode): void {
+    walk(node, {
+      enter: (inner) => {
+        if (inner.kind !== "Element" && inner.kind !== "Dynamic") return;
+        for (const attribute of inner.attributes) {
+          if (attribute.kind === "Event") this.#printed.delete(attribute);
+        }
+      },
+    });
   }
 
   /** The JSX attributes of `attribute`'s event on `element`, at its first listener; `[]` after. */

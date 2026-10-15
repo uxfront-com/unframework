@@ -195,18 +195,22 @@ export function isTextValue(
 }
 
 /**
- * Whether TypeScript may read an expression as nullish, from its syntax alone: the check behind
- * TS2869, which rejects `?? x` after an expression that never is (a literal, arithmetic, a
- * conditional of such). Names, members, calls and logical operators may be; so may `null`.
+ * Whether an expression is nullish as TypeScript reads it from its syntax alone (TS2869 rejects
+ * `?? x` after one that never is, TS2871 after one that always is). Names, members, calls and
+ * logical operators sometimes are; `null` and `undefined` always are; a conditional is what its
+ * branches are; a literal, arithmetic or a template never is.
  */
-export function mayBeNullish(expression: Expression): boolean {
-  return nullish(parseExpression(expression.code));
+export function nullishness(expression: Expression): Nullishness {
+  return nullishOf(parseExpression(expression.code));
 }
 
-/** See {@link mayBeNullish}. */
-function nullish(node: Node): boolean {
+/** See {@link nullishness}. */
+export type Nullishness = "never" | "sometimes" | "always";
+
+function nullishOf(node: Node): Nullishness {
   switch (node.type) {
     case "Identifier":
+      return node.name === "undefined" ? "always" : "sometimes";
     case "MemberExpression":
     case "ChainExpression":
     case "CallExpression":
@@ -217,23 +221,25 @@ function nullish(node: Node): boolean {
     case "ThisExpression":
     case "MetaProperty":
     case "LogicalExpression":
-      return true;
+      return "sometimes";
     case "Literal":
-      return node.value === null && !("regex" in node);
+      return node.value === null && !("regex" in node) ? "always" : "never";
     case "AssignmentExpression":
-      return ["=", "&&=", "||=", "??="].includes(node.operator);
-    case "ConditionalExpression":
-      return nullish(node.consequent) || nullish(node.alternate);
+      return ["=", "&&=", "||=", "??="].includes(node.operator) ? "sometimes" : "never";
+    case "ConditionalExpression": {
+      const consequent = nullishOf(node.consequent);
+      return consequent === nullishOf(node.alternate) ? consequent : "sometimes";
+    }
     case "SequenceExpression":
-      return nullish(node.expressions.at(-1)!);
+      return nullishOf(node.expressions.at(-1)!);
     case "ParenthesizedExpression":
     case "TSAsExpression":
     case "TSSatisfiesExpression":
     case "TSNonNullExpression":
     case "TSTypeAssertion":
-      return nullish(node.expression);
+      return nullishOf(node.expression);
     default:
-      return false;
+      return "never";
   }
 }
 

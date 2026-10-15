@@ -47,7 +47,7 @@ import { qwikEventProp } from "./events.ts";
 import { unreachable } from "./plan.ts";
 import type { OutputNames, SetupPlan } from "./plan.ts";
 import { printFunction } from "./setup.ts";
-import { mayBeNullish } from "./values.ts";
+import { nullishness } from "./values.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type AstExpression = Parameters<typeof js.conditionalExpression>[0];
@@ -668,10 +668,8 @@ export function textOptionSelected(
         typeof part === "string"
           ? part.replace(/[`\\]|\$\{/g, (found) => `\\${found}`)
           : // A nullish value renders nothing, as in Vue's text. TypeScript rejects `?? ""` after
-            // an expression it knows never is (TS2869).
-            mayBeNullish(part)
-            ? `\${${nullishOperand(expressionCode(part, context))} ?? ""}`
-            : `\${${expressionCode(part, context)}}`,
+            // an expression it knows never is, or always is (./values.ts).
+            textPart(part, context),
       )
       .join("");
     compared = `\`${template}\`.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")`;
@@ -683,6 +681,21 @@ export function textOptionSelected(
     value: { code, refs: [], span: { start: at.start, end: at.start + code.length } },
     span: at,
   };
+}
+
+/** An interpolation as a template literal's part: its text, or none where it is nullish. */
+function textPart(part: Expression, context: JsxContext): string {
+  const nullish = nullishness(part);
+  switch (nullish) {
+    case "never":
+      return `\${${expressionCode(part, context)}}`;
+    case "sometimes":
+      return `\${${nullishOperand(expressionCode(part, context))} ?? ""}`;
+    case "always":
+      return "";
+    default:
+      return unreachable(nullish);
+  }
 }
 
 /** Code as the left operand of `??`: in parentheses unless it is a name or a member. */
