@@ -5,12 +5,15 @@ export interface ContactLineProps {
   verified?: boolean | null;
 }
 
-type Props = ContactLineProps;
+interface Props extends ContactLineProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { name, phone, verified } = Astro.props;
+const { name, phone, verified, class: className, style } = Astro.props;
 ---
 
-<section class="contact-line" aria-label={name}>
+<section class:list={["contact-line", className]} aria-label={name} style={style}>
   <p
     data-phone={phone === null ? "withheld" : phone}
   >Phone: {phone === null ? "withheld" : (phone ?? "not given yet")}</p>

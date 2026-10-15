@@ -20,6 +20,7 @@ import type {
   RefAttribute,
 } from "@unframework/ir";
 
+import type { ReactComposer } from "./compose.ts";
 import { reactProp, targetGuarded } from "./events.ts";
 import { listenHelper, onceHelper } from "./helpers.ts";
 import type { ListenerMode, ReactPlan } from "./plan.ts";
@@ -46,10 +47,38 @@ export class ReactListeners {
   readonly #plan: ReactPlan;
   readonly #code: ReactCode;
   readonly #elements = new WeakMap<ElementNode, ElementListeners>();
+  readonly #heads = new WeakMap<ElementNode, Map<string, (event: string) => string[]>>();
+  #composer: ReactComposer | undefined;
 
   constructor(plan: ReactPlan, code: ReactCode) {
     this.#plan = plan;
     this.#code = code;
+  }
+
+  /** Connects the composer, whose `v-model` handlers run first in a listener's that shares them. */
+  connect(composer: ReactComposer): void {
+    this.#composer = composer;
+  }
+
+  /**
+   * The handlers of the element's `v-model` that one of its synthetic listeners shares, by
+   * React prop: that listener's handler runs them first, as Vue adds the model's listener before
+   * the element's own (ADR-0054). Two `onChange` props would leave only the last.
+   */
+  modelHeads(element: ElementNode, context: JsxContext): Map<string, (event: string) => string[]> {
+    let heads = this.#heads.get(element);
+    if (heads) return heads;
+    heads = new Map();
+    this.#heads.set(element, heads);
+    const { props } = this.#of(element);
+    for (const attribute of element.attributes) {
+      if (attribute.kind !== "Model") continue;
+      const parts = this.#composer!.modelParts(attribute, element, context);
+      for (const [prop, handler] of parts.handlers) {
+        if (props.has(prop)) heads.set(prop, handler.statements);
+      }
+    }
+    return heads;
   }
 
   /** The `listen` helper's name, claimed once a native listener needs it. */
@@ -74,7 +103,7 @@ export class ReactListeners {
         if (this.#plan.listeners.get(attribute)!.mode === "native") {
           found.refAt ??= attribute;
         } else {
-          const prop = reactProp(attribute);
+          const prop = propOf(attribute, element);
           const group = found.props.get(prop);
           if (group) group.push(attribute);
           else found.props.set(prop, [attribute]);
@@ -108,10 +137,10 @@ export class ReactListeners {
     if (this.#plan.listeners.get(attribute)!.mode === "native") {
       return listeners.refAt === attribute ? [this.#refAttribute(listeners, context)] : [];
     }
-    const prop = reactProp(attribute);
+    const prop = propOf(attribute, element);
     const group = listeners.props.get(prop)!;
     if (group[0] !== attribute) return [];
-    const handler = this.#synthetic(group, element);
+    const handler = this.#synthetic(group, element, this.modelHeads(element, context).get(prop));
     return [
       js.jsxAttribute(prop, js.jsxExpressionContainer(context.placeholders.expression(handler))),
     ];
@@ -152,15 +181,28 @@ export class ReactListeners {
     return js.jsxAttribute("ref", js.jsxExpressionContainer(value));
   }
 
-  /** The handler of one synthetic prop: its listeners, guarded, in attribute order. */
-  #synthetic(group: EventAttribute[], element: ElementNode): string {
+  /**
+   * The handler of one synthetic prop: its listeners, guarded, in attribute order, after what a
+   * `v-model` on the element writes there (`model`).
+   */
+  #synthetic(
+    group: EventAttribute[],
+    element: ElementNode,
+    model?: (event: string) => string[],
+  ): string {
     const [first] = group;
     const guarded = targetGuarded(first!, element);
-    if (group.length === 1 && !first!.once && !guarded) return this.#handler(first!, "synthetic");
+    if (group.length === 1 && !first!.once && !guarded && !model) {
+      return this.#handler(first!, "synthetic");
+    }
     // A listener of an event that does not bubble runs, as in the DOM, only at its target.
-    return this.#wrapped(group, "synthetic", (event) =>
-      guarded ? `if (${event}.target !== ${event}.currentTarget) return;` : undefined,
-    );
+    return this.#wrapped(group, "synthetic", (event) => {
+      const lines = [
+        ...(guarded ? [`if (${event}.target !== ${event}.currentTarget) return;`] : []),
+        ...(model ? model(event).map((line) => `${line};`) : []),
+      ];
+      return lines.length ? lines.join("\n") : undefined;
+    });
   }
 
   /**
@@ -201,7 +243,11 @@ export class ReactListeners {
       else lines.push(`if (${this.#once(listener)}(${event})) {\n${statements}\n}`);
     }
     const async = awaits ? "async " : "";
-    const parameter = named ? parameterText(named) : event;
+    // A handler whose code never reads its event takes none (an unused parameter fails L5).
+    const reads = new RegExp(`(?<![\\w$.])${event.replace(/\$/g, "\\$")}(?![\\w$])`).test(
+      lines.join("\n"),
+    );
+    const parameter = named ? parameterText(named) : reads ? event : "";
     return `${async}(${parameter}) => {\n${lines.join("\n")}\n}`;
   }
 
@@ -317,6 +363,22 @@ export class ReactListeners {
   #once(listener: EventAttribute): string {
     return this.#plan.onceGuards.get(listener)!;
   }
+}
+
+/**
+ * The React prop a synthetic listener is printed under. Beside a text field's \`v-model\`, whose
+ * \`onChange\` fires on \`input\` too, an \`input\` listener joins it: it runs after the model's write,
+ * as on Vue, where React would run \`onInput\` first.
+ */
+function propOf(attribute: EventAttribute, element: ElementNode): string {
+  const prop = reactProp(attribute);
+  if (prop !== "onInput") return prop;
+  const text = element.attributes.some(
+    (other) =>
+      other.kind === "Model" &&
+      (other.control === "text" || other.control === "textarea" || other.control === "number"),
+  );
+  return text ? "onChange" : prop;
 }
 
 /** The helpers the listeners of a planned component need, after it is printed. */

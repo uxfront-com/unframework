@@ -1,0 +1,19 @@
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+const size = "m" as string;
+---
+
+<section aria-label="Size" class:list={[className]} style={style}>
+  <label>Size <select><option value="s" selected={size === "s"}>Small</option><option
+    value="m"
+    selected={size === "m"}
+  >Medium</option><option value="l" selected={size === "l"}>Large</option></select></label>
+  <output>Chosen: {size}</output>
+  <button type="button">Largest</button>
+</section>

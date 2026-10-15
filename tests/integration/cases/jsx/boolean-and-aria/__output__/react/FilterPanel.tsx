@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export interface FilterPanelProps {
   heading: string;
   hint: string;
@@ -11,6 +13,11 @@ export interface FilterPanelProps {
   current?: "page" | "step";
 }
 
+export interface FilterPanelAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function FilterPanel({
   heading,
   hint,
@@ -22,13 +29,16 @@ export default function FilterPanel({
   loading,
   invalid,
   current,
-}: FilterPanelProps) {
+  className,
+  style,
+}: FilterPanelProps & FilterPanelAttributes) {
   return (
     <section
-      className="filter-panel"
+      className={cx("filter-panel", className)}
       aria-label={heading}
       data-category={category}
       data-layout="stacked"
+      style={style}
     >
       <button type="button" aria-expanded={expanded} aria-describedby="filter-panel-hint">
         Price filters
@@ -60,4 +70,19 @@ export default function FilterPanel({
       </p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

@@ -6,12 +6,15 @@ export interface ProductTileProps {
   available?: boolean;
 }
 
-type Props = ProductTileProps;
+interface Props extends ProductTileProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { name, price, stock, available = true } = Astro.props;
+const { name, price, stock, available = true, class: className, style } = Astro.props;
 ---
 
-<article class="product-tile" aria-label={name}>
+<article class:list={["product-tile", className]} aria-label={name} style={style}>
   <h2>{name}</h2>
   <p>Price: {price} EUR</p>
   <p data-stock={stock}>{stock} in stock</p>

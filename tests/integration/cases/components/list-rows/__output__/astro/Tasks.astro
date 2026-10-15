@@ -1,0 +1,29 @@
+---
+import Row from "./Row.astro";
+
+export interface Task {
+  id: number;
+  name: string;
+  done: boolean;
+}
+
+interface Props {
+  initial: Task[];
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { initial, class: className, style } = Astro.props;
+
+const tasks = initial;
+---
+
+<div class:list={[className]} style={style}>
+  <div role="list" aria-label="Tasks">
+    {tasks.map((task) => (
+      <Row name={task.name} done={task.done} />
+    ))}
+  </div>
+  <button type="button">Add a task</button>
+  <button type="button">Finish the first</button>
+</div>

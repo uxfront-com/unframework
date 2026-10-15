@@ -1,10 +1,19 @@
-import { type SubmitEvent, useRef, useState } from "react";
+import { type CSSProperties, type SubmitEvent, useRef, useState } from "react";
 
 export interface SignupFormEvents {
   onSignup?: (fullName: string, email: string, plan: string, newsletter: boolean) => void;
 }
 
-export default function SignupForm({ onSignup }: SignupFormEvents) {
+export interface SignupFormAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function SignupForm({
+  onSignup,
+  className,
+  style,
+}: SignupFormEvents & SignupFormAttributes) {
   const [fullName, setFullName] = useState("");
   const fullNameRef = useRef(fullName);
   const [email, setEmail] = useState("");
@@ -38,7 +47,12 @@ export default function SignupForm({ onSignup }: SignupFormEvents) {
   );
 
   return (
-    <form className="signup-form" aria-label="Sign up" onSubmit={submit}>
+    <form
+      className={cx("signup-form", className)}
+      aria-label="Sign up"
+      onSubmit={submit}
+      style={style}
+    >
       <label>
         Name
         <input
@@ -94,6 +108,21 @@ export default function SignupForm({ onSignup }: SignupFormEvents) {
       <button type="submit">Sign up</button>
     </form>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /**

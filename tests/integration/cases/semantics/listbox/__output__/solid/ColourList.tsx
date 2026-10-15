@@ -1,10 +1,10 @@
-import { createSignal } from "solid-js";
+import { type JSX, createSignal } from "solid-js";
 
-export default function ColourList() {
+export default function ColourList(props: { class?: string; style?: JSX.CSSProperties }) {
   const [colour, setColour] = createSignal("none");
 
   return (
-    <section aria-label="Colours">
+    <section aria-label="Colours" class={props.class} style={props.style}>
       <select
         size="3"
         aria-label="Colour"

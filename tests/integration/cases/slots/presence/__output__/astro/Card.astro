@@ -1,0 +1,24 @@
+---
+interface Props {
+  label: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, class: className, style } = Astro.props;
+---
+
+<section class:list={["card", className]} aria-label={label} style={style}>
+  {Astro.slots.has("title") ? (
+    <header class="title">
+      <slot name="title" />
+    </header>
+  ) : null}
+  {Astro.slots.has("default") ? (
+    <div class="body">
+      <slot />
+    </div>
+  ) : (
+    <p>Empty card</p>
+  )}
+</section>

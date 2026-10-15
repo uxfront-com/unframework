@@ -2,7 +2,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "message": "The angular target does not emit component yet: composition lands in M3.",
     "file": "expose/focus/Header.uf.tsx",
     "start": {
       "line": 9,
@@ -14,7 +14,7 @@
       "column": 48,
       "offset": 271
     },
-    "target": "astro"
+    "target": "angular"
   },
   {
     "code": "UF1002",
@@ -32,40 +32,6 @@
       "offset": 271
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
-    "file": "expose/focus/Header.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 7,
-      "offset": 230
-    },
-    "end": {
-      "line": 9,
-      "column": 48,
-      "offset": 271
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The solid target does not emit component yet: composition lands in M3.",
-    "file": "expose/focus/Header.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 7,
-      "offset": 230
-    },
-    "end": {
-      "line": 9,
-      "column": 48,
-      "offset": 271
-    },
-    "target": "solid"
   },
   {
     "code": "UF1002",
@@ -104,7 +70,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit expose yet: composition lands in M3.",
+    "message": "The angular target does not emit expose yet: composition lands in M3.",
     "file": "expose/focus/SearchField.uf.tsx",
     "start": {
       "line": 8,
@@ -116,7 +82,7 @@
       "column": 26,
       "offset": 257
     },
-    "target": "astro"
+    "target": "angular"
   },
   {
     "code": "UF1002",
@@ -134,40 +100,6 @@
       "offset": 257
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit expose yet: composition lands in M3.",
-    "file": "expose/focus/SearchField.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 3,
-      "offset": 234
-    },
-    "end": {
-      "line": 8,
-      "column": 26,
-      "offset": 257
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The solid target does not emit expose yet: composition lands in M3.",
-    "file": "expose/focus/SearchField.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 3,
-      "offset": 234
-    },
-    "end": {
-      "line": 8,
-      "column": 26,
-      "offset": 257
-    },
-    "target": "solid"
   },
   {
     "code": "UF1002",

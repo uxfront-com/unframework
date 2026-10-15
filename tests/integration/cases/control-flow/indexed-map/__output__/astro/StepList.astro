@@ -4,12 +4,15 @@ export interface StepListProps {
   steps: string[];
 }
 
-type Props = StepListProps;
+interface Props extends StepListProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { title, steps } = Astro.props;
+const { title, steps, class: className, style } = Astro.props;
 ---
 
-<ol class="step-list" aria-label={title}>
+<ol class:list={["step-list", className]} aria-label={title} style={style}>
   {steps.map((step, index) => (
     <li data-step={index + 1}>Step {index + 1}: {step}</li>
   ))}

@@ -7,6 +7,68 @@
 
 /** Component name → source. */
 export const BEHAVIOUR_SOURCES: Readonly<Record<string, string>> = {
+  // Listeners beside a \`v-model\` (ADR-0054): each runs after the model's write, and reads it.
+  ModelReads: `import { defineEmits, ref } from "unframework";
+
+export default function ModelReads() {
+  const emit = defineEmits<{ seen: [value: string] }>();
+  const size = ref("m");
+  const agreed = ref(false);
+  const name = ref("");
+  const notify = ref(false);
+  const plan = ref("a");
+  return (
+    <form>
+      <select aria-label="Size" v-model={size.value} onChange={() => emit("seen", "select:" + size.value)}>
+        <option value="s">S</option>
+        <option value="m">M</option>
+      </select>
+      <input type="checkbox" aria-label="Agree" v-model={agreed.value} onChange={() => emit("seen", "box:" + String(agreed.value))} />
+      <input aria-label="Name" v-model={name.value} onInput={() => emit("seen", "name:" + name.value)} />
+      <input type="checkbox" aria-label="Notify" v-model={notify.value} onInput={() => emit("seen", "boxin:" + String(notify.value))} />
+      <input type="radio" name="plan" value="a" aria-label="A" v-model={plan.value} />
+      <input type="radio" name="plan" value="b" aria-label="B" v-model={plan.value} onInput={() => emit("seen", "radio:" + plan.value)} />
+    </form>
+  );
+}
+`,
+  // Checked controls beside listeners that write state: one on \`input\`, where a render keeps what
+  // was clicked, and one on \`change\` that sets the model back, which unchecks the box, as on Vue.
+  DirtyForm: `import { ref } from "unframework";
+
+export default function DirtyForm() {
+  const agreed = ref(false);
+  const plan = ref("a");
+  const solo = ref(false);
+  const dirty = ref(0);
+  const touched = ref(0);
+  const veto = ref(false);
+  return (
+    <div>
+      <form onInput={() => dirty.value++}>
+        <input type="checkbox" aria-label="Agree" v-model={agreed.value} />
+        <input type="radio" name="plan" value="a" aria-label="A" v-model={plan.value} />
+        <input type="radio" name="plan" value="b" aria-label="B" v-model={plan.value} />
+      </form>
+      <input type="checkbox" aria-label="Solo" v-model={solo.value} onInput={() => touched.value++} />
+      <input type="checkbox" aria-label="Veto" v-model={veto.value} onChange={() => (veto.value = false)} />
+      <output>{String(agreed.value) + "|" + plan.value + "|" + String(solo.value) + "|" + dirty.value + "|" + touched.value + "|" + String(veto.value)}</output>
+    </div>
+  );
+}
+`,
+  // A bound model whose parent holds its value (ADR-0054): every write starts from that value.
+  HeldStepper: `import { defineModel } from "unframework";
+
+export default function HeldStepper() {
+  const value = defineModel<number>("value", { default: 0 });
+  return (
+    <button type="button" onClick={() => (value.value -= 1)}>
+      Fewer
+    </button>
+  );
+}
+`,
   Phases: `import { defineEmits, ref } from "unframework";
 
 export default function Phases() {

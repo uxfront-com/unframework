@@ -1,0 +1,20 @@
+---
+import Card from "./Card.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<div class:list={["cards", className]} style={style}>
+  <Card label="Full">
+    <p>Sunny, 21°</p>
+    <Fragment slot="title">
+      <h3>Weather</h3>
+    </Fragment>
+  </Card>
+  <Card label="Bare" />
+</div>

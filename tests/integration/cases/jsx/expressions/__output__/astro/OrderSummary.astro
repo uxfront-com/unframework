@@ -8,12 +8,24 @@ export interface OrderSummaryProps {
   coupon?: string;
 }
 
-type Props = OrderSummaryProps;
+interface Props extends OrderSummaryProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { customer, orderNumber, unitPrice, quantity, discount, coupon } = Astro.props;
+const {
+  customer,
+  orderNumber,
+  unitPrice,
+  quantity,
+  discount,
+  coupon,
+  class: className,
+  style,
+} = Astro.props;
 ---
 
-<section class="order-summary" aria-label="Order summary">
+<section class:list={["order-summary", className]} aria-label="Order summary" style={style}>
   <h2>Order {String(orderNumber).padStart(6, "0")}</h2>
   <p>Customer: {customer.trim().toUpperCase()}</p>
   <p>{`${quantity} item${quantity === 1 ? "" : "s"} at ${unitPrice.toFixed(2)} each`}</p>

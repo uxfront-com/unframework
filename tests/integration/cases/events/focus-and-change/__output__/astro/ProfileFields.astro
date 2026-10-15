@@ -1,11 +1,18 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const log = [] as string[];
 const nickname = "" as string;
 const cardFocuses = 0 as number;
 const cardBlurs = 0 as number;
 ---
 
-<section class="profile-fields" aria-label="Profile">
+<section class:list={["profile-fields", className]} aria-label="Profile" style={style}>
   <div class="name-group" role="group" aria-label="Name fields">
     <label>Name<input name="name" /></label>
   </div>

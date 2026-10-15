@@ -5,12 +5,15 @@ export interface SaveIndicatorProps {
   savedAt?: string;
 }
 
-type Props = SaveIndicatorProps;
+interface Props extends SaveIndicatorProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { saving, changes, savedAt } = Astro.props;
+const { saving, changes, savedAt, class: className, style } = Astro.props;
 ---
 
-<p class="save-indicator" role="status">
+<p class:list={["save-indicator", className]} role="status" style={style}>
   {saving ? <em>Saving</em> : "Saved"}, {changes === 1 ? "1 change" : `${changes} changes`}{savedAt ? <time
     datetime={savedAt}
   >{" at " + savedAt}</time> : " just now"}

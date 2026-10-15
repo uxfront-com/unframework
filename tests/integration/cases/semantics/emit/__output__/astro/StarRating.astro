@@ -1,9 +1,16 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const choices = [1, 2, 3, 4, 5];
 const stars = 0 as number;
 ---
 
-<div class="star-rating" role="group" aria-label="Rating">
+<div class:list={["star-rating", className]} role="group" aria-label="Rating" style={style}>
   <ul>
     {choices.map((choice) => (
       <li>

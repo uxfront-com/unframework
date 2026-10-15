@@ -23,11 +23,8 @@ const LAYER_2 = "Its case lands after the composition lanes merge.";
  * composition as UF1002 (its quarantine lists the cases), so its cells have no case yet.
  */
 const LANES: Readonly<Partial<Record<Exclude<TargetName, "vue">, string>>> = {
-  react: "React's M3 lane (UXF-315) emits composition, and its cases cover the cell.",
   svelte: "Svelte's M3 lane (UXF-316) emits composition, and its cases cover the cell.",
-  solid: "Solid's M3 lane (UXF-317) emits composition, and its cases cover the cell.",
   qwik: "Qwik's M3 lane (UXF-319) emits composition, and its cases cover the cell.",
-  astro: "Astro's M3 lane (UXF-320) emits composition, and its cases cover the cell.",
 };
 
 /** The lanes of every target but those whose cell is unsupported. */

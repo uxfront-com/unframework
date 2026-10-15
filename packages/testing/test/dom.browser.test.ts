@@ -62,9 +62,8 @@ describe("serializeDom", () => {
         "<pre>",
         '  "\\nindented"',
         "</pre>",
-        '<textarea uf:value="\\nline">',
-        '  "\\nline"',
-        "</textarea>",
+        // Its text is its value, which rule 4d keeps in `uf:value` alone.
+        '<textarea uf:value="\\nline"></textarea>',
       ),
     );
   });
@@ -112,8 +111,9 @@ describe("serializeDom: form-control state from properties", () => {
     const byAttribute = container('<input type="checkbox" checked>');
     const byProperty = container('<input type="checkbox">');
     byProperty.querySelector("input")!.checked = true;
+    // The attribute only repeats the state, which rule 4d keeps in `uf:checked` alone.
     expect(normalizeDom(byAttribute)).toBe(
-      '<input checked="" type="checkbox" uf:checked="true" uf:indeterminate="false">\n',
+      '<input type="checkbox" uf:checked="true" uf:indeterminate="false">\n',
     );
     expect(normalizeDom(byProperty)).toBe(
       '<input type="checkbox" uf:checked="true" uf:indeterminate="false">\n',

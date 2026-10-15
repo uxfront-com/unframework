@@ -14,7 +14,16 @@ import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
 import type { ProjectKind } from "@unframework/testing/node";
 import { describe, expect, it } from "vitest";
 
-import { parseArguments, selectCanaries, shardCases, shardFilters } from "../scripts/canaries.ts";
+// The unplugin's join, by path: it is internal to the package, and the canary must survive it.
+import { joinModules } from "../../../packages/unplugin/src/assemble.ts";
+import {
+  canaryRuns,
+  combineRuns,
+  parseArguments,
+  selectCanaries,
+  shardCases,
+  shardFilters,
+} from "../scripts/canaries.ts";
 import {
   addRootAttribute,
   CANARIES,
@@ -34,7 +43,7 @@ import {
 import type { Canary, CanaryCase } from "./canaries.ts";
 import { listCases } from "./cases.ts";
 import { checkFixes, formattingProblems, nondeterminism } from "./compile-checks.ts";
-import { REPO_ROOT } from "./paths.ts";
+import { CASES_DIR, REPO_ROOT } from "./paths.ts";
 import { LIVE_LAYERS } from "./quarantine.ts";
 import { REFERENCE } from "./targets.ts";
 
@@ -224,6 +233,32 @@ describe("canaries", () => {
     expect(canaryPlugins(null)).toEqual([]);
   });
 
+  it("corrupt each output of a joined module apart with L6-golden-guard, so the join keeps it", async () => {
+    // Two components of one `.uf.tsx`, whose outputs the unplugin joins into one module.
+    const path = "components/local-sibling/Card.uf.tsx";
+    const input = readFileSync(join(CASES_DIR, path), "utf8");
+    const compiled = (id: string | null) =>
+      compile(canarySource(id, input), {
+        filename: path,
+        targets: ["solid"],
+        plugins: canaryPlugins(id, "solid"),
+        format: canaryFormats(id),
+      });
+    const [clean, guarded] = await Promise.all([compiled(null), compiled("L6-golden-guard")]);
+    const files = guarded.outputs.solid!;
+    expect(files).toHaveLength(2);
+    for (const [index, file] of files.entries()) {
+      expect(file.contents).not.toBe(clean.outputs.solid![index]!.contents);
+    }
+    expect(
+      joinModules(
+        files,
+        path,
+        files.map((file) => file.path),
+      ),
+    ).not.toHaveProperty("error");
+  });
+
   it("keep the golden guard on, except under a canary that changes outputs on purpose", () => {
     expect(guardsGoldens(null)).toBe(true);
     expect(guardsGoldens("L7-wrong-text")).toBe(false);
@@ -319,6 +354,55 @@ describe("canaries", () => {
     // No spec path holds the filter the other projects' files match.
     for (const info of listCases().map(canaryCase))
       expect(info.spec ?? "").not.toContain("harness/");
+  });
+
+  it("run each project whose specs fail to load in a Vitest run of its own, named for it", () => {
+    const shard = { index: 2, count: 2 };
+    const cases = shardCases(listCases().slice(0, 4).map(canaryCase), shard);
+    const filters = shardFilters(cases, shard);
+    expect(canaryRuns(findCanary("L6-golden-guard"), TARGET_NAMES, cases, shard)).toEqual([
+      { name: "ssr", args: ["--project", "ssr:*", ...filters] },
+      ...TARGET_NAMES.map((target) => ({
+        name: `browser-${target}`,
+        args: ["--project", `browser:${target}`, ...filters],
+      })),
+    ]);
+    expect(canaryRuns(findCanary("L6-golden-guard"), ["vue", "angular"], cases, undefined)).toEqual(
+      [
+        { name: "ssr", args: ["--project", "ssr:*"] },
+        { name: "browser-vue", args: ["--project", "browser:vue"] },
+        { name: "browser-angular", args: ["--project", "browser:angular"] },
+      ],
+    );
+    // The other canaries run their projects together, and a canary of some targets theirs only,
+    // among the targets the run selects.
+    expect(canaryRuns(findCanary("L13-console-warn"), TARGET_NAMES, cases, shard)).toEqual([
+      { name: "ssr+browser", args: ["--project", "ssr:*", "--project", "browser:*", ...filters] },
+    ]);
+    const qwikOnly = findCanary("L13-qwik-handler-throws");
+    expect(canaryRuns(qwikOnly, TARGET_NAMES, cases, undefined)).toEqual([
+      { name: "browser-qwik", args: ["--project", "browser:qwik"] },
+    ]);
+    expect(canaryRuns(qwikOnly, ["vue"], cases, undefined)).toEqual([]);
+  });
+
+  it("judge a canary's runs as one: each project's cells, every load failure, a failed status", () => {
+    const failure = { project: "browser:vue", file: "cases/a/b/b.test.ts", errors: ["[uf guard]"] };
+    const ssr = { status: 1, projects: { "ssr:vue": {} }, loadFailures: [] };
+    const browser = { status: 0, projects: { "browser:vue": {} }, loadFailures: [failure] };
+    expect(combineRuns([ssr, browser])).toEqual({
+      status: 1,
+      projects: { "ssr:vue": {}, "browser:vue": {} },
+      loadFailures: [failure],
+    });
+    expect(combineRuns([{ ...ssr, status: 0 }, browser]).status).toBe(0);
+    // A run that wrote no matrix, or no list of load failures, leaves the canary without either.
+    const unfinished = { status: 1, projects: undefined, loadFailures: undefined };
+    expect(combineRuns([ssr, unfinished])).toEqual({
+      status: 1,
+      projects: undefined,
+      loadFailures: undefined,
+    });
   });
 
   it("are selected by id or by layer, and an unknown name or a layer without canaries throws", () => {
@@ -472,10 +556,10 @@ describe("canaries", () => {
     const result = await compileWith("L13-console-warn");
     const contents = (target: string) => result.outputs[target]![0]!.contents;
     expect(contents("react")).toMatch(
-      /tone = "info",\n\}: TaskListProps\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
+      /style,\n\}: TaskListProps & TaskListAttributes\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
     );
     expect(contents("solid")).toMatch(
-      /function TaskList\(rawProps: TaskListProps\) \{\n {2}console\.warn/,
+      /function TaskList\(\n {2}rawProps: TaskListProps & \{ class\?: string; style\?: JSX\.CSSProperties \},\n\) \{\n {2}console\.warn/,
     );
     expect(contents("qwik")).toMatch(
       /component\$<TaskListProps>\(\n {2}\(\{ title = "Tasks \(today\)", tasks, done, tone = "info" \}\) => \{\n {4}console\.warn/,
@@ -546,8 +630,8 @@ describe("canaries", () => {
     const result = await compileWith("L5-framework-rule");
     const root = (target: string) =>
       /<section\b[^>]*>/.exec(result.outputs[target]![0]!.contents)?.[0];
-    expect(root("react")).toMatch(/^<section class="uf-canary" className=/);
-    expect(root("solid")).toMatch(/^<section className="uf-canary" class=/);
+    expect(root("react")).toMatch(/^<section\s+class="uf-canary"\s+className=/);
+    expect(root("solid")).toMatch(/^<section\s+className="uf-canary"\s+class=/);
     expect(root("qwik")).toMatch(/^<section className="uf-canary" class=/);
     expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
     expect(root("svelte")).toMatch(/^<section style:uf-canary="1" class=/);
@@ -559,9 +643,10 @@ describe("canaries", () => {
     const result = await compileWith("L4-consumer");
     const lines = (target: string) =>
       result.outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
-    expect(lines("react")).toEqual([
-      'export default function TaskList({ title = "Tasks (today)", tasks, done, tone = "info" }: any) {',
-    ]);
+    expect(lines("react")).toEqual(["}: any) {"]);
+    expect(result.outputs.react![0]!.contents).toMatch(
+      /^export default function TaskList\(\{\n[\s\S]*?\n\}: any\) \{$/m,
+    );
     expect(lines("solid")).toEqual(["export default function TaskList(rawProps: any) {"]);
     expect(lines("qwik")).toEqual([
       'export default component$<any>(({ title = "Tasks (today)", tasks, done, tone = "info" }) => {',
@@ -595,9 +680,15 @@ describe("canaries", () => {
       });
       return outputs[target]![0]!.contents.split("\n").filter((line) => /\bany\b/.test(line));
     };
-    expect(await lines("react")).toEqual([
-      "export default function FileRow({ path, size, onRefresh, onOpen, onMove, onPick, onShare }: any) {",
-    ]);
+    expect(await lines("react")).toEqual(["}: any) {"]);
+    const { outputs: react } = await compile(readFileSync(info.source, "utf8"), {
+      filename: info.filename,
+      targets: ["react"],
+      plugins: canaryPlugins("L4-consumer", "react"),
+    });
+    expect(react.react![0]!.contents).toMatch(
+      /^export default function FileRow\(\{\n[\s\S]*?\n\}: any\) \{$/m,
+    );
     expect(await lines("solid")).toEqual(["export default function FileRow(props: any) {"]);
     expect(await lines("qwik")).toEqual(["export default component$<any>("]);
     expect(await lines("vue")).toEqual([
@@ -653,11 +744,16 @@ describe("canaries", () => {
       const { outputs } = await compileWith("L10-root-inverted", target);
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(1\)/g), target).toHaveLength(1);
-      // Angular binds the root's style, so that it can merge the consumer's (ADR-0056).
+      // Angular binds the root's style, so that it can merge the consumer's (ADR-0056). React's
+      // and Astro's roots also take a consumer's style, after their own (ADR-0054).
+      const spread =
+        target === "react" ? ", \\.\\.\\.style" : target === "astro" ? "(?:, \\.\\.\\.\\w+)?" : "";
       expect(contents, target).toMatch(
         target === "angular"
           ? /<section\b[^>]*\[style\]="\{ filter: 'invert\(1\)'/
-          : /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\})/,
+          : new RegExp(
+              `<section\\b[^>]*\\bstyle=(?:"filter: invert\\(1\\)"|\\{\\{ filter: "invert\\(1\\)"${spread} \\}\\}|\\{\\{ \\.\\.\\.\\{ filter: "invert\\(1\\)" \\}, \\.\\.\\.props\\.style \\}\\})`,
+            ),
       );
     }
   });
@@ -970,6 +1066,27 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
         "data-x={1}",
       ),
     ).toContain("<div data-x={1}>\n      <p />");
+    // A component at the root (React's context provider) is passed over for the first DOM element;
+    // without one, the first element takes it.
+    expect(
+      addRootAttribute(
+        {
+          path: "Level.tsx",
+          contents:
+            "export default function Level() {\n  return (\n    <DepthKey value={depthValue}>\n      <section>\n        <Level />\n      </section>\n    </DepthKey>\n  );\n}\n",
+        },
+        "data-x={1}",
+      ),
+    ).toContain("<DepthKey value={depthValue}>\n      <section data-x={1}>");
+    expect(
+      addRootAttribute(
+        {
+          path: "Primary.tsx",
+          contents: 'export default function Primary() {\n  return <Base text="Save" />;\n}\n',
+        },
+        "data-x={1}",
+      ),
+    ).toContain('<Base data-x={1} text="Save" />');
     expect(() =>
       addRootAttribute({ path: "Card.vue", contents: "<script setup></script>\n" }, attribute),
     ).toThrow(/no template/);

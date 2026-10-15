@@ -1,1 +1,10 @@
-<header class="header">Site</header>
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<header class:list={["header", className]} style={style}>Site</header>

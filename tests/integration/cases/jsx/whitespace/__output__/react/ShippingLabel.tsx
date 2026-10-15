@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export interface ShippingLabelProps {
   recipient: string;
   street: string;
@@ -5,9 +7,21 @@ export interface ShippingLabelProps {
   postcode: string;
 }
 
-export default function ShippingLabel({ recipient, street, city, postcode }: ShippingLabelProps) {
+export interface ShippingLabelAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function ShippingLabel({
+  recipient,
+  street,
+  city,
+  postcode,
+  className,
+  style,
+}: ShippingLabelProps & ShippingLabelAttributes) {
   return (
-    <article className="shipping-label" aria-label="Shipping label">
+    <article className={cx("shipping-label", className)} aria-label="Shipping label" style={style}>
       <p>
         <strong>To:</strong> {recipient}
       </p>
@@ -31,4 +45,19 @@ export default function ShippingLabel({ recipient, street, city, postcode }: Shi
       </p>
     </article>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

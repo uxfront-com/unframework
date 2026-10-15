@@ -1,0 +1,30 @@
+---
+import Box from "./Box.astro";
+
+interface Props {
+  label: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, class: className, style } = Astro.props;
+---
+
+<section class:list={["frame", className]} aria-label={label} style={style}>
+  {Astro.slots.has("default") && Astro.slots.has("title") ? (
+    <Box>
+      <slot />
+      <slot name="title" slot="title" />
+    </Box>
+  ) : Astro.slots.has("default") ? (
+    <Box>
+      <slot />
+    </Box>
+  ) : Astro.slots.has("title") ? (
+    <Box>
+      <slot name="title" slot="title" />
+    </Box>
+  ) : (
+    <Box />
+  )}
+</section>

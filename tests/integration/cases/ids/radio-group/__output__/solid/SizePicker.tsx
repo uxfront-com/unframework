@@ -1,11 +1,13 @@
-import { For, createSignal, createUniqueId } from "solid-js";
+import { For, type JSX, createSignal, createUniqueId } from "solid-js";
 
 export interface SizePickerProps {
   legend: string;
   sizes: string[];
 }
 
-export default function SizePicker(props: SizePickerProps) {
+export default function SizePicker(
+  props: SizePickerProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const group = `uf-id-${createUniqueId()}`;
   const hintId = `uf-id-${createUniqueId()}`;
   const [picked, setPicked] = createSignal("");
@@ -15,7 +17,11 @@ export default function SizePicker(props: SizePickerProps) {
   }
 
   return (
-    <fieldset class="size-picker" aria-describedby={hintId}>
+    <fieldset
+      class={props.class ? `size-picker ${props.class}` : "size-picker"}
+      aria-describedby={hintId}
+      style={props.style}
+    >
       <legend>{props.legend}</legend>
       <p id={hintId}>Pick one size.</p>
       <For each={props.sizes}>

@@ -6,12 +6,15 @@ export interface ShippingLabelProps {
   postcode: string;
 }
 
-type Props = ShippingLabelProps;
+interface Props extends ShippingLabelProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { recipient, street, city, postcode } = Astro.props;
+const { recipient, street, city, postcode, class: className, style } = Astro.props;
 ---
 
-<article class="shipping-label" aria-label="Shipping label">
+<article class:list={["shipping-label", className]} aria-label="Shipping label" style={style}>
   <p><strong>To:</strong> {recipient}</p>
   <p>
     <span class="shipping-label-city">{city}</span> <span

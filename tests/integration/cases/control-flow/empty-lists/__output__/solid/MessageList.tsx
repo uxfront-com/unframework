@@ -1,4 +1,4 @@
-import { For, Match, Show, Switch, mergeProps } from "solid-js";
+import { For, type JSX, Match, Show, Switch, mergeProps } from "solid-js";
 
 export interface InboxMessage {
   id: string;
@@ -11,14 +11,20 @@ export interface MessageListProps {
   emptyText?: string;
 }
 
-export default function MessageList(rawProps: MessageListProps) {
+export default function MessageList(
+  rawProps: MessageListProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const defaults: Required<Pick<MessageListProps, "archived" | "emptyText">> = {
     archived: [],
     emptyText: "Nothing here yet.",
   };
   const props = mergeProps(defaults, rawProps);
   return (
-    <section class="message-list" aria-label="Messages">
+    <section
+      class={props.class ? `message-list ${props.class}` : "message-list"}
+      aria-label="Messages"
+      style={props.style}
+    >
       <h2>Inbox</h2>
       <ul>
         <For each={props.messages}>{(message) => <li>{message.subject}</li>}</For>

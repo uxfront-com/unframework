@@ -4,15 +4,18 @@ export interface CounterProps {
   step?: number;
 }
 
-type Props = CounterProps;
+interface Props extends CounterProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { initial = 0, step = 1 } = Astro.props;
+const { initial = 0, step = 1, class: className, style } = Astro.props;
 
 const count = initial;
 const doubled = count * 2;
 ---
 
-<div class="counter">
+<div class:list={["counter", className]} style={style}>
   <output>{count}</output>
   {doubled > 10 ? (
     <span>Big</span>

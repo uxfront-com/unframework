@@ -1,4 +1,4 @@
-import { Show } from "solid-js";
+import { type JSX, Show } from "solid-js";
 
 export interface FileTransferProps {
   fileName: string;
@@ -7,9 +7,11 @@ export interface FileTransferProps {
   eta?: string;
 }
 
-export default function FileTransfer(props: FileTransferProps) {
+export default function FileTransfer(
+  props: FileTransferProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <div class="file-transfer">
+    <div class={props.class ? `file-transfer ${props.class}` : "file-transfer"} style={props.style}>
       <svg class="file-transfer-progress" role="img" viewBox="0 0 36 36" width="36" height="36">
         <title>
           {props.fileName}: {props.percent}% sent. {props.eta}

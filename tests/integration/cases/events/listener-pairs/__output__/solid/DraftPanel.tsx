@@ -1,4 +1,4 @@
-import { For, Show, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { For, type JSX, Show, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface DraftPanelEvents {
   onSave?: (count: number) => void;
@@ -7,7 +7,9 @@ export interface DraftPanelEvents {
   onKey?: (key: string) => void;
 }
 
-export default function DraftPanel(props: DraftPanelEvents) {
+export default function DraftPanel(
+  props: DraftPanelEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [open, setOpen] = createSignal(false);
   const [status, setStatus] = createSignal("draft");
   const [saves, setSaves] = createSignal(0);
@@ -67,7 +69,11 @@ export default function DraftPanel(props: DraftPanelEvents) {
   });
 
   return (
-    <section class="draft-panel" aria-label="Draft">
+    <section
+      class={props.class ? `draft-panel ${props.class}` : "draft-panel"}
+      aria-label="Draft"
+      style={props.style}
+    >
       <button type="button" aria-expanded={open()} onClick={show}>
         Options
       </button>

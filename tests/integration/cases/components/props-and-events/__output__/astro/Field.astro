@@ -4,12 +4,15 @@ export interface FieldProps {
   tone?: "info" | "warn";
 }
 
-type Props = FieldProps;
+interface Props extends FieldProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { label, tone = "info" } = Astro.props;
+const { label, tone = "info", class: className, style } = Astro.props;
 ---
 
-<div class:list={["field", tone]}>
+<div class:list={["field", tone, className]} style={style}>
   <span>{label}</span>
   <button type="button">Clear {label}</button>
 </div>

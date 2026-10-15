@@ -1,11 +1,16 @@
-import { useRef, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
-export default function ColourList() {
+export interface ColourListAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function ColourList({ className, style }: ColourListAttributes) {
   const [colour, setColour] = useState("none");
   const colourRef = useRef(colour);
 
   return (
-    <section aria-label="Colours">
+    <section aria-label="Colours" className={className} style={style}>
       <select
         size={3}
         aria-label="Colour"

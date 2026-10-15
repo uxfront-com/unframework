@@ -2,7 +2,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit two-way-binding yet: composition lands in M3.",
+    "message": "The angular target does not emit two-way-binding yet: composition lands in M3.",
     "file": "models/modifiers/Profile.uf.tsx",
     "start": {
       "line": 10,
@@ -14,7 +14,7 @@
       "column": 46,
       "offset": 253
     },
-    "target": "astro"
+    "target": "angular"
   },
   {
     "code": "UF4001",
@@ -49,40 +49,6 @@
       "offset": 253
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit two-way-binding yet: composition lands in M3.",
-    "file": "models/modifiers/Profile.uf.tsx",
-    "start": {
-      "line": 10,
-      "column": 21,
-      "offset": 228
-    },
-    "end": {
-      "line": 10,
-      "column": 46,
-      "offset": 253
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The solid target does not emit two-way-binding yet: composition lands in M3.",
-    "file": "models/modifiers/Profile.uf.tsx",
-    "start": {
-      "line": 10,
-      "column": 21,
-      "offset": 228
-    },
-    "end": {
-      "line": 10,
-      "column": 46,
-      "offset": 253
-    },
-    "target": "solid"
   },
   {
     "code": "UF1002",

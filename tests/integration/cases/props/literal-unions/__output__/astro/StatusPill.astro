@@ -5,11 +5,15 @@ export interface StatusPillProps {
   level?: 1 | 2 | 3;
 }
 
-type Props = StatusPillProps;
+interface Props extends StatusPillProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { status, size = "small", level = 1 } = Astro.props;
+const { status, size = "small", level = 1, class: className, style } = Astro.props;
 ---
 
 <span
-  class:list={["pill", `pill-${status}`, `pill-${size}`, `pill-level-${level}`]}
+  class:list={["pill", `pill-${status}`, `pill-${size}`, `pill-level-${level}`, className]}
+  style={style}
 >{status === "active" ? "Active" : status === "paused" ? "Paused" : "Archived"}{level === 3 ? " (critical)" : ""}</span>

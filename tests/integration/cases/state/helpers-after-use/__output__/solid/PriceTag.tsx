@@ -1,4 +1,12 @@
-import { createMemo, createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import {
+  type JSX,
+  createMemo,
+  createReaction,
+  createSignal,
+  onCleanup,
+  onMount,
+  untrack,
+} from "solid-js";
 
 export interface PriceTagProps {
   /** The unit price, in cents. */
@@ -9,7 +17,9 @@ function formatCents(cents: number): string {
   return `EUR ${(cents / 100).toFixed(2)}`;
 }
 
-export default function PriceTag(props: PriceTagProps) {
+export default function PriceTag(
+  props: PriceTagProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const [quantity, setQuantity] = createSignal(1);
   const [unit, setUnit] = createSignal(untrack(() => formatCents(props.price)));
   const [summary, setSummary] = createSignal(untrack(() => describe()));
@@ -30,7 +40,11 @@ export default function PriceTag(props: PriceTagProps) {
   }
 
   return (
-    <section class="price-tag" aria-label="Price">
+    <section
+      class={props.class ? `price-tag ${props.class}` : "price-tag"}
+      aria-label="Price"
+      style={props.style}
+    >
       <p>Unit: {unit()}</p>
       <p role="status">{summary()}</p>
       <p>Total: {total()}</p>

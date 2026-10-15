@@ -2,7 +2,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit an injection key yet: composition lands in M3.",
+    "message": "The angular target does not emit an injection key yet: composition lands in M3.",
     "file": "context/reactive/Counter.uf.tsx",
     "start": {
       "line": 6,
@@ -14,7 +14,7 @@
       "column": 71,
       "offset": 210
     },
-    "target": "astro"
+    "target": "angular"
   },
   {
     "code": "UF1002",
@@ -32,40 +32,6 @@
       "offset": 210
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit an injection key yet: composition lands in M3.",
-    "file": "context/reactive/Counter.uf.tsx",
-    "start": {
-      "line": 6,
-      "column": 1,
-      "offset": 140
-    },
-    "end": {
-      "line": 6,
-      "column": 71,
-      "offset": 210
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The solid target does not emit an injection key yet: composition lands in M3.",
-    "file": "context/reactive/Counter.uf.tsx",
-    "start": {
-      "line": 6,
-      "column": 1,
-      "offset": 140
-    },
-    "end": {
-      "line": 6,
-      "column": 71,
-      "offset": 210
-    },
-    "target": "solid"
   },
   {
     "code": "UF1002",
@@ -121,7 +87,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit context yet: composition lands in M3.",
+    "message": "The angular target does not emit context yet: composition lands in M3.",
     "file": "context/reactive/Display.uf.tsx",
     "start": {
       "line": 7,
@@ -133,7 +99,7 @@
       "column": 40,
       "offset": 188
     },
-    "target": "astro"
+    "target": "angular"
   },
   {
     "code": "UF4001",
@@ -168,40 +134,6 @@
       "offset": 188
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit context yet: composition lands in M3.",
-    "file": "context/reactive/Display.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 3,
-      "offset": 151
-    },
-    "end": {
-      "line": 7,
-      "column": 40,
-      "offset": 188
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The solid target does not emit context yet: composition lands in M3.",
-    "file": "context/reactive/Display.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 3,
-      "offset": 151
-    },
-    "end": {
-      "line": 7,
-      "column": 40,
-      "offset": 188
-    },
-    "target": "solid"
   },
   {
     "code": "UF1002",

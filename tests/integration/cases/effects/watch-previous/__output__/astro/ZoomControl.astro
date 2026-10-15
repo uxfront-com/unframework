@@ -1,9 +1,16 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const zoom = 100 as number;
 const history = [] as string[];
 ---
 
-<section class="zoom-control" aria-label="Zoom">
+<section class:list={["zoom-control", className]} aria-label="Zoom" style={style}>
   <output>{zoom}%</output>
   <button type="button">Zoom in</button>
   <button type="button">Zoom out</button>

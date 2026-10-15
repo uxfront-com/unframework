@@ -1,0 +1,13 @@
+---
+import Base from "./Base.astro";
+
+interface Props {
+  text: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { text, class: className, style } = Astro.props;
+---
+
+<Base text={text} class:list={["primary", className]} style={style} />

@@ -1,10 +1,26 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export interface ProfileMenuEvents {
   onClosed?: () => void;
 }
 
-export default function ProfileMenu({ onClosed }: ProfileMenuEvents) {
+export interface ProfileMenuAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function ProfileMenu({
+  onClosed,
+  className,
+  style,
+}: ProfileMenuEvents & ProfileMenuAttributes) {
   const onClosedRef = useRef(onClosed);
   useLayoutEffect(() => {
     onClosedRef.current = onClosed;
@@ -36,7 +52,7 @@ export default function ProfileMenu({ onClosed }: ProfileMenuEvents) {
   useEffect(() => () => onUnmount(), []);
 
   return (
-    <section className="profile-menu" aria-label="Profile">
+    <section className={cx("profile-menu", className)} aria-label="Profile" style={style}>
       <div className="menu" ref={menu}>
         <button
           type="button"
@@ -62,4 +78,19 @@ export default function ProfileMenu({ onClosed }: ProfileMenuEvents) {
       <p>Outside the menu</p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

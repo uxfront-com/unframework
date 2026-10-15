@@ -5,12 +5,15 @@ export interface TemplateTipProps {
   path: string;
 }
 
-type Props = TemplateTipProps;
+interface Props extends TemplateTipProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { example, note, path } = Astro.props;
+const { example, note, path, class: className, style } = Astro.props;
 ---
 
-<figure class="template-tip">
+<figure class:list={["template-tip", className]} style={style}>
   <figcaption
     title="Vue {{ name }}, Svelte {#if ok}, Angular @if (ok) &amp; JSX {name}"
   >Template syntax &amp; escaping</figcaption>

@@ -168,7 +168,11 @@ export default function Swatch({ colour, turn, paint, order }: SwatchProps) {
   );
 }
 `,
-  Plain: `export default function Plain(_: { note?: string }) {
+  // Without fallthrough, nothing reads its props: `_props`.
+  Plain: `import { defineOptions } from "unframework";
+
+export default function Plain(_: { note?: string }) {
+  defineOptions({ inheritAttrs: false });
   return <p>Nothing to read.</p>;
 }
 `,
@@ -1423,6 +1427,186 @@ export default function NarrowedState({ member }: NarrowedStateProps) {
       {user && <p title={user.name ? user.name.trim() : "anon"}>{user.name ?? "anon"}</p>}
     </div>
   );
+}
+`,
+  // Composition's forms the corpus does not reach (src/composition.ts, src/models.ts): slots
+  // tested in a condition and in an attribute, a required model, text models that may be
+  // nullish, a `<textarea>` with a modifier, a root spread's `class`, and a `<select>`'s options
+  // in a conditional and without a `value`.
+  TestedSlots: `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+export default function TestedSlots() {
+  const slots = defineSlots<{ title?(): Element; default?(): Element }>();
+  return (
+    <section data-filled={slots.default ? "yes" : "no"}>
+      {slots.title ? <h2>{slots.title?.()}</h2> : null}
+      {slots.default?.()}
+    </section>
+  );
+}
+`,
+  RequiredModel: `import { defineModel } from "unframework";
+
+export default function RequiredModel() {
+  const text = defineModel<string>("text", { required: true });
+  return (
+    <button type="button" onClick={() => (text.value = text.value + "!")}>
+      {text.value.length}
+    </button>
+  );
+}
+`,
+  NullableFields: `import { ref } from "unframework";
+
+export default function NullableFields() {
+  const name = ref<string | null>(null);
+  const note = ref<string>();
+  const memo = ref("Buy milk");
+  return (
+    <form>
+      <input aria-label="Name" v-model={name.value} />
+      <input aria-label="Note" v-model_trim={note.value} />
+      <textarea aria-label="Memo" v-model_trim={memo.value} />
+    </form>
+  );
+}
+`,
+  SpreadRoot: `export default function SpreadRoot({ attrs }: { attrs: { class: string; title: string } }) {
+  return <div {...attrs}>x</div>;
+}
+`,
+  ConditionalOptions: `import { ref } from "unframework";
+
+export default function ConditionalOptions({ extra }: { extra: boolean }) {
+  const size = ref("l");
+  const fruit = ref("pear");
+  return (
+    <form>
+      <select aria-label="Size" v-model={size.value}>
+        <option value="s">S</option>
+        {extra && <option value="l">L</option>}
+      </select>
+      <select aria-label="Fruit" v-model={fruit.value}>
+        <option>apple</option>
+        <option>pear</option>
+      </select>
+    </form>
+  );
+}
+`,
+  // Slots a list's row tests, a tested slot the component forwards, options matched by an
+  // interpolated text, options a child component renders, and a modified textarea whose model
+  // may be nullish (test/composition.browser.test.ts mounts the first four).
+  RowSlots: `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+export default function RowSlots({ items }: { items: string[] }) {
+  const slots = defineSlots<{ badge?(): Element }>();
+  return (
+    <ul>
+      {items.map((item) => (
+        <li key={item}>
+          {item}
+          {slots.badge ? <b>{slots.badge?.()}</b> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+`,
+  ForwardedSlot: `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+
+export default function ForwardedSlot({ depth }: { depth: number }) {
+  const slots = defineSlots<{ default?(): Element }>();
+  return (
+    <div data-filled={slots.default ? "yes" : "no"}>
+      {depth > 0 ? (
+        <ForwardedSlot depth={depth - 1}>{{ default: slots.default }}</ForwardedSlot>
+      ) : null}
+    </div>
+  );
+}
+`,
+  OptionText: `import { ref } from "unframework";
+
+export default function OptionText({ unit }: { unit: string }) {
+  const amount = ref("2 kg");
+  return (
+    <select aria-label="Amount" v-model={amount.value}>
+      <option>  1 {unit}</option>
+      <option>  2 {unit} </option>
+    </select>
+  );
+}
+`,
+  SelectRows: `import { ref } from "unframework";
+
+export default function SelectRows({ values }: { values: string[] }) {
+  const size = ref("y");
+  return (
+    <select aria-label="Size" v-model={size.value}>
+      {values.map((value) => (
+        <SelectRow key={value} value={value} />
+      ))}
+    </select>
+  );
+}
+
+function SelectRow({ value }: { value: string }) {
+  return <option value={value}>{value}</option>;
+}
+`,
+  // SelectRows's child, as its own output file imports it.
+  SelectRow: `export function SelectRow({ value }: { value: string }) {
+  return <option value={value}>{value}</option>;
+}
+`,
+  NullableArea: `import { ref } from "unframework";
+
+export default function NullableArea() {
+  const note = ref<string>();
+  return <textarea aria-label="Note" v-model_trim={note.value} />;
+}
+`,
+  // A template ref beside a `v-model` that needs the element's `ref` too: one `ref` callback.
+  TemplateRefModel: `import { ref, useTemplateRef } from "unframework";
+
+export default function TemplateRefModel() {
+  const box = useTemplateRef<HTMLInputElement>();
+  const name = ref("");
+  return (
+    <form>
+      <input aria-label="Name" ref={box} v-model_trim={name.value} />
+      <button type="button" onClick={() => box.value?.focus()}>
+        Edit
+      </button>
+    </form>
+  );
+}
+`,
+  RefSelect: `import { ref, useTemplateRef } from "unframework";
+
+export default function RefSelect({ values }: { values: string[] }) {
+  const field = useTemplateRef<HTMLSelectElement>();
+  const size = ref("y");
+  return (
+    <form>
+      <select aria-label="Size" ref={field} v-model={size.value}>
+        {values.map((value) => (
+          <SelectRow key={value} value={value} />
+        ))}
+      </select>
+      <button type="button" onClick={() => field.value?.focus()}>
+        Pick
+      </button>
+    </form>
+  );
+}
+
+function SelectRow({ value }: { value: string }) {
+  return <option value={value}>{value}</option>;
 }
 `,
 };

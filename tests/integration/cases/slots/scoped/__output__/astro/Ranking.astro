@@ -1,0 +1,20 @@
+---
+import List from "./List.astro";
+
+interface Props {
+  names: string[];
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { names, class: className, style } = Astro.props;
+---
+
+<div class:list={[className]} style={style}>
+  <List
+    items={names}
+    label="Podium"
+    item={({ item, index }) => <span>{index + 1}. <b>{item}</b></span>}
+  />
+  <List items={names} label="Initials" item={(entry) => <i>{entry.item.slice(0, 1)}</i>} />
+</div>

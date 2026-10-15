@@ -1,0 +1,15 @@
+---
+import Field from "./Field.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<form aria-label="Sign up" class:list={[className]} style={style}>
+  <Field label="Email" />
+  <Field label="Name" />
+</form>

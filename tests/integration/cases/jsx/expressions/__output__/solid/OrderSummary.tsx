@@ -1,3 +1,5 @@
+import type { JSX } from "solid-js";
+
 export interface OrderSummaryProps {
   customer: string;
   orderNumber: number;
@@ -7,9 +9,15 @@ export interface OrderSummaryProps {
   coupon?: string;
 }
 
-export default function OrderSummary(props: OrderSummaryProps) {
+export default function OrderSummary(
+  props: OrderSummaryProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <section class="order-summary" aria-label="Order summary">
+    <section
+      class={props.class ? `order-summary ${props.class}` : "order-summary"}
+      aria-label="Order summary"
+      style={props.style}
+    >
       <h2>Order {String(props.orderNumber).padStart(6, "0")}</h2>
       <p>Customer: {props.customer.trim().toUpperCase()}</p>
       <p>{`${props.quantity} item${props.quantity === 1 ? "" : "s"} at ${props.unitPrice.toFixed(2)} each`}</p>

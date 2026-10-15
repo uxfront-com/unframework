@@ -2,9 +2,12 @@
 // with the target's own server renderer and compared, normalised, with the shared
 // `__expected__/ssr.<scenario>.html`. Components are imported through `import.meta.glob`, so each
 // one goes through the unplugin and the framework's own Vite plugin, like a user's would.
+import { readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 
 import type { SsrRenderer } from "@unframework/codegen";
+import { builtinTargets } from "@unframework/compiler";
+import type { TargetName } from "@unframework/compiler";
 import {
   checkLayers,
   diffLines,
@@ -17,8 +20,9 @@ import {
 import { isNormalizeTarget, normalizeHtml } from "@unframework/testing/normalize";
 import { beforeAll, describe, inject, it } from "vitest";
 
-import { errorState, listCases } from "./cases.ts";
+import { errorState, listCases, specTests } from "./cases.ts";
 import { onlyCases } from "./references.ts";
+import { ssrSkip } from "./ssr-skip.ts";
 import "./context.ts";
 
 const target = inject("target");
@@ -89,6 +93,14 @@ describe(`ssr:${target}`, () => {
     // A case with compile errors has no output: the compile project records L6 as skipped.
     if (errors === true) continue;
     const key = `../cases/${info.id}/${basename(info.source)}`;
+    // A case whose every test requires a capability the target lacks renders differently there
+    // by declaration (`ssr-skip.ts`).
+    const skip = info.spec
+      ? ssrSkip(
+          specTests(readFileSync(info.spec, "utf8")),
+          builtinTargets[target as TargetName].capabilities,
+        )
+      : undefined;
     for (const [scenario, { props = {} }] of Object.entries(ssrScenarios(info.config))) {
       it(`${info.id} › ${scenario}`, async ({ task }) => {
         if (errors instanceof Error) throw errors;
@@ -99,6 +111,7 @@ describe(`ssr:${target}`, () => {
           { case: info.id, target, quarantine: harness.quarantine },
           {
             async L6() {
+              if (skip) return { skip };
               const load = components[key];
               if (!load) throw new Error(`import.meta.glob did not find ${key}.`);
               const component = (await load()).default;
@@ -118,7 +131,7 @@ describe(`ssr:${target}`, () => {
               if (!outcome.pass) throw new Error(outcome.message);
             },
             L13: () => {
-              if (!messages.length && !rendered) return { skip: NOT_RENDERED_SKIP };
+              if (!messages.length && !rendered) return { skip: skip ?? NOT_RENDERED_SKIP };
               if (messages.length) {
                 throw new Error(
                   `${messages.length} console message(s) during the server render:\n  ${messages.join("\n  ")}`,

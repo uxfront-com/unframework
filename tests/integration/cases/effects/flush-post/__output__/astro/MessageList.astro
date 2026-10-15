@@ -1,8 +1,15 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const messages = ["Welcome to the team"];
 ---
 
-<section class="message-list" aria-label="Messages">
+<section class:list={["message-list", className]} aria-label="Messages" style={style}>
   <ul>
     {messages.map((message) => (
       <li>{message}</li>

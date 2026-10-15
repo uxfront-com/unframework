@@ -1,4 +1,11 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export interface SearchSessionEvents {
   onUnmounted?: () => void;
@@ -9,6 +16,11 @@ export interface SearchSessionEvents {
   onSummary?: (text: string) => void;
 }
 
+export interface SearchSessionAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function SearchSession({
   onUnmounted,
   onEffectCleaned,
@@ -16,7 +28,9 @@ export default function SearchSession({
   onSearched,
   onSearchCleaned,
   onSummary,
-}: SearchSessionEvents) {
+  className,
+  style,
+}: SearchSessionEvents & SearchSessionAttributes) {
   const onEffectCleanedRef = useRef(onEffectCleaned);
   const onWatchCleanedRef = useRef(onWatchCleaned);
   const onSearchCleanedRef = useRef(onSearchCleaned);
@@ -146,7 +160,7 @@ export default function SearchSession({
   useEffect(() => () => onUnmount(), []);
 
   return (
-    <section className="search-session" aria-label="Search">
+    <section className={cx("search-session", className)} aria-label="Search" style={style}>
       <label>
         Query
         <input
@@ -173,4 +187,19 @@ export default function SearchSession({
       </button>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

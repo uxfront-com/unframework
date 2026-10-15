@@ -21,27 +21,26 @@ describe("composition before M3's lanes", () => {
     expect(files.map((file) => file.path)).toEqual(["Form.vue"]);
   });
 
-  it.each(TARGET_NAMES.filter((name) => name !== "vue" && name !== "angular"))(
-    "%s reports UF1002 where a component first uses it",
-    (name) => {
-      const module = composition();
-      const reported: Omit<Diagnostic, "file" | "target">[] = [];
-      const files = builtinTargets[name].emit(module.components[0]!, {
-        module,
-        options: undefined,
-        report: (diagnostic) => reported.push(diagnostic),
-      });
-      expect(files).toEqual([]);
-      expect(reported).toEqual([
-        {
-          code: "UF1002",
-          severity: "error",
-          message: `The ${name} target does not emit an injection key yet: composition lands in M3.`,
-          span: module.keys![0]!.span,
-        },
-      ]);
-    },
-  );
+  it.each(
+    TARGET_NAMES.filter((name) => !["vue", "astro", "react", "solid", "angular"].includes(name)),
+  )("%s reports UF1002 where a component first uses it", (name) => {
+    const module = composition();
+    const reported: Omit<Diagnostic, "file" | "target">[] = [];
+    const files = builtinTargets[name].emit(module.components[0]!, {
+      module,
+      options: undefined,
+      report: (diagnostic) => reported.push(diagnostic),
+    });
+    expect(files).toEqual([]);
+    expect(reported).toEqual([
+      {
+        code: "UF1002",
+        severity: "error",
+        message: `The ${name} target does not emit an injection key yet: composition lands in M3.`,
+        span: module.keys![0]!.span,
+      },
+    ]);
+  });
 });
 
 describe("a contextual root without composition", () => {

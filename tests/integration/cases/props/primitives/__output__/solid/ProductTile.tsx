@@ -1,4 +1,4 @@
-import { mergeProps } from "solid-js";
+import { type JSX, mergeProps } from "solid-js";
 
 export interface ProductTileProps {
   name: string;
@@ -7,10 +7,16 @@ export interface ProductTileProps {
   available?: boolean;
 }
 
-export default function ProductTile(rawProps: ProductTileProps) {
+export default function ProductTile(
+  rawProps: ProductTileProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const props = mergeProps({ available: true } satisfies Partial<ProductTileProps>, rawProps);
   return (
-    <article class="product-tile" aria-label={props.name}>
+    <article
+      class={props.class ? `product-tile ${props.class}` : "product-tile"}
+      aria-label={props.name}
+      style={props.style}
+    >
       <h2>{props.name}</h2>
       <p>Price: {props.price} EUR</p>
       <p data-stock={props.stock}>{props.stock} in stock</p>

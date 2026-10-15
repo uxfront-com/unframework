@@ -1,0 +1,9 @@
+---
+interface Props {
+  label: string;
+}
+
+const { label } = Astro.props;
+---
+
+<label class="field">{label} <input name={label.toLowerCase()} /></label>

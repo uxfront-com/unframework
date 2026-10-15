@@ -25,12 +25,15 @@ export interface AccountSummaryProps {
   seats: (Seat | null)[];
 }
 
-type Props = AccountSummaryProps;
+interface Props extends AccountSummaryProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { loading, member, uptime, storage, plan, seats } = Astro.props;
+const { loading, member, uptime, storage, plan, seats, class: className, style } = Astro.props;
 ---
 
-<section class="account-summary" aria-label="Account">
+<section class:list={["account-summary", className]} aria-label="Account" style={style}>
   {loading ? (
     <p>Loading the account</p>
   ) : !member ? (

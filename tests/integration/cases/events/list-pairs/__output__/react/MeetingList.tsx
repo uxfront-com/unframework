@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { type CSSProperties, useMemo, useRef, useState } from "react";
 
 export interface Meeting {
   id: number;
@@ -21,13 +21,20 @@ export interface MeetingListEvents {
   onTrack?: (name: string, count: number) => void;
 }
 
+export interface MeetingListAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function MeetingList({
   meetings,
   organiser,
   onOpened,
   onThanked,
   onTrack,
-}: MeetingListProps & MeetingListEvents) {
+  className,
+  style,
+}: MeetingListProps & MeetingListEvents & MeetingListAttributes) {
   const [rooms] = useState(["Atlas", "Borealis"]);
   const [log, setLog] = useState<string[]>([]);
   const logRef = useRef(log);
@@ -63,7 +70,7 @@ export default function MeetingList({
   const clickOnce_3 = useOnce();
 
   return (
-    <section className="meeting-list" aria-label="Meetings">
+    <section className={cx("meeting-list", className)} aria-label="Meetings" style={style}>
       <ul aria-label="Upcoming">
         {upcoming.map((event) => (
           <li key={event.id}>
@@ -146,6 +153,21 @@ export default function MeetingList({
       </ol>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /** The guard of a listener that runs once per element, as `{ once: true }` makes it. */

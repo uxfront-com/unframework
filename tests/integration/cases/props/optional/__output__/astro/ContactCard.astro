@@ -7,12 +7,15 @@ export interface ContactCardProps {
   phone?: string | null;
 }
 
-type Props = ContactCardProps;
+interface Props extends ContactCardProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { name, jobTitle, team, pronouns, phone } = Astro.props;
+const { name, jobTitle, team, pronouns, phone, class: className, style } = Astro.props;
 ---
 
-<article class="contact-card" aria-label={name} data-team={team}>
+<article class:list={["contact-card", className]} aria-label={name} data-team={team} style={style}>
   <h2 title={pronouns}>{name}</h2>
   <p>{jobTitle}</p>
   <p>Phone: {phone ?? "not listed"}</p>

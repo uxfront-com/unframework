@@ -2,7 +2,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit model yet: composition lands in M3.",
+    "message": "The angular target does not emit model yet: composition lands in M3.",
     "file": "semantics/models/Disclosure.uf.tsx",
     "start": {
       "line": 4,
@@ -14,7 +14,7 @@
       "column": 65,
       "offset": 175
     },
-    "target": "astro"
+    "target": "angular"
   },
   {
     "code": "UF1002",
@@ -32,40 +32,6 @@
       "offset": 175
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit model yet: composition lands in M3.",
-    "file": "semantics/models/Disclosure.uf.tsx",
-    "start": {
-      "line": 4,
-      "column": 3,
-      "offset": 113
-    },
-    "end": {
-      "line": 4,
-      "column": 65,
-      "offset": 175
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The solid target does not emit model yet: composition lands in M3.",
-    "file": "semantics/models/Disclosure.uf.tsx",
-    "start": {
-      "line": 4,
-      "column": 3,
-      "offset": 113
-    },
-    "end": {
-      "line": 4,
-      "column": 65,
-      "offset": 175
-    },
-    "target": "solid"
   },
   {
     "code": "UF1002",
@@ -104,7 +70,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "message": "The angular target does not emit component yet: composition lands in M3.",
     "file": "semantics/models/Panels.uf.tsx",
     "start": {
       "line": 9,
@@ -116,7 +82,7 @@
       "column": 68,
       "offset": 260
     },
-    "target": "astro"
+    "target": "angular"
   },
   {
     "code": "UF1002",
@@ -134,40 +100,6 @@
       "offset": 260
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
-    "file": "semantics/models/Panels.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 7,
-      "offset": 199
-    },
-    "end": {
-      "line": 9,
-      "column": 68,
-      "offset": 260
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The solid target does not emit component yet: composition lands in M3.",
-    "file": "semantics/models/Panels.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 7,
-      "offset": 199
-    },
-    "end": {
-      "line": 9,
-      "column": 68,
-      "offset": 260
-    },
-    "target": "solid"
   },
   {
     "code": "UF1002",

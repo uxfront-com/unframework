@@ -1,6 +1,11 @@
-import { type WheelEvent, useRef, useState } from "react";
+import { type CSSProperties, type WheelEvent, useRef, useState } from "react";
 
-export default function EventLog() {
+export interface EventLogAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function EventLog({ className, style }: EventLogAttributes) {
   const [log, setLog] = useState<string[]>([]);
   const logRef = useRef(log);
   const [volume, setVolume] = useState(5);
@@ -25,7 +30,7 @@ export default function EventLog() {
   const clickOnce_1 = useOnce();
 
   return (
-    <section className="event-log" aria-label="Event options">
+    <section className={cx("event-log", className)} aria-label="Event options" style={style}>
       <div
         className="panel"
         role="presentation"
@@ -76,6 +81,21 @@ export default function EventLog() {
       </ol>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /** The guard of a listener that runs once per element, as `{ once: true }` makes it. */

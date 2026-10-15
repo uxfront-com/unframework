@@ -1,4 +1,4 @@
-import { For, Show } from "solid-js";
+import { For, type JSX, Show } from "solid-js";
 
 export interface MenuDish {
   id: string;
@@ -18,9 +18,11 @@ export interface MenuBoardProps {
   closed: boolean;
 }
 
-export default function MenuBoard(props: MenuBoardProps) {
+export default function MenuBoard(
+  props: MenuBoardProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <div class="menu-board">
+    <div class={props.class ? `menu-board ${props.class}` : "menu-board"} style={props.style}>
       <Show
         when={props.closed}
         fallback={

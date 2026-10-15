@@ -1,4 +1,4 @@
-error[UF1002] (astro): The astro target does not emit component yet: composition lands in M3.
+error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
   --> components/local-sibling/Card.uf.tsx:13:7
    |
 13 |       <CardIcon symbol="+" />
@@ -7,22 +7,6 @@ error[UF1002] (astro): The astro target does not emit component yet: composition
    = see: https://unframework.dev/diagnostics/UF1002
 
 error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
-  --> components/local-sibling/Card.uf.tsx:13:7
-   |
-13 |       <CardIcon symbol="+" />
-   |       ^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
-  --> components/local-sibling/Card.uf.tsx:13:7
-   |
-13 |       <CardIcon symbol="+" />
-   |       ^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (solid): The solid target does not emit component yet: composition lands in M3.
   --> components/local-sibling/Card.uf.tsx:13:7
    |
 13 |       <CardIcon symbol="+" />

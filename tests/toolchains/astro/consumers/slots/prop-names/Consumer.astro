@@ -1,0 +1,5 @@
+---
+import Table from "../../../../../integration/cases/slots/prop-names/__output__/astro/Table.astro";
+---
+
+<Table people={[{ id: "a", name: "Ada" }]} row={({ name, index }) => <b>{index}: {name.toUpperCase()}</b>} />

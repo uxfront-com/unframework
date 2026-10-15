@@ -1,6 +1,18 @@
-export default function Row({ name, done }: { name: string; done: boolean }) {
+import type { CSSProperties } from "react";
+
+export interface RowAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function Row({
+  name,
+  done,
+  className,
+  style,
+}: { name: string; done: boolean } & RowAttributes) {
   return (
-    <div role="listitem" className={cx("row", { done })}>
+    <div role="listitem" className={cx("row", { done }, className)} style={style}>
       {name}
       {done ? " (done)" : ""}
     </div>

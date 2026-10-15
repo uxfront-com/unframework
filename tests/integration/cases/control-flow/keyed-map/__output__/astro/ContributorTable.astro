@@ -10,12 +10,15 @@ export interface ContributorTableProps {
   contributors: Contributor[];
 }
 
-type Props = ContributorTableProps;
+interface Props extends ContributorTableProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { caption, contributors } = Astro.props;
+const { caption, contributors, class: className, style } = Astro.props;
 ---
 
-<table class="contributors">
+<table class:list={["contributors", className]} style={style}>
   <caption>{caption}</caption>
   <thead>
     <tr>

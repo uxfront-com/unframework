@@ -1,0 +1,17 @@
+---
+import Display from "./Display.astro";
+
+export type CountKey = number;
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<section aria-label="Counter" class:list={[className]} style={style}>
+  <Display />
+  <button type="button">Add one</button>
+</section>

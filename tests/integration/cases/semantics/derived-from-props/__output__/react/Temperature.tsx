@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useRef } from "react";
+import { type CSSProperties, useEffect, useEffectEvent, useMemo, useRef } from "react";
 
 export interface TemperatureProps {
   celsius: number;
@@ -8,7 +8,17 @@ export interface TemperatureEvents {
   onReading?: (celsius: number, previous: number) => void;
 }
 
-export default function Temperature({ celsius, onReading }: TemperatureProps & TemperatureEvents) {
+export interface TemperatureAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function Temperature({
+  celsius,
+  onReading,
+  className,
+  style,
+}: TemperatureProps & TemperatureEvents & TemperatureAttributes) {
   const fahrenheit = useMemo(() => Math.round((celsius * 9) / 5 + 32), [celsius]);
   const level = useMemo(() => (celsius >= 30 ? "hot" : celsius <= 5 ? "cold" : "mild"), [celsius]);
 
@@ -24,10 +34,25 @@ export default function Temperature({ celsius, onReading }: TemperatureProps & T
   }, [celsius]);
 
   return (
-    <figure className="temperature" data-level={level}>
+    <figure className={cx("temperature", className)} data-level={level} style={style}>
       <p>{celsius} °C</p>
       <p>{fahrenheit} °F</p>
       <figcaption>Feels {level}</figcaption>
     </figure>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

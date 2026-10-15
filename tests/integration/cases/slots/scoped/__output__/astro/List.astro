@@ -1,0 +1,17 @@
+---
+interface Props {
+  items: string[];
+  label: string;
+  item?: (props: { item: string; index: number }) => unknown;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { items, label, item: item_1, class: className, style } = Astro.props;
+---
+
+<ul aria-label={label} class:list={[className]} style={style}>
+  {items.map((item, index) => (
+    <li>{item_1?.({ item, index })}</li>
+  ))}
+</ul>

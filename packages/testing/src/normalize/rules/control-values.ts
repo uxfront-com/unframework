@@ -1,20 +1,61 @@
-import { attributeName, forEachElement, getAttribute, HTML_NAMESPACE } from "../tree.ts";
-import type { TreeParent } from "../tree.ts";
+import {
+  attributeName,
+  childrenOf,
+  forEachElement,
+  getAttribute,
+  HTML_NAMESPACE,
+  isText,
+  replaceChildren,
+} from "../tree.ts";
+import type { TreeElement, TreeParent } from "../tree.ts";
 
 /**
- * Rule 4d: removes an `<input>`'s `value` attribute when it equals the input's current value,
- * its `uf:value` (ADR-0058). react-dom keeps a controlled input's attribute in step with its
- * value, and Vue's `v-model` sets only the property: the state compares in `uf:value` on every
- * target, so the attribute only repeats it. One that differs (a static `value="x"` after the
- * person typed `y`) stays, and so does every `value` of an element without `uf:value`. It holds
- * for every target, the reference included: a static field's attribute, which React writes as
- * `defaultValue` and Vue as the attribute, must still compare before anyone types.
+ * Rule 4d: removes the markup of a form control's initial state where its live state, a `uf:*`
+ * pseudo-attribute, says the same (ADR-0058):
+ * - an `<input>`'s `value` attribute that equals its `uf:value`;
+ * - an `<input>`'s `checked` attribute where its `uf:checked` is `"true"`;
+ * - an `<option>`'s `selected` attribute where its `uf:selected` is `"true"`;
+ * - a `<textarea>`'s text that equals its `uf:value`.
+ *
+ * Vue's `v-model` sets only the property, where react-dom keeps a controlled input's attribute
+ * in step with its value and writes `defaultChecked` and `defaultValue` as markup, and Astro,
+ * which runs no client code, writes the initial state as markup alone: the state compares in
+ * `uf:*` on every target, so the markup only repeats it. Markup that differs (a static
+ * `value="x"` after the person typed `y`, a `checked` box the person cleared) stays, and so does
+ * the markup of an element without the `uf:*` state (a server render). It holds for every
+ * target, the reference included: a static field's attribute, which React writes as
+ * `defaultValue` and Vue as the attribute, must still compare before anyone acts.
  */
 export function removeSettledValues(root: TreeParent): void {
   forEachElement(root, (element) => {
-    if (element.namespaceURI !== HTML_NAMESPACE || element.tagName !== "input") return;
-    const state = getAttribute(element, "uf:value");
-    if (state === undefined || getAttribute(element, "value") !== state) return;
-    element.attrs = element.attrs.filter((attribute) => attributeName(attribute) !== "value");
+    if (element.namespaceURI !== HTML_NAMESPACE) return;
+    switch (element.tagName) {
+      case "input": {
+        const state = getAttribute(element, "uf:value");
+        if (state !== undefined && getAttribute(element, "value") === state) {
+          removeAttribute(element, "value");
+        }
+        if (getAttribute(element, "uf:checked") === "true") removeAttribute(element, "checked");
+        return;
+      }
+      case "option":
+        if (getAttribute(element, "uf:selected") === "true") removeAttribute(element, "selected");
+        return;
+      case "textarea": {
+        const state = getAttribute(element, "uf:value");
+        const children = childrenOf(element);
+        const text = children.every(isText)
+          ? children.map((child) => child.value).join("")
+          : undefined;
+        if (state !== undefined && children.length && text === state) replaceChildren(element, []);
+        return;
+      }
+      default:
+        return;
+    }
   });
+}
+
+function removeAttribute(element: TreeElement, name: string): void {
+  element.attrs = element.attrs.filter((attribute) => attributeName(attribute) !== name);
 }

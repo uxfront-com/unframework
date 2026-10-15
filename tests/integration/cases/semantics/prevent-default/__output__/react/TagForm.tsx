@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   type InputEvent,
   type KeyboardEvent,
   type MouseEvent,
@@ -11,11 +12,20 @@ export interface TagFormEvents {
   onTagsChange?: (tags: string[]) => void;
 }
 
+export interface TagFormAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 function blockComma(event: KeyboardEvent) {
   if (event.key === ",") event.preventDefault();
 }
 
-export default function TagForm({ onTagsChange }: TagFormEvents) {
+export default function TagForm({
+  onTagsChange,
+  className,
+  style,
+}: TagFormEvents & TagFormAttributes) {
   const [tags, setTags] = useState<string[]>([]);
   const tagsRef = useRef(tags);
   const [draft, setDraft] = useState("");
@@ -49,7 +59,7 @@ export default function TagForm({ onTagsChange }: TagFormEvents) {
   }
 
   return (
-    <form className="tag-form" aria-label="Tags" onSubmit={addTag}>
+    <form className={cx("tag-form", className)} aria-label="Tags" onSubmit={addTag} style={style}>
       <label>
         New tag
         <input name="tag" ref={field} onKeyDown={blockComma} onInput={updateDraft} />
@@ -66,4 +76,19 @@ export default function TagForm({ onTagsChange }: TagFormEvents) {
       </ul>
     </form>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

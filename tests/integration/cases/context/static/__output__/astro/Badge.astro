@@ -1,0 +1,18 @@
+---
+import type { ThemeKey } from "./ThemeProvider.astro";
+
+interface Props {
+  text: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { text, class: className, style } = Astro.props;
+
+const theme = undefined as ThemeKey | undefined;
+---
+
+<span
+  class:list={["badge", theme?.accent, className]}
+  style={style}
+>{text} in {theme?.label ?? "no theme"}</span>

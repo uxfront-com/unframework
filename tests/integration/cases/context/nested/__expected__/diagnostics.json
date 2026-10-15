@@ -2,7 +2,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit an injection key yet: composition lands in M3.",
+    "message": "The angular target does not emit an injection key yet: composition lands in M3.",
     "file": "context/nested/Level.uf.tsx",
     "start": {
       "line": 4,
@@ -14,7 +14,7 @@
       "column": 66,
       "offset": 184
     },
-    "target": "astro"
+    "target": "angular"
   },
   {
     "code": "UF1002",
@@ -32,40 +32,6 @@
       "offset": 184
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit an injection key yet: composition lands in M3.",
-    "file": "context/nested/Level.uf.tsx",
-    "start": {
-      "line": 4,
-      "column": 1,
-      "offset": 119
-    },
-    "end": {
-      "line": 4,
-      "column": 66,
-      "offset": 184
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The solid target does not emit an injection key yet: composition lands in M3.",
-    "file": "context/nested/Level.uf.tsx",
-    "start": {
-      "line": 4,
-      "column": 1,
-      "offset": 119
-    },
-    "end": {
-      "line": 4,
-      "column": 66,
-      "offset": 184
-    },
-    "target": "solid"
   },
   {
     "code": "UF1002",
@@ -104,7 +70,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "message": "The angular target does not emit component yet: composition lands in M3.",
     "file": "context/nested/Outline.uf.tsx",
     "start": {
       "line": 5,
@@ -116,7 +82,7 @@
       "column": 13,
       "offset": 230
     },
-    "target": "astro"
+    "target": "angular"
   },
   {
     "code": "UF1002",
@@ -134,40 +100,6 @@
       "offset": 230
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
-    "file": "context/nested/Outline.uf.tsx",
-    "start": {
-      "line": 5,
-      "column": 5,
-      "offset": 88
-    },
-    "end": {
-      "line": 10,
-      "column": 13,
-      "offset": 230
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The solid target does not emit component yet: composition lands in M3.",
-    "file": "context/nested/Outline.uf.tsx",
-    "start": {
-      "line": 5,
-      "column": 5,
-      "offset": 88
-    },
-    "end": {
-      "line": 10,
-      "column": 13,
-      "offset": 230
-    },
-    "target": "solid"
   },
   {
     "code": "UF1002",

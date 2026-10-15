@@ -3,16 +3,19 @@ export interface SeatPickerProps {
   pricePerSeat: number;
 }
 
-type Props = SeatPickerProps;
+interface Props extends SeatPickerProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { pricePerSeat } = Astro.props;
+const { pricePerSeat, class: className, style } = Astro.props;
 
 const seats = 1 as number;
 const total = seats * pricePerSeat;
 const summary = seats === 1 ? `1 seat for ${total}` : `${seats} seats for ${total}`;
 ---
 
-<section class="seat-picker" aria-label="Seats">
+<section class:list={["seat-picker", className]} aria-label="Seats" style={style}>
   <p role="status">{summary}</p>
   <button type="button">Add a seat</button>
   <button type="button">Add a group and a guide</button>

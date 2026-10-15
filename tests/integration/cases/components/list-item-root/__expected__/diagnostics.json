@@ -19,7 +19,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "message": "The angular target does not emit component yet: composition lands in M3.",
     "file": "components/list-item-root/Menu.uf.tsx",
     "start": {
       "line": 7,
@@ -31,7 +31,7 @@
       "column": 43,
       "offset": 214
     },
-    "target": "astro"
+    "target": "angular"
   },
   {
     "code": "UF1002",
@@ -49,40 +49,6 @@
       "offset": 214
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
-    "file": "components/list-item-root/Menu.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 9,
-      "offset": 180
-    },
-    "end": {
-      "line": 7,
-      "column": 43,
-      "offset": 214
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The solid target does not emit component yet: composition lands in M3.",
-    "file": "components/list-item-root/Menu.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 9,
-      "offset": 180
-    },
-    "end": {
-      "line": 7,
-      "column": 43,
-      "offset": 214
-    },
-    "target": "solid"
   },
   {
     "code": "UF1002",

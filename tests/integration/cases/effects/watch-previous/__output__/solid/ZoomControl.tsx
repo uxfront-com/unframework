@@ -1,6 +1,6 @@
-import { For, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { For, type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
-export default function ZoomControl() {
+export default function ZoomControl(props: { class?: string; style?: JSX.CSSProperties }) {
   const [zoom, setZoom] = createSignal(100);
   const [history, setHistory] = createSignal<string[]>([]);
 
@@ -9,7 +9,11 @@ export default function ZoomControl() {
   });
 
   return (
-    <section class="zoom-control" aria-label="Zoom">
+    <section
+      class={props.class ? `zoom-control ${props.class}` : "zoom-control"}
+      aria-label="Zoom"
+      style={props.style}
+    >
       <output>{zoom()}%</output>
       <button type="button" onClick={() => setZoom(zoom() + 25)}>
         Zoom in

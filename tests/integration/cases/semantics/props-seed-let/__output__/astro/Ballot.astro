@@ -5,15 +5,18 @@ export interface BallotProps {
   choices: string[];
 }
 
-type Props = BallotProps;
+interface Props extends BallotProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { limit, label = "Vote", choices } = Astro.props;
+const { limit, label = "Vote", choices, class: className, style } = Astro.props;
 
 const votes = limit;
 const picked = "none" as string;
 ---
 
-<section class="ballot" aria-label={label}>
+<section class:list={["ballot", className]} aria-label={label} style={style}>
   <p role="status">{votes} votes left</p>
   <p>Picked: {picked}</p>
   <ul aria-label="Choices">

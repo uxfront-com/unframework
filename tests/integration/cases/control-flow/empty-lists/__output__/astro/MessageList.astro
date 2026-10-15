@@ -10,12 +10,21 @@ export interface MessageListProps {
   emptyText?: string;
 }
 
-type Props = MessageListProps;
+interface Props extends MessageListProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { messages, archived = [], emptyText = "Nothing here yet." } = Astro.props;
+const {
+  messages,
+  archived = [],
+  emptyText = "Nothing here yet.",
+  class: className,
+  style,
+} = Astro.props;
 ---
 
-<section class="message-list" aria-label="Messages">
+<section class:list={["message-list", className]} aria-label="Messages" style={style}>
   <h2>Inbox</h2>
   <ul>
     {messages.map((message) => (

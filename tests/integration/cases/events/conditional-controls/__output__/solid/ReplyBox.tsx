@@ -1,6 +1,6 @@
-import { createSignal } from "solid-js";
+import { type JSX, createSignal } from "solid-js";
 
-export default function ReplyBox() {
+export default function ReplyBox(props: { class?: string; style?: JSX.CSSProperties }) {
   const [started, setStarted] = createSignal(false);
   const [suggesting, setSuggesting] = createSignal(false);
   const [accepted, setAccepted] = createSignal(0);
@@ -12,7 +12,11 @@ export default function ReplyBox() {
   }
 
   return (
-    <section class="reply-box" aria-label="Reply">
+    <section
+      class={props.class ? `reply-box ${props.class}` : "reply-box"}
+      aria-label="Reply"
+      style={props.style}
+    >
       <label>
         Message
         <textarea

@@ -1,0 +1,19 @@
+---
+import Steps from "./Steps.astro";
+
+interface Props {
+  steps: string[];
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { steps, class: className, style } = Astro.props;
+---
+
+<div class:list={[className]} style={style}>
+  <Steps steps={steps}>
+    <Fragment slot="marker">
+      <span aria-hidden="true">&gt; </span>
+    </Fragment>
+  </Steps>
+</div>

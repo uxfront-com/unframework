@@ -125,15 +125,18 @@ export interface CounterProps {
   step?: number;
 }
 
-type Props = CounterProps;
+interface Props extends CounterProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { initial = 0 } = Astro.props;
+const { initial = 0, class: className, style } = Astro.props;
 
 const count = initial;
 const doubled = count * 2;
 ---
 
-<div class="counter">
+<div class:list={["counter", className]} style={style}>
   <output>{count}</output>
   {doubled > 10 ? (
     <span>Big</span>
@@ -148,6 +151,13 @@ interface Item {
   name: string;
 }
 
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const count = 0 as number;
 const offset = -1 as number;
 const title = "Draft" as string;
@@ -158,7 +168,7 @@ const items = [] as Item[];
 const tags = ["a", "b"];
 ---
 
-<dl>
+<dl class:list={[className]} style={style}>
   <dt>{count === 5 ? "five" : count}</dt>
   <dd>{offset + 1}</dd>
   <dd>{title === "Final" ? "final" : title}</dd>
@@ -176,9 +186,12 @@ export interface PriceProps {
   price: number;
 }
 
-type Props = PriceProps;
+interface Props extends PriceProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { price } = Astro.props;
+const { price, class: className, style } = Astro.props;
 
 const quantity = 2 as number;
 const total = quantity * price;
@@ -199,16 +212,23 @@ function getLabel(): string {
 const label = getLabel();
 ---
 
-<p data-tier={tier}>{label} {unit === "USD" ? "(US)" : "(EU)"}</p>
+<p
+  data-tier={tier}
+  class:list={[className]}
+  style={style}
+>{label} {unit === "USD" ? "(US)" : "(EU)"}</p>
 `,
   "Field.astro": `---
 export interface FieldProps {
   label: string;
 }
 
-type Props = FieldProps;
+interface Props extends FieldProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { label } = Astro.props;
+const { label, class: className, style } = Astro.props;
 
 function uniqueId(): string {
   const locals = Astro.locals as { ufIdCount?: number };
@@ -220,7 +240,7 @@ const inputId = uniqueId();
 const hintId = uniqueId();
 ---
 
-<div>
+<div class:list={[className]} style={style}>
   <label for={inputId}>{label}</label>
   <input id={inputId} aria-describedby={hintId} />
   <p id={hintId}>Required</p>

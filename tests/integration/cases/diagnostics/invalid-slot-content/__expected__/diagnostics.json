@@ -2,7 +2,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit `defineSlots` yet: composition lands in M3.",
+    "message": "The angular target does not emit `defineSlots` yet: composition lands in M3.",
     "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
     "start": {
       "line": 7,
@@ -14,7 +14,7 @@
       "column": 75,
       "offset": 321
     },
-    "target": "astro"
+    "target": "angular"
   },
   {
     "code": "UF1002",
@@ -32,40 +32,6 @@
       "offset": 321
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit `defineSlots` yet: composition lands in M3.",
-    "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 3,
-      "offset": 249
-    },
-    "end": {
-      "line": 7,
-      "column": 75,
-      "offset": 321
-    },
-    "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The solid target does not emit `defineSlots` yet: composition lands in M3.",
-    "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 3,
-      "offset": 249
-    },
-    "end": {
-      "line": 7,
-      "column": 75,
-      "offset": 321
-    },
-    "target": "solid"
   },
   {
     "code": "UF1002",

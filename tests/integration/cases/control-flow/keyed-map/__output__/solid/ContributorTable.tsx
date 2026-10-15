@@ -1,4 +1,4 @@
-import { For } from "solid-js";
+import { For, type JSX } from "solid-js";
 
 export interface Contributor {
   login: string;
@@ -11,9 +11,11 @@ export interface ContributorTableProps {
   contributors: Contributor[];
 }
 
-export default function ContributorTable(props: ContributorTableProps) {
+export default function ContributorTable(
+  props: ContributorTableProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <table class="contributors">
+    <table class={props.class ? `contributors ${props.class}` : "contributors"} style={props.style}>
       <caption>{props.caption}</caption>
       <thead>
         <tr>

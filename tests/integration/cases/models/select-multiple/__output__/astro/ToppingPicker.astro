@@ -1,0 +1,21 @@
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+const toppings = ["cheese"] as string[];
+---
+
+<section aria-label="Pizza" class:list={[className]} style={style}>
+  <label>Toppings <select
+    multiple
+  ><option value="cheese" selected={toppings.includes("cheese")}>Cheese</option><option
+    value="olives"
+    selected={toppings.includes("olives")}
+  >Olives</option><option value="basil" selected={toppings.includes("basil")}>Basil</option></select></label>
+  <output>On top: {toppings.join(", ") || "nothing"}</output>
+  <button type="button">Green</button>
+</section>
