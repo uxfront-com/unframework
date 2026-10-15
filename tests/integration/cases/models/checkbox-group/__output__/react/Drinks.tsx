@@ -16,17 +16,10 @@ export default function Drinks({ className, style }: DrinksAttributes) {
         <input
           type="checkbox"
           value="tea"
-          defaultChecked={drinks.includes("tea")}
-          ref={(element) => {
-            if (!element) return undefined;
-            element.checked = drinks.includes("tea");
-            const stop = listen(element, "change", () => {
-              drinksRef.current = toggle(drinksRef.current, "tea", element.checked);
-              setDrinks(drinksRef.current);
-            });
-            return () => {
-              stop();
-            };
+          checked={drinks.includes("tea")}
+          onChange={(event) => {
+            drinksRef.current = toggle(drinksRef.current, "tea", event.target.checked);
+            setDrinks(drinksRef.current);
           }}
         />{" "}
         Tea
@@ -35,17 +28,10 @@ export default function Drinks({ className, style }: DrinksAttributes) {
         <input
           type="checkbox"
           value="coffee"
-          defaultChecked={drinks.includes("coffee")}
-          ref={(element) => {
-            if (!element) return undefined;
-            element.checked = drinks.includes("coffee");
-            const stop = listen(element, "change", () => {
-              drinksRef.current = toggle(drinksRef.current, "coffee", element.checked);
-              setDrinks(drinksRef.current);
-            });
-            return () => {
-              stop();
-            };
+          checked={drinks.includes("coffee")}
+          onChange={(event) => {
+            drinksRef.current = toggle(drinksRef.current, "coffee", event.target.checked);
+            setDrinks(drinksRef.current);
           }}
         />{" "}
         Coffee
@@ -54,17 +40,10 @@ export default function Drinks({ className, style }: DrinksAttributes) {
         <input
           type="checkbox"
           value="juice"
-          defaultChecked={drinks.includes("juice")}
-          ref={(element) => {
-            if (!element) return undefined;
-            element.checked = drinks.includes("juice");
-            const stop = listen(element, "change", () => {
-              drinksRef.current = toggle(drinksRef.current, "juice", element.checked);
-              setDrinks(drinksRef.current);
-            });
-            return () => {
-              stop();
-            };
+          checked={drinks.includes("juice")}
+          onChange={(event) => {
+            drinksRef.current = toggle(drinksRef.current, "juice", event.target.checked);
+            setDrinks(drinksRef.current);
           }}
         />{" "}
         Juice
@@ -81,20 +60,6 @@ export default function Drinks({ className, style }: DrinksAttributes) {
       </button>
     </fieldset>
   );
-}
-
-/**
- * Listens to a DOM event natively, where React's synthetic event would not keep the DOM's
- * semantics, and gives back what stops it: the cleanup a ref callback returns.
- */
-function listen<K extends keyof HTMLElementEventMap>(
-  element: EventTarget | null,
-  type: K,
-  listener: (event: HTMLElementEventMap[K]) => void,
-  options?: AddEventListenerOptions,
-): () => void {
-  element?.addEventListener(type, listener as EventListener, options);
-  return () => element?.removeEventListener(type, listener as EventListener, options);
 }
 
 /** The array with `value` added when `checked`, and without it otherwise. */

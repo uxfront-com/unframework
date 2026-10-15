@@ -14,17 +14,10 @@ export default function Terms({ className, style }: TermsAttributes) {
       <label>
         <input
           type="checkbox"
-          defaultChecked={agreed}
-          ref={(element) => {
-            if (!element) return undefined;
-            setChecked(element, agreed, agreed);
-            const stop = listen(element, "change", () => {
-              agreedRef.current = element.checked;
-              setAgreed(agreedRef.current);
-            });
-            return () => {
-              stop();
-            };
+          checked={agreed}
+          onChange={(event) => {
+            agreedRef.current = event.target.checked;
+            setAgreed(agreedRef.current);
           }}
         />{" "}
         I agree
@@ -42,30 +35,3 @@ export default function Terms({ className, style }: TermsAttributes) {
     </section>
   );
 }
-
-/**
- * Listens to a DOM event natively, where React's synthetic event would not keep the DOM's
- * semantics, and gives back what stops it: the cleanup a ref callback returns.
- */
-function listen<K extends keyof HTMLElementEventMap>(
-  element: EventTarget | null,
-  type: K,
-  listener: (event: HTMLElementEventMap[K]) => void,
-  options?: AddEventListenerOptions,
-): () => void {
-  element?.addEventListener(type, listener as EventListener, options);
-  return () => element?.removeEventListener(type, listener as EventListener, options);
-}
-
-/**
- * Sets a checkbox's or a radio's `checked` when its model's value changed since the element last
- * showed it, as Vue's `v-model` does: a render between the control's `input` and its `change`
- * keeps what was clicked.
- */
-function setChecked(element: HTMLInputElement, value: unknown, checked: boolean): void {
-  if (checkedValues.has(element) && checkedValues.get(element) === value) return;
-  checkedValues.set(element, value);
-  element.checked = checked;
-}
-
-const checkedValues = new WeakMap<HTMLInputElement, unknown>();

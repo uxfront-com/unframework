@@ -3,22 +3,22 @@
 import type { QuarantineEntry } from "@unframework/testing/node";
 
 /**
- * ADR-0058's open item, measured: react-dom writes a bound checkbox's or radio's `checked`
- * attribute, which follows its state (its `defaultChecked`, as the model writes from the native
- * `change`), and keeps a controlled `<textarea>`'s text in step with its state, where Vue sets the
- * properties only. Until the shared normaliser rule for a native control's initial state lands
- * (the Astro lane's), the DOM and the trace differ. A `<textarea>` React fills from its text also
- * takes the caret at its start on focus, where Vue's set value leaves it at the end.
+ * ADR-0058's open item, measured: react-dom writes a controlled checkbox's or radio's first
+ * `checked` state as its attribute and never updates it, and keeps a controlled `<textarea>`'s
+ * text in step with its state, where Vue sets the properties only. Until the shared normaliser
+ * rule for a native control's initial state lands (the Astro lane's), the DOM and the trace
+ * differ. A `<textarea>` React fills from its text also takes the caret at its start on focus,
+ * where Vue's set value leaves it at the end.
  */
-const DEFAULT_STATE = "ADR-0058's open item: react-dom writes a bound control's state as markup";
+const DEFAULT_STATE = "ADR-0058's open item: react-dom writes a bound control's initial state";
 
 export const QUARANTINE: readonly QuarantineEntry[] = [
-  ...["models/checkbox", "models/checkbox-group", "models/radio"].flatMap((id) =>
+  ...["models/checkbox-group", "models/radio"].flatMap((id) =>
     (["L7", "L9"] as const).map((layer) => ({
       case: id,
       target: "react",
       layer,
-      reason: `${DEFAULT_STATE}: the \`checked\` attribute, in step with the state.`,
+      reason: `${DEFAULT_STATE}: the first render's \`checked\`, never updated.`,
       issue: "UXF-320",
     })),
   ),
