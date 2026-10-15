@@ -38,7 +38,6 @@ import type {
   FunctionCode,
   FunctionItem,
   Handler,
-  InjectionKeyDeclaration,
   InjectItem,
   LifecycleItem,
   ModelAttribute,
@@ -223,8 +222,6 @@ class ScriptWriter {
   /** The functions whose parameters' types Svelte's event types need changed (`handlers.ts`). */
   readonly #functions: ReadonlyMap<FunctionCode, FunctionCode>;
   readonly rules: RewriteRules;
-  /** The local name of each imported key's value type, by the key's local name. */
-  readonly #valueTypes = new Map<string, string>();
   /** The bindings the output names apart from the source (`snippetNames`). */
   readonly #renamed = new Map<string, string>();
   /** The template refs attached to an element or a component a condition renders. */
@@ -296,18 +293,7 @@ class ScriptWriter {
     const owner =
       this.#module.keys?.length &&
       keyOwner(this.#module.components, this.#module.exports) === component.name;
-    // A key's value type named as the output names it (`ThemeValue` for `Theme`) is the one a
-    // consumer imports, so it is exported.
-    const reused = new Set(
-      (this.#module.keys ?? []).flatMap((key) =>
-        key.type.code.trim() === valueType(key.name) ? [valueType(key.name)] : [],
-      ),
-    );
-    const types = componentTypes(component, this.#module).map((declaration) =>
-      reused.has(declaration.name) && !declaration.exported
-        ? `export ${declaration.code}`
-        : typeDeclarationCode(declaration),
-    );
+    const types = componentTypes(component, this.#module).map(typeDeclarationCode);
     const helpers = [
       ...(once ? [onceHelper(once)] : []),
       ...(this.#refObject ? [refObjectHelper(this.#refObject)] : []),
@@ -372,8 +358,7 @@ class ScriptWriter {
   /**
    * The children's outputs (ADR-0053), each a sibling file's default export imported under the
    * source's name, a component that renders itself included (its own file, as Svelte imports a
-   * recursive component); and the injection keys from the outputs that declare them, with the
-   * types a key's injection reads (ADR-0054).
+   * recursive component); and the injection keys from the outputs that declare them (ADR-0054).
    */
   #imports(): void {
     const component = this.#component;
@@ -382,17 +367,7 @@ class ScriptWriter {
       if (local !== child.local) this.#componentTags.set(child.local, local);
     }
     for (const key of keyImports(component, this.#module, (name) => `${name}.svelte`)) {
-      if (!key.specifier) continue;
-      this.#names.importNamed(key.specifier, key.name, key.local);
-      if (!component.setup.some((item) => item.kind === "Inject" && item.key === key.local)) {
-        continue;
-      }
-      // The key's value type, which the output declaring it exports (`#moduleScript`): what the
-      // key's type names may be global, or the module's own and not exported.
-      const value = this.#names.importNamed(key.specifier, valueType(key.name), undefined, {
-        type: true,
-      });
-      this.#valueTypes.set(key.local, value);
+      if (key.specifier) this.#names.importNamed(key.specifier, key.name, key.local);
     }
   }
 
@@ -409,27 +384,17 @@ class ScriptWriter {
   }
 
   /**
-   * The value type `getContext` reads under a key: a ref is passed as `refObject`'s object, whose
-   * `value` reads it (ADR-0054).
-   */
-  #contextType(local: string): string {
-    return this.#valueTypes.get(local) ?? valueType(local);
-  }
-
-  /**
-   * The `<script module>` block of the output that declares the module's injection keys
-   * (ADR-0054): each a `Symbol`, which `setContext` and `getContext` take, and the type of the
-   * value it holds (`ThemeKeyValue`), which a consumer imports with the key it injects, beside
-   * the types the component copies.
+   * The `<script lang="ts" module>` block of the output that declares the module's injection keys
+   * (ADR-0054), beside the types the component copies: each a `Symbol`, which `setContext` and
+   * `getContext` take, typed with the value it holds (`symbol & { readonly __value: Theme }`).
+   * A consumer reads that type from the key it imports (`contextType`), so the output exports no
+   * name of its own that could clash with the module's or a component's.
    */
   #moduleScript(types: readonly string[]): string {
-    const keys = this.#module.keys!.flatMap((key) => [
-      // Unless the key's type is that name already.
-      ...(key.type.code.trim() === valueType(key.name)
-        ? []
-        : [`export type ${valueType(key.name)} = ${contextValue(key.type.code, key.ref)};`]),
-      `export const ${key.name} = Symbol(${JSON.stringify(key.description)});`,
-    ]);
+    const keys = this.#module.keys!.map(
+      (key) =>
+        `export const ${key.name} = Symbol(${JSON.stringify(key.description)}) as symbol & { readonly __value: ${contextValue(key.type.code, key.ref)} };`,
+    );
     const body = [...types.map((each) => indent(each, INDENT)), indent(keys.join("\n"), INDENT)];
     return `<script lang="ts" module>\n${escapeScriptEnd(body.join("\n\n"))}\n</script>`;
   }
@@ -797,7 +762,7 @@ class ScriptWriter {
   #inject(item: InjectItem): string {
     const name = this.#name(item.binding);
     const getContext = this.#names.import("svelte", "getContext");
-    const type = this.#contextType(item.key);
+    const type = contextType(item.key);
     if (!item.fallback) return `const ${name} = ${getContext}<${orUndefined(type)}>(${item.key});`;
     const hasContext = this.#names.import("svelte", "hasContext");
     const fallback = this.#key(item.key).ref
@@ -1327,21 +1292,9 @@ function onceHelper(name: string): string {
   );
 }
 
-/**
- * The first of a module's keys whose value type's name (`valueType`) the module declares as
- * another type: the output cannot export both, and a consumer imports that name.
- */
-export function keyValueClash(module: UfModule): InjectionKeyDeclaration | undefined {
-  return module.keys?.find(
-    (key) =>
-      key.type.code.trim() !== valueType(key.name) &&
-      module.types.some((declaration) => declaration.name === valueType(key.name)),
-  );
-}
-
-/** The type a key's module output exports for the value the key holds: `ThemeKeyValue`. */
-function valueType(key: string): string {
-  return `${key}Value`;
+/** The type of the value a key holds, read from the key (`#moduleScript`). */
+function contextType(key: string): string {
+  return `(typeof ${key})["__value"]`;
 }
 
 /**

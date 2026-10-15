@@ -221,8 +221,8 @@ describe("svelte composition across files", () => {
   });
 
   // A key's type may name a global (`Error`) or a type the providing module does not export: the
-  // consumer imports neither, only what the providing output exports for the key.
-  it("types an injected key from what its module's output exports", checker, async () => {
+  // consumer imports neither, only the key, whose type carries its value's.
+  it("types an injected key from the key it imports", checker, async () => {
     const provider = [
       'import { defineSlots, provide, ref } from "unframework";',
       'import type { Element, InjectionKey, Ref } from "unframework";',
@@ -265,66 +265,121 @@ describe("svelte composition across files", () => {
       "Reader.svelte": [],
     });
   });
-  // A key whose value type is named as the output would name the key's own (`<Key>Value`).
-  it(
-    "exports a key's value type that the module already declares under that name",
-    checker,
-    async () => {
-      const provider = [
-        'import { defineSlots, provide } from "unframework";',
-        'import type { Element, InjectionKey } from "unframework";',
-        "",
-        "export interface ThemeValue {",
-        "  tone: string;",
-        "}",
-        "",
-        'export const Theme: InjectionKey<ThemeValue> = Symbol("uf.theme");',
-        "",
-        "export default function Provider() {",
-        "  const slots = defineSlots<{ default?(): Element }>();",
-        '  provide(Theme, { tone: "warm" });',
-        "  return <div>{slots.default?.()}</div>;",
-        "}",
-        "",
-      ].join("\n");
-      const reader = [
-        'import { inject } from "unframework";',
-        "",
-        'import { Theme } from "./Provider.uf.tsx";',
-        "",
-        "export default function Reader() {",
-        "  const theme = inject(Theme);",
-        "  return <p>{theme?.tone}</p>;",
-        "}",
-        "",
-      ].join("\n");
-      expect(await check({ "Provider.uf.tsx": provider, "Reader.uf.tsx": reader })).toEqual({
-        "Provider.svelte": [],
-        "Reader.svelte": [],
-      });
-    },
-  );
-
-  it("reports a module that declares another type under a key's value type name", async () => {
+  // A key whose value type is named `<Key>Value`, a name an output could have given it.
+  it("types a key whose value type the module declares as `<Key>Value`", checker, async () => {
     const provider = [
-      'import { provide } from "unframework";',
-      'import type { InjectionKey } from "unframework";',
+      'import { defineSlots, provide } from "unframework";',
+      'import type { Element, InjectionKey } from "unframework";',
       "",
       "export interface ThemeValue {",
       "  tone: string;",
       "}",
       "",
-      'export const Theme: InjectionKey<string> = Symbol("uf.theme");',
+      'export const Theme: InjectionKey<ThemeValue> = Symbol("uf.theme");',
       "",
-      "export default function Provider({ value }: { value: ThemeValue }) {",
-      "  provide(Theme, value.tone);",
-      "  return <p>{value.tone}</p>;",
+      "export default function Provider() {",
+      "  const slots = defineSlots<{ default?(): Element }>();",
+      '  provide(Theme, { tone: "warm" });',
+      "  return <div>{slots.default?.()}</div>;",
       "}",
       "",
     ].join("\n");
-    await expect(compileSources({ "Provider.uf.tsx": provider })).rejects.toThrow(
-      "The svelte target exports the value type of `Theme` as `ThemeValue`, which the module declares as another type: rename that type.",
-    );
+    const reader = [
+      'import { inject } from "unframework";',
+      "",
+      'import { Theme } from "./Provider.uf.tsx";',
+      "",
+      "export default function Reader() {",
+      "  const theme = inject(Theme);",
+      "  return <p>{theme?.tone}</p>;",
+      "}",
+      "",
+    ].join("\n");
+    expect(await check({ "Provider.uf.tsx": provider, "Reader.uf.tsx": reader })).toEqual({
+      "Provider.svelte": [],
+      "Reader.svelte": [],
+    });
+  });
+
+  // The consumer imports only the key, so no type or component the module declares under the
+  // name an output could have given the key's value type (`<Key>Value`) clashes with it.
+  it("types a key beside another type named `<Key>Value`", checker, async () => {
+    const provider = [
+      'import { defineSlots, provide, ref } from "unframework";',
+      'import type { Element, InjectionKey, Ref } from "unframework";',
+      "",
+      "export interface ThemeValue {",
+      "  tone: string;",
+      "}",
+      "",
+      'export const Theme: InjectionKey<Ref<ThemeValue>> = Symbol("uf.theme");',
+      "",
+      "export default function Provider() {",
+      "  const slots = defineSlots<{ default?(): Element }>();",
+      '  const theme = ref<ThemeValue>({ tone: "warm" });',
+      "  provide(Theme, theme);",
+      "  return <div>{slots.default?.()}</div>;",
+      "}",
+      "",
+    ].join("\n");
+    const reader = [
+      'import { inject, ref } from "unframework";',
+      "",
+      'import { Theme } from "./Provider.uf.tsx";',
+      "",
+      "export default function Reader() {",
+      '  const none = ref({ tone: "none" });',
+      "  const theme = inject(Theme, none);",
+      "  return <p>{theme.value.tone}</p>;",
+      "}",
+      "",
+    ].join("\n");
+    expect(await check({ "Provider.uf.tsx": provider, "Reader.uf.tsx": reader })).toEqual({
+      "Provider.svelte": [],
+      "Reader.svelte": [],
+    });
+  });
+
+  it("types a key beside a component named `<Key>Value`", checker, async () => {
+    const provider = [
+      'import { defineSlots, provide } from "unframework";',
+      'import type { Element, InjectionKey } from "unframework";',
+      "",
+      'import ThemeValue from "./ThemeValue.uf.tsx";',
+      "",
+      'export const Theme: InjectionKey<string> = Symbol("uf.theme");',
+      "",
+      "export default function Provider() {",
+      "  const slots = defineSlots<{ default?(): Element }>();",
+      '  provide(Theme, "dark");',
+      "  return (",
+      "    <div>",
+      "      <ThemeValue />",
+      "      {slots.default?.()}",
+      "    </div>",
+      "  );",
+      "}",
+      "",
+    ].join("\n");
+    const themeValue = "export default function ThemeValue() {\n  return <hr />;\n}\n";
+    const reader = [
+      'import { inject } from "unframework";',
+      "",
+      'import { Theme } from "./Provider.uf.tsx";',
+      "",
+      "export default function Reader() {",
+      "  const theme = inject(Theme);",
+      "  return <p>{theme}</p>;",
+      "}",
+      "",
+    ].join("\n");
+    expect(
+      await check({
+        "Provider.uf.tsx": provider,
+        "ThemeValue.uf.tsx": themeValue,
+        "Reader.uf.tsx": reader,
+      }),
+    ).toEqual({ "Provider.svelte": [], "ThemeValue.svelte": [], "Reader.svelte": [] });
   });
 
   // An exposed function keeps its name in the component's API, and a fill's parameter is
