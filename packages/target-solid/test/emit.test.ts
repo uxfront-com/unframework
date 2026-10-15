@@ -95,8 +95,14 @@ describe("solid target", () => {
     expect(await formatted(hello(), { name: "Hello" })).toEqual({
       path: "Hello.tsx",
       contents: [
-        "export default function Hello() {",
-        '  return <p class="greeting">Hello, world!</p>;',
+        'import type { JSX } from "solid-js";',
+        "",
+        "export default function Hello(props: { class?: string; style?: JSX.CSSProperties }) {",
+        "  return (",
+        '    <p class={props.class ? `greeting ${props.class}` : "greeting"} style={props.style}>',
+        "      Hello, world!",
+        "    </p>",
+        "  );",
         "}",
         "",
       ].join("\n"),
@@ -107,9 +113,15 @@ describe("solid target", () => {
     expect(await formatted(profileCard(), { name: "ProfileCard" })).toEqual({
       path: "ProfileCard.tsx",
       contents: [
-        "export default function ProfileCard() {",
+        'import type { JSX } from "solid-js";',
+        "",
+        "export default function ProfileCard(props: { class?: string; style?: JSX.CSSProperties }) {",
         "  return (",
-        '    <article class="profile" aria-labelledby="profile-name">',
+        "    <article",
+        '      class={props.class ? `profile ${props.class}` : "profile"}',
+        '      aria-labelledby="profile-name"',
+        "      style={props.style}",
+        "    >",
         '      <header class="profile-header">',
         "        <img",
         `          src="${AVATAR}"`,
@@ -137,7 +149,9 @@ describe("solid target", () => {
 
   it("keeps a named export named", async () => {
     const file = await formatted(hello(), { name: "Hello", kind: "named" });
-    expect(file.contents).toMatch(/^export function Hello\(\) \{/);
+    expect(file.contents).toMatch(
+      /^import type \{ JSX \} from "solid-js";\n\nexport function Hello\(props: \{ class\?: string; style\?: JSX\.CSSProperties \}\) \{/,
+    );
   });
 
   it("keeps boolean attributes as written: Solid inlines them into its HTML templates", async () => {
@@ -159,7 +173,7 @@ describe("solid props", () => {
     );
     expect(output).toBe(
       [
-        'import { mergeProps } from "solid-js";',
+        'import { type JSX, mergeProps } from "solid-js";',
         "",
         "export interface ProbeProps {",
         "  label: string;",
@@ -168,10 +182,18 @@ describe("solid props", () => {
         "  pill?: boolean;",
         "}",
         "",
-        "export default function Probe(rawProps: ProbeProps) {",
+        "export default function Probe(",
+        "  rawProps: ProbeProps & { class?: string; style?: JSX.CSSProperties },",
+        ") {",
         '  const props = mergeProps({ pill: false, tone: "info" } satisfies Partial<ProbeProps>, rawProps);',
         "  return (",
-        "    <span data-tone={props.tone} data-count={props.count} aria-pressed={props.pill}>",
+        "    <span",
+        "      data-tone={props.tone}",
+        "      data-count={props.count}",
+        "      aria-pressed={props.pill}",
+        "      class={props.class}",
+        "      style={props.style}",
+        "    >",
         "      {props.label}",
         "    </span>",
         "  );",
@@ -193,7 +215,9 @@ describe("solid props", () => {
     );
     expect(component(output)).toContain(
       [
-        "export default function Probe(rawProps: ProbeProps) {",
+        "export default function Probe(",
+        "  rawProps: ProbeProps & { class?: string; style?: JSX.CSSProperties },",
+        ") {",
         '  const defaults: Required<Pick<ProbeProps, "attrs" | "tone">> = {',
         '    attrs: { title: "t" },',
         '    tone: "info",',
@@ -226,7 +250,16 @@ describe("solid props", () => {
       probe("label: string;\n  tone?: string;", '{ label, tone = "info" }', "<p>{label}</p>"),
     );
     expect(component(output)).toBe(
-      "export default function Probe(props: ProbeProps) {\n  return <p>{props.label}</p>;\n}\n",
+      [
+        "export default function Probe(props: ProbeProps & { class?: string; style?: JSX.CSSProperties }) {",
+        "  return (",
+        "    <p class={props.class} style={props.style}>",
+        "      {props.label}",
+        "    </p>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
     );
     expect(output).not.toContain("mergeProps");
   });
@@ -237,8 +270,16 @@ describe("solid props", () => {
     );
     expect(output).toBe(
       [
-        "export default function Probe(card: { title: string; note?: string }) {",
-        "  return <p title={card.note}>{card.title}</p>;",
+        'import type { JSX } from "solid-js";',
+        "",
+        "export default function Probe(",
+        "  card: { title: string; note?: string } & { class?: string; style?: JSX.CSSProperties },",
+        ") {",
+        "  return (",
+        "    <p title={card.note} class={card.class} style={card.style}>",
+        "      {card.title}",
+        "    </p>",
+        "  );",
         "}",
         "",
       ].join("\n"),
@@ -251,9 +292,15 @@ describe("solid props", () => {
     );
     expect(component(output)).toBe(
       [
-        "export default function Probe(rawProps: { size?: number }) {",
+        "export default function Probe(",
+        "  rawProps: { size?: number } & { class?: string; style?: JSX.CSSProperties },",
+        ") {",
         "  const props = mergeProps({ size: 2 } satisfies Partial<{ size?: number }>, rawProps);",
-        "  return <p>{props.size}</p>;",
+        "  return (",
+        "    <p class={props.class} style={props.style}>",
+        "      {props.size}",
+        "    </p>",
+        "  );",
         "}",
         "",
       ].join("\n"),
@@ -263,35 +310,97 @@ describe("solid props", () => {
   it("names props it never reads `_props`, which keeps their type and no unused variable", async () => {
     const output = await emitSource(probe("tone?: string;", '{ tone = "info" }', "<p>Static</p>"));
     expect(component(output)).toBe(
-      "export default function Probe(_props: ProbeProps) {\n  return <p>Static</p>;\n}\n",
+      [
+        "export default function Probe(props: ProbeProps & { class?: string; style?: JSX.CSSProperties }) {",
+        "  return (",
+        "    <p class={props.class} style={props.style}>",
+        "      Static",
+        "    </p>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
     );
   });
 
-  // A source name `_` and more says it is unused already; oxlint reports a bare `_`.
+  // A source name `_` and more says it is unused already; oxlint reports a bare `_`. Without
+  // fallthrough (`inheritAttrs: false`), nothing reads it.
   it.each([
     ["_unused", "_unused"],
     ["_", "_props"],
   ])("keeps an object form %s nothing reads as %s", async (name, declared) => {
     const output = await emitSource(
-      `export default function Probe(${name}: { tone?: string }) {\n  return <p>Static</p>;\n}\n`,
+      [
+        'import { defineOptions } from "unframework";',
+        "",
+        `export default function Probe(${name}: { tone?: string }) {`,
+        "  defineOptions({ inheritAttrs: false });",
+        "  return <p>Static</p>;",
+        "}",
+        "",
+      ].join("\n"),
     );
     expect(component(output)).toBe(
-      `export default function Probe(${declared}: { tone?: string }) {\n  return <p>Static</p>;\n}\n`,
+      [
+        `export default function Probe(${declared}: { tone?: string }) {`,
+        "  return <p>Static</p>;",
+        "}",
+        "",
+      ].join("\n"),
     );
   });
+
+  // Fallthrough reads it, so a name that says it is unused gives way to `props`.
+  it.each(["_unused", "_"])(
+    "names an object form %s only fallthrough reads props",
+    async (name) => {
+      const output = await emitSource(
+        `export default function Probe(${name}: { tone?: string }) {\n  return <p>Static</p>;\n}\n`,
+      );
+      expect(component(output)).toBe(
+        [
+          "export default function Probe(",
+          "  props: { tone?: string } & { class?: string; style?: JSX.CSSProperties },",
+          ") {",
+          "  return (",
+          "    <p class={props.class} style={props.style}>",
+          "      Static",
+          "    </p>",
+          "  );",
+          "}",
+          "",
+        ].join("\n"),
+      );
+    },
+  );
 
   it("takes no parameter without props", async () => {
     const output = await emitSource(
       "export default function Probe() {\n  return <p>Static</p>;\n}\n",
     );
-    expect(output).toBe("export default function Probe() {\n  return <p>Static</p>;\n}\n");
+    expect(output).toBe(
+      [
+        'import type { JSX } from "solid-js";',
+        "",
+        "export default function Probe(props: { class?: string; style?: JSX.CSSProperties }) {",
+        "  return (",
+        "    <p class={props.class} style={props.style}>",
+        "      Static",
+        "    </p>",
+        "  );",
+        "}",
+        "",
+      ].join("\n"),
+    );
   });
 
   it("expands a shorthand property it rewrites", async () => {
     const output = await emitSource(
       probe("label: string;", "{ label }", "<p>{JSON.stringify({ label })}</p>"),
     );
-    expect(output).toContain("<p>{JSON.stringify({ label: props.label })}</p>");
+    expect(output).toContain(
+      "<p class={props.class} style={props.style}>\n      {JSON.stringify({ label: props.label })}\n    </p>",
+    );
   });
 
   it("imports under a free name when the source declares the name itself", async () => {
@@ -303,7 +412,7 @@ describe("solid props", () => {
         "interface For {\n  id: string;\n}\n\n",
       ),
     );
-    expect(output).toContain('import { For as For_1, Show } from "solid-js";');
+    expect(output).toContain('import { For as For_1, type JSX, Show } from "solid-js";');
     expect(component(output)).toContain(
       "<Show when={props.on}>\n        <For_1 each={props.items}>{(item) => <li>{item.id}</li>}</For_1>",
     );
@@ -315,9 +424,9 @@ describe("solid control flow", () => {
     const output = await emitSource(
       probe("count: number;", "{ count }", "<p>{count && <b>New</b>}</p>"),
     );
-    expect(output).toContain('import { Show } from "solid-js";');
+    expect(output).toContain('import { type JSX, Show } from "solid-js";');
     expect(component(output)).toContain(
-      "<p>\n      <Show when={props.count}>\n        <b>New</b>\n      </Show>\n    </p>",
+      "<p class={props.class} style={props.style}>\n      <Show when={props.count}>\n        <b>New</b>\n      </Show>\n    </p>",
     );
   });
 
@@ -354,7 +463,7 @@ describe("solid control flow", () => {
         '<p>{n > 2 ? <b>Many</b> : n > 1 ? null : n > 0 ? "One" : <i>None</i>}</p>',
       ),
     );
-    expect(output).toContain('import { Match, Switch } from "solid-js";');
+    expect(output).toContain('import { type JSX, Match, Switch } from "solid-js";');
     expect(component(output)).toContain(
       [
         "      <Switch fallback={<i>None</i>}>",
@@ -386,7 +495,9 @@ describe("solid control flow", () => {
     const output = await emitSource(
       probe("on: boolean;\n  label: string;", "{ on, label }", '<p>{on ? label : "none"}</p>'),
     );
-    expect(component(output)).toContain('<p>{props.on ? props.label : "none"}</p>');
+    expect(component(output)).toContain(
+      '<p class={props.class} style={props.style}>\n      {props.on ? props.label : "none"}\n    </p>',
+    );
   });
 
   it("lists with <For>, without the key, calling the index accessor", async () => {
@@ -397,7 +508,7 @@ describe("solid control flow", () => {
         "<ol>{steps.map((step, index) => <li key={index} data-step={index + 1}>{step}</li>)}</ol>",
       ),
     );
-    expect(output).toContain('import { For } from "solid-js";');
+    expect(output).toContain('import { For, type JSX } from "solid-js";');
     expect(component(output)).toContain(
       "<For each={props.steps}>{(step, index) => <li data-step={index() + 1}>{step}</li>}</For>",
     );
@@ -838,7 +949,12 @@ describe("solid output for its server compiler", () => {
     );
     expect(component(output)).toContain(
       [
-        `    <p title={props.on ? String('say "hi"') : props.label} data-a={props.label + String(" & more")}>`,
+        "    <p",
+        `      title={props.on ? String('say "hi"') : props.label}`,
+        '      data-a={props.label + String(" & more")}',
+        "      class={props.class}",
+        "      style={props.style}",
+        "    >",
         '      {props.on ? String("<b>") : props.label}',
         "      {String(`<${props.label}>`)}",
         '      {props.label + String("&")}',
@@ -854,19 +970,20 @@ describe("solid attributes", () => {
       probe(
         "active: boolean;\n  count: number;",
         "{ active, count }",
-        '<p class={["item", { active, "has-count": count, empty: count === 0 }]}>x</p>',
+        '<div>\n    <p class={["item", { active, "has-count": count, empty: count === 0 }]}>x</p>\n  </div>',
       ),
     );
+    // Not on the root, whose class merges what falls through to it (ADR-0054).
     expect(component(output)).toContain(
       [
-        "    <p",
-        '      class="item"',
-        "      classList={{",
-        "        active: props.active,",
-        '        "has-count": Boolean(props.count),',
-        "        empty: props.count === 0,",
-        "      }}",
-        "    >",
+        "      <p",
+        '        class="item"',
+        "        classList={{",
+        "          active: props.active,",
+        '          "has-count": Boolean(props.count),',
+        "          empty: props.count === 0,",
+        "        }}",
+        "      >",
       ].join("\n"),
     );
     expect(output).not.toContain("function cx");
@@ -881,7 +998,7 @@ describe("solid attributes", () => {
       ),
     );
     expect(component(output)).toContain(
-      '<p class={cx("item", props.tone, { active: props.active })}>x</p>',
+      '<p class={cx("item", props.tone, { active: props.active }, props.class)} style={props.style}>\n      x\n    </p>',
     );
     expect(output.slice(output.indexOf("\n}\n", output.indexOf("function Probe")))).toBe(
       [
@@ -909,9 +1026,10 @@ describe("solid attributes", () => {
       probe(
         'tone: "info" | "warn";\n  size: string;',
         "{ tone, size }",
-        "<p class={`tone-${tone}`}>\n    <b class={size}>x</b>\n    <i class={tone}>y</i>\n  </p>",
+        "<div>\n    <p class={`tone-${tone}`}>\n      <b class={size}>x</b>\n      <i class={tone}>y</i>\n    </p>\n  </div>",
       ),
     );
+    // Not on the root, whose class merges what falls through to it (ADR-0054).
     expect(component(output)).toContain("<p class={`tone-${props.tone}`}>");
     expect(component(output)).toContain("<b class={props.size}>x</b>");
     expect(component(output)).toContain("<i class={props.tone}>y</i>");
@@ -922,7 +1040,9 @@ describe("solid attributes", () => {
     const output = await emitSource(
       probe("tone?: string | null;", "{ tone }", "<p class={tone}>x</p>"),
     );
-    expect(component(output)).toContain("<p class={cx(props.tone)}>x</p>");
+    expect(component(output)).toContain(
+      "<p class={cx(props.tone, props.class)} style={props.style}>\n      x\n    </p>",
+    );
   });
 
   it("names the helper apart from the source's names", async () => {
@@ -933,7 +1053,9 @@ describe("solid attributes", () => {
         "<ul class={tone}>{items.map((cx) => <li key={cx}>{cx}</li>)}</ul>",
       ),
     );
-    expect(component(output)).toContain("<ul class={cx_1(props.tone)}>");
+    expect(component(output)).toContain(
+      "<ul class={cx_1(props.tone, props.class)} style={props.style}>",
+    );
     expect(output).toContain("function cx_1(...parts: unknown[]): string {");
   });
 
@@ -967,12 +1089,16 @@ describe("solid attributes", () => {
     expect(component(output)).toContain(
       [
         "      style={{",
-        '        "margin-top": props.gap,',
-        '        "line-height": "1.5",',
-        '        "--level": props.level,',
-        '        "z-index": "-1",',
-        '        color: "red",',
+        "        ...{",
+        '          "margin-top": props.gap,',
+        '          "line-height": "1.5",',
+        '          "--level": props.level,',
+        '          "z-index": "-1",',
+        '          color: "red",',
+        "        },",
+        "        ...props.style,",
         "      }}",
+        "      class={props.class}",
       ].join("\n"),
     );
   });
@@ -981,7 +1107,9 @@ describe("solid attributes", () => {
     const output = await emitSource(
       probe("label: string;", "{ label }", '<p style="color: red; margin-top: 4px">{label}</p>'),
     );
-    expect(component(output)).toContain('<p style={{ color: "red", "margin-top": "4px" }}>');
+    expect(component(output)).toContain(
+      '<p style={{ ...{ color: "red", "margin-top": "4px" }, ...props.style }} class={props.class}>',
+    );
   });
 
   it("writes a spread key by key, through `?.` when its source may be absent", async () => {
@@ -1013,7 +1141,9 @@ describe("solid attributes", () => {
     expect(component(output)).toContain(
       "<textarea readonly={props.locked} maxlength={props.limit} aria-disabled={props.locked} />",
     );
-    expect(component(output)).toContain("<label for={props.label}>");
+    expect(component(output)).toContain(
+      "<label for={props.label} class={props.class} style={props.style}>",
+    );
   });
 
   it("spreads the attributes Solid's types lack on an element, as Solid renders them alike", async () => {
@@ -1047,7 +1177,9 @@ describe("solid attributes", () => {
         '<svg viewBox="0 0 8 8" role="img">\n    <title>Dot</title>\n    <linearGradient id="g" />\n    <circle cx="4" cy="4" r="3" stroke-width={width} />\n  </svg>',
       ),
     );
-    expect(component(output)).toContain('<svg viewBox="0 0 8 8" role="img">');
+    expect(component(output)).toContain(
+      '<svg viewBox="0 0 8 8" role="img" class={props.class} style={props.style}>',
+    );
     expect(component(output)).toContain('<linearGradient id="g" />');
     expect(component(output)).toContain(
       '<circle cx="4" cy="4" r="3" stroke-width={props.width} />',

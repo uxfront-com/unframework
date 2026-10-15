@@ -22,12 +22,14 @@ import {
 } from "@unframework/codegen";
 import type { RewriteRules } from "@unframework/codegen";
 import type {
+  Attribute,
   ElementNode,
   Expression,
   FragmentNode,
   IfBranch,
   InterpolationNode,
   RenderNode,
+  SlotFill,
   UfComponent,
 } from "@unframework/ir";
 
@@ -45,7 +47,19 @@ export function forSolid(
   types: BindingTypes,
 ): UfComponent["render"] {
   const element = <T extends ElementNode | FragmentNode>(node: T): T => {
-    const content = children(node.children);
+    const model =
+      node.kind === "Element"
+        ? node.attributes.find(
+            (attribute) =>
+              attribute.kind === "Model" &&
+              (attribute.control === "select" || attribute.control === "select-multiple"),
+          )
+        : undefined;
+    const content = children(
+      model?.kind === "Model"
+        ? selectedOptions(node.children, model.value, model.control === "select-multiple")
+        : node.children,
+    );
     return {
       ...node,
       ...(node.kind === "Element"
@@ -100,9 +114,15 @@ export function forSolid(
           ];
         }
         case "For":
-          // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
-          if (node.body.kind !== "Element") return [node];
-          return [{ ...node, body: element(node.body) }];
+          return [
+            {
+              ...node,
+              body:
+                node.body.kind === "Element"
+                  ? element(node.body)
+                  : { ...node.body, fills: fills(node.body.fills) },
+            },
+          ];
         case "Interpolation":
           // The `<Show>` an interpolation may become renders it as a component's content,
           // which the server escapes whole; one left as text is escaped here.
@@ -120,14 +140,169 @@ export function forSolid(
         case "Text":
           return [node];
         case "Component":
+          return [{ ...node, fills: fills(node.fills) }];
         case "SlotOutlet":
+          return [{ ...node, fallback: children(node.fallback) }];
         case "Dynamic":
-          return [node];
+          return [
+            {
+              ...node,
+              children: children(node.children),
+              ...(node.fills ? { fills: fills(node.fills) } : {}),
+            },
+          ];
         default:
           return node satisfies never;
       }
     });
+  const fills = (list: readonly SlotFill[]): SlotFill[] =>
+    list.map((fill) => ({ ...fill, children: children(fill.children) }));
   return element(component.render);
+}
+
+/**
+ * A `<select>`'s options, each `selected` where it holds the model's value, or where the model's
+ * array holds it for a `<select multiple>` (ADR-0054), as Vue's `vModelSelect` sets them: Solid's
+ * server writes a `<select>`'s `value` as an attribute, and its `value` takes one value. Options
+ * are found in groups, lists and conditionals; one without a `value` holds its text, as the DOM
+ * reads it.
+ */
+function selectedOptions(
+  nodes: readonly RenderNode[],
+  model: Expression,
+  multiple: boolean,
+): RenderNode[] {
+  return nodes.map((node): RenderNode => {
+    switch (node.kind) {
+      case "For":
+        return node.body.kind === "Element" && node.body.tag === "option"
+          ? { ...node, body: selectedOption(node.body, model, multiple) }
+          : node;
+      case "If":
+        return {
+          ...node,
+          branches: node.branches.map((branch) => ({
+            ...branch,
+            children: selectedOptions(branch.children, model, multiple),
+          })),
+        };
+      case "Element":
+        if (node.tag === "optgroup") {
+          return { ...node, children: selectedOptions(node.children, model, multiple) };
+        }
+        return node.tag === "option" ? selectedOption(node, model, multiple) : node;
+      default:
+        return node;
+    }
+  });
+}
+
+/**
+ * Whether some of a `<select>`'s options are not its own to mark: a component, a slot, an
+ * interpolation or a `<component is>` renders them, or a list's row that is no `<option>`.
+ */
+export function unmarkedOptions(nodes: readonly RenderNode[]): boolean {
+  return nodes.some((node) => {
+    switch (node.kind) {
+      case "Text":
+        return false;
+      case "Element":
+        return node.tag === "optgroup" ? unmarkedOptions(node.children) : node.tag !== "option";
+      case "If":
+        return node.branches.some((branch) => unmarkedOptions(branch.children));
+      case "For":
+        return node.body.kind !== "Element" || node.body.tag !== "option";
+      default:
+        return true;
+    }
+  });
+}
+
+function selectedOption(option: ElementNode, model: Expression, multiple: boolean): ElementNode {
+  const value = option.attributes.find(
+    (attribute) =>
+      (attribute.kind === "Static" || attribute.kind === "Bound") && attribute.name === "value",
+  );
+  const own =
+    value?.kind === "Static"
+      ? JSON.stringify(value.value === true ? "" : value.value)
+      : value?.kind === "Bound"
+        ? value.value
+        : optionText(option);
+  const selected: Attribute = {
+    kind: "Bound",
+    name: "selected",
+    value: selects(model, own, multiple),
+    span: value?.span ?? option.span,
+  };
+  return { ...option, attributes: [...option.attributes, selected] };
+}
+
+/**
+ * The value of an option without a `value`: its text, the static text as a string and each
+ * interpolation as written, joined with `+`, the whitespace at its ends trimmed as the DOM's
+ * `value` strips and collapses it (a static text's own).
+ */
+function optionText(option: ElementNode): Expression | string {
+  const parts = option.children.flatMap((child): (Expression | string)[] => {
+    if (child.kind === "Text") return [child.value];
+    if (child.kind === "Interpolation") return [child.value];
+    return [];
+  });
+  if (parts.every((part) => typeof part === "string")) {
+    return JSON.stringify(
+      parts
+        .join("")
+        .replace(/[\t\n\f\r ]+/g, " ")
+        .trim(),
+    );
+  }
+  return joined(parts.map((part) => (typeof part === "string" ? JSON.stringify(part) : part)));
+}
+
+/**
+ * Expressions and string literals joined with `+` into an option's value, its ASCII whitespace
+ * collapsed as the DOM's (`String("a " + (x)).replace(…)`), each reference at its place in the
+ * new code.
+ */
+function joined(parts: readonly (Expression | string)[]): Expression {
+  const start = parts.find((part): part is Expression => typeof part !== "string")!.span.start;
+  let code = "String(";
+  const refs: Expression["refs"] = [];
+  for (const [index, part] of parts.entries()) {
+    if (index) code += " + ";
+    if (typeof part === "string") {
+      code += part;
+      continue;
+    }
+    code += "(";
+    const by = start + code.length - part.span.start;
+    code += `${part.code})`;
+    refs.push(...part.refs.map((reference) => shifted(reference, by)));
+  }
+  // The DOM strips and collapses an option's text into its value.
+  code += ').replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
+  return { code, span: { start, end: start + code.length }, refs };
+}
+
+/** A reference moved by `by` characters. */
+function shifted<T extends { span: { start: number; end: number } }>(reference: T, by: number): T {
+  return { ...reference, span: { start: reference.span.start + by, end: reference.span.end + by } };
+}
+
+/**
+ * `model === value`, or `model.includes(value)`, with each reference at its place in the new
+ * code.
+ */
+function selects(model: Expression, value: Expression | string, multiple: boolean): Expression {
+  const prefix = multiple ? `${model.code}.includes(` : `${model.code} === `;
+  const own = typeof value === "string" ? value : value.code;
+  const code = `${prefix}${own}${multiple ? ")" : ""}`;
+  const start = model.span.start;
+  const by = start + prefix.length - (typeof value === "string" ? 0 : value.span.start);
+  const ownRefs =
+    typeof value === "string" ? [] : value.refs.map((reference) => shifted(reference, by));
+  return { code, span: { start, end: start + code.length }, refs: [...model.refs, ...ownRefs] };
 }
 
 /**

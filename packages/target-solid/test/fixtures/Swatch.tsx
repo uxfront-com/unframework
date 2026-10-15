@@ -1,3 +1,5 @@
+import type { JSX } from "solid-js";
+
 interface Paint {
   fill?: string;
   id?: string;
@@ -10,9 +12,9 @@ export interface SwatchProps {
   order: number;
 }
 
-export default function Swatch(props: SwatchProps) {
+export default function Swatch(props: SwatchProps & { class?: string; style?: JSX.CSSProperties }) {
   return (
-    <div>
+    <div class={props.class} style={props.style}>
       <svg viewBox="0 0 8 8" role="img">
         <title>Swatch</title>
         <defs>

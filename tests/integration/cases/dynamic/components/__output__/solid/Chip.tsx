@@ -1,3 +1,11 @@
-export default function Chip(props: { label: string }) {
-  return <span class="chip">{props.label}</span>;
+import type { JSX } from "solid-js";
+
+export default function Chip(
+  props: { label: string } & { class?: string; style?: JSX.CSSProperties },
+) {
+  return (
+    <span class={props.class ? `chip ${props.class}` : "chip"} style={props.style}>
+      {props.label}
+    </span>
+  );
 }

@@ -38,14 +38,6 @@ error[UF1002] (react): The react target does not emit two-way-binding yet: compo
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (solid): The solid target does not emit two-way-binding yet: composition lands in M3.
- --> models/textarea/NoteEditor.uf.tsx:7:35
-  |
-7 |       <textarea aria-label="Text" v-model={note.value} />
-  |                                   ^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (svelte): The svelte target does not emit two-way-binding yet: composition lands in M3.
  --> models/textarea/NoteEditor.uf.tsx:7:35
   |

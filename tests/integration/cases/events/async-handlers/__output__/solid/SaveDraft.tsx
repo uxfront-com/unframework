@@ -1,10 +1,12 @@
-import { createSignal } from "solid-js";
+import { type JSX, createSignal } from "solid-js";
 
 export interface SaveDraftEvents {
   onSaved?: (attempt: number, status: string) => void;
 }
 
-export default function SaveDraft(props: SaveDraftEvents) {
+export default function SaveDraft(
+  props: SaveDraftEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [status, setStatus] = createSignal("Not saved");
   const [attempts, setAttempts] = createSignal(0);
 
@@ -19,7 +21,11 @@ export default function SaveDraft(props: SaveDraftEvents) {
   }
 
   return (
-    <section class="save-draft" aria-label="Draft">
+    <section
+      class={props.class ? `save-draft ${props.class}` : "save-draft"}
+      aria-label="Draft"
+      style={props.style}
+    >
       <p role="status">{status()}</p>
       <button type="button" onClick={save}>
         Save the draft

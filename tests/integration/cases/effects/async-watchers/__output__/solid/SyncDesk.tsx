@@ -1,4 +1,4 @@
-import { createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import { type JSX, createReaction, createSignal, onCleanup, onMount, untrack } from "solid-js";
 
 interface Waiting {
   resolve: (text: string) => void;
@@ -27,7 +27,9 @@ async function validate(value: string): Promise<boolean> {
   return value.includes("@");
 }
 
-export default function SyncDesk(props: SyncDeskProps & SyncDeskEvents) {
+export default function SyncDesk(
+  props: SyncDeskProps & SyncDeskEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   let waiting: Waiting[] = [];
 
   function ask(): Promise<string> {
@@ -203,7 +205,11 @@ export default function SyncDesk(props: SyncDeskProps & SyncDeskEvents) {
   });
 
   return (
-    <section class="sync-desk" aria-label="Sync desk">
+    <section
+      class={props.class ? `sync-desk ${props.class}` : "sync-desk"}
+      aria-label="Sync desk"
+      style={props.style}
+    >
       <button type="button" onClick={suggest}>
         Suggest
       </button>

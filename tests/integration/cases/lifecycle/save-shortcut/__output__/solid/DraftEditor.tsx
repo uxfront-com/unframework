@@ -1,10 +1,12 @@
-import { createSignal, onCleanup, onMount } from "solid-js";
+import { type JSX, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface DraftEditorEvents {
   onSaved?: (count: number) => void;
 }
 
-export default function DraftEditor(props: DraftEditorEvents) {
+export default function DraftEditor(
+  props: DraftEditorEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [saves, setSaves] = createSignal(0);
 
   function onShortcut(event: KeyboardEvent) {
@@ -25,7 +27,11 @@ export default function DraftEditor(props: DraftEditorEvents) {
   );
 
   return (
-    <section class="draft-editor" aria-label="Draft">
+    <section
+      class={props.class ? `draft-editor ${props.class}` : "draft-editor"}
+      aria-label="Draft"
+      style={props.style}
+    >
       <label>
         Draft
         <textarea name="draft" />

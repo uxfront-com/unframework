@@ -1,3 +1,5 @@
+import type { JSX } from "solid-js";
+
 export interface AccountSettingsProps {
   charset: string;
   bioId: string;
@@ -8,9 +10,14 @@ export interface AccountSettingsProps {
   helpOrder: number;
 }
 
-export default function AccountSettings(props: AccountSettingsProps) {
+export default function AccountSettings(
+  props: AccountSettingsProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <div class="account-settings">
+    <div
+      class={props.class ? `account-settings ${props.class}` : "account-settings"}
+      style={props.style}
+    >
       <form accept-charset="utf-8" aria-label="Profile">
         <img
           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23345'/%3E%3C/svg%3E"

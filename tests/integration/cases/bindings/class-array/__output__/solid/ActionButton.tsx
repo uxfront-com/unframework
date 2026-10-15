@@ -1,4 +1,4 @@
-import { mergeProps } from "solid-js";
+import { type JSX, mergeProps } from "solid-js";
 
 export interface ActionButtonProps {
   label: string;
@@ -8,7 +8,9 @@ export interface ActionButtonProps {
   badge: number;
 }
 
-export default function ActionButton(rawProps: ActionButtonProps) {
+export default function ActionButton(
+  rawProps: ActionButtonProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const props = mergeProps({ busy: false } satisfies Partial<ActionButtonProps>, rawProps);
   return (
     <button
@@ -23,7 +25,9 @@ export default function ActionButton(rawProps: ActionButtonProps) {
           "has-badge": props.badge,
         },
         props.primary ? "solid" : "outline",
+        props.class,
       )}
+      style={props.style}
     >
       {props.label}
     </button>

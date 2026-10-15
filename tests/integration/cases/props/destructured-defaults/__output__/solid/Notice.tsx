@@ -1,4 +1,4 @@
-import { mergeProps } from "solid-js";
+import { type JSX, mergeProps } from "solid-js";
 
 export interface NoticeProps {
   message: string;
@@ -10,7 +10,9 @@ export interface NoticeProps {
   author?: { name: string };
 }
 
-export default function Notice(rawProps: NoticeProps) {
+export default function Notice(
+  rawProps: NoticeProps & { class?: string; style?: JSX.CSSProperties },
+) {
   const defaults: Required<
     Pick<NoticeProps, "title" | "tone" | "priority" | "expanded" | "tags" | "author">
   > = {
@@ -23,7 +25,12 @@ export default function Notice(rawProps: NoticeProps) {
   };
   const props = mergeProps(defaults, rawProps);
   return (
-    <section class="notice" aria-label={props.title} data-tone={props.tone}>
+    <section
+      class={props.class ? `notice ${props.class}` : "notice"}
+      aria-label={props.title}
+      data-tone={props.tone}
+      style={props.style}
+    >
       <h2>{props.title}</h2>
       <p>{props.message}</p>
       <details open={props.expanded}>

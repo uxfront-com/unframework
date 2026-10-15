@@ -107,8 +107,8 @@ describe("solid frameworkCompile (L3)", () => {
       errors: [
         {
           message: "Expected corresponding JSX closing tag for <p>.",
-          line: 2,
-          column: 43,
+          line: 7,
+          column: 5,
           code: "MissingClosingTagElement",
         },
       ],
@@ -227,7 +227,7 @@ describe("solid renderToString (SSR)", () => {
     const html = await renderToString(ProfileCard, {});
     expect(html.replace(/ data-hk="[^"]*"/g, "")).toBe(
       [
-        '<article class="profile" aria-labelledby="profile-name">',
+        '<article class="profile" aria-labelledby="profile-name" style="">',
         '<header class="profile-header">',
         `<img src="${golden("ProfileCard.tsx").contents.match(/src="([^"]+)"/)![1]}" alt="Ada's avatar" width="48" height="48">`,
         '<h2 id="profile-name">Ada Lovelace</h2>',

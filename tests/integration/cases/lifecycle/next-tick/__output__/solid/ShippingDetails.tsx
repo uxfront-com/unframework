@@ -1,10 +1,12 @@
-import { Show, createSignal, onCleanup } from "solid-js";
+import { type JSX, Show, createSignal, onCleanup } from "solid-js";
 
 export interface ShippingDetailsEvents {
   onToggled?: (items: number) => void;
 }
 
-export default function ShippingDetails(props: ShippingDetailsEvents) {
+export default function ShippingDetails(
+  props: ShippingDetailsEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [open, setOpen] = createSignal(false);
   let details: HTMLUListElement | null = null;
 
@@ -15,7 +17,11 @@ export default function ShippingDetails(props: ShippingDetailsEvents) {
   }
 
   return (
-    <section class="shipping-details" aria-label="Shipping">
+    <section
+      class={props.class ? `shipping-details ${props.class}` : "shipping-details"}
+      aria-label="Shipping"
+      style={props.style}
+    >
       <button type="button" aria-expanded={open()} onClick={toggle}>
         Shipping details
       </button>

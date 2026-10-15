@@ -1,4 +1,4 @@
-import { For, createReaction, createSignal, onCleanup, onMount } from "solid-js";
+import { For, type JSX, createReaction, createSignal, onCleanup, onMount } from "solid-js";
 
 export interface Book {
   id: number;
@@ -21,7 +21,9 @@ function sum(values: number[]): number {
   return values.reduce((total, value) => total + value, 0);
 }
 
-export default function BookShelf(props: BookShelfProps & BookShelfEvents) {
+export default function BookShelf(
+  props: BookShelfProps & BookShelfEvents & { class?: string; style?: JSX.CSSProperties },
+) {
   const [focused, setFocused] = createSignal<Book | null>(null);
   const [reads, setReads] = createSignal(new Map<number, number>());
   const [open, setOpen] = createSignal(false);
@@ -82,7 +84,11 @@ export default function BookShelf(props: BookShelfProps & BookShelfEvents) {
   }
 
   return (
-    <section class="book-shelf" aria-label="Books">
+    <section
+      class={props.class ? `book-shelf ${props.class}` : "book-shelf"}
+      aria-label="Books"
+      style={props.style}
+    >
       <ul aria-label="Shelf">
         <For each={props.books}>
           {(book) => (

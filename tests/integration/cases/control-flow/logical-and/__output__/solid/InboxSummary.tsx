@@ -1,4 +1,4 @@
-import { Show } from "solid-js";
+import { type JSX, Show } from "solid-js";
 
 export interface InboxSummaryProps {
   folder: string;
@@ -7,9 +7,15 @@ export interface InboxSummaryProps {
   signature: string;
 }
 
-export default function InboxSummary(props: InboxSummaryProps) {
+export default function InboxSummary(
+  props: InboxSummaryProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <section class="inbox-summary" aria-label="Inbox summary">
+    <section
+      class={props.class ? `inbox-summary ${props.class}` : "inbox-summary"}
+      aria-label="Inbox summary"
+      style={props.style}
+    >
       <h2>{props.folder || "Inbox"}</h2>
       <Show when={props.unread}>
         <p>{props.unread} unread</p>

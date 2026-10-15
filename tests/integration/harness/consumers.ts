@@ -37,9 +37,10 @@ export interface Fixture {
 /**
  * What a target's checker cannot check: a kind of declaration, or a finer part of one
  * (ADR-0059's feasibility table), a slot without props (`named-slot`). Models' setters join with
- * models.
+ * models: a model's directive names its value, so a gap in its setter alone (`model-setter`)
+ * fails no directive, and is declared for the record.
  */
-export type ConsumerGap = ConsumerKind | "named-slot";
+export type ConsumerGap = ConsumerKind | "named-slot" | "model-setter";
 
 /**
  * The declarations a target's checker cannot check, with the reason (ADR-0059's feasibility
@@ -49,6 +50,10 @@ export const CONSUMER_GAPS: Readonly<Record<string, Partial<Record<ConsumerGap, 
   astro: {
     event: "Astro has no events: its `interactivity` cell is unsupported",
     "named-slot": "Astro does not type a named slot without props, which renders through `<slot>`",
+  },
+  solid: {
+    "model-setter":
+      "Solid's setter of a signal (`onValueChange={setCount}`) is assignable to any model's change callback: only the model's value is checked",
   },
 };
 

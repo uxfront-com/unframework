@@ -1,4 +1,4 @@
-import { For, Match, Show, Switch } from "solid-js";
+import { For, type JSX, Match, Show, Switch } from "solid-js";
 
 interface Team {
   name: string;
@@ -26,9 +26,15 @@ export interface AccountSummaryProps {
   seats: (Seat | null)[];
 }
 
-export default function AccountSummary(props: AccountSummaryProps) {
+export default function AccountSummary(
+  props: AccountSummaryProps & { class?: string; style?: JSX.CSSProperties },
+) {
   return (
-    <section class="account-summary" aria-label="Account">
+    <section
+      class={props.class ? `account-summary ${props.class}` : "account-summary"}
+      aria-label="Account"
+      style={props.style}
+    >
       <Switch>
         <Match when={props.loading}>
           <p>Loading the account</p>

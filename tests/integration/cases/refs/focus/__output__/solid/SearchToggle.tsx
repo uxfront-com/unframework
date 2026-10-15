@@ -1,6 +1,6 @@
-import { onCleanup } from "solid-js";
+import { type JSX, onCleanup } from "solid-js";
 
-export default function SearchToggle() {
+export default function SearchToggle(props: { class?: string; style?: JSX.CSSProperties }) {
   let field: HTMLInputElement | null = null;
   let trigger: HTMLButtonElement | null = null;
 
@@ -13,7 +13,11 @@ export default function SearchToggle() {
   }
 
   return (
-    <div class="search-toggle" role="search">
+    <div
+      class={props.class ? `search-toggle ${props.class}` : "search-toggle"}
+      role="search"
+      style={props.style}
+    >
       <button
         type="button"
         ref={(element) => {

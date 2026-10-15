@@ -14,6 +14,8 @@ import type { ElementNode, RenderNode, UfModule } from "@unframework/ir";
 import type { ProjectKind } from "@unframework/testing/node";
 import { describe, expect, it } from "vitest";
 
+// The unplugin's join, by path: it is internal to the package, and the canary must survive it.
+import { joinModules } from "../../../packages/unplugin/src/assemble.ts";
 import {
   canaryRuns,
   combineRuns,
@@ -41,7 +43,7 @@ import {
 import type { Canary, CanaryCase } from "./canaries.ts";
 import { listCases } from "./cases.ts";
 import { checkFixes, formattingProblems, nondeterminism } from "./compile-checks.ts";
-import { REPO_ROOT } from "./paths.ts";
+import { CASES_DIR, REPO_ROOT } from "./paths.ts";
 import { LIVE_LAYERS } from "./quarantine.ts";
 import { REFERENCE } from "./targets.ts";
 
@@ -229,6 +231,32 @@ describe("canaries", () => {
   it("refuse an unknown canary", () => {
     expect(() => findCanary("L5-lint")).toThrow(/Unknown canary "L5-lint"/);
     expect(canaryPlugins(null)).toEqual([]);
+  });
+
+  it("corrupt each output of a joined module apart with L6-golden-guard, so the join keeps it", async () => {
+    // Two components of one `.uf.tsx`, whose outputs the unplugin joins into one module.
+    const path = "components/local-sibling/Card.uf.tsx";
+    const input = readFileSync(join(CASES_DIR, path), "utf8");
+    const compiled = (id: string | null) =>
+      compile(canarySource(id, input), {
+        filename: path,
+        targets: ["solid"],
+        plugins: canaryPlugins(id, "solid"),
+        format: canaryFormats(id),
+      });
+    const [clean, guarded] = await Promise.all([compiled(null), compiled("L6-golden-guard")]);
+    const files = guarded.outputs.solid!;
+    expect(files).toHaveLength(2);
+    for (const [index, file] of files.entries()) {
+      expect(file.contents).not.toBe(clean.outputs.solid![index]!.contents);
+    }
+    expect(
+      joinModules(
+        files,
+        path,
+        files.map((file) => file.path),
+      ),
+    ).not.toHaveProperty("error");
   });
 
   it("keep the golden guard on, except under a canary that changes outputs on purpose", () => {
@@ -531,7 +559,7 @@ describe("canaries", () => {
       /tone = "info",\n\}: TaskListProps\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
     );
     expect(contents("solid")).toMatch(
-      /function TaskList\(rawProps: TaskListProps\) \{\n {2}console\.warn/,
+      /function TaskList\(\n {2}rawProps: TaskListProps & \{ class\?: string; style\?: JSX\.CSSProperties \},\n\) \{\n {2}console\.warn/,
     );
     expect(contents("qwik")).toMatch(
       /component\$<TaskListProps>\(\n {2}\(\{ title = "Tasks \(today\)", tasks, done, tone = "info" \}\) => \{\n {4}console\.warn/,
@@ -603,7 +631,7 @@ describe("canaries", () => {
     const root = (target: string) =>
       /<section\b[^>]*>/.exec(result.outputs[target]![0]!.contents)?.[0];
     expect(root("react")).toMatch(/^<section class="uf-canary" className=/);
-    expect(root("solid")).toMatch(/^<section className="uf-canary" class=/);
+    expect(root("solid")).toMatch(/^<section\s+className="uf-canary"\s+class=/);
     expect(root("qwik")).toMatch(/^<section className="uf-canary" class=/);
     expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
     expect(root("svelte")).toMatch(/^<section style:uf-canary="1" class=/);
@@ -706,7 +734,7 @@ describe("canaries", () => {
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(1\)/g), target).toHaveLength(1);
       expect(contents, target).toMatch(
-        /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\})/,
+        /<section\b[^>]*\bstyle=(?:"filter: invert\(1\)"|\{\{ filter: "invert\(1\)" \}\}|\{\{ \.\.\.\{ filter: "invert\(1\)" \}, \.\.\.props\.style \}\})/,
       );
     }
   });
