@@ -30,7 +30,15 @@ import {
   rewriteCode,
 } from "@unframework/codegen";
 import type { CodeKind, JsxContext, LiftedControl } from "@unframework/codegen";
-import type { ElementNode, EventAttribute, FunctionCode, Parameter } from "@unframework/ir";
+import type {
+  Attribute,
+  ComponentAttribute,
+  ElementNode,
+  EventAttribute,
+  FunctionCode,
+  ModelAttribute,
+  Parameter,
+} from "@unframework/ir";
 
 import { qwikListenerProp } from "./events.ts";
 import { readsName, splitHandler } from "./handlers.ts";
@@ -91,15 +99,22 @@ export class Listeners {
   /** The `once` listeners' WeakSets, declared after the component. */
   readonly helpers: string[] = [];
   /**
-   * The elements in a list inside a fill, whose `$` handler is written `$(…)` in place: Qwik
-   * 2.0.0-beta.47's optimizer hoists the capture of an arrow on a list's element out of the
+   * The listeners and models in a fill and in a list, whose `$` handler is written `$(…)` in
+   * place: Qwik 2.0.0-beta.47's optimizer hoists the capture of an arrow in a list out of the
    * fill's segment, which then reads a name it does not declare; an explicit `$()` captures the
    * item where it is (./composition.ts).
    */
-  readonly explicit: Set<ElementNode> = new Set();
+  readonly explicit: Set<EventAttribute | ModelAttribute> = new Set();
 
   constructor(plan: SetupPlan) {
     this.#plan = plan;
+  }
+
+  /** Prints these attributes' listeners again: a `<component is>` prints one tag per candidate. */
+  reprint(attributes: readonly (Attribute | ComponentAttribute)[]): void {
+    for (const attribute of attributes) {
+      if (attribute.kind === "Event") this.#printed.delete(attribute);
+    }
   }
 
   /** The JSX attributes of `attribute`'s event on `element`, at its first listener; `[]` after. */
@@ -110,7 +125,7 @@ export class Listeners {
     const [first] = listeners;
     if (first !== attribute || this.#printed.has(first)) return [];
     this.#printed.add(first);
-    return this.#event(attribute.event, listeners, context, this.explicit.has(element));
+    return this.#event(attribute.event, listeners, context, this.explicit.has(first));
   }
 
   #event(

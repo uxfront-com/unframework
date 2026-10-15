@@ -294,7 +294,7 @@ function listenerFunctions(component: UfComponent): Set<string> {
   const named = new Set<string>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
       for (const attribute of node.attributes) {
         if (attribute.kind === "Event" && attribute.handler.kind === "Function") {
           named.add(attribute.handler.binding);
@@ -360,7 +360,7 @@ export function usedFunctions(component: UfComponent, removed: ReadonlySet<numbe
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
       for (const attribute of node.attributes) {
         if (attribute.kind === "Event" && attribute.handler.kind === "Inline") {
           visit(attribute.handler.function.body.refs);

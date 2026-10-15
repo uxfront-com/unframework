@@ -476,3 +476,22 @@ describe("tasks in source order, async watchers and effects (ADR-0048)", () => {
     ]);
   });
 });
+
+describe("composition (ADR-0054)", () => {
+  it("runs a fill's listeners and models in a list, and in a component in a list", async () => {
+    await start("FillLists");
+    await click("Pick Bo");
+    expect(status()).toBe("Bo ");
+    await act(() => userEvent.click(page.getByRole("checkbox", { name: "Tick Ada" })));
+    expect(status()).toBe("Bo Ada");
+    await click("Pick y");
+    expect(status()).toBe("y1 Ada");
+  });
+
+  it("runs the listeners of a `<component is>`", async () => {
+    await start("DynamicListeners", { props: { link: false } });
+    await click("Count 0");
+    await act(() => userEvent.keyboard("{Enter}"));
+    expect(container.querySelector("button")?.textContent).toBe("Count 3");
+  });
+});

@@ -473,45 +473,25 @@ function Rows() {
   });
 
   it("emits fills that type-check and lint clean (L4, L5)", async () => {
-    const paths = [];
-    for (const [index, source] of [board, spelled].entries()) {
-      const dir = join(scratch, `fills-${index}`);
-      mkdirSync(dir);
-      const module = lower(source);
-      for (const component of module.components) {
-        const emit: EmitContext = { module, options: undefined, report: () => {} };
-        for (const file of target.emit(component, emit)) {
-          const { file: formatted } = await formatOutput(file);
-          const path = join(dir, formatted.path);
-          writeFileSync(path, formatted.contents);
-          paths.push(path);
-        }
-      }
-    }
-    const [types, lint] = await Promise.all([
-      toolchain.typecheck(paths, context),
-      toolchain.lint(paths, context),
-    ]);
-    for (const path of paths) {
-      expect(types.get(path), path).toEqual([]);
-      expect(lint.get(path), path).toEqual([]);
-    }
+    await expectCheckedClean([board, spelled]);
   });
 });
 
 describe("qwik target: options read as the DOM reads them", () => {
-  it("renders a nullish expression as no text, and keeps a non-ASCII space", async () => {
-    const contents = await emitSource(`import { ref } from "unframework";
+  const pick = `import { ref } from "unframework";
 
 export default function Pick({ hint, sizes }: { hint?: string; sizes: string[] }) {
   const picked = ref("");
   const many = ref<string[]>([]);
+  const count = ref(1);
   return (
     <div>
       <select v-model={picked.value}>
         <option>{hint}</option>
         <option>&nbsp;sp&nbsp;</option>
         <option>{hint ? "Yes" : "No"}</option>
+        <option>{hint ? hint : undefined}</option>
+        <option>{\`\${count.value + 1}\`}</option>
       </select>
       <select multiple v-model={many.value}>
         {sizes.map((n) => (
@@ -520,13 +500,94 @@ export default function Pick({ hint, sizes }: { hint?: string; sizes: string[] }
       </select>
     </div>
   );
-}`);
+}`;
+
+  it("renders a nullish expression as no text, and keeps a non-ASCII space", async () => {
+    const contents = await emitSource(pick);
     const read = '.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")';
     expect(contents).toContain(`currentPicked === \`\${hint ?? ""}\`${read}`);
     // The DOM strips ASCII whitespace only.
     expect(contents).toContain('currentPicked === "\u00a0sp\u00a0"');
-    // A conditional of strings is one expression, in parentheses before `??`.
-    expect(contents).toContain(`\`\${(hint ? "Yes" : "No") ?? ""}\`${read}`);
+    // TypeScript rejects `?? ""` after what is never nullish (TS2869).
+    expect(contents).toContain(`\`\${hint ? "Yes" : "No"}\`${read}`);
+    expect(contents).toContain(`\`\${\`\${count.value + 1}\`}\`${read}`);
+    // A conditional that may be nullish is in parentheses before `??`.
+    expect(contents).toContain(`\`\${(hint ? hint : undefined) ?? ""}\`${read}`);
     expect(contents).toMatch(/currentMany\.includes\(\s*`\$\{n \?\? ""\}`/);
   });
+
+  it("emits options that type-check and lint clean (L4, L5)", async () => {
+    await expectCheckedClean([pick]);
+  });
 });
+
+describe("qwik target: a `<component is>` with listeners", () => {
+  const toggle = `import { ref } from "unframework";
+
+export default function Toggle({ link }: { link: boolean }) {
+  const count = ref(0);
+  function bump() {
+    count.value += 1;
+  }
+  return (
+    <component is={link ? "a" : "button"} role="button" tabindex="0" onClick={bump} onKeydown={() => bump()}>
+      Count {count.value}
+    </component>
+  );
+}`;
+
+  it("renders one tag per candidate, each with the listeners", async () => {
+    const contents = await emitSource(toggle);
+    expect(contents).toContain('const Tag = link ? "a" : "button";');
+    expect(contents).toMatch(
+      /Tag === "a" \? \(\s*<a role="button" tabIndex=\{0\} onClick\$=\{bump\}/,
+    );
+    expect(contents).toMatch(/\) : \(\s*<button role="button" tabIndex=\{0\} onClick\$=\{bump\}/);
+    expect(contents.match(/onKeyDown\$=\{\(\) => bump\(\)\}/g)).toHaveLength(2);
+    expect(contents).not.toContain("<Tag");
+  });
+
+  it("emits a `<component is>` with listeners that compiles, type-checks and lints clean", async () => {
+    const file = { path: "/virtual/Toggle.tsx", contents: await emitSource(toggle) };
+    const compiled = (await toolchain.frameworkCompile([file], context)).get(file.path);
+    expect(compiled).toEqual({ errors: [], warnings: [] });
+    await expectCheckedClean([toggle]);
+  });
+});
+
+/**
+ * Emits every component of each source, as the compiler does, and runs L4 and L5 on the
+ * output: neither the target nor oxfmt may report anything, and no checker message, for these
+ * files or any other path, may remain.
+ */
+async function expectCheckedClean(sources: readonly string[]): Promise<void> {
+  const paths: string[] = [];
+  for (const source of sources) {
+    const dir = mkdtempSync(join(scratch, "checked-"));
+    const module = lower(source);
+    const reported: unknown[] = [];
+    for (const component of module.components) {
+      const emit: EmitContext = {
+        module,
+        options: undefined,
+        report: (diagnostic) => void reported.push(diagnostic),
+      };
+      for (const file of target.emit(component, emit)) {
+        const formatted = await formatOutput(file);
+        expect(formatted.error).toBeUndefined();
+        const path = join(dir, formatted.file.path);
+        writeFileSync(path, formatted.file.contents);
+        paths.push(path);
+      }
+    }
+    expect(reported).toEqual([]);
+  }
+  const [types, lint] = await Promise.all([
+    toolchain.typecheck(paths, context),
+    toolchain.lint(paths, context),
+  ]);
+  for (const results of [types, lint]) {
+    for (const [path, messages] of results) expect(messages, path).toEqual([]);
+    expect([...results.keys()].toSorted()).toEqual(paths.toSorted());
+  }
+}

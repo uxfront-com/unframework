@@ -12,6 +12,7 @@ import {
   jsxAttributeValue,
   jsxContext,
   jsxDynamic,
+  jsxElement,
   jsxExpression,
   jsxNode,
   keyImports,
@@ -29,7 +30,9 @@ import { codeOf } from "@unframework/ir";
 import { childrenOf, walk } from "@unframework/ir";
 import type {
   BindingId,
+  DynamicNode,
   ElementNode,
+  EventAttribute,
   EventDeclaration,
   FragmentNode,
   ModelAttribute,
@@ -237,7 +240,7 @@ export const qwik: Target = defineTarget({
       if (selected) option.attributes = [selected, ...option.attributes];
     }
     for (const node of replacedBeforeSiblings(render)) followed.add(node);
-    for (const element of listsInFills(render)) listeners.explicit.add(element);
+    for (const attribute of listsInFills(render)) listeners.explicit.add(attribute);
     const setup = printSetup(plan);
     const root = jsxNode(render, jsx);
     if (plan.composition.fallthrough) mergeFallthrough(root, plan.composition.fallthrough);
@@ -818,15 +821,21 @@ function qwikDialect(
       ];
     },
     modelAttribute: (attribute, element, context) =>
-      modelAttribute(attribute, element, context, plan, locals),
+      modelAttribute(attribute, element, context, plan, locals, listeners.explicit.has(attribute)),
     // A `<component is>` that reads a list's item, or sits in a fill, is declared in that
     // callback.
     dynamic(node, context) {
       // In a fill, it may call a function only the fill declares (./composition.ts).
       const local = readsRenderLocal(node.is, component) || locals.inFill;
       const name = locals.declare("Tag", expressionCode(node.is, context), local);
-      const element = jsxDynamic(node, name, context);
-      return followed.has(node) ? js.jsxFragment([element]) : element;
+      const element = node.attributes.some((attribute) => attribute.kind === "Event")
+        ? candidateBranches(node, name, context, listeners)
+        : jsxDynamic(node, name, context);
+      return followed.has(node)
+        ? js.jsxFragment([
+            element.type === "JSXElement" ? element : js.jsxExpressionContainer(element),
+          ])
+        : element;
     },
     eventAttribute: (attribute, element, context) =>
       listeners.attributes(attribute, element, context),
@@ -892,25 +901,76 @@ function qwikDialect(
   };
 }
 
-/** The elements inside a list inside a render-prop fill (see `Listeners.explicit`). */
-function listsInFills(root: ElementNode | FragmentNode): Set<ElementNode> {
-  const found = new Set<ElementNode>();
+/**
+ * A `<component is>` with listeners, as one element per candidate tag: `Tag === "a" ? <a …> :
+ * <button …>`. Qwik 2.0.0-beta.47's runtime makes a `$` prop an element's listener only where
+ * the optimizer splits the props, which it does not for `<Tag>`, so `onClick$` on it would be an
+ * attribute. Listeners are on tags only: a component candidate's are its props (ADR-0054).
+ */
+function candidateBranches(
+  node: DynamicNode,
+  name: string,
+  context: JsxContext,
+  listeners: Listeners,
+): AstExpression {
+  const tags = node.candidates.flatMap((candidate) =>
+    candidate.kind === "Tag" ? [candidate.tag] : [],
+  );
+  const branches = tags.map((tag) => {
+    listeners.reprint(node.attributes);
+    return jsxElement(
+      {
+        kind: "Element",
+        tag,
+        // A tag candidate's attributes are an element's (ADR-0054).
+        attributes: node.attributes.filter(
+          (attribute) =>
+            attribute.kind !== "Prop" &&
+            attribute.kind !== "Listener" &&
+            attribute.kind !== "ModelBinding",
+        ),
+        children: node.children,
+        span: node.span,
+      },
+      context,
+    );
+  });
+  return branches
+    .slice(0, -1)
+    .reduceRight<AstExpression>(
+      (alternate, branch, index) =>
+        js.conditionalExpression(
+          js.binaryExpression("===", js.identifier(name), js.stringLiteral(tags[index]!)),
+          branch,
+          alternate,
+        ),
+      branches.at(-1)!,
+    );
+}
+
+/**
+ * The listeners and models of the elements and `<component is>` nodes in a render-prop fill and
+ * in a list, the fill's own or one around its component (see `Listeners.explicit`).
+ */
+function listsInFills(root: ElementNode | FragmentNode): Set<EventAttribute | ModelAttribute> {
+  const found = new Set<EventAttribute | ModelAttribute>();
   const visit = (node: RenderNode, fill: boolean, list: boolean): void => {
-    if (node.kind === "Element" && fill && list) found.add(node);
+    if ((node.kind === "Element" || node.kind === "Dynamic") && fill && list) {
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Event" || attribute.kind === "Model") found.add(attribute);
+      }
+    }
     if (node.kind === "Component" || node.kind === "Dynamic") {
       const fills = node.kind === "Component" ? node.fills : (node.fills ?? []);
       for (const each of fills) {
         // The default slot's plain fill is projected: it renders in the component's own segment.
         const own = each.slot === "default" && !each.parameter;
-        for (const child of each.children) {
-          if (own) visit(child, fill, list);
-          else visit(child, true, false);
-        }
+        for (const child of each.children) visit(child, own ? fill : true, list);
       }
       if (node.kind === "Dynamic") for (const child of node.children) visit(child, fill, list);
       return;
     }
-    if (node.kind === "For") return visit(node.body, fill, fill);
+    if (node.kind === "For") return visit(node.body, fill, true);
     for (const child of childrenOf(node)) visit(child, fill, list);
   };
   for (const child of root.kind === "Fragment" ? root.children : [root]) visit(child, false, false);

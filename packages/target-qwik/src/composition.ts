@@ -47,6 +47,7 @@ import { qwikEventProp } from "./events.ts";
 import { unreachable } from "./plan.ts";
 import type { OutputNames, SetupPlan } from "./plan.ts";
 import { printFunction } from "./setup.ts";
+import { mayBeNullish } from "./values.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type AstExpression = Parameters<typeof js.conditionalExpression>[0];
@@ -450,7 +451,8 @@ export function fillExpressions(component: UfComponent): Set<Expression> {
  * text where it reads as the value, as Vue's `vModelText` does, through a ref to the control. A
  * checkbox binds `checked`, into an array through `toggle`; a radio is checked where the model
  * holds its value; a select's options are selected where the model holds theirs (./index.ts),
- * and a multiple one writes `selectedValues`.
+ * and a multiple one writes `selectedValues`. In a list in a fill, the listener is `$(…)`, as an
+ * element's is there (`Listeners.explicit`).
  */
 export function modelAttribute(
   attribute: ModelAttribute,
@@ -458,17 +460,20 @@ export function modelAttribute(
   context: JsxContext,
   plan: SetupPlan,
   locals: RenderLocals,
+  explicit: boolean,
 ): JsxAttribute[] {
   const read = expressionCode(attribute.value, context);
   const current = locals.current(read, modelBindingName(attribute.value, plan));
   const write = (value: string) => modelWrite(attribute.value, value, plan);
-  const listener = (event: string, value: string, parameters = "_, element") =>
-    js.jsxAttribute(
+  const listener = (event: string, value: string, parameters = "_, element") => {
+    const handler = `(${parameters}) => ${write(value)}`;
+    return js.jsxAttribute(
       qwikEventProp(event),
       js.jsxExpressionContainer(
-        context.placeholders.expression(`(${parameters}) => ${write(value)}`),
+        context.placeholders.expression(explicit ? `${plan.names.core("$")}(${handler})` : handler),
       ),
     );
+  };
   const prop = (name: string, code: string) =>
     js.jsxAttribute(name, js.jsxExpressionContainer(context.placeholders.expression(code)));
   switch (attribute.control) {
@@ -662,8 +667,11 @@ export function textOptionSelected(
       .map((part) =>
         typeof part === "string"
           ? part.replace(/[`\\]|\$\{/g, (found) => `\\${found}`)
-          : // A nullish value renders nothing, as in Vue's text.
-            `\${${nullishOperand(expressionCode(part, context))} ?? ""}`,
+          : // A nullish value renders nothing, as in Vue's text. TypeScript rejects `?? ""` after
+            // an expression it knows never is (TS2869).
+            mayBeNullish(part)
+            ? `\${${nullishOperand(expressionCode(part, context))} ?? ""}`
+            : `\${${expressionCode(part, context)}}`,
       )
       .join("");
     compared = `\`${template}\`.replace(/[\\t\\n\\f\\r ]+/g, " ").replace(/^ | $/g, "")`;

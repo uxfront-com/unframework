@@ -305,7 +305,7 @@ function planEventFunctions(
   const removed = new Set([...splits.values()].flatMap((split) => split.removedCalls));
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event" || attribute.handler.kind !== "Inline") continue;
         const split = splitHandler(attribute.handler.function, component, empty);
@@ -667,7 +667,7 @@ function planListeners(component: UfComponent): ListenerPlan {
   const passive = new Map<string, Set<boolean>>();
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
       const phases = new Map<string, Set<boolean>>();
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event") continue;
@@ -735,7 +735,17 @@ function planListeners(component: UfComponent): ListenerPlan {
         for (const child of node.fallback) visit(child, path);
         return;
       case "Dynamic":
-        for (const child of node.children) visit(child, path);
+        // Its tag takes its listeners and children, as an element (codegen's `jsxDynamic`).
+        visit(
+          {
+            kind: "Element",
+            tag: "component",
+            attributes: node.attributes.filter((attribute) => attribute.kind === "Event"),
+            children: node.children,
+            span: node.span,
+          },
+          path,
+        );
         for (const fill of node.fills ?? []) for (const child of fill.children) visit(child, path);
         return;
       default:
@@ -1120,7 +1130,7 @@ function planFunctions(
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event") continue;
         if (attribute.handler.kind === "Function") client.add(attribute.handler.binding);
@@ -1267,7 +1277,7 @@ function emittedEvents(component: UfComponent): Set<string> {
   }
   walk(component.render, {
     enter(node) {
-      if (node.kind !== "Element") return;
+      if (node.kind !== "Element" && node.kind !== "Dynamic") return;
       for (const attribute of node.attributes) {
         if (attribute.kind === "Event" && attribute.handler.kind === "Inline") {
           visit(attribute.handler.function.body.refs);

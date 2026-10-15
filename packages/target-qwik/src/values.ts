@@ -195,6 +195,49 @@ export function isTextValue(
 }
 
 /**
+ * Whether TypeScript may read an expression as nullish, from its syntax alone: the check behind
+ * TS2869, which rejects `?? x` after an expression that never is (a literal, arithmetic, a
+ * conditional of such). Names, members, calls and logical operators may be; so may `null`.
+ */
+export function mayBeNullish(expression: Expression): boolean {
+  return nullish(parseExpression(expression.code));
+}
+
+/** See {@link mayBeNullish}. */
+function nullish(node: Node): boolean {
+  switch (node.type) {
+    case "Identifier":
+    case "MemberExpression":
+    case "ChainExpression":
+    case "CallExpression":
+    case "NewExpression":
+    case "AwaitExpression":
+    case "YieldExpression":
+    case "TaggedTemplateExpression":
+    case "ThisExpression":
+    case "MetaProperty":
+    case "LogicalExpression":
+      return true;
+    case "Literal":
+      return node.value === null && !("regex" in node);
+    case "AssignmentExpression":
+      return ["=", "&&=", "||=", "??="].includes(node.operator);
+    case "ConditionalExpression":
+      return nullish(node.consequent) || nullish(node.alternate);
+    case "SequenceExpression":
+      return nullish(node.expressions.at(-1)!);
+    case "ParenthesizedExpression":
+    case "TSAsExpression":
+    case "TSSatisfiesExpression":
+    case "TSNonNullExpression":
+    case "TSTypeAssertion":
+      return nullish(node.expression);
+    default:
+      return false;
+  }
+}
+
+/**
  * The kinds a prop read as a whole (`label`, `props.label`) may have: its declared type's, with
  * `undefined` when the consumer may leave it out and it has no default. `undefined` for any
  * other expression.
