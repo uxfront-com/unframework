@@ -191,6 +191,19 @@ ${setup}
 return <button type="button" onClick={() => emit("${events.slice(0, events.indexOf(":"))}")}>x</button>;
 }`;
 
+/** A `Card` with a scoped `title` slot, beside `declaration`, its setup ending with `setup`. */
+const card = (
+  declaration: string,
+  setup: string,
+) => `import { defineSlots${setup ? ", provide" : ""} } from "unframework";
+import type { Element${setup ? ", InjectionKey" : ""} } from "unframework";
+${declaration}
+export default function Card({ level }: { level: CardTitle${setup ? " | undefined" : ""} }) {
+  const slots = defineSlots<{ title?(props: { text: string }): Element }>();
+${setup}
+  return <h2 data-level={level}>{slots.title?.({ text: "x" })}</h2>;
+}`;
+
 describe("the component's API", () => {
   it("names a model's input and output after the model, whatever its binding's name", () => {
     const files = composedOf("Basket");
@@ -276,17 +289,6 @@ export default function Card() {
   });
 
   it("reports a slot's directive named like a type or a key the file exports (UF2003)", () => {
-    const card = (
-      declaration: string,
-      setup: string,
-    ) => `import { defineSlots${setup ? ", provide" : ""} } from "unframework";
-import type { Element${setup ? ", InjectionKey" : ""} } from "unframework";
-${declaration}
-export default function Card({ level }: { level: CardTitle${setup ? " | undefined" : ""} }) {
-  const slots = defineSlots<{ title?(props: { text: string }): Element }>();
-${setup}
-  return <h2 data-level={level}>{slots.title?.({ text: "x" })}</h2>;
-}`;
     expect(
       reportedFor(card('export type CardTitle = "h1" | "h2";', "")).map(({ message }) => message),
     ).toEqual([
