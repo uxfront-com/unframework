@@ -1,10 +1,15 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface NameSorterEvents {
   onStarted?: (text: string) => void;
   onFirstSeen?: (text: string) => void;
   onSecondSeen?: (count: number) => void;
   onTotal?: (letters: number) => void;
+}
+
+export interface NameSorterAttributes {
+  className?: string;
+  style?: CSSProperties;
 }
 
 function compare(a: string, b: string): number {
@@ -16,7 +21,9 @@ export default function NameSorter({
   onFirstSeen,
   onSecondSeen,
   onTotal,
-}: NameSorterEvents) {
+  className,
+  style,
+}: NameSorterEvents & NameSorterAttributes) {
   const [names, setNames] = useState(() => ["Cy", "Al"].toSorted((a, b) => compare(a, b)));
   const namesRef = useRef(names);
   const [count, setCount] = useState(0);
@@ -82,7 +89,7 @@ export default function NameSorter({
   }
 
   return (
-    <section className="name-sorter" aria-label="Names">
+    <section className={cx("name-sorter", className)} aria-label="Names" style={style}>
       <p>Names: {names.join(", ")}</p>
       <p>Added: {count}</p>
       <button type="button" onClick={() => add("Bo")}>
@@ -93,4 +100,19 @@ export default function NameSorter({
       </button>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

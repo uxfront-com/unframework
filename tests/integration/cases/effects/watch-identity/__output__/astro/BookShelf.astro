@@ -8,9 +8,12 @@ export interface BookShelfProps {
   books: Book[];
 }
 
-type Props = BookShelfProps;
+interface Props extends BookShelfProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { books } = Astro.props;
+const { books, class: className, style } = Astro.props;
 
 const focused = null as Book | null;
 const reads = new Map<number, number>();
@@ -21,7 +24,7 @@ const low = 1 as number;
 const high = 5 as number;
 ---
 
-<section class="book-shelf" aria-label="Books">
+<section class:list={["book-shelf", className]} aria-label="Books" style={style}>
   <ul aria-label="Shelf">
     {books.map((book) => (
       <li>

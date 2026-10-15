@@ -13,21 +13,29 @@ export interface UploadStatusProps {
   error?: string;
 }
 
+export interface UploadStatusAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function UploadStatus({
   fileName,
   state,
   percent,
   steps,
   error,
-}: UploadStatusProps) {
+  className,
+  style,
+}: UploadStatusProps & UploadStatusAttributes) {
   return (
     <section
-      className={cx("upload", `upload-${state}`)}
+      className={cx("upload", `upload-${state}`, className)}
       aria-label={`Upload of ${fileName}`}
       style={
         {
           color: state === "failed" ? "#8a1c1c" : "#1f3d5c",
           "--upload-percent": percent,
+          ...style,
         } as CSSProperties
       }
     >

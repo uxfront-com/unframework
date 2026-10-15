@@ -1,9 +1,16 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const log = [] as string[];
 const status = "idle" as string;
 ---
 
-<section class="picker" aria-label="Picker">
+<section class:list={["picker", className]} aria-label="Picker" style={style}>
   <div class="choices" role="presentation">
     <button type="button">Alpha</button>
     <button type="button">Beta</button>

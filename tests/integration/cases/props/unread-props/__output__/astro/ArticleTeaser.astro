@@ -10,12 +10,15 @@ export interface ArticleTeaserProps {
   layout?: "row" | "column";
 }
 
-type Props = ArticleTeaserProps;
+interface Props extends ArticleTeaserProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { title, summary, minutes = 5 } = Astro.props;
+const { title, summary, minutes = 5, class: className, style } = Astro.props;
 ---
 
-<article class="article-teaser" aria-label={title}>
+<article class:list={["article-teaser", className]} aria-label={title} style={style}>
   <h2>{title}</h2>
   <p>{summary}</p>
   <p class="article-teaser-meta">{minutes} min read</p>

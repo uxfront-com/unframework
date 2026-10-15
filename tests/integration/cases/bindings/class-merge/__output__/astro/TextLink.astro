@@ -18,12 +18,19 @@ export interface TextLinkProps {
   row: RowAttributes;
 }
 
-type Props = TextLinkProps;
+interface Props extends TextLinkProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { href, label, strong, link, row } = Astro.props;
+const { href, label, strong, link, row, class: className, style } = Astro.props;
 ---
 
-<p class:list={[row.class, "link-row", { "link-row-strong": strong }]} id={row.id}>
+<p
+  class:list={[row.class, "link-row", { "link-row-strong": strong }, className]}
+  id={row.id}
+  style={style}
+>
   <a
     href={href}
     class:list={["text-link", link.class]}

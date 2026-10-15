@@ -9,12 +9,15 @@ export interface FileRowProps {
   size: number;
 }
 
-type Props = FileRowProps;
+interface Props extends FileRowProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { path, size } = Astro.props;
+const { path, size, class: className, style } = Astro.props;
 ---
 
-<div class="file-row" role="group" aria-label={path}>
+<div class:list={["file-row", className]} role="group" aria-label={path} style={style}>
   <span>{path} ({size} bytes)</span>
   <button type="button">Refresh</button>
   <button type="button">Open</button>

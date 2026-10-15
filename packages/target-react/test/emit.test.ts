@@ -150,8 +150,34 @@ describe("react target", () => {
     expect(await formatted(hello(), { name: "Hello" })).toEqual({
       path: "Hello.tsx",
       contents: [
-        "export default function Hello() {",
-        '  return <p className="greeting">Hello, world!</p>;',
+        'import type { CSSProperties } from "react";',
+        "",
+        "export interface HelloAttributes {",
+        "  className?: string;",
+        "  style?: CSSProperties;",
+        "}",
+        "",
+        "export default function Hello({ className, style }: HelloAttributes) {",
+        "  return (",
+        '    <p className={cx("greeting", className)} style={style}>',
+        "      Hello, world!",
+        "    </p>",
+        "  );",
+        "}",
+        "",
+        "/** Joins class names, and the keys of an object's truthy entries, into one `className`. */",
+        "function cx(...parts: unknown[]): string {",
+        "  const names: string[] = [];",
+        "  for (const part of parts) {",
+        '    if (typeof part === "string") {',
+        "      if (part) names.push(part);",
+        '    } else if (part && typeof part === "object") {',
+        "      for (const [key, on] of Object.entries(part)) {",
+        "        if (on) names.push(key);",
+        "      }",
+        "    }",
+        "  }",
+        '  return names.join(" ");',
         "}",
         "",
       ].join("\n"),
@@ -162,13 +188,20 @@ describe("react target", () => {
     expect(await formatted(profileCard(), { name: "ProfileCard" })).toEqual({
       path: "ProfileCard.tsx",
       contents: [
-        "export default function ProfileCard() {",
+        'import type { CSSProperties } from "react";',
+        "",
+        "export interface ProfileCardAttributes {",
+        "  className?: string;",
+        "  style?: CSSProperties;",
+        "}",
+        "",
+        "export default function ProfileCard({ className, style }: ProfileCardAttributes) {",
         "  return (",
-        '    <article className="profile" aria-labelledby="profile-name">',
+        '    <article className={cx("profile", className)} aria-labelledby="profile-name" style={style}>',
         '      <header className="profile-header">',
         "        <img",
-        `          src="${AVATAR}"`,
-        `          alt="Ada's avatar"`,
+        "          src=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%23345'/%3E%3C/svg%3E\"",
+        '          alt="Ada\'s avatar"',
         "          width={48}",
         "          height={48}",
         "        />",
@@ -186,13 +219,30 @@ describe("react target", () => {
         "  );",
         "}",
         "",
+        "/** Joins class names, and the keys of an object's truthy entries, into one `className`. */",
+        "function cx(...parts: unknown[]): string {",
+        "  const names: string[] = [];",
+        "  for (const part of parts) {",
+        '    if (typeof part === "string") {',
+        "      if (part) names.push(part);",
+        '    } else if (part && typeof part === "object") {',
+        "      for (const [key, on] of Object.entries(part)) {",
+        "        if (on) names.push(key);",
+        "      }",
+        "    }",
+        "  }",
+        '  return names.join(" ");',
+        "}",
+        "",
       ].join("\n"),
     });
   });
 
   it("keeps a named export named", async () => {
     const file = await formatted(hello(), { name: "Hello", kind: "named" });
-    expect(file.contents).toMatch(/^export function Hello\(\) \{/);
+    expect(file.contents).toMatch(
+      /^export function Hello\(\{ className, style \}: HelloAttributes\) \{$/m,
+    );
   });
 
   // The target reports nothing (ADR-0033): what React renders differently from the
@@ -244,6 +294,8 @@ export default function Badge({ tone = "info", label, size }: BadgeProps) {
 `;
     expect(await output(source)).toBe(
       [
+        'import type { CSSProperties } from "react";',
+        "",
         "interface Size {",
         "  width: number;",
         "}",
@@ -255,9 +307,20 @@ export default function Badge({ tone = "info", label, size }: BadgeProps) {
         "  size?: Size;",
         "}",
         "",
-        'export default function Badge({ tone = "info", label, size }: BadgeProps) {',
+        "export interface BadgeAttributes {",
+        "  className?: string;",
+        "  style?: CSSProperties;",
+        "}",
+        "",
+        "export default function Badge({",
+        '  tone = "info",',
+        "  label,",
+        "  size,",
+        "  className,",
+        "  style,",
+        "}: BadgeProps & BadgeAttributes) {",
         "  return (",
-        "    <p data-tone={tone} data-width={size?.width}>",
+        "    <p data-tone={tone} data-width={size?.width} className={className} style={style}>",
         "      {label}",
         "    </p>",
         "  );",
@@ -267,32 +330,39 @@ export default function Badge({ tone = "info", label, size }: BadgeProps) {
     );
   });
 
-  // An unused binding fails L5 (oxlint's no-unused-vars), and so does an empty pattern.
+  // An unused binding fails L5 (oxlint's no-unused-vars), and so does an empty pattern. Each
+  // component takes no `class` or `style` (ADR-0054), so its own props are all it reads.
   it("leaves out the props nothing reads, defaults included", async () => {
-    const props = `export interface P { label: string; count?: number; tone?: string }\n`;
+    const props = `import { defineOptions } from "unframework";
+export interface P { label: string; count?: number; tone?: string }\n`;
     expect(
       await output(`${props}export default function A({ label, count = 0, tone }: P) {
+  defineOptions({ inheritAttrs: false });
   return <p title={tone}>Hi</p>;
 }`),
     ).toContain("export default function A({ tone }: P) {");
     expect(
       await output(`${props}export default function A({ label, count = 0 }: P) {
+  defineOptions({ inheritAttrs: false });
   return <p>Hi</p>;
 }`),
     ).toContain("export default function A(_props: P) {");
     expect(
       await output(`${props}export default function A(props: P) {
+  defineOptions({ inheritAttrs: false });
   return <p>Hi</p>;
 }`),
     ).toContain("export default function A(_props: P) {");
     // A source name `_` and more says it is unused already; oxlint reports a bare `_`.
     expect(
       await output(`${props}export default function A(_props: P) {
+  defineOptions({ inheritAttrs: false });
   return <p>Hi</p>;
 }`),
     ).toContain("export default function A(_props: P) {");
     expect(
       await output(`${props}export default function A(_: P) {
+  defineOptions({ inheritAttrs: false });
   return <p>Hi</p>;
 }`),
     ).toContain("export default function A(__: P) {");
@@ -306,8 +376,12 @@ export function Plain(props: PlainProps) {
 }`),
     ).toContain(
       [
-        "export function Plain(props: PlainProps) {",
-        "  return <p title={props.title}>{props.label}</p>;",
+        "export function Plain(props: PlainProps & PlainAttributes) {",
+        "  return (",
+        "    <p title={props.title} className={props.className} style={props.style}>",
+        "      {props.label}",
+        "    </p>",
+        "  );",
         "}",
       ].join("\n"),
     );
@@ -317,8 +391,19 @@ export function Plain(props: PlainProps) {
 }`),
     ).toBe(
       [
-        "export default function Inline({ label }: { label: string }) {",
-        "  return <p>{label}</p>;",
+        'import type { CSSProperties } from "react";',
+        "",
+        "export interface InlineAttributes {",
+        "  className?: string;",
+        "  style?: CSSProperties;",
+        "}",
+        "",
+        "export default function Inline({ label, className, style }: { label: string } & InlineAttributes) {",
+        "  return (",
+        "    <p className={className} style={style}>",
+        "      {label}",
+        "    </p>",
+        "  );",
         "}",
         "",
       ].join("\n"),
@@ -331,7 +416,7 @@ export function Plain(props: PlainProps) {
   return <p title={\`\${amount * 1000} mills\`}>{(amount / 0.50).toFixed(2)}, {amount * 1e3}</p>;
 }`),
     ).toContain(
-      "<p title={`${amount * 1000} mills`}>\n      {(amount / 0.5).toFixed(2)}, {amount * 1e3}\n    </p>",
+      "<p title={`${amount * 1000} mills`} className={className} style={style}>\n      {(amount / 0.5).toFixed(2)}, {amount * 1e3}\n    </p>",
     );
   });
 
@@ -349,7 +434,7 @@ export default function Status({ count, label, ready }: P) {
 }`;
     expect(await output(source)).toContain(
       [
-        "    <div>",
+        "    <div className={className} style={style}>",
         "      {count ? <b>{count}</b> : null}",
         "      {ready ? (",
         "        <i>Ready</i>",
@@ -412,7 +497,7 @@ export default function Form({ id, locked, order, skip }: P) {
 }`;
     const contents = await output(source);
     for (const expected of [
-      '<form acceptCharset="utf-8" noValidate>',
+      '<form acceptCharset="utf-8" noValidate className={className} style={style}>',
       "<label htmlFor={id}>Name</label>",
       "<input id={id} readOnly disabled={locked} tabIndex={order} maxLength={10} />",
       '<button type="submit" formNoValidate={skip}>',
@@ -436,7 +521,7 @@ export default function Form({ id, locked, order, skip }: P) {
 }`),
     ).toContain(
       [
-        '    <svg viewBox="0 0 10 10" role="img">',
+        '    <svg viewBox="0 0 10 10" role="img" className={className} style={style}>',
         "      <title>Done</title>",
         '      <linearGradient id="fade">',
         '        <stop offset="0" stopColor="#fff" />',
@@ -498,6 +583,8 @@ export default function Chip({ tone, active, busy, label }: P) {
 }`;
     expect(await output(source)).toBe(
       [
+        'import type { CSSProperties } from "react";',
+        "",
         "export interface P {",
         "  tone: string;",
         "  active: boolean;",
@@ -505,9 +592,14 @@ export default function Chip({ tone, active, busy, label }: P) {
         "  label: string;",
         "}",
         "",
-        "export default function Chip({ tone, active, busy, label }: P) {",
+        "export interface ChipAttributes {",
+        "  className?: string;",
+        "  style?: CSSProperties;",
+        "}",
+        "",
+        "export default function Chip({ tone, active, busy, label, className, style }: P & ChipAttributes) {",
         "  return (",
-        '    <p className="chip">',
+        '    <p className={cx("chip", className)} style={style}>',
         '      <b className={cx("badge", tone, { active, "is-busy": busy, long: label.length > 3 })}>',
         "        {label}",
         "      </b>",
@@ -515,7 +607,21 @@ export default function Chip({ tone, active, busy, label }: P) {
         "  );",
         "}",
         "",
-        cxHelper(),
+        "/** Joins class names, and the keys of an object's truthy entries, into one `className`. */",
+        "function cx(...parts: unknown[]): string {",
+        "  const names: string[] = [];",
+        "  for (const part of parts) {",
+        '    if (typeof part === "string") {',
+        "      if (part) names.push(part);",
+        '    } else if (part && typeof part === "object") {',
+        "      for (const [key, on] of Object.entries(part)) {",
+        "        if (on) names.push(key);",
+        "      }",
+        "    }",
+        "  }",
+        '  return names.join(" ");',
+        "}",
+        "",
       ].join("\n"),
     );
   });
@@ -526,24 +632,31 @@ export default function A({ cx, CSSProperties }: P) {
   return <p class={[cx]} style={{ "--x": CSSProperties }}>Hi</p>;
 }`);
     expect(contents).toContain('import type { CSSProperties as CSSProperties_1 } from "react";');
-    expect(contents).toContain("className={cx_1(cx)}");
-    expect(contents).toContain('style={{ "--x": CSSProperties } as CSSProperties_1}');
+    expect(contents).toContain("className={cx_1(cx, className)}");
+    expect(contents).toContain('style={{ "--x": CSSProperties, ...style } as CSSProperties_1}');
     expect(contents).toContain(cxHelper("cx_1"));
-    // A type declaration is a name the source declares too.
+    // A type declaration is a name the source declares too. B takes no `class` or `style`
+    // (ADR-0054), so it reads no prop.
     expect(
-      await output(`interface _props { label?: string }
+      await output(`import { defineOptions } from "unframework";
+interface _props { label?: string }
 export default function B({ label }: _props) {
+  defineOptions({ inheritAttrs: false });
   return <p>Hi</p>;
 }`),
     ).toContain("export default function B(_props_1: _props) {");
   });
 
   it("writes a style as an object, typed as CSSProperties when it sets a custom property", async () => {
-    const source = `export interface P { gap?: string; size: number }
+    // Neither takes a consumer's \`style\` (ADR-0054): its own is the subject.
+    const source = `import { defineOptions } from "unframework";
+export interface P { gap?: string; size: number }
 export function Plain({ gap }: P) {
+  defineOptions({ inheritAttrs: false });
   return <p style="color: red; margin-top: 4px" />;
 }
 export function Bound({ gap, size }: P) {
+  defineOptions({ inheritAttrs: false });
   return <p style={{ marginTop: gap, lineHeight: size, "--gap": gap }} />;
 }`;
     const module = lower(source);
@@ -584,7 +697,9 @@ export default function Notes({ attrs, extra }: P) {
 
   it("writes a <textarea>'s text as its defaultValue", async () => {
     expect(
-      await output(`export default function Note() {
+      await output(`import { defineOptions } from "unframework";
+export default function Note() {
+  defineOptions({ inheritAttrs: false });
   return <textarea name="note">{"  Hello,\\n  world  "}</textarea>;
 }`),
     ).toContain('<textarea name="note" defaultValue={"  Hello,\\n  world  "} />');

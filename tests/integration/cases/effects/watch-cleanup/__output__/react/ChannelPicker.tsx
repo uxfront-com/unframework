@@ -1,11 +1,29 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 export interface ChannelPickerEvents {
   onJoin?: (channel: string) => void;
   onLeave?: (channel: string) => void;
 }
 
-export default function ChannelPicker({ onJoin, onLeave }: ChannelPickerEvents) {
+export interface ChannelPickerAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function ChannelPicker({
+  onJoin,
+  onLeave,
+  className,
+  style,
+}: ChannelPickerEvents & ChannelPickerAttributes) {
   const onLeaveRef = useRef(onLeave);
   useLayoutEffect(() => {
     onLeaveRef.current = onLeave;
@@ -39,7 +57,7 @@ export default function ChannelPicker({ onJoin, onLeave }: ChannelPickerEvents) 
   }, [watchedName]);
 
   return (
-    <section className="channel-picker" aria-label="Channels">
+    <section className={cx("channel-picker", className)} aria-label="Channels" style={style}>
       <p role="status">Channel: #{channel}</p>
       <button
         type="button"
@@ -61,4 +79,19 @@ export default function ChannelPicker({ onJoin, onLeave }: ChannelPickerEvents) 
       </button>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

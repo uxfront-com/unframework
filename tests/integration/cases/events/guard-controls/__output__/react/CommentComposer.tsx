@@ -1,4 +1,4 @@
-import { type KeyboardEvent, type MouseEvent, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, type MouseEvent, useRef, useState } from "react";
 
 export interface CommentComposerEvents {
   onSent?: (text: string) => void;
@@ -6,7 +6,18 @@ export interface CommentComposerEvents {
   onFirstSave?: () => void;
 }
 
-export default function CommentComposer({ onSent, onSaved, onFirstSave }: CommentComposerEvents) {
+export interface CommentComposerAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function CommentComposer({
+  onSent,
+  onSaved,
+  onFirstSave,
+  className,
+  style,
+}: CommentComposerEvents & CommentComposerAttributes) {
   const [tags, setTags] = useState<string[]>([]);
   const tagsRef = useRef(tags);
   const [query, setQuery] = useState("");
@@ -61,7 +72,7 @@ export default function CommentComposer({ onSent, onSaved, onFirstSave }: Commen
   const clickOnce_1 = useOnce();
 
   return (
-    <section className="comment-composer" aria-label="Composer">
+    <section className={cx("comment-composer", className)} aria-label="Composer" style={style}>
       <label>
         Comment
         <textarea name="comment" onKeyDown={send} />
@@ -209,6 +220,21 @@ export default function CommentComposer({ onSent, onSaved, onFirstSave }: Commen
       </ol>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /** The guard of a listener that runs once per element, as `{ once: true }` makes it. */

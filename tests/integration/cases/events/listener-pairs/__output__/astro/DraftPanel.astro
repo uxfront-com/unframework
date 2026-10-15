@@ -1,10 +1,17 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const open = false as boolean;
 const status = "draft" as string;
 const log = [] as string[];
 ---
 
-<section class="draft-panel" aria-label="Draft">
+<section class:list={["draft-panel", className]} aria-label="Draft" style={style}>
   <button type="button" aria-expanded={open}>Options</button>
   {open ? (
     <div class="options" role="group" aria-label="Draft options">

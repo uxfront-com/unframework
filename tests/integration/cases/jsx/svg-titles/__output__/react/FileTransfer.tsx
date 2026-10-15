@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export interface FileTransferProps {
   fileName: string;
   percent: number;
@@ -5,9 +7,21 @@ export interface FileTransferProps {
   eta?: string;
 }
 
-export default function FileTransfer({ fileName, percent, paused, eta }: FileTransferProps) {
+export interface FileTransferAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function FileTransfer({
+  fileName,
+  percent,
+  paused,
+  eta,
+  className,
+  style,
+}: FileTransferProps & FileTransferAttributes) {
   return (
-    <div className="file-transfer">
+    <div className={cx("file-transfer", className)} style={style}>
       <svg className="file-transfer-progress" role="img" viewBox="0 0 36 36" width="36" height="36">
         <title>{`${fileName}: ${percent}% sent. ${eta ?? ""}`}</title>
         <circle cx="18" cy="18" r="16" fill="none" stroke="#0969da" strokeWidth="4" />
@@ -18,4 +32,19 @@ export default function FileTransfer({ fileName, percent, paused, eta }: FileTra
       </svg>
     </div>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

@@ -1,9 +1,11 @@
 ---
 interface Props {
   symbol: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
 }
 
-const { symbol } = Astro.props;
+const { symbol, class: className, style } = Astro.props;
 ---
 
-<span class="icon" aria-hidden="true">{symbol}</span>
+<span class:list={["icon", className]} aria-hidden="true" style={style}>{symbol}</span>

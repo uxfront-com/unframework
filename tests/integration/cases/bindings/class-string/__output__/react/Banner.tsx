@@ -1,12 +1,25 @@
+import type { CSSProperties } from "react";
+
 export interface BannerProps {
   message: string;
   tone: string;
   emphasis?: string | null;
 }
 
-export default function Banner({ message, tone, emphasis }: BannerProps) {
+export interface BannerAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function Banner({
+  message,
+  tone,
+  emphasis,
+  className,
+  style,
+}: BannerProps & BannerAttributes) {
   return (
-    <div className={cx("banner", tone)} role="note">
+    <div className={cx("banner", tone, className)} role="note" style={style}>
       <p className={cx(emphasis)}>{message}</p>
       <p className={cx(`banner-footer banner-footer-${tone}`)}>Shown to every visitor.</p>
     </div>

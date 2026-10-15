@@ -16,9 +16,12 @@ export interface TaskBoardProps {
   initial: Task[];
 }
 
-type Props = TaskBoardProps;
+interface Props extends TaskBoardProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { initial } = Astro.props;
+const { initial, class: className, style } = Astro.props;
 
 const tasks = initial;
 const filters = { query: "", tags: [] } as Filters;
@@ -68,7 +71,7 @@ const byState = getByState();
 const progress = Math.round((tasks.filter((task) => task.done).length / tasks.length) * 100);
 ---
 
-<section class="task-board" aria-label="Tasks">
+<section class:list={["task-board", className]} aria-label="Tasks" style={style}>
   <ol aria-label="Open">
     {open.map((task) => (
       <li

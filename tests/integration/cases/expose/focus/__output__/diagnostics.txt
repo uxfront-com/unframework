@@ -6,15 +6,7 @@ error[UF1002] (angular): The angular target does not emit component yet: composi
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (astro): The astro target does not emit component yet: composition lands in M3.
- --> expose/focus/Header.uf.tsx:9:7
-  |
-9 |       <SearchField ref={search} label="Find" />
-  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
  --> expose/focus/Header.uf.tsx:9:7
   |
 9 |       <SearchField ref={search} label="Find" />
@@ -46,15 +38,7 @@ error[UF1002] (angular): The angular target does not emit expose yet: compositio
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (astro): The astro target does not emit expose yet: composition lands in M3.
- --> expose/focus/SearchField.uf.tsx:8:3
-  |
-8 |   defineExpose({ focus });
-  |   ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (react): The react target does not emit expose yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit expose yet: composition lands in M3.
  --> expose/focus/SearchField.uf.tsx:8:3
   |
 8 |   defineExpose({ focus });

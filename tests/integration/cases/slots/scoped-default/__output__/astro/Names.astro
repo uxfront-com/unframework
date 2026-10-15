@@ -1,0 +1,16 @@
+---
+interface Props {
+  names: string[];
+  default?: (props: { item: string }) => unknown;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { names, default: defaultSlot, class: className, style } = Astro.props;
+---
+
+<ul aria-label="Names" class:list={[className]} style={style}>
+  {names.map((item) => (
+    <li>{defaultSlot?.({ item })}</li>
+  ))}
+</ul>

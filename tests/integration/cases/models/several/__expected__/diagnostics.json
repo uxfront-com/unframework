@@ -19,7 +19,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit model yet: composition lands in M3.",
+    "message": "The qwik target does not emit model yet: composition lands in M3.",
     "file": "models/several/PriceRange.uf.tsx",
     "start": {
       "line": 4,
@@ -31,24 +31,7 @@
       "column": 58,
       "offset": 168
     },
-    "target": "astro"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit model yet: composition lands in M3.",
-    "file": "models/several/PriceRange.uf.tsx",
-    "start": {
-      "line": 4,
-      "column": 3,
-      "offset": 113
-    },
-    "end": {
-      "line": 4,
-      "column": 58,
-      "offset": 168
-    },
-    "target": "react"
+    "target": "qwik"
   },
   {
     "code": "UF1002",
@@ -104,7 +87,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "models/several/Search.uf.tsx",
     "start": {
       "line": 10,
@@ -116,24 +99,7 @@
       "column": 84,
       "offset": 293
     },
-    "target": "astro"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
-    "file": "models/several/Search.uf.tsx",
-    "start": {
-      "line": 10,
-      "column": 7,
-      "offset": 216
-    },
-    "end": {
-      "line": 10,
-      "column": 84,
-      "offset": 293
-    },
-    "target": "react"
+    "target": "qwik"
   },
   {
     "code": "UF1002",

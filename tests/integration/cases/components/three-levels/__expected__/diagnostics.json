@@ -19,7 +19,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "components/three-levels/Page.uf.tsx",
     "start": {
       "line": 6,
@@ -31,24 +31,7 @@
       "column": 72,
       "offset": 217
     },
-    "target": "astro"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
-    "file": "components/three-levels/Page.uf.tsx",
-    "start": {
-      "line": 6,
-      "column": 7,
-      "offset": 152
-    },
-    "end": {
-      "line": 6,
-      "column": 72,
-      "offset": 217
-    },
-    "target": "react"
+    "target": "qwik"
   },
   {
     "code": "UF1002",
@@ -87,7 +70,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "components/three-levels/Section.uf.tsx",
     "start": {
       "line": 6,
@@ -99,24 +82,7 @@
       "column": 31,
       "offset": 196
     },
-    "target": "astro"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
-    "file": "components/three-levels/Section.uf.tsx",
-    "start": {
-      "line": 6,
-      "column": 7,
-      "offset": 172
-    },
-    "end": {
-      "line": 6,
-      "column": 31,
-      "offset": 196
-    },
-    "target": "react"
+    "target": "qwik"
   },
   {
     "code": "UF1002",

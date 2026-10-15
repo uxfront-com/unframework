@@ -6,12 +6,15 @@ export interface InboxSummaryProps {
   signature: string;
 }
 
-type Props = InboxSummaryProps;
+interface Props extends InboxSummaryProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { folder, unread, flagged, signature } = Astro.props;
+const { folder, unread, flagged, signature, class: className, style } = Astro.props;
 ---
 
-<section class="inbox-summary" aria-label="Inbox summary">
+<section class:list={["inbox-summary", className]} aria-label="Inbox summary" style={style}>
   <h2>{folder || "Inbox"}</h2>
   {unread ? (
     <p>{unread} unread</p>

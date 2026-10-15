@@ -1,0 +1,17 @@
+---
+import Avatar from "./Avatar.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+const picked = "none" as string;
+---
+
+<div class:list={[className]} style={style}>
+  <Avatar imageURL="/a.png" userID={7} />
+  <output>Picked: {picked}</output>
+</div>

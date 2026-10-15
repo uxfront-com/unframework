@@ -3,15 +3,18 @@ export interface WelcomeBannerProps {
   name: string;
 }
 
-type Props = WelcomeBannerProps;
+interface Props extends WelcomeBannerProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { name } = Astro.props;
+const { name, class: className, style } = Astro.props;
 
 const greeting = `Welcome, ${name}`;
 const tips = ["Set up your profile", "Invite your team"];
 ---
 
-<section class="welcome-banner" aria-label="Welcome">
+<section class:list={["welcome-banner", className]} aria-label="Welcome" style={style}>
   <h2>{greeting}</h2>
   <p>Signed in as {name}</p>
   <ul>

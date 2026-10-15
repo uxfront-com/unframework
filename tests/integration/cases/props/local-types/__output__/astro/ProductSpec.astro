@@ -13,12 +13,15 @@ export interface ProductSpecProps {
   finishes: Finish[];
 }
 
-type Props = ProductSpecProps;
+interface Props extends ProductSpecProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { name, availability, size, finishes } = Astro.props;
+const { name, availability, size, finishes, class: className, style } = Astro.props;
 ---
 
-<section class="product-spec" aria-label={name}>
+<section class:list={["product-spec", className]} aria-label={name} style={style}>
   <h2>{name}</h2>
   <dl>
     <dt>Availability</dt>

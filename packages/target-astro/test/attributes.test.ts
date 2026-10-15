@@ -175,7 +175,7 @@ export default function Note({ mode, typing }: NoteProps) {
       // Astro's types declare `autocorrect` on a form: it is written there as an attribute.
       expect(output.slice(output.indexOf("---\n\n", 4) + 5)).toBe(
         [
-          "<div>",
+          "<div class:list={[className]} style={style}>",
           '  <form autocorrect="off" aria-label="Search">x</form>',
           '  <p {...{ autocorrect: "on" }}>y</p>',
           "  <p {...{ autocorrect: mode }}>z</p>",

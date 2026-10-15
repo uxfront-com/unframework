@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 type Availability = "in-stock" | "backorder" | "discontinued";
 
 interface Finish {
@@ -12,9 +14,21 @@ export interface ProductSpecProps {
   finishes: Finish[];
 }
 
-export default function ProductSpec({ name, availability, size, finishes }: ProductSpecProps) {
+export interface ProductSpecAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function ProductSpec({
+  name,
+  availability,
+  size,
+  finishes,
+  className,
+  style,
+}: ProductSpecProps & ProductSpecAttributes) {
   return (
-    <section className="product-spec" aria-label={name}>
+    <section className={cx("product-spec", className)} aria-label={name} style={style}>
       <h2>{name}</h2>
       <dl>
         <dt>Availability</dt>
@@ -33,4 +47,19 @@ export default function ProductSpec({ name, availability, size, finishes }: Prod
       </ul>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

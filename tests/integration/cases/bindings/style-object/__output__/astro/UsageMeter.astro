@@ -6,12 +6,15 @@ export interface UsageMeterProps {
   thickness: number;
 }
 
-type Props = UsageMeterProps;
+interface Props extends UsageMeterProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { label, percent, colour, thickness } = Astro.props;
+const { label, percent, colour, thickness, class: className, style } = Astro.props;
 ---
 
-<div class="usage-meter">
+<div class:list={["usage-meter", className]} style={style}>
   <p
     style={{ color: colour, fontWeight: 700, lineHeight: 1.5, marginBottom: "4px" }}
   >{label}: {percent}%</p>

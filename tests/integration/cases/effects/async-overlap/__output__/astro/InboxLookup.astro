@@ -1,4 +1,11 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const answers = [] as string[];
 const ordering = "none" as string;
 const messages = [] as string[];
@@ -7,7 +14,7 @@ const failure = "" as string;
 const unread = 0 as number;
 ---
 
-<section class="inbox-lookup" aria-label="Inbox">
+<section class:list={["inbox-lookup", className]} aria-label="Inbox" style={style}>
   <button type="button">Find Ann</button>
   <button type="button">Find Anna</button>
   <button type="button">Answer lookups</button>

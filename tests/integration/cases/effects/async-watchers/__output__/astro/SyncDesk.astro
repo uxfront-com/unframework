@@ -3,7 +3,12 @@ export interface SyncDeskProps {
   files: string[];
 }
 
-export type Props = SyncDeskProps;
+interface Props extends SyncDeskProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
 
 const email = "ada@example.com" as string;
 const checking = false as boolean;
@@ -21,7 +26,7 @@ const outcome = "" as string;
 const level = 4 as number;
 ---
 
-<section class="sync-desk" aria-label="Sync desk">
+<section class:list={["sync-desk", className]} aria-label="Sync desk" style={style}>
   <button type="button">Suggest</button>
   <button type="button">Use this email</button>
   <p>{email}: {checking ? "checking" : valid ? "valid" : "invalid"}</p>

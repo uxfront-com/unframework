@@ -1,0 +1,21 @@
+---
+import Badge from "./Badge.astro";
+
+export interface Theme {
+  accent: string;
+  label: string;
+}
+
+export type ThemeKey = Theme;
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<section aria-label="Themed" class:list={[className]} style={style}>
+  <Badge text="New" />
+</section>

@@ -1,0 +1,23 @@
+---
+import Tag from "./Tag.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+const active = false as boolean;
+---
+
+<div class:list={["tags", className]} style={style}>
+  <Tag label="plain" />
+  <Tag label="wide" class="wide" style={{ marginLeft: "8px" }} />
+  <Tag
+    label="toggled"
+    class:list={["picked", { active }]}
+    style={{ color: active ? "rgb(200, 0, 0)" : undefined }}
+  />
+  <button type="button">Toggle</button>
+</div>

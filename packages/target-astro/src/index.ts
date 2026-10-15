@@ -1,10 +1,12 @@
-import { compositionUse, defineTarget } from "@unframework/codegen";
+import { childImports, defineTarget, ImportSet } from "@unframework/codegen";
 import type { CapabilityCell, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
-import { frontmatterOf } from "./frontmatter.ts";
+import { astroRender, takesFallthrough } from "./composition.ts";
+import { childTags, frontmatterOf } from "./frontmatter.ts";
 import { printComponentMarkup } from "./markup.ts";
 import { UNIQUE_ID } from "./setup.ts";
+import { spellingOf } from "./spelling.ts";
 
 /**
  * Why nothing runs in the browser (ADR-0045, ADR-0047): Astro renders each component once, on
@@ -97,23 +99,29 @@ export const astro: Target = defineTarget({
    * One `.astro` file: the frontmatter at the very top (where Astro reads it, and where the
    * harness's canaries look for it) when it declares anything, then the markup. Each expression
    * is printed as the source writes it, with a state's or a computed's `x.value` as the constant
-   * `x` the frontmatter declares (ADR-0046).
+   * `x` the frontmatter declares (ADR-0046). Composition is written in Astro's shape
+   * (`./composition.ts`, ADR-0054): the markup is printed first, since whether it names `Astro`
+   * decides how the frontmatter declares `Props`.
    */
   emit(component: UfComponent, context): OutputFile[] {
-    // Composition's cells are declared before this target emits it (ADR-0055): until M3's lane
-    // for Astro lands, a component that uses it is reported, never emitted without it (P2).
-    const composition = compositionUse(context.module, component);
-    if (composition) {
-      context.report({
-        code: "UF1002",
-        severity: "error",
-        message: `The astro target does not emit ${composition.what} yet: composition lands in M3.`,
-        span: composition.span,
-      });
-      return [];
-    }
-    const { code, rewrite } = frontmatterOf(component, context.module);
-    const markup = printComponentMarkup(component, rewrite);
+    const { module } = context;
+    const spelling = spellingOf(component, module);
+    const imports = new ImportSet(spelling.scope);
+    const tags = childTags(
+      childImports(component, module, (name) => `${name}.astro`),
+      imports,
+    );
+    const fallthrough = takesFallthrough(component)
+      ? { className: spelling.scope.claim("className"), style: spelling.scope.claim("style") }
+      : undefined;
+    const render = astroRender(component, module, spelling, fallthrough);
+    const markup = printComponentMarkup(component, spelling.rules, { spelling, render, tags });
+    const code = frontmatterOf(component, module, {
+      spelling,
+      imports,
+      render,
+      markupNamesAstro: /\bAstro\./.test(markup),
+    });
     return [
       {
         path: `${component.name}.astro`,

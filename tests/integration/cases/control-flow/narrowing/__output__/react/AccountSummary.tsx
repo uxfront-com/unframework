@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 interface Team {
   name: string;
 }
@@ -24,6 +26,11 @@ export interface AccountSummaryProps {
   seats: (Seat | null)[];
 }
 
+export interface AccountSummaryAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function AccountSummary({
   loading,
   member,
@@ -31,9 +38,11 @@ export default function AccountSummary({
   storage,
   plan,
   seats,
-}: AccountSummaryProps) {
+  className,
+  style,
+}: AccountSummaryProps & AccountSummaryAttributes) {
   return (
-    <section className="account-summary" aria-label="Account">
+    <section className={cx("account-summary", className)} aria-label="Account" style={style}>
       {loading ? <p>Loading the account</p> : !member ? <p>Signed out</p> : <h2>{member.name}</h2>}
       {member ? <p>Signed in as {member.email}</p> : null}
       {member ? <p>Role: {member.admin ? "administrator" : "member"}</p> : <p>Role: guest</p>}
@@ -57,4 +66,19 @@ export default function AccountSummary({
       </ul>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

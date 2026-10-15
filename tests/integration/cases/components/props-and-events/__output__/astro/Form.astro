@@ -1,0 +1,19 @@
+---
+import Field from "./Field.astro";
+
+interface Props {
+  city: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { city, class: className, style } = Astro.props;
+
+const cleared = "nothing" as string;
+---
+
+<section aria-label="Address" class:list={[className]} style={style}>
+  <Field label="Street" />
+  <Field label={city} tone="warn" />
+  <output>Cleared: {cleared}</output>
+</section>

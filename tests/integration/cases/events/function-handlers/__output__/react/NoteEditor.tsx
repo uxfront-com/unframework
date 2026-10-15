@@ -1,11 +1,21 @@
-import { type KeyboardEvent, type UIEvent, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, type UIEvent, useRef, useState } from "react";
 
 export interface NoteEditorEvents {
   onSaved?: (count: number) => void;
   onTagged?: (tag: string, via: string) => void;
 }
 
-export default function NoteEditor({ onSaved, onTagged }: NoteEditorEvents) {
+export interface NoteEditorAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function NoteEditor({
+  onSaved,
+  onTagged,
+  className,
+  style,
+}: NoteEditorEvents & NoteEditorAttributes) {
   const [saves, setSaves] = useState(0);
   const savesRef = useRef(saves);
   const [lastKey, setLastKey] = useState("none");
@@ -42,7 +52,7 @@ export default function NoteEditor({ onSaved, onTagged }: NoteEditorEvents) {
   }
 
   return (
-    <section className="note-editor" aria-label="Note">
+    <section className={cx("note-editor", className)} aria-label="Note" style={style}>
       <button type="button" onClick={save}>
         Save
       </button>
@@ -78,4 +88,19 @@ export default function NoteEditor({ onSaved, onTagged }: NoteEditorEvents) {
       <p>Tags: {tags.join(", ")}</p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

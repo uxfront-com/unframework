@@ -8,15 +8,18 @@ export interface FruitPickerProps {
   fruits: Fruit[];
 }
 
-type Props = FruitPickerProps;
+interface Props extends FruitPickerProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { fruits } = Astro.props;
+const { fruits, class: className, style } = Astro.props;
 
 const selected = null as Fruit | null;
 const basket = [] as Fruit[];
 ---
 
-<section class="fruit-picker" aria-label="Fruit">
+<section class:list={["fruit-picker", className]} aria-label="Fruit" style={style}>
   <ul aria-label="Fruits">
     {fruits.map((fruit) => (
       <li>

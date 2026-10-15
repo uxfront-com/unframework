@@ -1,11 +1,28 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export interface ShortcutTipEvents {
   onDismissed?: () => void;
   onShortcut?: (key: string, count: number) => void;
 }
 
-export default function ShortcutTip({ onDismissed, onShortcut: onShortcut_1 }: ShortcutTipEvents) {
+export interface ShortcutTipAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function ShortcutTip({
+  onDismissed,
+  onShortcut: onShortcut_1,
+  className,
+  style,
+}: ShortcutTipEvents & ShortcutTipAttributes) {
   const onDismissedRef = useRef(onDismissed);
   const onShortcutRef = useRef(onShortcut_1);
   useLayoutEffect(() => {
@@ -70,7 +87,7 @@ export default function ShortcutTip({ onDismissed, onShortcut: onShortcut_1 }: S
   useEffect(() => () => onUnmount(), []);
 
   return (
-    <section className="shortcut-tip" aria-label="Shortcuts">
+    <section className={cx("shortcut-tip", className)} aria-label="Shortcuts" style={style}>
       <p>{open ? "Press Escape to hide this tip." : "Tip hidden."}</p>
       <button type="button" aria-pressed={enabled} onClick={toggle}>
         Shortcut K
@@ -78,4 +95,19 @@ export default function ShortcutTip({ onDismissed, onShortcut: onShortcut_1 }: S
       <p role="status">Used: {count}</p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

@@ -8,15 +8,18 @@ export interface ContactListProps {
   initial: Contact[];
 }
 
-type Props = ContactListProps;
+interface Props extends ContactListProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { initial } = Astro.props;
+const { initial, class: className, style } = Astro.props;
 
 const contacts = initial;
 const chosen = undefined as string | undefined;
 ---
 
-<section class="contact-list" aria-label="Contacts">
+<section class:list={["contact-list", className]} aria-label="Contacts" style={style}>
   <ul>
     {contacts.map((contact) => (
       <li>

@@ -1,0 +1,17 @@
+---
+import Item from "./Item.astro";
+
+interface Props {
+  entries: string[];
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { entries, class: className, style } = Astro.props;
+---
+
+<ul aria-label="Menu" class:list={[className]} style={style}>
+  {entries.map((entry) => (
+    <Item label={entry} />
+  ))}
+</ul>

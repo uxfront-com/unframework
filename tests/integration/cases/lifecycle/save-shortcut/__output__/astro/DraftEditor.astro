@@ -1,8 +1,15 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const saves = 0 as number;
 ---
 
-<section class="draft-editor" aria-label="Draft">
+<section class:list={["draft-editor", className]} aria-label="Draft" style={style}>
   <label>Draft<textarea name="draft"></textarea></label>
   <p role="status">Saved: {saves}</p>
 </section>

@@ -19,7 +19,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit dynamic-component yet: composition lands in M3.",
+    "message": "The qwik target does not emit dynamic-component yet: composition lands in M3.",
     "file": "dynamic/tags/Section.uf.tsx",
     "start": {
       "line": 7,
@@ -31,24 +31,7 @@
       "column": 19,
       "offset": 252
     },
-    "target": "astro"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit dynamic-component yet: composition lands in M3.",
-    "file": "dynamic/tags/Section.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 7,
-      "offset": 160
-    },
-    "end": {
-      "line": 9,
-      "column": 19,
-      "offset": 252
-    },
-    "target": "react"
+    "target": "qwik"
   },
   {
     "code": "UF1002",

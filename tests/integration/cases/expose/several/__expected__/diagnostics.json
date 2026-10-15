@@ -19,7 +19,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "expose/several/Controls.uf.tsx",
     "start": {
       "line": 9,
@@ -31,24 +31,7 @@
       "column": 43,
       "offset": 279
     },
-    "target": "astro"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
-    "file": "expose/several/Controls.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 7,
-      "offset": 243
-    },
-    "end": {
-      "line": 9,
-      "column": 43,
-      "offset": 279
-    },
-    "target": "react"
+    "target": "qwik"
   },
   {
     "code": "UF1002",
@@ -102,23 +85,6 @@
     "target": "angular"
   },
   {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The astro target does not emit expose yet: composition lands in M3.",
-    "file": "expose/several/Counter.uf.tsx",
-    "start": {
-      "line": 11,
-      "column": 3,
-      "offset": 246
-    },
-    "end": {
-      "line": 11,
-      "column": 37,
-      "offset": 280
-    },
-    "target": "astro"
-  },
-  {
     "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support expose: What a component exposes is never called on Astro: components render on the server only, and nothing runs in the browser.",
@@ -138,7 +104,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The react target does not emit expose yet: composition lands in M3.",
+    "message": "The qwik target does not emit expose yet: composition lands in M3.",
     "file": "expose/several/Counter.uf.tsx",
     "start": {
       "line": 11,
@@ -150,7 +116,7 @@
       "column": 37,
       "offset": 280
     },
-    "target": "react"
+    "target": "qwik"
   },
   {
     "code": "UF1002",

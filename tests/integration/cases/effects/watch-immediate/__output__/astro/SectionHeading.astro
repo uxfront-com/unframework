@@ -3,9 +3,12 @@ export interface SectionHeadingProps {
   title: string;
 }
 
-type Props = SectionHeadingProps;
+interface Props extends SectionHeadingProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { title } = Astro.props;
+const { title, class: className, style } = Astro.props;
 ---
 
-<h2 class="section-heading">{title}</h2>
+<h2 class:list={["section-heading", className]} style={style}>{title}</h2>

@@ -1,4 +1,4 @@
-import { type SyntheticEvent, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type SyntheticEvent, useMemo, useRef, useState } from "react";
 
 export interface Task {
   id: number;
@@ -17,6 +17,11 @@ export interface TaskBoardProps {
   initial: Task[];
 }
 
+export interface TaskBoardAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 function sizeSummary(event: SyntheticEvent) {
   const area = event.currentTarget as HTMLTextAreaElement;
   const lines = area.value.split("\n").length;
@@ -24,7 +29,11 @@ function sizeSummary(event: SyntheticEvent) {
   area.classList.toggle("tall", lines > 3);
 }
 
-export default function TaskBoard({ initial }: TaskBoardProps) {
+export default function TaskBoard({
+  initial,
+  className,
+  style,
+}: TaskBoardProps & TaskBoardAttributes) {
   const [tasks, setTasks] = useState(initial);
   const tasksRef = useRef(tasks);
   const [filters, setFilters] = useState<Filters>({ query: "", tags: [] });
@@ -108,7 +117,7 @@ export default function TaskBoard({ initial }: TaskBoardProps) {
   }
 
   return (
-    <section className="task-board" aria-label="Tasks">
+    <section className={cx("task-board", className)} aria-label="Tasks" style={style}>
       <ol aria-label="Open">
         {open.map((task) => (
           <li key={task.id} className={cx({ first: task.rank === 1 })}>

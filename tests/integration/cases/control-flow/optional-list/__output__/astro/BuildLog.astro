@@ -11,12 +11,15 @@ export interface BuildLogProps {
   warnings?: string[];
 }
 
-type Props = BuildLogProps;
+interface Props extends BuildLogProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { target, failed, lines, warnings } = Astro.props;
+const { target, failed, lines, warnings, class: className, style } = Astro.props;
 ---
 
-<section class="build-log" aria-label="Build log">
+<section class:list={["build-log", className]} aria-label="Build log" style={style}>
   <pre>$ make {target}{failed ? <strong> (failed)</strong> : null}
 {(lines ?? []).map((line) => <code>{line.text}{"\n"}</code>)}</pre>
   <ul aria-label="Warnings">

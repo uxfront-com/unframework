@@ -4,7 +4,7 @@
 // JavaScript in `{…}`, braces in strings, templates and regular expressions included, so
 // expression code is printed as written.
 import { BINDABLE_BOOLEAN_ATTRIBUTES } from "@unframework/ir";
-import type { ForNode } from "@unframework/ir";
+import type { ForNode, RenderNode } from "@unframework/ir";
 
 import { referencedBindings } from "../references.ts";
 import {
@@ -23,7 +23,14 @@ import {
   staticStyleValue,
   test,
 } from "./printer.ts";
-import type { BlockSegment, ConditionalBranch, MarkupDialect, MarkupPiece } from "./printer.ts";
+import type {
+  BlockSegment,
+  Container,
+  MarkupDialect,
+  MarkupPiece,
+  PrintedAttribute,
+  PrintedFill,
+} from "./printer.ts";
 
 /** Line breaks and tabs, which JSX-style whitespace rules (Astro's `compressHTML`) rewrite. */
 const JSX_WHITESPACE = /[\t\n\r]/;
@@ -54,11 +61,17 @@ function listParameters(node: ForNode, item: string, index: string | undefined):
   return read.has(node.item) ? item : "";
 }
 
-/** What a branch or a list body holds, as an expression in a ternary or a `.map` callback. */
-function content(nodes: ConditionalBranch["branch"]): MarkupPiece {
-  const [only, ...more] = nodes.children;
+/**
+ * What a branch, a list body or a slot's fallback holds, as an expression in a ternary or a
+ * `.map` callback.
+ */
+function content(nodes: readonly RenderNode[], container: Container): MarkupPiece {
+  const [only, ...more] = nodes;
   if (more.length === 0 && only?.kind === "Element") {
     return { kind: "element", element: only, directives: [] };
+  }
+  if (more.length === 0 && only?.kind === "Component") {
+    return { kind: "component", component: only, directives: [] };
   }
   if (more.length === 0 && only?.kind === "Text") {
     return { kind: "code", code: JSON.stringify(only.value) };
@@ -67,8 +80,39 @@ function content(nodes: ConditionalBranch["branch"]): MarkupPiece {
     kind: "wrapper",
     tag: "",
     attributes: [],
-    content: { kind: "nodes", nodes: nodes.children, container: nodes },
+    content: { kind: "nodes", nodes, container },
   };
+}
+
+/**
+ * A string prop Astro passes on as written between quotes: its compiler decodes no character
+ * reference in a component's attribute, so any other string is a string literal in braces.
+ */
+const PLAIN_PROP = /^[^"&{}<>\\`$\t\n\r\u00a0]*$/;
+
+/**
+ * A fill as the content of a component element (ADR-0054): the default slot's children as they
+ * are, a named slot's in `<Fragment slot="title">`, and a slot the component forwards as its own
+ * `<slot>`. Astro's compiler gives a component every slot its content names, whatever an
+ * expression around it gives, so the target branches the element on the forwarded slots'
+ * presence and keeps a forwarded fill only where it is present. A scoped fill is no content:
+ * Astro's `<Fragment slot>` drops a slot's arguments, so the target passes it as a render prop
+ * named as the slot.
+ */
+function fillContent({ fill, forwardsProps }: PrintedFill): MarkupPiece {
+  if (fill.parameter !== undefined || forwardsProps) {
+    throw new Error(`The astro dialect writes no scoped fill (${fill.slot}): it is a render prop.`);
+  }
+  const slot: PrintedAttribute = { name: "slot", text: quotedAttribute("slot", fill.slot) };
+  if (fill.forward === "default") return { kind: "tag", tag: "slot", attributes: [] };
+  if (fill.forward !== undefined) {
+    const name = { name: "name", text: quotedAttribute("name", fill.forward) };
+    return { kind: "tag", tag: "slot", attributes: [name, slot] };
+  }
+  const nodes: MarkupPiece = { kind: "nodes", nodes: fill.children, container: fill };
+  return fill.slot === "default"
+    ? nodes
+    : { kind: "wrapper", tag: "Fragment", attributes: [slot], content: nodes };
 }
 
 /**
@@ -146,30 +190,83 @@ export const astroDialect: MarkupDialect = {
         tail += `${head}null : `;
         continue;
       }
-      segments.push({ open: `${tail}${head}`, content: content(branch), parentheses: true });
+      segments.push({
+        open: `${tail}${head}`,
+        content: content(branch.children, branch),
+        parentheses: true,
+      });
       tail = condition === undefined ? "" : " : ";
     }
     return [{ kind: "block", segments, close: tail === "" ? "}" : `${tail}null}` }];
   },
-  // A component as the body is not printed yet (ADR-0055): each target's `emit` reports UF1002
-  // for it.
-  list: ({ node, source, item, index }) =>
-    node.body.kind !== "Element"
-      ? []
-      : [
-          {
-            kind: "block",
-            segments: [
-              {
-                open: `{${operand(source)}.map((${listParameters(node, item, index)}) => `,
-                content: { kind: "element", element: node.body, directives: [] },
-                parentheses: true,
-              },
-            ],
-            close: ")}",
-          },
-        ],
+  list: ({ node, source, item, index }) => [
+    {
+      kind: "block",
+      segments: [
+        {
+          open: `{${operand(source)}.map((${listParameters(node, item, index)}) => `,
+          content: content([node.body], node),
+          parentheses: true,
+        },
+      ],
+      close: ")}",
+    },
+  ],
   eventAttribute: () => [],
   refAttribute: () => [],
   inert: true,
+  // A component's props are attributes (ADR-0053); no listener runs (`component-event`).
+  propAttribute: ({ name, code, literal }) => [
+    {
+      name,
+      text:
+        literal !== undefined && PLAIN_PROP.test(literal)
+          ? `${name}="${literal}"`
+          : `${name}={${code}}`,
+    },
+  ],
+  componentEvent: () => [],
+  fills: (fills) => fills.map(fillContent),
+  /**
+   * A slot outlet (ADR-0054): `<slot>`, named unless it is the default, with the fallback as its
+   * content, which Astro renders where the consumer passed no slot. A scoped slot is a render
+   * prop the target reads by the slot's name: called with its props, or the fallback where the
+   * consumer passed none.
+   */
+  slotOutlet: ({ node, props }) => {
+    if (props) {
+      const call = `${node.slot}(${props.code})`;
+      if (!node.fallback.length) return [{ kind: "code", code: `{${node.slot}?.(${props.code})}` }];
+      return [
+        {
+          kind: "block",
+          segments: [
+            {
+              open: `{${node.slot} ? ${call} : `,
+              content: content(node.fallback, node),
+              parentheses: true,
+            },
+          ],
+          close: "}",
+        },
+      ];
+    }
+    return [
+      {
+        kind: "tag",
+        tag: "slot",
+        attributes:
+          node.slot === "default"
+            ? []
+            : [{ name: "name", text: quotedAttribute("name", node.slot) }],
+        ...(node.fallback.length
+          ? { content: [{ kind: "nodes", nodes: node.fallback, container: node }] }
+          : {}),
+      },
+    ];
+  },
+  // A child's model is a prop that renders its value: nothing writes it (ADR-0054).
+  modelBinding: ({ attribute, value }) => [
+    { name: attribute.model, text: `${attribute.model}={${value}}` },
+  ],
 };

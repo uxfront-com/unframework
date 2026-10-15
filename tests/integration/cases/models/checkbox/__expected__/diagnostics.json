@@ -17,23 +17,6 @@
     "target": "angular"
   },
   {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The astro target does not emit two-way-binding yet: composition lands in M3.",
-    "file": "models/checkbox/Terms.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 32,
-      "offset": 188
-    },
-    "end": {
-      "line": 8,
-      "column": 54,
-      "offset": 210
-    },
-    "target": "astro"
-  },
-  {
     "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
@@ -53,7 +36,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The react target does not emit two-way-binding yet: composition lands in M3.",
+    "message": "The qwik target does not emit two-way-binding yet: composition lands in M3.",
     "file": "models/checkbox/Terms.uf.tsx",
     "start": {
       "line": 8,
@@ -65,7 +48,7 @@
       "column": 54,
       "offset": 210
     },
-    "target": "react"
+    "target": "qwik"
   },
   {
     "code": "UF1002",

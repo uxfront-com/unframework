@@ -7,7 +7,7 @@ import { expect } from "vitest";
 import Outline from "./Outline.uf.tsx";
 
 describeTargets("context/nested", () => {
-  it("reads the nearest provider", async () => {
+  it("reads the nearest provider", { requires: ["context"] }, async () => {
     const view = await mount(Outline);
     await view.expectParity("initial");
     await expect.element(view.getByRole("heading", { name: "Book at depth 0" })).toBeVisible();

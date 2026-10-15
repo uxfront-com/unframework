@@ -19,7 +19,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit component yet: composition lands in M3.",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "slots/default/Greeting.uf.tsx",
     "start": {
       "line": 5,
@@ -31,24 +31,7 @@
       "column": 13,
       "offset": 260
     },
-    "target": "astro"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
-    "file": "slots/default/Greeting.uf.tsx",
-    "start": {
-      "line": 5,
-      "column": 5,
-      "offset": 115
-    },
-    "end": {
-      "line": 10,
-      "column": 13,
-      "offset": 260
-    },
-    "target": "react"
+    "target": "qwik"
   },
   {
     "code": "UF1002",
@@ -87,7 +70,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit `defineSlots` yet: composition lands in M3.",
+    "message": "The qwik target does not emit `defineSlots` yet: composition lands in M3.",
     "file": "slots/default/Panel.uf.tsx",
     "start": {
       "line": 5,
@@ -99,24 +82,7 @@
       "column": 56,
       "offset": 205
     },
-    "target": "astro"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The react target does not emit `defineSlots` yet: composition lands in M3.",
-    "file": "slots/default/Panel.uf.tsx",
-    "start": {
-      "line": 5,
-      "column": 3,
-      "offset": 152
-    },
-    "end": {
-      "line": 5,
-      "column": 56,
-      "offset": 205
-    },
-    "target": "react"
+    "target": "qwik"
   },
   {
     "code": "UF1002",

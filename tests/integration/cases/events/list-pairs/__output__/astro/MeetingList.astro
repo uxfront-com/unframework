@@ -14,9 +14,12 @@ export interface MeetingListProps {
   organiser?: Organiser;
 }
 
-type Props = MeetingListProps;
+interface Props extends MeetingListProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { meetings, organiser } = Astro.props;
+const { meetings, organiser, class: className, style } = Astro.props;
 
 const rooms = ["Atlas", "Borealis"];
 const log = [] as string[];
@@ -25,7 +28,7 @@ const clicks = 0 as number;
 const upcoming = meetings.filter((meeting) => !meeting.done);
 ---
 
-<section class="meeting-list" aria-label="Meetings">
+<section class:list={["meeting-list", className]} aria-label="Meetings" style={style}>
   <ul aria-label="Upcoming">
     {upcoming.map((event) => (
       <li>

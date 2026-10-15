@@ -6,13 +6,18 @@ export interface AuthorBylineProps {
   affiliation?: string;
 }
 
-type Props = AuthorBylineProps;
+interface Props extends AuthorBylineProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
 const props = Astro.props;
+const { class: className, style } = Astro.props;
 ---
 
 <p
-  class="byline"
+  class:list={["byline", className]}
+  style={style}
 >By {props.author}, {props.affiliation ?? "independent"}<br /><time
   datetime={props.published}
 >{props.published}</time> · {props.minutes} min read</p>

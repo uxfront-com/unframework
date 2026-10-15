@@ -1,4 +1,5 @@
 {
   "description": "A child injects with a fallback: outside any provider it reads the fallback, and inside one the provided value.",
-  "main": "Page.uf.tsx"
+  "main": "Page.uf.tsx",
+  "requires": "Every test reads what a provider passes down, which a target without `context` renders as the fallback (ADR-0054)."
 }

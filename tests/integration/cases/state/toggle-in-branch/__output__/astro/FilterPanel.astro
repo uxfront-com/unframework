@@ -1,10 +1,17 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const open = false as boolean;
 const colour = null as string | null;
 const note = null as string | null;
 ---
 
-<section class="filter-panel" aria-label="Filters">
+<section class:list={["filter-panel", className]} aria-label="Filters" style={style}>
   {open ? (
     <button type="button" aria-expanded="true">Hide colours</button>
   ) : (

@@ -9,14 +9,17 @@ export interface ProfileCardProps {
   initial: Profile;
 }
 
-type Props = ProfileCardProps;
+interface Props extends ProfileCardProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { initial } = Astro.props;
+const { initial, class: className, style } = Astro.props;
 
 const profile = initial;
 ---
 
-<article class="profile-card" aria-label="Profile">
+<article class:list={["profile-card", className]} aria-label="Profile" style={style}>
   <h2>{profile.name}</h2>
   <p>{profile.title}</p>
   <p role="status">{profile.available ? "Available" : "Away"}</p>
