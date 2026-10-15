@@ -1,8 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts" module>
-  export type LocaleKeyValue = string;
-  export const LocaleKey = Symbol("uf.locale");
+  export const LocaleKey = Symbol("uf.locale") as symbol & { readonly __value: string };
 </script>
 
 <script lang="ts">

@@ -42,17 +42,6 @@ error[UF1002] (react): The react target does not emit component yet: composition
    |
    = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (svelte): The svelte target does not emit component yet: composition lands in M3.
-  --> slots/fallback/Board.uf.tsx:6:7
-   |
- 6 |       <Notice label="Build">
-   |       ^^^^^^^^^^^^^^^^^^^^^^
-   | ...
-11 |       </Notice>
-   | ^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (angular): The angular target does not emit `defineSlots` yet: composition lands in M3.
  --> slots/fallback/Notice.uf.tsx:5:3
   |
@@ -78,14 +67,6 @@ error[UF1002] (qwik): The qwik target does not emit `defineSlots` yet: compositi
   = see: https://unframework.dev/diagnostics/UF1002
 
 error[UF1002] (react): The react target does not emit `defineSlots` yet: composition lands in M3.
- --> slots/fallback/Notice.uf.tsx:5:3
-  |
-5 |   const slots = defineSlots<{ default?(): Element; action?(): Element }>();
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (svelte): The svelte target does not emit `defineSlots` yet: composition lands in M3.
  --> slots/fallback/Notice.uf.tsx:5:3
   |
 5 |   const slots = defineSlots<{ default?(): Element; action?(): Element }>();

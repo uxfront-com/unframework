@@ -38,14 +38,6 @@ error[UF1002] (react): The react target does not emit context yet: composition l
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (svelte): The svelte target does not emit context yet: composition lands in M3.
- --> context/fallback/Greeting.uf.tsx:6:3
-  |
-6 |   const locale = inject(LocaleKey, "en");
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (angular): The angular target does not emit an injection key yet: composition lands in M3.
  --> context/fallback/LocaleProvider.uf.tsx:4:1
   |
@@ -71,14 +63,6 @@ error[UF1002] (qwik): The qwik target does not emit an injection key yet: compos
   = see: https://unframework.dev/diagnostics/UF1002
 
 error[UF1002] (react): The react target does not emit an injection key yet: composition lands in M3.
- --> context/fallback/LocaleProvider.uf.tsx:4:1
-  |
-4 | export const LocaleKey: InjectionKey<string> = Symbol("uf.locale");
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (svelte): The svelte target does not emit an injection key yet: composition lands in M3.
  --> context/fallback/LocaleProvider.uf.tsx:4:1
   |
 4 | export const LocaleKey: InjectionKey<string> = Symbol("uf.locale");
@@ -119,14 +103,6 @@ error[UF1002] (qwik): The qwik target does not emit component yet: composition l
   = see: https://unframework.dev/diagnostics/UF1002
 
 error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
- --> context/fallback/Page.uf.tsx:7:7
-  |
-7 |       <Greeting name="Ada" />
-  |       ^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (svelte): The svelte target does not emit component yet: composition lands in M3.
  --> context/fallback/Page.uf.tsx:7:7
   |
 7 |       <Greeting name="Ada" />

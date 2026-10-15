@@ -83,22 +83,5 @@
       "offset": 211
     },
     "target": "react"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The svelte target does not emit two-way-binding yet: composition lands in M3.",
-    "file": "models/select/SizePicker.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 17,
-      "offset": 191
-    },
-    "end": {
-      "line": 9,
-      "column": 37,
-      "offset": 211
-    },
-    "target": "svelte"
   }
 ]

@@ -6,8 +6,7 @@
     label: string;
   }
 
-  export type ThemeKeyValue = Theme;
-  export const ThemeKey = Symbol("uf.theme");
+  export const ThemeKey = Symbol("uf.theme") as symbol & { readonly __value: Theme };
 </script>
 
 <script lang="ts">
