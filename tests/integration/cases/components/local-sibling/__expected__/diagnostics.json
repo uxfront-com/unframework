@@ -53,7 +53,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
+    "message": "The svelte target does not emit component yet: composition lands in M3.",
     "file": "components/local-sibling/Card.uf.tsx",
     "start": {
       "line": 13,
@@ -65,6 +65,6 @@
       "column": 30,
       "offset": 357
     },
-    "target": "react"
+    "target": "svelte"
   }
 ]

@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useEffectEvent, useRef, useState } from "react";
 
 export interface Book {
   id: number;
@@ -17,6 +17,11 @@ export interface BookShelfEvents {
   onSummed?: (total: number) => void;
 }
 
+export interface BookShelfAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 function sum(values: number[]): number {
   return values.reduce((total, value) => total + value, 0);
 }
@@ -28,7 +33,9 @@ export default function BookShelf({
   onToggled,
   onBusy,
   onSummed,
-}: BookShelfProps & BookShelfEvents) {
+  className,
+  style,
+}: BookShelfProps & BookShelfEvents & BookShelfAttributes) {
   const [focused, setFocused] = useState<Book | null>(null);
   const focusedRef = useRef(focused);
   const [reads, setReads] = useState(() => new Map<number, number>());
@@ -132,7 +139,7 @@ export default function BookShelf({
   }
 
   return (
-    <section className="book-shelf" aria-label="Books">
+    <section className={cx("book-shelf", className)} aria-label="Books" style={style}>
       <ul aria-label="Shelf">
         {books.map((book) => (
           <li key={book.id}>
@@ -178,4 +185,19 @@ export default function BookShelf({
       </p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

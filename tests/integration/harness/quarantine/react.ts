@@ -3,65 +3,30 @@
 import type { QuarantineEntry } from "@unframework/testing/node";
 
 /**
- * The cases of M3's core lane (components, slots, fallthrough, expose, models, context and
- * `<component is>`) that React reports as UF1002 until its own M3 lane emits composition (codegen's
- * `compositionUse`): L1 finds an error no capability cell of React's declares, or a fix that
- * recompiles to one. Every later layer has no output to check, and is skipped.
+ * ADR-0058's open item, measured: react-dom writes a controlled checkbox's or radio's first
+ * `checked` state as its attribute and never updates it, and keeps a controlled `<textarea>`'s
+ * text in step with its state, where Vue sets the properties only. Until the shared normaliser
+ * rule for a native control's initial state lands (the Astro lane's), the DOM and the trace
+ * differ. A `<textarea>` React fills from its text also takes the caret at its start on focus,
+ * where Vue's set value leaves it at the end.
  */
-const COMPOSITION: readonly string[] = [
-  "components/acronym-names",
-  "components/branch-content",
-  "components/framework-names",
-  "components/list-item-root",
-  "components/list-rows",
-  "components/local-sibling",
-  "components/named-import",
-  "components/props-and-events",
-  "components/recursion",
-  "components/three-levels",
-  "context/fallback",
-  "context/nested",
-  "context/reactive",
-  "context/static",
-  "diagnostics/component-listener-option",
-  "diagnostics/invalid-model",
-  "diagnostics/invalid-v-model",
-  "diagnostics/unknown-component",
-  "dynamic/components",
-  "dynamic/prop-union",
-  "dynamic/tags",
-  "expose/focus",
-  "expose/several",
-  "fallthrough/class-and-style",
-  "fallthrough/inherit-attrs-false",
-  "fallthrough/to-component-root",
-  "models/checkbox",
-  "models/checkbox-group",
-  "models/component",
-  "models/modifiers",
-  "models/number",
-  "models/radio",
-  "models/select",
-  "models/select-multiple",
-  "models/several",
-  "models/text-field",
-  "models/textarea",
-  "semantics/models",
-  "slots/default",
-  "slots/fallback",
-  "slots/forwarding",
-  "slots/in-list",
-  "slots/named",
-  "slots/presence",
-  "slots/prop-names",
-  "slots/scoped",
-  "slots/scoped-default",
-];
+const DEFAULT_STATE = "ADR-0058's open item: react-dom writes a bound control's initial state";
 
-export const QUARANTINE: readonly QuarantineEntry[] = COMPOSITION.map((id) => ({
-  case: id,
-  target: "react",
-  layer: "L1",
-  reason: "React reports composition (UF1002) until its M3 lane emits it.",
-  issue: "UXF-315",
-}));
+export const QUARANTINE: readonly QuarantineEntry[] = [
+  ...["models/checkbox-group", "models/radio"].flatMap((id) =>
+    (["L7", "L9"] as const).map((layer) => ({
+      case: id,
+      target: "react",
+      layer,
+      reason: `${DEFAULT_STATE}: the first render's \`checked\`, never updated.`,
+      issue: "UXF-320",
+    })),
+  ),
+  ...(["L7", "L9", "L10"] as const).map((layer) => ({
+    case: "models/textarea",
+    target: "react",
+    layer,
+    reason: `${DEFAULT_STATE}: a <textarea>'s text, which also starts the caret at the text's start.`,
+    issue: "UXF-320",
+  })),
+];

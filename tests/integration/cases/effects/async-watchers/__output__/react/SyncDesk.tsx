@@ -1,4 +1,12 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useReducer, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 
 interface Waiting {
   resolve: (text: string) => void;
@@ -23,6 +31,11 @@ export interface SyncDeskEvents {
   onClamped?: (level: number) => void;
 }
 
+export interface SyncDeskAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 async function validate(value: string): Promise<boolean> {
   return value.includes("@");
 }
@@ -40,7 +53,9 @@ export default function SyncDesk({
   onSending,
   onSent,
   onClamped,
-}: SyncDeskProps & SyncDeskEvents) {
+  className,
+  style,
+}: SyncDeskProps & SyncDeskEvents & SyncDeskAttributes) {
   const filesRef = useRef(files);
   const onFocusedRef = useRef(onFocused);
   const onSavedNameRef = useRef(onSavedName);
@@ -359,7 +374,7 @@ export default function SyncDesk({
   }, [email, valid, checking, level, waits]);
 
   return (
-    <section className="sync-desk" aria-label="Sync desk">
+    <section className={cx("sync-desk", className)} aria-label="Sync desk" style={style}>
       <button type="button" onClick={suggest}>
         Suggest
       </button>
@@ -429,6 +444,21 @@ export default function SyncDesk({
       </div>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /**

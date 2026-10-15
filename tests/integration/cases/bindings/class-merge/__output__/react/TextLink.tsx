@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 interface LinkAttributes {
   class?: string;
   title?: string;
@@ -17,9 +19,26 @@ export interface TextLinkProps {
   row: RowAttributes;
 }
 
-export default function TextLink({ href, label, strong, link, row }: TextLinkProps) {
+export interface TextLinkAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function TextLink({
+  href,
+  label,
+  strong,
+  link,
+  row,
+  className,
+  style,
+}: TextLinkProps & TextLinkAttributes) {
   return (
-    <p id={row.id} className={cx("link-row", { "link-row-strong": strong }, row.class)}>
+    <p
+      id={row.id}
+      className={cx("link-row", { "link-row-strong": strong }, className, row.class)}
+      style={style}
+    >
       <a href={href} className={cx("text-link", link.class)} title={link.title} rel={link.rel}>
         {label}
       </a>

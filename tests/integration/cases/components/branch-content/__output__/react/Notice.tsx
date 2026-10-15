@@ -1,6 +1,18 @@
-export default function Notice({ text, tone }: { text: string; tone: "info" | "quiet" }) {
+import type { CSSProperties } from "react";
+
+export interface NoticeAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function Notice({
+  text,
+  tone,
+  className,
+  style,
+}: { text: string; tone: "info" | "quiet" } & NoticeAttributes) {
   return (
-    <p role="status" className={cx("notice", tone)}>
+    <p role="status" className={cx("notice", tone, className)} style={style}>
       {text}
     </p>
   );

@@ -53,7 +53,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The react target does not emit model yet: composition lands in M3.",
+    "message": "The svelte target does not emit model yet: composition lands in M3.",
     "file": "models/several/PriceRange.uf.tsx",
     "start": {
       "line": 4,
@@ -65,7 +65,7 @@
       "column": 58,
       "offset": 168
     },
-    "target": "react"
+    "target": "svelte"
   },
   {
     "code": "UF4001",
@@ -138,7 +138,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The react target does not emit component yet: composition lands in M3.",
+    "message": "The svelte target does not emit component yet: composition lands in M3.",
     "file": "models/several/Search.uf.tsx",
     "start": {
       "line": 10,
@@ -150,7 +150,7 @@
       "column": 84,
       "offset": 293
     },
-    "target": "react"
+    "target": "svelte"
   },
   {
     "code": "UF4001",

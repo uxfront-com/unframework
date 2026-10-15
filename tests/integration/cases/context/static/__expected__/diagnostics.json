@@ -70,7 +70,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The react target does not emit context yet: composition lands in M3.",
+    "message": "The svelte target does not emit context yet: composition lands in M3.",
     "file": "context/static/Badge.uf.tsx",
     "start": {
       "line": 6,
@@ -82,7 +82,7 @@
       "column": 34,
       "offset": 184
     },
-    "target": "react"
+    "target": "svelte"
   },
   {
     "code": "UF1002",
@@ -138,7 +138,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The react target does not emit an injection key yet: composition lands in M3.",
+    "message": "The svelte target does not emit an injection key yet: composition lands in M3.",
     "file": "context/static/ThemeProvider.uf.tsx",
     "start": {
       "line": 11,
@@ -150,7 +150,7 @@
       "column": 65,
       "offset": 253
     },
-    "target": "react"
+    "target": "svelte"
   },
   {
     "code": "UF4001",

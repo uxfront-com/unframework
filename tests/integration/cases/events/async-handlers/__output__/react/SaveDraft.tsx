@@ -1,10 +1,26 @@
-import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 
 export interface SaveDraftEvents {
   onSaved?: (attempt: number, status: string) => void;
 }
 
-export default function SaveDraft({ onSaved }: SaveDraftEvents) {
+export interface SaveDraftAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function SaveDraft({
+  onSaved,
+  className,
+  style,
+}: SaveDraftEvents & SaveDraftAttributes) {
   const onSavedRef = useRef(onSaved);
   useLayoutEffect(() => {
     onSavedRef.current = onSaved;
@@ -31,13 +47,28 @@ export default function SaveDraft({ onSaved }: SaveDraftEvents) {
   }
 
   return (
-    <section className="save-draft" aria-label="Draft">
+    <section className={cx("save-draft", className)} aria-label="Draft" style={style}>
       <p role="status">{status}</p>
       <button type="button" onClick={save}>
         Save the draft
       </button>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /**

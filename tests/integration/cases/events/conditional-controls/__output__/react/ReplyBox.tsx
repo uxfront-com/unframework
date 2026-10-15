@@ -1,6 +1,11 @@
-import { type KeyboardEvent, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, useRef, useState } from "react";
 
-export default function ReplyBox() {
+export interface ReplyBoxAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function ReplyBox({ className, style }: ReplyBoxAttributes) {
   const [started, setStarted] = useState(false);
   const startedRef = useRef(started);
   const [suggesting, setSuggesting] = useState(false);
@@ -19,7 +24,7 @@ export default function ReplyBox() {
   const keydownOnce = useOnce();
 
   return (
-    <section className="reply-box" aria-label="Reply">
+    <section className={cx("reply-box", className)} aria-label="Reply" style={style}>
       <label>
         Message
         <textarea
@@ -55,6 +60,21 @@ export default function ReplyBox() {
       <p>Accepted: {accepted}</p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /** The guard of a listener that runs once per element, as `{ once: true }` makes it. */

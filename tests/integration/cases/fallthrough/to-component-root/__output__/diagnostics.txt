@@ -22,7 +22,7 @@ error[UF1002] (qwik): The qwik target does not emit component yet: composition l
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
+error[UF1002] (svelte): The svelte target does not emit component yet: composition lands in M3.
  --> fallthrough/to-component-root/Primary.uf.tsx:5:10
   |
 5 |   return <Base text={text} class="primary" />;
@@ -54,7 +54,7 @@ error[UF1002] (qwik): The qwik target does not emit component yet: composition l
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
+error[UF1002] (svelte): The svelte target does not emit component yet: composition lands in M3.
  --> fallthrough/to-component-root/Toolbar.uf.tsx:6:7
   |
 6 |       <Primary text="Save" class="wide" />

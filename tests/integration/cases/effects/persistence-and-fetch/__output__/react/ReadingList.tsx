@@ -1,4 +1,11 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export interface ReadingListProps {
   shelves: string[];
@@ -13,6 +20,11 @@ export interface ReadingListEvents {
   onRefreshed?: (total: number) => void;
 }
 
+export interface ReadingListAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function ReadingList({
   shelves,
   onRequested,
@@ -21,7 +33,9 @@ export default function ReadingList({
   onStarted,
   onChecked,
   onRefreshed,
-}: ReadingListProps & ReadingListEvents) {
+  className,
+  style,
+}: ReadingListProps & ReadingListEvents & ReadingListAttributes) {
   // React Compiler 1.0 cannot compile `?.` inside a `try` block yet: the component opts out of it.
   "use no memo";
 
@@ -180,7 +194,7 @@ export default function ReadingList({
   }
 
   return (
-    <section className="reading-list" aria-label="Reading list">
+    <section className={cx("reading-list", className)} aria-label="Reading list" style={style}>
       <label>
         Search
         <input
@@ -247,4 +261,19 @@ export default function ReadingList({
       <p>{refreshing ? "Refreshing" : "Up to date"}</p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

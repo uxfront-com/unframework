@@ -7,9 +7,21 @@ export interface UsageMeterProps {
   thickness: number;
 }
 
-export default function UsageMeter({ label, percent, colour, thickness }: UsageMeterProps) {
+export interface UsageMeterAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function UsageMeter({
+  label,
+  percent,
+  colour,
+  thickness,
+  className,
+  style,
+}: UsageMeterProps & UsageMeterAttributes) {
   return (
-    <div className="usage-meter">
+    <div className={cx("usage-meter", className)} style={style}>
       <p style={{ color: colour, fontWeight: 700, lineHeight: 1.5, marginBottom: "4px" }}>
         {label}: {percent}%
       </p>
@@ -43,4 +55,19 @@ export default function UsageMeter({ label, percent, colour, thickness }: UsageM
       </p>
     </div>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

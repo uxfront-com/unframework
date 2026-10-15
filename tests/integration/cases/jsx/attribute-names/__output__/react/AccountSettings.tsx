@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export interface AccountSettingsProps {
   charset: string;
   bioId: string;
@@ -8,6 +10,11 @@ export interface AccountSettingsProps {
   helpOrder: number;
 }
 
+export interface AccountSettingsAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function AccountSettings({
   charset,
   bioId,
@@ -16,9 +23,11 @@ export default function AccountSettings({
   bannerCors,
   seatColumns,
   helpOrder,
-}: AccountSettingsProps) {
+  className,
+  style,
+}: AccountSettingsProps & AccountSettingsAttributes) {
   return (
-    <div className="account-settings">
+    <div className={cx("account-settings", className)} style={style}>
       <form acceptCharset="utf-8" aria-label="Profile">
         <img
           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23345'/%3E%3C/svg%3E"
@@ -68,4 +77,19 @@ export default function AccountSettings({
       </form>
     </div>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

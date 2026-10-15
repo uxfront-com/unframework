@@ -1,10 +1,22 @@
-import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 
 export interface PickerEvents {
   onDone?: (step: number, status: string) => void;
 }
 
-export default function Picker({ onDone }: PickerEvents) {
+export interface PickerAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function Picker({ onDone, className, style }: PickerEvents & PickerAttributes) {
   const onDoneRef = useRef(onDone);
   useLayoutEffect(() => {
     onDoneRef.current = onDone;
@@ -63,7 +75,7 @@ export default function Picker({ onDone }: PickerEvents) {
   }
 
   return (
-    <section className="picker" aria-label="Picker">
+    <section className={cx("picker", className)} aria-label="Picker" style={style}>
       <div className="choices" role="presentation" onClick={report}>
         <button type="button" onClick={() => pick("alpha")}>
           Alpha
@@ -83,6 +95,21 @@ export default function Picker({ onDone }: PickerEvents) {
       </button>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /**
