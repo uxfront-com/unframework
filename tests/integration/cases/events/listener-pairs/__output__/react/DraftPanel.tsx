@@ -1,4 +1,11 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export interface DraftPanelEvents {
   onSave?: (count: number) => void;
@@ -7,12 +14,19 @@ export interface DraftPanelEvents {
   onKey?: (key: string) => void;
 }
 
+export interface DraftPanelAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function DraftPanel({
   onSave,
   onStatus,
   onClosed,
   onKey: onKey_1,
-}: DraftPanelEvents) {
+  className,
+  style,
+}: DraftPanelEvents & DraftPanelAttributes) {
   const onClosedRef = useRef(onClosed);
   const onKeyRef = useRef(onKey_1);
   useLayoutEffect(() => {
@@ -103,7 +117,7 @@ export default function DraftPanel({
   useEffect(() => () => onUnmount(), []);
 
   return (
-    <section className="draft-panel" aria-label="Draft">
+    <section className={cx("draft-panel", className)} aria-label="Draft" style={style}>
       <button type="button" aria-expanded={open} onClick={show}>
         Options
       </button>
@@ -136,4 +150,19 @@ export default function DraftPanel({
       </ol>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

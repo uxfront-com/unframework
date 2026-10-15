@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export interface MenuDish {
   id: string;
   name: string;
@@ -16,9 +18,19 @@ export interface MenuBoardProps {
   closed: boolean;
 }
 
-export default function MenuBoard({ courses, closed }: MenuBoardProps) {
+export interface MenuBoardAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function MenuBoard({
+  courses,
+  closed,
+  className,
+  style,
+}: MenuBoardProps & MenuBoardAttributes) {
   return (
-    <div className="menu-board">
+    <div className={cx("menu-board", className)} style={style}>
       {closed ? (
         <p>The kitchen is closed.</p>
       ) : (
@@ -38,4 +50,19 @@ export default function MenuBoard({ courses, closed }: MenuBoardProps) {
       )}
     </div>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

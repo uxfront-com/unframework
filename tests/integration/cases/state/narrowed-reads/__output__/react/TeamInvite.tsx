@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   Fragment,
   type SubmitEvent,
   useEffect,
@@ -35,6 +36,11 @@ export interface TeamInviteEvents {
   onMoved?: (page: number) => void;
 }
 
+export interface TeamInviteAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function TeamInvite({
   inviter,
   members,
@@ -43,7 +49,9 @@ export default function TeamInvite({
   onSubmitted,
   onTagged,
   onMoved,
-}: TeamInviteProps & TeamInviteEvents) {
+  className,
+  style,
+}: TeamInviteProps & TeamInviteEvents & TeamInviteAttributes) {
   const greeting = useMemo(
     () => (inviter ? `Invite as ${inviter.name}` : "Invite as a guest"),
     [inviter],
@@ -118,7 +126,7 @@ export default function TeamInvite({
   useEffect(() => () => onUnmount(), []);
 
   return (
-    <section className="team-invite" aria-label="Invite">
+    <section className={cx("team-invite", className)} aria-label="Invite" style={style}>
       <h2>{greeting}</h2>
       <ul aria-label="Members">
         {visible.map((member) => (
@@ -217,4 +225,19 @@ export default function TeamInvite({
       <p>Seconds: {seconds}</p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

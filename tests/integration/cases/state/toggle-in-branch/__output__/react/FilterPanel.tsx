@@ -1,6 +1,11 @@
-import { useRef, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
-export default function FilterPanel() {
+export interface FilterPanelAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function FilterPanel({ className, style }: FilterPanelAttributes) {
   const [open, setOpen] = useState(false);
   const openRef = useRef(open);
   const [colour, setColour] = useState<string | null>(null);
@@ -9,7 +14,7 @@ export default function FilterPanel() {
   const noteRef = useRef(note);
 
   return (
-    <section className="filter-panel" aria-label="Filters">
+    <section className={cx("filter-panel", className)} aria-label="Filters" style={style}>
       {open ? (
         <button
           key={0}
@@ -114,4 +119,19 @@ export default function FilterPanel() {
       )}
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useId, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, useId, useMemo, useRef, useState } from "react";
 
 export interface CityPickerProps {
   cities: string[];
@@ -9,11 +9,18 @@ export interface CityPickerEvents {
   onNoted?: (text: string) => void;
 }
 
+export interface CityPickerAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 export default function CityPicker({
   cities,
   onChose,
   onNoted,
-}: CityPickerProps & CityPickerEvents) {
+  className,
+  style,
+}: CityPickerProps & CityPickerEvents & CityPickerAttributes) {
   const listId = `uf-id-${useId()}`;
   const [query, setQuery] = useState("");
   const queryRef = useRef(query);
@@ -86,7 +93,7 @@ export default function CityPicker({
   }
 
   return (
-    <section className="city-picker" aria-label="Trip">
+    <section className={cx("city-picker", className)} aria-label="Trip" style={style}>
       <form role="search" aria-label="Destination" onSubmit={(event) => event.preventDefault()}>
         <label>
           City
@@ -145,4 +152,19 @@ export default function CityPicker({
       </ul>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

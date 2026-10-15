@@ -14,14 +14,6 @@ error[UF1002] (qwik): The qwik target does not emit model yet: composition lands
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (react): The react target does not emit model yet: composition lands in M3.
- --> models/several/PriceRange.uf.tsx:4:3
-  |
-4 |   const min = defineModel<number>("min", { default: 0 });
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (svelte): The svelte target does not emit model yet: composition lands in M3.
  --> models/several/PriceRange.uf.tsx:4:3
   |
@@ -47,14 +39,6 @@ error[UF1002] (angular): The angular target does not emit component yet: composi
    = see: https://unframework.dev/diagnostics/UF1002
 
 error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
-  --> models/several/Search.uf.tsx:10:7
-   |
-10 |       <PriceRange label="Price" v-model:min={low.value} v-model:max={high.value} />
-   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (react): The react target does not emit component yet: composition lands in M3.
   --> models/several/Search.uf.tsx:10:7
    |
 10 |       <PriceRange label="Price" v-model:min={low.value} v-model:max={high.value} />

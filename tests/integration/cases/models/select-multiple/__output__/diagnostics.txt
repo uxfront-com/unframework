@@ -22,14 +22,6 @@ error[UF1002] (qwik): The qwik target does not emit two-way-binding yet: composi
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (react): The react target does not emit two-way-binding yet: composition lands in M3.
- --> models/select-multiple/ToppingPicker.uf.tsx:9:26
-  |
-9 |         <select multiple v-model={toppings.value}>
-  |                          ^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (svelte): The svelte target does not emit two-way-binding yet: composition lands in M3.
  --> models/select-multiple/ToppingPicker.uf.tsx:9:26
   |

@@ -1,4 +1,12 @@
-import { useEffect, useEffectEvent, useLayoutEffect, useReducer, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 
 export interface SearchResultsEvents {
   onReady?: (text: string) => void;
@@ -6,7 +14,18 @@ export interface SearchResultsEvents {
   onShown?: (text: string) => void;
 }
 
-export default function SearchResults({ onReady, onRendered, onShown }: SearchResultsEvents) {
+export interface SearchResultsAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function SearchResults({
+  onReady,
+  onRendered,
+  onShown,
+  className,
+  style,
+}: SearchResultsEvents & SearchResultsAttributes) {
   const onReadyRef = useRef(onReady);
   const onShownRef = useRef(onShown);
   useLayoutEffect(() => {
@@ -92,7 +111,7 @@ export default function SearchResults({ onReady, onRendered, onShown }: SearchRe
   }
 
   return (
-    <section className="search-results" aria-label="Search">
+    <section className={cx("search-results", className)} aria-label="Search" style={style}>
       <p ref={banner}>{status}</p>
       <label>
         Query
@@ -115,6 +134,21 @@ export default function SearchResults({ onReady, onRendered, onShown }: SearchRe
       </button>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
 
 /**

@@ -1,16 +1,25 @@
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
 
 export interface WelcomeBannerProps {
   name: string;
 }
 
+export interface WelcomeBannerAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
 const tips = ["Set up your profile", "Invite your team"];
 
-export default function WelcomeBanner({ name }: WelcomeBannerProps) {
+export default function WelcomeBanner({
+  name,
+  className,
+  style,
+}: WelcomeBannerProps & WelcomeBannerAttributes) {
   const [greeting] = useState(`Welcome, ${name}`);
 
   return (
-    <section className="welcome-banner" aria-label="Welcome">
+    <section className={cx("welcome-banner", className)} aria-label="Welcome" style={style}>
       <h2>{greeting}</h2>
       <p>Signed in as {name}</p>
       <ul>
@@ -20,4 +29,19 @@ export default function WelcomeBanner({ name }: WelcomeBannerProps) {
       </ul>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }

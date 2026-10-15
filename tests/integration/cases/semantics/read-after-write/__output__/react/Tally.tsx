@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
 export interface TallyEvents {
   onTotal?: (value: number) => void;
@@ -6,7 +6,18 @@ export interface TallyEvents {
   onLogged?: (entries: string[]) => void;
 }
 
-export default function Tally({ onTotal, onSteps, onLogged }: TallyEvents) {
+export interface TallyAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export default function Tally({
+  onTotal,
+  onSteps,
+  onLogged,
+  className,
+  style,
+}: TallyEvents & TallyAttributes) {
   const [count, setCount] = useState(0);
   const countRef = useRef(count);
   const [trail, setTrail] = useState<string[]>([]);
@@ -58,7 +69,7 @@ export default function Tally({ onTotal, onSteps, onLogged }: TallyEvents) {
   }
 
   return (
-    <section className="tally" aria-label="Tally">
+    <section className={cx("tally", className)} aria-label="Tally" style={style}>
       <p role="status">Count: {count}</p>
       <button type="button" onClick={addTwice}>
         Add two
@@ -78,4 +89,19 @@ export default function Tally({ onTotal, onSteps, onLogged }: TallyEvents) {
       <p>Phases: {trail.join(" then ")}</p>
     </section>
   );
+}
+
+/** Joins class names, and the keys of an object's truthy entries, into one `className`. */
+function cx(...parts: unknown[]): string {
+  const names: string[] = [];
+  for (const part of parts) {
+    if (typeof part === "string") {
+      if (part) names.push(part);
+    } else if (part && typeof part === "object") {
+      for (const [key, on] of Object.entries(part)) {
+        if (on) names.push(key);
+      }
+    }
+  }
+  return names.join(" ");
 }
