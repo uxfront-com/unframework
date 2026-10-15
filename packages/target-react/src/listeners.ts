@@ -23,7 +23,7 @@ import type {
 
 import type { ReactComposer } from "./compose.ts";
 import { reactProp, targetGuarded } from "./events.ts";
-import { listenHelper, onceHelper } from "./helpers.ts";
+import { listenHelper, onceHelper, setCheckedHelper } from "./helpers.ts";
 import type { ListenerMode, ReactPlan } from "./plan.ts";
 import type { ReactCode } from "./rules.ts";
 import { locals, templateRefType, withEventTypes } from "./setup.ts";
@@ -87,6 +87,15 @@ export class ReactListeners {
   /** The `listen` helper's name, claimed once a native listener needs it. */
   get #listen(): string {
     return (this.#plan.helpers.listen ??= this.#plan.names.claim("listen"));
+  }
+
+  /** The `setChecked` helper's name, claimed once a checkbox's or a radio's model needs it. */
+  get #setChecked(): string {
+    const helper = (this.#plan.helpers.setChecked ??= {
+      name: this.#plan.names.claim("setChecked"),
+      values: this.#plan.names.claim("checkedValues"),
+    });
+    return helper.name;
   }
 
   #of(element: ElementNode): ElementListeners {
@@ -313,8 +322,9 @@ export class ReactListeners {
    */
   #callback(listeners: ElementListeners, type?: string, context?: JsxContext): string {
     const listen = this.#listen;
-    // A checkbox's or a radio's model: shown on every render, as the callback is written in place,
-    // and written from `change` before the element's own listeners of it, as Vue adds it first. It
+    // A checkbox's or a radio's model: shown on every render its value changed, as the callback is
+    // written in place (`setChecked`), and written from `change` before the element's own
+    // listeners of it, as Vue adds it first. It
     // runs in their one listener: a write renders, and the callback written in place is replaced,
     // between two listeners, which would remove the second before it ran.
     const model =
@@ -362,7 +372,9 @@ export class ReactListeners {
     if (model) {
       lines.push(
         `if (!${local.element}) return undefined;`,
-        `${local.element}.checked = ${model.checked};`,
+        model.value === undefined
+          ? `${local.element}.checked = ${model.checked};`
+          : `${this.#setChecked}(${local.element}, ${model.value}, ${model.checked});`,
       );
     }
     const stops = [ref ? `${ref}.current = null;` : undefined];
@@ -447,6 +459,10 @@ export function listenerHelpers(plan: ReactPlan): string[] {
   if (plan.helpers.listen) helpers.push(listenHelper(plan.helpers.listen));
   if (plan.helpers.once)
     helpers.push(onceHelper(plan.helpers.once, plan.names.add("react", "useRef")));
+  if (plan.helpers.setChecked) {
+    const { name, values } = plan.helpers.setChecked;
+    helpers.push(setCheckedHelper(name, values));
+  }
   return helpers;
 }
 

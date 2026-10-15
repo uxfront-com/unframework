@@ -146,8 +146,12 @@ every edit, or as the field loses focus for `lazy` (Enter in a text field writes
 `onChange`, a field's `onBlur`, and a text field's `onInput`, which joins its `onChange`) runs
 first in the listener's handler, as Vue adds the model's listener first. A checkbox's or a radio's
 model writes from the native `change`, after the DOM's `input`, as Vue's does (ADR-0047): React's
-`onChange` there fires on `click`. The element's ref callback, written in place, shows the state
-on every render and runs the model's write first in the one `change` listener it adds. A state or a
+`onChange` there fires on `click`. The element's ref callback, written in place, runs on every
+render and runs the model's write first in the one `change` listener it adds. It sets `checked`
+through `setChecked` only when the model's value changed since the element last showed it, as Vue
+does: a render between the control's `input` and its `change`, from a listener that writes state
+on `input`, keeps what was clicked. A checkbox group shows its array on every render, as Vue's
+does. A state or a
 model that a control's `v-model` writes and client code reads has a mirror, so a listener beside
 the control or around it reads the write. A written model's local state holds its value in an
 object, new on every write, so a write always renders: a parent that holds its value resets the

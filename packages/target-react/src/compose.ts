@@ -233,16 +233,18 @@ export class ReactComposer {
   }
 
   /**
-   * A checkbox's or a radio's `v-model` (ADR-0054): whether the control is checked, and the
-   * statements that write it from the control (`element` its local). React's `onChange` on a
-   * checkbox or a radio fires on `click`, before the DOM's `input`; Vue writes on `change`, after
-   * it, so the element listens natively (ADR-0047). `undefined` for any other control.
+   * A checkbox's or a radio's `v-model` (ADR-0054): whether the control is checked, the model's
+   * value whose change shows it (`value`, unset for a checkbox group, which Vue shows on every
+   * update), and the statements that write it from the control (`element` its local). React's
+   * `onChange` on a checkbox or a radio fires on `click`, before the DOM's `input`; Vue writes on
+   * `change`, after it, so the element listens natively (ADR-0047). `undefined` for any other
+   * control.
    */
   checkedModel(
     attribute: ModelAttribute,
     element: ElementNode,
     context: JsxContext,
-  ): { checked: string; statements: (target: string) => string[] } | undefined {
+  ): { checked: string; value?: string; statements: (target: string) => string[] } | undefined {
     const { control } = attribute;
     if (control !== "checkbox" && control !== "checkbox-group" && control !== "radio") {
       return undefined;
@@ -253,11 +255,16 @@ export class ReactComposer {
     if (control === "checkbox") {
       return {
         checked: read,
+        value: read,
         statements: (target) => this.#assign(binding, `${target}.checked`),
       };
     }
     if (control === "radio") {
-      return { checked: `${read} === ${box}`, statements: () => this.#assign(binding, box) };
+      return {
+        checked: `${read} === ${box}`,
+        value: read,
+        statements: () => this.#assign(binding, box),
+      };
     }
     const toggle = (this.#plan.helpers.toggle ??= this.#plan.names.claim("toggle"));
     const current = this.#clientRead(attribute.value);

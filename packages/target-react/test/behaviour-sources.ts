@@ -32,6 +32,29 @@ export default function ModelReads() {
   );
 }
 `,
+  // Checked controls under listeners that write state from \`input\`: the render between a
+  // control's \`input\` and its \`change\` keeps what was clicked, as Vue's \`v-model\` does.
+  DirtyForm: `import { ref } from "unframework";
+
+export default function DirtyForm() {
+  const agreed = ref(false);
+  const plan = ref("a");
+  const solo = ref(false);
+  const dirty = ref(0);
+  const touched = ref(0);
+  return (
+    <div>
+      <form onInput={() => dirty.value++}>
+        <input type="checkbox" aria-label="Agree" v-model={agreed.value} />
+        <input type="radio" name="plan" value="a" aria-label="A" v-model={plan.value} />
+        <input type="radio" name="plan" value="b" aria-label="B" v-model={plan.value} />
+      </form>
+      <input type="checkbox" aria-label="Solo" v-model={solo.value} onInput={() => touched.value++} />
+      <output>{String(agreed.value) + "|" + plan.value + "|" + String(solo.value) + "|" + dirty.value + "|" + touched.value}</output>
+    </div>
+  );
+}
+`,
   // A bound model whose parent holds its value (ADR-0054): every write starts from that value.
   HeldStepper: `import { defineModel } from "unframework";
 

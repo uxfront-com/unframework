@@ -139,6 +139,7 @@ export interface ReactPlan {
     refObject?: string;
     toggle?: string;
     modelText?: string;
+    setChecked?: { name: string; values: string };
   };
   /** Children, slots, models, fallthrough, expose, context and `<component is>` (ADR-0054). */
   readonly composition: CompositionPlan;
@@ -565,6 +566,8 @@ const HELPER_NAMES = [
   "toggle",
   "useModelText",
   "looseToNumber",
+  "setChecked",
+  "checkedValues",
 ];
 
 /** Whether a binding's value changes as the component runs: a prop, state or a derived value. */

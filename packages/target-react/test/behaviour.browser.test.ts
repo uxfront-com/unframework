@@ -135,6 +135,21 @@ describe("react output in the browser", () => {
     expect(logged).toEqual([]);
   });
 
+  it("keeps a checked control's click when an input listener writes state before its change", async () => {
+    await start(await component("DirtyForm"), []);
+    const field = (label: string) =>
+      container.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
+    for (const label of ["Agree", "B", "Solo"]) await act(() => userEvent.click(field(label)));
+    expect(container.querySelector("output")!.textContent).toBe("true|b|true|2|1");
+    expect([field("Agree").checked, field("A").checked, field("B").checked]).toEqual([
+      true,
+      false,
+      true,
+    ]);
+    expect(field("Solo").checked).toBe(true);
+    expect(logged).toEqual([]);
+  });
+
   it("asks a parent that holds a model's value for the same value on every write", async () => {
     const changes: unknown[] = [];
     await start(await component("HeldStepper"), [], {
@@ -447,6 +462,27 @@ describe("react output in the browser", () => {
   // An app renders without `act`, which drains every update before a promise's continuation
   // runs: these mount with `createRoot` alone and click as a user does.
   describe("outside act", () => {
+    it("keeps a checked control's click when an input listener writes state before its change", async () => {
+      const root = createRoot(container);
+      const field = (label: string) =>
+        container.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
+      const output = () => container.querySelector("output")?.textContent;
+      try {
+        root.render(createElement(await component("DirtyForm")));
+        await vi.waitFor(() => expect(output()).toBe("false|a|false|0|0"));
+        for (const label of ["Agree", "B", "Solo"]) await userEvent.click(field(label));
+        await vi.waitFor(() => expect(output()).toBe("true|b|true|2|1"));
+        expect([field("Agree").checked, field("B").checked, field("Solo").checked]).toEqual([
+          true,
+          true,
+          true,
+        ]);
+        expect(logged).toEqual([]);
+      } finally {
+        root.unmount();
+      }
+    });
+
     it("resolves nextTick once the writes before it, and those of the watchers they run, render", async () => {
       const root = createRoot(container);
       try {
