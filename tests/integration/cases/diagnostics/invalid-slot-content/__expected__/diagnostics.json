@@ -19,23 +19,6 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The astro target does not emit `defineSlots` yet: composition lands in M3.",
-    "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 3,
-      "offset": 249
-    },
-    "end": {
-      "line": 7,
-      "column": 75,
-      "offset": 321
-    },
-    "target": "astro"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
     "message": "The qwik target does not emit `defineSlots` yet: composition lands in M3.",
     "file": "diagnostics/invalid-slot-content/Page.uf.tsx",
     "start": {

@@ -1,0 +1,16 @@
+---
+import Counter from "./Counter.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<div class:list={["controls", className]} style={style}>
+  <Counter start={10} />
+  <button type="button">More</button>
+  <button type="button">Reset</button>
+</div>

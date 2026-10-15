@@ -1,0 +1,14 @@
+---
+interface Props {
+  title: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { title, class: className, style } = Astro.props;
+---
+
+<section class:list={["panel", className]} aria-label={title} style={style}>
+  <h2>{title}</h2>
+  <slot />
+</section>

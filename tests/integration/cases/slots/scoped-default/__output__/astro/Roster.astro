@@ -1,0 +1,18 @@
+---
+import Names from "./Names.astro";
+
+interface Props {
+  names: string[];
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { names, class: className, style } = Astro.props;
+---
+
+<Names
+  names={names}
+  class:list={[className]}
+  style={style}
+  default={({ item }) => <b>{item}!</b>}
+/>

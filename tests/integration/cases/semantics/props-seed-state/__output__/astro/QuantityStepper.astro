@@ -4,14 +4,17 @@ export interface QuantityStepperProps {
   label: string;
 }
 
-type Props = QuantityStepperProps;
+interface Props extends QuantityStepperProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { initial, label } = Astro.props;
+const { initial, label, class: className, style } = Astro.props;
 
 const quantity = initial;
 ---
 
-<div class="quantity-stepper" role="group" aria-label={label}>
+<div class:list={["quantity-stepper", className]} role="group" aria-label={label} style={style}>
   <output>{quantity}</output>
   <button type="button" aria-label={`Increase ${label}`}>+</button>
 </div>

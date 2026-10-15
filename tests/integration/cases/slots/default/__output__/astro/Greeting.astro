@@ -1,0 +1,16 @@
+---
+import Panel from "./Panel.astro";
+
+interface Props {
+  name: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { name, class: className, style } = Astro.props;
+---
+
+<Panel title="Welcome" class:list={[className]} style={style}>
+  <p>Hello, <strong>{name}</strong>!</p>
+  <p>Your children render in the panel.</p>
+</Panel>

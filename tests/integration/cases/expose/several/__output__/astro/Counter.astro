@@ -1,0 +1,13 @@
+---
+interface Props {
+  start: number;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { start, class: className, style } = Astro.props;
+
+const count = start;
+---
+
+<output class:list={["count", className]} style={style}>{count}</output>

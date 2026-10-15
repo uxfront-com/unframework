@@ -9,7 +9,10 @@ export interface NoticeProps {
   author?: { name: string };
 }
 
-type Props = NoticeProps;
+interface Props extends NoticeProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
 const {
   message,
@@ -19,10 +22,12 @@ const {
   expanded = false,
   tags = ["general"],
   author = { name: "System" },
+  class: className,
+  style,
 } = Astro.props;
 ---
 
-<section class="notice" aria-label={title} data-tone={tone}>
+<section class:list={["notice", className]} aria-label={title} data-tone={tone} style={style}>
   <h2>{title}</h2>
   <p>{message}</p>
   <details open={expanded}>

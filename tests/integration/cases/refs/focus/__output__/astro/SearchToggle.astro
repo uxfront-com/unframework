@@ -1,4 +1,13 @@
-<div class="search-toggle" role="search">
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<div class:list={["search-toggle", className]} role="search" style={style}>
   <button type="button">Search</button>
   <input name="query" aria-label="Search the docs" />
 </div>

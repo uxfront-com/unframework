@@ -4,9 +4,12 @@ export interface PriceTagProps {
   price: number;
 }
 
-type Props = PriceTagProps;
+interface Props extends PriceTagProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { price } = Astro.props;
+const { price, class: className, style } = Astro.props;
 
 const quantity = 1 as number;
 const unit = formatCents(price);
@@ -23,7 +26,7 @@ function describe(): string {
 }
 ---
 
-<section class="price-tag" aria-label="Price">
+<section class:list={["price-tag", className]} aria-label="Price" style={style}>
   <p>Unit: {unit}</p>
   <p role="status">{summary}</p>
   <p>Total: {total}</p>

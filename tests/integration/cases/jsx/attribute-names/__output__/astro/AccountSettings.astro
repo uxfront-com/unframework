@@ -9,12 +9,25 @@ export interface AccountSettingsProps {
   helpOrder: number;
 }
 
-type Props = AccountSettingsProps;
+interface Props extends AccountSettingsProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { charset, bioId, bioLimit, locked, bannerCors, seatColumns, helpOrder } = Astro.props;
+const {
+  charset,
+  bioId,
+  bioLimit,
+  locked,
+  bannerCors,
+  seatColumns,
+  helpOrder,
+  class: className,
+  style,
+} = Astro.props;
 ---
 
-<div class="account-settings">
+<div class:list={["account-settings", className]} style={style}>
   <form accept-charset="utf-8" aria-label="Profile">
     <img
       src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23345'/%3E%3C/svg%3E"

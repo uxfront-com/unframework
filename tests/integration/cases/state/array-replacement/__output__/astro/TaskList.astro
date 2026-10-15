@@ -8,15 +8,18 @@ export interface TaskListProps {
   initial: Task[];
 }
 
-type Props = TaskListProps;
+interface Props extends TaskListProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { initial } = Astro.props;
+const { initial, class: className, style } = Astro.props;
 
 const tasks = initial;
 const selected = undefined as string | undefined;
 ---
 
-<section class="task-list" aria-label="Tasks">
+<section class:list={["task-list", className]} aria-label="Tasks" style={style}>
   {tasks.length === 0 ? (
     <p>No tasks yet.</p>
   ) : (

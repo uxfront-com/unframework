@@ -1,0 +1,16 @@
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+const agreed = false as boolean;
+---
+
+<section aria-label="Terms" class:list={[className]} style={style}>
+  <label><input type="checkbox" checked={agreed} /> I agree</label>
+  <output>{agreed ? "Agreed" : "Not agreed"}</output>
+  <button type="button">Toggle</button>
+</section>

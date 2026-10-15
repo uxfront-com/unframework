@@ -1,0 +1,20 @@
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<article class:list={["card", className]} style={style}>
+  <header>
+    <slot name="header" />
+  </header>
+  <div class="body">
+    <slot />
+  </div>
+  <footer>
+    <slot name="footer" />
+  </footer>
+</article>

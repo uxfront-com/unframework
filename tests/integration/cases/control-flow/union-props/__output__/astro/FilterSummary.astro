@@ -7,12 +7,15 @@ export interface FilterSummaryProps {
   result: LookupResult;
 }
 
-type Props = FilterSummaryProps;
+interface Props extends FilterSummaryProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { tags, limit, result } = Astro.props;
+const { tags, limit, result, class: className, style } = Astro.props;
 ---
 
-<section class="filter-summary" aria-label="Filters">
+<section class:list={["filter-summary", className]} aria-label="Filters" style={style}>
   <p>Tags: {Array.isArray(tags) ? tags.join(", ") : tags}</p>
   <p>Limit: {typeof limit === "number" ? limit.toFixed(0) : limit.toLowerCase()}</p>
   {result.ok ? (

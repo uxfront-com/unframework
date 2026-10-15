@@ -7,12 +7,16 @@ export interface ActionButtonProps {
   badge: number;
 }
 
-type Props = ActionButtonProps;
+interface Props extends ActionButtonProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { label, size, primary, busy = false, badge } = Astro.props;
+const { label, size, primary, busy = false, badge, class: className, style } = Astro.props;
 ---
 
 <button
   type="button"
-  class:list={["button", `button-${size}`, { "button-primary": primary, "is-busy": busy, "button-waiting": busy, "has-badge": badge }, primary ? "solid" : "outline"]}
+  class:list={["button", `button-${size}`, { "button-primary": primary, "is-busy": busy, "button-waiting": busy, "has-badge": badge }, primary ? "solid" : "outline", className]}
+  style={style}
 >{label}</button>

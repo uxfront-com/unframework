@@ -21,12 +21,26 @@ export interface ShipmentCardProps {
   signature?: LabelAttributes;
 }
 
-type Props = ShipmentCardProps;
+interface Props extends ShipmentCardProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { reference, carrier, eta = null, parcel, tracked, tracking, stops, signature } = Astro.props;
+const {
+  reference,
+  carrier,
+  eta = null,
+  parcel,
+  tracked,
+  tracking,
+  stops,
+  signature,
+  class: className,
+  style,
+} = Astro.props;
 ---
 
-<section class="shipment-card" aria-label={reference}>
+<section class:list={["shipment-card", className]} aria-label={reference} style={style}>
   <p id={carrier?.id} title={carrier?.title}>Carrier</p>
   <p id={eta?.id} title={eta?.title}>Estimated delivery</p>
   <p id={parcel.tag?.id} title={parcel.tag?.title}>{parcel.label}</p>

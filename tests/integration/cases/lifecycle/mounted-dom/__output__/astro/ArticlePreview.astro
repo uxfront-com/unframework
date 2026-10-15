@@ -4,15 +4,18 @@ export interface ArticlePreviewProps {
   text: string;
 }
 
-type Props = ArticlePreviewProps;
+interface Props extends ArticlePreviewProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { title, text } = Astro.props;
+const { title, text, class: className, style } = Astro.props;
 
 const characters = 0 as number;
 const counted = false as boolean;
 ---
 
-<article class="article-preview" aria-label={title}>
+<article class:list={["article-preview", className]} aria-label={title} style={style}>
   <h2>{title}</h2>
   <p>{text}</p>
   <p role="status">{counted ? `${characters} characters` : "Counting the characters"}</p>

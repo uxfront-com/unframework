@@ -6,9 +6,12 @@ export interface CheckoutTotalProps {
   subtotal: number;
 }
 
-type Props = CheckoutTotalProps;
+interface Props extends CheckoutTotalProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { subtotal } = Astro.props;
+const { subtotal, class: className, style } = Astro.props;
 
 const rates = { standard: 0, express: 1200 };
 
@@ -21,7 +24,7 @@ const shipping = rates[method];
 const total = formatCents(subtotal + shipping);
 ---
 
-<section class="checkout-total" aria-label="Order total">
+<section class:list={["checkout-total", className]} aria-label="Order total" style={style}>
   <p>Subtotal: {formatCents(subtotal)}</p>
   <p>Shipping: {formatCents(shipping)}</p>
   <p role="status">Total: {total}</p>

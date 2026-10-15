@@ -7,10 +7,14 @@ import { expect } from "vitest";
 import Page from "./Page.uf.tsx";
 
 describeTargets("context/fallback", () => {
-  it("reads the fallback outside a provider and the value inside one", async () => {
-    const view = await mount(Page);
-    await view.expectParity("initial");
-    await expect.element(view.getByText("Hello, Ada (en)")).toBeVisible();
-    await expect.element(view.getByText("Olá, Inês (pt)")).toBeVisible();
-  });
+  it(
+    "reads the fallback outside a provider and the value inside one",
+    { requires: ["context"] },
+    async () => {
+      const view = await mount(Page);
+      await view.expectParity("initial");
+      await expect.element(view.getByText("Hello, Ada (en)")).toBeVisible();
+      await expect.element(view.getByText("Olá, Inês (pt)")).toBeVisible();
+    },
+  );
 });

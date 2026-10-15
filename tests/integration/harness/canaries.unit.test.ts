@@ -740,8 +740,9 @@ describe("canaries", () => {
       const { outputs } = await compileWith("L10-root-inverted", target);
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(1\)/g), target).toHaveLength(1);
-      // React's root also takes a consumer's style, after its own (ADR-0054).
-      const spread = target === "react" ? ", \\.\\.\\.style" : "";
+      // React's and Astro's roots also take a consumer's style, after their own (ADR-0054).
+      const spread =
+        target === "react" ? ", \\.\\.\\.style" : target === "astro" ? "(?:, \\.\\.\\.\\w+)?" : "";
       expect(contents, target).toMatch(
         new RegExp(
           `<section\\b[^>]*\\bstyle=(?:"filter: invert\\(1\\)"|\\{\\{ filter: "invert\\(1\\)"${spread} \\}\\}|\\{\\{ \\.\\.\\.\\{ filter: "invert\\(1\\)" \\}, \\.\\.\\.props\\.style \\}\\})`,

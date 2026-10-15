@@ -6,7 +6,7 @@ import { expect } from "vitest";
 import ThemeProvider from "./ThemeProvider.uf.tsx";
 
 describeTargets("context/static", () => {
-  it("injects what the parent provides", async () => {
+  it("injects what the parent provides", { requires: ["context"] }, async () => {
     const view = await mount(ThemeProvider);
     await view.expectParity("initial");
     await expect.element(view.getByText("New in Teal")).toHaveClass("badge teal");

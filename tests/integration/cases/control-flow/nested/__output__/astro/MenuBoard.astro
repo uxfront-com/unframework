@@ -17,12 +17,15 @@ export interface MenuBoardProps {
   closed: boolean;
 }
 
-type Props = MenuBoardProps;
+interface Props extends MenuBoardProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { courses, closed } = Astro.props;
+const { courses, closed, class: className, style } = Astro.props;
 ---
 
-<div class="menu-board">
+<div class:list={["menu-board", className]} style={style}>
   {closed ? (
     <p>The kitchen is closed.</p>
   ) : (

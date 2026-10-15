@@ -4,9 +4,12 @@ export interface SizePickerProps {
   sizes: string[];
 }
 
-type Props = SizePickerProps;
+interface Props extends SizePickerProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { legend, sizes } = Astro.props;
+const { legend, sizes, class: className, style } = Astro.props;
 
 function uniqueId(): string {
   const locals = Astro.locals as { ufIdCount?: number };
@@ -19,7 +22,7 @@ const hintId = uniqueId();
 const picked = "" as string;
 ---
 
-<fieldset class="size-picker" aria-describedby={hintId}>
+<fieldset class:list={["size-picker", className]} aria-describedby={hintId} style={style}>
   <legend>{legend}</legend>
   <p id={hintId}>Pick one size.</p>
   {sizes.map((size, index) => (

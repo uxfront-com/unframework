@@ -1,9 +1,11 @@
 ---
 interface Props {
   text: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
 }
 
-const { text } = Astro.props;
+const { text, class: className, style } = Astro.props;
 ---
 
-<button type="button" class="base">{text}</button>
+<button type="button" class:list={["base", className]} style={style}>{text}</button>

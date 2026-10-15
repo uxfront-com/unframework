@@ -1,10 +1,17 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const status = "Loading" as string;
 const results = [] as string[];
 const doubled = 0 as number;
 ---
 
-<section class="search-results" aria-label="Search">
+<section class:list={["search-results", className]} aria-label="Search" style={style}>
   <p>{status}</p>
   <label>Query<input name="query" /></label>
   <ul aria-label="Results">

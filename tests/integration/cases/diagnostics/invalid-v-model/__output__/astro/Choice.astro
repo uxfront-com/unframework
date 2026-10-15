@@ -1,0 +1,11 @@
+---
+interface Props {
+  picked?: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { picked = "", class: className, style } = Astro.props;
+---
+
+<button type="button" class:list={[className]} style={style}>Yes ({picked})</button>

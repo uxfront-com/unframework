@@ -1,9 +1,11 @@
 ---
 interface Props {
   step: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
 }
 
-const { step } = Astro.props;
+const { step, class: className, style } = Astro.props;
 ---
 
-<p class="step">Step: {step}</p>
+<p class:list={["step", className]} style={style}>Step: {step}</p>

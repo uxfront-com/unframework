@@ -1,0 +1,18 @@
+---
+interface Props {
+  title: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { title, class: className, style } = Astro.props;
+
+const nested = false as boolean;
+
+const Tag = nested ? "h3" : "h2";
+---
+
+<article class:list={[className]} style={style}>
+  <Tag class="title">{title}</Tag>
+  <button type="button">{nested ? "Lift" : "Nest"}</button>
+</article>

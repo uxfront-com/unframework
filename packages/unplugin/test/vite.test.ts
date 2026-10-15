@@ -60,6 +60,21 @@ async function withServer<T>(
   }
 }
 
+/** Astro's output for `Hello.uf.tsx`: its root takes a consumer's `class` and `style` (ADR-0054). */
+const ASTRO_HELLO = [
+  "---",
+  "interface Props {",
+  "  class?: string;",
+  "  style?: Record<string, string | number | undefined>;",
+  "}",
+  "",
+  "const { class: className, style } = Astro.props;",
+  "---",
+  "",
+  '<p class:list={["greeting", className]} style={style}>Hello, world!</p>',
+  "",
+].join("\n");
+
 describe("unframework()", () => {
   it("returns the pre plugin, with its api, and the post guard plugin", () => {
     const [pre, post, ...rest] = unframework({ target: "vue" });
@@ -196,16 +211,14 @@ describe("resolveId", () => {
       );
       expect(resolved?.id).toBe(`${file("Hello.uf.tsx")}.astro?container`);
       const code = codeOf(await client.pluginContainer.load(resolved!.id));
-      expect(code).toBe('<p class="greeting">Hello, world!</p>\n');
+      expect(code).toBe(ASTRO_HELLO);
     });
   });
 
   it("loads a queried module id cold, whatever the process resolved before", async () => {
     await withServer(unframework({ target: "astro" }), async ({ client }) => {
       const id = `${file("Hello.uf.tsx")}.astro?container`;
-      expect(codeOf(await client.pluginContainer.load(id))).toBe(
-        '<p class="greeting">Hello, world!</p>\n',
-      );
+      expect(codeOf(await client.pluginContainer.load(id))).toBe(ASTRO_HELLO);
       // From a browser that kept the URL across a server restart.
       expect((await client.pluginContainer.resolveId("/Hello.uf.tsx.astro?container"))?.id).toBe(
         id,

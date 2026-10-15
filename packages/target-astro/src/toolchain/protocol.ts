@@ -5,8 +5,12 @@
 import type { CapturedConsoleMessage } from "@unframework/codegen";
 import type { experimental_AstroContainer as AstroContainer } from "astro/container";
 
-/** The virtual id the unplugin gives an Astro output (`/abs/X.uf.tsx.astro`), with any query. */
-export const ASTRO_VIRTUAL_ID: RegExp = /\.uf\.tsx\.astro(?:\?.*)?$/;
+/**
+ * The virtual id the unplugin gives an Astro output, with any query: the main component's
+ * (`/abs/X.uf.tsx.astro`), or another component's of the file (`/abs/X.uf.tsx.Icon.astro`,
+ * ADR-0053).
+ */
+export const ASTRO_VIRTUAL_ID: RegExp = /\.uf\.tsx\.(?:[^/?.]+\.)?astro(?:\?.*)?$/;
 
 /** What `import X from "./X.uf.tsx"` yields in a browser project: a serialisable reference. */
 export interface AstroComponentRef {

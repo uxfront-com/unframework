@@ -1,9 +1,16 @@
 ---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
 const tags = [] as string[];
 const helpOpen = false as boolean;
 ---
 
-<form class="tag-form" aria-label="Tags">
+<form class:list={["tag-form", className]} aria-label="Tags" style={style}>
   <label>New tag<input name="tag" /></label>
   <button type="submit">Add tag</button>
   <a href="/help/tags">How tags work</a>

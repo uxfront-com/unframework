@@ -1,0 +1,18 @@
+---
+import Stepper from "./Stepper.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+
+const cups = 2 as number;
+---
+
+<section aria-label="Order" class:list={[className]} style={style}>
+  <Stepper label="Cups" value={cups} />
+  <output>Ordered: {cups}</output>
+  <button type="button">Clear</button>
+</section>

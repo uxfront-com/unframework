@@ -2,9 +2,11 @@
 interface Props {
   text: string;
   tone: "info" | "quiet";
+  class?: string;
+  style?: Record<string, string | number | undefined>;
 }
 
-const { text, tone } = Astro.props;
+const { text, tone, class: className, style } = Astro.props;
 ---
 
-<p role="status" class:list={["notice", tone]}>{text}</p>
+<p role="status" class:list={["notice", tone, className]} style={style}>{text}</p>

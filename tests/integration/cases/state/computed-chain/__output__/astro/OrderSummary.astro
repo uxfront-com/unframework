@@ -5,9 +5,12 @@ export interface OrderSummaryProps {
   taxRate: number;
 }
 
-type Props = OrderSummaryProps;
+interface Props extends OrderSummaryProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { price, taxRate } = Astro.props;
+const { price, taxRate, class: className, style } = Astro.props;
 
 const quantity = 1 as number;
 const subtotal = quantity * price;
@@ -22,7 +25,12 @@ function getTier() {
 const tier = getTier();
 ---
 
-<section class="order-summary" aria-label="Order summary" data-tier={tier}>
+<section
+  class:list={["order-summary", className]}
+  aria-label="Order summary"
+  data-tier={tier}
+  style={style}
+>
   <p role="status">Quantity: {quantity}</p>
   <button type="button" disabled={quantity === 1}>Remove one</button>
   <button type="button">Add one</button>

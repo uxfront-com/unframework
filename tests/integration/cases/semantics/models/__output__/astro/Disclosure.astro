@@ -1,0 +1,17 @@
+---
+interface Props {
+  title: string;
+  open?: boolean;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { title, open = false, class: className, style } = Astro.props;
+---
+
+<div class:list={["disclosure", className]} style={style}>
+  <button type="button" aria-expanded={open}>{title}</button>
+  {open ? (
+    <p>Details of {title}</p>
+  ) : null}
+</div>

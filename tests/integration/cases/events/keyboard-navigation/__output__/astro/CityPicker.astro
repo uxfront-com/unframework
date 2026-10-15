@@ -3,9 +3,12 @@ export interface CityPickerProps {
   cities: string[];
 }
 
-type Props = CityPickerProps;
+interface Props extends CityPickerProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { cities } = Astro.props;
+const { cities, class: className, style } = Astro.props;
 
 function uniqueId(): string {
   const locals = Astro.locals as { ufIdCount?: number };
@@ -22,7 +25,7 @@ const notes = [] as string[];
 const matches = cities.filter((city) => city.toLowerCase().startsWith(query.toLowerCase()));
 ---
 
-<section class="city-picker" aria-label="Trip">
+<section class:list={["city-picker", className]} aria-label="Trip" style={style}>
   <form role="search" aria-label="Destination">
     <label>City<input
       type="search"

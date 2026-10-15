@@ -4,15 +4,18 @@ export interface CalloutProps {
   body: string;
 }
 
-type Props = CalloutProps;
+interface Props extends CalloutProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { heading, body } = Astro.props;
+const { heading, body, class: className, style } = Astro.props;
 ---
 
 <aside
-  class="callout"
+  class:list={["callout", className]}
   aria-label={heading}
-  style="--callout-accent: #1f4d7a; border-left: 4px solid var(--callout-accent); padding: 8px 12px; color: #1a1a1a"
+  style={{ "--callout-accent": "#1f4d7a", borderLeft: "4px solid var(--callout-accent)", padding: "8px 12px", color: "#1a1a1a", ...style }}
 >
   <p style="margin: 0; font-weight: 700">{heading}</p>
   <p style="margin: 4px 0 0">{body}</p>

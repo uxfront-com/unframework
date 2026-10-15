@@ -21,12 +21,15 @@ export interface TextFieldProps {
   hint?: HintAttributes;
 }
 
-type Props = TextFieldProps;
+interface Props extends TextFieldProps {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
 
-const { label, inputId, hintText, field, hint } = Astro.props;
+const { label, inputId, hintText, field, hint, class: className, style } = Astro.props;
 ---
 
-<div class="text-field">
+<div class:list={["text-field", className]} style={style}>
   <label for={inputId}>{label}</label>
   <input
     id={inputId}
