@@ -1,22 +1,5 @@
 [
   {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The angular target does not emit two-way-binding yet: composition lands in M3.",
-    "file": "models/checkbox/Terms.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 32,
-      "offset": 188
-    },
-    "end": {
-      "line": 8,
-      "column": 54,
-      "offset": 210
-    },
-    "target": "angular"
-  },
-  {
     "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",

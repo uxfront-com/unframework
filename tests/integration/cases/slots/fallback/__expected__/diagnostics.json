@@ -2,23 +2,6 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The angular target does not emit component yet: composition lands in M3.",
-    "file": "slots/fallback/Board.uf.tsx",
-    "start": {
-      "line": 6,
-      "column": 7,
-      "offset": 128
-    },
-    "end": {
-      "line": 11,
-      "column": 16,
-      "offset": 299
-    },
-    "target": "angular"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
     "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "slots/fallback/Board.uf.tsx",
     "start": {
@@ -49,23 +32,6 @@
       "offset": 299
     },
     "target": "svelte"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The angular target does not emit `defineSlots` yet: composition lands in M3.",
-    "file": "slots/fallback/Notice.uf.tsx",
-    "start": {
-      "line": 5,
-      "column": 3,
-      "offset": 153
-    },
-    "end": {
-      "line": 5,
-      "column": 76,
-      "offset": 226
-    },
-    "target": "angular"
   },
   {
     "code": "UF1002",

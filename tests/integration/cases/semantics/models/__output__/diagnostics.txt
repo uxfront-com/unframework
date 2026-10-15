@@ -1,11 +1,3 @@
-error[UF1002] (angular): The angular target does not emit model yet: composition lands in M3.
- --> semantics/models/Disclosure.uf.tsx:4:3
-  |
-4 |   const open = defineModel<boolean>("open", { default: false });
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (qwik): The qwik target does not emit model yet: composition lands in M3.
  --> semantics/models/Disclosure.uf.tsx:4:3
   |
@@ -29,14 +21,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
   |                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
- --> semantics/models/Panels.uf.tsx:9:7
-  |
-9 |       <Disclosure title="Shipping" v-model:open={shipping.value} />
-  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
 
 error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
  --> semantics/models/Panels.uf.tsx:9:7

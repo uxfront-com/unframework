@@ -1,14 +1,3 @@
-error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
-  --> slots/default/Greeting.uf.tsx:5:5
-   |
- 5 |     <Panel title="Welcome">
-   |     ^^^^^^^^^^^^^^^^^^^^^^^
-   | ...
-10 |     </Panel>
-   | ^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
   --> slots/default/Greeting.uf.tsx:5:5
    |
@@ -30,14 +19,6 @@ error[UF1002] (svelte): The svelte target does not emit component yet: compositi
    | ^^^^^^^^^^^^
    |
    = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (angular): The angular target does not emit `defineSlots` yet: composition lands in M3.
- --> slots/default/Panel.uf.tsx:5:3
-  |
-5 |   const slots = defineSlots<{ default?(): Element }>();
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
 
 error[UF1002] (qwik): The qwik target does not emit `defineSlots` yet: composition lands in M3.
  --> slots/default/Panel.uf.tsx:5:3
