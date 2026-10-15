@@ -22,14 +22,6 @@ error[UF1002] (qwik): The qwik target does not emit an injection key yet: compos
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (svelte): The svelte target does not emit an injection key yet: composition lands in M3.
- --> context/reactive/Counter.uf.tsx:6:1
-  |
-6 | export const CountKey: InjectionKey<Ref<number>> = Symbol("uf.count");
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 warning[UF4001] (astro): The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).
   --> context/reactive/Counter.uf.tsx:10:3
    |
@@ -71,14 +63,6 @@ warning[UF4001] (astro): The astro target does not support context: Astro render
   = see: https://unframework.dev/diagnostics/UF4001
 
 error[UF1002] (qwik): The qwik target does not emit context yet: composition lands in M3.
- --> context/reactive/Display.uf.tsx:7:3
-  |
-7 |   const count = inject(CountKey, none);
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (svelte): The svelte target does not emit context yet: composition lands in M3.
  --> context/reactive/Display.uf.tsx:7:3
   |
 7 |   const count = inject(CountKey, none);

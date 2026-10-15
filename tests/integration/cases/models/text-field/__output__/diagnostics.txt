@@ -29,11 +29,3 @@ error[UF1002] (qwik): The qwik target does not emit two-way-binding yet: composi
   |                     ^^^^^^^^^^^^^^^^^^^^
   |
   = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (svelte): The svelte target does not emit two-way-binding yet: composition lands in M3.
- --> models/text-field/ContactForm.uf.tsx:9:21
-  |
-9 |         Name <input v-model={name.value} />
-  |                     ^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002

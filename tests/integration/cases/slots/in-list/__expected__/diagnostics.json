@@ -53,23 +53,6 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The svelte target does not emit component yet: composition lands in M3.",
-    "file": "slots/in-list/Recipe.uf.tsx",
-    "start": {
-      "line": 6,
-      "column": 7,
-      "offset": 129
-    },
-    "end": {
-      "line": 6,
-      "column": 93,
-      "offset": 215
-    },
-    "target": "svelte"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
     "message": "The angular target does not emit `defineSlots` yet: composition lands in M3.",
     "file": "slots/in-list/Steps.uf.tsx",
     "start": {
@@ -117,22 +100,5 @@
       "offset": 206
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The svelte target does not emit `defineSlots` yet: composition lands in M3.",
-    "file": "slots/in-list/Steps.uf.tsx",
-    "start": {
-      "line": 5,
-      "column": 3,
-      "offset": 154
-    },
-    "end": {
-      "line": 5,
-      "column": 55,
-      "offset": 206
-    },
-    "target": "svelte"
   }
 ]
