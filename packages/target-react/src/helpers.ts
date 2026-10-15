@@ -25,28 +25,6 @@ function ${name}<K extends keyof HTMLElementEventMap>(
 }
 
 /**
- * `two-way-binding`: a checkbox's or a radio's `v-model`, shown from the ref callback written in
- * place, which runs on every render. As Vue's `vModelCheckbox` and `vModelRadio` do, it sets
- * `checked` only when the model's value changed since the element last showed it: a render
- * between the control's `input` and its `change`, from a listener that writes state on `input`,
- * keeps what was clicked, which `change` then writes. `values` names the map of shown values.
- */
-export function setCheckedHelper(name: string, values: string): string {
-  return `/**
- * Sets a checkbox's or a radio's \`checked\` when its model's value changed since the element last
- * showed it, as Vue's \`v-model\` does: a render between the control's \`input\` and its \`change\`
- * keeps what was clicked.
- */
-function ${name}(element: HTMLInputElement, value: unknown, checked: boolean): void {
-  if (${values}.has(element) && ${values}.get(element) === value) return;
-  ${values}.set(element, value);
-  element.checked = checked;
-}
-
-const ${values} = new WeakMap<HTMLInputElement, unknown>();`;
-}
-
-/**
  * `event-once`: the guard of a listener that runs once (`onClickOnce`). It remembers each
  * element it ran for, as a native listener added with `{ once: true }` is removed from its own
  * element only: in a list, every row's runs once.

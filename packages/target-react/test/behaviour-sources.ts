@@ -32,8 +32,8 @@ export default function ModelReads() {
   );
 }
 `,
-  // Checked controls under listeners that write state from \`input\`: the render between a
-  // control's \`input\` and its \`change\` keeps what was clicked, as Vue's \`v-model\` does.
+  // Checked controls beside listeners that write state: one on \`input\`, where a render keeps what
+  // was clicked, and one on \`change\` that sets the model back, which unchecks the box, as on Vue.
   DirtyForm: `import { ref } from "unframework";
 
 export default function DirtyForm() {
@@ -42,6 +42,7 @@ export default function DirtyForm() {
   const solo = ref(false);
   const dirty = ref(0);
   const touched = ref(0);
+  const veto = ref(false);
   return (
     <div>
       <form onInput={() => dirty.value++}>
@@ -50,7 +51,8 @@ export default function DirtyForm() {
         <input type="radio" name="plan" value="b" aria-label="B" v-model={plan.value} />
       </form>
       <input type="checkbox" aria-label="Solo" v-model={solo.value} onInput={() => touched.value++} />
-      <output>{String(agreed.value) + "|" + plan.value + "|" + String(solo.value) + "|" + dirty.value + "|" + touched.value}</output>
+      <input type="checkbox" aria-label="Veto" v-model={veto.value} onChange={() => (veto.value = false)} />
+      <output>{String(agreed.value) + "|" + plan.value + "|" + String(solo.value) + "|" + dirty.value + "|" + touched.value + "|" + String(veto.value)}</output>
     </div>
   );
 }

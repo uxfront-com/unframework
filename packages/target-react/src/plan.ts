@@ -139,7 +139,6 @@ export interface ReactPlan {
     refObject?: string;
     toggle?: string;
     modelText?: string;
-    setChecked?: { name: string; values: string };
   };
   /** Children, slots, models, fallthrough, expose, context and `<component is>` (ADR-0054). */
   readonly composition: CompositionPlan;
@@ -502,15 +501,7 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
   const helpers: ReactPlan["helpers"] = {};
   if (onceGuards.size) helpers.once = names.claim("useOnce");
   for (const [element, native] of nativeElements) {
-    // A checkbox's or a radio's `v-model` is shown from the callback on every render: in place.
-    const checked = element.attributes.some(
-      (attribute) =>
-        attribute.kind === "Model" &&
-        (attribute.control === "checkbox" ||
-          attribute.control === "checkbox-group" ||
-          attribute.control === "radio"),
-    );
-    if (stable(native.groups) && !checked) {
+    if (stable(native.groups)) {
       native.callback = names.claim(`${callbackBase(element, bindings)}Listeners`);
     }
   }
@@ -566,8 +557,6 @@ const HELPER_NAMES = [
   "toggle",
   "useModelText",
   "looseToNumber",
-  "setChecked",
-  "checkedValues",
 ];
 
 /** Whether a binding's value changes as the component runs: a prop, state or a derived value. */
