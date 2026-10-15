@@ -7,8 +7,8 @@ import { describe, expect, it } from "vitest";
 import { analyze } from "../../analyzer/src/index.ts";
 import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
-import { COMPOSITION_SOURCES } from "./composition-sources.ts";
-import { emitted, lower } from "./helpers.ts";
+import { COMPOSED_SOURCES, COMPOSITION_SOURCES } from "./composition-sources.ts";
+import { emitModule, emitted, lower } from "./helpers.ts";
 
 /** A module lowered with the API of each child module it imports, as the compiler's resolver gives it. */
 function lowerWith(source: string, children: Record<string, string>): UfModule {
@@ -32,15 +32,21 @@ export default function Card() {
   return ${root};
 }`;
 
-/** What the emitter reports for a source, each with the source text at its span. */
+/** Each file a module of several components emits, by its path. */
+const composedOf = (name: string) =>
+  new Map(emitModule(lower(COMPOSED_SOURCES[name]!)).map(({ path, contents }) => [path, contents]));
+
+/** What the emitter reports for each component of a source, with the source text at its span. */
 function reportedFor(source: string) {
   const module = lower(source);
   const reported: Parameters<EmitContext["report"]>[0][] = [];
-  target.emit(module.components[0]!, {
-    module,
-    options: undefined,
-    report: (diagnostic) => reported.push(diagnostic),
-  });
+  for (const component of module.components) {
+    target.emit(component, {
+      module,
+      options: undefined,
+      report: (diagnostic) => reported.push(diagnostic),
+    });
+  }
   return reported.map(({ code, message, span }) => ({
     code,
     message,
@@ -173,6 +179,125 @@ export default function Card() {
     ]);
     // A component that takes neither declares neither input.
     expect(reportedFor(emitting(`<><b>x</b><i>y</i></>`))).toEqual([]);
+  });
+});
+
+/** A component with `props`, the events `events` and the setup `setup`, emitting the first event. */
+const declaring = (props: string, events: string, setup = "") =>
+  `import { defineEmits${setup.includes("defineExpose") ? ", defineExpose" : ""} } from "unframework";
+export default function Card(${props}) {
+const emit = defineEmits<{ ${events} }>();
+${setup}
+return <button type="button" onClick={() => emit("${events.slice(0, events.indexOf(":"))}")}>x</button>;
+}`;
+
+describe("the component's API", () => {
+  it("names a model's input and output after the model, whatever its binding's name", () => {
+    const files = composedOf("Basket");
+    expect(files.get("counter.ts")).toContain(
+      'readonly count = model<number>(0, { alias: "value" });',
+    );
+    expect(files.get("panel.ts")).toContain(
+      'readonly currentTitleTemplate = model.required<boolean>({ alias: "titleTemplate" });',
+    );
+    expect(files.get("basket.ts")).toContain('[(value)]="this.items"');
+    expect(files.get("basket.ts")).toContain('[(titleTemplate)]="this.open"');
+  });
+
+  it("names a helper apart from an output", () => {
+    const output = emittedOf("Chooser");
+    expect(output).toContain("readonly selectedValues = output<string[]>();");
+    expect(output).toContain("function selectedValues_1(select: HTMLSelectElement): string[] {");
+  });
+
+  it("exports a slot's directive under its consumers' name, past an import of that name", () => {
+    const files = composedOf("Page");
+    expect(files.get("card.ts")).toContain('import { CardTitle } from "./card-title";');
+    expect(files.get("card.ts")).toContain("\nclass CardTitle_1 {");
+    expect(files.get("card.ts")).toContain("export { CardTitle_1 as CardTitle };");
+    expect(files.get("page.ts")).toContain('import { Card, CardTitle } from "./card";');
+  });
+
+  it("reports an event whose output another event's takes (UF2003)", () => {
+    expect(reportedFor(declaring("", "change: []; ufChange: []"))).toEqual([
+      {
+        code: "UF2003",
+        message:
+          "`ufChange` names the output `ufChange` of the event `change` on Angular. Rename the event.",
+        at: "ufChange: []",
+      },
+    ]);
+  });
+
+  it("reports an event whose output a prop's member takes (UF2003)", () => {
+    expect(
+      reportedFor(declaring("{ ufInput }: { ufInput: string }", "input: []")).map(
+        ({ message }) => message,
+      ),
+    ).toEqual([
+      "`ufInput`, the output `ufInput` of the event `input`, names the prop `ufInput` on Angular. Rename the event.",
+    ]);
+  });
+
+  it("reports an exposed function named like an event's output (UF2003)", () => {
+    const reported = reportedFor(
+      declaring(
+        "",
+        "save: []",
+        `  function save() {\n    emit("save");\n  }\n  defineExpose({ save });`,
+      ),
+    );
+    expect(reported.map(({ message }) => message)).toEqual([
+      "`save` names the output of the event `save` on Angular. Rename the function.",
+    ]);
+    expect(reported[0]!.at).toBe("save");
+  });
+
+  it("reports an event named like a lifecycle hook (UF2003)", () => {
+    expect(reportedFor(declaring("", "ngOnInit: []")).map(({ message }) => message)).toEqual([
+      "`ngOnInit` names the lifecycle hook `ngOnInit` on Angular. Rename the event.",
+    ]);
+  });
+
+  it("reports a model named like the class input of a root that takes it (UF2003)", () => {
+    expect(
+      reportedFor(`import { defineModel } from "unframework";
+export default function Card() {
+  const tone = defineModel<string>("class");
+  return <p>{tone.value}</p>;
+}`).map(({ message }) => message),
+    ).toEqual(["`class` names the input of the consumer's `class` on Angular. Rename the model."]);
+  });
+
+  it("reports two slots of two children filled through one attribute (UF1104)", () => {
+    const reported = reportedFor(`import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+function CardTitle() {
+  const slots = defineSlots<{ bar?(): Element }>();
+  return <h2>{slots.bar?.()}</h2>;
+}
+function Card() {
+  const slots = defineSlots<{ titleBar?(): Element; default?(): Element }>();
+  return <article>{slots.titleBar?.()}{slots.default?.()}</article>;
+}
+export default function Page() {
+  return (
+    <Card>
+      {{
+        titleBar: () => <b>Bar</b>,
+        default: () => <CardTitle>{{ bar: () => <em>Only once</em> }}</CardTitle>,
+      }}
+    </Card>
+  );
+}`);
+    expect(reported.map(({ code, message }) => ({ code, message }))).toEqual([
+      {
+        code: "UF1104",
+        message:
+          "`<CardTitle>`'s `bar` slot is filled through `ufCardTitleBar` on Angular, as `<Card>`'s `titleBar` slot is: Angular would match both. Rename one of the slots.",
+      },
+    ]);
+    expect(reported[0]!.at).toContain("Only once");
   });
 });
 

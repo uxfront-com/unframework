@@ -113,7 +113,10 @@ export function planModels(plan: Plan): Models {
   const helper = (base: keyof typeof HELPERS): string => {
     let found = helpers.get(base);
     if (!found) {
-      const name = plan.imports.claim(base);
+      // A helper is a function of the file and a member of the class of one name, so it takes
+      // a name free in both: the outputs and the props are members too.
+      let name = plan.imports.claim(base);
+      while (plan.members.has(name)) name = plan.imports.claim(base);
       plan.members.reserve(name);
       const support = base === "modelText" || base === "writeModelText";
       if (support && !helpers.has("looseToNumber")) helper("looseToNumber");

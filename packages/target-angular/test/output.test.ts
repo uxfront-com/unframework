@@ -24,7 +24,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { canonical } from "../../codegen/test/markup-cases.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { renderToString } from "../src/toolchain/server.ts";
-import { COMPOSITION_SOURCES } from "./composition-sources.ts";
+import { COMPOSED_SOURCES, COMPOSITION_SOURCES } from "./composition-sources.ts";
 import {
   context,
   corpusSources,
@@ -310,6 +310,17 @@ describe("angular output", () => {
           return output!;
         }),
       );
+      const messages = await toolchainMessages(files);
+      expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
+    },
+  );
+
+  it.each(Object.keys(COMPOSED_SOURCES))(
+    "passes them for the composed module %s, its files together",
+    { timeout: 120_000 },
+    async (name) => {
+      const files = await emitFormatted(lower(COMPOSED_SOURCES[name]!, `${name}.uf.tsx`));
+      expect(files.length).toBeGreaterThan(1);
       const messages = await toolchainMessages(files);
       expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
     },

@@ -70,4 +70,77 @@ export default function Steps() {
   );
 }
 `,
+  // An event named like a helper the template calls.
+  Chooser: `import { defineEmits, ref } from "unframework";
+export default function Chooser() {
+  const emit = defineEmits<{ selectedValues: [values: string[]] }>();
+  const picked = ref<string[]>([]);
+  return (
+    <div>
+      <select multiple v-model={picked.value} aria-label="Fruit">
+        <option value="a">A</option>
+        <option value="b">B</option>
+      </select>
+      <button type="button" onClick={() => emit("selectedValues", picked.value)}>Send</button>
+    </div>
+  );
+}
+`,
+};
+
+/**
+ * Composed forms the corpus does not reach, by module: each module's components are files of
+ * their own that import each other, so test/output.test.ts runs each module's files together.
+ */
+export const COMPOSED_SOURCES: Readonly<Record<string, string>> = {
+  // Models whose bindings are named apart from them, one like a slot's query, each bound by a
+  // consumer through the model's own name.
+  Basket: `import { defineModel, defineSlots, ref } from "unframework";
+import type { Element } from "unframework";
+function Counter() {
+  const count = defineModel<number>("value", { default: 0 });
+  return <button type="button" onClick={() => (count.value = count.value + 1)}>{count.value}</button>;
+}
+function Panel() {
+  const slots = defineSlots<{ title?(): Element }>();
+  const titleTemplate = defineModel<boolean>("titleTemplate", { required: true });
+  return (
+    <section>
+      {slots.title?.()}
+      <button type="button" onClick={() => (titleTemplate.value = !titleTemplate.value)}>
+        {titleTemplate.value ? "Open" : "Shut"}
+      </button>
+    </section>
+  );
+}
+export default function Basket() {
+  const items = ref(1);
+  const open = ref(false);
+  return (
+    <div>
+      <Counter v-model:value={items.value} />
+      <Panel v-model:titleTemplate={open.value} />
+    </div>
+  );
+}
+`,
+  // A slot whose directive is named like a child the component imports.
+  Page: `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+function CardTitle() {
+  return <h2>Title</h2>;
+}
+function Card() {
+  const slots = defineSlots<{ title?(): Element }>();
+  return (
+    <article>
+      <CardTitle />
+      {slots.title?.()}
+    </article>
+  );
+}
+export default function Page() {
+  return <Card>{{ title: () => <em>Filled</em> }}</Card>;
+}
+`,
 };

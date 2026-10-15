@@ -96,7 +96,13 @@ export interface Plan {
 }
 
 /** The names Angular gives a component class's own members: no binding may take them. */
-const ANGULAR_MEMBERS = ["constructor", "ngOnInit", "ngOnDestroy", "ngOnChanges", "ngDoCheck"];
+export const ANGULAR_MEMBERS: readonly string[] = [
+  "constructor",
+  "ngOnInit",
+  "ngOnDestroy",
+  "ngOnChanges",
+  "ngDoCheck",
+];
 
 /** Every name the output may import from Angular: no local the emitter declares takes one. */
 export const ANGULAR_IMPORTS: readonly string[] = [

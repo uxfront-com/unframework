@@ -22,6 +22,11 @@ export interface SlotDirective {
   slot: SlotDeclaration;
   /** The directive's class, `CardTitle`. */
   className: string;
+  /**
+   * The name its file exports it under, which its consumers compute: the component's name and
+   * the slot's (`CardTitle`). The class takes another where an import has that name.
+   */
+  exported: string;
   /** The attribute its selector names on an `<ng-template>`, `ufCardTitle`. */
   attribute: string;
   /** The context type's name, for a slot with props: `ListItemContext`. */
@@ -48,6 +53,12 @@ export interface Composition {
    * `./b/Button.uf.tsx`), match one element (NG8023).
    */
   clashes: ReadonlyMap<string, string>;
+  /**
+   * The fills whose directive's attribute an earlier fill's already is, with that fill: two
+   * components' slots can share one (`Card`'s `titleBar` and `CardTitle`'s `bar`,
+   * `ufCardTitleBar`), and each `<ng-template>` of either would match both directives.
+   */
+  slotClashes: { fill: SlotFill; child: string; attribute: string; other: string }[];
 }
 
 /** The output file a component's output is named by, without `./` (ADR-0053). */
@@ -115,14 +126,18 @@ export function planComposition(plan: Plan): Composition {
   const slots: SlotDirective[] = (component.slots?.slots ?? [])
     .filter((slot) => usesDirective(slot.name, slot.props !== undefined))
     .map((slot) => {
-      const className = imports.claim(`${component.name}${pascalCase(slot.name)}`);
+      const exported = `${component.name}${pascalCase(slot.name)}`;
+      const className = imports.claim(exported);
       return {
         slot,
         className,
+        exported,
         attribute: slotAttribute(component.name, slot.name),
         ...(slot.props ? { context: imports.claim(`${className}Context`) } : {}),
       };
     });
+  const attributes = new Map<string, string>();
+  const slotClashes: Composition["slotClashes"] = [];
   let outlet = false;
   const fillDirectives = (local: string, fills: readonly SlotFill[]) => {
     const child = specifiers.get(local)!;
@@ -131,6 +146,11 @@ export function planComposition(plan: Plan): Composition {
       if (fill.forward !== undefined && fill.slot !== "default") outlet = true;
       if (!usesDirective(fill.slot, fill.parameter !== undefined)) continue;
       const name = `${child.name}${pascalCase(fill.slot)}`;
+      const attribute = slotAttribute(child.name, fill.slot);
+      const filled = `\`<${child.name}>\`'s \`${fill.slot}\` slot`;
+      const other = attributes.get(attribute) ?? filled;
+      attributes.set(attribute, other);
+      if (other !== filled) slotClashes.push({ fill, child: filled, attribute, other });
       const directive = child.self
         ? slots.find((slot) => slot.slot.name === fill.slot)!.className
         : imports.add(child.specifier, name);
@@ -164,7 +184,7 @@ export function planComposition(plan: Plan): Composition {
     module.keys?.length && keyOwner(module.components, module.exports) === component.name
       ? module.keys
       : [];
-  return { tags, imports: classes, slots, outlet, keys, keyNames, clashes };
+  return { tags, imports: classes, slots, outlet, keys, keyNames, clashes, slotClashes };
 }
 
 /**
@@ -234,7 +254,7 @@ export function slotDirectiveCode(
   directive: SlotDirective,
   decorator: string,
 ): string {
-  const { slot, className, attribute, context } = directive;
+  const { slot, className, exported, attribute, context } = directive;
   const selector = `@${decorator}({ selector: "ng-template[${attribute}]" })`;
   // A slot without props passes an empty context, so a consumer's `let-` variable is an error.
   const type = context ? `${context} & { $implicit: ${context} }` : "Record<never, never>";
@@ -248,7 +268,7 @@ export function slotDirectiveCode(
       : []),
     `/** A template of \`${component}\`'s \`${slot.name}\` slot, ${context ? "its `let-` variables typed" : "which takes no `let-` variable"} (ADR-0056). */`,
     selector,
-    `export class ${className} {`,
+    `${className === exported ? "export " : ""}class ${className} {`,
     `  static ngTemplateContextGuard(`,
     `    _directive: ${className},`,
     `    _context: unknown,`,
@@ -256,6 +276,8 @@ export function slotDirectiveCode(
     `    return true;`,
     `  }`,
     `}`,
+    // Exported under the name its consumers import, as the component's class is.
+    ...(className === exported ? [] : ["", `export { ${className} as ${exported} };`]),
     "",
   ].join("\n");
 }

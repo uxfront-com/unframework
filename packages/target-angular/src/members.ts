@@ -124,22 +124,27 @@ export function classMembers(context: MemberContext): {
       ),
     );
   }
-  // A model is a signal input the component writes (`model()`), declared with the inputs.
+  // A model is a signal input the component writes (`model()`), declared with the inputs. Its
+  // binding names the member; the model's own name is the public one (`value` and
+  // `valueChange`), an alias where the two differ.
   for (const item of component.setup) {
     if (item.kind !== "Model") continue;
     const { name } = bindingById(plan, item.binding);
     const callee = js.identifier(core("model"));
     const type = item.type ? [placeholders.type(item.type.code)] : [];
+    const alias =
+      name === item.name ? [] : [js.objectExpression([["alias", js.stringLiteral(item.name)]])];
+    const initial = item.default
+      ? [placeholders.expression(item.default.code)]
+      : alias.length
+        ? [js.identifier("undefined")]
+        : [];
     members.push(
       js.propertyDefinition(
         name,
         item.required
-          ? js.callExpression(js.memberExpression(callee, "required"), [], type)
-          : js.callExpression(
-              callee,
-              item.default ? [placeholders.expression(item.default.code)] : [],
-              type,
-            ),
+          ? js.callExpression(js.memberExpression(callee, "required"), alias, type)
+          : js.callExpression(callee, [...initial, ...alias], type),
         { readonly: true },
       ),
     );
