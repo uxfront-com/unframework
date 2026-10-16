@@ -94,6 +94,14 @@ function compileWith(
   });
 }
 
+/** Code's lines without their indentation, and without blank ones. */
+function trimmedLines(code: string): string[] {
+  return code
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 /** The kinds of project that verify each live layer (plan §7.3). */
 const VERIFIED_BY: Record<string, readonly ProjectKind[]> = {
   L1: ["compile"],
@@ -605,20 +613,15 @@ describe("canaries", () => {
       /return \(\n {6}<>\n {8}<section\b[\s\S]*<\/section>\n {8}<UfCanaryLeafTaskList \/>\n {6}<\/>\n {4}\);/,
     );
     // Nothing else changed: the component's own code is as it was, a level deeper.
-    const lines = (code: string) =>
-      code
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean);
     expect(
-      lines(
+      trimmedLines(
         contents
           .replace(`\n${leaf}`, "")
           .replace(", $, useOnDocument", "")
           .replace(/\n {6}<>\n/, "\n")
           .replace(/\n {8}<UfCanaryLeafTaskList \/>\n {6}<\/>\n/, "\n"),
       ),
-    ).toEqual(lines(clean.outputs.qwik![0]!.contents));
+    ).toEqual(trimmedLines(clean.outputs.qwik![0]!.contents));
     expect(canaryPlugins("L13-qwik-handler-throws", "react")).toEqual([]);
     for (const target of TARGET_NAMES.filter((name) => name !== "qwik")) {
       const other = await compileWith("L13-qwik-handler-throws", target);
