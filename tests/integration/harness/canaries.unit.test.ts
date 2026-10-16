@@ -578,28 +578,47 @@ describe("canaries", () => {
     }
   });
 
-  it("L13-qwik-handler-throws gives Qwik's component a throwing document listener, and changes no other target", async () => {
+  it("L13-qwik-handler-throws gives Qwik's component a leaf with a throwing document listener, and changes no other target", async () => {
     const clean = await compileWith(null);
     const result = await compileWith("L13-qwik-handler-throws", "qwik");
     const contents = result.outputs.qwik![0]!.contents;
-    const listener = [
-      "    useOnDocument(",
-      '      ["click", "pointerover", "keydown", "input", "focusin", "wheel"],',
-      "      $(() => {",
-      '        throw new Error("[uf canary] L13 in qwik");',
-      "      }),",
-      "    );",
+    const leaf = [
+      "const UfCanaryLeafTaskList = component$(() => {",
+      "  useOnDocument(",
+      '    ["click", "pointerover", "keydown", "input", "focusin", "wheel"],',
+      "    $(async () => {",
+      "      await new Promise((resolve) => setTimeout(resolve));",
+      '      throw new Error("[uf canary] L13 in qwik");',
+      "    }),",
+      "  );",
+      "  return null;",
+      "});",
       "",
     ].join("\n");
-    // The import names what the listener calls; the listener opens the component's body.
+    // The import names what the leaf calls; the leaf follows the component, which renders it
+    // after its root, in a fragment.
     expect(contents).toMatch(
       /^import \{ type CSSProperties, type ClassList, component\$, \$, useOnDocument \} from "@qwik\.dev\/core";$/m,
     );
-    expect(contents).toContain(`style }) => {\n${listener}`);
-    // Nothing else changed: the component's own code is as it was.
-    expect(contents.replace(listener, "").replace(", $, useOnDocument", "")).toBe(
-      clean.outputs.qwik![0]!.contents,
+    expect(contents.endsWith(`\n\n${leaf}`)).toBe(true);
+    expect(contents).toMatch(
+      /return \(\n {6}<>\n {8}<section\b[\s\S]*<\/section>\n {8}<UfCanaryLeafTaskList \/>\n {6}<\/>\n {4}\);/,
     );
+    // Nothing else changed: the component's own code is as it was, a level deeper.
+    const lines = (code: string) =>
+      code
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+    expect(
+      lines(
+        contents
+          .replace(`\n${leaf}`, "")
+          .replace(", $, useOnDocument", "")
+          .replace(/\n {6}<>\n/, "\n")
+          .replace(/\n {8}<UfCanaryLeafTaskList \/>\n {6}<\/>\n/, "\n"),
+      ),
+    ).toEqual(lines(clean.outputs.qwik![0]!.contents));
     expect(canaryPlugins("L13-qwik-handler-throws", "react")).toEqual([]);
     for (const target of TARGET_NAMES.filter((name) => name !== "qwik")) {
       const other = await compileWith("L13-qwik-handler-throws", target);
