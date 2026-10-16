@@ -1,9 +1,11 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  type Props = { onsave?: () => void };
+  import type { ClassValue } from "svelte/elements";
 
-  let { onsave }: Props = $props();
+  type Props = { onsave?: () => void; class?: ClassValue; style?: string };
+
+  let { onsave, class: className, style }: Props = $props();
 </script>
 
-<button type="button" onclick={() => onsave?.()}>Save</button>
+<button type="button" onclick={() => onsave?.()} class={className} {style}>Save</button>

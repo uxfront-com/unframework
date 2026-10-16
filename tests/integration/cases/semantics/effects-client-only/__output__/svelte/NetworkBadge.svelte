@@ -2,6 +2,11 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = { class?: ClassValue; style?: string };
+
+  let { class: className, style }: Props = $props();
 
   let online = $state<boolean>();
   let label = $state("Checking the connection");
@@ -22,7 +27,8 @@
 </script>
 
 <p
-  class="network-badge"
+  class={["network-badge", className]}
   role="status"
   data-checked={online === undefined ? "no" : "yes"}
+  {style}
 >{label}</p>

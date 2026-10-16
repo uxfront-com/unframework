@@ -1,13 +1,20 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface CommandMenuProps {
     commands: string[];
   }
 
-  type Props = CommandMenuProps & { onrun?: (command: string) => void; ondismiss?: () => void };
+  type Props = CommandMenuProps & {
+    onrun?: (command: string) => void;
+    ondismiss?: () => void;
+    class?: ClassValue;
+    style?: string;
+  };
 
-  let { commands, onrun, ondismiss }: Props = $props();
+  let { commands, onrun, ondismiss, class: className, style }: Props = $props();
 
   let active = $state(0);
   let query = $state("");
@@ -33,7 +40,7 @@
   }
 </script>
 
-<section class="command-menu" aria-label="Command menu">
+<section class={["command-menu", className]} aria-label="Command menu" {style}>
   <form role="search" aria-label="Commands">
     <label>Command<input
       name="command"

@@ -1,13 +1,17 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   type Props = {
     onpreview?: (stars: number) => void;
     onrate?: (stars: number, previous: number) => void;
     oncleared?: () => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { onpreview, onrate, oncleared }: Props = $props();
+  let { onpreview, onrate, oncleared, class: className, style }: Props = $props();
 
   const choices = [1, 2, 3, 4, 5];
   let stars = $state(0);
@@ -28,7 +32,7 @@
   }
 </script>
 
-<div class="star-rating" role="group" aria-label="Rating">
+<div class={["star-rating", className]} role="group" aria-label="Rating" {style}>
   <ul>
     {#each choices as choice (choice)}
       <li>

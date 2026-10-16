@@ -2,10 +2,11 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
-  type Props = { onrendered?: (count: number) => void };
+  type Props = { onrendered?: (count: number) => void; class?: ClassValue; style?: string };
 
-  let { onrendered }: Props = $props();
+  let { onrendered, class: className, style }: Props = $props();
 
   let messages = $state.raw(["Welcome to the team"]);
   let list: HTMLUListElement | null = null;
@@ -24,7 +25,7 @@
   }
 </script>
 
-<section class="message-list" aria-label="Messages">
+<section class={["message-list", className]} aria-label="Messages" {style}>
   <ul bind:this={list}>
     {#each messages as message (message)}
       <li>{message}</li>

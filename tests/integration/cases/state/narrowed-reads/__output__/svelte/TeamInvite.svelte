@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { onMount } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface Member {
     id: number;
@@ -28,9 +29,21 @@
     onsubmitted?: (email: string) => void;
     ontagged?: (count: number) => void;
     onmoved?: (page: number) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { inviter, members, onselect, onremoved, onsubmitted, ontagged, onmoved }: Props = $props();
+  let {
+    inviter,
+    members,
+    onselect,
+    onremoved,
+    onsubmitted,
+    ontagged,
+    onmoved,
+    class: className,
+    style,
+  }: Props = $props();
 
   const greeting = $derived(inviter ? `Invite as ${inviter.name}` : "Invite as a guest");
   let selected = $state.raw<Member | null>(null);
@@ -89,7 +102,7 @@
   });
 </script>
 
-<section class="team-invite" aria-label="Invite">
+<section class={["team-invite", className]} aria-label="Invite" {style}>
   <h2>{greeting}</h2
   ><ul aria-label="Members">
     {#each visible as member (member.id)}

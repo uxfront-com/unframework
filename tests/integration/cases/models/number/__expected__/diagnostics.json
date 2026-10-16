@@ -32,22 +32,5 @@
       "offset": 241
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The svelte target does not emit two-way-binding yet: composition lands in M3.",
-    "file": "models/number/Quantity.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 55,
-      "offset": 220
-    },
-    "end": {
-      "line": 8,
-      "column": 76,
-      "offset": 241
-    },
-    "target": "svelte"
   }
 ]

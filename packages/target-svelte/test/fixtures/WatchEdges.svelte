@@ -2,15 +2,18 @@
 
 <script lang="ts">
   import { tick, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = {
     onpair?: (first: number, second: number, previous: number) => void;
     ontotal?: (value: number) => void;
     onseen?: (value: number) => void;
     onunseen?: (value: number) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { onpair, ontotal, onseen, onunseen }: Props = $props();
+  let { onpair, ontotal, onseen, onunseen, class: className, style }: Props = $props();
 
   let a = $state(1);
   let b = $state(2);
@@ -71,4 +74,6 @@
     a++;
     items = [...items, a];
   }}
+  class={className}
+  {style}
 >{a} {b} {items.length}</button>

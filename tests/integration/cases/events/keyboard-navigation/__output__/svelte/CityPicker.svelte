@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface CityPickerProps {
     cities: string[];
   }
@@ -8,9 +10,11 @@
   type Props = CityPickerProps & {
     onchose?: (city: string) => void;
     onnoted?: (text: string) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { cities, onchose, onnoted }: Props = $props();
+  let { cities, onchose, onnoted, class: className, style }: Props = $props();
 
   const uid = $props.id();
   const listId = `uf-id-${uid}-0`;
@@ -66,7 +70,7 @@
   }
 </script>
 
-<section class="city-picker" aria-label="Trip">
+<section class={["city-picker", className]} aria-label="Trip" {style}>
   <form role="search" aria-label="Destination" onsubmit={(event) => event.preventDefault()}>
     <label>City<input
       type="search"

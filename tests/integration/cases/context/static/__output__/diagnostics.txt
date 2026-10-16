@@ -1,3 +1,11 @@
+error[UF1002] (angular): The angular target does not emit context yet: composition lands in M3.
+ --> context/static/Badge.uf.tsx:6:3
+  |
+6 |   const theme = inject(ThemeKey);
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF1002
+
 warning[UF4001] (astro): The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).
  --> context/static/Badge.uf.tsx:6:3
   |
@@ -14,15 +22,7 @@ error[UF1002] (qwik): The qwik target does not emit context yet: composition lan
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (svelte): The svelte target does not emit context yet: composition lands in M3.
- --> context/static/Badge.uf.tsx:6:3
-  |
-6 |   const theme = inject(ThemeKey);
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (qwik): The qwik target does not emit an injection key yet: composition lands in M3.
+error[UF1002] (angular): The angular target does not emit an injection key yet: composition lands in M3.
   --> context/static/ThemeProvider.uf.tsx:11:1
    |
 11 | export const ThemeKey: InjectionKey<Theme> = Symbol("uf.theme");
@@ -30,7 +30,7 @@ error[UF1002] (qwik): The qwik target does not emit an injection key yet: compos
    |
    = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (svelte): The svelte target does not emit an injection key yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit an injection key yet: composition lands in M3.
   --> context/static/ThemeProvider.uf.tsx:11:1
    |
 11 | export const ThemeKey: InjectionKey<Theme> = Symbol("uf.theme");

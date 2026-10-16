@@ -2,15 +2,18 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = {
     onsave?: (count: number) => void;
     onstatus?: (value: string) => void;
     onclosed?: (reason: string) => void;
     onkey?: (key: string) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { onsave, onstatus, onclosed, onkey }: Props = $props();
+  let { onsave, onstatus, onclosed, onkey, class: className, style }: Props = $props();
 
   let open = $state(false);
   let status = $state("draft");
@@ -79,7 +82,7 @@
   });
 </script>
 
-<section class="draft-panel" aria-label="Draft">
+<section class={["draft-panel", className]} aria-label="Draft" {style}>
   <button type="button" aria-expanded={open} onclick={show}>Options</button
   >{#if open}
     <div class="options" role="group" aria-label="Draft options">

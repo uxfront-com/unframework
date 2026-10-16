@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { onMount, tick, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = {
     onlooked?: (sender: string) => void;
@@ -11,9 +12,21 @@
     onbusy?: (count: number, loading: boolean) => void;
     onfailed?: (message: string, loading: boolean) => void;
     oncounted?: (count: number) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { onlooked, ondropped, onsorted, onscaled, onbusy, onfailed, oncounted }: Props = $props();
+  let {
+    onlooked,
+    ondropped,
+    onsorted,
+    onscaled,
+    onbusy,
+    onfailed,
+    oncounted,
+    class: className,
+    style,
+  }: Props = $props();
 
   let sender = $state("");
   let order = $state("newest");
@@ -167,7 +180,7 @@
   }
 </script>
 
-<section class="inbox-lookup" aria-label="Inbox">
+<section class={["inbox-lookup", className]} aria-label="Inbox" {style}>
   <button type="button" onclick={() => (sender = "Ann")}>Find Ann</button
   ><button type="button" onclick={() => (sender = "Anna")}>Find Anna</button
   ><button type="button" onclick={answerLookups}>Answer lookups</button

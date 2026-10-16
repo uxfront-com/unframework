@@ -1,15 +1,19 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface StepListProps {
     title: string;
     steps: string[];
   }
 
-  let { title, steps }: StepListProps = $props();
+  type Props = StepListProps & { class?: ClassValue; style?: string };
+
+  let { title, steps, class: className, style }: Props = $props();
 </script>
 
-<ol class="step-list" aria-label={title}>
+<ol class={["step-list", className]} aria-label={title} {style}>
   {#each steps as step, index (index)}
     <li data-step={index + 1}>Step {index + 1}: {step}</li>
   {/each}

@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface PriceRangeProps {
     currency: string;
@@ -11,9 +12,18 @@
     onspanupdate?: (span: number) => void;
     onrangeupdate?: (low: number, high: number) => void;
     oncurrencyupdate?: (currency: string) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { currency, onspanupdate, onrangeupdate, oncurrencyupdate }: Props = $props();
+  let {
+    currency,
+    onspanupdate,
+    onrangeupdate,
+    oncurrencyupdate,
+    class: className,
+    style,
+  }: Props = $props();
 
   let low = $state(10);
   let high = $state(50);
@@ -51,7 +61,7 @@
   });
 </script>
 
-<section class="price-range" aria-label="Price range">
+<section class={["price-range", className]} aria-label="Price range" {style}>
   <p role="status">{low} to {high} {currency}</p
   ><button
     type="button"

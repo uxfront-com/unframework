@@ -2,10 +2,15 @@
 
 <script lang="ts">
   import { tick } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
-  type Props = { ontoggled?: (items: number) => void };
+  type Props = {
+    ontoggled?: (items: number) => void;
+    class?: ClassValue;
+    style?: string;
+  };
 
-  let { ontoggled }: Props = $props();
+  let { ontoggled, class: className, style }: Props = $props();
 
   let open = $state(false);
   let field: HTMLInputElement | null = null;
@@ -25,7 +30,7 @@
   }
 </script>
 
-<section aria-label="Details">
+<section aria-label="Details" class={className} {style}>
   <label for={fieldId}>Name</label><input id={fieldId} bind:this={field}
   /><button
     type="button"

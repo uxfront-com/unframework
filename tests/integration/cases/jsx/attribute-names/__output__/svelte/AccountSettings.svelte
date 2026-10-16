@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface AccountSettingsProps {
     charset: string;
     bioId: string;
@@ -11,6 +13,8 @@
     helpOrder: number;
   }
 
+  type Props = AccountSettingsProps & { class?: ClassValue; style?: string };
+
   let {
     charset,
     bioId,
@@ -19,10 +23,12 @@
     bannerCors,
     seatColumns,
     helpOrder,
-  }: AccountSettingsProps = $props();
+    class: className,
+    style,
+  }: Props = $props();
 </script>
 
-<div class="account-settings">
+<div class={["account-settings", className]} {style}>
   <form accept-charset="utf-8" aria-label="Profile">
     <img
       src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23345'/%3E%3C/svg%3E"

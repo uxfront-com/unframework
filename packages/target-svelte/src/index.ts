@@ -1,4 +1,4 @@
-import { compositionUse, defineTarget, printMarkup, svelteDialect } from "@unframework/codegen";
+import { defineTarget, printMarkup, svelteDialect } from "@unframework/codegen";
 import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
@@ -53,7 +53,11 @@ export const svelte: Target = defineTarget({
       helper: "modelText",
       note: "A `v-model`'s modifiers and a number control's cast follow Vue's `vModelText` through an inline helper, `modelText` (ADR-0054).",
     },
-    fallthrough: { support: "native" },
+    fallthrough: {
+      support: "emulated",
+      helper: "mergeStyle",
+      note: "A component takes a consumer's `style` as a string, merged over its root's own declarations through an inline helper, `mergeStyle`, where a consumer's nullish value removes the root's declaration, as an object merge does (ADR-0054).",
+    },
     "contextual-root": { support: "native" },
     expose: { support: "native" },
     context: { support: "native" },
@@ -86,22 +90,11 @@ export const svelte: Target = defineTarget({
     "late-prop": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // Composition's cells are declared before this target emits it (ADR-0055): until M3's lane
-    // for Svelte lands, a component that uses it is reported, never emitted without it (P2).
-    const composition = compositionUse(context.module, component);
-    if (composition) {
-      context.report({
-        code: "UF1002",
-        severity: "error",
-        message: `The svelte target does not emit ${composition.what} yet: composition lands in M3.`,
-        span: composition.span,
-      });
-      return [];
-    }
-    const { block, markup: options } = instanceScript(component, context.module);
+    const script = instanceScript(component, context.module);
+    const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.
-    const markup = printMarkup(component.render, svelteDialect, { component, ...options });
-    const parts = block === undefined ? [OPTIONS, markup] : [OPTIONS, block, markup];
+    const markup = printMarkup(render, svelteDialect, { component: script.component, ...options });
+    const parts = [OPTIONS, ...(module ? [module] : []), ...(block ? [block] : []), markup];
     return [{ path: `${component.name}.svelte`, contents: `${parts.join("\n\n")}\n` }];
   },
 });

@@ -1,5 +1,6 @@
 // L5 is one contract checked seven times (ADR-0042): every toolchain's oxlint runs one baseline
-// configuration, identical but for the framework an output may import; and every toolchain's
+// configuration, identical but for the framework an output may import and the named exceptions
+// below (`BASELINE_EXCEPTIONS`); and every toolchain's
 // `lint` catches a probe that breaks two baseline rules and one of its framework's own rules, in
 // the target's own syntax, which proves its configuration and its plugins load and run. The
 // baselines are compared as oxlint reads them (`--print-config`, which expands the categories
@@ -29,6 +30,15 @@ const ALLOWED_IMPORTS: Record<string, readonly string[]> = {
   angular: ["@angular/core", "@angular/common"],
   qwik: ["@qwik.dev/core", "@qwik.dev/core/*"],
   astro: ["astro", "astro/*"],
+};
+
+/**
+ * The baseline rules a target turns off, each because its framework's own idiom needs it: Svelte
+ * writes a recursive component as an import of its own file (ADR-0054), which
+ * `import/no-self-import` rejects.
+ */
+const BASELINE_EXCEPTIONS: Readonly<Record<string, readonly string[]>> = {
+  svelte: ["import/no-self-import"],
 };
 
 /**
@@ -250,10 +260,16 @@ describe("every toolchain's oxlint configuration", () => {
     ]);
   });
 
-  it("holds the same baseline on every target, but for the import allow-list", () => {
+  it("holds the same baseline on every target, but for the import allow-list and its exceptions", () => {
     const baselines = TARGETS.map((target) => {
       const { overrides: _framework, rules, ...rest } = configs.get(target)!;
       const { "no-restricted-imports": _allowList, ...baselineRules } = rules;
+      // An excepted rule is off where it is excepted, and on everywhere else.
+      for (const rule of Object.values(BASELINE_EXCEPTIONS).flat()) {
+        const off = BASELINE_EXCEPTIONS[target]?.includes(rule) ?? false;
+        expect(baselineRules[rule], `${target}: ${rule}`).toBe(off ? "allow" : "deny");
+        delete baselineRules[rule];
+      }
       return { target, baseline: { ...rest, rules: baselineRules } };
     });
     const [first] = baselines;

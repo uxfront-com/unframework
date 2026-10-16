@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface Task {
     id: string;
@@ -12,7 +13,9 @@
     initial: Task[];
   }
 
-  let { initial }: TaskListProps = $props();
+  type Props = TaskListProps & { class?: ClassValue; style?: string };
+
+  let { initial, class: className, style }: Props = $props();
 
   let tasks = $state.raw(untrack(() => initial));
   let selected = $state<string>();
@@ -41,7 +44,7 @@
   }
 </script>
 
-<section class="task-list" aria-label="Tasks">
+<section class={["task-list", className]} aria-label="Tasks" {style}>
   {#if tasks.length === 0}
     <p>No tasks yet.</p>
   {:else}

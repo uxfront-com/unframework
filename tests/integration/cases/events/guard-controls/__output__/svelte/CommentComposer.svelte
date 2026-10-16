@@ -1,15 +1,18 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
   import { on } from "svelte/events";
 
   type Props = {
     onsent?: (text: string) => void;
     onsaved?: (count: number) => void;
     onfirstsave?: () => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { onsent, onsaved, onfirstsave }: Props = $props();
+  let { onsent, onsaved, onfirstsave, class: className, style }: Props = $props();
 
   let tags = $state.raw<string[]>([]);
   let query = $state("");
@@ -60,7 +63,7 @@
   }
 </script>
 
-<section class="comment-composer" aria-label="Composer">
+<section class={["comment-composer", className]} aria-label="Composer" {style}>
   <label>Comment<textarea name="comment" onkeydown={send}></textarea></label
   ><form
     aria-label="Tags"

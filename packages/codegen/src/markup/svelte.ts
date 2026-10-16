@@ -3,7 +3,7 @@
 // `bind:this`. Svelte parses balanced JavaScript in `{…}`, braces in strings and comments
 // included, so expression code is printed as written.
 import { HTML_ELEMENTS } from "@unframework/ir";
-import type { ElementNode } from "@unframework/ir";
+import type { Attribute, ComponentAttribute, ElementNode } from "@unframework/ir";
 
 import {
   escapeBraces,
@@ -20,7 +20,7 @@ import {
   unreachable,
   withoutEmptyBranches,
 } from "./printer.ts";
-import type { AttributeContext, MarkupDialect } from "./printer.ts";
+import type { AttributeContext, MarkupDialect, MarkupPiece, PrintedAttribute } from "./printer.ts";
 
 /** HTML's own whitespace, which Svelte trims at the edges of an element's or a block's content. */
 const HTML_WHITESPACE = /[\t\n\f\r ]/;
@@ -39,6 +39,18 @@ const ESCAPED_TWICE = /[&<"]/;
 
 /** A static attribute value in Svelte markup, where `{` opens an expression. */
 const attributeValue = (value: string) => escapeBraces(escapeHtmlAttribute(value));
+
+/**
+ * Whether a tag is a component's: Svelte reads a capitalised tag, or one with a dot, as a
+ * component, whose attributes are props.
+ */
+const isComponentTag = (tag: string) => /^[A-Z]/.test(tag) || tag.includes(".");
+
+/**
+ * The prop a slot is passed as (ADR-0054): a snippet named like the slot, and `children` for the
+ * default slot, which is what Svelte passes the content between a component's tags as.
+ */
+const svelteSlotProp = (slot: string): string => (slot === "default" ? "children" : slot);
 
 /**
  * Whether a binding can take Svelte's shorthand, which reads the variable named like the
@@ -241,6 +253,19 @@ export const svelteDialect: MarkupDialect = {
     return [{ name: "class", text: `class={${value}}` }];
   },
   styleAttribute: (parts, context) => {
+    // A component takes its fallthrough `style` as a prop (ADR-0054), a string its root merges:
+    // Svelte has no `style:` directive on a component, and leaves out a nullish expression's
+    // text, so a declaration whose value is nullish is empty there, which the CSSOM drops.
+    if (isComponentTag(context.element.tag)) {
+      const value = parts
+        .map((part) =>
+          part.kind === "Static"
+            ? `${part.property}: ${attributeValue(part.value)}`
+            : `${part.property}: {${part.value}}`,
+        )
+        .join("; ");
+      return [{ name: "style", text: `style="${value}"` }];
+    }
     if (parts.every((part) => part.kind === "Static")) {
       return [
         {
@@ -306,4 +331,110 @@ export const svelteDialect: MarkupDialect = {
     return [{ name, text: shorthand(name, code) ? `{${name}}` : `${name}={${code}}` }];
   },
   refAttribute: ({ name }) => [{ name: "bind:this", text: `bind:this={${name}}` }],
+  // A child's props and events (ADR-0053): `label="Name"`, `{tone}`, and its events' callback
+  // props, `onclear` for `clear` (ADR-0012).
+  propAttribute: ({ name, code, literal }) => [
+    {
+      name,
+      text:
+        literal !== undefined
+          ? `${name}="${attributeValue(literal)}"`
+          : shorthand(name, code)
+            ? `{${name}}`
+            : `${name}={${code}}`,
+    },
+  ],
+  componentEvent: ({ attribute, handler }) => {
+    const name = `on${attribute.event.toLowerCase()}`;
+    return [{ name, text: shorthand(name, handler) ? `{${name}}` : `${name}={${handler}}` }];
+  },
+  // The default slot's content between the tags, which Svelte passes as `children`, and each
+  // other fill, or the default one with a parameter, as a snippet declared there, which Svelte
+  // passes as the prop of its name (ADR-0054). A forwarded slot is a prop (`{title}`), which the
+  // Svelte target writes.
+  fills: (fills) =>
+    fills.map(({ fill, parameter }): MarkupPiece => {
+      if (fill.forward !== undefined) {
+        throw new Error(
+          `Svelte forwards the \`${fill.forward}\` slot as a prop: the Svelte target writes it.`,
+        );
+      }
+      const content: MarkupPiece = { kind: "nodes", nodes: fill.children, container: fill };
+      if (fill.slot === "default" && parameter === undefined) return content;
+      return {
+        kind: "block",
+        segments: [
+          { open: `{#snippet ${svelteSlotProp(fill.slot)}(${parameter ?? ""})}`, content },
+        ],
+        close: "{/snippet}",
+      };
+    }),
+  // `{@render title?.()}`, and with a fallback, the snippet when the parent passed it.
+  slotOutlet: ({ node, props }) => {
+    const name = svelteSlotProp(node.slot);
+    const args = props?.code ?? "";
+    if (!node.fallback.length) return [{ kind: "code", code: `{@render ${name}?.(${args})}` }];
+    return [
+      {
+        kind: "block",
+        segments: [
+          { open: `{#if ${name}}`, content: { kind: "code", code: `{@render ${name}(${args})}` } },
+          { open: "{:else}", content: { kind: "nodes", nodes: node.fallback, container: node } },
+        ],
+        close: "{/if}",
+      },
+    ];
+  },
+  // Svelte's own bindings: `bind:value` on a text field, a `<textarea>` and a `<select>`,
+  // `bind:checked` on a checkbox, `bind:group` on checkboxes into an array and on radios. A
+  // number control and a modifier follow Vue's `vModelText`, which the Svelte target writes
+  // through its `modelText` helper (`model-modifiers`, emulated).
+  modelAttribute: ({ attribute, value }) => {
+    if (attribute.trim || attribute.lazy || attribute.number || attribute.control === "number") {
+      throw new Error(
+        "Svelte binds a number or a modified field through the Svelte target's helper.",
+      );
+    }
+    const property =
+      attribute.control === "checkbox"
+        ? "checked"
+        : attribute.control === "checkbox-group" || attribute.control === "radio"
+          ? "group"
+          : "value";
+    return [binding(property, value)];
+  },
+  modelBinding: ({ attribute, value }) => [binding(attribute.model, value)],
+  // `<svelte:element this={…}>` over tags. Over components, the Svelte target declares the
+  // component as a `$derived` and writes it as a component element.
+  dynamic: ({ node, is }) => {
+    if (!node.candidates.every((candidate) => candidate.kind === "Tag")) {
+      throw new Error("Svelte renders a dynamic component through the Svelte target's `$derived`.");
+    }
+    return [
+      {
+        kind: "element",
+        element: {
+          kind: "Element",
+          tag: "svelte:element",
+          attributes: node.attributes.filter(isElementAttribute),
+          children: node.children,
+          span: node.span,
+        },
+        directives: [{ name: "this", text: `this={${is}}` }],
+      },
+    ];
+  },
 };
+
+/** Whether an attribute of `<component is>` over tags is an element's: every one is. */
+function isElementAttribute(attribute: Attribute | ComponentAttribute): attribute is Attribute {
+  return (
+    attribute.kind !== "Prop" && attribute.kind !== "Listener" && attribute.kind !== "ModelBinding"
+  );
+}
+
+/** `bind:value={text}`, or `bind:value` where the variable is named like the property. */
+function binding(property: string, code: string): PrintedAttribute {
+  const name = `bind:${property}`;
+  return { name, text: shorthand(property, code) ? name : `${name}={${code}}` };
+}

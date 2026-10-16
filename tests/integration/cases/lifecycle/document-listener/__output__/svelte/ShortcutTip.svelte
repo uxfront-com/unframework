@@ -2,10 +2,16 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
-  type Props = { ondismissed?: () => void; onshortcut?: (key: string, count: number) => void };
+  type Props = {
+    ondismissed?: () => void;
+    onshortcut?: (key: string, count: number) => void;
+    class?: ClassValue;
+    style?: string;
+  };
 
-  let { ondismissed, onshortcut }: Props = $props();
+  let { ondismissed, onshortcut, class: className, style }: Props = $props();
 
   let open = $state(true);
   let enabled = $state(false);
@@ -53,7 +59,7 @@
   });
 </script>
 
-<section class="shortcut-tip" aria-label="Shortcuts">
+<section class={["shortcut-tip", className]} aria-label="Shortcuts" {style}>
   <p>{open ? "Press Escape to hide this tip." : "Tip hidden."}</p
   ><button type="button" aria-pressed={enabled} onclick={toggle}>Shortcut K</button
   ><p role="status">Used: {count}</p>

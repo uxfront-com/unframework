@@ -2,6 +2,23 @@
   {
     "code": "UF1002",
     "severity": "error",
+    "message": "The angular target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/forwarding/Box.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 3,
+      "offset": 122
+    },
+    "end": {
+      "line": 5,
+      "column": 75,
+      "offset": 194
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
     "message": "The qwik target does not emit `defineSlots` yet: composition lands in M3.",
     "file": "slots/forwarding/Box.uf.tsx",
     "start": {
@@ -19,19 +36,19 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The svelte target does not emit `defineSlots` yet: composition lands in M3.",
-    "file": "slots/forwarding/Box.uf.tsx",
+    "message": "The angular target does not emit `defineSlots` yet: composition lands in M3.",
+    "file": "slots/forwarding/Frame.uf.tsx",
     "start": {
-      "line": 5,
+      "line": 7,
       "column": 3,
-      "offset": 122
+      "offset": 185
     },
     "end": {
-      "line": 5,
+      "line": 7,
       "column": 75,
-      "offset": 194
+      "offset": 257
     },
-    "target": "svelte"
+    "target": "angular"
   },
   {
     "code": "UF1002",
@@ -49,23 +66,6 @@
       "offset": 257
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The svelte target does not emit `defineSlots` yet: composition lands in M3.",
-    "file": "slots/forwarding/Frame.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 3,
-      "offset": 185
-    },
-    "end": {
-      "line": 7,
-      "column": 75,
-      "offset": 257
-    },
-    "target": "svelte"
   },
   {
     "code": "UF4001",
@@ -104,6 +104,23 @@
   {
     "code": "UF1002",
     "severity": "error",
+    "message": "The angular target does not emit component yet: composition lands in M3.",
+    "file": "slots/forwarding/Gallery.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 7,
+      "offset": 100
+    },
+    "end": {
+      "line": 8,
+      "column": 15,
+      "offset": 214
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
     "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "slots/forwarding/Gallery.uf.tsx",
     "start": {
@@ -117,22 +134,5 @@
       "offset": 214
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The svelte target does not emit component yet: composition lands in M3.",
-    "file": "slots/forwarding/Gallery.uf.tsx",
-    "start": {
-      "line": 6,
-      "column": 7,
-      "offset": 100
-    },
-    "end": {
-      "line": 8,
-      "column": 15,
-      "offset": 214
-    },
-    "target": "svelte"
   }
 ]

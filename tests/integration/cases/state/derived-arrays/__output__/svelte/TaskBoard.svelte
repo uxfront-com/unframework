@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface Task {
     id: number;
@@ -20,7 +21,9 @@
     initial: Task[];
   }
 
-  let { initial }: TaskBoardProps = $props();
+  type Props = TaskBoardProps & { class?: ClassValue; style?: string };
+
+  let { initial, class: className, style }: Props = $props();
 
   let tasks = $state.raw(untrack(() => initial));
   let filters = $state.raw<Filters>({ query: "", tags: [] });
@@ -101,7 +104,7 @@
   }
 </script>
 
-<section class="task-board" aria-label="Tasks">
+<section class={["task-board", className]} aria-label="Tasks" {style}>
   <ol aria-label="Open">
     {#each open as task (task.id)}
       <li

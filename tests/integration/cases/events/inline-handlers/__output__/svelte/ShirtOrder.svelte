@@ -1,13 +1,19 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = { class?: ClassValue; style?: string };
+
+  let { class: className, style }: Props = $props();
+
   let size = $state("M");
   let quantity = $state(1);
   let note = $state("");
   let noteField: HTMLInputElement | null = null;
 </script>
 
-<section class="shirt-order" aria-label="Shirt order">
+<section class={["shirt-order", className]} aria-label="Shirt order" {style}>
   <p role="status">{`${quantity} x size ${size}`}</p
   ><div role="group" aria-label="Size">
     <button

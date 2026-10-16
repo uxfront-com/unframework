@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface NoticeProps {
     message: string;
     title?: string;
@@ -11,6 +13,8 @@
     author?: { name: string };
   }
 
+  type Props = NoticeProps & { class?: ClassValue; style?: string };
+
   let {
     message,
     title = "Notice",
@@ -19,10 +23,12 @@
     expanded = false,
     tags = ["general"],
     author = { name: "System" },
-  }: NoticeProps = $props();
+    class: className,
+    style,
+  }: Props = $props();
 </script>
 
-<section class="notice" aria-label={title} data-tone={tone}>
+<section class={["notice", className]} aria-label={title} data-tone={tone} {style}>
   <h2>{title}</h2
   ><p>{message}</p
   ><details open={expanded}>

@@ -2,10 +2,11 @@
 
 <script lang="ts">
   import { onMount } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
-  type Props = { onsaved?: (count: number) => void };
+  type Props = { onsaved?: (count: number) => void; class?: ClassValue; style?: string };
 
-  let { onsaved }: Props = $props();
+  let { onsaved, class: className, style }: Props = $props();
 
   let saves = $state(0);
 
@@ -25,7 +26,7 @@
   });
 </script>
 
-<section class="draft-editor" aria-label="Draft">
+<section class={["draft-editor", className]} aria-label="Draft" {style}>
   <label>Draft<textarea name="draft"></textarea></label
   ><p role="status">Saved: {saves}</p>
 </section>

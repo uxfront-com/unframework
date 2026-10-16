@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface FileTransferProps {
     fileName: string;
     percent: number;
@@ -8,10 +10,12 @@
     eta?: string;
   }
 
-  let { fileName, percent, paused, eta }: FileTransferProps = $props();
+  type Props = FileTransferProps & { class?: ClassValue; style?: string };
+
+  let { fileName, percent, paused, eta, class: className, style }: Props = $props();
 </script>
 
-<div class="file-transfer">
+<div class={["file-transfer", className]} {style}>
   <svg class="file-transfer-progress" role="img" viewBox="0 0 36 36" width="36" height="36">
     <title>{fileName}: {percent}% sent. {eta}</title
     ><circle cx="18" cy="18" r="16" fill="none" stroke="#0969da" stroke-width="4" />
