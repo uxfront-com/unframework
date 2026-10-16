@@ -47,7 +47,7 @@ import { qwikEventProp } from "./events.ts";
 import { unreachable } from "./plan.ts";
 import type { OutputNames, SetupPlan } from "./plan.ts";
 import { printFunction } from "./setup.ts";
-import { nullishness } from "./values.ts";
+import { isAlwaysNullish, nullishness } from "./values.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type AstExpression = Parameters<typeof js.conditionalExpression>[0];
@@ -464,58 +464,108 @@ export function modelAttribute(
 ): JsxAttribute[] {
   const read = expressionCode(attribute.value, context);
   const current = locals.current(read, modelBindingName(attribute.value, plan));
-  const write = (value: string) => modelWrite(attribute.value, value, plan);
-  const listener = (event: string, value: string, parameters = "_, element") => {
-    const handler = `(${parameters}) => ${write(value)}`;
-    return js.jsxAttribute(
-      qwikEventProp(event),
-      js.jsxExpressionContainer(
-        context.placeholders.expression(explicit ? `${plan.names.core("$")}(${handler})` : handler),
-      ),
-    );
-  };
+  const { event, handler } = modelListener(attribute, element, context, plan);
+  // An element that listens to the event itself runs the model's handler first in its own prop
+  // (./listeners.ts), as Vue's directive listens before the element's listeners: two props of
+  // one name fail type-checking (TS17001).
+  const listener = element.attributes.some(
+    (other) => other.kind === "Event" && other.event === event,
+  )
+    ? []
+    : [
+        js.jsxAttribute(
+          qwikEventProp(event),
+          js.jsxExpressionContainer(
+            context.placeholders.expression(
+              explicit ? `${plan.names.core("$")}(${handler})` : handler,
+            ),
+          ),
+        ),
+      ];
   const prop = (name: string, code: string) =>
     js.jsxAttribute(name, js.jsxExpressionContainer(context.placeholders.expression(code)));
   switch (attribute.control) {
     case "text":
     case "number":
     case "textarea": {
-      const event = attribute.lazy ? "change" : "input";
-      const modifiers = [
-        ...(attribute.trim ? ["trim: true"] : []),
-        ...(attribute.lazy ? ["lazy: true"] : []),
-        ...(attribute.number || attribute.control === "number" ? ["number: true"] : []),
-      ];
-      if (!modifiers.length) return [prop("value", current), listener(event, "element.value")];
+      const options = modelTextOptions(attribute);
+      if (!options) return [prop("value", current), ...listener];
       const modelText = plan.names.once("modelText");
-      const options = `{ ${modifiers.join(", ")} }`;
       const ref = controlRef(element, plan, locals, modelBindingName(attribute.value, plan));
       return [
         ...(ref.attribute ? [prop("ref", ref.name)] : []),
         prop("value", `${modelText}.shown(${ref.name}.value, ${current}, ${options})`),
-        listener(event, `${modelText}.read(element, ${options})`),
+        ...listener,
       ];
     }
     case "checkbox":
-      return [prop("checked", current), listener("change", "element.checked")];
-    case "checkbox-group": {
-      const value = controlValue(element, context);
+      return [prop("checked", current), ...listener];
+    case "checkbox-group":
       return [
-        prop("checked", `${current}.includes(${value})`),
-        listener("change", `${plan.names.once("toggle")}(${read}, ${value}, element.checked)`),
+        prop("checked", `${current}.includes(${controlValue(element, context)})`),
+        ...listener,
       ];
-    }
-    case "radio": {
-      const value = controlValue(element, context);
-      return [prop("checked", `${current} === ${value}`), listener("change", value, "")];
-    }
+    case "radio":
+      return [prop("checked", `${current} === ${controlValue(element, context)}`), ...listener];
     case "select":
-      return [listener("change", "element.value")];
     case "select-multiple":
-      return [listener("change", `${plan.names.once("selectedValues")}(element)`)];
+      return listener;
     default:
       return unreachable(attribute.control);
   }
+}
+
+/**
+ * The listener a form control's `v-model` writes its model back with: the event, and the
+ * handler, which takes the control as Qwik's element argument (see {@link modelAttribute}).
+ */
+export function modelListener(
+  attribute: ModelAttribute,
+  element: ElementNode,
+  context: JsxContext,
+  plan: SetupPlan,
+): { event: string; handler: string } {
+  const write = (value: string) => modelWrite(attribute.value, value, plan);
+  const listener = (event: string, value: string, parameters = "_, element") => ({
+    event,
+    handler: `(${parameters}) => ${write(value)}`,
+  });
+  switch (attribute.control) {
+    case "text":
+    case "number":
+    case "textarea": {
+      const event = attribute.lazy ? "change" : "input";
+      const options = modelTextOptions(attribute);
+      return options
+        ? listener(event, `${plan.names.once("modelText")}.read(element, ${options})`)
+        : listener(event, "element.value");
+    }
+    case "checkbox":
+      return listener("change", "element.checked");
+    case "checkbox-group": {
+      const read = expressionCode(attribute.value, context);
+      const value = controlValue(element, context);
+      return listener("change", `${plan.names.once("toggle")}(${read}, ${value}, element.checked)`);
+    }
+    case "radio":
+      return listener("change", controlValue(element, context), "");
+    case "select":
+      return listener("change", "element.value");
+    case "select-multiple":
+      return listener("change", `${plan.names.once("selectedValues")}(element)`);
+    default:
+      return unreachable(attribute.control);
+  }
+}
+
+/** A text control's `modelText` options, from its modifiers and its type, or none. */
+function modelTextOptions(attribute: ModelAttribute): string | undefined {
+  const modifiers = [
+    ...(attribute.trim ? ["trim: true"] : []),
+    ...(attribute.lazy ? ["lazy: true"] : []),
+    ...(attribute.number || attribute.control === "number" ? ["number: true"] : []),
+  ];
+  return modifiers.length ? `{ ${modifiers.join(", ")} }` : undefined;
 }
 
 /** The name of the state or the model a `v-model` binds: `name` in `name.value`. */
@@ -685,14 +735,17 @@ export function textOptionSelected(
 
 /** An interpolation as a template literal's part: its text, or none where it is nullish. */
 function textPart(part: Expression, context: JsxContext): string {
+  const code = expressionCode(part, context);
   const nullish = nullishness(part);
   switch (nullish) {
     case "never":
-      return `\${${expressionCode(part, context)}}`;
+      return `\${${code}}`;
     case "sometimes":
-      return `\${${nullishOperand(expressionCode(part, context))} ?? ""}`;
+      return `\${${nullishOperand(code)} ?? ""}`;
     case "always":
-      return "";
+      // TypeScript reads `a ?? null` as always nullish, though `a` may not be: `join` renders a
+      // nullish value as no text, with no `??` (TS2871).
+      return isAlwaysNullish(part) ? "" : `\${[${code}].join("")}`;
     default:
       return unreachable(nullish);
   }

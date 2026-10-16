@@ -17,6 +17,12 @@ const context = {
   toolchainDir: `${repo}tests/toolchains/qwik`,
   root: `${repo}tests/integration`,
 };
+/**
+ * The timeout of a test that runs a checker (tsgo, oxlint or the optimizer): CI's `Unit tests`
+ * is slower than the 5 s default, as for the other targets' L4 tests (./typecheck.test.ts).
+ */
+const CHECKED = 60_000;
+
 // Scratch components live inside this package, so `@qwik.dev/core` resolves from them.
 const scratchRoot = fileURLToPath(new URL("../.uf-tmp", import.meta.url));
 mkdirSync(scratchRoot, { recursive: true });
@@ -472,9 +478,13 @@ function Rows() {
     expect(contents).toContain(".map((c) => format(c))");
   });
 
-  it("emits fills that type-check and lint clean (L4, L5)", async () => {
-    await expectCheckedClean([board, spelled]);
-  });
+  it(
+    "emits fills that type-check and lint clean (L4, L5)",
+    async () => {
+      await expectCheckedClean([board, spelled]);
+    },
+    CHECKED,
+  );
 });
 
 describe("qwik target: options read as the DOM reads them", () => {
@@ -492,6 +502,7 @@ export default function Pick({ hint, sizes }: { hint?: string; sizes: string[] }
         <option>{hint ? "Yes" : "No"}</option>
         <option>{hint ? hint : undefined}</option>
         <option>{\`\${count.value + 1}\`}</option>
+        <option>{hint ?? "none"}</option>
       </select>
       <select multiple v-model={many.value}>
         {sizes.map((n) => (
@@ -514,6 +525,8 @@ export default function Pick({ hint, sizes }: { hint?: string; sizes: string[] }
     // A conditional that may be nullish is in parentheses before `??`.
     expect(contents).toContain(`\`\${(hint ? hint : undefined) ?? ""}\`${read}`);
     expect(contents).toMatch(/currentMany\.includes\(\s*`\$\{n \?\? ""\}`/);
+    // TypeScript reads `a ?? b` by `b`, which is never nullish here.
+    expect(contents).toContain(`\`\${hint ?? "none"}\`${read}`);
   });
 
   it("renders an expression that is always nullish as no text, with no `??` (TS2871)", async () => {
@@ -524,15 +537,66 @@ export default function Pick({ hint }: { hint?: string }) {
   return (
     <select v-model={picked.value}>
       <option>A{hint ? null : undefined}</option>
+      <option>{hint ?? null}</option>
     </select>
   );
 }`);
     expect(contents).toContain("currentPicked === `A`.replace(");
+    // TypeScript reads `hint ?? null` as always nullish, though `hint` may not be.
+    expect(contents).toMatch(
+      /currentPicked ===\s+`\$\{\[hint \?\? null\]\.join\(""\)\}`\.replace\(/,
+    );
   });
 
-  it("emits options that type-check and lint clean (L4, L5)", async () => {
-    await expectCheckedClean([pick]);
+  it(
+    "emits options that type-check and lint clean (L4, L5)",
+    async () => {
+      await expectCheckedClean([pick]);
+    },
+    CHECKED,
+  );
+});
+
+describe("qwik target: a `v-model` beside a listener of its event", () => {
+  const fields = `import { ref } from "unframework";
+
+export default function Fields() {
+  const text = ref("");
+  const on = ref(false);
+  const size = ref("s");
+  const count = ref(0);
+  return (
+    <div>
+      <input aria-label="Name" onInput={() => count.value++} v-model={text.value} />
+      <input type="checkbox" aria-label="On" v-model={on.value} onChange={() => count.value++} />
+      <select aria-label="Size" v-model={size.value} onChange={() => count.value++}>
+        <option value="s">S</option>
+        <option value="m">M</option>
+      </select>
+      <p>{count.value}</p>
+    </div>
+  );
+}`;
+
+  it("runs the model's handler first, in the element's one prop of the event", async () => {
+    const contents = await emitSource(fields);
+    expect(contents.match(/onInput\$=/g)).toHaveLength(1);
+    expect(contents.match(/onChange\$=/g)).toHaveLength(2);
+    expect(contents).toContain(
+      "onInput$={[$((_, element) => (text.value = element.value)), $(() => count.value++)]}",
+    );
+    expect(contents).toContain(
+      "onChange$={[$((_, element) => (size.value = element.value)), $(() => count.value++)]}",
+    );
   });
+
+  it(
+    "emits a model beside a listener that type-checks and lints clean (L4, L5)",
+    async () => {
+      await expectCheckedClean([fields]);
+    },
+    CHECKED,
+  );
 });
 
 describe("qwik target: a `<component is>` with listeners", () => {
@@ -575,12 +639,16 @@ export default function Toggle({ link }: { link: boolean }) {
     );
   });
 
-  it("emits a `<component is>` with listeners that compiles, type-checks and lints clean", async () => {
-    const file = { path: "/virtual/Toggle.tsx", contents: await emitSource(toggle) };
-    const compiled = (await toolchain.frameworkCompile([file], context)).get(file.path);
-    expect(compiled).toEqual({ errors: [], warnings: [] });
-    await expectCheckedClean([toggle]);
-  });
+  it(
+    "emits a `<component is>` with listeners that compiles, type-checks and lints clean",
+    async () => {
+      const file = { path: "/virtual/Toggle.tsx", contents: await emitSource(toggle) };
+      const compiled = (await toolchain.frameworkCompile([file], context)).get(file.path);
+      expect(compiled).toEqual({ errors: [], warnings: [] });
+      await expectCheckedClean([toggle]);
+    },
+    CHECKED,
+  );
 });
 
 /** A source whose tag, an element or a `<component is>`, holds every kind of listener. */

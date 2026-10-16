@@ -196,12 +196,44 @@ export function isTextValue(
 
 /**
  * Whether an expression is nullish as TypeScript reads it from its syntax alone (TS2869 rejects
- * `?? x` after one that never is, TS2871 after one that always is). Names, members, calls and
- * logical operators sometimes are; `null` and `undefined` always are; a conditional is what its
- * branches are; a literal, arithmetic or a template never is.
+ * `?? x` after one that never is, TS2871 after one that always is). Names, members, calls, `||`
+ * and `&&` sometimes are; `a ?? b` is what `b` is; `null` and `undefined` always are; a
+ * conditional is what its branches are; a literal, arithmetic or a template never is.
  */
 export function nullishness(expression: Expression): Nullishness {
   return nullishOf(parseExpression(expression.code));
+}
+
+/**
+ * Whether an expression's value is always `null` or `undefined`: `null`, `undefined`, and
+ * conditionals and `??` of those. TypeScript also reads `a ?? null` as always nullish, though `a`
+ * may not be (see {@link nullishness}).
+ */
+export function isAlwaysNullish(expression: Expression): boolean {
+  return alwaysNullish(parseExpression(expression.code));
+}
+
+function alwaysNullish(node: Node): boolean {
+  switch (node.type) {
+    case "Identifier":
+      return node.name === "undefined";
+    case "Literal":
+      return node.value === null && !("regex" in node);
+    case "ConditionalExpression":
+      return alwaysNullish(node.consequent) && alwaysNullish(node.alternate);
+    case "LogicalExpression":
+      return node.operator === "??" && alwaysNullish(node.left) && alwaysNullish(node.right);
+    case "SequenceExpression":
+      return alwaysNullish(node.expressions.at(-1)!);
+    case "ParenthesizedExpression":
+    case "TSAsExpression":
+    case "TSSatisfiesExpression":
+    case "TSNonNullExpression":
+    case "TSTypeAssertion":
+      return alwaysNullish(node.expression);
+    default:
+      return false;
+  }
 }
 
 /** See {@link nullishness}. */
@@ -220,8 +252,10 @@ function nullishOf(node: Node): Nullishness {
     case "TaggedTemplateExpression":
     case "ThisExpression":
     case "MetaProperty":
-    case "LogicalExpression":
       return "sometimes";
+    // `a ?? b` is what `b` is; `a || b` and `a && b` may be either side.
+    case "LogicalExpression":
+      return node.operator === "??" ? nullishOf(node.right) : "sometimes";
     case "Literal":
       return node.value === null && !("regex" in node) ? "always" : "never";
     case "AssignmentExpression":

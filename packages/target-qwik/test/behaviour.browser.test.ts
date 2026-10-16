@@ -478,6 +478,14 @@ describe("tasks in source order, async watchers and effects (ADR-0048)", () => {
 });
 
 describe("composition (ADR-0054)", () => {
+  it("writes a model before its element's listener of the same event runs", async () => {
+    await start("ModelListeners");
+    await act(() => userEvent.type(page.getByRole("textbox", { name: "Name" }), "ab"));
+    expect(status()).toBe("a,ab");
+    await act(() => userEvent.click(page.getByRole("checkbox", { name: "On" })));
+    expect(status()).toBe("a,ab,true");
+  });
+
   it("runs a fill's listeners and models in a list, and in a component in a list", async () => {
     await start("FillLists");
     await click("Pick Bo");

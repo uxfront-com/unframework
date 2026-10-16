@@ -40,6 +40,7 @@ import type {
   Parameter,
 } from "@unframework/ir";
 
+import { modelListener } from "./composition.ts";
 import { qwikListenerProp } from "./events.ts";
 import { readsName, splitHandler } from "./handlers.ts";
 import type { SplitHandler } from "./handlers.ts";
@@ -133,7 +134,14 @@ export class Listeners {
     const [first] = listeners;
     if (first !== attribute || this.#printed.has(first)) return [];
     this.#printed.add(first);
-    return this.#event(attribute.event, listeners, context, this.explicit.has(first));
+    // A `v-model` of the event runs first, as Vue's directive listens before the element's
+    // listeners (./composition.ts `modelAttribute`).
+    const model = element.attributes.flatMap((other) => {
+      if (other.kind !== "Model") return [];
+      const found = modelListener(other, element, context, this.#plan);
+      return found.event === attribute.event ? [found.handler] : [];
+    })[0];
+    return this.#event(attribute.event, listeners, context, this.explicit.has(first), model);
   }
 
   #event(
@@ -141,6 +149,7 @@ export class Listeners {
     listeners: readonly EventAttribute[],
     context: JsxContext,
     explicit: boolean,
+    model?: string,
   ): JsxAttribute[] {
     const plan = this.#plan;
     const groups = [
@@ -176,6 +185,7 @@ export class Listeners {
       const sync = found && syncHandler(plan, syncs, found.eventType);
       const entries = [
         ...(sync ? [{ code: () => sync, inline: false }] : []),
+        ...(model && scope === "element" ? [{ code: () => model, inline: true }] : []),
         ...(found?.handler ? [found.handler] : []),
       ];
       if (!entries.length) continue;
