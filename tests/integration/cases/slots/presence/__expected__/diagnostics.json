@@ -34,23 +34,6 @@
     "target": "qwik"
   },
   {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The svelte target does not emit `defineSlots` yet: composition lands in M3.",
-    "file": "slots/presence/Card.uf.tsx",
-    "start": {
-      "line": 5,
-      "column": 3,
-      "offset": 151
-    },
-    "end": {
-      "line": 5,
-      "column": 75,
-      "offset": 223
-    },
-    "target": "svelte"
-  },
-  {
     "code": "UF4001",
     "severity": "error",
     "message": "The angular target does not support default-slot-presence: Angular has no API for whether `<ng-content>` received content, and forwarding the default slot would re-project `<ng-content />`, which always counts as content (ADR-0056).",
@@ -117,22 +100,5 @@
       "offset": 221
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The svelte target does not emit component yet: composition lands in M3.",
-    "file": "slots/presence/Cards.uf.tsx",
-    "start": {
-      "line": 6,
-      "column": 7,
-      "offset": 110
-    },
-    "end": {
-      "line": 8,
-      "column": 14,
-      "offset": 221
-    },
-    "target": "svelte"
   }
 ]

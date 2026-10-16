@@ -1,7 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
   import { on } from "svelte/events";
+
+  type Props = {
+    class?: ClassValue;
+    style?: string;
+  };
+
+  let { class: className, style }: Props = $props();
 
   let log = $state.raw<string[]>([]);
   let draft = $state("");
@@ -28,7 +36,13 @@
   }
 </script>
 
-<div role="presentation" onclickcapture={() => record("capture")} onclick={() => record("bubble")}>
+<div
+  role="presentation"
+  onclickcapture={() => record("capture")}
+  onclick={() => record("bubble")}
+  class={className}
+  {style}
+>
   <button
     type="button"
     {@attach (node) => on(node, "click", pressed)}

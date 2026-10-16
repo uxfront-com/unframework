@@ -2,15 +2,18 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = {
     onstarted?: (text: string) => void;
     onfirstseen?: (text: string) => void;
     onsecondseen?: (count: number) => void;
     ontotal?: (letters: number) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { onstarted, onfirstseen, onsecondseen, ontotal }: Props = $props();
+  let { onstarted, onfirstseen, onsecondseen, ontotal, class: className, style }: Props = $props();
 
   let names = $state.raw(["Cy", "Al"].toSorted((a, b) => compare(a, b)));
   let count = $state(0);
@@ -63,7 +66,7 @@
   }
 </script>
 
-<section class="name-sorter" aria-label="Names">
+<section class={["name-sorter", className]} aria-label="Names" {style}>
   <p>Names: {names.join(", ")}</p
   ><p>Added: {count}</p
   ><button type="button" onclick={() => add("Bo")}>Add Bo</button

@@ -36,23 +36,6 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The svelte target does not emit component yet: composition lands in M3.",
-    "file": "components/framework-names/KeepAlive.uf.tsx",
-    "start": {
-      "line": 7,
-      "column": 21,
-      "offset": 291
-    },
-    "end": {
-      "line": 7,
-      "column": 52,
-      "offset": 322
-    },
-    "target": "svelte"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
     "message": "The angular target does not emit component yet: composition lands in M3.",
     "file": "components/framework-names/Wizard.uf.tsx",
     "start": {
@@ -83,22 +66,5 @@
       "offset": 270
     },
     "target": "qwik"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The svelte target does not emit component yet: composition lands in M3.",
-    "file": "components/framework-names/Wizard.uf.tsx",
-    "start": {
-      "line": 8,
-      "column": 7,
-      "offset": 241
-    },
-    "end": {
-      "line": 8,
-      "column": 36,
-      "offset": 270
-    },
-    "target": "svelte"
   }
 ]

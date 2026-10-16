@@ -2,10 +2,15 @@
 
 <script lang="ts">
   import { tick } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
-  type Props = { ondone?: (step: number, status: string) => void };
+  type Props = {
+    ondone?: (step: number, status: string) => void;
+    class?: ClassValue;
+    style?: string;
+  };
 
-  let { ondone }: Props = $props();
+  let { ondone, class: className, style }: Props = $props();
 
   let selected = $state("none");
   let hits = $state(0);
@@ -46,7 +51,7 @@
   }
 </script>
 
-<section class="picker" aria-label="Picker">
+<section class={["picker", className]} aria-label="Picker" {style}>
   <div class="choices" role="presentation" onclick={report}>
     <button type="button" onclick={() => pick("alpha")}>Alpha</button
     ><button type="button" onclick={() => pick("beta")}>Beta</button>

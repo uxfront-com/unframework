@@ -2,10 +2,11 @@
 
 <script lang="ts">
   import { tick } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
-  type Props = { ontoggled?: (items: number) => void };
+  type Props = { ontoggled?: (items: number) => void; class?: ClassValue; style?: string };
 
-  let { ontoggled }: Props = $props();
+  let { ontoggled, class: className, style }: Props = $props();
 
   let open = $state(false);
   let details = $state<HTMLUListElement | null>(null);
@@ -17,7 +18,7 @@
   }
 </script>
 
-<section class="shipping-details" aria-label="Shipping">
+<section class={["shipping-details", className]} aria-label="Shipping" {style}>
   <button type="button" aria-expanded={open} onclick={toggle}>Shipping details</button
   >{#if open}
     <ul bind:this={details}>

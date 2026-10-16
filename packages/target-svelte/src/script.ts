@@ -7,32 +7,45 @@
 // `computed` a `$derived`, a template ref a variable `bind:this` sets, and an event a callback
 // prop, `onchange` for `change` (ADR-0012, D8).
 import {
+  childImports,
   componentTypes,
   functionBodyText,
   functionText,
   isPrimitiveState,
+  keyImports,
+  keyOwner,
   NameScope,
   parseExpression,
   parseStatementsSource,
   pascalCase,
   referencedBindings,
   rewriteCode,
+  rewriteExpression,
   sourceNames,
   typeDeclarationCode,
 } from "@unframework/codegen";
 import type { MarkupOptions, RewriteRules } from "@unframework/codegen";
-import { codeOf, walk } from "@unframework/ir";
+import { codeOf, expressionsOf, walk } from "@unframework/ir";
 import type {
   Binding,
   BindingKind,
   Code,
   DerivedItem,
+  DynamicNode,
+  ElementNode,
   EventAttribute,
+  FragmentNode,
   FunctionCode,
   FunctionItem,
   Handler,
+  InjectItem,
   LifecycleItem,
+  ModelAttribute,
+  ModelItem,
   Parameter,
+  ProvideItem,
+  RefType,
+  RenderNode,
   SetupItem,
   UfComponent,
   UfModule,
@@ -42,20 +55,48 @@ import type {
 } from "@unframework/ir";
 
 import { functionRanges, readsName, visit } from "./ast.ts";
+import {
+  composedRender,
+  hasOwnStyle,
+  rootTakesFallthrough,
+  slotProp,
+  takesFallthrough,
+} from "./composition.ts";
+import type { Fallthrough } from "./composition.ts";
 import { isAttached } from "./events.ts";
 import { handlerTypes } from "./handlers.ts";
 import { block, escapeScriptEnd, INDENT, reindent } from "./text.ts";
 
 /** What a component's script gives its markup. */
 export interface InstanceScript {
+  /** The component as the markup prints it: a binding a snippet would hide has its own name. */
+  component: UfComponent;
+  /**
+   * The `<script lang="ts" module>` block of the output that declares the module's injection keys
+   * (ADR-0054): absent elsewhere.
+   */
+  module?: string;
   /** The `<script lang="ts">` block: absent for a component that needs none. */
   block?: string;
-  /** How the markup spells references, and writes the listeners Svelte has no attribute for. */
-  markup: Pick<MarkupOptions, "rewrite" | "attribute" | "handler">;
+  /**
+   * How the markup spells references, and writes the listeners Svelte has no attribute for and
+   * the fields `modelText` binds.
+   */
+  markup: Pick<MarkupOptions, "rewrite" | "attribute" | "handler" | "componentTag">;
+  /** The render tree the markup prints (`composition.ts`). */
+  render: ElementNode | FragmentNode;
 }
 
 /** The modules a script imports from, in the order it prints them. */
-type Module = "svelte" | "svelte/events";
+type Module = "svelte" | "svelte/elements" | "svelte/events";
+
+/** An import of a sibling output: a child component (its default export) or injection keys. */
+interface LocalImport {
+  specifier: string;
+  default?: string;
+  /** Named imports, by local name: the name the sibling output exports, imported under each. */
+  names: Map<string, string>;
+}
 
 /**
  * The output's names: the source's (`sourceNames`), which it keeps, and those it claims for its
@@ -63,7 +104,8 @@ type Module = "svelte" | "svelte/events";
  */
 class Names {
   readonly scope: NameScope;
-  readonly #imports = new Map<Module, Map<string, string>>();
+  readonly #imports = new Map<Module, Map<string, { local: string; type: boolean }>>();
+  readonly #locals = new Map<string, LocalImport>();
 
   constructor(component: UfComponent, module: UfModule) {
     this.scope = new NameScope(sourceNames(component, module));
@@ -74,25 +116,80 @@ class Names {
   }
 
   /** The local name of an import, claimed on first use: `untrack`, or `untrack_1` if taken. */
-  import(source: Module, name: string): string {
+  import(source: Module, name: string, { type = false }: { type?: boolean } = {}): string {
     let names = this.#imports.get(source);
     if (!names) this.#imports.set(source, (names = new Map()));
-    let local = names.get(name);
-    if (local === undefined) names.set(name, (local = this.claim(name)));
-    return local;
+    let entry = names.get(name);
+    if (entry === undefined) names.set(name, (entry = { local: this.claim(name), type }));
+    else if (!type) entry.type = false;
+    return entry.local;
   }
 
-  /** The import declarations, by module, each name sorted. */
+  /**
+   * A sibling output's default export, under the local name the source uses: the first name a
+   * file is imported under, which the markup writes for the others (`componentTag`).
+   */
+  importDefault(specifier: string, local: string): string {
+    const entry = this.#local(specifier);
+    if (entry.default === undefined) {
+      this.scope.reserve(local);
+      entry.default = local;
+    }
+    return entry.default;
+  }
+
+  /** A name a sibling output exports, under the source's local name: `Theme as Mode`. */
+  importNamed(specifier: string, name: string, local: string): void {
+    const entry = this.#local(specifier);
+    if (entry.names.has(local)) return;
+    this.scope.reserve(local);
+    entry.names.set(local, name);
+  }
+
+  #local(specifier: string): LocalImport {
+    let entry = this.#locals.get(specifier);
+    if (!entry) this.#locals.set(specifier, (entry = { specifier, names: new Map() }));
+    return entry;
+  }
+
+  /**
+   * The import declarations: the sibling outputs in the order the script first names them, then
+   * Svelte's modules, each name sorted, a type-only import written `import type`.
+   */
   declarations(): string[] {
-    return (["svelte", "svelte/events"] as const).flatMap((source) => {
+    const locals = [...this.#locals.values()].map(({ specifier, default: local, names }) => {
+      const named = names.size
+        ? `{ ${[...names]
+            .map(([alias, name]) => (name === alias ? name : `${name} as ${alias}`))
+            .toSorted()
+            .join(", ")} }`
+        : "";
+      const clause = [...(local === undefined ? [] : [local]), ...(named ? [named] : [])];
+      return `import ${clause.join(", ")} from "${specifier}";`;
+    });
+    const modules = (["svelte", "svelte/elements", "svelte/events"] as const).flatMap((source) => {
       const names = this.#imports.get(source);
       if (!names?.size) return [];
-      const specifiers = [...names]
-        .toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-        .map(([name, local]) => (name === local ? name : `${name} as ${local}`));
-      return [`import { ${specifiers.join(", ")} } from "${source}";`];
+      const types = [...names.values()].every(({ type }) => type);
+      return [`import ${types ? "type " : ""}${specifiers(names, !types)} from "${source}";`];
     });
+    return [...locals, ...modules];
   }
+}
+
+/** Named import specifiers, sorted: `{ a, type B, c as d }`; `inline` marks the type ones. */
+function specifiers(
+  names: ReadonlyMap<string, { local: string; type: boolean }>,
+  inline = true,
+): string {
+  if (!names.size) return "";
+  const written = [...names]
+    .toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([name, { local, type }]) => {
+      const specifier = name === local ? name : `${name} as ${local}`;
+      return inline && type ? `type ${specifier}` : specifier;
+    });
+  return `{ ${written.join(", ")} }`;
 }
 
 /** An event's callback prop: its key in the props type, and how the script reads it. */
@@ -126,15 +223,40 @@ class ScriptWriter {
   /** The functions whose parameters' types Svelte's event types need changed (`handlers.ts`). */
   readonly #functions: ReadonlyMap<FunctionCode, FunctionCode>;
   readonly rules: RewriteRules;
-  /** The template refs attached to an element a condition renders. */
+  /** The bindings the output names apart from the source (`snippetNames`). */
+  readonly #renamed = new Map<string, string>();
+  /** The template refs attached to an element or a component a condition renders. */
   readonly #conditionalRefs: ReadonlySet<string>;
   /** The id `$props.id()` gives, once the first `useId()` claimed it, and the next id's suffix. */
   #id: { local: string; count: number } | undefined;
+  /** The local names of the fallthrough `class` and `style`, when the component takes them. */
+  #fallthrough: Fallthrough | undefined;
+  /** The `refObject` helper's name, once a provided or injected ref needs it. */
+  #refObject: string | undefined;
+  /** The variable of each `<component is>` over components (`$derived`), by its node. */
+  readonly #dynamic = new Map<RenderNode, string>();
+  /** Each slot's snippet variable, where it is not the slot's prop name (`children`, `title`). */
+  readonly #slotLocals = new Map<string, string>();
+  /** The name the markup writes a child under, where the script imports it under another. */
+  readonly #componentTags = new Map<string, string>();
 
   constructor(component: UfComponent, module: UfModule) {
-    this.#component = component;
     this.#module = module;
     this.#names = new Names(component, module);
+    // A fill's snippet is named like its slot, which would hide a binding of that name from
+    // everything between the child's tags: such a binding takes a name of its own.
+    const hidden = snippetNames(component.render);
+    const nested = nestedSnippetNames(component);
+    const bindings = component.bindings.map((binding) => {
+      // A fill's parameter is hidden only by a snippet declared inside its own fill: its own
+      // snippet's name is the one its parameter shadows.
+      const names = binding.kind === "slotScope" ? nested.get(binding.id) : hidden;
+      if (!names?.has(binding.name) || !renamable(binding, component)) return binding;
+      this.#renamed.set(binding.id, binding.name);
+      return { ...binding, name: this.#names.claim(binding.name) };
+    });
+    this.#component = this.#renamed.size ? { ...component, bindings } : component;
+    component = this.#component;
     this.#bindings = new Map(component.bindings.map((binding) => [binding.id, binding]));
     this.#functions = handlerTypes(component);
     this.#conditionalRefs = conditionalRefs(component);
@@ -144,56 +266,220 @@ class ScriptWriter {
         `${this.#callback(emit.event)}?.(${parts.arguments.join(", ")})`,
       // `nextTick()` is only awaited (UF2025): Svelte's `tick()` is the same promise.
       api: () => this.#names.import("svelte", "tick"),
+      // A slot's presence is its snippet's (ADR-0054).
+      slot: (reference) => this.#slotLocal(reference.slot),
     };
   }
 
   write(): InstanceScript {
+    const component = this.#component;
+    // The children and the keys keep the source's names (ADR-0053), so they are taken first.
+    this.#imports();
     // The names the markup's code reads are claimed before the script's own: `tick` in a handler,
-    // `on` and the attachment's parameter for the listeners Svelte has no attribute for.
-    if (usesNextTick(this.#component)) this.#names.import("svelte", "tick");
-    const attached = attachedListeners(this.#component);
+    // `on` and the attachment's parameter for the listeners Svelte has no attribute for, and the
+    // `modelText` helper with what its fields read.
+    if (usesNextTick(component)) this.#names.import("svelte", "tick");
+    const attached = attachedListeners(component);
+    const fields = modelTextFields(component);
     const node = attached.length ? this.#names.claim("node") : undefined;
-    const on = attached.length ? this.#names.import("svelte/events", "on") : undefined;
+    const on =
+      attached.length || fields.length ? this.#names.import("svelte/events", "on") : undefined;
     const once = attached.some((each) => each.once) ? this.#names.claim("once") : undefined;
+    const modelText = fields.length ? this.#names.claim("modelText") : undefined;
+    const untrack = fields.length ? this.#names.import("svelte", "untrack") : undefined;
 
     const props = this.#props();
     const setup = this.#setup();
-    const types = componentTypes(this.#component, this.#module).map(typeDeclarationCode);
+    const dynamic = this.#dynamicComponents();
+    const owner =
+      this.#module.keys?.length &&
+      keyOwner(this.#module.components, this.#module.exports) === component.name;
+    const types = componentTypes(component, this.#module).map(typeDeclarationCode);
+    const helpers = [
+      ...(once ? [onceHelper(once)] : []),
+      ...(this.#refObject ? [refObjectHelper(this.#refObject)] : []),
+      ...(modelText && on ? [modelTextHelper(modelText, on)] : []),
+      ...(this.#fallthrough?.mergeStyle ? [mergeStyleHelper(this.#fallthrough.mergeStyle)] : []),
+    ];
     const imports = this.#names.declarations();
     const pieces = [
       ...(imports.length ? [imports.map((line) => `${INDENT}${line}`).join("\n")] : []),
-      ...types.map((each) => indent(each, INDENT)),
-      ...[...props, ...setup, ...(once ? [onceHelper(once)] : [])].map((piece) =>
-        reindent(piece, INDENT),
-      ),
+      ...(owner ? [] : types.map((each) => indent(each, INDENT))),
+      ...[...props, ...setup, ...dynamic, ...helpers].map((piece) => reindent(piece, INDENT)),
     ];
+    const composed = composedRender(
+      component,
+      this.#fallthrough,
+      this.#dynamic,
+      (slot) => this.#slotLocal(slot),
+      (parameter) => this.#fillParameter(parameter),
+      (expression) => rewriteExpression(expression, component, this.rules, "render"),
+    );
     const markup: InstanceScript["markup"] = {
       rewrite: this.rules,
       handler: (attribute) => this.#inlineHandler(attribute),
-      ...(node !== undefined && on !== undefined
-        ? {
-            attribute: (attribute, element) =>
-              attribute.kind === "Event" && isAttached(attribute, element)
-                ? this.#attachment(attribute, node, on, once)
-                : undefined,
-          }
+      attribute: (attribute, element) => {
+        if (attribute.kind === "Event" && node !== undefined && on !== undefined) {
+          return isAttached(attribute, element)
+            ? this.#attachment(attribute, node, on, once)
+            : undefined;
+        }
+        if (attribute.kind === "Model" && modelText !== undefined && untrack !== undefined) {
+          return usesModelText(attribute)
+            ? this.#modelField(attribute, modelText, untrack)
+            : undefined;
+        }
+        return undefined;
+      },
+      ...(this.#componentTags.size
+        ? { componentTag: (name: string) => this.#componentTags.get(name) }
         : {}),
     };
+    const moduleBlock = owner ? this.#moduleScript(types) : undefined;
+    const result = (instance?: string): InstanceScript => ({
+      ...(moduleBlock ? { module: moduleBlock } : {}),
+      ...(instance ? { block: instance } : {}),
+      component,
+      markup,
+      render: composed.render,
+    });
     if (!pieces.length) {
       // Svelte parses the markup's code as TypeScript only in a component whose script is: a
       // handler's annotation or cast needs one, though empty.
-      return typeScriptInMarkup(this.#component, this.rules)
-        ? { block: '<script lang="ts"></script>', markup }
-        : { markup };
+      return typeScriptInMarkup(component, this.rules)
+        ? result('<script lang="ts"></script>')
+        : result();
     }
     const body = pieces.join("\n\n");
-    return { block: `<script lang="ts">\n${escapeScriptEnd(body)}\n</script>`, markup };
+    return result(`<script lang="ts">\n${escapeScriptEnd(body)}\n</script>`);
+  }
+
+  // --- Composition ---------------------------------------------------------------------------
+
+  /**
+   * The children's outputs (ADR-0053), each a sibling file's default export imported under the
+   * source's name, a component that renders itself included (its own file, as Svelte imports a
+   * recursive component); and the injection keys from the outputs that declare them (ADR-0054).
+   */
+  #imports(): void {
+    const component = this.#component;
+    for (const child of childImports(component, this.#module, (name) => `${name}.svelte`)) {
+      const local = this.#names.importDefault(child.specifier, child.local);
+      if (local !== child.local) this.#componentTags.set(child.local, local);
+    }
+    for (const key of keyImports(component, this.#module, (name) => `${name}.svelte`)) {
+      if (key.specifier) this.#names.importNamed(key.specifier, key.name, key.local);
+    }
+  }
+
+  /** A key's value type as written, and the ref it holds: the module's own, or an imported one's. */
+  #key(local: string): { type: string; ref?: RefType } {
+    const own = this.#module.keys?.find((key) => key.name === local);
+    if (own) return { type: own.type.code, ...(own.ref ? { ref: own.ref } : {}) };
+    for (const entry of this.#module.imports ?? []) {
+      const imported = entry.names.find((name) => name.kind === "Key" && name.local === local);
+      const key = imported && entry.api.keys.find((each) => each.name === imported.imported);
+      if (key) return { type: key.type, ...(key.ref ? { ref: key.ref } : {}) };
+    }
+    throw new Error(`The module declares or imports no key \`${local}\`.`);
+  }
+
+  /**
+   * The `<script lang="ts" module>` block of the output that declares the module's injection keys
+   * (ADR-0054), beside the types the component copies: each a `Symbol`, which `setContext` and
+   * `getContext` take, typed with the value it holds (`symbol & { readonly __value: Theme }`).
+   * A consumer reads that type from the key it imports (`contextType`), so the output exports no
+   * name of its own that could clash with the module's or a component's.
+   */
+  #moduleScript(types: readonly string[]): string {
+    const keys = this.#module.keys!.map(
+      (key) =>
+        `export const ${key.name} = Symbol(${JSON.stringify(key.description)}) as symbol & { readonly __value: ${contextValue(key.type.code, key.ref)} };`,
+    );
+    const body = [...types.map((each) => indent(each, INDENT)), indent(keys.join("\n"), INDENT)];
+    return `<script lang="ts" module>\n${escapeScriptEnd(body.join("\n\n"))}\n</script>`;
+  }
+
+  /**
+   * Each `<component is>` over components, as a variable the markup writes as a component:
+   * `const Component = $derived(compact ? Chip : Card)` (ADR-0054). Svelte renders a component
+   * held in a variable, and renders the new one when it changes.
+   */
+  #dynamicComponents(): string[] {
+    const declarations: string[] = [];
+    walk(this.#component.render, {
+      enter: (node) => {
+        if (node.kind !== "Dynamic") return;
+        if (!node.candidates.every((candidate) => candidate.kind === "Component")) return;
+        // A condition that reads a block's variable is chosen where it sits (`composition.ts`).
+        if (choosesInBlock(node, this.#component)) return;
+        const name = this.#names.claim("Component");
+        this.#dynamic.set(node, name);
+        const is = rewriteExpression(node.is, this.#component, this.rules, "render");
+        declarations.push(`const ${name} = $derived(${is});`);
+      },
+    });
+    return declarations.length ? [declarations.join("\n")] : [];
+  }
+
+  /**
+   * A field `modelText` binds (ADR-0054): its value as the server renders it and the client's
+   * first render sets it, read once (`untrack`), since the helper sets it from then on as Vue's
+   * `vModelText` does; and the helper as an attachment.
+   */
+  #modelField(attribute: ModelAttribute, modelText: string, untrack: string): string {
+    const value = rewriteExpression(attribute.value, this.#component, this.rules, "render");
+    const options = [
+      ...(attribute.trim ? ["trim: true"] : []),
+      ...(attribute.lazy ? ["lazy: true"] : []),
+      ...(attribute.number || attribute.control === "number" ? ["number: true"] : []),
+    ];
+    const args = [`() => ${value}`, `(value) => (${value} = value)`];
+    if (options.length) args.push(`{ ${options.join(", ")} }`);
+    return `value={${untrack}(() => ${value})} {@attach ${modelText}(${args.join(", ")})}`;
+  }
+
+  /**
+   * A fill's parameter with the names the output renamed (`snippetNames`): `{ header }` becomes
+   * `{ header: header_1 }`, and `header` becomes `header_1`.
+   */
+  #fillParameter(parameter: Parameter): Parameter {
+    const inside = this.#component.bindings.filter(
+      ({ id, kind, span }) =>
+        kind === "slotScope" &&
+        this.#renamed.has(id) &&
+        span.start >= parameter.span.start &&
+        span.end <= parameter.span.end,
+    );
+    if (!inside.length) return parameter;
+    if (parameter.name !== undefined) return { ...parameter, name: inside[0]!.name };
+    const pattern = parameter.pattern!;
+    // The pattern parsed as an arrow's parameter, whose code starts one character in.
+    const shorthands = new Set<number>();
+    visit(parseExpression(`(${pattern.code}) => 0`), (node) => {
+      if (node.type === "Property" && node["shorthand"] === true) shorthands.add(node.start - 1);
+    });
+    let code = pattern.code;
+    for (const binding of inside.toSorted((a, b) => b.span.start - a.span.start)) {
+      const start = binding.span.start - pattern.span.start;
+      const end = binding.span.end - pattern.span.start;
+      const original = this.#renamed.get(binding.id)!;
+      const written = shorthands.has(start) ? `${original}: ${binding.name}` : binding.name;
+      code = `${code.slice(0, start)}${written}${code.slice(end)}`;
+    }
+    return { ...parameter, pattern: { ...pattern, code } };
+  }
+
+  /** The variable a slot's snippet is read through. */
+  #slotLocal(slot: string): string {
+    return this.#slotLocals.get(slot) ?? slotProp(slot);
   }
 
   // --- Spelling ------------------------------------------------------------------------------
 
   /** How code reads a binding: a ref's value without `.value`, everything else as written. */
   #read(binding: Binding, written: string): string {
+    if (this.#renamed.has(binding.id)) return binding.name;
     switch (binding.kind) {
       case "prop":
         return this.#propsObject === undefined ? written : `${this.#propsObject}.${binding.name}`;
@@ -233,15 +519,21 @@ class ScriptWriter {
 
   /**
    * The props' declarations: the events' callback props joined to the source's props type
-   * (`type Props = CounterProps & { onchange?: … }`, ADR-0047), and the `$props()` declaration.
+   * (`type Props = CounterProps & { onchange?: … }`, ADR-0047), with the models, the slots'
+   * snippets and the fallthrough `class` and `style` (ADR-0054), and the `$props()` declaration.
    * Destructured props keep their order in the source and their defaults as written; a prop no
-   * printed code reads is left out, so the script declares no unused variable (ADR-0034, L5).
+   * printed code reads is left out, so the script declares no unused variable (ADR-0034, L5). A
+   * model is `$bindable`, with its default as its fallback, so a parent may bind it
+   * (`bind:value`) or leave it local.
    */
   #props(): string[] {
     const component = this.#component;
     const parameter = component.propsParameter;
     const emits = component.emits;
-    if (!parameter && !emits) return [];
+    const models = component.setup.filter((item): item is ModelItem => item.kind === "Model");
+    const declaredSlots = component.slots?.slots ?? [];
+    const fallthrough = takesFallthrough(component);
+    if (!parameter && !emits && !models.length && !declaredSlots.length && !fallthrough) return [];
     const scope = this.#names;
     const read = referencedBindings(component);
     const emitted = emittedEvents(component);
@@ -257,10 +549,52 @@ class ScriptWriter {
         ...(destructured && emitted.has(event.name) ? { local: scope.claim(key) } : {}),
       });
     }
+    // The members the props type adds to the source's, and what the pattern binds of them.
+    const members = [...this.#events.values()].map(({ key, type: each }) => `${key}?: ${each};`);
+    const extras: string[] = [];
+    for (const model of models) {
+      const local = this.#name(model.binding);
+      const optional = model.required ? "" : "?";
+      members.push(`${model.name}${optional}: ${model.type?.code ?? "unknown"};`);
+      const bindable = `$bindable(${model.default?.code ?? ""})`;
+      extras.push(`${local === model.name ? model.name : `${model.name}: ${local}`} = ${bindable}`);
+    }
+    if (declaredSlots.length) {
+      const snippet = scope.import("svelte", "Snippet", { type: true });
+      const used = usedSlots(component);
+      for (const slot of declaredSlots) {
+        const prop = slotProp(slot.name);
+        members.push(`${prop}?: ${snippet}${slot.props ? `<[${slot.props.code}]>` : ""};`);
+        if (!used.has(slot.name)) continue;
+        // A source name the prop's would capture (a list's `item`) leaves it to the snippet.
+        if (scope.scope.has(prop)) {
+          const local = scope.claim(`${prop}Snippet`);
+          this.#slotLocals.set(slot.name, local);
+          extras.push(`${prop}: ${local}`);
+        } else {
+          scope.scope.reserve(prop);
+          extras.push(prop);
+        }
+      }
+    }
+    if (fallthrough) {
+      const classValue = scope.import("svelte/elements", "ClassValue", { type: true });
+      members.push(`class?: ${classValue};`, "style?: string;");
+    }
+    // A root component that turns fallthrough off takes neither: the component declares them,
+    // as its API says, and renders neither, as Vue's `inheritAttrs: false` child drops them.
+    if (fallthrough && rootTakesFallthrough(component, this.#module)) {
+      this.#fallthrough = {
+        className: scope.claim("className"),
+        style: scope.claim("style"),
+        ...(hasOwnStyle(component) ? { mergeStyle: scope.claim("mergeStyle") } : {}),
+      };
+      const { className, style } = this.#fallthrough;
+      extras.push(`class: ${className}`, style === "style" ? style : `style: ${style}`);
+    }
     const pieces: string[] = [];
     let type = parameter?.type.code;
-    if (emits) {
-      const members = [...this.#events.values()].map(({ key, type: each }) => `${key}?: ${each};`);
+    if (members.length) {
       const name = scope.scope.has("Props")
         ? scope.claim(`${component.name}Props`)
         : scope.claim("Props");
@@ -286,17 +620,23 @@ class ScriptWriter {
         local = scope.claim("props");
         this.#propsObject = local;
       }
-      pattern = local;
+      // The models, the snippets and the fallthrough are bound beside the object, the rest of
+      // the props, which a component that reads none of its own leaves out.
+      if (!extras.length) pattern = local;
+      else pattern = `{ ${[...extras, ...(reads ? [`...${local}`] : [])].join(", ")} }`;
     } else {
       const props = new Map(component.props.map((prop) => [prop.binding, prop]));
       const entries = component.bindings.flatMap(({ id, kind }) => {
         const prop = kind === "prop" && read.has(id) ? props.get(id) : undefined;
         if (!prop) return [];
-        return [prop.default ? `${prop.name} = ${prop.default.code}` : prop.name];
+        const local = this.#name(id);
+        const bound = local === prop.name ? prop.name : `${prop.name}: ${local}`;
+        return [prop.default ? `${bound} = ${prop.default.code}` : bound];
       });
       for (const { key, local } of this.#events.values()) {
         if (local !== undefined) entries.push(local === key ? key : `${key}: ${local}`);
       }
+      entries.push(...extras);
       // A component that reads none of its props still declares them, under the object form:
       // the props type is its API, and an empty pattern (`let {}`) is `no-empty-pattern`. The
       // object is named `_props`, as nothing reads it (`no-unused-vars`).
@@ -310,7 +650,8 @@ class ScriptWriter {
 
   /**
    * The setup items in source order, each as code: one-line declarations that follow each other
-   * stay together, and a blank line sets apart everything else, as Svelte code is laid out.
+   * stay together, and a blank line sets apart everything else, as Svelte code is laid out. A
+   * model is a prop (`#props`), so it writes nothing here.
    *
    * An `onUnmounted` hook declared before a watcher or a `watchEffect` with a cleanup comes after
    * the last of them. Vue runs every effect's cleanup when it stops the component's scope, then the
@@ -323,6 +664,7 @@ class ScriptWriter {
     const pieces: string[] = [];
     let previousDeclaration = false;
     for (const item of setupInTeardownOrder(this.#component.setup)) {
+      if (item.kind === "Model") continue;
       const code = this.#item(item);
       // The first id is two declarations, `$props.id()` and the id itself.
       const declaration = isDeclaration(item) && (item.kind === "Id" || !code.includes("\n"));
@@ -388,14 +730,65 @@ class ScriptWriter {
         return this.#watchEffect(item);
       case "Lifecycle":
         return this.#lifecycle(item);
-      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
-      case "Model":
       case "Provide":
+        return this.#provide(item);
       case "Inject":
+        return this.#inject(item);
+      // A prop (`#props`).
+      case "Model":
         return "";
       default:
         return unreachable(item);
     }
+  }
+
+  /**
+   * `provide(Key, value)` (ADR-0054): `setContext`, which the descendants created after it read.
+   * A provided ref is passed as `refObject(() => count)`, whose `value` reads the state as it
+   * changes (`reactive-context`, emulated); any other value as the setup reads it once.
+   */
+  #provide(item: ProvideItem): string {
+    const setContext = this.#names.import("svelte", "setContext");
+    const value = this.#key(item.key).ref
+      ? this.#refValue(item.value)
+      : this.#setupValue(item.value);
+    return `${setContext}(${item.key}, ${value});`;
+  }
+
+  /**
+   * `inject(Key, fallback)` (ADR-0054): the nearest ancestor's value, `getContext`, or the
+   * fallback where none provides the key (`hasContext`). The value is typed with the key's type,
+   * which Svelte's untyped keys leave to the call.
+   */
+  #inject(item: InjectItem): string {
+    const name = this.#name(item.binding);
+    const getContext = this.#names.import("svelte", "getContext");
+    const type = contextType(item.key);
+    if (!item.fallback) return `const ${name} = ${getContext}<${orUndefined(type)}>(${item.key});`;
+    const hasContext = this.#names.import("svelte", "hasContext");
+    const fallback = this.#key(item.key).ref
+      ? this.#refValue(item.fallback)
+      : this.#setupValue(item.fallback);
+    return `const ${name} = ${hasContext}(${item.key}) ? ${getContext}<${type}>(${item.key}) : ${fallback};`;
+  }
+
+  /**
+   * Setup code whose ref a key holds (`provide(CountKey, count)`): each state, computed value or
+   * model it names whole is passed as `refObject(() => count)`.
+   */
+  #refValue(code: Code): string {
+    const rules: RewriteRules = {
+      ...this.rules,
+      binding: (_reference, binding, written) => {
+        const whole =
+          written === binding.name &&
+          (binding.kind === "state" || binding.kind === "derived" || binding.kind === "model");
+        if (!whole) return this.#read(binding, written);
+        this.#refObject ??= this.#names.claim("refObject");
+        return `${this.#refObject}(() => ${binding.name})`;
+      },
+    };
+    return rewriteCode(code, this.#component, rules, "pure");
   }
 
   #name(id: string): string {
@@ -429,13 +822,24 @@ class ScriptWriter {
     return `const ${name} = $derived.by${type}(${fn});`;
   }
 
+  /**
+   * A setup function, exported where `defineExpose` exposes it (ADR-0054): Svelte's component
+   * exports are what `bind:this` gives a parent.
+   */
   #function(item: FunctionItem): string {
     const name = this.#name(item.binding);
     const fn = this.#functions.get(item.function) ?? item.function;
-    if (item.form === "declaration") {
-      return functionText(fn, this.#component, this.rules, "client", { name });
-    }
-    return `const ${name} = ${functionText(fn, this.#component, this.rules, "client")};`;
+    const exposed = this.#component.exposes?.functions.includes(item.binding) ?? false;
+    // An exposed function the output renames is exported under the name the source exposes.
+    const original = this.#renamed.get(item.binding);
+    const exported = exposed && original === undefined ? "export " : "";
+    const declared =
+      item.form === "declaration"
+        ? `${exported}${functionText(fn, this.#component, this.rules, "client", { name })}`
+        : `${exported}const ${name} = ${functionText(fn, this.#component, this.rules, "client")};`;
+    return exposed && original !== undefined
+      ? `${declared}\n\nexport const ${original} = ${name};`
+      : declared;
   }
 
   /** A function's body as statements, for a block the target writes around it. */
@@ -833,14 +1237,20 @@ function typeScriptInMarkup(component: UfComponent, rules: RewriteRules): boolea
   return found;
 }
 
-/** The template refs attached inside a conditional's branch. */
+/**
+ * The template refs attached inside a conditional's branch, to an element or a component, and
+ * those on a `<component is>` the markup chooses where it sits (`composition.ts`), whose
+ * candidates are the branches of a conditional too.
+ */
 function conditionalRefs(component: UfComponent): Set<string> {
   const found = new Set<string>();
   let depth = 0;
   walk(component.render, {
     enter(node) {
       if (node.kind === "If") depth++;
-      if (node.kind !== "Element" || depth === 0) return;
+      const chosen = node.kind === "Dynamic" && choosesInBlock(node, component);
+      if (node.kind !== "Element" && node.kind !== "Component" && !chosen) return;
+      if (depth === 0 && !chosen) return;
       for (const attribute of node.attributes) {
         if (attribute.kind === "Ref") found.add(attribute.binding);
       }
@@ -850,6 +1260,19 @@ function conditionalRefs(component: UfComponent): Set<string> {
     },
   });
   return found;
+}
+
+/**
+ * Whether a `<component is>` over components is chosen where it sits: its condition reads a
+ * list's item or a fill's parameter, which a `$derived` in the script cannot see.
+ */
+function choosesInBlock(node: DynamicNode, component: UfComponent): boolean {
+  if (!node.candidates.every((candidate) => candidate.kind === "Component")) return false;
+  return node.is.refs.some((reference) => {
+    if (reference.kind !== "Binding") return false;
+    const kind = component.bindings.find((binding) => binding.id === reference.binding)?.kind;
+    return kind === "loopVar" || kind === "slotScope";
+  });
 }
 
 /**
@@ -868,6 +1291,249 @@ function onceHelper(name: string): string {
     ],
     "}",
   );
+}
+
+/** The type of the value a key holds, read from the key (`#moduleScript`). */
+function contextType(key: string): string {
+  return `(typeof ${key})["__value"]`;
+}
+
+/**
+ * The value `getContext` reads under a key, as the key's type writes it: a ref is passed as
+ * `refObject`'s object, whose `value` reads it (ADR-0054).
+ */
+function contextValue(type: string, ref: RefType | undefined): string {
+  if (!ref) return type;
+  const inner = new RegExp(`^${ref}\\s*<([\\s\\S]*)>$`).exec(type.trim())?.[1] ?? "unknown";
+  return `{ readonly value: ${inner.trim()} }`;
+}
+
+/** `T | undefined`, with parentheses around a function type, which `|` would split. */
+function orUndefined(type: string): string {
+  return `${/=>/.test(type) ? `(${type})` : type} | undefined`;
+}
+
+/**
+ * The names of the snippets the markup declares between a child's tags: each fill of a named
+ * slot, and a default fill with a parameter (ADR-0054).
+ */
+function snippetNames(root: RenderNode | ElementNode | FragmentNode): Set<string> {
+  const names = new Set<string>();
+  walk(root, {
+    enter(node) {
+      const fills =
+        node.kind === "Component" ? node.fills : node.kind === "Dynamic" ? node.fills : [];
+      for (const fill of fills ?? []) {
+        if (fill.forward === undefined && (fill.slot !== "default" || fill.parameter)) {
+          names.add(slotProp(fill.slot));
+        }
+      }
+    },
+  });
+  return names;
+}
+
+/**
+ * For each fill parameter's binding, the names of the snippets declared inside its fill, between
+ * the tags of the components the fill renders.
+ */
+function nestedSnippetNames(component: UfComponent): Map<string, Set<string>> {
+  const found = new Map<string, Set<string>>();
+  walk(component.render, {
+    enter(node) {
+      const fills =
+        node.kind === "Component" ? node.fills : node.kind === "Dynamic" ? node.fills : [];
+      for (const fill of fills ?? []) {
+        if (!fill.parameter) continue;
+        const { span } = fill.parameter;
+        const inner = new Set<string>();
+        for (const child of fill.children) for (const name of snippetNames(child)) inner.add(name);
+        for (const binding of component.bindings) {
+          if (
+            binding.kind === "slotScope" &&
+            binding.span.start >= span.start &&
+            binding.span.end <= span.end
+          ) {
+            found.set(binding.id, inner);
+          }
+        }
+      }
+    },
+  });
+  return found;
+}
+
+/**
+ * Whether the output may name a binding apart from the source: a variable it declares, but not a
+ * prop read through the props object or a component, an import's name. An exposed function keeps
+ * its name in the component's exports (`#function`), and a fill's parameter in the fill's
+ * pattern is written under the new one (`#fillParameter`).
+ */
+function renamable(binding: Binding, component: UfComponent): boolean {
+  switch (binding.kind) {
+    case "prop":
+      return component.propsParameter?.form !== "object";
+    case "component":
+    case "slots":
+    case "emit":
+      return false;
+    default:
+      return true;
+  }
+}
+
+/**
+ * The slots a component reads (ADR-0054): those it renders, tests for presence or forwards. A
+ * slot it only declares is in its props type, and bound by no variable.
+ */
+function usedSlots(component: UfComponent): Set<string> {
+  const used = new Set<string>();
+  for (const { expression } of expressionsOf(component)) {
+    for (const reference of expression.refs)
+      if (reference.kind === "Slot") used.add(reference.slot);
+  }
+  walk(component.render, {
+    enter(node) {
+      if (node.kind === "SlotOutlet") used.add(node.slot);
+      const fills =
+        node.kind === "Component" ? node.fills : node.kind === "Dynamic" ? node.fills : [];
+      for (const fill of fills ?? []) if (fill.forward !== undefined) used.add(fill.forward);
+    },
+  });
+  return used;
+}
+
+/**
+ * Whether a field's `v-model` goes through `modelText` (ADR-0054): a number or range input, which
+ * the contract casts with Vue's `looseToNumber`, and a modifier, which Svelte's `bind:value` has
+ * none of.
+ */
+function usesModelText(attribute: ModelAttribute): boolean {
+  return (
+    attribute.trim === true ||
+    attribute.lazy === true ||
+    attribute.number === true ||
+    attribute.control === "number"
+  );
+}
+
+/** The `v-model`s of fields the markup binds through `modelText`. */
+function modelTextFields(component: UfComponent): ModelAttribute[] {
+  const found: ModelAttribute[] = [];
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element") return;
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Model" && usesModelText(attribute)) found.push(attribute);
+      }
+    },
+  });
+  return found;
+}
+
+/**
+ * The `mergeStyle` helper (`fallthrough`, emulated, ADR-0054): the root's own declarations with
+ * a consumer's `style` over them, as the other targets merge style objects. Svelte writes a
+ * consumer's nullish value as an empty declaration (`color: `), which removes the root's own
+ * and stays empty in the result, so a component whose root is another component passes it on
+ * as Vue's `normalizeStyle` keeps the `undefined`; the CSSOM drops an empty declaration. The
+ * consumer's text splits at each `;` outside a string, a comment, an escape or parentheses
+ * (`content: "a;b"`).
+ */
+function mergeStyleHelper(name: string): string {
+  return [
+    `function ${name}(`,
+    "  own: Record<string, string | number | null | undefined>,",
+    "  consumer: string | undefined,",
+    "): string {",
+    "  const merged = { ...own };",
+    '  const text = consumer ?? "";',
+    "  const add = (declaration: string) => {",
+    '    const colon = declaration.indexOf(":");',
+    "    if (colon > 0) merged[declaration.slice(0, colon).trim()] = declaration.slice(colon + 1).trim();",
+    "  };",
+    "  let start = 0;",
+    "  let depth = 0;",
+    '  let quote = "";',
+    "  for (let index = 0; index < text.length; index++) {",
+    "    const char = text[index];",
+    "    if (quote) {",
+    '      if (char === "\\\\") index++;',
+    '      else if (char === quote) quote = "";',
+    '    } else if (char === "\\\\") index++;',
+    '    else if (char === "/" && text[index + 1] === "*") {',
+    '      const close = text.indexOf("*/", index + 2);',
+    "      index = close === -1 ? text.length : close + 1;",
+    `    } else if (char === '"' || char === "'") quote = char;`,
+    '    else if (char === "(") depth++;',
+    '    else if (char === ")") depth--;',
+    '    else if (char === ";" && depth === 0) {',
+    "      add(text.slice(start, index));",
+    "      start = index + 1;",
+    "    }",
+    "  }",
+    "  add(text.slice(start));",
+    "  return Object.entries(merged)",
+    '    .map(([property, value]) => `${property}: ${value ?? ""}`)',
+    '    .join("; ");',
+    "}",
+  ].join("\n");
+}
+
+/**
+ * The `refObject` helper (`reactive-context`, emulated, ADR-0054): a provided ref as an object
+ * whose `value` reads it, so a descendant that reads `count.value` in its markup or its effects
+ * tracks the state, as it tracks Vue's ref.
+ */
+function refObjectHelper(name: string): string {
+  return block(
+    `function ${name}<T>(get: () => T): { readonly value: T } {`,
+    [block("return {", [block("get value() {", ["return get();"], "},")], "};")],
+    "}",
+  );
+}
+
+/**
+ * The `modelText` helper (`model-modifiers`, emulated, ADR-0054): Vue's `vModelText` as an
+ * attachment. It writes the field's text on `input` (`change` when lazy), trimmed and cast with
+ * `looseToNumber` as its modifiers say, trims the shown text on `change`, and shows the value
+ * when it changes, unless the field shows it already (as a number when it casts), or the user is
+ * typing in it and only its trimmed text differs.
+ */
+function modelTextHelper(name: string, on: string): string {
+  return [
+    `function ${name}<T>(`,
+    "  get: () => T,",
+    "  set: (value: T) => void,",
+    "  { trim = false, lazy = false, number = false } = {},",
+    ") {",
+    "  const cast = (text: string): string | number => {",
+    "    const parsed = Number.parseFloat(text);",
+    "    return Number.isNaN(parsed) ? text : parsed;",
+    "  };",
+    "  return (field: HTMLInputElement | HTMLTextAreaElement) => {",
+    "    $effect(() => {",
+    '      const value = get() ?? "";',
+    String.raw`      const shown = number && !/^0\d/.test(field.value) ? cast(field.value) : field.value;`,
+    "      if (shown === value) return;",
+    '      const typing = document.activeElement === field && field.type !== "range";',
+    "      if (typing && trim && field.value.trim() === value) return;",
+    "      field.value = String(value);",
+    "    });",
+    `    const stopWriting = ${on}(field, lazy ? "change" : "input", () => {`,
+    "      const text = trim ? field.value.trim() : field.value;",
+    "      set((number ? cast(text) : text) as T);",
+    "    });",
+    `    const stopTrimming = ${on}(field, "change", () => {`,
+    "      if (trim) field.value = field.value.trim();",
+    "    });",
+    "    return () => {",
+    "      stopWriting();",
+    "      stopTrimming();",
+    "    };",
+    "  };",
+    "}",
+  ].join("\n");
 }
 
 /** The listeners the markup writes as attachments. */

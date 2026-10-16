@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   interface LabelAttributes {
     id: string;
     title?: string;
@@ -23,6 +25,8 @@
     signature?: LabelAttributes;
   }
 
+  type Props = ShipmentCardProps & { class?: ClassValue; style?: string };
+
   let {
     reference,
     carrier,
@@ -32,10 +36,12 @@
     tracking,
     stops,
     signature,
-  }: ShipmentCardProps = $props();
+    class: className,
+    style,
+  }: Props = $props();
 </script>
 
-<section class="shipment-card" aria-label={reference}>
+<section class={["shipment-card", className]} aria-label={reference} {style}>
   <p id={carrier?.id} title={carrier?.title}>Carrier</p
   ><p id={eta?.id} title={eta?.title}>Estimated delivery</p
   ><p id={parcel.tag?.id} title={parcel.tag?.title}>{parcel.label}</p

@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   interface Team {
     name: string;
   }
@@ -27,10 +29,12 @@
     seats: (Seat | null)[];
   }
 
-  let { loading, member, uptime, storage, plan, seats }: AccountSummaryProps = $props();
+  type Props = AccountSummaryProps & { class?: ClassValue; style?: string };
+
+  let { loading, member, uptime, storage, plan, seats, class: className, style }: Props = $props();
 </script>
 
-<section class="account-summary" aria-label="Account">
+<section class={["account-summary", className]} aria-label="Account" {style}>
   {#if loading}
     <p>Loading the account</p>
   {:else if !member}

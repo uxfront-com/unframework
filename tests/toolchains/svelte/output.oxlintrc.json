@@ -1,8 +1,8 @@
 // L5 (ADR-0042): oxlint over every svelte output file: its script block (ESLint lints the rest).
 // Not named `.oxlintrc.json`, which oxlint would take for a nested configuration when it lints
 // the repository. Everything but `overrides` is the baseline every toolchain shares, identical
-// but for the import allow-list (tests/integration/harness/toolchain-lint.unit.test.ts compares
-// them).
+// but for the import allow-list and the self-import below
+// (tests/integration/harness/toolchain-lint.unit.test.ts compares them).
 //
 // L5 judges the emitter's idiom, not the author's code (ADR-0042). A rule that can only fire
 // on what the author wrote (an expression, a literal, text, markup) is off below: oxlint sees
@@ -31,6 +31,9 @@
         ]
       }
     ],
+    // A recursive component imports its own file (ADR-0054's cell): Svelte 5 has no other way,
+    // as `<svelte:self>` is deprecated in runes mode. The six other targets keep the rule.
+    "import/no-self-import": "off",
     // Angular components are decorated classes, which may have no member.
     "typescript/no-extraneous-class": ["error", { "allowWithDecorator": true }],
     // A useless escape in an output is in code it copies, so it is the author's, `<\/script`

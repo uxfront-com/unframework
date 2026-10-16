@@ -1,6 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
   import { on } from "svelte/events";
 
   export interface Meeting {
@@ -22,9 +23,19 @@
     onopened?: (title: string) => void;
     onthanked?: (name: string) => void;
     ontrack?: (name: string, count: number) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { meetings, organiser, onopened, onthanked, ontrack }: Props = $props();
+  let {
+    meetings,
+    organiser,
+    onopened,
+    onthanked,
+    ontrack,
+    class: className,
+    style,
+  }: Props = $props();
 
   let rooms = $state.raw(["Atlas", "Borealis"]);
   let log = $state.raw<string[]>([]);
@@ -60,7 +71,7 @@
   }
 </script>
 
-<section class="meeting-list" aria-label="Meetings">
+<section class={["meeting-list", className]} aria-label="Meetings" {style}>
   <ul aria-label="Upcoming">
     {#each upcoming as event (event.id)}
       <li>

@@ -2,10 +2,16 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
-  type Props = { onjoin?: (channel: string) => void; onleave?: (channel: string) => void };
+  type Props = {
+    onjoin?: (channel: string) => void;
+    onleave?: (channel: string) => void;
+    class?: ClassValue;
+    style?: string;
+  };
 
-  let { onjoin, onleave }: Props = $props();
+  let { onjoin, onleave, class: className, style }: Props = $props();
 
   let channel = $state("general");
 
@@ -36,7 +42,7 @@
   onMount(() => () => cleanupName?.());
 </script>
 
-<section class="channel-picker" aria-label="Channels">
+<section class={["channel-picker", className]} aria-label="Channels" {style}>
   <p role="status">Channel: #{channel}</p
   ><button type="button" onclick={() => (channel = "random")}>Join #random</button
   ><button type="button" onclick={() => (channel = "General")}>Join #General</button>

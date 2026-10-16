@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface SectionHeadingProps {
     title: string;
@@ -10,9 +11,11 @@
   type Props = SectionHeadingProps & {
     onchange?: (title: string, previous?: string) => void;
     onready?: () => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { title, onchange, onready }: Props = $props();
+  let { title, onchange, onready, class: className, style }: Props = $props();
 
   let previousTitle = untrack(() => title);
   let titleWatched = false;
@@ -32,4 +35,4 @@
   });
 </script>
 
-<h2 class="section-heading">{title}</h2>
+<h2 class={["section-heading", className]} {style}>{title}</h2>

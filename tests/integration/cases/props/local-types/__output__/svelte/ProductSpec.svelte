@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   type Availability = "in-stock" | "backorder" | "discontinued";
 
   interface Finish {
@@ -15,10 +17,12 @@
     finishes: Finish[];
   }
 
-  let { name, availability, size, finishes }: ProductSpecProps = $props();
+  type Props = ProductSpecProps & { class?: ClassValue; style?: string };
+
+  let { name, availability, size, finishes, class: className, style }: Props = $props();
 </script>
 
-<section class="product-spec" aria-label={name}>
+<section class={["product-spec", className]} aria-label={name} {style}>
   <h2>{name}</h2
   ><dl>
     <dt>Availability</dt

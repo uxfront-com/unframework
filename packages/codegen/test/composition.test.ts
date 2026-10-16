@@ -32,7 +32,7 @@ import {
   printProgram,
   referencedBindings,
 } from "../src/index.ts";
-import { printMarkup, svelteDialect } from "../src/markup.ts";
+import { htmlDialect, printMarkup } from "../src/markup.ts";
 import { objectEntries } from "../src/markup/printer.ts";
 
 const at = span(0, 0);
@@ -120,8 +120,8 @@ describe("exportsOf", () => {
 describe("the printer's composition hooks", () => {
   it("throws for a dialect that does not print composition yet", () => {
     const root = createElement("div", [], [createComponentNode("Field", [], [], at)], at);
-    expect(() => printMarkup(root, svelteDialect)).toThrow(
-      "The svelte dialect does not print composition yet (fills).",
+    expect(() => printMarkup(root, htmlDialect)).toThrow(
+      "The html dialect does not print composition yet (fills).",
     );
     const slot = createElement(
       "div",
@@ -129,8 +129,8 @@ describe("the printer's composition hooks", () => {
       [createSlotOutlet("default", [createText("x", at)], at)],
       at,
     );
-    expect(() => printMarkup(slot, svelteDialect)).toThrow(
-      "The svelte dialect does not print composition yet (slotOutlet).",
+    expect(() => printMarkup(slot, htmlDialect)).toThrow(
+      "The html dialect does not print composition yet (slotOutlet).",
     );
   });
 

@@ -1,6 +1,14 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
-<article class="profile" aria-labelledby="profile-name">
+<script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = { class?: ClassValue; style?: string };
+
+  let { class: className, style }: Props = $props();
+</script>
+
+<article class={["profile", className]} aria-labelledby="profile-name" {style}>
   <header class="profile-header">
     <img
       src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%23345'/%3E%3C/svg%3E"

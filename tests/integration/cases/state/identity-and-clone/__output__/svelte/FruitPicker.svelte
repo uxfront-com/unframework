@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface Fruit {
     name: string;
     colour: string;
@@ -10,9 +12,13 @@
     fruits: Fruit[];
   }
 
-  type Props = FruitPickerProps & { onkept?: (name: string, colour: string) => void };
+  type Props = FruitPickerProps & {
+    onkept?: (name: string, colour: string) => void;
+    class?: ClassValue;
+    style?: string;
+  };
 
-  let { fruits, onkept }: Props = $props();
+  let { fruits, onkept, class: className, style }: Props = $props();
 
   let selected = $state.raw<Fruit | null>(null);
   let basket = $state.raw<Fruit[]>([]);
@@ -30,7 +36,7 @@
   }
 </script>
 
-<section class="fruit-picker" aria-label="Fruit">
+<section class={["fruit-picker", className]} aria-label="Fruit" {style}>
   <ul aria-label="Fruits">
     {#each fruits as fruit (fruit.name)}
       <li>

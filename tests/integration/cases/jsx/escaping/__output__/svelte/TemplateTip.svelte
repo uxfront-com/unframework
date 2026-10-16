@@ -1,16 +1,20 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface TemplateTipProps {
     example: string;
     note: string;
     path: string;
   }
 
-  let { example, note, path }: TemplateTipProps = $props();
+  type Props = TemplateTipProps & { class?: ClassValue; style?: string };
+
+  let { example, note, path, class: className, style }: Props = $props();
 </script>
 
-<figure class="template-tip">
+<figure class={["template-tip", className]} {style}>
   <figcaption
     title="Vue &#123;&#123; name &#125;&#125;, Svelte &#123;#if ok&#125;, Angular @if (ok) &amp; JSX &#123;name&#125;"
   >Template syntax &amp; escaping</figcaption

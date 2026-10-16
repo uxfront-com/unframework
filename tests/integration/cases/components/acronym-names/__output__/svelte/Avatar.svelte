@@ -1,13 +1,23 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  type Props = { imageURL: string; userID: number; onpickedurl?: (url: string) => void };
+  import type { ClassValue } from "svelte/elements";
 
-  let { imageURL, userID, onpickedurl }: Props = $props();
+  type Props = {
+    imageURL: string;
+    userID: number;
+    onpickedurl?: (url: string) => void;
+    class?: ClassValue;
+    style?: string;
+  };
+
+  let { imageURL, userID, onpickedurl, class: className, style }: Props = $props();
 </script>
 
 <button
   type="button"
   data-user={userID}
   onclick={() => onpickedurl?.(imageURL)}
+  class={className}
+  {style}
 >User {userID}: {imageURL}</button>

@@ -654,9 +654,8 @@ describe("canaries", () => {
     expect(lines("vue")).toEqual([
       'const { title = "Tasks (today)", tasks, done, tone = "info" } = defineProps<Record<string, any>>();',
     ]);
-    expect(lines("svelte")).toEqual([
-      '  let { title = "Tasks (today)", tasks, done, tone = "info" }: any = $props();',
-    ]);
+    // The pattern runs over several lines, beside the fallthrough props (ADR-0054).
+    expect(lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(lines("astro")).toEqual(["type Props = any;"]);
     expect(lines("angular")).toEqual([
       '  readonly title = input<any>("Tasks (today)", {',
@@ -693,9 +692,7 @@ describe("canaries", () => {
       "const { path, size } = defineProps<Record<string, any>>();",
       "const emit = defineEmits<Record<string, any[]>>();",
     ]);
-    expect(await lines("svelte")).toEqual([
-      "  let { path, size, onrefresh, onopen, onmove, onpick, onshare }: any = $props();",
-    ]);
+    expect(await lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(await lines("astro")).toEqual(["type Props = any;"]);
     expect(await lines("angular")).toEqual([
       "  readonly path = input.required<any>();",
@@ -739,16 +736,30 @@ describe("canaries", () => {
     for (const target of TARGET_NAMES.filter((name) => name !== REFERENCE)) {
       const { outputs } = await compileWith("L10-root-inverted", target);
       const contents = outputs[target]![0]!.contents;
-      expect(contents.match(/invert\(1\)/g), target).toHaveLength(1);
+      expect(contents.match(/invert\(0\.8\)/g), target).toHaveLength(1);
       // React's and Astro's roots also take a consumer's style, after their own (ADR-0054).
       const spread =
         target === "react" ? ", \\.\\.\\.style" : target === "astro" ? "(?:, \\.\\.\\.\\w+)?" : "";
       expect(contents, target).toMatch(
         new RegExp(
-          `<section\\b[^>]*\\bstyle=(?:"filter: invert\\(1\\)"|\\{\\{ filter: "invert\\(1\\)"${spread} \\}\\}|\\{\\{ \\.\\.\\.\\{ filter: "invert\\(1\\)" \\}, \\.\\.\\.props\\.style \\}\\})`,
+          `<section\\b[^>]*\\bstyle=(?:"filter: invert\\(0\\.8\\)"|\\{\\{ filter: "invert\\(0\\.8\\)"${spread} \\}\\}|\\{mergeStyle\\(\\{ filter: "invert\\(0\\.8\\)" \\}, style\\)\\}|\\{\\{ \\.\\.\\.\\{ filter: "invert\\(0\\.8\\)" \\}, \\.\\.\\.props\\.style \\}\\})`,
         ),
       );
     }
+  });
+
+  // A component's root inside another's is inverted twice: the filter must not undo itself,
+  // or a child that holds all the parent's ink renders the reference's pixels.
+  it("L10-root-inverted changes a pixel that a nested root inverts twice", async () => {
+    const root = await corruptedRoot(
+      "L10-root-inverted",
+      "export default function Tag() {\n  return <span>a</span>;\n}\n",
+    );
+    const [filter] = declarationsOf(root);
+    const amount = Number(/^filter: invert\(([\d.]+)\)$/.exec(filter!)![1]);
+    // The filter's per-channel function (Filter Effects 1, `invert()`).
+    const invert = (channel: number) => amount * (1 - channel) + (1 - amount) * channel;
+    for (const channel of [0, 1]) expect(invert(invert(channel))).not.toBeCloseTo(channel, 2);
   });
 
   describe("on roots that already set what they set", () => {
@@ -774,7 +785,7 @@ describe("canaries", () => {
       const hidden = await corruptedRoot("L10-root-hidden", styled);
       const inverted = await corruptedRoot("L10-root-inverted", styled);
       expect(declarationsOf(hidden)).toEqual(["filter: none", "display: none"]);
-      expect(declarationsOf(inverted)).toEqual(["display: inline-block", "filter: invert(1)"]);
+      expect(declarationsOf(inverted)).toEqual(["display: inline-block", "filter: invert(0.8)"]);
       // An <svg> takes no `hidden`: it is hidden by a style of its own.
       expect(declarationsOf(await corruptedRoot("L10-root-hidden", icon))).toEqual([
         "display: none",

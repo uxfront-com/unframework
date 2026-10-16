@@ -25,8 +25,8 @@ describe("svelte frameworkCompile", () => {
   // left, it took 0.6 s alone on a laptop and overran Vitest's 5 s default in CI's Unit tests.
   it.each(cases)(
     "accepts what the target emits for $name without a warning",
-    async ({ name, module }) => {
-      for (const file of await emitFormatted(module)) {
+    async ({ name, modules }) => {
+      for (const file of (await Promise.all(modules.map(emitFormatted))).flat()) {
         expect(await compileOne(file.contents, `/virtual/${name}/${file.path}`), name).toEqual({
           errors: [],
           warnings: [],

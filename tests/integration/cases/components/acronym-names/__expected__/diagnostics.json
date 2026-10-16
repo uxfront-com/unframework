@@ -51,23 +51,6 @@
     "target": "qwik"
   },
   {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The svelte target does not emit component yet: composition lands in M3.",
-    "file": "components/acronym-names/Profile.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 7,
-      "offset": 168
-    },
-    "end": {
-      "line": 9,
-      "column": 90,
-      "offset": 251
-    },
-    "target": "svelte"
-  },
-  {
     "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",

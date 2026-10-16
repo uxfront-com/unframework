@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { onMount, tick, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface MailboxProps {
     folder: string;
@@ -12,9 +13,11 @@
     onprogress?: (status: string, attempts: number) => void;
     onseen?: (text: string) => void;
     onnoted?: (text: string) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { folder, onloaded, onprogress, onseen, onnoted }: Props = $props();
+  let { folder, onloaded, onprogress, onseen, onnoted, class: className, style }: Props = $props();
 
   let name = $state("Loading");
   let unread = $state(0);
@@ -104,7 +107,7 @@
   }
 </script>
 
-<section class="mailbox" aria-label="Mailbox">
+<section class={["mailbox", className]} aria-label="Mailbox" {style}>
   <h2>{name}</h2
   ><p role="status">{summary}</p
   ><p>Status: {status}</p

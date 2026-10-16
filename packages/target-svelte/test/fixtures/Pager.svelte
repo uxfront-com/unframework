@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = {
     size: number;
@@ -10,9 +11,11 @@
     onspan?: (value: number) => void;
     onrange?: (low: number, high: number) => void;
     onresize?: (value: number, previous?: number) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { size, onturn, onleft, onspan, onrange, onresize }: Props = $props();
+  let { size, onturn, onleft, onspan, onrange, onresize, class: className, style }: Props = $props();
 
   let page = $state(1);
   let low = $state(0);
@@ -78,7 +81,7 @@
   });
 </script>
 
-<section aria-label="Pager">
+<section aria-label="Pager" class={className} {style}>
   <p>Page {page}, {low} to {high} of {size}</p
   ><button type="button" onclick={() => page++}>Next</button
   ><button

@@ -2,10 +2,15 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
-  type Props = { onstep?: (text: string) => void };
+  type Props = {
+    onstep?: (text: string) => void;
+    class?: ClassValue;
+    style?: string;
+  };
 
-  let { onstep }: Props = $props();
+  let { onstep, class: className, style }: Props = $props();
 
   let query = $state("");
 
@@ -45,4 +50,4 @@
   });
 </script>
 
-<button type="button" onclick={() => (query += "a")}>Type</button>
+<button type="button" onclick={() => (query += "a")} class={className} {style}>Type</button>

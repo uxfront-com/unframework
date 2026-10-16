@@ -21,11 +21,3 @@ error[UF1002] (qwik): The qwik target does not emit two-way-binding yet: composi
   |                                ^^^^^^^^^^^^^^^^^^^^^^
   |
   = see: https://unframework.dev/diagnostics/UF1002
-
-error[UF1002] (svelte): The svelte target does not emit two-way-binding yet: composition lands in M3.
- --> models/checkbox/Terms.uf.tsx:8:32
-  |
-8 |         <input type="checkbox" v-model={agreed.value} /> I agree
-  |                                ^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002

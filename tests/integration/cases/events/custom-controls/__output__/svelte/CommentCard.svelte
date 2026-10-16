@@ -1,9 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  type Props = { onliked?: (liked: boolean, by: string) => void };
+  import type { ClassValue } from "svelte/elements";
 
-  let { onliked }: Props = $props();
+  type Props = {
+    onliked?: (liked: boolean, by: string) => void;
+    class?: ClassValue;
+    style?: string;
+  };
+
+  let { onliked, class: className, style }: Props = $props();
 
   let text = $state("");
   let liked = $state(false);
@@ -25,7 +31,7 @@
   }
 </script>
 
-<section class="comment-card" aria-label="Comment">
+<section class={["comment-card", className]} aria-label="Comment" {style}>
   <label>Comment<textarea name="comment" rows="2" oninput={autosize}></textarea></label
   ><div class="meter" role="presentation">
     <div class="fill" style:width={`${Math.min(text.length, 100)}%`}></div>

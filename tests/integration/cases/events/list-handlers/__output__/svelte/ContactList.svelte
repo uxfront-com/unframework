@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface Contact {
     id: string;
@@ -15,9 +16,11 @@
   type Props = ContactListProps & {
     onchoose?: (id: string, position: number) => void;
     onremoved?: (name: string) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { initial, onchoose, onremoved }: Props = $props();
+  let { initial, onchoose, onremoved, class: className, style }: Props = $props();
 
   let contacts = $state.raw(untrack(() => initial));
   let chosen = $state<string>();
@@ -33,7 +36,7 @@
   }
 </script>
 
-<section class="contact-list" aria-label="Contacts">
+<section class={["contact-list", className]} aria-label="Contacts" {style}>
   <ul>
     {#each contacts as contact, index (contact.id)}
       <li>

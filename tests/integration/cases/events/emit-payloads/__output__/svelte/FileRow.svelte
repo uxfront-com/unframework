@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface FileInfo {
     path: string;
     size: number;
@@ -17,9 +19,21 @@
     onmove?: (from: string, to: string) => void;
     onpick?: (file: FileInfo) => void;
     onshare?: (path: string, note?: string) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { path, size, onrefresh, onopen, onmove, onpick, onshare }: Props = $props();
+  let {
+    path,
+    size,
+    onrefresh,
+    onopen,
+    onmove,
+    onpick,
+    onshare,
+    class: className,
+    style,
+  }: Props = $props();
 
   function archive() {
     onmove?.(path, `archive/${path}`);
@@ -27,7 +41,7 @@
   }
 </script>
 
-<div class="file-row" role="group" aria-label={path}>
+<div class={["file-row", className]} role="group" aria-label={path} {style}>
   <span>{path} ({size} bytes)</span
   ><button type="button" onclick={() => onrefresh?.()}>Refresh</button
   ><button type="button" onclick={() => onopen?.(path)}>Open</button

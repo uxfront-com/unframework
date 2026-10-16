@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface OrderSummaryProps {
     customer: string;
     orderNumber: number;
@@ -10,11 +12,21 @@
     coupon?: string;
   }
 
-  let { customer, orderNumber, unitPrice, quantity, discount, coupon }: OrderSummaryProps =
-    $props();
+  type Props = OrderSummaryProps & { class?: ClassValue; style?: string };
+
+  let {
+    customer,
+    orderNumber,
+    unitPrice,
+    quantity,
+    discount,
+    coupon,
+    class: className,
+    style,
+  }: Props = $props();
 </script>
 
-<section class="order-summary" aria-label="Order summary">
+<section class={["order-summary", className]} aria-label="Order summary" {style}>
   <h2>Order {String(orderNumber).padStart(6, "0")}</h2
   ><p>Customer: {customer.trim().toUpperCase()}</p
   ><p>{`${quantity} item${quantity === 1 ? "" : "s"} at ${unitPrice.toFixed(2)} each`}</p

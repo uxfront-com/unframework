@@ -1,7 +1,11 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  let { text }: { text: string } = $props();
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = { text: string; class?: ClassValue; style?: string };
+
+  let { text, class: className, style }: Props = $props();
 </script>
 
-<span class="pill">{text}</span>
+<span class={["pill", className]} {style}>{text}</span>
