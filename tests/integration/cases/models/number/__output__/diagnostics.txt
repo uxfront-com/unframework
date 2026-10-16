@@ -1,7 +1,0 @@
-info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
- --> models/number/Quantity.uf.tsx:8:55
-  |
-8 |       <input type="number" aria-label="Count" min="0" v-model={count.value} />
-  |                                                       ^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF4001

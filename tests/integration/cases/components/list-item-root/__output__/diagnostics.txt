@@ -5,11 +5,3 @@ error[UF4001] (angular): The angular target does not support contextual-root: A 
   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
- --> components/list-item-root/Menu.uf.tsx:7:9
-  |
-7 |         <Item key={entry} label={entry} />
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
