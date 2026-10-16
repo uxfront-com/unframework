@@ -1,13 +1,18 @@
-import { Component, output, signal } from "@angular/core";
+import { Component, input, output, signal } from "@angular/core";
 
 @Component({
   selector: "uf-comment-card",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let text = this.text();
     @let currentLiked = this.currentLiked();
-    <section class="comment-card" aria-label="Comment">
+    <section
+      class="comment-card"
+      aria-label="Comment"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <label>Comment<textarea name="comment" rows="2" (input)="autosize($event)"></textarea></label>
       <div class="meter" role="presentation">
         <div class="fill" [style.width]="Math.min(text.length, 100) + '%'"></div>
@@ -25,6 +30,8 @@ import { Component, output, signal } from "@angular/core";
   `,
 })
 export default class CommentCard {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly liked = output<[liked: boolean, by: string]>();
   protected readonly text = signal("");
   protected readonly currentLiked = signal(false);

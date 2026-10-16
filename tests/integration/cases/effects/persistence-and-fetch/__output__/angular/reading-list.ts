@@ -21,7 +21,7 @@ export interface ReadingListProps {
 
 @Component({
   selector: "uf-reading-list",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let shelves = this.shelves();
@@ -33,7 +33,12 @@ export interface ReadingListProps {
     @let checks = this.checks();
     @let counts = this.counts();
     @let refreshing = this.refreshing();
-    <section class="reading-list" aria-label="Reading list">
+    <section
+      class="reading-list"
+      aria-label="Reading list"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <label>Search<input type="search" name="query" (input)="onQueryInput($event)" /></label>
       <p
         role="status"
@@ -69,6 +74,8 @@ export interface ReadingListProps {
 })
 export default class ReadingList implements OnInit, OnDestroy {
   readonly shelves = input.required<string[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly requested = output<string>();
   readonly cancelled = output<string>();
   readonly found = output<[query: string, count: number]>();

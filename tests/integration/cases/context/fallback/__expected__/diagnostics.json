@@ -1,22 +1,5 @@
 [
   {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The angular target does not emit context yet: composition lands in M3.",
-    "file": "context/fallback/Greeting.uf.tsx",
-    "start": {
-      "line": 6,
-      "column": 3,
-      "offset": 158
-    },
-    "end": {
-      "line": 6,
-      "column": 42,
-      "offset": 197
-    },
-    "target": "angular"
-  },
-  {
     "code": "UF4001",
     "severity": "warning",
     "message": "The astro target does not support context: Astro renders each component on its own, with no tree of instances to provide to, so `inject` gives its fallback (ADR-0054).",
@@ -36,7 +19,24 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The angular target does not emit an injection key yet: composition lands in M3.",
+    "message": "The qwik target does not emit context yet: composition lands in M3.",
+    "file": "context/fallback/Greeting.uf.tsx",
+    "start": {
+      "line": 6,
+      "column": 3,
+      "offset": 158
+    },
+    "end": {
+      "line": 6,
+      "column": 42,
+      "offset": 197
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF1002",
+    "severity": "error",
+    "message": "The qwik target does not emit an injection key yet: composition lands in M3.",
     "file": "context/fallback/LocaleProvider.uf.tsx",
     "start": {
       "line": 4,
@@ -48,7 +48,7 @@
       "column": 68,
       "offset": 178
     },
-    "target": "angular"
+    "target": "qwik"
   },
   {
     "code": "UF4001",
@@ -70,7 +70,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The angular target does not emit component yet: composition lands in M3.",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "context/fallback/Page.uf.tsx",
     "start": {
       "line": 7,
@@ -82,6 +82,6 @@
       "column": 30,
       "offset": 181
     },
-    "target": "angular"
+    "target": "qwik"
   }
 ]

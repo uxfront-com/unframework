@@ -1,4 +1,4 @@
-error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
  --> components/framework-names/KeepAlive.uf.tsx:7:21
   |
 7 |       {level > 0 && <KeepAlive level={level - 1} />}
@@ -6,7 +6,7 @@ error[UF1002] (angular): The angular target does not emit component yet: composi
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
  --> components/framework-names/Wizard.uf.tsx:8:7
   |
 8 |       <Transition step="details" />

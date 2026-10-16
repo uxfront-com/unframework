@@ -1,4 +1,4 @@
-error[UF1002] (angular): The angular target does not emit model yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit model yet: composition lands in M3.
  --> diagnostics/invalid-v-model/Survey.uf.tsx:6:3
   |
 6 |   const picked = defineModel<string>("picked", { default: "" });

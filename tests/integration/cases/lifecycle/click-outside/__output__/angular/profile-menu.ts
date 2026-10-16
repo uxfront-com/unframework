@@ -6,6 +6,7 @@ import {
   PLATFORM_ID,
   afterNextRender,
   inject,
+  input,
   output,
   signal,
   viewChild,
@@ -13,11 +14,16 @@ import {
 
 @Component({
   selector: "uf-profile-menu",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let open = this.open();
-    <section class="profile-menu" aria-label="Profile">
+    <section
+      class="profile-menu"
+      aria-label="Profile"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <div class="menu" #menu>
         <button type="button" [attr.aria-expanded]="open" (click)="onAccount()">Account</button>
         @if (open) {
@@ -36,6 +42,8 @@ import {
   `,
 })
 export default class ProfileMenu implements OnDestroy {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly closed = output<void>();
   private readonly menu = viewChild<ElementRef<HTMLDivElement>>("menu");
   private readonly platformId = inject(PLATFORM_ID);

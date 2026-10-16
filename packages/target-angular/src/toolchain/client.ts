@@ -5,6 +5,7 @@ import type { Binding, ComponentRef } from "@angular/core";
 import { createApplication } from "@angular/platform-browser";
 import type { MountAdapter, MountEvent, MountListener } from "@unframework/codegen";
 
+import { outputName } from "../outputs.ts";
 import { angularComponent } from "./component.ts";
 
 /**
@@ -91,7 +92,7 @@ function outputBindings(
         `Angular mount: the test listens to "${name}", which the component declares no payload for: an output's value is read by the event's shape.`,
       );
     }
-    return outputBinding<unknown>(name, (value) => {
+    return outputBinding<unknown>(outputName(name), (value) => {
       if (!optional.length) listener();
       else if (optional.length === 1 && !optional[0]) listener(value);
       else listener(...(value as unknown[]));

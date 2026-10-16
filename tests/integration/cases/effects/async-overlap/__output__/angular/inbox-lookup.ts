@@ -10,6 +10,7 @@ import {
   computed,
   effect,
   inject,
+  input,
   output,
   signal,
   untracked,
@@ -17,7 +18,7 @@ import {
 
 @Component({
   selector: "uf-inbox-lookup",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let answers = this.answers();
@@ -26,7 +27,7 @@ import {
     @let loading = this.loading();
     @let failure = this.failure();
     @let unread = this.unread();
-    <section class="inbox-lookup" aria-label="Inbox">
+    <section class="inbox-lookup" aria-label="Inbox" [class]="this.class()" [style]="this.style()">
       <button type="button" (click)="onFindAnn()">Find Ann</button>
       <button type="button" (click)="onFindAnna()">Find Anna</button>
       <button type="button" (click)="answerLookups()">Answer lookups</button>
@@ -51,6 +52,8 @@ import {
   `,
 })
 export default class InboxLookup implements OnInit, OnDestroy {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly looked = output<string>();
   readonly dropped = output<string>();
   readonly sorted = output<string>();

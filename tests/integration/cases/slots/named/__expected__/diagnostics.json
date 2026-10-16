@@ -2,7 +2,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The angular target does not emit `defineSlots` yet: composition lands in M3.",
+    "message": "The qwik target does not emit `defineSlots` yet: composition lands in M3.",
     "file": "slots/named/Card.uf.tsx",
     "start": {
       "line": 5,
@@ -14,12 +14,12 @@
       "column": 96,
       "offset": 216
     },
-    "target": "angular"
+    "target": "qwik"
   },
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The angular target does not emit component yet: composition lands in M3.",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "slots/named/Post.uf.tsx",
     "start": {
       "line": 5,
@@ -31,6 +31,6 @@
       "column": 12,
       "offset": 296
     },
-    "target": "angular"
+    "target": "qwik"
   }
 ]

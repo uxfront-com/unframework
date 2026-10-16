@@ -9,14 +9,19 @@ export interface InboxSummaryProps {
 
 @Component({
   selector: "uf-inbox-summary",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let folder = this.folder();
     @let unread = this.unread();
     @let flagged = this.flagged();
     @let signature = this.signature();
-    <section class="inbox-summary" aria-label="Inbox summary">
+    <section
+      class="inbox-summary"
+      aria-label="Inbox summary"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <h2>{{ folder || "Inbox" }}</h2>
       @if (unread) {
         <p>{{ unread }} unread</p>
@@ -41,4 +46,6 @@ export default class InboxSummary {
   readonly unread = input.required<number>();
   readonly flagged = input.required<number>();
   readonly signature = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

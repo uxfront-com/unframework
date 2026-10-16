@@ -1,4 +1,4 @@
-error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
   --> components/list-rows/Tasks.uf.tsx:26:11
    |
 26 |           <Row key={task.id} name={task.name} done={task.done} />

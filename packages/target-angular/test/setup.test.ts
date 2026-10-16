@@ -609,7 +609,7 @@ describe("outputs named like a setup binding (ADR-0047)", () => {
     expect(contents).toContain(
       lines(
         "  readonly save = output<Settings>();",
-        "  readonly toggle = output<[id: string, open: boolean]>();",
+        "  readonly ufToggle = output<[id: string, open: boolean]>();",
         "  readonly page = output<number>();",
         "  readonly field = output<void>();",
         '  private readonly fieldElement = viewChild<ElementRef<HTMLInputElement>>("fieldElement");',
@@ -623,9 +623,28 @@ describe("outputs named like a setup binding (ADR-0047)", () => {
         "    let lastPage = currentPage();",
       ),
     );
-    expect(contents).toContain('<form aria-label="Settings" (submit)="onSave($event)">');
+    expect(contents).toContain(
+      lines(
+        "    <form",
+        '      aria-label="Settings"',
+        '      (submit)="onSave($event)"',
+        '      [class]="this.class()"',
+        '      [style]="this.style()"',
+        "    >",
+      ),
+    );
     expect(contents).toContain('<input type="text" aria-label="Name" #fieldElement />');
-    expect(contents).toContain('(click)="onToggle(row)"');
+    // `toggle` names a native DOM event, so its output is `ufToggle` (ADR-0056) and the setup's
+    // `toggle` keeps its name.
+    expect(contents).toContain('(click)="toggle(row)"');
+    expect(contents).toContain(
+      lines(
+        "  protected toggle(id: string) {",
+        "    const isOpen = this.open().includes(id);",
+        "    this.open.set(isOpen ? this.open().filter((each) => each !== id) : [...this.open(), id]);",
+        "    this.ufToggle.emit([id, !isOpen]);",
+      ),
+    );
     expect(contents).toContain(
       lines(
         "  protected onSave(event: SubmitEvent) {",

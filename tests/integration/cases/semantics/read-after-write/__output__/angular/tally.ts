@@ -5,6 +5,7 @@ import {
   ElementRef,
   Renderer2,
   inject,
+  input,
   output,
   signal,
 } from "@angular/core";
@@ -28,12 +29,12 @@ export class ClickCapture {
 @Component({
   selector: "uf-tally",
   imports: [ClickCapture],
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let count = this.count();
     @let trail = this.trail();
-    <section class="tally" aria-label="Tally">
+    <section class="tally" aria-label="Tally" [class]="this.class()" [style]="this.style()">
       <p role="status">Count: {{ count }}</p>
       <button type="button" (click)="addTwice()">Add two</button>
       <button type="button" (click)="addFive()">Add five</button>
@@ -49,6 +50,8 @@ export class ClickCapture {
   `,
 })
 export default class Tally {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly total = output<number>();
   readonly steps = output<number[]>();
   readonly logged = output<string[]>();

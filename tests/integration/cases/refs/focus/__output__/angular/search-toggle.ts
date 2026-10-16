@@ -1,17 +1,19 @@
-import { Component, ElementRef, viewChild } from "@angular/core";
+import { Component, ElementRef, input, viewChild } from "@angular/core";
 
 @Component({
   selector: "uf-search-toggle",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
-    <div class="search-toggle" role="search">
+    <div class="search-toggle" role="search" [class]="this.class()" [style]="this.style()">
       <button type="button" #trigger (click)="focusField()">Search</button>
       <input name="query" aria-label="Search the docs" #field (keydown)="returnFocus($event)" />
     </div>
   `,
 })
 export default class SearchToggle {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   private readonly field = viewChild<ElementRef<HTMLInputElement>>("field");
   private readonly trigger = viewChild<ElementRef<HTMLButtonElement>>("trigger");
 

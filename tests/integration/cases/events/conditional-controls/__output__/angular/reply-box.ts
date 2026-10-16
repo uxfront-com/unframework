@@ -5,6 +5,7 @@ import {
   ElementRef,
   Renderer2,
   inject,
+  input,
   output,
   signal,
 } from "@angular/core";
@@ -28,13 +29,13 @@ export class KeydownOnce {
 @Component({
   selector: "uf-reply-box",
   imports: [KeydownOnce],
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let started = this.started();
     @let suggesting = this.suggesting();
     @let accepted = this.accepted();
-    <section class="reply-box" aria-label="Reply">
+    <section class="reply-box" aria-label="Reply" [class]="this.class()" [style]="this.style()">
       <label>Message<textarea name="message" (ufKeydownOnce)="onMessageKeydown($event)"></textarea></label>
       <p>{{ started ? "Started" : "Not started" }}</p>
       <label>Answer<textarea name="answer" (keydown)="onAnswerKeydown($event)"></textarea></label>
@@ -48,6 +49,8 @@ export class KeydownOnce {
   `,
 })
 export default class ReplyBox {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly started = signal(false);
   protected readonly suggesting = signal(false);
   protected readonly accepted = signal(0);

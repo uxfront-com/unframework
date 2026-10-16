@@ -1,4 +1,4 @@
-error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
   --> slots/fallback/Board.uf.tsx:6:7
    |
  6 |       <Notice label="Build">
@@ -9,7 +9,7 @@ error[UF1002] (angular): The angular target does not emit component yet: composi
    |
    = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (angular): The angular target does not emit `defineSlots` yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit `defineSlots` yet: composition lands in M3.
  --> slots/fallback/Notice.uf.tsx:5:3
   |
 5 |   const slots = defineSlots<{ default?(): Element; action?(): Element }>();

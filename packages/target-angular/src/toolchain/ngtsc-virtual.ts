@@ -168,13 +168,26 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
         // and load the virtual modules it names before this module compiles (ADR-0053). A child
         // whose source the plugin holds is loaded, or being loaded, already: that also ends a
         // cycle of imports.
+        const client =
+          this.environment.mode === "dev" && this.environment.config.consumer === "client";
         for (const [, fileName = ""] of code.matchAll(RELATIVE_IMPORT)) {
           if (COMPONENT_IMPORT.test(fileName)) continue;
           const resolved = await this.resolve(fileName, id);
           const child = resolved?.id.split("?")[0];
           if (!resolved || !child || !VIRTUAL_ID.test(child)) continue;
           children.set(childKey(id, fileName), child);
-          if (api!.getCompiled(child) === undefined) await this.load({ id: resolved.id });
+          if (api!.getCompiled(child) !== undefined) continue;
+          try {
+            await this.load({ id: resolved.id });
+          } catch (error) {
+            // A child that cannot load fails its parent with the child's reason (the golden
+            // guard's, say), which a page would otherwise get only as a failed fetch.
+            const reason = error instanceof Error ? error.message : String(error);
+            const message = `${id} imports ${fileName}, which failed to load:\n${reason}`;
+            if (!client) this.error(message);
+            this.environment.logger.error(message);
+            return { code: failingModule(message, exportedNames(code)), map: null };
+          }
         }
         const run = queue.then(() => compile(id, code));
         // The queue only orders compiles; each caller still gets its own outcome or error.
@@ -190,7 +203,7 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
           // A page gets a module that failed to transform only as "Failed to fetch dynamically
           // imported module", without the reason. Served to a browser, the module throws the
           // reason instead, so it reaches the test report; the server log keeps it too.
-          if (this.environment.mode === "dev" && this.environment.config.consumer === "client") {
+          if (client) {
             this.environment.logger.error(message);
             return { code: failingModule(message, compiled.exports), map: null };
           }
@@ -201,6 +214,13 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
       },
     },
   };
+}
+
+/** The values a module's code exports by name, for a module that stands in for it. */
+function exportedNames(code: string): string[] {
+  return [...code.matchAll(/^export\s+(?:default\s+)?(?:class|const|function)\s+(\w+)/gm)]
+    .filter(([whole]) => !/^export\s+default\b/.test(whole))
+    .map(([, name]) => name!);
 }
 
 /** The key of an import in `children`: the importing file and the specifier. */

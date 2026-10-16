@@ -12,12 +12,18 @@ export interface FileRowProps {
 
 @Component({
   selector: "uf-file-row",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let path = this.path();
     @let size = this.size();
-    <div class="file-row" role="group" [attr.aria-label]="path">
+    <div
+      class="file-row"
+      role="group"
+      [attr.aria-label]="path"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <span>{{ path }} ({{ size }} bytes)</span>
       <button type="button" (click)="refresh.emit()">Refresh</button>
       <button type="button" (click)="open.emit(path)">Open</button>
@@ -31,6 +37,8 @@ export interface FileRowProps {
 export default class FileRow {
   readonly path = input.required<string>();
   readonly size = input.required<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly refresh = output<void>();
   readonly open = output<string>();
   readonly move = output<[from: string, to: string]>();

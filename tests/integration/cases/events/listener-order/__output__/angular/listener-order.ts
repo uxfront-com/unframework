@@ -5,6 +5,7 @@ import {
   ElementRef,
   Renderer2,
   inject,
+  input,
   output,
   signal,
 } from "@angular/core";
@@ -60,12 +61,17 @@ export class WheelPassive {
 @Component({
   selector: "uf-listener-order",
   imports: [ClickCapture, ClickOnce, WheelPassive],
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let log = this.log();
     @let resets = this.resets();
-    <section class="listener-order" aria-label="Listener order">
+    <section
+      class="listener-order"
+      aria-label="Listener order"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <div class="toolbar" role="presentation" (click)="record('toolbar')">
         <button
           type="button"
@@ -111,6 +117,8 @@ export class WheelPassive {
   `,
 })
 export default class ListenerOrder {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly log = signal<string[]>([]);
   protected readonly resets = signal(0);
   protected readonly clickOnce = new WeakSet<EventTarget>();

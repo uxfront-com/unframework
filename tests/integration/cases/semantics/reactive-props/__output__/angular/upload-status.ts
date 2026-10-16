@@ -15,7 +15,7 @@ export interface UploadStatusProps {
 
 @Component({
   selector: "uf-upload-status",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let fileName = this.fileName();
@@ -25,10 +25,9 @@ export interface UploadStatusProps {
     @let error = this.error();
     <section
       class="upload"
-      [class]="'upload-' + state"
+      [class]="['upload-' + state, this.class()].join(' ')"
       [attr.aria-label]="'Upload of ' + fileName"
-      [style.color]="state === 'failed' ? '#8a1c1c' : '#1f3d5c'"
-      [style.--upload-percent]="percent"
+      [style]="{ color: state === 'failed' ? '#8a1c1c' : '#1f3d5c', '--upload-percent': percent, ...this.style() }"
     >
       <h2>{{ fileName }}</h2>
       <div
@@ -57,4 +56,6 @@ export default class UploadStatus {
   readonly percent = input.required<number>();
   readonly steps = input.required<UploadStep[]>();
   readonly error = input<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

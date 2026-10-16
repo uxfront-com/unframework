@@ -9,14 +9,14 @@ export interface FileTransferProps {
 
 @Component({
   selector: "uf-file-transfer",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let fileName = this.fileName();
     @let percent = this.percent();
     @let paused = this.paused();
     @let eta = this.eta();
-    <div class="file-transfer">
+    <div class="file-transfer" [class]="this.class()" [style]="this.style()">
       <svg class="file-transfer-progress" role="img" viewBox="0 0 36 36" width="36" height="36">
         <svg:title>{{ fileName }}: {{ percent }}% sent. {{ eta }}</svg:title>
         <circle cx="18" cy="18" r="16" fill="none" stroke="#0969da" stroke-width="4" />
@@ -33,4 +33,6 @@ export default class FileTransfer {
   readonly percent = input.required<number>();
   readonly paused = input.required<boolean>();
   readonly eta = input<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

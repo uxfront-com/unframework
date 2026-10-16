@@ -11,7 +11,7 @@ export interface OrderSummaryProps {
 
 @Component({
   selector: "uf-order-summary",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let customer = this.customer();
@@ -20,7 +20,12 @@ export interface OrderSummaryProps {
     @let quantity = this.quantity();
     @let discount = this.discount();
     @let coupon = this.coupon();
-    <section class="order-summary" aria-label="Order summary">
+    <section
+      class="order-summary"
+      aria-label="Order summary"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <h2>Order {{ String(orderNumber).padStart(6, "0") }}</h2>
       <p>Customer: {{ customer.trim().toUpperCase() }}</p>
       <p>{{ quantity + " item" + (quantity === 1 ? "" : "s") + " at " + unitPrice.toFixed(2) + " each" }}</p>
@@ -39,6 +44,8 @@ export default class OrderSummary {
   readonly quantity = input.required<number>();
   readonly discount = input.required<number>();
   readonly coupon = input<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly Math = Math;
   protected readonly String = String;
 }

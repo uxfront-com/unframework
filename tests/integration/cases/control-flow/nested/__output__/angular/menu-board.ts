@@ -20,12 +20,12 @@ export interface MenuBoardProps {
 
 @Component({
   selector: "uf-menu-board",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let courses = this.courses();
     @let closed = this.closed();
-    <div class="menu-board">
+    <div class="menu-board" [class]="this.class()" [style]="this.style()">
       @if (closed) {
         <p>The kitchen is closed.</p>
       } @else {
@@ -46,4 +46,6 @@ export interface MenuBoardProps {
 export default class MenuBoard {
   readonly courses = input.required<MenuCourse[]>();
   readonly closed = input.required<boolean>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

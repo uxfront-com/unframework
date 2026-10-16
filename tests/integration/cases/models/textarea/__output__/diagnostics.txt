@@ -1,11 +1,3 @@
-error[UF1002] (angular): The angular target does not emit two-way-binding yet: composition lands in M3.
- --> models/textarea/NoteEditor.uf.tsx:7:35
-  |
-7 |       <textarea aria-label="Text" v-model={note.value} />
-  |                                   ^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
  --> models/textarea/NoteEditor.uf.tsx:7:35
   |

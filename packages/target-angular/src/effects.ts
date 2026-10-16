@@ -215,7 +215,11 @@ function watchedSignal(source: WatchSource, plan: Plan): Binding | undefined {
   switch (form) {
     case "input":
     case "computed":
+    case "model":
       return binding;
+    case "context":
+    case "instance":
+    case "component":
     case "signal":
     case "linked":
     case "once":

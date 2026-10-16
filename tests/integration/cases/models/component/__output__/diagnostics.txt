@@ -1,4 +1,4 @@
-error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
  --> models/component/Order.uf.tsx:9:7
   |
 9 |       <Stepper label="Cups" v-model:value={cups.value} />
@@ -14,7 +14,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF1002] (angular): The angular target does not emit model yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit model yet: composition lands in M3.
  --> models/component/Stepper.uf.tsx:4:3
   |
 4 |   const value = defineModel<number>("value", { default: 0 });

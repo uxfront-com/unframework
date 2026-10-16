@@ -28,7 +28,7 @@ export interface AccountSummaryProps {
 
 @Component({
   selector: "uf-account-summary",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let loading = this.loading();
@@ -37,7 +37,12 @@ export interface AccountSummaryProps {
     @let storage = this.storage();
     @let plan = this.plan();
     @let seats = this.seats();
-    <section class="account-summary" aria-label="Account">
+    <section
+      class="account-summary"
+      aria-label="Account"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       @if (loading) {
         <p>Loading the account</p>
       } @else if (!member) {
@@ -91,4 +96,6 @@ export default class AccountSummary {
   readonly storage = input.required<number | string>();
   readonly plan = input.required<Plan>();
   readonly seats = input.required<(Seat | null)[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

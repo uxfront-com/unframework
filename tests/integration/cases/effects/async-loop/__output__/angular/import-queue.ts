@@ -18,12 +18,12 @@ export interface ImportQueueProps {
 
 @Component({
   selector: "uf-import-queue",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let status = this.status();
     @let attempts = this.attempts();
-    <section class="import-queue" aria-label="Import">
+    <section class="import-queue" aria-label="Import" [class]="this.class()" [style]="this.style()">
       <button type="button" (click)="importAll()">Import all</button>
       <p role="status">{{ status }}, {{ attempts }} attempts</p>
     </section>
@@ -31,7 +31,9 @@ export interface ImportQueueProps {
 })
 export default class ImportQueue implements OnInit {
   readonly files = input.required<string[]>();
-  readonly progress = output<[status: string, attempts: number]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
+  readonly ufProgress = output<[status: string, attempts: number]>();
   private readonly injector = inject(Injector);
   private readonly appRef = inject(ApplicationRef);
   protected readonly status = signal("idle");
@@ -50,7 +52,7 @@ export default class ImportQueue implements OnInit {
         const [nextStatus, nextAttempts] = current;
         lastValues = current;
         untracked(() => {
-          this.progress.emit([nextStatus, nextAttempts]);
+          this.ufProgress.emit([nextStatus, nextAttempts]);
         });
       },
       { injector: this.injector },

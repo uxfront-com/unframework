@@ -24,7 +24,7 @@ export interface ShipmentCardProps {
 
 @Component({
   selector: "uf-shipment-card",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let reference = this.reference();
@@ -35,7 +35,12 @@ export interface ShipmentCardProps {
     @let tracking = this.tracking();
     @let stops = this.stops();
     @let signature = this.signature();
-    <section class="shipment-card" [attr.aria-label]="reference">
+    <section
+      class="shipment-card"
+      [attr.aria-label]="reference"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <p [attr.id]="carrier?.id" [attr.title]="carrier?.title">Carrier</p>
       <p [attr.id]="eta?.id" [attr.title]="eta?.title">Estimated delivery</p>
       <p [attr.id]="parcel.tag?.id" [attr.title]="parcel.tag?.title">{{ parcel.label }}</p>
@@ -70,4 +75,6 @@ export default class ShipmentCard {
   readonly tracking = input.required<LabelAttributes>();
   readonly stops = input.required<(LabelAttributes | undefined)[]>();
   readonly signature = input<LabelAttributes>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

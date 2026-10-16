@@ -15,13 +15,13 @@ export interface CounterProps {
 
 @Component({
   selector: "uf-counter",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let step = this.step();
     @let count = this.count();
     @let doubled = this.doubled();
-    <div class="counter">
+    <div class="counter" [class]="this.class()" [style]="this.style()">
       <output>{{ count }}</output>
       @if (doubled > 10) {
         <span>Big</span>
@@ -37,7 +37,9 @@ export default class Counter implements OnInit {
   readonly step = input<number, number | undefined>(1, {
     transform: (value) => (value === undefined ? 1 : value),
   });
-  readonly change = output<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
+  readonly ufChange = output<number>();
   protected readonly count = linkedSignal(() => untracked(() => this.initial()));
   protected readonly doubled = computed(() => this.count() * 2);
 
@@ -48,6 +50,6 @@ export default class Counter implements OnInit {
 
   protected increment() {
     this.count.update((count) => count + this.step());
-    this.change.emit(this.count());
+    this.ufChange.emit(this.count());
   }
 }

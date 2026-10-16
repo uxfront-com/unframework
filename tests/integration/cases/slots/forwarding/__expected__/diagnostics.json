@@ -2,7 +2,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The angular target does not emit `defineSlots` yet: composition lands in M3.",
+    "message": "The qwik target does not emit `defineSlots` yet: composition lands in M3.",
     "file": "slots/forwarding/Box.uf.tsx",
     "start": {
       "line": 5,
@@ -14,12 +14,12 @@
       "column": 75,
       "offset": 194
     },
-    "target": "angular"
+    "target": "qwik"
   },
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The angular target does not emit `defineSlots` yet: composition lands in M3.",
+    "message": "The qwik target does not emit `defineSlots` yet: composition lands in M3.",
     "file": "slots/forwarding/Frame.uf.tsx",
     "start": {
       "line": 7,
@@ -31,7 +31,7 @@
       "column": 75,
       "offset": 257
     },
-    "target": "angular"
+    "target": "qwik"
   },
   {
     "code": "UF4001",
@@ -70,7 +70,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The angular target does not emit component yet: composition lands in M3.",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "slots/forwarding/Gallery.uf.tsx",
     "start": {
       "line": 6,
@@ -82,6 +82,6 @@
       "column": 15,
       "offset": 214
     },
-    "target": "angular"
+    "target": "qwik"
   }
 ]

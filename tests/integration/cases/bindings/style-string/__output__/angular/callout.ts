@@ -7,7 +7,7 @@ export interface CalloutProps {
 
 @Component({
   selector: "uf-callout",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let heading = this.heading();
@@ -15,7 +15,8 @@ export interface CalloutProps {
     <aside
       class="callout"
       [attr.aria-label]="heading"
-      style="--callout-accent: #1f4d7a; border-left: 4px solid var(--callout-accent); padding: 8px 12px; color: #1a1a1a"
+      [style]="{ '--callout-accent': '#1f4d7a', 'border-left': '4px solid var(--callout-accent)', padding: '8px 12px', color: '#1a1a1a', ...this.style() }"
+      [class]="this.class()"
     >
       <p style="margin: 0; font-weight: 700">{{ heading }}</p>
       <p style="margin: 4px 0 0">{{ body }}</p>
@@ -25,4 +26,6 @@ export interface CalloutProps {
 export default class Callout {
   readonly heading = input.required<string>();
   readonly body = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

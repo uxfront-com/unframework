@@ -29,7 +29,7 @@ export interface TaskBoardProps {
 
 @Component({
   selector: "uf-task-board",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let filters = this.filters();
@@ -42,7 +42,7 @@ export interface TaskBoardProps {
     @let finishedByKind = this.finishedByKind();
     @let byState = this.byState();
     @let progress = this.progress();
-    <section class="task-board" aria-label="Tasks">
+    <section class="task-board" aria-label="Tasks" [class]="this.class()" [style]="this.style()">
       <ol aria-label="Open">
         @for (task of open; track task.id) {
           <li
@@ -81,6 +81,8 @@ export interface TaskBoardProps {
 })
 export default class TaskBoard implements OnInit {
   readonly initial = input.required<Task[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   private readonly notes = viewChild<ElementRef<HTMLTextAreaElement>>("notes");
   private readonly tasks = linkedSignal(() => untracked(() => this.initial()));
   protected readonly filters = signal<Filters>({ query: "", tags: [] });

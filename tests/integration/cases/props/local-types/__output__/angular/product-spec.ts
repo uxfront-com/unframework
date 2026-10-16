@@ -16,14 +16,19 @@ export interface ProductSpecProps {
 
 @Component({
   selector: "uf-product-spec",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let name = this.name();
     @let availability = this.availability();
     @let size = this.size();
     @let finishes = this.finishes();
-    <section class="product-spec" [attr.aria-label]="name">
+    <section
+      class="product-spec"
+      [attr.aria-label]="name"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <h2>{{ name }}</h2>
       <dl>
         <dt>Availability</dt>
@@ -44,4 +49,6 @@ export default class ProductSpec {
   readonly availability = input.required<Availability>();
   readonly size = input.required<{ width: number; depth: number; unit: "cm" | "in" }>();
   readonly finishes = input.required<Finish[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

@@ -7,6 +7,7 @@ import {
   computed,
   effect,
   inject,
+  input,
   output,
   signal,
   untracked,
@@ -14,12 +15,12 @@ import {
 
 @Component({
   selector: "uf-search-pager",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let query = this.query();
     @let page = this.page();
-    <section class="search-pager" aria-label="Search">
+    <section class="search-pager" aria-label="Search" [class]="this.class()" [style]="this.style()">
       <p
         role="status"
       >{{ query === "" ? "All results" : "Results for " + query }}, page {{ page }}</p>
@@ -31,6 +32,8 @@ import {
   `,
 })
 export default class SearchPager implements OnInit, OnDestroy {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly queryRun = output<[value: string, previous: string]>();
   readonly pageRun = output<[value: number, previous: number]>();
   readonly cleanedUp = output<string>();

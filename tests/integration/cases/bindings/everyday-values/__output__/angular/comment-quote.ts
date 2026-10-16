@@ -7,12 +7,12 @@ export interface CommentQuoteProps {
 
 @Component({
   selector: "uf-comment-quote",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let author = this.author();
     @let comment = this.comment();
-    <figure class="comment-quote">
+    <figure class="comment-quote" [class]="this.class()" [style]="this.style()">
       <blockquote style="margin: 0; padding: 0">
         <p dir="auto">{{ comment }}</p>
       </blockquote>
@@ -23,4 +23,6 @@ export interface CommentQuoteProps {
 export default class CommentQuote {
   readonly author = input.required<string>();
   readonly comment = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

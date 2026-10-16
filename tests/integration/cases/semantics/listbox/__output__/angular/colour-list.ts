@@ -1,12 +1,12 @@
-import { Component, signal } from "@angular/core";
+import { Component, input, signal } from "@angular/core";
 
 @Component({
   selector: "uf-colour-list",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let colour = this.colour();
-    <section aria-label="Colours">
+    <section aria-label="Colours" [class]="this.class()" [style]="this.style()">
       <select size="3" aria-label="Colour" (change)="onColourChange($event)">
         <option value="red">Red</option>
         <option value="green">Green</option>
@@ -17,6 +17,8 @@ import { Component, signal } from "@angular/core";
   `,
 })
 export default class ColourList {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly colour = signal("none");
 
   protected onColourChange(event: Event) {

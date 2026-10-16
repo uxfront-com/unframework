@@ -1,4 +1,4 @@
-error[UF1002] (angular): The angular target does not emit dynamic-component yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit dynamic-component yet: composition lands in M3.
  --> dynamic/prop-union/Heading.uf.tsx:3:5
   |
 3 |     <component is={tag} class="heading">
@@ -9,7 +9,7 @@ error[UF1002] (angular): The angular target does not emit dynamic-component yet:
   |
   = see: https://unframework.dev/diagnostics/UF1002
 
-error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
+error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
  --> dynamic/prop-union/Outline.uf.tsx:6:7
   |
 6 |       <Heading tag="h1" text="Guide" />

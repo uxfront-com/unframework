@@ -9,14 +9,19 @@ export interface CheckoutTotalProps {
 
 @Component({
   selector: "uf-checkout-total",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let subtotal = this.subtotal();
     @let method = this.method();
     @let shipping = this.shipping();
     @let total = this.total();
-    <section class="checkout-total" aria-label="Order total">
+    <section
+      class="checkout-total"
+      aria-label="Order total"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <p>Subtotal: {{ formatCents(subtotal) }}</p>
       <p>Shipping: {{ formatCents(shipping) }}</p>
       <p role="status">Total: {{ total }}</p>
@@ -35,6 +40,8 @@ export interface CheckoutTotalProps {
 })
 export default class CheckoutTotal {
   readonly subtotal = input.required<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly shippingChange = output<ShippingMethod>();
   private readonly rates = { standard: 0, express: 1200 };
   protected readonly method = signal<ShippingMethod>("standard");

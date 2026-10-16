@@ -16,13 +16,18 @@ export interface TemperatureProps {
 
 @Component({
   selector: "uf-temperature",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let celsius = this.celsius();
     @let fahrenheit = this.fahrenheit();
     @let level = this.level();
-    <figure class="temperature" [attr.data-level]="level">
+    <figure
+      class="temperature"
+      [attr.data-level]="level"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <p>{{ celsius }} °C</p>
       <p>{{ fahrenheit }} °F</p>
       <figcaption>Feels {{ level }}</figcaption>
@@ -31,6 +36,8 @@ export interface TemperatureProps {
 })
 export default class Temperature implements OnInit {
   readonly celsius = input.required<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly reading = output<[celsius: number, previous: number]>();
   private readonly injector = inject(Injector);
   protected readonly fahrenheit = computed(() => Math.round((this.celsius() * 9) / 5 + 32));

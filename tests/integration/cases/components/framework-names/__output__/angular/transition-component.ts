@@ -1,11 +1,14 @@
-import { Component } from "@angular/core";
+import { Component, input } from "@angular/core";
 
 @Component({
   selector: "uf-transition-component",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
-    <p class="note">Plain child</p>
+    <p class="note" [class]="this.class()" [style]="this.style()">Plain child</p>
   `,
 })
-export default class TransitionComponent {}
+export default class TransitionComponent {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
+}

@@ -9,14 +9,19 @@ export interface ShippingLabelProps {
 
 @Component({
   selector: "uf-shipping-label",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let recipient = this.recipient();
     @let street = this.street();
     @let city = this.city();
     @let postcode = this.postcode();
-    <article class="shipping-label" aria-label="Shipping label">
+    <article
+      class="shipping-label"
+      aria-label="Shipping label"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <p><strong>To:</strong>&ngsp;{{ recipient }}</p>
       <p>
         <span class="shipping-label-city">{{ city }}</span>&ngsp;<span
@@ -39,4 +44,6 @@ export default class ShippingLabel {
   readonly street = input.required<string>();
   readonly city = input.required<string>();
   readonly postcode = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

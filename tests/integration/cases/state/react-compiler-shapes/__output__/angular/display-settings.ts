@@ -1,4 +1,4 @@
-import { Component, output, signal } from "@angular/core";
+import { Component, input, output, signal } from "@angular/core";
 
 export interface Settings {
   theme: string;
@@ -12,14 +12,19 @@ interface SaveReply {
 
 @Component({
   selector: "uf-display-settings",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let settings = this.settings();
     @let saving = this.saving();
     @let label = this.label();
     @let failure = this.failure();
-    <section class="display-settings" aria-label="Display">
+    <section
+      class="display-settings"
+      aria-label="Display"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <p role="status">Theme {{ settings.theme }}, size {{ settings.size }}</p>
       <button type="button" (click)="onDark()">Dark</button>
       <button type="button" (click)="grow()">Larger</button>
@@ -35,6 +40,8 @@ interface SaveReply {
   `,
 })
 export default class DisplaySettings {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly applied = output<[theme: string, size: number]>();
   readonly saved = output<number>();
   protected readonly settings = signal<Settings>({ theme: "light", size: 14 });

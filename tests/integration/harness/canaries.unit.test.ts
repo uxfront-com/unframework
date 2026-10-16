@@ -636,7 +636,7 @@ describe("canaries", () => {
     expect(root("qwik")).toMatch(/^<section\s+className="uf-canary"\s+class=/);
     expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
     expect(root("svelte")).toMatch(/^<section style:uf-canary="1" class=/);
-    expect(root("angular")).toMatch(/^<section \*ngIf="true" class=/);
+    expect(root("angular")).toMatch(/^<section \*ngIf="true"\s+class=/);
     expect(root("astro")).toMatch(/^<section set:html="uf-canary" class:list=/);
   });
 
@@ -661,6 +661,8 @@ describe("canaries", () => {
       "  readonly tasks = input.required<any>();",
       "  readonly done = input.required<any>();",
       '  readonly tone = input<any>("info", {',
+      "  readonly class = input<any>();",
+      "  readonly style = input<any>();",
     ]);
   });
 
@@ -696,6 +698,8 @@ describe("canaries", () => {
     expect(await lines("angular")).toEqual([
       "  readonly path = input.required<any>();",
       "  readonly size = input.required<any>();",
+      "  readonly class = input<any>();",
+      "  readonly style = input<any>();",
       "  readonly refresh = output<any>();",
       "  readonly open = output<any>();",
       "  readonly move = output<any>();",
@@ -736,7 +740,8 @@ describe("canaries", () => {
       const { outputs } = await compileWith("L10-root-inverted", target);
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(0\.8\)/g), target).toHaveLength(1);
-      // React's, Qwik's and Astro's roots also take a consumer's style, after their own (ADR-0054).
+      // Angular binds the root's style, so that it can merge the consumer's (ADR-0056). React's,
+      // Qwik's and Astro's roots also take a consumer's style, after their own (ADR-0054).
       const spread =
         target === "react" || target === "qwik"
           ? ", \\.\\.\\.style"
@@ -744,9 +749,11 @@ describe("canaries", () => {
             ? "(?:, \\.\\.\\.\\w+)?"
             : "";
       expect(contents, target).toMatch(
-        new RegExp(
-          `<section\\b[^>]*\\bstyle=(?:"filter: invert\\(0\\.8\\)"|\\{\\{ filter: "invert\\(0\\.8\\)"${spread} \\}\\}|\\{mergeStyle\\(\\{ filter: "invert\\(0\\.8\\)" \\}, style\\)\\}|\\{\\{ \\.\\.\\.\\{ filter: "invert\\(0\\.8\\)" \\}, \\.\\.\\.props\\.style \\}\\})`,
-        ),
+        target === "angular"
+          ? /<section\b[^>]*\[style\]="\{ filter: 'invert\(0\.8\)'/
+          : new RegExp(
+              `<section\\b[^>]*\\bstyle=(?:"filter: invert\\(0\\.8\\)"|\\{\\{ filter: "invert\\(0\\.8\\)"${spread} \\}\\}|\\{mergeStyle\\(\\{ filter: "invert\\(0\\.8\\)" \\}, style\\)\\}|\\{\\{ \\.\\.\\.\\{ filter: "invert\\(0\\.8\\)" \\}, \\.\\.\\.props\\.style \\}\\})`,
+            ),
       );
     }
   });

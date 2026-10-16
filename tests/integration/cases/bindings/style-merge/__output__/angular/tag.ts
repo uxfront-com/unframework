@@ -9,7 +9,7 @@ export interface TagProps {
 
 @Component({
   selector: "uf-tag",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let label = this.label();
@@ -18,11 +18,8 @@ export interface TagProps {
     @let indent = this.indent();
     <span
       class="tag"
-      style="display: inline-block; padding: 2px 8px; border-style: solid; border-width: 1px"
-      [style.border-color]="colour ?? '#5a5a5a'"
-      [style.color]="colour"
-      [style.font-weight]="weight"
-      [style.margin-left]="indent"
+      [style]="{ display: 'inline-block', padding: '2px 8px', 'border-style': 'solid', 'border-width': '1px', 'border-color': colour ?? '#5a5a5a', color: colour, 'font-weight': weight, 'margin-left': indent, ...this.style() }"
+      [class]="this.class()"
     >{{ label }}</span>
   `,
 })
@@ -31,4 +28,6 @@ export default class Tag {
   readonly colour = input<string>();
   readonly weight = input<number>();
   readonly indent = input<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }
