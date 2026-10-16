@@ -8,7 +8,7 @@ let nextId = 0;
 
 @Component({
   selector: "uf-city-picker",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let open = this.open();
@@ -16,7 +16,7 @@ let nextId = 0;
     @let chosen = this.chosen();
     @let notes = this.notes();
     @let matches = this.matches();
-    <section class="city-picker" aria-label="Trip">
+    <section class="city-picker" aria-label="Trip" [class]="this.class()" [style]="this.style()">
       <form role="search" aria-label="Destination" (submit)="onDestinationSubmit($event)">
         <label>City<input
           type="search"
@@ -59,6 +59,8 @@ let nextId = 0;
 })
 export default class CityPicker {
   readonly cities = input.required<string[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly chose = output<string>();
   readonly noted = output<string>();
   protected readonly listId = `uf-id-city-picker-${nextId++}`;

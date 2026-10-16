@@ -1,14 +1,19 @@
-import { Component, ElementRef, signal, viewChild } from "@angular/core";
+import { Component, ElementRef, input as input_1, signal, viewChild } from "@angular/core";
 
 @Component({
   selector: "uf-shirt-order",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let size = this.size();
     @let quantity = this.quantity();
     @let note = this.note();
-    <section class="shirt-order" aria-label="Shirt order">
+    <section
+      class="shirt-order"
+      aria-label="Shirt order"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <p role="status">{{ quantity + " x size " + size }}</p>
       <div role="group" aria-label="Size">
         <button
@@ -38,6 +43,8 @@ import { Component, ElementRef, signal, viewChild } from "@angular/core";
   `,
 })
 export default class ShirtOrder {
+  readonly class = input_1<string>();
+  readonly style = input_1<Record<string, string | null | undefined>>();
   private readonly noteField = viewChild<ElementRef<HTMLInputElement>>("noteField");
   protected readonly size = signal("M");
   protected readonly quantity = signal(1);

@@ -1,14 +1,14 @@
-import { Component, ElementRef, output, signal, viewChild } from "@angular/core";
+import { Component, ElementRef, input, output, signal, viewChild } from "@angular/core";
 
 @Component({
   selector: "uf-note-editor",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let saves = this.saves();
     @let lastKey = this.lastKey();
     @let tags = this.tags();
-    <section class="note-editor" aria-label="Note">
+    <section class="note-editor" aria-label="Note" [class]="this.class()" [style]="this.style()">
       <button type="button" (click)="save()">Save</button>
       <label>Title<input name="title" (keydown)="recordKey($event)" /></label>
       <label>Body<textarea name="body" (keydown)="recordKey($event)"></textarea></label>
@@ -26,6 +26,8 @@ import { Component, ElementRef, output, signal, viewChild } from "@angular/core"
   `,
 })
 export default class NoteEditor {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly saved = output<number>();
   readonly tagged = output<[tag: string, via: string]>();
   private readonly tagField = viewChild<ElementRef<HTMLInputElement>>("tagField");

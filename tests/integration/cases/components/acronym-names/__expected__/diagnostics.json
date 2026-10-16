@@ -19,23 +19,6 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The angular target does not emit component yet: composition lands in M3.",
-    "file": "components/acronym-names/Profile.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 7,
-      "offset": 168
-    },
-    "end": {
-      "line": 9,
-      "column": 90,
-      "offset": 251
-    },
-    "target": "angular"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
     "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "components/acronym-names/Profile.uf.tsx",
     "start": {

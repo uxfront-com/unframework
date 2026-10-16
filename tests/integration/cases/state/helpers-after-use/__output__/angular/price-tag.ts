@@ -18,14 +18,14 @@ export interface PriceTagProps {
 
 @Component({
   selector: "uf-price-tag",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let unit = this.unit();
     @let summary = this.summary();
     @let total = this.total();
     @let last = this.last();
-    <section class="price-tag" aria-label="Price">
+    <section class="price-tag" aria-label="Price" [class]="this.class()" [style]="this.style()">
       <p>Unit: {{ unit }}</p>
       <p role="status">{{ summary }}</p>
       <p>Total: {{ total }}</p>
@@ -37,6 +37,8 @@ export interface PriceTagProps {
 })
 export default class PriceTag implements OnInit {
   readonly price = input.required<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   private readonly injector = inject(Injector);
   private readonly quantity = signal(1);
   protected readonly unit = linkedSignal(() => untracked(() => this.formatCents(this.price())));

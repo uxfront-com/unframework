@@ -8,7 +8,7 @@ export interface OrderSummaryProps {
 
 @Component({
   selector: "uf-order-summary",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let quantity = this.quantity();
@@ -16,7 +16,13 @@ export interface OrderSummaryProps {
     @let tax = this.tax();
     @let total = this.total();
     @let tier = this.tier();
-    <section class="order-summary" aria-label="Order summary" [attr.data-tier]="tier">
+    <section
+      class="order-summary"
+      aria-label="Order summary"
+      [attr.data-tier]="tier"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <p role="status">Quantity: {{ quantity }}</p>
       <button
         type="button"
@@ -33,6 +39,8 @@ export interface OrderSummaryProps {
 export default class OrderSummary {
   readonly price = input.required<number>();
   readonly taxRate = input.required<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly quantity = signal(1);
   protected readonly subtotal = computed(() => this.quantity() * this.price());
   protected readonly tax = computed(() => Math.round(this.subtotal() * this.taxRate()));

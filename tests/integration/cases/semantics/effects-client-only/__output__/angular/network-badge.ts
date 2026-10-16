@@ -6,13 +6,14 @@ import {
   computed,
   effect,
   inject,
+  input,
   signal,
   untracked,
 } from "@angular/core";
 
 @Component({
   selector: "uf-network-badge",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let online = this.online();
@@ -21,10 +22,14 @@ import {
       class="network-badge"
       role="status"
       [attr.data-checked]="online === undefined ? 'no' : 'yes'"
+      [class]="this.class()"
+      [style]="this.style()"
     >{{ label }}</p>
   `,
 })
 export default class NetworkBadge implements OnInit {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   private readonly injector = inject(Injector);
   protected readonly online = signal<boolean | undefined>(undefined);
   protected readonly label = signal("Checking the connection");

@@ -21,14 +21,14 @@ export interface BallotProps {
 
 @Component({
   selector: "uf-ballot",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let label = this.label();
     @let choices = this.choices();
     @let votes = this.votes();
     @let picked = this.picked();
-    <section class="ballot" [attr.aria-label]="label">
+    <section class="ballot" [attr.aria-label]="label" [class]="this.class()" [style]="this.style()">
       <p role="status">{{ votes }} votes left</p>
       <p>Picked: {{ picked }}</p>
       <ul aria-label="Choices">
@@ -48,6 +48,8 @@ export default class Ballot implements OnInit {
     transform: (value) => (value === undefined ? "Vote" : value),
   });
   readonly choices = input.required<string[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly voted = output<[remaining: number, text: string]>();
   readonly moved = output<string>();
   readonly report = output<string>();

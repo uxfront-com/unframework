@@ -8,7 +8,7 @@ export interface StatusPillProps {
 
 @Component({
   selector: "uf-status-pill",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let status = this.status();
@@ -16,7 +16,8 @@ export interface StatusPillProps {
     @let level = this.level();
     <span
       class="pill"
-      [class]="['pill-' + status, 'pill-' + size, 'pill-level-' + level].join(' ')"
+      [class]="['pill-' + status, 'pill-' + size, 'pill-level-' + level, this.class()].join(' ')"
+      [style]="this.style()"
     >{{ status === "active" ? "Active" : status === "paused" ? "Paused" : "Archived" }}{{ level === 3 ? " (critical)" : "" }}</span>
   `,
 })
@@ -28,4 +29,6 @@ export default class StatusPill {
   readonly level = input<1 | 2 | 3, 1 | 2 | 3 | undefined>(1, {
     transform: (value) => (value === undefined ? 1 : value),
   });
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

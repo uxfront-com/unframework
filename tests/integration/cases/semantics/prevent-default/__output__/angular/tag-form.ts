@@ -1,13 +1,19 @@
-import { Component, ElementRef, output, signal, viewChild } from "@angular/core";
+import { Component, ElementRef, input as input_1, output, signal, viewChild } from "@angular/core";
 
 @Component({
   selector: "uf-tag-form",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let tags = this.tags();
     @let helpOpen = this.helpOpen();
-    <form class="tag-form" aria-label="Tags" (submit)="addTag($event)">
+    <form
+      class="tag-form"
+      aria-label="Tags"
+      (submit)="addTag($event)"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <label>New tag<input
         name="tag"
         #field
@@ -28,6 +34,8 @@ import { Component, ElementRef, output, signal, viewChild } from "@angular/core"
   `,
 })
 export default class TagForm {
+  readonly class = input_1<string>();
+  readonly style = input_1<Record<string, string | null | undefined>>();
   readonly tagsChange = output<string[]>();
   private readonly field = viewChild<ElementRef<HTMLInputElement>>("field");
   protected readonly tags = signal<string[]>([]);

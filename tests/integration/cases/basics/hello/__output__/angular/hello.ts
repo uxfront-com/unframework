@@ -1,11 +1,14 @@
-import { Component } from "@angular/core";
+import { Component, input } from "@angular/core";
 
 @Component({
   selector: "uf-hello",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
-    <p class="greeting">Hello, world!</p>
+    <p class="greeting" [class]="this.class()" [style]="this.style()">Hello, world!</p>
   `,
 })
-export default class Hello {}
+export default class Hello {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
+}

@@ -6,12 +6,17 @@ export interface WelcomeBannerProps {
 
 @Component({
   selector: "uf-welcome-banner",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let name = this.name();
     @let greeting = this.greeting();
-    <section class="welcome-banner" aria-label="Welcome">
+    <section
+      class="welcome-banner"
+      aria-label="Welcome"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <h2>{{ greeting }}</h2>
       <p>Signed in as {{ name }}</p>
       <ul>
@@ -24,6 +29,8 @@ export interface WelcomeBannerProps {
 })
 export default class WelcomeBanner implements OnInit {
   readonly name = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly greeting = computed(() => untracked(() => `Welcome, ${this.name()}`));
   protected readonly tips = ["Set up your profile", "Invite your team"];
 

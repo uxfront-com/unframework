@@ -10,7 +10,7 @@ export interface ActionButtonProps {
 
 @Component({
   selector: "uf-action-button",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let label = this.label();
@@ -21,7 +21,8 @@ export interface ActionButtonProps {
     <button
       type="button"
       class="button"
-      [class]="['button-' + size, primary ? 'button-primary' : null, busy ? 'is-busy' : null, busy ? 'button-waiting' : null, badge ? 'has-badge' : null, primary ? 'solid' : 'outline'].join(' ')"
+      [class]="['button-' + size, primary ? 'button-primary' : null, busy ? 'is-busy' : null, busy ? 'button-waiting' : null, badge ? 'has-badge' : null, primary ? 'solid' : 'outline', this.class()].join(' ')"
+      [style]="this.style()"
     >{{ label }}</button>
   `,
 })
@@ -33,4 +34,6 @@ export default class ActionButton {
     transform: (value) => (value === undefined ? false : value),
   });
   readonly badge = input.required<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

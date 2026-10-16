@@ -15,7 +15,7 @@ export interface FilterPanelProps {
 
 @Component({
   selector: "uf-filter-panel",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let heading = this.heading();
@@ -33,6 +33,8 @@ export interface FilterPanelProps {
       [attr.aria-label]="heading"
       [attr.data-category]="category"
       data-layout="stacked"
+      [class]="this.class()"
+      [style]="this.style()"
     >
       <button
         type="button"
@@ -77,4 +79,6 @@ export default class FilterPanel {
   readonly loading = input.required<boolean>();
   readonly invalid = input<boolean>();
   readonly current = input<"page" | "step">();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

@@ -1,7 +1,7 @@
 import {
+  angularDialect,
   codeNames,
   codeKind,
-  compositionUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
@@ -11,19 +11,32 @@ import {
   Placeholders,
   printExpression,
   printProgram,
+  rewriteCode,
   typeDeclarationCode,
   typeNames,
 } from "@unframework/codegen";
-import type { EmitContext, OutputFile, Target } from "@unframework/codegen";
+import type { EmitContext, OutputFile, RewriteRules, Target } from "@unframework/codegen";
 import { codeOf, functionsOf } from "@unframework/ir";
-import type { UfComponent, UfModule } from "@unframework/ir";
+import type { Span, UfComponent, UfModule } from "@unframework/ir";
 
+import {
+  firstUse,
+  keyOf,
+  planComposition,
+  refObjectCode,
+  slotDirectiveCode,
+  tokenType,
+} from "./composition.ts";
+import type { Composition } from "./composition.ts";
 import { directiveCode } from "./directives.ts";
 import { planListeners } from "./listeners.ts";
 import { classMembers } from "./members.ts";
-import { bindingById, planComponent } from "./plan.ts";
+import { planModels } from "./models.ts";
+import { outputName } from "./outputs.ts";
+import { ANGULAR_MEMBERS, bindingById, planComponent, slotQuery } from "./plan.ts";
+import type { Plan } from "./plan.ts";
 import { classRules } from "./rules.ts";
-import { template, templateReads } from "./template.ts";
+import { fallthroughRoot, template, templateReads } from "./template.ts";
 import { declaredTypes } from "./types.ts";
 
 /** The note the emulated cells share: why a listener's option needs a directive. */
@@ -149,28 +162,39 @@ export const angular: Target = defineTarget({
     },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // Composition's cells are declared before this target emits it (ADR-0055): until M3's lane
-    // for Angular lands, a component that uses it is reported, never emitted without it (P2).
-    const composition = compositionUse(context.module, component);
-    if (composition) {
-      context.report({
-        code: "UF1002",
-        severity: "error",
-        message: `The angular target does not emit ${composition.what} yet: composition lands in M3.`,
-        span: composition.span,
-      });
-      return [];
-    }
-    return [emitComponent(component, context.module)];
+    return [emitComponent(component, context)];
   },
 });
 
 export default angular;
 
 /** A component's output file. */
-function emitComponent(component: UfComponent, module: UfModule): OutputFile {
+function emitComponent(component: UfComponent, context: EmitContext): OutputFile {
+  const { module } = context;
   const plan = planComponent(component, module);
   const { imports } = plan;
+  const composition = planComposition(plan);
+  // Angular matches a child by its selector alone, so two children of one name are reported
+  // (UF1104), as two names that differ only in case are: rename one of them.
+  for (const [local, selector] of composition.clashes) {
+    context.report({
+      code: "UF1104",
+      severity: "error",
+      message: `\`${local}\` is written \`<${selector}>\` on Angular, as another component of its name is: Angular would match both. Rename one of them.`,
+      span: firstUse(component, local),
+    });
+  }
+  // A slot's directive selects its component's name and the slot's: two pairs can give one
+  // attribute (UF1104), so a template that fills both slots would match both directives.
+  for (const { fill, child, attribute, other } of composition.slotClashes) {
+    context.report({
+      code: "UF1104",
+      severity: "error",
+      message: `${child} is filled through \`${attribute}\` on Angular, as ${other} is: Angular would match both. Rename one of the slots.`,
+      span: fill.span,
+    });
+  }
+  const models = planModels(plan);
   // The module's types keep their names, which consumers import. Angular's own names come
   // next: its compiler accepts a signal input only in a class whose decorator is imported as
   // `Component` (NG8110 otherwise), so a component named `Component` takes another name
@@ -185,13 +209,31 @@ function emitComponent(component: UfComponent, module: UfModule): OutputFile {
   const nextTick = callsNextTick ? plan.members.claim("nextTick") : undefined;
   const rules = classRules(plan, nextTick);
   const closure = componentTypes(component, module);
-  const listeners = planListeners(plan, nextTick);
+  const listeners = planListeners(plan, nextTick, models.writes);
   const reads = templateReads(plan, listeners);
   const templateMembers = new Set<string>(
     [...reads.read, ...reads.keyed, ...listeners.members].map((id) => bindingById(plan, id).name),
   );
   for (const method of listeners.methods) templateMembers.add(method.name);
   for (const guard of listeners.guards) templateMembers.add(guard);
+  for (const slot of reads.slots) templateMembers.add(slotQuery(slot));
+  // A consumer's `class` and `style` fall through to a root element or component, through
+  // inputs; the host clears both for a component that takes them or opts out (ADR-0056).
+  // A root Angular can bind nothing on (`{{` in an attribute, ADR-0037) takes neither.
+  const root = fallthroughRoot(component.render);
+  const fallthrough =
+    component.inheritAttrs !== false &&
+    root !== undefined &&
+    (root.kind === "Component" || angularDialect.literalRegion?.(root) === undefined);
+  const clearsHost = fallthrough || component.inheritAttrs === false;
+  reportApiClashes(component, composition, fallthrough, context);
+  const usesRefObject = component.setup.some(
+    (item) =>
+      (item.kind === "Provide" || (item.kind === "Inject" && item.fallback)) &&
+      keyOf(plan, item.key).ref,
+  );
+  const refObject = usesRefObject ? imports.claim("refObject") : undefined;
+  const provided = providers(plan, rules, composition, className, refObject);
   const nextId = component.setup.some((item) => item.kind === "Id")
     ? imports.claim("nextId")
     : undefined;
@@ -208,48 +250,273 @@ function emitComponent(component: UfComponent, module: UfModule): OutputFile {
     ...(listeners.once === undefined ? {} : { once: listeners.once }),
     ...(nextTick === undefined ? {} : { nextTick }),
     ...(nextId === undefined ? {} : { nextId }),
+    ...(refObject === undefined ? {} : { refObject }),
+    slots: composition.slots,
+    fallthrough,
+    keyNames: composition.keyNames,
+    external: provided.external,
+    helpers: models.helpers,
+    ...(models.server === undefined ? {} : { server: models.server }),
   });
 
   type Entry = Parameters<typeof js.objectExpression>[0][number];
   const metadata = js.objectExpression([
     ["selector", js.stringLiteral(`uf-${kebabCase(component.name)}`)],
-    ...(directives.length
+    ...(composition.imports.length || directives.length
       ? [
           [
             "imports",
             js.arrayExpression(
-              listeners.directives.map(({ className: name }) => js.identifier(name)),
+              [
+                ...composition.imports,
+                ...listeners.directives.map(({ className: name }) => name),
+              ].map((name) => js.identifier(name)),
             ),
           ] satisfies Entry,
         ]
       : []),
-    ["host", js.objectExpression([["style", js.stringLiteral("display: contents")]])],
+    ...(provided.code.length
+      ? [
+          [
+            "providers",
+            js.arrayExpression(provided.code.map((code) => placeholders.expression(code))),
+          ] satisfies Entry,
+        ]
+      : []),
+    [
+      "host",
+      clearsHost
+        ? js.objectExpression([
+            ["[attr.class]", js.stringLiteral("null")],
+            ["[attr.style]", js.stringLiteral("'display: contents;'")],
+          ])
+        : js.objectExpression([["style", js.stringLiteral("display: contents")]]),
+    ],
     ["preserveWhitespaces", js.booleanLiteral(false)],
-    ["template", js.templateLiteral(`\n${template(plan, listeners, reads)}\n  `)],
+    [
+      "template",
+      js.templateLiteral(
+        `\n${template(plan, listeners, reads, composition, models, fallthrough)}\n  `,
+      ),
+    ],
   ]);
   // Printed apart from the class: oxc-codegen puts a class's decorators after `export`, and
   // Angular code puts them first.
-  const decorator = `@${printExpression(js.callExpression(js.identifier(decoratorName), [metadata]))}`;
+  const decorator = () =>
+    `@${printExpression(js.callExpression(js.identifier(decoratorName), [metadata]))}`;
   const statements = exportDeclaration(
     className,
     js.classDeclaration(className, [], members, { implements: interfaces }),
     exportsOf(component.name, module.exports),
   );
   const types = declaredTypes(closure, typeRoots(component, module));
+  // A slot's directive is exported under the name its consumers compute (`CardTitle`), which
+  // nothing else the file exports may take: a type, a key or the component (UF2003).
+  const exported = new Map<string, string>([
+    ...types.filter((type) => type.exported).map(({ name }) => [name, `the type`] as const),
+    ...composition.keys.map(({ name }) => [name, `the injection key`] as const),
+    ...exportsOf(component.name, module.exports).map(
+      ({ name }) => [name, `the component`] as const,
+    ),
+  ]);
+  for (const { slot, exported: name } of composition.slots) {
+    const other = exported.get(name);
+    if (other === undefined) continue;
+    context.report({
+      code: "UF2003",
+      severity: "error",
+      message: `\`${name}\` names the directive of \`${component.name}\`'s \`${slot.name}\` slot on Angular, and ${other} \`${name}\` too. Rename one of them.`,
+      span: slot.span,
+    });
+  }
+  // The file's own declarations, before the imports print: each adds the imports it needs.
+  const declarations = [
+    ...composition.keys.map(
+      (key) =>
+        `export const ${key.name} = new ${imports.add("@angular/core", "InjectionToken")}<${tokenType(key)}>(${JSON.stringify(key.description)});\n`,
+    ),
+    ...(refObject === undefined ? [] : [refObjectCode(refObject)]),
+    ...[...models.helpers, ...models.support].map(({ code }) => `${code}\n`),
+    ...composition.slots.map((slot) =>
+      slotDirectiveCode(component.name, slot, imports.add("@angular/core", "Directive")),
+    ),
+  ];
+  if (models.helpers.some(({ code }) => code.includes("WritableSignal"))) {
+    imports.add("@angular/core", "WritableSignal", { type: true });
+  }
   const contents = placeholders.print(() =>
     [
       printProgram(js.program(imports.toDeclarations())),
       ...types.map((declaration) => `${typeDeclarationCode(declaration)}\n`),
       ...(nextId === undefined ? [] : [`let ${nextId} = 0;\n`]),
+      ...declarations,
       ...directives.map(
         ({ decorator: written, statements: declared }) =>
           `${written}\n${spaced(printProgram(js.program(declared)))}`,
       ),
-      decorator,
+      decorator(),
       spaced(printProgram(js.program(statements))),
     ].join("\n"),
   );
   return { path: `${kebabCase(component.name)}.ts`, contents };
+}
+
+/** A name of the component's API on Angular, and what the source names with it. */
+interface ApiName {
+  /** A class member, an input or an output. */
+  space: "member" | "input" | "output";
+  name: string;
+  /** What declares it, for a diagnostic: "the prop `label`". */
+  what: string;
+}
+
+/**
+ * Reports each name of the component's API that another name of it takes on Angular (UF2003).
+ * Angular declares a class member for each prop, output, exposed function, slot query and
+ * lifecycle hook, and names each input and output in a consumer's template: a model's own name
+ * and its `Change` output (`value`, `valueChange`), and an event's output name (`ufChange` for
+ * `change`). The source's names are the component's API, which the target keeps as they are,
+ * so a clash is reported at the later declaration rather than renamed. A binding is no API:
+ * ./plan.ts renames it.
+ */
+function reportApiClashes(
+  component: UfComponent,
+  composition: Composition,
+  fallthrough: boolean,
+  context: EmitContext,
+): void {
+  const taken = new Map<string, string>();
+  const key = ({ space, name }: ApiName) => `${space} ${name}`;
+  const declare = (names: ApiName[]) => {
+    for (const name of names) if (!taken.has(key(name))) taken.set(key(name), name.what);
+  };
+  for (const name of ANGULAR_MEMBERS) {
+    const what =
+      name === "constructor" ? "the class's constructor" : `the lifecycle hook \`${name}\``;
+    declare([{ space: "member", name, what }]);
+  }
+  for (const { slot } of composition.slots) {
+    const what = `the query of the \`${slot.name}\` slot`;
+    declare([{ space: "member", name: slotQuery(slot.name), what }]);
+  }
+  if (fallthrough) {
+    for (const name of ["class", "style"]) {
+      const what = `the input of the consumer's \`${name}\``;
+      declare([
+        { space: "member", name, what },
+        { space: "input", name, what },
+      ]);
+    }
+  }
+  const source: { kind: string; label: string; span: Span; names: ApiName[] }[] = [
+    ...component.props.map(({ name, span }) => {
+      const what = `the prop \`${name}\``;
+      return {
+        kind: "prop",
+        label: name,
+        span,
+        names: [
+          { space: "member" as const, name, what },
+          { space: "input" as const, name, what },
+        ],
+      };
+    }),
+    ...component.setup.flatMap((item) =>
+      item.kind === "Model"
+        ? [
+            {
+              kind: "model",
+              label: item.name,
+              span: item.span,
+              names: [
+                { space: "input" as const, name: item.name, what: `the model \`${item.name}\`` },
+                {
+                  space: "output" as const,
+                  name: `${item.name}Change`,
+                  what: `the output of the model \`${item.name}\``,
+                },
+              ],
+            },
+          ]
+        : [],
+    ),
+    ...(component.emits?.events ?? []).map(({ name: event, span }) => {
+      const name = outputName(event);
+      const what =
+        name === event
+          ? `the output of the event \`${event}\``
+          : `the output \`${name}\` of the event \`${event}\``;
+      return {
+        kind: "event",
+        label: event,
+        span,
+        names: [
+          { space: "member" as const, name, what },
+          { space: "output" as const, name, what },
+        ],
+      };
+    }),
+    ...(component.exposes?.functions ?? []).map((id) => {
+      const { name, span } = component.bindings.find((binding) => binding.id === id)!;
+      return {
+        kind: "function",
+        label: name,
+        span,
+        names: [{ space: "member" as const, name, what: `the exposed function \`${name}\`` }],
+      };
+    }),
+  ];
+  for (const { kind, label, span, names } of source) {
+    const clash = names.find((name) => taken.has(key(name)));
+    if (clash === undefined) {
+      declare(names);
+      continue;
+    }
+    const named = clash.name === label ? `\`${label}\`` : `\`${clash.name}\`, ${clash.what},`;
+    context.report({
+      code: "UF2003",
+      severity: "error",
+      message: `${named} names ${taken.get(key(clash))} on Angular. Rename the ${kind}.`,
+      span,
+    });
+  }
+}
+
+/**
+ * A provider per key the setup provides (ADR-0054): the value itself where it reads nothing of
+ * the component (`useValue`), or a factory that reads it from the component's instance, which a
+ * descendant's injector creates once the inputs are set; a key of a ref gets `refObject` over the
+ * signal. The members the factories read are public: they are read from outside the class.
+ */
+function providers(
+  plan: Plan,
+  rules: RewriteRules,
+  composition: Composition,
+  className: string,
+  refObject: string | undefined,
+): { code: string[]; external: Set<string> } {
+  const external = new Set<string>();
+  const code: string[] = [];
+  const instance = plan.locals.claim(`${className.charAt(0).toLowerCase()}${className.slice(1)}`);
+  for (const item of plan.component.setup) {
+    if (item.kind !== "Provide") continue;
+    for (const reference of item.value.refs) {
+      if (reference.kind === "Binding") external.add(bindingById(plan, reference.binding).name);
+    }
+    const written = rewriteCode(item.value, plan.component, rules, "pure");
+    const value = keyOf(plan, item.key).ref ? `${refObject}(${written})` : written;
+    const key = composition.keyNames.get(item.key) ?? item.key;
+    const reads = value.split("this.").length - 1;
+    const inject = () => `${plan.imports.add("@angular/core", "inject")}(${className})`;
+    code.push(
+      reads === 0
+        ? `{ provide: ${key}, useValue: ${value} }`
+        : reads === 1
+          ? `{ provide: ${key}, useFactory: () => ${value.replace("this.", `${inject()}.`)} }`
+          : `{ provide: ${key}, useFactory: () => { const ${instance} = ${inject()}; return ${value.replaceAll("this.", `${instance}.`)}; } }`,
+    );
+  }
+  return { code, external };
 }
 
 /**

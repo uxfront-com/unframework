@@ -9,14 +9,14 @@ export interface UsageMeterProps {
 
 @Component({
   selector: "uf-usage-meter",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let label = this.label();
     @let percent = this.percent();
     @let colour = this.colour();
     @let thickness = this.thickness();
-    <div class="usage-meter">
+    <div class="usage-meter" [class]="this.class()" [style]="this.style()">
       <p
         style="margin-bottom: 4px"
         [style.color]="colour"
@@ -53,4 +53,6 @@ export default class UsageMeter {
   readonly percent = input.required<number>();
   readonly colour = input.required<string>();
   readonly thickness = input.required<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

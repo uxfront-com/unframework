@@ -109,17 +109,18 @@ describe("angular lint (L5)", { timeout: 60_000 }, () => {
     );
   });
 
-  it("names an output after a DOM event, as the author does (ADR-0012)", async () => {
-    // `no-output-native` is off: it judges the author's event names (ADR-0047).
-    const members = `${MEMBERS}\n  readonly change = output<string>();`;
-    expect(
-      await lintCodes(
+  it("names an output after a DOM event with the `uf` prefix (ADR-0056)", async () => {
+    // `no-output-native` rejects `change`, which the native event bubbling out of the host would
+    // reach too; the emitter writes `ufChange`.
+    const lint = (output: string) =>
+      lintCodes(
         component("<p>{{ label() }}{{ items().length }}</p>", {
-          members,
+          members: `${MEMBERS}\n  readonly ${output} = output<string>();`,
           imports: "Component, input, output",
         }),
-      ),
-    ).toEqual([]);
+      );
+    expect(await lint("change")).toEqual(["@angular-eslint/no-output-native"]);
+    expect(await lint("ufChange")).toEqual([]);
   });
 
   it.each([

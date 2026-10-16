@@ -13,13 +13,18 @@ export interface ArticleTeaserProps {
 
 @Component({
   selector: "uf-article-teaser",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let title = this.title();
     @let summary = this.summary();
     @let minutes = this.minutes();
-    <article class="article-teaser" [attr.aria-label]="title">
+    <article
+      class="article-teaser"
+      [attr.aria-label]="title"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <h2>{{ title }}</h2>
       <p>{{ summary }}</p>
       <p class="article-teaser-meta">{{ minutes }} min read</p>
@@ -41,4 +46,6 @@ export default class ArticleTeaser {
   readonly layout = input<"row" | "column", "row" | "column" | undefined>("row", {
     transform: (value) => (value === undefined ? "row" : value),
   });
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

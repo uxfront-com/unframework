@@ -8,7 +8,7 @@ export interface StatusIconProps {
 
 @Component({
   selector: "uf-status-icon",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let label = this.label();
@@ -21,6 +21,8 @@ export interface StatusIconProps {
       [attr.width]="size"
       [attr.height]="size"
       fill="none"
+      [class]="this.class()"
+      [style]="this.style()"
     >
       <svg:title>{{ label }}</svg:title>
       <defs>
@@ -48,4 +50,6 @@ export default class StatusIcon {
   readonly colour = input<string, string | undefined>("#1f6feb", {
     transform: (value) => (value === undefined ? "#1f6feb" : value),
   });
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

@@ -10,6 +10,7 @@ import {
   computed,
   effect,
   inject,
+  input,
   output,
   signal,
   untracked,
@@ -18,13 +19,13 @@ import {
 
 @Component({
   selector: "uf-draft-panel",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let open = this.open();
     @let currentStatus = this.currentStatus();
     @let log = this.log();
-    <section class="draft-panel" aria-label="Draft">
+    <section class="draft-panel" aria-label="Draft" [class]="this.class()" [style]="this.style()">
       <button type="button" [attr.aria-expanded]="open" (click)="show()">Options</button>
       @if (open) {
         <div class="options" role="group" aria-label="Draft options">
@@ -45,6 +46,8 @@ import {
   `,
 })
 export default class DraftPanel implements OnInit, OnDestroy {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly save = output<number>();
   readonly status = output<string>();
   readonly closed = output<string>();

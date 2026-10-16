@@ -13,13 +13,18 @@ export interface MessageListProps {
 
 @Component({
   selector: "uf-message-list",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let messages = this.messages();
     @let archived = this.archived();
     @let emptyText = this.emptyText();
-    <section class="message-list" aria-label="Messages">
+    <section
+      class="message-list"
+      aria-label="Messages"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <h2>Inbox</h2>
       <ul>
         @for (message of messages; track message.id) {
@@ -51,4 +56,6 @@ export default class MessageList {
   readonly emptyText = input<string, string | undefined>("Nothing here yet.", {
     transform: (value) => (value === undefined ? "Nothing here yet." : value),
   });
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

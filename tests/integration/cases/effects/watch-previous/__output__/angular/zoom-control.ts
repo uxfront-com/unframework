@@ -5,18 +5,19 @@ import {
   computed,
   effect,
   inject,
+  input,
   signal,
   untracked,
 } from "@angular/core";
 
 @Component({
   selector: "uf-zoom-control",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let zoom = this.zoom();
     @let history = this.history();
-    <section class="zoom-control" aria-label="Zoom">
+    <section class="zoom-control" aria-label="Zoom" [class]="this.class()" [style]="this.style()">
       <output>{{ zoom }}%</output>
       <button type="button" (click)="onZoomIn()">Zoom in</button>
       <button type="button" (click)="onZoomOut()">Zoom out</button>
@@ -30,6 +31,8 @@ import {
   `,
 })
 export default class ZoomControl implements OnInit {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   private readonly injector = inject(Injector);
   protected readonly zoom = signal(100);
   protected readonly history = signal<string[]>([]);

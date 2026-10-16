@@ -11,6 +11,7 @@ import {
   computed,
   effect,
   inject,
+  input,
   output,
   signal,
   untracked,
@@ -18,11 +19,16 @@ import {
 
 @Component({
   selector: "uf-search-session",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let results = this.results();
-    <section class="search-session" aria-label="Search">
+    <section
+      class="search-session"
+      aria-label="Search"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <label>Query<input name="query" (input)="onQueryInput($event)" /></label>
       <ul aria-label="Results">
         @for (result of results; track result) {
@@ -34,6 +40,8 @@ import {
   `,
 })
 export default class SearchSession implements OnInit, OnDestroy {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly unmounted = output<void>();
   readonly effectCleaned = output<string>();
   readonly watchCleaned = output<string>();

@@ -2,7 +2,8 @@
 // ngtsc as the output is, with an `output()` per event, reaches the test's listeners through the
 // output bindings the adapter creates it with. An output emits one value, so each payload comes
 // back by its event's shape: no argument for an event without members, the value for one
-// required member, the tuple's members otherwise; a rerender, which sets inputs, keeps them.
+// required member, the tuple's members otherwise; a rerender, which sets inputs, keeps them. An
+// event named like a native DOM event is the output `uf` and its name (`ufChange`, ADR-0056).
 // Like the rerender test, it runs in Node on domino (this package has no browser project).
 // oxlint-disable-next-line import/no-unassigned-import -- loaded for its side effect
 import "@angular/compiler";
@@ -29,7 +30,7 @@ export default class Counter {
   readonly step = input<number, number | undefined>(1, {
     transform: (value) => (value === undefined ? 1 : value),
   });
-  readonly change = output<number>();
+  readonly ufChange = output<number>();
   readonly closed = output<void>();
   readonly moved = output<[x: number, y: number]>();
   readonly ping = output<[value?: number]>();
@@ -37,7 +38,7 @@ export default class Counter {
 
   protected add(): void {
     this.count.update((count) => count + this.step());
-    this.change.emit(this.count());
+    this.ufChange.emit(this.count());
     this.closed.emit();
     this.moved.emit([this.count(), -1]);
     this.ping.emit([]);

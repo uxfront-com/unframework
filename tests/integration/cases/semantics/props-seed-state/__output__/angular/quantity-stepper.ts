@@ -7,12 +7,18 @@ export interface QuantityStepperProps {
 
 @Component({
   selector: "uf-quantity-stepper",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let label = this.label();
     @let quantity = this.quantity();
-    <div class="quantity-stepper" role="group" [attr.aria-label]="label">
+    <div
+      class="quantity-stepper"
+      role="group"
+      [attr.aria-label]="label"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <output>{{ quantity }}</output>
       <button type="button" [attr.aria-label]="'Increase ' + label" (click)="onClick()">+</button>
     </div>
@@ -21,6 +27,8 @@ export interface QuantityStepperProps {
 export default class QuantityStepper implements OnInit {
   readonly initial = input.required<number>();
   readonly label = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly quantity = linkedSignal(() => untracked(() => this.initial()));
 
   ngOnInit(): void {

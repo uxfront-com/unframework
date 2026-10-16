@@ -13,12 +13,12 @@ export interface ContributorTableProps {
 
 @Component({
   selector: "uf-contributor-table",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let caption = this.caption();
     @let contributors = this.contributors();
-    <table class="contributors">
+    <table class="contributors" [class]="this.class()" [style]="this.style()">
       <caption>{{ caption }}</caption>
       <thead>
         <tr>
@@ -44,4 +44,6 @@ export interface ContributorTableProps {
 export default class ContributorTable {
   readonly caption = input.required<string>();
   readonly contributors = input.required<Contributor[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

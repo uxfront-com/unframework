@@ -6,14 +6,19 @@ export interface QuickActionsProps {
 
 @Component({
   selector: "uf-quick-actions",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let actions = this.actions();
     @let query = this.query();
     @let lastKey = this.lastKey();
     @let subscriptions = this.subscriptions();
-    <section class="quick-actions" aria-label="Quick actions">
+    <section
+      class="quick-actions"
+      aria-label="Quick actions"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <label>Search<input
         name="query"
         (input)="onQueryInput($event)"
@@ -53,6 +58,8 @@ export interface QuickActionsProps {
 })
 export default class QuickActions {
   readonly actions = input.required<string[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly welcomed = output<void>();
   readonly subscribed = output<number>();
   readonly chosen = output<[action: string, scope: string]>();

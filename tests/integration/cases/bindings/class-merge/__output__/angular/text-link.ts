@@ -21,7 +21,7 @@ export interface TextLinkProps {
 
 @Component({
   selector: "uf-text-link",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let href = this.href();
@@ -31,8 +31,9 @@ export interface TextLinkProps {
     @let row = this.row();
     <p
       class="link-row"
-      [class]="[row.class, strong ? 'link-row-strong' : null].join(' ')"
+      [class]="[row.class, strong ? 'link-row-strong' : null, this.class()].join(' ')"
       [attr.id]="row.id"
+      [style]="this.style()"
     >
       <a
         [attr.href]="href"
@@ -50,4 +51,6 @@ export default class TextLink {
   readonly strong = input.required<boolean>();
   readonly link = input.required<LinkAttributes>();
   readonly row = input.required<RowAttributes>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

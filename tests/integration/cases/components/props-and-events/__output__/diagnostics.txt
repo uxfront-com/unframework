@@ -6,14 +6,6 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
    |
    = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF1002] (angular): The angular target does not emit component yet: composition lands in M3.
-  --> components/props-and-events/Form.uf.tsx:12:7
-   |
-12 |       <Field label="Street" onClear={clear} />
-   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |
-   = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF1002] (qwik): The qwik target does not emit component yet: composition lands in M3.
   --> components/props-and-events/Form.uf.tsx:12:7
    |

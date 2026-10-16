@@ -17,13 +17,18 @@ export interface PriceRangeProps {
 
 @Component({
   selector: "uf-price-range",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let currency = this.currency();
     @let low = this.low();
     @let high = this.high();
-    <section class="price-range" aria-label="Price range">
+    <section
+      class="price-range"
+      aria-label="Price range"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <p role="status">{{ low }} to {{ high }}&ngsp;{{ currency }}</p>
       <button type="button" (click)="onShiftUp()">Shift up</button>
       <button type="button" (click)="onWiden()">Widen</button>
@@ -32,6 +37,8 @@ export interface PriceRangeProps {
 })
 export default class PriceRange implements OnInit {
   readonly currency = input.required<string>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly spanUpdate = output<number>();
   readonly rangeUpdate = output<[low: number, high: number]>();
   readonly currencyUpdate = output<string>();

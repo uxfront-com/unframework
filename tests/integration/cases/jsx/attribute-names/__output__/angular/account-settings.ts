@@ -12,7 +12,7 @@ export interface AccountSettingsProps {
 
 @Component({
   selector: "uf-account-settings",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let charset = this.charset();
@@ -22,7 +22,7 @@ export interface AccountSettingsProps {
     @let bannerCors = this.bannerCors();
     @let seatColumns = this.seatColumns();
     @let helpOrder = this.helpOrder();
-    <div class="account-settings">
+    <div class="account-settings" [class]="this.class()" [style]="this.style()">
       <form accept-charset="utf-8" aria-label="Profile">
         <img
           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23345'/%3E%3C/svg%3E"
@@ -83,4 +83,6 @@ export default class AccountSettings {
   readonly bannerCors = input.required<"anonymous" | "use-credentials">();
   readonly seatColumns = input.required<number>();
   readonly helpOrder = input.required<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

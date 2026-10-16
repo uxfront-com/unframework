@@ -9,14 +9,19 @@ export interface ProductTileProps {
 
 @Component({
   selector: "uf-product-tile",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let name = this.name();
     @let price = this.price();
     @let stock = this.stock();
     @let available = this.available();
-    <article class="product-tile" [attr.aria-label]="name">
+    <article
+      class="product-tile"
+      [attr.aria-label]="name"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <h2>{{ name }}</h2>
       <p>Price: {{ price }} EUR</p>
       <p [attr.data-stock]="stock">{{ stock }} in stock</p>
@@ -35,4 +40,6 @@ export default class ProductTile {
   readonly available = input<boolean, boolean | undefined>(true, {
     transform: (value) => (value === undefined ? true : value),
   });
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

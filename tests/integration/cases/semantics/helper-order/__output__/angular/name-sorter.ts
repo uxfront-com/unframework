@@ -6,6 +6,7 @@ import {
   computed,
   effect,
   inject,
+  input,
   output,
   signal,
   untracked,
@@ -13,12 +14,12 @@ import {
 
 @Component({
   selector: "uf-name-sorter",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let names = this.names();
     @let count = this.count();
-    <section class="name-sorter" aria-label="Names">
+    <section class="name-sorter" aria-label="Names" [class]="this.class()" [style]="this.style()">
       <p>Names: {{ names.join(", ") }}</p>
       <p>Added: {{ count }}</p>
       <button type="button" (click)="add('Bo')">Add Bo</button>
@@ -27,6 +28,8 @@ import {
   `,
 })
 export default class NameSorter implements OnInit {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly started = output<string>();
   readonly firstSeen = output<string>();
   readonly secondSeen = output<number>();

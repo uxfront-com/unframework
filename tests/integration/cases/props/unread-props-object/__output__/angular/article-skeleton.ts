@@ -8,10 +8,16 @@ export interface ArticleSkeletonProps {
 
 @Component({
   selector: "uf-article-skeleton",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
-    <article class="article-skeleton" aria-busy="true" aria-label="Loading article">
+    <article
+      class="article-skeleton"
+      aria-busy="true"
+      aria-label="Loading article"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <p>Loading the article</p>
     </article>
   `,
@@ -20,4 +26,6 @@ export default class ArticleSkeleton {
   readonly title = input.required<string>();
   readonly summary = input<string>();
   readonly minutes = input<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
 }

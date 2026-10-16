@@ -6,6 +6,7 @@ import {
   afterRenderEffect,
   computed,
   inject,
+  input,
   output,
   signal,
   untracked,
@@ -14,11 +15,16 @@ import {
 
 @Component({
   selector: "uf-message-list",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let messages = this.messages();
-    <section class="message-list" aria-label="Messages">
+    <section
+      class="message-list"
+      aria-label="Messages"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       <ul #list>
         @for (message of messages; track message) {
           <li>{{ message }}</li>
@@ -29,6 +35,8 @@ import {
   `,
 })
 export default class MessageList implements OnInit {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly rendered = output<number>();
   private readonly list = viewChild<ElementRef<HTMLUListElement>>("list");
   private readonly injector = inject(Injector);

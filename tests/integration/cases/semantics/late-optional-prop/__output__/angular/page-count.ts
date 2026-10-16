@@ -17,12 +17,12 @@ export interface PageCountProps {
 
 @Component({
   selector: "uf-page-count",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let page = this.page();
     @let label = this.label();
-    <nav class="page-count" aria-label="Pages">
+    <nav class="page-count" aria-label="Pages" [class]="this.class()" [style]="this.style()">
       <p role="status">{{ label }}</p>
       <p>Direct: {{ page }}</p>
     </nav>
@@ -33,6 +33,8 @@ export default class PageCount implements OnInit {
     transform: (value) => (value === undefined ? 1 : value),
   });
   readonly total = input.required<number>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   readonly pageChange = output<[page: number, previous: number]>();
   private readonly injector = inject(Injector);
   protected readonly label = computed(() => `Page ${this.page()} of ${this.total()}`);

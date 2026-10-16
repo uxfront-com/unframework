@@ -11,12 +11,12 @@ export interface TaskListProps {
 
 @Component({
   selector: "uf-task-list",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let tasks = this.tasks();
     @let selected = this.selected();
-    <section class="task-list" aria-label="Tasks">
+    <section class="task-list" aria-label="Tasks" [class]="this.class()" [style]="this.style()">
       @if (tasks.length === 0) {
         <p>No tasks yet.</p>
       } @else {
@@ -44,6 +44,8 @@ export interface TaskListProps {
 })
 export default class TaskList implements OnInit {
   readonly initial = input.required<Task[]>();
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly tasks = linkedSignal(() => untracked(() => this.initial()));
   protected readonly selected = signal<string | undefined>(undefined);
   private added = 0;

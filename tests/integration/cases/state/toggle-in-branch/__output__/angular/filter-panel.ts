@@ -1,14 +1,19 @@
-import { Component, signal } from "@angular/core";
+import { Component, input, signal } from "@angular/core";
 
 @Component({
   selector: "uf-filter-panel",
-  host: { style: "display: contents" },
+  host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let open = this.open();
     @let colour = this.colour();
     @let note = this.note();
-    <section class="filter-panel" aria-label="Filters">
+    <section
+      class="filter-panel"
+      aria-label="Filters"
+      [class]="this.class()"
+      [style]="this.style()"
+    >
       @if (open) {
         <button type="button" aria-expanded="true" (click)="onHideColours()">Hide colours</button>
       } @else {
@@ -41,6 +46,8 @@ import { Component, signal } from "@angular/core";
   `,
 })
 export default class FilterPanel {
+  readonly class = input<string>();
+  readonly style = input<Record<string, string | null | undefined>>();
   protected readonly open = signal(false);
   protected readonly colour = signal<string | null>(null);
   protected readonly note = signal<string | null>(null);
