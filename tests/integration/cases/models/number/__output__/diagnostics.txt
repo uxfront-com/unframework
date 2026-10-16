@@ -13,11 +13,3 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
   |                                                       ^^^^^^^^^^^^^^^^^^^^^
   |
   = see: https://unframework.dev/diagnostics/UF4001
-
-error[UF1002] (qwik): The qwik target does not emit two-way-binding yet: composition lands in M3.
- --> models/number/Quantity.uf.tsx:8:55
-  |
-8 |       <input type="number" aria-label="Count" min="0" v-model={count.value} />
-  |                                                       ^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
