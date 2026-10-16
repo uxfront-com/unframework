@@ -1,7 +1,11 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  let { text }: { text: string } = $props();
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = { text: string; class?: ClassValue; style?: string };
+
+  let { text, class: className, style }: Props = $props();
 </script>
 
-<button type="button" class="base">{text}</button>
+<button type="button" class={["base", className]} {style}>{text}</button>

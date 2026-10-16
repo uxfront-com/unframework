@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface StepperProps {
     initial?: number;
@@ -11,9 +12,11 @@
   type Props = StepperProps & {
     onchange?: (value: number, changes: number) => void;
     oncleared?: () => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { initial = 0, step = 1, onchange, oncleared }: Props = $props();
+  let { initial = 0, step = 1, onchange, oncleared, class: className, style }: Props = $props();
 
   const limits = { low: 0, high: 10 };
   let count = $state(untrack(() => initial));
@@ -40,7 +43,7 @@
   };
 </script>
 
-<div class="stepper" data-parity={parity}>
+<div class={["stepper", className]} data-parity={parity} {style}>
   <output>{count}</output
   >{#if doubled > limits.high}
     <span>Big</span>

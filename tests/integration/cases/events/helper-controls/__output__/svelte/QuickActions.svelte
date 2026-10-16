@@ -1,6 +1,7 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
   import { on } from "svelte/events";
 
   export interface QuickActionsProps {
@@ -11,9 +12,11 @@
     onwelcomed?: () => void;
     onsubscribed?: (count: number) => void;
     onchosen?: (action: string, scope: string) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { actions, onwelcomed, onsubscribed, onchosen }: Props = $props();
+  let { actions, onwelcomed, onsubscribed, onchosen, class: className, style }: Props = $props();
 
   let query = $state("");
   let lastKey = $state("none");
@@ -49,7 +52,7 @@
   }
 </script>
 
-<section class="quick-actions" aria-label="Quick actions">
+<section class={["quick-actions", className]} aria-label="Quick actions" {style}>
   <label>Search<input
     name="query"
     oninput={(event) => (query = (event.currentTarget as HTMLInputElement).value)}

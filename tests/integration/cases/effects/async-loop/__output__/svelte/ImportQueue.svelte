@@ -2,14 +2,19 @@
 
 <script lang="ts">
   import { tick, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface ImportQueueProps {
     files: string[];
   }
 
-  type Props = ImportQueueProps & { onprogress?: (status: string, attempts: number) => void };
+  type Props = ImportQueueProps & {
+    onprogress?: (status: string, attempts: number) => void;
+    class?: ClassValue;
+    style?: string;
+  };
 
-  let { files, onprogress }: Props = $props();
+  let { files, onprogress, class: className, style }: Props = $props();
 
   let status = $state("idle");
   let attempts = $state(0);
@@ -36,7 +41,7 @@
   }
 </script>
 
-<section class="import-queue" aria-label="Import">
+<section class={["import-queue", className]} aria-label="Import" {style}>
   <button type="button" onclick={importAll}>Import all</button
   ><p role="status">{status}, {attempts} attempts</p>
 </section>

@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface Book {
     id: number;
@@ -18,9 +19,20 @@
     ontoggled?: (open: boolean) => void;
     onbusy?: (label: string, loading: boolean) => void;
     onsummed?: (total: number) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { books, onmoved, oncounted, ontoggled, onbusy, onsummed }: Props = $props();
+  let {
+    books,
+    onmoved,
+    oncounted,
+    ontoggled,
+    onbusy,
+    onsummed,
+    class: className,
+    style,
+  }: Props = $props();
 
   let focused = $state.raw<Book | null>(null);
   let reads = $state.raw(new Map<number, number>());
@@ -116,7 +128,7 @@
   }
 </script>
 
-<section class="book-shelf" aria-label="Books">
+<section class={["book-shelf", className]} aria-label="Books" {style}>
   <ul aria-label="Shelf">
     {#each books as book (book.id)}
       <li>

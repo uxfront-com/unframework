@@ -2,14 +2,19 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface TemperatureProps {
     celsius: number;
   }
 
-  type Props = TemperatureProps & { onreading?: (celsius: number, previous: number) => void };
+  type Props = TemperatureProps & {
+    onreading?: (celsius: number, previous: number) => void;
+    class?: ClassValue;
+    style?: string;
+  };
 
-  let { celsius, onreading }: Props = $props();
+  let { celsius, onreading, class: className, style }: Props = $props();
 
   const fahrenheit = $derived(Math.round((celsius * 9) / 5 + 32));
   const level = $derived(celsius >= 30 ? "hot" : celsius <= 5 ? "cold" : "mild");
@@ -26,7 +31,7 @@
   });
 </script>
 
-<figure class="temperature" data-level={level}>
+<figure class={["temperature", className]} data-level={level} {style}>
   <p>{celsius} °C</p
   ><p>{fahrenheit} °F</p
   ><figcaption>Feels {level}</figcaption>

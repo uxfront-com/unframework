@@ -19,7 +19,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The svelte target does not emit dynamic-component yet: composition lands in M3.",
+    "message": "The qwik target does not emit dynamic-component yet: composition lands in M3.",
     "file": "dynamic/components/Tag.uf.tsx",
     "start": {
       "line": 10,
@@ -31,7 +31,7 @@
       "column": 67,
       "offset": 302
     },
-    "target": "svelte"
+    "target": "qwik"
   },
   {
     "code": "UF4001",

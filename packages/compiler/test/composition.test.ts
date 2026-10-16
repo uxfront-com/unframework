@@ -22,7 +22,9 @@ describe("composition before M3's lanes", () => {
   });
 
   it.each(
-    TARGET_NAMES.filter((name) => !["vue", "astro", "react", "solid", "qwik"].includes(name)),
+    TARGET_NAMES.filter(
+      (name) => !["vue", "svelte", "astro", "react", "solid", "qwik"].includes(name),
+    ),
   )("%s reports UF1002 where a component first uses it", (name) => {
     const module = composition();
     const reported: Omit<Diagnostic, "file" | "target">[] = [];

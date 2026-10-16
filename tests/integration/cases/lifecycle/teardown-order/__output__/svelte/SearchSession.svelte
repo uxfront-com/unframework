@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = {
     onunmounted?: () => void;
@@ -10,6 +11,8 @@
     onsearched?: (query: string, count: number) => void;
     onsearchcleaned?: (query: string) => void;
     onsummary?: (text: string) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
   let {
@@ -19,6 +22,8 @@
     onsearched,
     onsearchcleaned,
     onsummary,
+    class: className,
+    style,
   }: Props = $props();
 
   let query = $state("");
@@ -97,7 +102,7 @@
   });
 </script>
 
-<section class="search-session" aria-label="Search">
+<section class={["search-session", className]} aria-label="Search" {style}>
   <label>Query<input
     name="query"
     oninput={(event) => (query = (event.currentTarget as HTMLInputElement).value)}

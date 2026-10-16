@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { tick, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   interface Waiting {
     resolve: (text: string) => void;
@@ -24,6 +25,8 @@
     onsending?: (busy: boolean, outcome: string) => void;
     onsent?: (count: number) => void;
     onclamped?: (level: number) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
   let {
@@ -39,6 +42,8 @@
     onsending,
     onsent,
     onclamped,
+    class: className,
+    style,
   }: Props = $props();
 
   let waiting: Waiting[] = [];
@@ -263,7 +268,7 @@
   });
 </script>
 
-<section class="sync-desk" aria-label="Sync desk">
+<section class={["sync-desk", className]} aria-label="Sync desk" {style}>
   <button type="button" onclick={suggest}>Suggest</button
   ><button type="button" bind:this={confirm}>Use this email</button
   ><p>{email}: {checking ? "checking" : valid ? "valid" : "invalid"}</p

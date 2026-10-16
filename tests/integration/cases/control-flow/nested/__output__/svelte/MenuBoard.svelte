@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface MenuDish {
     id: string;
     name: string;
@@ -19,10 +21,12 @@
     closed: boolean;
   }
 
-  let { courses, closed }: MenuBoardProps = $props();
+  type Props = MenuBoardProps & { class?: ClassValue; style?: string };
+
+  let { courses, closed, class: className, style }: Props = $props();
 </script>
 
-<div class="menu-board">
+<div class={["menu-board", className]} {style}>
   {#if closed}
     <p>The kitchen is closed.</p>
   {:else}

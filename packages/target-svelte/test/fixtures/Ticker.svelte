@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { onMount } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = {
     label: string;
@@ -9,9 +10,11 @@
     onreleased?: (text: string) => void;
     onready?: (items: number) => void;
     onstopped?: () => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { label, ontitle, onreleased, onready, onstopped }: Props = $props();
+  let { label, ontitle, onreleased, onready, onstopped, class: className, style }: Props = $props();
 
   let ticks = $state(0);
   let list: HTMLUListElement | null = null;
@@ -54,7 +57,7 @@
   });
 </script>
 
-<ul bind:this={list}>
+<ul bind:this={list} class={className} {style}>
   <li>{label}</li
   ><li>{ticks}</li>
 </ul>

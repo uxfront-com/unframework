@@ -36,7 +36,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The svelte target does not emit component yet: composition lands in M3.",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "components/list-item-root/Menu.uf.tsx",
     "start": {
       "line": 7,
@@ -48,6 +48,6 @@
       "column": 43,
       "offset": 214
     },
-    "target": "svelte"
+    "target": "qwik"
   }
 ]

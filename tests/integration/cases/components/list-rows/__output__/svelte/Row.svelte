@@ -1,7 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  let { name, done }: { name: string; done: boolean } = $props();
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = { name: string; done: boolean; class?: ClassValue; style?: string };
+
+  let { name, done, class: className, style }: Props = $props();
 </script>
 
-<div role="listitem" class={["row", { done }]}>{name}{done ? " (done)" : ""}</div>
+<div
+  role="listitem"
+  class={["row", { done }, className]}
+  {style}
+>{name}{done ? " (done)" : ""}</div>

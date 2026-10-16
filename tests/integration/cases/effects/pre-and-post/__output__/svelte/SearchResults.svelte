@@ -2,14 +2,17 @@
 
 <script lang="ts">
   import { onMount, tick, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   type Props = {
     onready?: (text: string) => void;
     onrendered?: (count: number) => void;
     onshown?: (text: string) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { onready, onrendered, onshown }: Props = $props();
+  let { onready, onrendered, onshown, class: className, style }: Props = $props();
 
   let status = $state("Loading");
   let query = $state("");
@@ -62,7 +65,7 @@
   }
 </script>
 
-<section class="search-results" aria-label="Search">
+<section class={["search-results", className]} aria-label="Search" {style}>
   <p bind:this={banner}>{status}</p
   ><label>Query<input
     name="query"

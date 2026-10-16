@@ -19,7 +19,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The svelte target does not emit component yet: composition lands in M3.",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "models/component/Order.uf.tsx",
     "start": {
       "line": 9,
@@ -31,7 +31,7 @@
       "column": 58,
       "offset": 235
     },
-    "target": "svelte"
+    "target": "qwik"
   },
   {
     "code": "UF4001",
@@ -70,7 +70,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The svelte target does not emit model yet: composition lands in M3.",
+    "message": "The qwik target does not emit model yet: composition lands in M3.",
     "file": "models/component/Stepper.uf.tsx",
     "start": {
       "line": 4,
@@ -82,7 +82,7 @@
       "column": 62,
       "offset": 169
     },
-    "target": "svelte"
+    "target": "qwik"
   },
   {
     "code": "UF4001",

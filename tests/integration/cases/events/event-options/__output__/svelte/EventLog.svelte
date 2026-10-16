@@ -1,7 +1,12 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
   import { on } from "svelte/events";
+
+  type Props = { class?: ClassValue; style?: string };
+
+  let { class: className, style }: Props = $props();
 
   let log = $state.raw<string[]>([]);
   let volume = $state(5);
@@ -28,7 +33,7 @@
   }
 </script>
 
-<section class="event-log" aria-label="Event options">
+<section class={["event-log", className]} aria-label="Event options" {style}>
   <div
     class="panel"
     role="presentation"

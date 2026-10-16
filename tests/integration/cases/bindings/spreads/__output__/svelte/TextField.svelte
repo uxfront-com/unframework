@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   interface FieldAttributes {
     name: string;
     placeholder?: string;
@@ -23,10 +25,12 @@
     hint?: HintAttributes;
   }
 
-  let { label, inputId, hintText, field, hint }: TextFieldProps = $props();
+  type Props = TextFieldProps & { class?: ClassValue; style?: string };
+
+  let { label, inputId, hintText, field, hint, class: className, style }: Props = $props();
 </script>
 
-<div class="text-field">
+<div class={["text-field", className]} {style}>
   <label for={inputId}>{label}</label
   ><input
     id={inputId}

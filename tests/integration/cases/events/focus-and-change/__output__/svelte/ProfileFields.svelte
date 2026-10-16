@@ -1,11 +1,12 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
   import { on } from "svelte/events";
 
-  type Props = { onfirstnickname?: (nickname: string) => void };
+  type Props = { onfirstnickname?: (nickname: string) => void; class?: ClassValue; style?: string };
 
-  let { onfirstnickname }: Props = $props();
+  let { onfirstnickname, class: className, style }: Props = $props();
 
   let log = $state.raw<string[]>([]);
   let nickname = $state("");
@@ -31,7 +32,7 @@
   }
 </script>
 
-<section class="profile-fields" aria-label="Profile">
+<section class={["profile-fields", className]} aria-label="Profile" {style}>
   <div
     class="name-group"
     role="group"

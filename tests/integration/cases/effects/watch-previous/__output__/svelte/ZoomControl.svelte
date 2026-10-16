@@ -2,6 +2,11 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = { class?: ClassValue; style?: string };
+
+  let { class: className, style }: Props = $props();
 
   let zoom = $state(100);
   let history = $state.raw<string[]>([]);
@@ -18,7 +23,7 @@
   });
 </script>
 
-<section class="zoom-control" aria-label="Zoom">
+<section class={["zoom-control", className]} aria-label="Zoom" {style}>
   <output>{zoom}%</output><button type="button" onclick={() => (zoom += 25)}>Zoom in</button
   ><button type="button" onclick={() => (zoom -= 25)}>Zoom out</button
   ><button type="button" onclick={() => (zoom = 100)}>Reset</button

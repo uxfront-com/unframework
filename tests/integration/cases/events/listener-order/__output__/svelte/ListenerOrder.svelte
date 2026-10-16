@@ -1,7 +1,12 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
   import { on } from "svelte/events";
+
+  type Props = { class?: ClassValue; style?: string };
+
+  let { class: className, style }: Props = $props();
 
   let log = $state.raw<string[]>([]);
   let resets = $state(0);
@@ -20,7 +25,7 @@
   }
 </script>
 
-<section class="listener-order" aria-label="Listener order">
+<section class={["listener-order", className]} aria-label="Listener order" {style}>
   <div class="toolbar" role="presentation" onclick={() => record("toolbar")}>
     <button
       type="button"

@@ -1,11 +1,15 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   type Props = {
     onsignup?: (fullName: string, email: string, plan: string, newsletter: boolean) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { onsignup }: Props = $props();
+  let { onsignup, class: className, style }: Props = $props();
 
   let fullName = $state("");
   let email = $state("");
@@ -19,7 +23,7 @@
   }
 </script>
 
-<form class="signup-form" aria-label="Sign up" onsubmit={submit}>
+<form class={["signup-form", className]} aria-label="Sign up" onsubmit={submit} {style}>
   <label>Name<input
     name="name"
     onchange={(event) => (fullName = (event.currentTarget as HTMLInputElement).value)}

@@ -19,7 +19,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The svelte target does not emit an injection key yet: composition lands in M3.",
+    "message": "The qwik target does not emit an injection key yet: composition lands in M3.",
     "file": "context/nested/Level.uf.tsx",
     "start": {
       "line": 4,
@@ -31,7 +31,7 @@
       "column": 66,
       "offset": 184
     },
-    "target": "svelte"
+    "target": "qwik"
   },
   {
     "code": "UF4001",
@@ -70,7 +70,7 @@
   {
     "code": "UF1002",
     "severity": "error",
-    "message": "The svelte target does not emit component yet: composition lands in M3.",
+    "message": "The qwik target does not emit component yet: composition lands in M3.",
     "file": "context/nested/Outline.uf.tsx",
     "start": {
       "line": 5,
@@ -82,6 +82,6 @@
       "column": 13,
       "offset": 230
     },
-    "target": "svelte"
+    "target": "qwik"
   }
 ]

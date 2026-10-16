@@ -1,13 +1,17 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   type Props = {
     ontotal?: (value: number) => void;
     onsteps?: (values: number[]) => void;
     onlogged?: (entries: string[]) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { ontotal, onsteps, onlogged }: Props = $props();
+  let { ontotal, onsteps, onlogged, class: className, style }: Props = $props();
 
   let count = $state(0);
   let trail = $state.raw<string[]>([]);
@@ -51,7 +55,7 @@
   }
 </script>
 
-<section class="tally" aria-label="Tally">
+<section class={["tally", className]} aria-label="Tally" {style}>
   <p role="status">Count: {count}</p
   ><button type="button" onclick={addTwice}>Add two</button
   ><button type="button" onclick={addFive}>Add five</button

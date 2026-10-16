@@ -1,15 +1,19 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface DraftNoticeProps {
     author: string;
     saved: boolean;
   }
 
-  let { author, saved }: DraftNoticeProps = $props();
+  type Props = DraftNoticeProps & { class?: ClassValue; style?: string };
+
+  let { author, saved, class: className, style }: Props = $props();
 </script>
 
-<section class="draft-notice" aria-label="Draft">
+<section class={["draft-notice", className]} aria-label="Draft" {style}>
   <img
     src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Crect width='32' height='32' fill='%23345'/%3E%3C/svg%3E"
     alt={`${author}'s avatar`}

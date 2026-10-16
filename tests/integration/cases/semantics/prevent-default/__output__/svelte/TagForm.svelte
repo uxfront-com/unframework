@@ -1,9 +1,11 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  type Props = { ontagschange?: (tags: string[]) => void };
+  import type { ClassValue } from "svelte/elements";
 
-  let { ontagschange }: Props = $props();
+  type Props = { ontagschange?: (tags: string[]) => void; class?: ClassValue; style?: string };
+
+  let { ontagschange, class: className, style }: Props = $props();
 
   let tags = $state.raw<string[]>([]);
   let draft = $state("");
@@ -35,7 +37,7 @@
   }
 </script>
 
-<form class="tag-form" aria-label="Tags" onsubmit={addTag}>
+<form class={["tag-form", className]} aria-label="Tags" onsubmit={addTag} {style}>
   <label>New tag<input name="tag" bind:this={field} onkeydown={blockComma} oninput={updateDraft} /></label
   ><button type="submit">Add tag</button><a href="/help/tags" onclick={toggleHelp}>How tags work</a
   >{#if helpOpen}

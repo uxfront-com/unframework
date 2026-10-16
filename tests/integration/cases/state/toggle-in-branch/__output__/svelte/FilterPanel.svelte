@@ -1,12 +1,18 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
+  type Props = { class?: ClassValue; style?: string };
+
+  let { class: className, style }: Props = $props();
+
   let open = $state(false);
   let colour = $state<string | null>(null);
   let note = $state<string | null>(null);
 </script>
 
-<section class="filter-panel" aria-label="Filters">
+<section class={["filter-panel", className]} aria-label="Filters" {style}>
   {#if open}
     <button type="button" aria-expanded="true" onclick={() => (open = false)}>Hide colours</button>
   {:else}

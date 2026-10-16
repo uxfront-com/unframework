@@ -1,6 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import type { ClassValue } from "svelte/elements";
+
   export interface Settings {
     theme: string;
     size: number;
@@ -14,9 +16,11 @@
   type Props = {
     onapplied?: (theme: string, size: number) => void;
     onsaved?: (id: number) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { onapplied, onsaved }: Props = $props();
+  let { onapplied, onsaved, class: className, style }: Props = $props();
 
   let settings = $state.raw<Settings>({ theme: "light", size: 14 });
   let maxSize = $state(20);
@@ -55,7 +59,7 @@
   }
 </script>
 
-<section class="display-settings" aria-label="Display">
+<section class={["display-settings", className]} aria-label="Display" {style}>
   <p role="status">Theme {settings.theme}, size {settings.size}</p
   ><button type="button" onclick={() => apply({ theme: "dark" })}>Dark</button
   ><button type="button" onclick={grow}>Larger</button

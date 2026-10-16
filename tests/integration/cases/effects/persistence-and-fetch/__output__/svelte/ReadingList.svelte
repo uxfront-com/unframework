@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface ReadingListProps {
     shelves: string[];
@@ -14,10 +15,21 @@
     onstarted?: () => void;
     onchecked?: (count: number) => void;
     onrefreshed?: (total: number) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { shelves, onrequested, oncancelled, onfound, onstarted, onchecked, onrefreshed }: Props =
-    $props();
+  let {
+    shelves,
+    onrequested,
+    oncancelled,
+    onfound,
+    onstarted,
+    onchecked,
+    onrefreshed,
+    class: className,
+    style,
+  }: Props = $props();
 
   let query = $state("");
   let books = $state.raw<string[]>([]);
@@ -117,7 +129,7 @@
   }
 </script>
 
-<section class="reading-list" aria-label="Reading list">
+<section class={["reading-list", className]} aria-label="Reading list" {style}>
   <label>Search<input
     type="search"
     name="query"

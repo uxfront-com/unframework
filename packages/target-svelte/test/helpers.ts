@@ -9,6 +9,7 @@ import type { UfModule } from "@unframework/ir";
 // The analyzer is no dependency of a target (plan §5.2): tests reach it from its source, as the
 // render-parity kit does, to lower source snippets as `compile()` would.
 import { analyze } from "../../analyzer/src/index.ts";
+import { compile, createFileResolver } from "../../compiler/src/index.ts";
 import { parseModule } from "../../parser/src/index.ts";
 import target from "../src/index.ts";
 
@@ -49,18 +50,35 @@ function hasErrors(caseDir: string): boolean {
   );
 }
 
+/** An IR snapshot. */
+const readModule = (file: string) => JSON.parse(readFileSync(file, "utf8")) as UfModule;
+
 /**
- * Each corpus case's IR snapshot, with the directory its golden outputs live in: the cases the
- * compiler emits a Svelte output for.
+ * Each corpus case's IR snapshots, with the directory its golden outputs live in: the cases the
+ * compiler emits a Svelte output for. `module` is the main source's; `modules` holds every
+ * source's (ADR-0057), the main one first, whose outputs import each other.
  */
-export function corpus(): { name: string; module: UfModule; outputDir: string }[] {
+export function corpus(): {
+  name: string;
+  module: UfModule;
+  modules: UfModule[];
+  outputDir: string;
+}[] {
   return filesUnder(casesDir)
     .filter((path) => path.endsWith("/__output__/ir.json") && !hasErrors(join(path, "../..")))
-    .map((path) => ({
-      name: path.slice(casesDir.length + 1, -"/__output__/ir.json".length),
-      module: JSON.parse(readFileSync(path, "utf8")) as UfModule,
-      outputDir: join(path, "../svelte"),
-    }));
+    .map((path) => {
+      const module = readModule(path);
+      const others = readdirSync(join(path, ".."))
+        .filter((name) => /^ir\.[^.]+\.json$/.test(name))
+        .toSorted()
+        .map((name) => readModule(join(path, "..", name)));
+      return {
+        name: path.slice(casesDir.length + 1, -"/__output__/ir.json".length),
+        module,
+        modules: [module, ...others],
+        outputDir: join(path, "../svelte"),
+      };
+    });
 }
 
 /** What this target emits for a module, formatted as the compiler formats it. */
@@ -93,6 +111,32 @@ export async function emitSource(
     : target.emit(module.components[0]!, context(module));
   if (files.length !== 1) throw new Error(`expected one file, got ${files.length}`);
   return files[0]!;
+}
+
+/**
+ * What this target emits for several sources that import each other, as `compile()` does with
+ * a file resolver over them (ADR-0053): every output file by its name. Fails on any error.
+ */
+export async function compileSources(
+  sources: Record<string, string>,
+): Promise<Record<string, string>> {
+  const resolve = createFileResolver({
+    root: "/case",
+    readFile: async (path) => sources[path.slice(6)],
+  });
+  const files: Record<string, string> = {};
+  for (const [filename, source] of Object.entries(sources)) {
+    const { diagnostics, outputs } = await compile(source, {
+      filename,
+      targets: [target],
+      resolve,
+    });
+    const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
+    if (errors.length)
+      throw new Error(`${filename}: ${errors.map((each) => each.message).join("; ")}`);
+    for (const file of outputs["svelte"] ?? []) files[file.path] = file.contents;
+  }
+  return files;
 }
 
 /** An emit context that fails on any diagnostic: a target never reports from `emit`. */

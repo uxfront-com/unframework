@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
+  import type { ClassValue } from "svelte/elements";
 
   export interface BallotProps {
     limit: number;
@@ -14,9 +15,21 @@
     onmoved?: (line: string) => void;
     onreport?: (text: string) => void;
     oncounted?: (answers: number) => void;
+    class?: ClassValue;
+    style?: string;
   };
 
-  let { limit, label = "Vote", choices, onvoted, onmoved, onreport, oncounted }: Props = $props();
+  let {
+    limit,
+    label = "Vote",
+    choices,
+    onvoted,
+    onmoved,
+    onreport,
+    oncounted,
+    class: className,
+    style,
+  }: Props = $props();
 
   let votes = $state(untrack(() => limit));
   let picked = $state("none");
@@ -65,7 +78,7 @@
   }
 </script>
 
-<section class="ballot" aria-label={label}>
+<section class={["ballot", className]} aria-label={label} {style}>
   <p role="status">{votes} votes left</p
   ><p>Picked: {picked}</p
   ><ul aria-label="Choices">
