@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export interface InboxMessage {
   id: string;
@@ -11,17 +11,17 @@ export interface MessageListProps {
   emptyText?: string;
 }
 
-export default component$<MessageListProps>(
-  ({ messages, archived = [], emptyText = "Nothing here yet." }) => {
+export default component$<MessageListProps & { class?: ClassList; style?: CSSProperties }>(
+  ({ messages, archived = [], emptyText = "Nothing here yet.", class: className, style }) => {
     return (
-      <section class="message-list" aria-label="Messages">
+      <section class={["message-list", className]} aria-label="Messages" style={style}>
         <h2>Inbox</h2>
         <ul>
           {messages.map((message) => (
             <li key={message.id}>{message.subject}</li>
           ))}
         </ul>
-        {messages.length === 0 ? <p>{emptyText}</p> : null}
+        <>{messages.length === 0 ? <p>{emptyText}</p> : null}</>
         <h2>Archive</h2>
         <ul>
           {archived.map((message) => (

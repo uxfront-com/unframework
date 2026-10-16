@@ -94,6 +94,14 @@ function compileWith(
   });
 }
 
+/** Code's lines without their indentation, and without blank ones. */
+function trimmedLines(code: string): string[] {
+  return code
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 /** The kinds of project that verify each live layer (plan §7.3). */
 const VERIFIED_BY: Record<string, readonly ProjectKind[]> = {
   L1: ["compile"],
@@ -562,7 +570,7 @@ describe("canaries", () => {
       /function TaskList\(\n {2}rawProps: TaskListProps & \{ class\?: string; style\?: JSX\.CSSProperties \},\n\) \{\n {2}console\.warn/,
     );
     expect(contents("qwik")).toMatch(
-      /component\$<TaskListProps>\(\n {2}\(\{ title = "Tasks \(today\)", tasks, done, tone = "info" \}\) => \{\n {4}console\.warn/,
+      /component\$<TaskListProps & \{ class\?: ClassList; style\?: CSSProperties \}>\(\n {2}\(\{ title = "Tasks \(today\)", tasks, done, tone = "info", class: className, style \}\) => \{\n {4}console\.warn/,
     );
     expect(contents("vue")).toMatch(/<script setup lang="ts">\nconsole\.warn/);
     expect(contents("svelte")).toMatch(/<script lang="ts">\n {2}console\.warn/);
@@ -578,28 +586,42 @@ describe("canaries", () => {
     }
   });
 
-  it("L13-qwik-handler-throws gives Qwik's component a throwing document listener, and changes no other target", async () => {
+  it("L13-qwik-handler-throws gives Qwik's component a leaf with a throwing document listener, and changes no other target", async () => {
     const clean = await compileWith(null);
     const result = await compileWith("L13-qwik-handler-throws", "qwik");
     const contents = result.outputs.qwik![0]!.contents;
-    const listener = [
-      "    useOnDocument(",
-      '      ["click", "pointerover", "keydown", "input", "focusin", "wheel"],',
-      "      $(() => {",
-      '        throw new Error("[uf canary] L13 in qwik");',
-      "      }),",
-      "    );",
+    const leaf = [
+      "const UfCanaryLeafTaskList = component$(() => {",
+      "  useOnDocument(",
+      '    ["click", "pointerover", "keydown", "input", "focusin", "wheel"],',
+      "    $(async () => {",
+      "      await new Promise((resolve) => setTimeout(resolve));",
+      '      throw new Error("[uf canary] L13 in qwik");',
+      "    }),",
+      "  );",
+      "  return null;",
+      "});",
       "",
     ].join("\n");
-    // The import names what the listener calls; the listener opens the component's body.
+    // The import names what the leaf calls; the leaf follows the component, which renders it
+    // after its root, in a fragment.
     expect(contents).toMatch(
-      /^import \{ component\$, \$, useOnDocument \} from "@qwik\.dev\/core";$/m,
+      /^import \{ type CSSProperties, type ClassList, component\$, \$, useOnDocument \} from "@qwik\.dev\/core";$/m,
     );
-    expect(contents).toContain(`tone = "info" }) => {\n${listener}`);
-    // Nothing else changed: the component's own code is as it was.
-    expect(contents.replace(listener, "").replace(", $, useOnDocument", "")).toBe(
-      clean.outputs.qwik![0]!.contents,
+    expect(contents.endsWith(`\n\n${leaf}`)).toBe(true);
+    expect(contents).toMatch(
+      /return \(\n {6}<>\n {8}<section\b[\s\S]*<\/section>\n {8}<UfCanaryLeafTaskList \/>\n {6}<\/>\n {4}\);/,
     );
+    // Nothing else changed: the component's own code is as it was, a level deeper.
+    expect(
+      trimmedLines(
+        contents
+          .replace(`\n${leaf}`, "")
+          .replace(", $, useOnDocument", "")
+          .replace(/\n {6}<>\n/, "\n")
+          .replace(/\n {8}<UfCanaryLeafTaskList \/>\n {6}<\/>\n/, "\n"),
+      ),
+    ).toEqual(trimmedLines(clean.outputs.qwik![0]!.contents));
     expect(canaryPlugins("L13-qwik-handler-throws", "react")).toEqual([]);
     for (const target of TARGET_NAMES.filter((name) => name !== "qwik")) {
       const other = await compileWith("L13-qwik-handler-throws", target);
@@ -632,7 +654,8 @@ describe("canaries", () => {
       /<section\b[^>]*>/.exec(result.outputs[target]![0]!.contents)?.[0];
     expect(root("react")).toMatch(/^<section\s+class="uf-canary"\s+className=/);
     expect(root("solid")).toMatch(/^<section\s+className="uf-canary"\s+class=/);
-    expect(root("qwik")).toMatch(/^<section className="uf-canary" class=/);
+    // Qwik's root also takes the fallthrough `class` and `style` (ADR-0054): oxfmt breaks it.
+    expect(root("qwik")).toMatch(/^<section\s+className="uf-canary"\s+class=/);
     expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
     expect(root("svelte")).toMatch(/^<section style:uf-canary="1" class=/);
     expect(root("angular")).toMatch(/^<section \*ngIf="true"\s+class=/);
@@ -648,9 +671,7 @@ describe("canaries", () => {
       /^export default function TaskList\(\{\n[\s\S]*?\n\}: any\) \{$/m,
     );
     expect(lines("solid")).toEqual(["export default function TaskList(rawProps: any) {"]);
-    expect(lines("qwik")).toEqual([
-      'export default component$<any>(({ title = "Tasks (today)", tasks, done, tone = "info" }) => {',
-    ]);
+    expect(lines("qwik")).toEqual(["export default component$<any>("]);
     expect(lines("vue")).toEqual([
       'const { title = "Tasks (today)", tasks, done, tone = "info" } = defineProps<Record<string, any>>();',
     ]);
@@ -741,10 +762,14 @@ describe("canaries", () => {
       const { outputs } = await compileWith("L10-root-inverted", target);
       const contents = outputs[target]![0]!.contents;
       expect(contents.match(/invert\(0\.8\)/g), target).toHaveLength(1);
-      // Angular binds the root's style, so that it can merge the consumer's (ADR-0056). React's
-      // and Astro's roots also take a consumer's style, after their own (ADR-0054).
+      // Angular binds the root's style, so that it can merge the consumer's (ADR-0056). React's,
+      // Qwik's and Astro's roots also take a consumer's style, after their own (ADR-0054).
       const spread =
-        target === "react" ? ", \\.\\.\\.style" : target === "astro" ? "(?:, \\.\\.\\.\\w+)?" : "";
+        target === "react" || target === "qwik"
+          ? ", \\.\\.\\.style"
+          : target === "astro"
+            ? "(?:, \\.\\.\\.\\w+)?"
+            : "";
       expect(contents, target).toMatch(
         target === "angular"
           ? /<section\b[^>]*\[style\]="\{ filter: 'invert\(0\.8\)'/

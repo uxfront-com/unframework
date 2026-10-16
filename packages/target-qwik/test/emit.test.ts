@@ -34,7 +34,8 @@ function element(
 const greeting = element("p", { class: "greeting" }, [createText("Hello, world!", at)]);
 
 function emit(render: ElementNode, exports: UfExport[] = [createExport("default", "Hello", at)]) {
-  const component = createComponent("Hello", render, at);
+  // Without fallthrough's `class` and `style` props (ADR-0054), which ./lower.ts explains.
+  const component = { ...createComponent("Hello", render, at), inheritAttrs: false as const };
   const module = createModule("Hello.uf.tsx", [component], exports);
   const reported: unknown[] = [];
   const context: EmitContext = {

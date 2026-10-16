@@ -17,7 +17,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
-import type { OutputFile } from "@unframework/codegen";
+import { parseStatementsSource } from "@unframework/codegen";
+import type { OutputFile, ParsedStatements } from "@unframework/codegen";
 import { builtinTargets } from "@unframework/compiler";
 import type { CompilerPlugin, OutputHookContext, TargetName } from "@unframework/compiler";
 import type { Diagnostic } from "@unframework/diagnostics";
@@ -618,9 +619,13 @@ export const CANARIES: readonly Canary[] = [
     id: "L13-qwik-handler-throws",
     layer: "L13",
     description:
-      "Gives every Qwik component a document listener, for the events every action dispatches, that throws: nothing the component renders or does changes, and only Qwik's report of the error on the console (`QWIK ERROR`) shows it, on the cases whose specs act. Qwik's test mode (`qTest`) would silence the report.",
-    // Qwik's development build may also mark the component as errored, which L7 can see; the
-    // verdict asks L13 alone for its evidence.
+      "Gives every Qwik component a leaf component, rendered last, with a document listener, for the events every action dispatches, that throws a task later: nothing the component renders or does changes, and only Qwik's report of the error on the console (`QWIK ERROR`) shows it, on the cases whose specs act. Qwik's test mode (`qTest`) would silence the report.",
+    // Qwik 2.0.0-beta.47's development build wraps the host of a handler that throws in an
+    // `<errored-host>`, and loops forever where that host re-renders or holds another errored
+    // host, or where its first wrap lands with a re-render the same event schedules (a select's
+    // `input` and its model's `change` come in one task). The leaf has no props, no state and no
+    // component children, and it throws a task after the event. The wrap is the leaf's, which L7
+    // can see; the verdict asks L13 alone for its evidence.
     evidence: {
       browser: {
         "page console":
@@ -631,21 +636,63 @@ export const CANARIES: readonly Canary[] = [
     appliesTo: (info, target) => info.interacts(target),
     plugin: () => ({
       name: "uf-canary-L13-qwik-handler",
-      output: (files, { target }) =>
+      output: (files, { target, component }) =>
         target !== "qwik"
           ? undefined
           : files.map((file) => ({
               ...file,
-              contents: injectScript(
-                { ...file, contents: withQwikImports(file, ["$", "useOnDocument"]) },
-                target,
-                `useOnDocument(${JSON.stringify(ACTION_EVENTS)}, $(() => { throw new Error("${MARKER} L13 in ${target}"); }));`,
-                "render",
+              contents: withThrowingLeaf(
+                file,
+                `UfCanaryLeaf${component.name}`,
+                `useOnDocument(${JSON.stringify(ACTION_EVENTS)}, $(async () => { await new Promise((resolve) => setTimeout(resolve)); throw new Error("${MARKER} L13 in ${target}"); }));`,
               ),
             })),
     }),
   },
 ];
+
+/**
+ * A Qwik file whose component renders `leaf` after what it returns, in a fragment
+ * (`<><section>…</section><Leaf /></>`), and a component declared after it that runs `statement`
+ * and renders nothing. The component's body is the first code after its opening brace that
+ * parses as whole statements up to a brace the `component$` call's parenthesis closes; its last
+ * statement is what it returns.
+ */
+function withThrowingLeaf(file: OutputFile, leaf: string, statement: string): string {
+  const contents = withQwikImports(file, ["$", "useOnDocument"]);
+  const body = componentBodyStart(contents);
+  const fail = (): never => {
+    throw new Error(`${MARKER} ${file.path} (qwik) has no component$ body that returns.`);
+  };
+  if (body === undefined) return fail();
+  for (
+    let close = contents.indexOf("}", body);
+    close !== -1;
+    close = contents.indexOf("}", close + 1)
+  ) {
+    if (!/^\s*\)/.test(contents.slice(close + 1))) continue;
+    let statements: ParsedStatements["statements"];
+    try {
+      ({ statements } = parseStatementsSource(contents.slice(body, close)));
+    } catch {
+      continue;
+    }
+    const last = statements.at(-1);
+    if (last?.type !== "ReturnStatement" || !last.argument) return fail();
+    const start = body + last.argument.start;
+    const end = body + last.argument.end;
+    const returned = contents.slice(start, end);
+    const child = /^JSX(?:Element|Fragment)$/.test(last.argument.type) ? returned : `{${returned}}`;
+    return `${contents.slice(0, start)}<>${child}<${leaf} /></>${contents.slice(end).trimEnd()}
+
+const ${leaf} = component$(() => {
+  ${statement}
+  return null;
+});
+`;
+  }
+  return fail();
+}
 
 /** The canary with an id; throws for an unknown one, so a typo never runs a clean suite. */
 export function findCanary(id: string): Canary {

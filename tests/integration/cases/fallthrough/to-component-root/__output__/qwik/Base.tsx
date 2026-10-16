@@ -1,9 +1,11 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
-export default component$<{ text: string }>(({ text }) => {
-  return (
-    <button type="button" class="base">
-      {text}
-    </button>
-  );
-});
+export default component$<{ text: string } & { class?: ClassList; style?: CSSProperties }>(
+  ({ text, class: className, style }) => {
+    return (
+      <button type="button" class={["base", className]} style={style}>
+        {text}
+      </button>
+    );
+  },
+);

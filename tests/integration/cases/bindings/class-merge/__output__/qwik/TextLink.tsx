@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 interface LinkAttributes {
   class?: string;
@@ -19,12 +19,18 @@ export interface TextLinkProps {
   row: RowAttributes;
 }
 
-export default component$<TextLinkProps>(({ href, label, strong, link, row }) => {
-  return (
-    <p id={row.id} class={["link-row", { "link-row-strong": strong }, row.class]}>
-      <a href={href} class={["text-link", link.class]} title={link.title} rel={link.rel}>
-        {label}
-      </a>
-    </p>
-  );
-});
+export default component$<TextLinkProps & { class?: ClassList; style?: CSSProperties }>(
+  ({ href, label, strong, link, row, class: className, style }) => {
+    return (
+      <p
+        id={row.id}
+        class={["link-row", { "link-row-strong": strong }, row.class, className]}
+        style={style}
+      >
+        <a href={href} class={["text-link", link.class]} title={link.title} rel={link.rel}>
+          {label}
+        </a>
+      </p>
+    );
+  },
+);

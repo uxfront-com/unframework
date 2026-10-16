@@ -26,6 +26,9 @@ import {
   specifierFilter,
 } from "./ids.ts";
 
+/** A Qwik optimizer segment of a module: `<module id>_<symbol>.js`, its symbol a name. */
+const SEGMENT = /^(.+\.uf\.tsx(?:\.[^/_]+)?)_[\w$]+\.js$/;
+
 /** What {@link UnframeworkOptions.onCompile} receives for every module it loads. */
 export interface CompileEvent {
   /** The module id, such as `/abs/Hello.uf.tsx.vue`. */
@@ -171,6 +174,21 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
   const componentRequest = (id: string) =>
     parseModuleId(id, suffix) ? undefined : parseComponentId(id);
 
+  /**
+   * The module of ours that a framework's plugin split `id` off, when it is such a module: Qwik's
+   * optimizer moves a component's body, with the imports it reads, into a segment named after the
+   * module, `<module id>_<symbol>.js` (`Form.uf.tsx_Form_component_<hash>.js`). Its imports are
+   * the module's, so they resolve as the module's do (ADR-0053). Only that shape counts: a file
+   * that merely starts with a module's name (`Form.uf.tsx_helpers.ts`) is no segment.
+   */
+  const splitFrom = (id: string) => {
+    const index = id.indexOf("?");
+    const segment = SEGMENT.exec(index === -1 ? id : id.slice(0, index));
+    return segment
+      ? (parseModuleId(segment[1]!, suffix) ?? componentRequest(segment[1]!))
+      : undefined;
+  };
+
   /** Whether the files a compile's resolver read still hold what it read. */
   const unchanged = async (reads: ReadonlyMap<string, string | undefined>) => {
     for (const [path, text] of reads) {
@@ -313,8 +331,11 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
             );
             return id === undefined ? null : `${id}${query}`;
           }
-          // An output's import of another output (ADR-0053): `./Field.vue` from a module of ours.
-          const from = importer && (parseModuleId(importer, suffix) ?? componentRequest(importer));
+          // An output's import of another output (ADR-0053): `./Field.vue` from a module of ours,
+          // or from one a framework split off it.
+          const from =
+            importer &&
+            (parseModuleId(importer, suffix) ?? componentRequest(importer) ?? splitFrom(importer));
           if (
             from &&
             isAbsolute(from.file) &&

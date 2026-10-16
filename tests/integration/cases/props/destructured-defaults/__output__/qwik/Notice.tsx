@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export interface NoticeProps {
   message: string;
@@ -10,7 +10,7 @@ export interface NoticeProps {
   author?: { name: string };
 }
 
-export default component$<NoticeProps>(
+export default component$<NoticeProps & { class?: ClassList; style?: CSSProperties }>(
   ({
     message,
     title = "Notice",
@@ -19,9 +19,11 @@ export default component$<NoticeProps>(
     expanded = false,
     tags = ["general"],
     author = { name: "System" },
+    class: className,
+    style,
   }) => {
     return (
-      <section class="notice" aria-label={title} data-tone={tone}>
+      <section class={["notice", className]} aria-label={title} data-tone={tone} style={style}>
         <h2>{title}</h2>
         <p>{message}</p>
         <details open={expanded}>

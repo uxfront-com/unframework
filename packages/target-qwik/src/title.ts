@@ -61,11 +61,21 @@ export function qwikTitles(
       case "Text":
       case "Interpolation":
         return node;
-      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
       case "Component":
+        return {
+          ...node,
+          fills: node.fills.map((fill) => ({ ...fill, children: fill.children.map(child) })),
+        };
       case "SlotOutlet":
+        return { ...node, fallback: node.fallback.map(child) };
       case "Dynamic":
-        return node;
+        return {
+          ...node,
+          children: node.children.map(child),
+          ...(node.fills
+            ? { fills: node.fills.map((fill) => ({ ...fill, children: fill.children.map(child) })) }
+            : {}),
+        };
       default:
         return node satisfies never;
     }

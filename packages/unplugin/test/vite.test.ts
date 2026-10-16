@@ -528,6 +528,37 @@ describe("children (ADR-0053)", () => {
     }
   });
 
+  it("resolves a child's output from a module a framework splits off the parent's", async () => {
+    const children = createProject({ "Field.uf.tsx": FIELD, "Form.uf.tsx": FORM });
+    try {
+      const server = await startServer(children.root, unframework({ target: "qwik" }));
+      try {
+        const { client } = server;
+        const form = join(children.root, "Form.uf.tsx");
+        expect(codeOf(await client.pluginContainer.load(form))).toContain(
+          'import Field from "./Field";',
+        );
+        // Qwik's optimizer moves a component's body, and the imports it reads, into a segment.
+        const segment = `${form}_Form_component_Jf8mu3bRpe0.js`;
+        expect(await client.pluginContainer.resolveId("./Field", segment)).toMatchObject({
+          id: join(children.root, "Field.uf.tsx"),
+        });
+        // A script target joins a file's outputs: a local child loads under the module id.
+        expect(await client.pluginContainer.resolveId("./Note", segment)).toMatchObject({
+          id: form,
+        });
+        // A file that only starts with the module's name is no segment: its imports are its own.
+        for (const lookalike of [`${form}_helpers.ts`, `${form}_assets/util.js`]) {
+          expect(await client.pluginContainer.resolveId("./Field", lookalike)).toBeNull();
+        }
+      } finally {
+        await server.close();
+      }
+    } finally {
+      children.remove();
+    }
+  });
+
   it("recompiles a parent when a child's API changes, and watches the child", async () => {
     const children = createProject({ "Field.uf.tsx": FIELD, "Form.uf.tsx": FORM });
     try {

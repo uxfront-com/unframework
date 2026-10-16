@@ -1,27 +1,42 @@
 import {
   bindingOf,
   boundJsxAttribute,
+  childImports,
   componentTypes,
-  compositionUse,
   defineTarget,
   exportDeclaration,
   exportsOf,
+  expressionCode,
   ImportSet,
   js,
   jsxAttributeValue,
   jsxContext,
+  jsxDynamic,
+  jsxElement,
   jsxExpression,
   jsxNode,
+  keyImports,
+  keyOwner,
+  mapCall,
   printComponentModule,
+  rewriteExpression,
   sourceNames,
   spreadRead,
   staticJsxAttribute,
+  ternaryChain,
 } from "@unframework/codegen";
 import type { EmitContext, JsxContext, JsxDialect, OutputFile, Target } from "@unframework/codegen";
 import { codeOf } from "@unframework/ir";
+import { childrenOf, walk } from "@unframework/ir";
 import type {
+  BindingId,
+  DynamicNode,
   ElementNode,
+  EventAttribute,
   EventDeclaration,
+  FragmentNode,
+  ModelAttribute,
+  RenderNode,
   TypeDeclaration,
   UfComponent,
   UfModule,
@@ -35,11 +50,29 @@ import {
 } from "./attributes.ts";
 import type { Namespace } from "./attributes.ts";
 import { qwikClassAttribute } from "./class.ts";
+import {
+  componentHandler,
+  fillExpressions,
+  keyType,
+  fillAttribute,
+  isRenderProp,
+  modelAttribute,
+  modelCallback,
+  modelOptions,
+  modelWriter,
+  optionSelected,
+  readsRenderLocal,
+  RenderLocals,
+  slotOutlet,
+  textOptionSelected,
+  withLocals,
+  slotProp,
+} from "./composition.ts";
 import { qwikEventProp } from "./events.ts";
 import { Listeners } from "./listeners.ts";
 import { OutputNames, planSetup } from "./plan.ts";
 import type { SetupPlan } from "./plan.ts";
-import { printSetup } from "./setup.ts";
+import { exposeStatement, fillFunction, printSetup } from "./setup.ts";
 import { qwikTitles } from "./title.ts";
 import { isPrimitiveValue } from "./values.ts";
 
@@ -146,24 +179,27 @@ export const qwik: Target = defineTarget({
     "dynamic-component": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
-    // Composition's cells are declared before this target emits it (ADR-0055): until M3's lane
-    // for Qwik lands, a component that uses it is reported, never emitted without it (P2).
-    const composition = compositionUse(context.module, component);
-    if (composition) {
-      context.report({
-        code: "UF1002",
-        severity: "error",
-        message: `The qwik target does not emit ${composition.what} yet: composition lands in M3.`,
-        span: composition.span,
-      });
-      return [];
-    }
     const { module } = context;
     // Every name the source declares or reads is taken before the output names its own, but for
     // the authoring APIs code calls (`nextTick`), which the output replaces with its own.
     const reserved = sourceNames(component, module);
     for (const name of apiNames(component)) reserved.delete(name);
     const imports = new ImportSet(reserved);
+    // Each child's output by the name the template uses (ADR-0053), and each key from the output
+    // of its module's main component (ADR-0054). A component that renders itself names its own
+    // `const`.
+    const children = childImports(component, module, (name) => name);
+    for (const child of children) {
+      if (child.self) continue;
+      if (child.export === "default") {
+        imports.addDefault(child.specifier, child.local, { exact: true });
+      } else {
+        imports.add(child.specifier, child.name, { local: child.local, exact: true });
+      }
+    }
+    for (const key of keyImports(component, module, (name) => name)) {
+      if (key.specifier) imports.add(key.specifier, key.name, { local: key.local, exact: true });
+    }
     const componentFn = imports.add("@qwik.dev/core", "component$");
     const names = new OutputNames(imports);
     const plan = planSetup(component, module, names);
@@ -171,26 +207,63 @@ export const qwik: Target = defineTarget({
     // The dialect reads the namespaces of the tree it prints, which is the render tree with
     // Qwik's form of each `<title>`: they are filled in once that tree is built.
     const namespaces = new Map<ElementNode, Namespace>();
+    const options = new Map<ElementNode, ModelAttribute>();
+    const followed = new Set<RenderNode>();
+    // What the render reads before it returns: `<component is>`'s `const`, the values of the
+    // form controls a `v-model` binds (./composition.ts).
+    const locals = new RenderLocals(plan);
     const jsx = jsxContext({
       component,
-      dialect: qwikDialect(component, module, namespaces, listeners),
+      dialect: qwikDialect(
+        component,
+        module,
+        namespaces,
+        options,
+        followed,
+        listeners,
+        plan,
+        locals,
+      ),
       rules: plan.rules(),
     });
     const render = qwikTitles(component.render, jsx, module);
     for (const [element, namespace] of elementNamespaces(render))
       namespaces.set(element, namespace);
+    for (const [option, model] of modelOptions(render)) {
+      options.set(option, model);
+      // An option without a `value` is selected by its text.
+      const valued = option.attributes.some(
+        (attribute) =>
+          (attribute.kind === "Static" || attribute.kind === "Bound") && attribute.name === "value",
+      );
+      const selected = valued ? undefined : textOptionSelected(option, model, jsx, plan, locals);
+      if (selected) option.attributes = [selected, ...option.attributes];
+    }
+    for (const node of replacedBeforeSiblings(render)) followed.add(node);
+    for (const attribute of listsInFills(render)) listeners.explicit.add(attribute);
     const setup = printSetup(plan);
-    const returned = js.returnStatement(jsxNode(render, jsx));
+    const root = jsxNode(render, jsx);
+    if (plan.composition.fallthrough) mergeFallthrough(root, plan.composition.fallthrough);
+    const returned = js.returnStatement(root);
+    const body = [setup.body, exposeStatement(plan), locals.statements.join("\n")]
+      .filter(Boolean)
+      .join("\n\n");
     const events = eventsInterface(component, plan);
+    const slots = slotsInterface(component, plan);
+    const models = modelsInterface(component, plan);
     const parameter = propsParameter(component, jsx, plan);
-    const propsType = [component.propsParameter?.type.code, events?.name].filter(
-      (type) => type !== undefined,
-    );
+    const propsType = [
+      component.propsParameter?.type.code,
+      events?.name,
+      models?.name,
+      slots?.name,
+      ownProps(component, plan),
+    ].filter((type) => type !== undefined);
     const definition = js.callExpression(
       js.identifier(componentFn),
       [
         js.arrowFunction(parameter ? [parameter] : [], [
-          ...(setup.body ? [jsx.placeholders.statements(`${setup.body}\n`)] : []),
+          ...(body ? [jsx.placeholders.statements(`${body}\n`)] : []),
           returned,
         ]),
       ],
@@ -199,20 +272,35 @@ export const qwik: Target = defineTarget({
     const hoisted = setup.hoisted.length
       ? [jsx.placeholders.statements(`${joinHoisted(setup.hoisted)}\n`)]
       : [];
+    const keys = keyDeclarations(component, module, plan);
+    const exported = exportsOf(component.name, module.exports);
+    // A component that renders itself refers to its own `const` (ADR-0053).
+    const declared = children.some((child) => child.self)
+      ? [
+          js.variableDeclaration("const", component.name, definition),
+          ...exported.map((entry) =>
+            entry.kind === "default"
+              ? js.exportDefault(js.identifier(component.name))
+              : js.exportList(component.name, [entry.name]),
+          ),
+        ]
+      : exportDeclaration(component.name, definition, exported);
     return [
       {
         path: `${component.name}.tsx`,
         contents: printComponentModule(
           {
             imports,
-            types: [...componentTypes(component, module), ...(events ? [events] : [])],
+            types: [
+              ...componentTypes(component, module),
+              ...(events ? [events] : []),
+              ...(models ? [models] : []),
+              ...(slots ? [slots] : []),
+            ],
             body: [
+              ...(keys ? [jsx.placeholders.statements(`${keys}\n`)] : []),
               ...hoisted,
-              ...exportDeclaration(
-                component.name,
-                definition,
-                exportsOf(component.name, module.exports),
-              ),
+              ...declared,
             ],
             helpers: helpers(plan, listeners),
             placeholders: jsx.placeholders,
@@ -230,6 +318,7 @@ export default qwik;
 type Parameter = Parameters<typeof js.arrowFunction>[0][number];
 type AstExpression = Parameters<typeof js.conditionalExpression>[0];
 type JsxAttribute = ReturnType<typeof js.jsxAttribute> | ReturnType<typeof js.jsxSpreadAttribute>;
+type JsxAttributeNode = ReturnType<typeof js.jsxAttribute>;
 
 /**
  * The props as `component$`'s parameter, typed by its type argument (`component$<Props>`,
@@ -257,10 +346,13 @@ function propsParameter(
       ? property
       : { ...property, value: js.bindingIdentifier(local), shorthand: false };
   });
+  const composition = compositionProps(plan);
   if (parameter?.form === "object") {
-    return read.length || plan.emitted.size ? js.bindingIdentifier(parameter.name!) : undefined;
+    return read.length || plan.emitted.size || composition.length
+      ? js.bindingIdentifier(parameter.name!)
+      : undefined;
   }
-  if (!read.length && !events.length) return undefined;
+  if (!read.length && !events.length && !composition.length) return undefined;
   // In the order the source destructures them, which may differ from the type's.
   const start = (binding: string) => bindingOf(component, binding).span.start;
   return js.objectPattern([
@@ -273,7 +365,179 @@ function propsParameter(
         ),
       ),
     ...events,
+    ...composition.map(([prop, local]) => {
+      const property = js.bindingProperty(prop);
+      return local === prop
+        ? property
+        : { ...property, value: js.bindingIdentifier(local), shorthand: false };
+    }),
   ]);
+}
+
+/**
+ * The props composition adds that the component reads, each with its local: its models and
+ * their callbacks, its render-prop slots, the `class` and `style` that fall through, and the
+ * `ref` it exposes through (./composition.ts).
+ */
+function compositionProps(plan: SetupPlan): [prop: string, local: string][] {
+  const { composition } = plan;
+  const found: [string, string][] = [];
+  for (const model of composition.models.values()) {
+    found.push([model.name, model.prop]);
+    if (model.written) found.push([model.callbackProp, model.callback]);
+  }
+  for (const [slot, local] of composition.slots) found.push([slotProp(slot), local]);
+  if (composition.fallthrough) {
+    found.push(["class", composition.fallthrough.className]);
+    found.push(["style", composition.fallthrough.style]);
+  }
+  if (composition.expose) found.push(["ref", composition.expose.ref]);
+  return found;
+}
+
+/**
+ * The slots a component declares as QRL render props (ADR-0054), as an exported interface beside
+ * its props type: `export interface CardSlots { title$?: QRL<() => JSXOutput>; }`. The default
+ * slot without props is projected, and is no prop.
+ */
+function slotsInterface(component: UfComponent, plan: SetupPlan): TypeDeclaration | undefined {
+  const declared = (component.slots?.slots ?? []).filter((slot) =>
+    isRenderProp(component, slot.name),
+  );
+  if (!declared.length) return undefined;
+  const name = plan.names.fresh(`${component.name}Slots`);
+  const qrl = plan.names.core("QRL", { type: true });
+  const output = plan.names.core("JSXOutput", { type: true });
+  const members = declared.map(
+    (slot) =>
+      `  ${slotProp(slot.name)}?: ${qrl}<(${slot.props ? `props: ${slot.props.code}` : ""}) => ${output}>;`,
+  );
+  const code = `interface ${name} {\n${members.join("\n")}\n}`;
+  return { name, exported: true, code, span: component.slots!.span };
+}
+
+/**
+ * The models a component declares (ADR-0054), each a prop and its change callback, as an
+ * exported interface beside its props type: `export interface StepperModels { value?: number;
+ * onValueChange$?: QRL<(value: number) => void>; }`.
+ */
+function modelsInterface(component: UfComponent, plan: SetupPlan): TypeDeclaration | undefined {
+  const models = [...plan.composition.models.values()];
+  const [first] = models;
+  if (!first) return undefined;
+  const name = plan.names.fresh(`${component.name}Models`);
+  const qrl = plan.names.core("QRL", { type: true });
+  const members = models.flatMap(({ item, name: model, callbackProp }) => {
+    const type = item.type?.code ?? "unknown";
+    return [
+      `  ${model}${item.required ? "" : "?"}: ${type};`,
+      `  ${callbackProp}?: ${qrl}<(${model}: ${type}) => void>;`,
+    ];
+  });
+  const code = `interface ${name} {\n${members.join("\n")}\n}`;
+  return { name, exported: true, code, span: first.item.span };
+}
+
+/**
+ * The props every component of its kind takes, as a type literal: `class` and `style` where
+ * they fall through, and the `ref` a component that exposes functions fills.
+ */
+function ownProps(component: UfComponent, plan: SetupPlan): string | undefined {
+  const members: string[] = [];
+  if (plan.composition.fallthrough) {
+    members.push(
+      `class?: ${plan.names.core("ClassList", { type: true })}`,
+      `style?: ${plan.names.core("CSSProperties", { type: true })}`,
+    );
+  }
+  // The signal of a consumer's component ref, which the component fills (`exposeRef`): of
+  // `object`, as Qwik's lint (`qwik/valid-lexical-scope`) refuses a captured signal whose type
+  // holds functions, and the consumer's ref type names the exposed functions as plain ones.
+  if (component.exposes)
+    members.push(`ref?: ${plan.names.core("Signal", { type: true })}<object | undefined>`);
+  return members.length ? `{ ${members.join("; ")} }` : undefined;
+}
+
+/**
+ * The injection keys of the module (ADR-0054), declared in the output of its main component:
+ * `export const ThemeKey = createContextId<Theme>("uf.theme");`. A key that holds a ref holds
+ * Qwik's signal, which is provided itself.
+ */
+function keyDeclarations(
+  component: UfComponent,
+  module: UfModule,
+  plan: SetupPlan,
+): string | undefined {
+  if (!module.keys?.length || keyOwner(module.components, module.exports) !== component.name) {
+    return undefined;
+  }
+  const create = plan.names.core("createContextId");
+  return module.keys
+    .map(
+      (key) =>
+        `export const ${key.name} = ${create}<${keyType(key.type.code, plan.names)}>(${JSON.stringify(key.description)});`,
+    )
+    .join("\n");
+}
+
+/**
+ * Merges the `class` and `style` a consumer passes into the root (`fallthrough`): the class
+ * tokens after the root's own, `class={["tag", className]}`, and the style's declarations after
+ * the root's, `style={{ padding: "2px", ...style }}`, so the consumer's win (ADR-0054).
+ */
+function mergeFallthrough(
+  root: AstExpression,
+  { className, style }: { className: string; style: string },
+): void {
+  // A component at the root is the only child of a fragment.
+  const [only] = root.type === "JSXFragment" ? root.children : [];
+  const element =
+    root.type === "JSXElement" ? root : only?.type === "JSXElement" ? only : undefined;
+  if (!element) return;
+  const attributes = element.openingElement.attributes;
+  const find = (name: string) =>
+    attributes.find(
+      (attribute): attribute is JsxAttributeNode =>
+        attribute.type === "JSXAttribute" &&
+        attribute.name.type === "JSXIdentifier" &&
+        attribute.name.name === name,
+    );
+  const classAttribute = find("class");
+  const classValue = classAttribute && attributeValue(classAttribute);
+  const merged =
+    classValue === undefined
+      ? js.identifier(className)
+      : classValue.type === "ArrayExpression"
+        ? js.arrayExpression([...classValue.elements, js.identifier(className)])
+        : js.arrayExpression([classValue, js.identifier(className)]);
+  const styleAttribute = find("style");
+  const styleValue = styleAttribute && attributeValue(styleAttribute);
+  const styled =
+    styleValue === undefined
+      ? js.identifier(style)
+      : js.objectExpression([
+          ...(styleValue.type === "ObjectExpression"
+            ? styleValue.properties
+            : [js.spreadElement(styleValue)]),
+          js.spreadElement(js.identifier(style)),
+        ] as Parameters<typeof js.objectExpression>[0]);
+  const replace = (attribute: JsxAttributeNode | undefined, name: string, value: AstExpression) => {
+    const next = js.jsxAttribute(name, js.jsxExpressionContainer(value));
+    if (attribute) attributes.splice(attributes.indexOf(attribute), 1, next);
+    else attributes.push(next);
+  };
+  replace(classAttribute, "class", merged);
+  replace(styleAttribute, "style", styled);
+}
+
+/** An attribute's value as an expression: a string for a quoted one. */
+function attributeValue(attribute: JsxAttributeNode): AstExpression | undefined {
+  const { value } = attribute;
+  if (value?.type === "Literal") return js.stringLiteral(value.value);
+  if (value?.type === "JSXExpressionContainer" && value.expression.type !== "JSXEmptyExpression") {
+    return value.expression;
+  }
+  return undefined;
 }
 
 /**
@@ -374,6 +638,87 @@ function helpers(plan: SetupPlan, listeners: Listeners): string[] {
       ].join("\n"),
     );
   }
+  if (names.has("exposeRef")) {
+    const signal = names.core("Signal", { type: true });
+    found.push(
+      [
+        "/**",
+        " * Fills a consumer's component ref with what the component exposes, or empties it: Qwik has no",
+        " * component instance for the ref to hold (ADR-0054).",
+        " */",
+        `function ${names.once("exposeRef")}(`,
+        `  ref: ${signal}<object | undefined> | undefined,`,
+        "  exposed: object | undefined,",
+        "): void {",
+        "  if (ref) ref.value = exposed;",
+        "}",
+      ].join("\n"),
+    );
+  }
+  if (names.has("toggle")) {
+    found.push(
+      [
+        "/** The values with `value` added or removed, as Vue's `vModelCheckbox` writes a checkbox group. */",
+        `function ${names.once("toggle")}<T>(values: readonly T[], value: T, checked: boolean): T[] {`,
+        "  if (!checked) return values.filter((each) => each !== value);",
+        "  return values.includes(value) ? [...values] : [...values, value];",
+        "}",
+      ].join("\n"),
+    );
+  }
+  if (names.has("selectedValues")) {
+    found.push(
+      [
+        "/** The values of a multiple select's selected options, as Vue's `vModelSelect` writes them. */",
+        `function ${names.once("selectedValues")}(select: HTMLSelectElement): string[] {`,
+        "  return Array.from(select.selectedOptions, (option) => option.value);",
+        "}",
+      ].join("\n"),
+    );
+  }
+  if (names.has("modelText")) {
+    const modifiers = names.once("TextModifiers");
+    found.push(
+      [
+        "/**",
+        " * A text control's `v-model` as Vue's `vModelText` runs it: `read` is what the control's text",
+        " * writes, trimmed with `trim` and cast with `number` as `looseToNumber` does; `shown` is the text",
+        " * the control shows for a value, which keeps the person's own text while it is focused and",
+        " * reads as the value (`trim`, `lazy`), or casts to it.",
+        " */",
+        `const ${names.once("modelText")} = {`,
+        `  read<T>(element: HTMLInputElement | HTMLTextAreaElement, modifiers: ${modifiers}): T {`,
+        "    const text = modifiers.trim ? element.value.trim() : element.value;",
+        "    const number = Number.parseFloat(text);",
+        "    // The state's type: where the text is no number, Vue writes the text, as here.",
+        "    return (modifiers.number && !Number.isNaN(number) ? number : text) as T;",
+        "  },",
+        "  shown(",
+        "    element: HTMLInputElement | HTMLTextAreaElement | undefined,",
+        "    value: unknown,",
+        `    modifiers: ${modifiers},`,
+        "  ): string {",
+        '    const text = value == null ? "" : String(value);',
+        "    if (!element || element.value === text) return text;",
+        '    if (element === document.activeElement && element.type !== "range") {',
+        "      if (modifiers.lazy || (modifiers.trim && element.value.trim() === text)) {",
+        "        return element.value;",
+        "      }",
+        "    }",
+        "    if (modifiers.number && this.read(element, modifiers) === value) return element.value;",
+        "    return text;",
+        "  },",
+        "};",
+        "",
+        "/** The modifiers of a text control's `v-model`. */",
+        `interface ${modifiers} {`,
+        "  trim?: boolean;",
+        "  lazy?: boolean;",
+        "  number?: boolean;",
+        "}",
+      ].join("\n"),
+    );
+  }
   return found;
 }
 
@@ -387,10 +732,111 @@ function qwikDialect(
   component: UfComponent,
   module: UfModule,
   namespaces: ReadonlyMap<ElementNode, Namespace>,
+  options: ReadonlyMap<ElementNode, ModelAttribute>,
+  followed: ReadonlySet<RenderNode>,
   listeners: Listeners,
+  plan: SetupPlan,
+  locals: RenderLocals,
 ): JsxDialect {
   const namespaceOf = (element: ElementNode) => namespaces.get(element) ?? "html";
+  const { composition } = plan;
+  const fills = fillExpressions(component);
+  /** The name of each setup function's copy in the fills that call it. */
+  const fillCopies = new Map<BindingId, string>();
   return {
+    conditional(node, context) {
+      const chain = ternaryChain(node, context);
+      return followed.has(node) ? js.jsxFragment([js.jsxExpressionContainer(chain)]) : chain;
+    },
+    // A child's event is its QRL prop (ADR-0047), its handler a `$` scope the optimizer makes.
+    componentEvent(attribute, _node, context) {
+      return [
+        js.jsxAttribute(
+          qwikEventProp(attribute.event),
+          js.jsxExpressionContainer(componentHandler(attribute.handler, context, plan)),
+        ),
+      ];
+    },
+    fillAttribute: (fill, _node, context) => fillAttribute(fill, context, composition, locals),
+    list(node, context) {
+      locals.enter(false);
+      const call = mapCall(node, context);
+      const scope = locals.leave();
+      if (call.type !== "CallExpression") return call;
+      const [arrow] = call.arguments;
+      if (arrow?.type !== "ArrowFunctionExpression") return call;
+      return { ...call, arguments: [withLocals(arrow, scope, context)] };
+    },
+    // A fill's code runs as a `$` scope, which captures no plain function: a setup function it
+    // calls is declared in the fill's callback, its own calls written in place (./inline.ts), so
+    // the fill renders at once, with no promise in a condition, a class or a style.
+    // Where the component declares the function too (its QRL, or a plain one render calls), the
+    // fill's copy takes a name of its own: a listener in the fill keeps calling the QRL.
+    expression(expression, context, site) {
+      const rules = context.rules!;
+      if (!(locals.inFill && fills.has(expression))) {
+        return rewriteExpression(expression, component, rules, site);
+      }
+      const copies = new Map<BindingId, string>();
+      for (const reference of expression.refs) {
+        if (reference.kind !== "Binding" || !reference.call) continue;
+        const fn = plan.functions.get(reference.binding);
+        if (!fn || fn.form === "module") continue;
+        const id = fn.item.binding;
+        let name = fillCopies.get(id);
+        if (name === undefined) {
+          const declared = plan.declared.has(id) || fn.form === "render" || fn.form === "both";
+          name = declared ? plan.names.fresh(`${fn.binding.name}InFill`) : fn.binding.name;
+          fillCopies.set(id, name);
+        }
+        copies.set(id, name);
+        locals.declareInFill(name, () => fillFunction(plan, id, name));
+      }
+      return rewriteExpression(
+        expression,
+        component,
+        {
+          ...rules,
+          binding: (reference, binding, written, at) =>
+            (reference.call && copies.get(binding.id)) ||
+            rules.binding(reference, binding, written, at),
+        },
+        site,
+      );
+    },
+    slotOutlet: (node, context) =>
+      slotOutlet(node, context, composition, () => plan.names.core("Slot")),
+    modelBinding(attribute, _node, context) {
+      return [
+        js.jsxAttribute(
+          attribute.model,
+          js.jsxExpressionContainer(jsxExpression(attribute.value, context)),
+        ),
+        js.jsxAttribute(
+          modelCallback(attribute.model),
+          js.jsxExpressionContainer(
+            context.placeholders.expression(modelWriter(attribute.value, plan)),
+          ),
+        ),
+      ];
+    },
+    modelAttribute: (attribute, element, context) =>
+      modelAttribute(attribute, element, context, plan, locals, listeners.explicit.has(attribute)),
+    // A `<component is>` that reads a list's item, or sits in a fill, is declared in that
+    // callback.
+    dynamic(node, context) {
+      // In a fill, it may call a function only the fill declares (./composition.ts).
+      const local = readsRenderLocal(node.is, component) || locals.inFill;
+      const name = locals.declare("Tag", expressionCode(node.is, context), local);
+      const element = node.attributes.some((attribute) => attribute.kind === "Event")
+        ? candidateBranches(node, name, context, listeners)
+        : jsxDynamic(node, name, context);
+      return followed.has(node)
+        ? js.jsxFragment([
+            element.type === "JSXElement" ? element : js.jsxExpressionContainer(element),
+          ])
+        : element;
+    },
     eventAttribute: (attribute, element, context) =>
       listeners.attributes(attribute, element, context),
     attributeName: (name, element) => qwikAttributeName(name, namespaceOf(element)),
@@ -403,7 +849,9 @@ function qwikDialect(
         return [untypedSpread(name, js.stringLiteral(written === true ? "" : written))];
       }
       const value = qwikStaticValue(element.tag, namespace, name, written);
+      const model = name === "value" ? options.get(element) : undefined;
       return [
+        ...(model ? [optionSelected(element, model, context, plan, locals)] : []),
         js.jsxAttribute(
           qwikAttributeName(name, namespace),
           value === true
@@ -415,6 +863,13 @@ function qwikDialect(
       ];
     },
     boundAttribute(attribute, element, context) {
+      const model = attribute.name === "value" ? options.get(element) : undefined;
+      if (model) {
+        return [
+          optionSelected(element, model, context, plan, locals),
+          ...boundJsxAttribute(attribute, element, context),
+        ];
+      }
       if (!isUntypedAttribute(element.tag, namespaceOf(element), attribute.name)) {
         return boundJsxAttribute(attribute, element, context);
       }
@@ -444,6 +899,113 @@ function qwikDialect(
         isPrimitiveValue(condition, component, module),
       ),
   };
+}
+
+/**
+ * A `<component is>` with listeners, as one element per candidate tag: `Tag === "a" ? <a …> :
+ * <button …>`. Qwik 2.0.0-beta.47's runtime makes a `$` prop an element's listener only where
+ * the optimizer splits the props, which it does not for `<Tag>`, so `onClick$` on it would be an
+ * attribute. Listeners are on tags only: a component candidate's are its props (ADR-0054).
+ */
+function candidateBranches(
+  node: DynamicNode,
+  name: string,
+  context: JsxContext,
+  listeners: Listeners,
+): AstExpression {
+  const tags = node.candidates.flatMap((candidate) =>
+    candidate.kind === "Tag" ? [candidate.tag] : [],
+  );
+  const branches = tags.map((tag) => {
+    listeners.reprint(node);
+    return jsxElement(
+      {
+        kind: "Element",
+        tag,
+        // A tag candidate's attributes are an element's (ADR-0054).
+        attributes: node.attributes.filter(
+          (attribute) =>
+            attribute.kind !== "Prop" &&
+            attribute.kind !== "Listener" &&
+            attribute.kind !== "ModelBinding",
+        ),
+        children: node.children,
+        span: node.span,
+      },
+      context,
+    );
+  });
+  return branches
+    .slice(0, -1)
+    .reduceRight<AstExpression>(
+      (alternate, branch, index) =>
+        js.conditionalExpression(
+          js.binaryExpression("===", js.identifier(name), js.stringLiteral(tags[index]!)),
+          branch,
+          alternate,
+        ),
+      branches.at(-1)!,
+    );
+}
+
+/**
+ * The listeners and models of the elements and `<component is>` nodes in a render-prop fill and
+ * in a list, the fill's own or one around its component (see `Listeners.explicit`).
+ */
+function listsInFills(root: ElementNode | FragmentNode): Set<EventAttribute | ModelAttribute> {
+  const found = new Set<EventAttribute | ModelAttribute>();
+  const visit = (node: RenderNode, fill: boolean, list: boolean): void => {
+    if ((node.kind === "Element" || node.kind === "Dynamic") && fill && list) {
+      for (const attribute of node.attributes) {
+        if (attribute.kind === "Event" || attribute.kind === "Model") found.add(attribute);
+      }
+    }
+    if (node.kind === "Component" || node.kind === "Dynamic") {
+      const fills = node.kind === "Component" ? node.fills : (node.fills ?? []);
+      for (const each of fills) {
+        // The default slot's plain fill is projected: it renders in the component's own segment.
+        const own = each.slot === "default" && !each.parameter;
+        for (const child of each.children) visit(child, own ? fill : true, list);
+      }
+      if (node.kind === "Dynamic") for (const child of node.children) visit(child, fill, list);
+      return;
+    }
+    if (node.kind === "For") return visit(node.body, fill, true);
+    for (const child of childrenOf(node)) visit(child, fill, list);
+  };
+  for (const child of root.kind === "Fragment" ? root.children : [root]) visit(child, false, false);
+  return found;
+}
+
+/**
+ * The conditionals and `<component is>` nodes that a sibling follows. Qwik 2.0.0-beta.47's diff
+ * inserts a node that replaces another before it, then moves each unkeyed sibling after it back
+ * in place (core's `retrieveChildWithKey`), and a focused sibling loses its focus. In a fragment
+ * of its own, the replacement happens among the fragment's children, and no sibling moves.
+ */
+function replacedBeforeSiblings(root: ElementNode | FragmentNode): Set<RenderNode> {
+  const found = new Set<RenderNode>();
+  const visit = (children: readonly RenderNode[]) => {
+    children.forEach((child, index) => {
+      if ((child.kind === "If" || child.kind === "Dynamic") && index < children.length - 1) {
+        found.add(child);
+      }
+    });
+  };
+  visit(root.kind === "Fragment" ? root.children : [root]);
+  walk(root, {
+    enter(node) {
+      if (node.kind === "Element") visit(node.children);
+      if (node.kind === "If") for (const branch of node.branches) visit(branch.children);
+      if (node.kind === "Component") for (const fill of node.fills) visit(fill.children);
+      if (node.kind === "SlotOutlet") visit(node.fallback);
+      if (node.kind === "Dynamic") {
+        visit(node.children);
+        for (const fill of node.fills ?? []) visit(fill.children);
+      }
+    },
+  });
+  return found;
 }
 
 /** `{...{ name: value }}`: an attribute under its HTML name, which Qwik's types leave unchecked. */

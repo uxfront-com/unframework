@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export interface OrderSummaryProps {
   customer: string;
@@ -9,10 +9,10 @@ export interface OrderSummaryProps {
   coupon?: string;
 }
 
-export default component$<OrderSummaryProps>(
-  ({ customer, orderNumber, unitPrice, quantity, discount, coupon }) => {
+export default component$<OrderSummaryProps & { class?: ClassList; style?: CSSProperties }>(
+  ({ customer, orderNumber, unitPrice, quantity, discount, coupon, class: className, style }) => {
     return (
-      <section class="order-summary" aria-label="Order summary">
+      <section class={["order-summary", className]} aria-label="Order summary" style={style}>
         <h2>Order {String(orderNumber).padStart(6, "0")}</h2>
         <p>Customer: {customer.trim().toUpperCase()}</p>
         <p>{`${quantity} item${quantity === 1 ? "" : "s"} at ${unitPrice.toFixed(2)} each`}</p>

@@ -176,10 +176,18 @@ export function elementNamespaces(root: ElementNode | FragmentNode): Map<Element
       case "Text":
       case "Interpolation":
         return;
-      // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
+      // A fill renders in the child's HTML: the analyser keeps components out of SVG (M8).
       case "Component":
+        for (const fill of node.fills) for (const child of fill.children) visit(child, "html");
+        return;
       case "SlotOutlet":
+        for (const child of node.fallback) visit(child, parent);
+        return;
       case "Dynamic":
+        for (const child of node.children) visit(child, parent);
+        for (const fill of node.fills ?? []) {
+          for (const child of fill.children) visit(child, "html");
+        }
         return;
       default:
         return node satisfies never;

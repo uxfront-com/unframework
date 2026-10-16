@@ -1,4 +1,4 @@
-import { $, type QRL, component$ } from "@qwik.dev/core";
+import { $, type CSSProperties, type ClassList, type QRL, component$ } from "@qwik.dev/core";
 
 export interface FileInfo {
   path: string;
@@ -18,37 +18,37 @@ export interface FileRowEvents {
   onShare$?: QRL<(path: string, note?: string) => void>;
 }
 
-export default component$<FileRowProps & FileRowEvents>(
-  ({ path, size, onRefresh$, onOpen$, onMove$, onPick$, onShare$ }) => {
-    const archive = $(() => {
-      onMove$?.(path, `archive/${path}`);
-      onRefresh$?.();
-    });
+export default component$<
+  FileRowProps & FileRowEvents & { class?: ClassList; style?: CSSProperties }
+>(({ path, size, onRefresh$, onOpen$, onMove$, onPick$, onShare$, class: className, style }) => {
+  const archive = $(() => {
+    onMove$?.(path, `archive/${path}`);
+    onRefresh$?.();
+  });
 
-    return (
-      <div class="file-row" role="group" aria-label={path}>
-        <span>
-          {path} ({size} bytes)
-        </span>
-        <button type="button" onClick$={() => onRefresh$?.()}>
-          Refresh
-        </button>
-        <button type="button" onClick$={() => onOpen$?.(path)}>
-          Open
-        </button>
-        <button type="button" onClick$={archive}>
-          Archive
-        </button>
-        <button type="button" onClick$={() => onPick$?.({ path, size })}>
-          Select
-        </button>
-        <button type="button" onClick$={() => onShare$?.(path)}>
-          Share
-        </button>
-        <button type="button" onClick$={() => onShare$?.(path, "Please review")}>
-          Share with a note
-        </button>
-      </div>
-    );
-  },
-);
+  return (
+    <div class={["file-row", className]} role="group" aria-label={path} style={style}>
+      <span>
+        {path} ({size} bytes)
+      </span>
+      <button type="button" onClick$={() => onRefresh$?.()}>
+        Refresh
+      </button>
+      <button type="button" onClick$={() => onOpen$?.(path)}>
+        Open
+      </button>
+      <button type="button" onClick$={archive}>
+        Archive
+      </button>
+      <button type="button" onClick$={() => onPick$?.({ path, size })}>
+        Select
+      </button>
+      <button type="button" onClick$={() => onShare$?.(path)}>
+        Share
+      </button>
+      <button type="button" onClick$={() => onShare$?.(path, "Please review")}>
+        Share with a note
+      </button>
+    </div>
+  );
+});

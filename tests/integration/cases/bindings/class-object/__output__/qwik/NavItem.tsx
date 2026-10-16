@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export interface NavItemProps {
   label: string;
@@ -8,14 +8,20 @@ export interface NavItemProps {
   danger?: boolean;
 }
 
-export default component$<NavItemProps>(({ label, href, active, muted, danger = false }) => {
-  return (
-    <a
-      href={href}
-      class={{ active, "nav-item-muted": muted, "nav-item-danger text-danger": danger }}
-      aria-current={active ? "page" : undefined}
-    >
-      {label}
-    </a>
-  );
-});
+export default component$<NavItemProps & { class?: ClassList; style?: CSSProperties }>(
+  ({ label, href, active, muted, danger = false, class: className, style }) => {
+    return (
+      <a
+        href={href}
+        class={[
+          { active, "nav-item-muted": muted, "nav-item-danger text-danger": danger },
+          className,
+        ]}
+        aria-current={active ? "page" : undefined}
+        style={style}
+      >
+        {label}
+      </a>
+    );
+  },
+);

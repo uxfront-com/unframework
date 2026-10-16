@@ -1,4 +1,12 @@
-import { $, type QRL, component$, useSignal, useVisibleTask$ } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type QRL,
+  component$,
+  useSignal,
+  useVisibleTask$,
+} from "@qwik.dev/core";
 
 export interface AutoRefreshProps {
   /** Milliseconds between two refreshes. */
@@ -9,7 +17,9 @@ export interface AutoRefreshEvents {
   onRefresh$?: QRL<(count: number) => void>;
 }
 
-export default component$<AutoRefreshProps & AutoRefreshEvents>(({ interval, onRefresh$ }) => {
+export default component$<
+  AutoRefreshProps & AutoRefreshEvents & { class?: ClassList; style?: CSSProperties }
+>(({ interval, onRefresh$, class: className, style }) => {
   const enabled = useSignal(false);
   const timer = useSignal<ReturnType<typeof setInterval> | undefined>();
   const refreshes = useSignal(0);
@@ -39,7 +49,7 @@ export default component$<AutoRefreshProps & AutoRefreshEvents>(({ interval, onR
   );
 
   return (
-    <section class="auto-refresh" aria-label="Auto-refresh">
+    <section class={["auto-refresh", className]} aria-label="Auto-refresh" style={style}>
       <button type="button" aria-pressed={enabled.value} onClick$={toggle}>
         Auto-refresh
       </button>

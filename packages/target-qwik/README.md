@@ -103,7 +103,7 @@ binding declared after it).
 
 Capabilities: every cell is native but `event-once` (emulated: the `WeakSet` guard), composition's
 `named-slot` and `scoped-slot` (emulated: the QRL render prop `<slot>$`), its `model-array`
-(emulated: `toggle`), its `model-modifiers` (emulated: `modelText`), its `expose` (emulated:
+(emulated: `toggle`, `selectedValues`), its `model-modifiers` (emulated: `modelText`), its `expose` (emulated:
 `exposeRef`), its `default-slot-presence` (unsupported, an error: `<Slot />` has no presence API),
 `next-tick` (emulated: the `nextTick` helper), `conditional-event-control` (unsupported, an
 error: a control anywhere but at the top of a template listener, after a test that reads what a
@@ -115,8 +115,41 @@ state and that client code hands to `addEventListener` or calls outside a templa
 an optional prop a parent's spread adds after the mount; `test/behaviour.browser.test.ts` pins
 it).
 
-Composition's cells (ADR-0055) are declared before Qwik emits composition: until M3's lane for Qwik
-lands, `emit` reports UF1002 where a component first uses it, and emits nothing for that component.
+## Composition (M3)
+
+Composition follows ADR-0053 to ADR-0055 (`src/composition.ts`, `src/index.ts`).
+
+| Source                                        | Qwik output                                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `import Field from "./Field.uf.tsx"`          | `import Field from "./Field"`: each component is its own `<Name>.tsx`, a local one exported by name; a key is imported from its module's main component                                                                                                                                                                          |
+| A component that renders itself               | a named `const Countdown = component$(…)`, exported after it                                                                                                                                                                                                                                                                     |
+| `onClear={clear}` on a component              | `onClear$={clear}`, the setup function a QRL; an arrow written in place is one the optimizer makes                                                                                                                                                                                                                               |
+| `{slots.default?.()}`, with a fallback        | `<Slot />`, `<Slot>{fallback}</Slot>`; the consumer's children are projected                                                                                                                                                                                                                                                     |
+| Any other slot, `{slots.item?.({ item })}`    | a QRL render prop declared in `<Name>Slots`, `item$?: QRL<(props: …) => JSXOutput>`, rendered `{item$?.({ item })}`, with a fallback `{item$?.() ?? fallback}`, tested `item$`; a consumer fills it `item$={({ item }) => …}`                                                                                                    |
+| `slots.default` as a condition, or forwarded  | `default-slot-presence`, unsupported (an error)                                                                                                                                                                                                                                                                                  |
+| `defineModel("value", { default: 0 })`        | `value` and `onValueChange$` in `<Name>Models`; `const value = useComputed$(…)` of the prop, or of `valueLocal` while it is `undefined`; a write calls the `$()` setter `setValue`, which writes the local and awaits the callback                                                                                               |
+| `v-model:value={cups.value}` on a component   | `value={cups.value} onValueChange$={(value) => (cups.value = value)}`, or the parent's own model's setter                                                                                                                                                                                                                        |
+| `v-model` on a form control                   | the state read in render through a local (`const currentName = name.value;`), so Qwik sets the property, never the attribute (ADR-0058); `onInput$`, or `onChange$` for a lazy field, a checkbox, a radio or a select, first in the element's own prop of that event when it listens to it too                                   |
+| `v-model` modifiers, a number or range input  | the inline `modelText`: `read` casts and trims as Vue's `vModelText`, and `shown` keeps the person's own text while it reads as the value, through a ref to the control                                                                                                                                                          |
+| Checkboxes into an array, `<select multiple>` | the inline `toggle`, `selectedValues`; every select's options are `selected` where the model holds their value                                                                                                                                                                                                                   |
+| A consumer's `class` and `style`              | `class` and `style` props, merged after the root's own (`class={["tag", className]}`, `style={{ …, ...style }}`), on every component whose root is one element or a component that takes them                                                                                                                                    |
+| `defineExpose({ focus })`                     | the consumer's `ref` signal holds the exposed QRLs from the component's render on (a `useTask$`), so a consumer's `onMounted` finds them, and is emptied when it goes (the inline `exposeRef`)                                                                                                                                   |
+| `InjectionKey`, `provide`, `inject`           | `createContextId<T>(description)`, a ref key holding Qwik's `Signal`; `useContextProvider`; `useContext(key, (provided?) => …)`, which gives the fallback, or `undefined` without one: Qwik throws for a default that is `undefined`                                                                                             |
+| `<component is={…}>`                          | `const Tag = …;` before the return, or in the callback of the list whose item it reads, or of the fill it sits in, rendered `<Tag …>`; with listeners of its own, one tag per candidate, each with every listener inside it (`Tag === "a" ? <a …> : <button …>`), since Qwik 2.0.0-beta.47 attaches no `$` listener to a `<Tag>` |
+
+Known limit, not yet diagnosed: Qwik projects a default slot once, so a default slot rendered
+inside a list, twice, or inside a fill the component passes to a child shows its content once
+or not at all, where Vue renders it each time.
+
+A fill is a `$` scope, which captures no plain function: a setup function it calls is declared
+in the fill's callback, its own calls written in place, under a name of its own where the
+component declares the function too. A listener or a `v-model` in a list inside a fill, or in a fill whose component sits in a list, is written `$(…)`: Qwik 2.0.0-beta.47's optimizer would hoist an arrow's capture out of the fill. An option
+without a `value` is selected by its text and expressions, as the DOM reads its value; one
+that holds anything else (a conditional) shows unselected.
+
+A conditional or a `<component is>` that a sibling follows sits in a fragment of its own: Qwik
+2.0.0-beta.47's diff moves the siblings after a node it replaces, and a moved element loses its
+focus.
 
 ## Toolchain
 

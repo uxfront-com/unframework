@@ -153,7 +153,8 @@ async function typecheck(
   const render = createElement("div", [], children, at);
   const module = createModule(
     "Attributes.uf.tsx",
-    [createComponent("Attributes", render, at)],
+    // Without fallthrough's `class` and `style` props (ADR-0054): the root's own attributes.
+    [{ ...createComponent("Attributes", render, at), inheritAttrs: false as const }],
     [createExport("default", "Attributes", at)],
   );
   const [file] = target.emit(module.components[0]!, {
