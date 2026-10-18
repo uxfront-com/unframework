@@ -99,8 +99,11 @@ renders alike however it is written:
   value (ADR-0044);
 - a boolean attribute's value written empty (`disabled="disabled"` is `disabled=""`), and on
   Qwik, whose client writes a boolean that is on as `="true"`, that value too (ADR-0044);
-- no `value` attribute on an `<input>` whose `uf:value` it equals: react-dom keeps a controlled
-  input's attribute in step with its value, and the state compares in `uf:value` (ADR-0058);
+- no markup of a form control's initial state where its live `uf:*` state says the same: an
+  `<input>`'s `value` that equals its `uf:value`, its `checked` where `uf:checked` is `"true"`, an
+  `<option>`'s `selected` where `uf:selected` is `"true"`, and a `<textarea>`'s text that equals
+  its `uf:value`. react-dom and Astro write the initial state as markup where Vue sets the
+  property, and the state compares in `uf:*` (ADR-0058);
 - the compiler's generated ids renumbered `uf-id-1`, `uf-id-2`… by first appearance wherever they
   appear: every attribute value and text node, and the ARIA tree and payloads with them;
 - whitespace collapsed as Chromium renders it, and kept as written where the model cannot tell
