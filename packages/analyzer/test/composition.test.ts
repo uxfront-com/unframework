@@ -532,6 +532,35 @@ export default function Tree({ depth }: { depth: number }) {
     expect(fixed).not.toContain("import");
     expect(fixed).toContain("<Tree depth={depth - 1} />");
   });
+
+  /** A self-import's diagnostics, with the module's own API as the resolver gives it. */
+  const selfImported = (source: string) => {
+    const api = analyze(parseModule("ui/Tree.uf.tsx", source)).api!;
+    return analyze(parseModule("ui/Tree.uf.tsx", source), {
+      imports: new Map([["./Tree.uf.tsx", { ...api, file: "Tree.uf.tsx" }]]),
+    }).diagnostics;
+  };
+
+  it("renames every read of a self-import's name, closing tags and `is` included", () => {
+    const source = `import Again from "./Tree.uf.tsx";
+export default function Tree({ depth }: { depth: number }) {
+  return <ul>{depth > 0 ? <li><Again depth={depth - 1}></Again><component is={Again} depth={depth - 1} /></li> : <li>leaf</li>}</ul>;
+}`;
+    expect(applyAndRecheck(source, selfImported(source)))
+      .toBe(`export default function Tree({ depth }: { depth: number }) {
+  return <ul>{depth > 0 ? <li><Tree depth={depth - 1}></Tree><component is={Tree} depth={depth - 1} /></li> : <li>leaf</li>}</ul>;
+}`);
+  });
+
+  it("offers no fix where the component's name means something else", () => {
+    const source = `import Again from "./Tree.uf.tsx";
+export default function Tree({ items }: { items: string[] }) {
+  return <ul>{items.map((Tree) => <li key={Tree}><Again items={[]} /></li>)}</ul>;
+}`;
+    const diagnostics = selfImported(source);
+    expect(problems(source, diagnostics)).toContain('UF1203 "./Tree.uf.tsx"');
+    expect(diagnostics.find((diagnostic) => diagnostic.code === "UF1203")!.fixes).toBeUndefined();
+  });
 });
 
 describe("misuse the second review found (UXF-313)", () => {

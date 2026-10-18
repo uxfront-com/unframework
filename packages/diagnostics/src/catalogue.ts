@@ -224,7 +224,9 @@ const entries: CatalogueEntry[] = [
       "<Countdown from={from - 1} />           // accepted",
       "```",
       "",
-      "Remove the import, and render the component by its own name. The likely fix does both.",
+      "Remove the import, and render the component by its own name. The likely fix does both, unless",
+      "the import binds something other than a component, or the module gives the name to something",
+      "else.",
     ].join("\n"),
   },
   {

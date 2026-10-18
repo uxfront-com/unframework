@@ -729,7 +729,8 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
     if (owner !== undefined && owner !== `${api.file}#${component.name}`) {
       // Reported here, once: the tags that render the name are not unknown (UF3047).
       context.components.set(item.local, undefined);
-      const hash = owner.indexOf("#");
+      // A component name holds no `#`, and a directory may.
+      const hash = owner.lastIndexOf("#");
       const file = owner.slice(0, hash);
       const other =
         hash === -1
@@ -790,15 +791,37 @@ function selfImport(
   }
   const edits: { span: { start: number; end: number }; text: string }[] = [];
   if (names.size === statement.specifiers.length) {
-    const end = source[statement.end] === "\n" ? statement.end + 1 : statement.end;
-    edits.push({ span: { start: statement.start, end }, text: "" });
+    // Every read of a name the import binds, a tag or a value (`is={Again}`), is renamed. The
+    // fix is withheld where a name it writes would mean something else: a binding that shadows
+    // the component, or a shorthand property whose key the rename would change.
+    const written = new Set(names.values());
+    const declarations = new Map(
+      context.candidates.map((candidate) => [candidate.name, candidate.node.id]),
+    );
+    let safe = true;
     visit(context.program, (node) => {
-      if (node.type !== "JSXOpeningElement" && node.type !== "JSXClosingElement") return;
-      if (node.name.type !== "JSXIdentifier") return;
-      const resolution = scopes.resolve(node.name as unknown as AST.IdentifierReference);
+      if (node.type === "Property" && node.shorthand && node.value.type === "Identifier") {
+        const resolution = scopes.resolve(node.value as unknown as AST.IdentifierReference);
+        if (resolution.kind === "import" && names.has(resolution.declaration)) safe = false;
+      }
+      if (node.type !== "Identifier" && node.type !== "JSXIdentifier") return;
+      if (node.start >= statement.start && node.end <= statement.end) return;
+      const resolution = scopes.resolve(node as unknown as AST.IdentifierReference);
       const name = resolution.kind === "import" ? names.get(resolution.declaration) : undefined;
-      if (name) edits.push({ span: spanOf(node.name), text: name });
+      if (name) {
+        edits.push({ span: spanOf(node), text: name });
+        return;
+      }
+      if (!written.has(node.name)) return;
+      const declaration = declarations.get(node.name);
+      const component =
+        node === declaration ||
+        (resolution.kind === "variable" && resolution.declaration === declaration);
+      if (!component) safe = false;
     });
+    const end = source[statement.end] === "\n" ? statement.end + 1 : statement.end;
+    if (safe) edits.unshift({ span: { start: statement.start, end }, text: "" });
+    else edits.length = 0;
   }
   const [first] = names.values();
   reporter.report(
@@ -806,7 +829,7 @@ function selfImport(
     statement.source,
     `"${statement.source.value}" is this module's own file: a component renders itself, and the components beside it, by their own names.`,
     {
-      help: `Remove the import, and write the tag with the component's name${first ? `, as in \`<${first} />\`` : ""}.`,
+      help: `Remove the import, and render the component by its own name${first ? `, as in \`<${first} />\`` : ""}.`,
       ...(edits.length
         ? {
             fixes: [
