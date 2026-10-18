@@ -516,6 +516,22 @@ export function A() { return <div><Plain>{/* note */}</Plain><Field label="a">{/
       'Icon from "../ui/Glyph.uf.tsx" and Icon from "../ui/Icon.uf.tsx" write one output file, which each output imports by its name.',
     ]);
   });
+
+  // Recursion has one form, the component's own name (ADR-0053), so a self-import is no clash.
+  it("reports a module that imports itself, and renders the component by its own name", () => {
+    const source = `import Again from "./Tree.uf.tsx";
+export default function Tree({ depth }: { depth: number }) {
+  return <ul>{depth > 0 ? <li><Again depth={depth - 1} /></li> : <li>leaf</li>}</ul>;
+}`;
+    const api = analyze(parseModule("ui/Tree.uf.tsx", source)).api!;
+    const { diagnostics } = analyze(parseModule("ui/Tree.uf.tsx", source), {
+      imports: new Map([["./Tree.uf.tsx", { ...api, file: "Tree.uf.tsx" }]]),
+    });
+    expect(problems(source, diagnostics)).toEqual(['UF1203 "./Tree.uf.tsx"']);
+    const fixed = applyAndRecheck(source, diagnostics);
+    expect(fixed).not.toContain("import");
+    expect(fixed).toContain("<Tree depth={depth - 1} />");
+  });
 });
 
 describe("misuse the second review found (UXF-313)", () => {

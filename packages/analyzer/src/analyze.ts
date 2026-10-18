@@ -29,6 +29,7 @@ import {
   findTypeDeclarations,
   isComponentName,
   typeDeclarationOf,
+  visitorKeys,
 } from "@unframework/parser";
 import type { AST, ComponentExport, ParsedModule } from "@unframework/parser";
 
@@ -190,6 +191,8 @@ export function analyzeModule(
     if (candidate.node.id) components.set(candidate.node.id, { name: candidate.name, api });
   }
   const context: ModuleContext = {
+    program: parsed.program,
+    scopes,
     source: parsed.source,
     candidates,
     exported: exportedNames(parsed.program),
@@ -386,6 +389,8 @@ function spanOf(node: { start: number; end: number }): { start: number; end: num
 
 /** What the checks of a module's statements need to know about the module. */
 interface ModuleContext {
+  program: AST.Program;
+  scopes: Scopes;
   source: string;
   candidates: Candidate[];
   /** The local names the module exports as values (`export { name }`, `export default name`). */
@@ -657,6 +662,11 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
     );
     return;
   }
+  // The resolver gives the file relative to the importer: its own file is its own name.
+  if (api.file === reporter.file.slice(reporter.file.lastIndexOf("/") + 1)) {
+    selfImport(statement, api, context);
+    return;
+  }
   const names: ImportedName[] = [];
   for (const item of statement.specifiers) {
     if (item.type === "ImportSpecifier" && item.importKind === "type") {
@@ -749,6 +759,78 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
       end: statement.end,
     }),
   );
+}
+
+/**
+ * An import of the module's own file (UF1203). A component renders itself, and the other
+ * components of its module, by the names they are declared with (ADR-0053): recursion has one
+ * form (P3). The likely fix removes the import and writes each tag that renders a name it binds
+ * with the component's own name, when every name it binds is a component's.
+ */
+function selfImport(statement: AST.ImportDeclaration, api: ModuleApi, context: ModuleContext): void {
+  const { reporter, source, scopes } = context;
+  const names = new Map<object, string>();
+  for (const item of statement.specifiers) {
+    // Reported here, once: the tags that render the name are not unknown (UF3047).
+    context.components.set(item.local, undefined);
+    const imported =
+      item.type === "ImportDefaultSpecifier"
+        ? "default"
+        : item.type === "ImportSpecifier" && item.importKind !== "type"
+          ? exportName(item.imported)
+          : undefined;
+    const component = api.components.find((entry) =>
+      imported === "default" ? entry.export === "default" : entry.name === imported,
+    );
+    if (imported !== undefined && component) names.set(item.local, component.name);
+  }
+  const edits: { span: { start: number; end: number }; text: string }[] = [];
+  if (names.size === statement.specifiers.length) {
+    const end = source[statement.end] === "\n" ? statement.end + 1 : statement.end;
+    edits.push({ span: { start: statement.start, end }, text: "" });
+    visit(context.program, (node) => {
+      if (node.type !== "JSXOpeningElement" && node.type !== "JSXClosingElement") return;
+      if (node.name.type !== "JSXIdentifier") return;
+      const resolution = scopes.resolve(node.name as unknown as AST.IdentifierReference);
+      const name = resolution.kind === "import" ? names.get(resolution.declaration) : undefined;
+      if (name) edits.push({ span: spanOf(node.name), text: name });
+    });
+  }
+  const [first] = names.values();
+  reporter.report(
+    "UF1203",
+    statement.source,
+    `"${statement.source.value}" is this module's own file: a component renders itself, and the components beside it, by their own names.`,
+    {
+      help: `Remove the import, and write the tag with the component's name${first ? `, as in \`<${first} />\`` : ""}.`,
+      ...(edits.length
+        ? {
+            fixes: [
+              {
+                title: "Remove the import, and render each component by its own name",
+                confidence: "likely" as const,
+                edits,
+              },
+            ],
+          }
+        : {}),
+    },
+  );
+}
+
+/** Visits every node in a tree, depth first. */
+function visit(node: unknown, enter: (node: AST.Node) => void): void {
+  if (!node || typeof node !== "object") return;
+  if (Array.isArray(node)) {
+    for (const item of node) visit(item, enter);
+    return;
+  }
+  const typed = node as AST.Node;
+  if (typeof typed.type !== "string") return;
+  enter(typed);
+  for (const key of visitorKeys[typed.type] ?? []) {
+    visit((typed as unknown as Record<string, unknown>)[key], enter);
+  }
 }
 
 /**
