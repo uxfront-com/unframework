@@ -78,10 +78,10 @@ cases/components/form/
   `view.emitted` of the parent's own events. The parent exercises each target's consumer
   output, which a mount option would bypass.
 - The browser and SSR projects load a child by the import its parent's output writes
-  (`./Field.vue`, ADR-0053). The unplugin's resolution of that import comes with the compiler's
-  composition work; the harness is ready for it: Angular's ngtsc step resolves and loads each
-  child before it compiles the parent, and Astro's render server asks the browser project to
-  resolve and compile it, since the browser imports only the main component.
+  (`./Field.vue`, ADR-0053). The unplugin resolves that import from the parent's compile, to the
+  child's module, and watches the child's file for the parent. Angular's ngtsc step resolves and
+  loads each child before it compiles the parent, and Astro's render server asks the browser
+  project to resolve and compile it, since the browser imports only the main component.
 
 The `.html` expectations use the canonical format of `@unframework/testing/normalize`: one node
 per line, JSON-quoted text and attribute values, and form-control state as `uf:*`
@@ -219,7 +219,7 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
 | L1    | `compile`             | The diagnostics equal `diagnostics.json`: no internal error (UF9xxx), and in a case with a spec no error but one a target declares for a capability it lacks. Every fix applies and recompiles clean, but for what the target's capability cells report. |
 | L2    | `compile`             | The IR and the outputs equal `__output__`, byte for byte, with no stale files; compiling twice gives the same bytes; formatting is idempotent.                                                                                                           |
 | L3    | `toolchain:<target>`  | Each output passes its framework's own compiler with zero warnings.                                                                                                                                                                                      |
-| L4    | `toolchain:<target>`  | Each output type-checks under one strictness for all seven checkers, one run per target over every case; a tsconfig problem fails every case.                                                                                                            |
+| L4    | `toolchain:<target>`  | Each output type-checks under one strictness for all seven checkers, one run per target over every case; a tsconfig problem fails every case. The case's consumer fixtures fail exactly where their directives say (below).                              |
 | L5    | `toolchain:<target>`  | Each output passes oxlint's shared baseline rules and its framework's lint rules with zero warnings; rules that judge the author's code are off.                                                                                                         |
 | L6    | `ssr:<target>`        | The server render equals `ssr.<scenario>.html`.                                                                                                                                                                                                          |
 | L7    | `browser:<target>`    | The client DOM and the ARIA tree equal `dom.<name>.html` and `aria.<name>.yaml`.                                                                                                                                                                         |
@@ -228,6 +228,18 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
 | L10   | `browser:<target>`    | Geometry and computed styles first, then pixels, with zero tolerance by default.                                                                                                                                                                         |
 | L11   | `browser:<target>`    | axe-core reports no violations, or exactly the case's `axe` list.                                                                                                                                                                                        |
 | L13   | `ssr:` and `browser:` | No `console.warn` or `console.error` during render or mount.                                                                                                                                                                                             |
+
+**L4's consumer check** (ADR-0059). A case may have consumer fixtures per target, hand-written in
+that target's language under `../toolchains/<target>/consumers/<area>/<case>/`: one correct
+consumer, which must check clean, and one fixture per misuse of a prop, an event, a model or a
+slot. A misuse carries a directive on the line before it, `// @uf-expect TS2322 Field.prop:label`
+(an HTML comment in markup), and the same checker run as L4 judges it in the case's L4 cell
+(`harness/consumers.ts`): every directive must be met by a diagnostic with its code on the next
+line, any other diagnostic fails, and a directive's declaration must exist in the case's IR. A
+failure names the declaration's `.uf.tsx` line from its IR span. A kind a target cannot check is
+declared in `CONSUMER_GAPS`, with its reason, and a directive of that kind fails. The
+`L4-consumer` canary types every output's props, events and slots `any`, so every directive must
+go unmet. `../toolchains/README.md` has the layout and the notes per checker.
 
 Each test records its layers in its task meta: `expectParity` records L7, L9, L10 and L11
 without throwing, so the assertions after it always run, and the setup's `afterEach` records L8
@@ -340,7 +352,8 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   `sources.ts`: how a case's inputs join their diagnostics and golden files.
 - `harness/compile.test.ts`, `toolchain.test.ts`, `ssr.test.ts`: the node-side layers;
   `compile-checks.ts`: L1's fix check and L2's determinism and formatting checks;
-  `toolchain-results.ts`: what L3, L4 and L5 make of each tool's report.
+  `toolchain-results.ts`: what L3, L4 and L5 make of each tool's report; `consumers.ts`: L4's
+  consumer check and `CONSUMER_GAPS`.
 - `harness/no-output.ts`: the browser projects' stand-ins for the components a target has no
   output for.
 - `harness/canaries.ts`, `canary-verdict.ts`, `load-failures.ts`: the canaries, how
