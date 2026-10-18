@@ -767,7 +767,11 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
  * form (P3). The likely fix removes the import and writes each tag that renders a name it binds
  * with the component's own name, when every name it binds is a component's.
  */
-function selfImport(statement: AST.ImportDeclaration, api: ModuleApi, context: ModuleContext): void {
+function selfImport(
+  statement: AST.ImportDeclaration,
+  api: ModuleApi,
+  context: ModuleContext,
+): void {
   const { reporter, source, scopes } = context;
   const names = new Map<object, string>();
   for (const item of statement.specifiers) {
