@@ -126,8 +126,8 @@ needed: each unsupported cell reports UF4001 with its reason, as every cell does
   helpers go by other names in some outputs, under the cells above: React's `modelText` is a hook,
   `useModelText`; Angular's comes with `writeModelText` and `looseToNumber`; and Solid's
   `two-way-binding`, native, adds an inline `selectOptions` where a `<select>`'s options come from a
-  component, a slot or an interpolation. React's `two-way-binding` stays native and declares one
-  difference, the `input` listener of a checked control (ADR-0054).
+  component, a slot or an interpolation. React's `two-way-binding` stays native, with no note yet;
+  its one difference, the `input` listener of a checked control, is outside the contract (ADR-0054).
 
 **Diagnostic codes.** In order, every one an error unless noted. Each is reported at the exact
 span; the fixes are applied and recompiled by L1.

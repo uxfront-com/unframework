@@ -3,7 +3,8 @@
 - **Status:** Accepted
 - **Date:** 2026-10-18
 - **Plan:** §6 (Angular), §7.5, §9 M3; P2, P4, P6; R5; ADR-0010, ADR-0012, ADR-0027, ADR-0031,
-  ADR-0042, ADR-0047, ADR-0053, ADR-0054; amends ADR-0010, ADR-0042 and ADR-0047
+  ADR-0042, ADR-0047, ADR-0053, ADR-0054; amends ADR-0010, ADR-0012 (an output named like a DOM
+  event), ADR-0042 and ADR-0047
 
 ## Context
 
@@ -93,7 +94,8 @@ a setup binding of such a name is renamed. Two children of one name, a child nam
 component, and two slots whose directives share an attribute filled in one template are UF1104.
 
 **Component refs** hold a template reference, `<uf-search-field #search …>`, read with `viewChild<{
-focus(): void }>("search")`; an exposed function is public, and the rest of the class protected.
+focus(): void }>("search")`; an exposed function is public, and the rest of the class protected
+where the template reads it, private otherwise.
 
 **Recursion** uses the component's own selector, with nothing in `imports`.
 
