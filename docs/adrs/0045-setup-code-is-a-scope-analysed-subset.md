@@ -1,6 +1,6 @@
 # ADR-0045: Setup code is a scope-analysed subset, in source order
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0054
 - **Date:** 2026-10-07
 - **Plan:** §4.2, §4.5, §4.6, §5.3, §5.4, §9 M2; G2, P2, P3, P5, P6, P8; R1, R4, R5, R6;
   ADR-0001, ADR-0006, ADR-0008, ADR-0015; amends ADR-0032, ADR-0034, ADR-0035, ADR-0039 and

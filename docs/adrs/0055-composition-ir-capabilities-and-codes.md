@@ -1,7 +1,7 @@
 # ADR-0055: The composition contract: IR kinds, capabilities and codes
 
-- **Status:** Proposed
-- **Date:** 2026-10-08
+- **Status:** Accepted
+- **Date:** 2026-10-18
 - **Plan:** §5.3, §5.6 (layer 2), §5.7, §5.9, §7.7 (coverage gate), §9 M3; P2, P4, P5; ADR-0032,
   ADR-0033, ADR-0053, ADR-0054, ADR-0056; amends ADR-0032 (its invariants)
 
@@ -29,14 +29,17 @@ invariants, `portability.ts` and the schema):
   - `UfModule.imports?: ModuleImport[]`, absent when empty, as `emits` is: `{ specifier, file, api: ModuleApi, names: ImportedName[],
 span }`. `file` is the resolved `.uf.tsx`, relative to the importer, with forward slashes.
     `ImportedName` is `{ kind: "Component" | "Key", imported, local, span }`.
-  - `UfModule.keys?: InjectionKeyDeclaration[]`, absent when empty: `{ name, description, type: TypeText, span }`, each
-    exported.
+  - `UfModule.keys?: InjectionKeyDeclaration[]`, absent when empty: `{ name, description, type:
+TypeText, ref?, span }`, each exported. `ref` is `"Ref"`, `"ComputedRef"` or `"ModelRef"` for a
+    key that holds a ref, read from the key's type as written: such a key is provided the ref whole,
+    a `ComputedRef` key a `computed`, a `ModelRef` key a model and a `Ref` key any of the three, and
+    its injection is read as `x.value`, with a ref as its fallback (UF2032 otherwise).
   - `ModuleApi` is what the resolver returns (ADR-0053): `{ file, components: ComponentApi[], keys:
 KeyApi[] }`. `ComponentApi` is `{ name, export: "default" | "named" | "local", props, events,
 models, slots, exposes, inheritAttrs, root, rootTag? }`: each prop, event, model and slot by
     name, with its optionality and its type as written (for layer 2's literal unions); `exposes` the
     exposed names; `root` is `"element"`, `"component"` or `"other"`, and `rootTag` the root
-    element's tag. `KeyApi` is `{ name, description, type }`.
+    element's tag. `KeyApi` is `{ name, description, type, ref? }`.
 - **Component.** `UfComponent.slots?: Slots` (`{ binding, type, slots: SlotDeclaration[], span }`,
   each `{ name, optional, props?: TypeText, span }`), `UfComponent.exposes?: { functions:
 BindingId[], span }` and `UfComponent.inheritAttrs?: false`.
@@ -80,26 +83,26 @@ number?: true, span }`, an `Attribute`.
 its inline helper, or `unsupported` with UF4001 and the severity shown. No new UF4xxx code is
 needed: each unsupported cell reports UF4001 with its reason, as every cell does (ADR-0033).
 
-| Capability              | What uses it                                                                     | React                 | Vue    | Svelte                | Solid                                | Angular                              | Qwik                                 | Astro                                         |
-| ----------------------- | -------------------------------------------------------------------------------- | --------------------- | ------ | --------------------- | ------------------------------------ | ------------------------------------ | ------------------------------------ | --------------------------------------------- |
-| `component`             | a `Component` node                                                               | native                | native | native                | native                               | native                               | native                               | native                                        |
-| `component-event`       | a `Listener` on a component; refines `interactivity`, behavioural                | native                | native | native                | native                               | native                               | native                               | UF4001 (info): inert                          |
-| `default-slot`          | the default slot's outlet or fill                                                | native                | native | native                | native                               | native                               | native                               | native                                        |
-| `named-slot`            | a named slot without props                                                       | native                | native | native                | native                               | emulated: `uf<Component><Slot>`      | emulated: `<slot>$`                  | native                                        |
-| `scoped-slot`           | a slot with props                                                                | native                | native | native                | native                               | emulated: `uf<Component><Slot>`      | emulated: `<slot>$`                  | emulated: `<slot>` render prop                |
-| `slot-fallback`         | an outlet with fallback content                                                  | native                | native | native                | native                               | native                               | native                               | native                                        |
-| `default-slot-presence` | `slots.default` as a condition, or the default slot forwarded                    | native                | native | native                | native                               | UF4001 (error)                       | UF4001 (error)                       | native                                        |
-| `slot-forwarding`       | a fill with `forward`                                                            | native                | native | native                | native                               | emulated: `uf<Component><Slot>`      | native                               | native                                        |
-| `model`                 | `defineModel` (a `Model` item), and a `ModelBinding`                             | native                | native | native                | native                               | native                               | native                               | native: the prop's value                      |
-| `two-way-binding`       | an element's `Model`                                                             | native                | native | native                | native                               | native                               | native                               | UF4001 (info): inert                          |
-| `model-array`           | a `Model` of a `checkbox-group` or a `select-multiple`                           | emulated: `toggle`    | native | native                | emulated: `toggle`, `selectedValues` | emulated: `toggle`, `selectedValues` | emulated: `toggle`, `selectedValues` | UF4001 (info): inert                          |
-| `model-modifiers`       | a `Model` that is `trim`, `lazy` or `number`, or of a `number` control           | emulated: `modelText` | native | emulated: `modelText` | emulated: `modelText`                | emulated: `modelText`                | emulated: `modelText`                | UF4001 (info): inert                          |
-| `fallthrough`           | a `class` or `style` on a component                                              | native                | native | native                | native                               | emulated: `fallthrough`              | native                               | native                                        |
-| `contextual-root`       | a component whose root element lives only inside a given parent (ADR-0056)       | native                | native | native                | native                               | UF4001 (error)                       | native                               | native                                        |
-| `expose`                | `defineExpose`, and a `Ref` on a component; refines `interactivity`, behavioural | native                | native | native                | native                               | native                               | emulated: `exposeRef`                | UF4001 (info): inert                          |
-| `context`               | `Provide` and `Inject`                                                           | native                | native | native                | native                               | native                               | native                               | UF4001 (warning): `inject` gives its fallback |
-| `reactive-context`      | a provided `state`, `derived` or `model` binding; refines `context`              | emulated: `refObject` | native | emulated: `refObject` | emulated: `refObject`                | emulated: `refObject`                | native                               | UF4001 (warning)                              |
-| `dynamic-component`     | a `Dynamic` node                                                                 | native                | native | native                | native                               | emulated: `@switch`                  | native                               | native                                        |
+| Capability              | What uses it                                                                     | React                 | Vue    | Svelte                 | Solid                                | Angular                              | Qwik                                 | Astro                                         |
+| ----------------------- | -------------------------------------------------------------------------------- | --------------------- | ------ | ---------------------- | ------------------------------------ | ------------------------------------ | ------------------------------------ | --------------------------------------------- |
+| `component`             | a `Component` node                                                               | native                | native | native                 | native                               | native                               | native                               | native                                        |
+| `component-event`       | a `Listener` on a component; refines `interactivity`, behavioural                | native                | native | native                 | native                               | native                               | native                               | UF4001 (info): inert                          |
+| `default-slot`          | the default slot's outlet or fill                                                | native                | native | native                 | native                               | native                               | native                               | native                                        |
+| `named-slot`            | a named slot without props                                                       | native                | native | native                 | native                               | emulated: `uf<Component><Slot>`      | emulated: `<slot>$`                  | native                                        |
+| `scoped-slot`           | a slot with props                                                                | native                | native | native                 | native                               | emulated: `uf<Component><Slot>`      | emulated: `<slot>$`                  | emulated: `<slot>` render prop                |
+| `slot-fallback`         | an outlet with fallback content                                                  | native                | native | native                 | native                               | native                               | native                               | native                                        |
+| `default-slot-presence` | `slots.default` as a condition, or the default slot forwarded                    | native                | native | native                 | native                               | UF4001 (error)                       | UF4001 (error)                       | native                                        |
+| `slot-forwarding`       | a fill with `forward`                                                            | native                | native | native                 | native                               | emulated: `uf<Component><Slot>`      | native                               | native                                        |
+| `model`                 | `defineModel` (a `Model` item), and a `ModelBinding`                             | native                | native | native                 | native                               | native                               | native                               | native: the prop's value                      |
+| `two-way-binding`       | an element's `Model`                                                             | native                | native | native                 | native                               | native                               | native                               | UF4001 (info): inert                          |
+| `model-array`           | a `Model` of a `checkbox-group` or a `select-multiple`                           | emulated: `toggle`    | native | native                 | emulated: `toggle`, `selectedValues` | emulated: `toggle`, `selectedValues` | emulated: `toggle`, `selectedValues` | UF4001 (info): inert                          |
+| `model-modifiers`       | a `Model` that is `trim`, `lazy` or `number`, or of a `number` control           | emulated: `modelText` | native | emulated: `modelText`  | emulated: `modelText`                | emulated: `modelText`                | emulated: `modelText`                | UF4001 (info): inert                          |
+| `fallthrough`           | a `class` or `style` on a component                                              | native                | native | emulated: `mergeStyle` | native                               | emulated: `fallthrough`              | native                               | native                                        |
+| `contextual-root`       | a component whose root element lives only inside a given parent (ADR-0056)       | native                | native | native                 | native                               | UF4001 (error)                       | native                               | native                                        |
+| `expose`                | `defineExpose`, and a `Ref` on a component; refines `interactivity`, behavioural | native                | native | native                 | native                               | native                               | emulated: `exposeRef`                | UF4001 (info): inert                          |
+| `context`               | `Provide` and `Inject`                                                           | native                | native | native                 | native                               | native                               | native                               | UF4001 (warning): `inject` gives its fallback |
+| `reactive-context`      | a provided `state`, `derived` or `model` binding; refines `context`              | emulated: `refObject` | native | emulated: `refObject`  | emulated: `refObject`                | emulated: `refObject`                | native                               | UF4001 (warning)                              |
+| `dynamic-component`     | a `Dynamic` node                                                                 | native                | native | native                 | native                               | emulated: `@switch`                  | native                               | native                                        |
 
 - `requiredCapabilities` also requires `interactivity` at each element `Model`, `ModelBinding`
   and component `Listener`, as `Event` and `Ref` do: the record maps each attribute kind to one
@@ -118,6 +121,13 @@ needed: each unsupported cell reports UF4001 with its reason, as every cell does
   attribute kinds in `ATTRIBUTE_CAPABILITIES`, and `Model`, `Provide` and `Inject` in
   `SETUP_ITEM_CAPABILITIES`; `requiredCapabilities` derives the rest at the span named above.
 - `3.reference/1.targets.md` gets a row and a note per capability, with the contract change.
+- **As built**, Svelte's `fallthrough` is emulated through `mergeStyle`, by the owner's ruling of
+  2026-10-13 that a nullish value in a consumer's `style` removes the property (ADR-0054). Three
+  helpers go by other names in some outputs, under the cells above: React's `modelText` is a hook,
+  `useModelText`; Angular's comes with `writeModelText` and `looseToNumber`; and Solid's
+  `two-way-binding`, native, adds an inline `selectOptions` where a `<select>`'s options come from a
+  component, a slot or an interpolation. React's `two-way-binding` stays native and declares one
+  difference, the `input` listener of a checked control (ADR-0054).
 
 **Diagnostic codes.** In order, every one an error unless noted. Each is reported at the exact
 span; the fixes are applied and recompiled by L1.
@@ -148,6 +158,13 @@ span; the fixes are applied and recompiled by L1.
 | UF3048 | `open-spread`               | UF3  | A spread's keys are the ones its type declares                                | none                                         |
 | UF3049 | `reserved-spread-key`       | UF3  | A spread renders attributes: no listener, `key`, `ref` or `children`          | none                                         |
 
+- **Fills that need a given parent stay rejected in M3** (the owner's ruling of 2026-10-09). A slot
+  fill whose root element belongs only inside a given parent, such as a `<summary>`, a
+  `<figcaption>`, a `<dt>` or a `<dd>`, is UF3003, because `ComponentApi` does not record where a
+  slot places its fill, so the compiler cannot prove the parent. A component's own root element is
+  checked where the component sits (ADR-0054); a fill has no such place. Recording each slot's
+  placement in `ComponentApi` is deferred to M5's typed APIs; lifting the rejection then is
+  additive.
 - UF3035 to UF3039 are layer 2 of §5.6. Each says "did you mean `…`?" when a declared name is close.
   UF3038 covers a slot-object key the child does not declare and children given to a child with no
   default slot; UF3035 an attribute that is no prop, model, slot, `class`, `style`, `key` or `ref`.
@@ -170,6 +187,7 @@ span; the fixes are applied and recompiled by L1.
 
 **Negative:**
 
+- A `<details>` component cannot take its `<summary>` through a slot until M5.
 - The IR grows by three render nodes, four attribute kinds, three setup items, five binding kinds
   and one reference kind; `walk`, the invariants, `portability.ts` and every emitter's exhaustive
   switch change at once.

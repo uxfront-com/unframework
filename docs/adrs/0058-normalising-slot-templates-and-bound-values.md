@@ -1,7 +1,7 @@
 # ADR-0058: Normalising Qwik's slot templates and bound `value` attributes
 
-- **Status:** Proposed
-- **Date:** 2026-10-08
+- **Status:** Accepted
+- **Date:** 2026-10-18
 - **Plan:** §4.5, §7.5, §9 M3; P1, P4; ADR-0031, ADR-0044, ADR-0049, ADR-0054; amends ADR-0031
 
 ## Context
@@ -30,15 +30,24 @@ itself compares on every target.
 - **Qwik's `q:template` elements are Qwik's noise.** On Qwik only, the normaliser removes a
   `q:template` element and its content, as it removes `q:*` attributes. It holds content that
   renders nowhere: `hidden`, `aria-hidden`, and absent from the client render.
-- **A form control's `value` attribute that equals its current value is written once.** On every
-  target, the normaliser leaves out an `<input>`'s `value` attribute when it equals the input's
-  `uf:value`; one that differs (a static `value="x"` after the person typed `y`) stays. The rule
+- **A form control's initial state that equals its live state is written once** (rule 4d,
+  `removeSettledValues`). On every target, the normaliser leaves out the markup of a control's
+  initial state wherever its live state, a `uf:*` pseudo-attribute, says the same: an `<input>`'s
+  `value` that equals its `uf:value`, an `<input>`'s `checked` where `uf:checked` is `"true"`, an
+  `<option>`'s `selected` where `uf:selected` is `"true"`, and a `<textarea>`'s text that equals its
+  `uf:value`. Vue's `v-model` sets the property alone, while Astro, which runs no client code, and
+  React's `defaultChecked` and `defaultValue` write the initial state as markup. The live state is
+  compared on every target, so the comparison loses nothing. Markup that differs from the state (a
+  static `value="x"` after the person typed `y`, a box the person cleared) stays, and so does the
+  markup of an element without a `uf:*` state, as in a server render. L10's geometry capture keys
+  no `<textarea>` text for the same reason: it is the control's default value, which the control
+  shows as its value and never lays out. The rule
   applies to every target, because a target-only rule would break the static case: React writes a
   static `value="x"` as `defaultValue`, which Vue writes as the attribute too, and both must still
   compare equal before anyone types.
 - **The default value of a bound control is outside the contract.** It is what `form.reset()`
   restores and what a `[value="…"]` selector matches: Vue's is the server's `value` or nothing,
-  React's follows the value. The semantics page says so once M3 accepts this record.
+  React's follows the value. The semantics page says so.
 - Each rule gets its unit test and a negative test in `@unframework/testing` (ADR-0031): a
   `q:template` on another target stays, and so does a `value` attribute that differs from the
   value, or one on an element with no `uf:value`.
@@ -59,9 +68,13 @@ itself compares on every target.
 
 **Open:**
 
-- Whether react-dom keeps `checked`, `selected` and a `<textarea>`'s text in step the same way.
-  The React lane measures them with M3's model cases; if it does, this record is amended to apply
-  the same rule to `checked` and `selected` against their `uf:` state.
+- React, measured with M3's model cases: react-dom writes a controlled checkbox's or radio's first
+  `checked` state as its attribute and never updates it, and keeps a `<textarea>`'s text in step
+  with its state, where Vue sets the properties alone; a `<textarea>` React fills from its text
+  also takes the caret at its start on focus, where Vue's leaves it at the end. So a stale
+  `checked` stays where `uf:checked` is `"false"`. React's `models/checkbox-group` and
+  `models/radio` cells at L7 and L9, and its `models/textarea` cells at L7, L9 and L10, are
+  quarantined until rule 4d drops `checked` wherever `uf:checked` is set, and the caret is settled.
 
 ## Alternatives considered
 

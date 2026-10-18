@@ -1,6 +1,6 @@
 # ADR-0014: Vue is the reference target for expectations
 
-- **Status:** Proposed — the plan proceeds on the recommendation
+- **Status:** Proposed — the plan proceeds on the recommendation, amended by ADR-0057
 - **Date:** 2026-10-01
 - **Plan:** §11 D10; §4.5, §6, §7.1, §7.4, §7.5, §9, Appendix A
 
