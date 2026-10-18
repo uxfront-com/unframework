@@ -1,6 +1,8 @@
-export function Field(props: { label: string }) {
+import type { JSX } from "solid-js";
+
+export function Field(props: { label: string } & { class?: string; style?: JSX.CSSProperties }) {
   return (
-    <label>
+    <label class={props.class} style={props.style}>
       {props.label} <input type="text" />
     </label>
   );

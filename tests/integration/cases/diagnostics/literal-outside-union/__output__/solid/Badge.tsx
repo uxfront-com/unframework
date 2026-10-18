@@ -1,5 +1,13 @@
-export function Badge(props: { tone: "info" | "warning" }) {
-  return <span class={cx("badge", props.tone)}>{props.tone}</span>;
+import type { JSX } from "solid-js";
+
+export function Badge(
+  props: { tone: "info" | "warning" } & { class?: string; style?: JSX.CSSProperties },
+) {
+  return (
+    <span class={cx("badge", props.tone, props.class)} style={props.style}>
+      {props.tone}
+    </span>
+  );
 }
 
 /** Joins class names: strings as they are, and the names of an object's truthy entries. */

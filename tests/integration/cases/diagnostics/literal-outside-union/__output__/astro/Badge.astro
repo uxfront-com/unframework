@@ -1,9 +1,11 @@
 ---
 interface Props {
   tone: "info" | "warning";
+  class?: string;
+  style?: Record<string, string | number | undefined>;
 }
 
-const { tone } = Astro.props;
+const { tone, class: className, style } = Astro.props;
 ---
 
-<span class:list={["badge", tone]}>{tone}</span>
+<span class:list={["badge", tone, className]} style={style}>{tone}</span>

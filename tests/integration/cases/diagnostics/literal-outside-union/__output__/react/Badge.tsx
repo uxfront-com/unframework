@@ -1,5 +1,16 @@
-export function Badge({ tone }: { tone: "info" | "warning" }) {
-  return <span className={cx("badge", tone)}>{tone}</span>;
+import type { CSSProperties } from "react";
+
+export interface BadgeAttributes {
+  className?: string;
+  style?: CSSProperties;
+}
+
+export function Badge({ tone, className, style }: { tone: "info" | "warning" } & BadgeAttributes) {
+  return (
+    <span className={cx("badge", tone, className)} style={style}>
+      {tone}
+    </span>
+  );
 }
 
 /** Joins class names, and the keys of an object's truthy entries, into one `className`. */
