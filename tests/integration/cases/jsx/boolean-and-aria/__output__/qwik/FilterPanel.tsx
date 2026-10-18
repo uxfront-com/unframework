@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export interface FilterPanelProps {
   heading: string;
@@ -13,7 +13,7 @@ export interface FilterPanelProps {
   current?: "page" | "step";
 }
 
-export default component$<FilterPanelProps>(
+export default component$<FilterPanelProps & { class?: ClassList; style?: CSSProperties }>(
   ({
     heading,
     hint,
@@ -25,13 +25,16 @@ export default component$<FilterPanelProps>(
     loading,
     invalid,
     current,
+    class: className,
+    style,
   }) => {
     return (
       <section
-        class="filter-panel"
+        class={["filter-panel", className]}
         aria-label={heading}
         data-category={category}
         data-layout="stacked"
+        style={style}
       >
         <button type="button" aria-expanded={expanded} aria-describedby="filter-panel-hint">
           Price filters

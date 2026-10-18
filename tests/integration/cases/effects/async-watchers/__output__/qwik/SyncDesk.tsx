@@ -1,4 +1,13 @@
-import { $, type QRL, component$, useSignal, useTask$, useVisibleTask$ } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type QRL,
+  component$,
+  useSignal,
+  useTask$,
+  useVisibleTask$,
+} from "@qwik.dev/core";
 
 interface Waiting {
   resolve: (text: string) => void;
@@ -27,7 +36,9 @@ async function validate(value: string): Promise<boolean> {
   return value.includes("@");
 }
 
-export default component$<SyncDeskProps & SyncDeskEvents>(
+export default component$<
+  SyncDeskProps & SyncDeskEvents & { class?: ClassList; style?: CSSProperties }
+>(
   ({
     files,
     onChecked$,
@@ -41,6 +52,8 @@ export default component$<SyncDeskProps & SyncDeskEvents>(
     onSending$,
     onSent$,
     onClamped$,
+    class: className,
+    style,
   }) => {
     const waiting = useSignal<Waiting[]>([]);
 
@@ -289,7 +302,7 @@ export default component$<SyncDeskProps & SyncDeskEvents>(
     );
 
     return (
-      <section class="sync-desk" aria-label="Sync desk">
+      <section class={["sync-desk", className]} aria-label="Sync desk" style={style}>
         <button type="button" onClick$={suggest}>
           Suggest
         </button>

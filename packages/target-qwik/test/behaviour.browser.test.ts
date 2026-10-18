@@ -476,3 +476,34 @@ describe("tasks in source order, async watchers and effects (ADR-0048)", () => {
     ]);
   });
 });
+
+describe("composition (ADR-0054)", () => {
+  it("writes a model before its element's listener of the same event runs", async () => {
+    await start("ModelListeners");
+    await act(() => userEvent.type(page.getByRole("textbox", { name: "Name" }), "ab"));
+    expect(status()).toBe("a,ab");
+    await act(() => userEvent.click(page.getByRole("checkbox", { name: "On" })));
+    expect(status()).toBe("a,ab,true");
+  });
+
+  it("runs a fill's listeners and models in a list, and in a component in a list", async () => {
+    await start("FillLists");
+    await click("Pick Bo");
+    expect(status()).toBe("Bo ");
+    await act(() => userEvent.click(page.getByRole("checkbox", { name: "Tick Ada" })));
+    expect(status()).toBe("Bo Ada");
+    await click("Pick y");
+    expect(status()).toBe("y1 Ada");
+  });
+
+  it.each([true, false])(
+    "runs a `<component is>`'s listeners and its child's, on each candidate (boxed: %s)",
+    async (boxed) => {
+      await start("DynamicListeners", { props: { boxed } });
+      expect(container.querySelector("[role=group]")?.tagName).toBe(boxed ? "SECTION" : "DIV");
+      // The click focuses the child, whose focusin bubbles to the tag's listener.
+      await click("Add 0");
+      expect(container.querySelector("button")?.textContent).toBe("Add 11");
+    },
+  );
+});

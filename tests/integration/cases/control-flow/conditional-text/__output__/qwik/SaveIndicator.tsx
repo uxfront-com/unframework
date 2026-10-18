@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export interface SaveIndicatorProps {
   saving: boolean;
@@ -6,11 +6,14 @@ export interface SaveIndicatorProps {
   savedAt?: string;
 }
 
-export default component$<SaveIndicatorProps>(({ saving, changes, savedAt }) => {
-  return (
-    <p class="save-indicator" role="status">
-      {saving ? <em>Saving</em> : "Saved"}, {changes === 1 ? "1 change" : `${changes} changes`}
-      {savedAt ? <time dateTime={savedAt}>{" at " + savedAt}</time> : " just now"}
-    </p>
-  );
-});
+export default component$<SaveIndicatorProps & { class?: ClassList; style?: CSSProperties }>(
+  ({ saving, changes, savedAt, class: className, style }) => {
+    return (
+      <p class={["save-indicator", className]} role="status" style={style}>
+        <>{saving ? <em>Saving</em> : "Saved"}</>,{" "}
+        {changes === 1 ? "1 change" : `${changes} changes`}
+        {savedAt ? <time dateTime={savedAt}>{" at " + savedAt}</time> : " just now"}
+      </p>
+    );
+  },
+);

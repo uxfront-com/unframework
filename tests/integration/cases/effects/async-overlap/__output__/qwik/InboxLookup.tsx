@@ -1,5 +1,7 @@
 import {
   $,
+  type CSSProperties,
+  type ClassList,
   type QRL,
   component$,
   noSerialize,
@@ -19,8 +21,18 @@ export interface InboxLookupEvents {
   onCounted$?: QRL<(count: number) => void>;
 }
 
-export default component$<InboxLookupEvents>(
-  ({ onLooked$, onDropped$, onSorted$, onScaled$, onBusy$, onFailed$, onCounted$ }) => {
+export default component$<InboxLookupEvents & { class?: ClassList; style?: CSSProperties }>(
+  ({
+    onLooked$,
+    onDropped$,
+    onSorted$,
+    onScaled$,
+    onBusy$,
+    onFailed$,
+    onCounted$,
+    class: className,
+    style,
+  }) => {
     const sender = useSignal("");
     const order = useSignal("newest");
     const answers = useSignal<string[]>([]);
@@ -200,7 +212,7 @@ export default component$<InboxLookupEvents>(
     });
 
     return (
-      <section class="inbox-lookup" aria-label="Inbox">
+      <section class={["inbox-lookup", className]} aria-label="Inbox" style={style}>
         <button type="button" onClick$={() => (sender.value = "Ann")}>
           Find Ann
         </button>

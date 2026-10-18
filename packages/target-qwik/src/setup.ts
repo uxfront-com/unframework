@@ -18,7 +18,7 @@
 // Each `$` scope captures what it reads when it is created, so a statement comes after the
 // statements of what it captures: the source's order, but where client code reads a binding
 // declared after it (ADR-0045 allows it), that declaration moves up, so tasks keep their order.
-import { functionSource, rewriteCode } from "@unframework/codegen";
+import { functionSource, rewriteCode, rewriteExpression } from "@unframework/codegen";
 import type { CodeKind, RewriteSite } from "@unframework/codegen";
 import type {
   BindingId,
@@ -27,6 +27,7 @@ import type {
   FunctionCode,
   FunctionItem,
   LifecycleItem,
+  ModelItem,
   Parameter,
   SetupItem,
   WatchEffectItem,
@@ -35,7 +36,7 @@ import type {
 import { summarizeTracked } from "@unframework/ir";
 
 import { awaitQrlCalls, passElement } from "./calls.ts";
-import { inlineCalls } from "./inline.ts";
+import { inlineCalls, localDeclaration } from "./inline.ts";
 import type { InlineFunction, Inliner } from "./inline.ts";
 import {
   eventCallees,
@@ -303,14 +304,84 @@ function itemStatements(plan: SetupPlan, item: SetupItem): Statement[] {
       return [block(watchEffectCode(plan, item))];
     case "Lifecycle":
       return [block(lifecycleCode(plan, item))];
-    // Composition (ADR-0055) is not emitted yet: `emit` reports UF1002 before this runs.
     case "Model":
+      return modelStatements(plan, item);
     case "Provide":
-    case "Inject":
-      return [];
+      return [block(`${names.core("useContextProvider")}(${item.key}, ${pure(item.value)});`)];
+    case "Inject": {
+      // Qwik 2.0.0-beta.47's `useContext` throws where no ancestor provides the key, unless its
+      // default is not `undefined`, and calls a function default with the provided value: so it
+      // takes a function, which gives the fallback, or `undefined` without one (ADR-0054), and
+      // never mistakes a function fallback for one. Its optional parameter is the key's type or
+      // `undefined`, typed by the key alone, whose type may come from another module.
+      const provided = names.once("provided");
+      const value = item.fallback
+        ? `(${provided} === undefined ? ${pure(item.fallback)} : ${provided})`
+        : provided;
+      return [
+        declaration(
+          `const ${bindingName(plan, item.binding)} = ${names.core("useContext")}(${item.key}, (${provided}?) => ${value});`,
+        ),
+      ];
+    }
     default:
       return unreachable(item);
   }
+}
+
+/**
+ * A model (./composition.ts): the signal that holds the value while the consumer binds none, the
+ * value the component reads, and the setter its writes call, which writes the signal while
+ * unbound and asks the consumer through its callback, awaited.
+ */
+function modelStatements(plan: SetupPlan, item: ModelItem): Statement[] {
+  const { names } = plan;
+  const model = plan.composition.models.get(item.binding)!;
+  const type = item.type ? `<${item.type.code}>` : "";
+  const initial = item.default
+    ? rewriteExpression(item.default, plan.component, plan.rules(), "pure")
+    : "";
+  const statements = [
+    declaration(`const ${model.local} = ${names.core("useSignal")}${type}(${initial});`),
+    declaration(
+      `const ${model.binding.name} = ${names.core("useComputed$")}(() => (${model.prop} === undefined ? ${model.local}.value : ${model.prop}));`,
+    ),
+  ];
+  if (model.written) {
+    const taken = [model.prop, model.local, model.callback];
+    const next = taken.includes("next") ? "nextValue" : "next";
+    const valueType = item.type?.code ?? `typeof ${model.local}.value`;
+    statements.push(
+      block(
+        `const ${model.setter} = ${names.core("$")}(async (${next}: ${valueType}) => {\nif (${model.prop} === undefined) ${model.local}.value = ${next};\nawait ${model.callback}?.(${next});\n});`,
+      ),
+    );
+  }
+  return statements;
+}
+
+/**
+ * `defineExpose({ focus })`: the consumer's `ref` signal holds the exposed QRLs from the
+ * component's render on, and is emptied when the component goes (`exposeRef`, ./index.ts).
+ */
+export function exposeStatement(plan: SetupPlan): string | undefined {
+  const { exposes } = plan.component;
+  const expose = plan.composition.expose;
+  if (!exposes || !expose) return undefined;
+  const members = exposes.functions.map((id) => {
+    const fn = plan.functions.get(id)!;
+    return fn.binding.name === fn.qrl ? fn.qrl : `${fn.binding.name}: ${fn.qrl}`;
+  });
+  const cleanup = plan.names.once("cleanup");
+  const parameter = cleanup === "cleanup" ? "{ cleanup }" : `{ cleanup: ${cleanup} }`;
+  const exposeRef = plan.names.once("exposeRef");
+  // Filled as the component renders, before any visible task runs: a consumer's `onMounted`
+  // finds it filled, as Vue's does. A server render keeps it in the state it serialises; it is
+  // emptied in the browser only, as the component goes.
+  return [
+    `${plan.names.core("useTask$")}(() => {\n${exposeRef}(${expose.ref}, { ${members.join(", ")} });\n});`,
+    `${plan.names.core("useVisibleTask$")}((${parameter}) => {\n${cleanup}(() => ${exposeRef}(${expose.ref}, undefined));\n}, { strategy: "document-ready" });`,
+  ].join("\n");
 }
 
 const declaration = (code: string): Statement => ({ code, declaration: true });
@@ -485,6 +556,14 @@ export function inliner(plan: SetupPlan, synchronous: boolean): Inliner {
   };
 }
 
+/**
+ * A setup function as a fill declares it (./composition.ts): written in place, its own calls in
+ * place too, so the fill's `$` scope captures no plain function and renders at once.
+ */
+export function fillFunction(plan: SetupPlan, id: BindingId, name: string): string {
+  return localDeclaration(name, inlineFunction(plan, id));
+}
+
 /** A client function as it is written in place: its own calls in place too. */
 function inlineFunction(plan: SetupPlan, id: BindingId): InlineFunction {
   const { item } = plan.functions.get(id)!;
@@ -592,8 +671,10 @@ function uses(fn: FunctionCode, name: string): boolean {
 function tracked(plan: SetupPlan, id: BindingId, track: string): { tracked: string; read: string } {
   const binding = plan.component.bindings.find((candidate) => candidate.id === id)!;
   switch (binding.kind) {
+    // A model is read through its computed (./composition.ts).
     case "state":
     case "derived":
+    case "model":
       return { tracked: `${track}(${binding.name})`, read: `${binding.name}.value` };
     case "prop": {
       const read =
@@ -610,7 +691,6 @@ function tracked(plan: SetupPlan, id: BindingId, track: string): { tracked: stri
     case "emit":
       // The analyser lets a watcher or `watchEffect` read none of them (UF2010, UF2020).
       throw new Error(`A ${binding.kind} is no reactive value a task can track.`);
-    case "model":
     case "slots":
     case "slotScope":
     case "context":

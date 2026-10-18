@@ -1,11 +1,3 @@
-error[UF1002] (qwik): The qwik target does not emit `defineSlots` yet: composition lands in M3.
- --> diagnostics/invalid-slot-content/Page.uf.tsx:7:3
-  |
-7 |   const slots = defineSlots<{ title?(): Element; default?(): Element }>();
-  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = see: https://unframework.dev/diagnostics/UF1002
-
 error[UF3040]: The slot `title`'s fill is an arrow function whose body is the JSX it renders, or the parent's own slot (`slots.title`).
   --> diagnostics/invalid-slot-content/Page.uf.tsx:17:28
    |

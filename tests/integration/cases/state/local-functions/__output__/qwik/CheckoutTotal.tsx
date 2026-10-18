@@ -1,4 +1,12 @@
-import { $, type QRL, component$, useComputed$, useSignal } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type QRL,
+  component$,
+  useComputed$,
+  useSignal,
+} from "@qwik.dev/core";
 
 export type ShippingMethod = "standard" | "express";
 
@@ -17,37 +25,37 @@ function formatCents(cents: number): string {
   return `EUR ${(cents / 100).toFixed(2)}`;
 }
 
-export default component$<CheckoutTotalProps & CheckoutTotalEvents>(
-  ({ subtotal, onShippingChange$ }) => {
-    const method = useSignal<ShippingMethod>("standard");
-    const shipping = useComputed$(() => rates[method.value]);
-    const total = useComputed$(() => formatCents(subtotal + shipping.value));
+export default component$<
+  CheckoutTotalProps & CheckoutTotalEvents & { class?: ClassList; style?: CSSProperties }
+>(({ subtotal, onShippingChange$, class: className, style }) => {
+  const method = useSignal<ShippingMethod>("standard");
+  const shipping = useComputed$(() => rates[method.value]);
+  const total = useComputed$(() => formatCents(subtotal + shipping.value));
 
-    const choose = $((next: ShippingMethod) => {
-      method.value = next;
-      onShippingChange$?.(next);
-    });
+  const choose = $((next: ShippingMethod) => {
+    method.value = next;
+    onShippingChange$?.(next);
+  });
 
-    const chooseExpress = $(async () => {
-      await choose("express");
-    });
+  const chooseExpress = $(async () => {
+    await choose("express");
+  });
 
-    const chooseStandard = $(async () => {
-      await choose("standard");
-    });
+  const chooseStandard = $(async () => {
+    await choose("standard");
+  });
 
-    return (
-      <section class="checkout-total" aria-label="Order total">
-        <p>Subtotal: {formatCents(subtotal)}</p>
-        <p>Shipping: {formatCents(shipping.value)}</p>
-        <p role="status">Total: {total.value}</p>
-        <button type="button" aria-pressed={method.value === "standard"} onClick$={chooseStandard}>
-          Standard shipping
-        </button>
-        <button type="button" aria-pressed={method.value === "express"} onClick$={chooseExpress}>
-          Express shipping
-        </button>
-      </section>
-    );
-  },
-);
+  return (
+    <section class={["checkout-total", className]} aria-label="Order total" style={style}>
+      <p>Subtotal: {formatCents(subtotal)}</p>
+      <p>Shipping: {formatCents(shipping.value)}</p>
+      <p role="status">Total: {total.value}</p>
+      <button type="button" aria-pressed={method.value === "standard"} onClick$={chooseStandard}>
+        Standard shipping
+      </button>
+      <button type="button" aria-pressed={method.value === "express"} onClick$={chooseExpress}>
+        Express shipping
+      </button>
+    </section>
+  );
+});

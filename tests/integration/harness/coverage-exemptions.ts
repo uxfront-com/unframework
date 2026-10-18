@@ -22,9 +22,7 @@ const LAYER_2 = "Its case lands after the composition lanes merge.";
  * Each target's M3 lane, which emits composition: until it lands, the target reports a case's
  * composition as UF1002 (its quarantine lists the cases), so its cells have no case yet.
  */
-const LANES: Readonly<Partial<Record<Exclude<TargetName, "vue">, string>>> = {
-  qwik: "Qwik's M3 lane (UXF-319) emits composition, and its cases cover the cell.",
-};
+const LANES: Readonly<Partial<Record<Exclude<TargetName, "vue">, string>>> = {};
 
 /** The lanes of every target but those whose cell is unsupported. */
 function lanesBut(
@@ -71,6 +69,7 @@ export const EXEMPT_CAPABILITIES: Readonly<
   "default-slot-presence": lanesBut("angular", "qwik"),
   "slot-forwarding": {
     ...lanesBut(),
+    qwik: "slots/forwarding also forwards the default slot, which needs default-slot-presence (an error on Qwik). M3's repeated-default-slot follow-up adds a case that forwards only a named slot, which covers Qwik's cell, and removes this exemption.",
     angular:
       "slots/forwarding also forwards the default slot, which needs default-slot-presence (an error on Angular). M3's repeated-default-slot follow-up adds a case that forwards only a named slot, which covers Angular's cell, and removes this exemption.",
   },

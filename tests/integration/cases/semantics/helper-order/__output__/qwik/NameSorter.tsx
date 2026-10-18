@@ -1,5 +1,7 @@
 import {
   $,
+  type CSSProperties,
+  type ClassList,
   type QRL,
   component$,
   useComputed$,
@@ -19,8 +21,8 @@ function compare(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-export default component$<NameSorterEvents>(
-  ({ onStarted$, onFirstSeen$, onSecondSeen$, onTotal$ }) => {
+export default component$<NameSorterEvents & { class?: ClassList; style?: CSSProperties }>(
+  ({ onStarted$, onFirstSeen$, onSecondSeen$, onTotal$, class: className, style }) => {
     const names = useSignal(["Cy", "Al"].toSorted((a, b) => compare(a, b)));
     const count = useSignal(0);
     const doubled = useComputed$(() => count.value * 2);
@@ -81,7 +83,7 @@ export default component$<NameSorterEvents>(
     });
 
     return (
-      <section class="name-sorter" aria-label="Names">
+      <section class={["name-sorter", className]} aria-label="Names" style={style}>
         <p>Names: {names.value.join(", ")}</p>
         <p>Added: {count.value}</p>
         <button type="button" onClick$={() => add("Bo")}>

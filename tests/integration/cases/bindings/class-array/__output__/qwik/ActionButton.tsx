@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export interface ActionButtonProps {
   label: string;
@@ -8,18 +8,22 @@ export interface ActionButtonProps {
   badge: number;
 }
 
-export default component$<ActionButtonProps>(({ label, size, primary, busy = false, badge }) => {
-  return (
-    <button
-      type="button"
-      class={[
-        "button",
-        `button-${size}`,
-        { "button-primary": primary, "is-busy button-waiting": busy, "has-badge": badge },
-        primary ? "solid" : "outline",
-      ]}
-    >
-      {label}
-    </button>
-  );
-});
+export default component$<ActionButtonProps & { class?: ClassList; style?: CSSProperties }>(
+  ({ label, size, primary, busy = false, badge, class: className, style }) => {
+    return (
+      <button
+        type="button"
+        class={[
+          "button",
+          `button-${size}`,
+          { "button-primary": primary, "is-busy button-waiting": busy, "has-badge": badge },
+          primary ? "solid" : "outline",
+          className,
+        ]}
+        style={style}
+      >
+        {label}
+      </button>
+    );
+  },
+);

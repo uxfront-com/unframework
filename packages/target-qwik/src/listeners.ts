@@ -30,8 +30,17 @@ import {
   rewriteCode,
 } from "@unframework/codegen";
 import type { CodeKind, JsxContext, LiftedControl } from "@unframework/codegen";
-import type { ElementNode, EventAttribute, FunctionCode, Parameter } from "@unframework/ir";
+import { walk } from "@unframework/ir";
+import type {
+  DynamicNode,
+  ElementNode,
+  EventAttribute,
+  FunctionCode,
+  ModelAttribute,
+  Parameter,
+} from "@unframework/ir";
 
+import { modelListener } from "./composition.ts";
 import { qwikListenerProp } from "./events.ts";
 import { readsName, splitHandler } from "./handlers.ts";
 import type { SplitHandler } from "./handlers.ts";
@@ -90,9 +99,31 @@ export class Listeners {
   readonly #printed = new Set<EventAttribute>();
   /** The `once` listeners' WeakSets, declared after the component. */
   readonly helpers: string[] = [];
+  /**
+   * The listeners and models in a fill and in a list, whose `$` handler is written `$(…)` in
+   * place: Qwik 2.0.0-beta.47's optimizer hoists the capture of an arrow in a list out of the
+   * fill's segment, which then reads a name it does not declare; an explicit `$()` captures the
+   * item where it is (./composition.ts).
+   */
+  readonly explicit: Set<EventAttribute | ModelAttribute> = new Set();
 
   constructor(plan: SetupPlan) {
     this.#plan = plan;
+  }
+
+  /**
+   * Prints the listeners in `node` again, its own and its descendants': a `<component is>`
+   * prints its tag and its children once per candidate (./index.ts).
+   */
+  reprint(node: DynamicNode): void {
+    walk(node, {
+      enter: (inner) => {
+        if (inner.kind !== "Element" && inner.kind !== "Dynamic") return;
+        for (const attribute of inner.attributes) {
+          if (attribute.kind === "Event") this.#printed.delete(attribute);
+        }
+      },
+    });
   }
 
   /** The JSX attributes of `attribute`'s event on `element`, at its first listener; `[]` after. */
@@ -103,10 +134,23 @@ export class Listeners {
     const [first] = listeners;
     if (first !== attribute || this.#printed.has(first)) return [];
     this.#printed.add(first);
-    return this.#event(attribute.event, listeners, context);
+    // A `v-model` of the event runs first, as Vue's directive listens before the element's
+    // listeners (./composition.ts `modelAttribute`).
+    const model = element.attributes.flatMap((other) => {
+      if (other.kind !== "Model") return [];
+      const found = modelListener(other, element, context, this.#plan);
+      return found.event === attribute.event ? [found.handler] : [];
+    })[0];
+    return this.#event(attribute.event, listeners, context, this.explicit.has(first), model);
   }
 
-  #event(event: string, listeners: readonly EventAttribute[], context: JsxContext): JsxAttribute[] {
+  #event(
+    event: string,
+    listeners: readonly EventAttribute[],
+    context: JsxContext,
+    explicit: boolean,
+    model?: string,
+  ): JsxAttribute[] {
     const plan = this.#plan;
     const groups = [
       ...new Set(listeners.map((listener) => plan.listeners.groups.get(listener)!)),
@@ -141,12 +185,17 @@ export class Listeners {
       const sync = found && syncHandler(plan, syncs, found.eventType);
       const entries = [
         ...(sync ? [{ code: () => sync, inline: false }] : []),
+        ...(model && scope === "element" ? [{ code: () => model, inline: true }] : []),
         ...(found?.handler ? [found.handler] : []),
       ];
       if (!entries.length) continue;
       const value =
         entries.length === 1
-          ? context.placeholders.expression(entries[0]!.code(false))
+          ? context.placeholders.expression(
+              explicit && entries[0]!.inline
+                ? `${plan.names.core("$")}(${entries[0]!.code(true)})`
+                : entries[0]!.code(false),
+            )
           : js.arrayExpression(
               entries.map(({ code, inline }) =>
                 context.placeholders.expression(

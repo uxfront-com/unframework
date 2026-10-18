@@ -1,4 +1,11 @@
-import { $, type QRL, component$, useSignal } from "@qwik.dev/core";
+import {
+  $,
+  type CSSProperties,
+  type ClassList,
+  type QRL,
+  component$,
+  useSignal,
+} from "@qwik.dev/core";
 
 export interface DeleteFileProps {
   fileName: string;
@@ -8,7 +15,9 @@ export interface DeleteFileEvents {
   onDeleted$?: QRL<(fileName: string, copies: number) => void>;
 }
 
-export default component$<DeleteFileProps & DeleteFileEvents>(({ fileName, onDeleted$ }) => {
+export default component$<
+  DeleteFileProps & DeleteFileEvents & { class?: ClassList; style?: CSSProperties }
+>(({ fileName, onDeleted$, class: className, style }) => {
   const copies = useSignal(1);
   const confirming = useSignal(false);
   const resolveConfirmation = useSignal<(() => void) | undefined>();
@@ -31,7 +40,7 @@ export default component$<DeleteFileProps & DeleteFileEvents>(({ fileName, onDel
   });
 
   return (
-    <section class="delete-file" aria-label="File">
+    <section class={["delete-file", className]} aria-label="File" style={style}>
       <p>
         {fileName}, {copies.value} {copies.value === 1 ? "copy" : "copies"}
       </p>

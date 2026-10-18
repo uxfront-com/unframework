@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 interface LabelAttributes {
   id: string;
@@ -22,10 +22,21 @@ export interface ShipmentCardProps {
   signature?: LabelAttributes;
 }
 
-export default component$<ShipmentCardProps>(
-  ({ reference, carrier, eta = null, parcel, tracked, tracking, stops, signature }) => {
+export default component$<ShipmentCardProps & { class?: ClassList; style?: CSSProperties }>(
+  ({
+    reference,
+    carrier,
+    eta = null,
+    parcel,
+    tracked,
+    tracking,
+    stops,
+    signature,
+    class: className,
+    style,
+  }) => {
     return (
-      <section class="shipment-card" aria-label={reference}>
+      <section class={["shipment-card", className]} aria-label={reference} style={style}>
         <p id={carrier?.id} title={carrier?.title}>
           Carrier
         </p>
@@ -48,11 +59,13 @@ export default component$<ShipmentCardProps>(
             </li>
           ))}
         </ol>
-        {signature ? (
-          <p id={signature.id} title={signature.title}>
-            Signed on delivery
-          </p>
-        ) : null}
+        <>
+          {signature ? (
+            <p id={signature.id} title={signature.title}>
+              Signed on delivery
+            </p>
+          ) : null}
+        </>
         {!parcel.seal ? (
           <p>Not sealed</p>
         ) : (

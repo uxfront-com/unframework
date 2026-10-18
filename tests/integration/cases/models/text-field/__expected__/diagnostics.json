@@ -15,22 +15,5 @@
       "offset": 225
     },
     "target": "astro"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The qwik target does not emit two-way-binding yet: composition lands in M3.",
-    "file": "models/text-field/ContactForm.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 21,
-      "offset": 205
-    },
-    "end": {
-      "line": 9,
-      "column": 41,
-      "offset": 225
-    },
-    "target": "qwik"
   }
 ]

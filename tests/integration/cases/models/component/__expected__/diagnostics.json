@@ -1,22 +1,5 @@
 [
   {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The qwik target does not emit component yet: composition lands in M3.",
-    "file": "models/component/Order.uf.tsx",
-    "start": {
-      "line": 9,
-      "column": 7,
-      "offset": 184
-    },
-    "end": {
-      "line": 9,
-      "column": 58,
-      "offset": 235
-    },
-    "target": "qwik"
-  },
-  {
     "code": "UF4001",
     "severity": "info",
     "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
@@ -32,23 +15,6 @@
       "offset": 232
     },
     "target": "astro"
-  },
-  {
-    "code": "UF1002",
-    "severity": "error",
-    "message": "The qwik target does not emit model yet: composition lands in M3.",
-    "file": "models/component/Stepper.uf.tsx",
-    "start": {
-      "line": 4,
-      "column": 3,
-      "offset": 110
-    },
-    "end": {
-      "line": 4,
-      "column": 62,
-      "offset": 169
-    },
-    "target": "qwik"
   },
   {
     "code": "UF4001",

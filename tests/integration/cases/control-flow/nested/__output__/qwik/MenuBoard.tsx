@@ -1,4 +1,4 @@
-import { component$ } from "@qwik.dev/core";
+import { type CSSProperties, type ClassList, component$ } from "@qwik.dev/core";
 
 export interface MenuDish {
   id: string;
@@ -18,26 +18,28 @@ export interface MenuBoardProps {
   closed: boolean;
 }
 
-export default component$<MenuBoardProps>(({ courses, closed }) => {
-  return (
-    <div class="menu-board">
-      {closed ? (
-        <p>The kitchen is closed.</p>
-      ) : (
-        courses.map((course) => (
-          <section key={course.id} aria-label={course.title}>
-            <h2>{course.title}</h2>
-            <ul>
-              {course.dishes.map((dish) => (
-                <li key={dish.id}>
-                  {dish.name}, {dish.price.toFixed(2)}
-                  {dish.vegetarian ? <span> (vegetarian)</span> : null}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))
-      )}
-    </div>
-  );
-});
+export default component$<MenuBoardProps & { class?: ClassList; style?: CSSProperties }>(
+  ({ courses, closed, class: className, style }) => {
+    return (
+      <div class={["menu-board", className]} style={style}>
+        {closed ? (
+          <p>The kitchen is closed.</p>
+        ) : (
+          courses.map((course) => (
+            <section key={course.id} aria-label={course.title}>
+              <h2>{course.title}</h2>
+              <ul>
+                {course.dishes.map((dish) => (
+                  <li key={dish.id}>
+                    {dish.name}, {dish.price.toFixed(2)}
+                    {dish.vegetarian ? <span> (vegetarian)</span> : null}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))
+        )}
+      </div>
+    );
+  },
+);
