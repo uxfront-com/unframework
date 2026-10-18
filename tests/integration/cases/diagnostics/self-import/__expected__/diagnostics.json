@@ -1,0 +1,41 @@
+[
+  {
+    "code": "UF1203",
+    "severity": "error",
+    "message": "\"./Countdown.uf.tsx\" is this module's own file: a component renders itself, and the components beside it, by their own names.",
+    "file": "diagnostics/self-import/Countdown.uf.tsx",
+    "start": {
+      "line": 2,
+      "column": 19,
+      "offset": 99
+    },
+    "end": {
+      "line": 2,
+      "column": 39,
+      "offset": 119
+    },
+    "help": "Remove the import, and write the tag with the component's name, as in `<Countdown />`.",
+    "fixes": [
+      {
+        "title": "Remove the import, and render each component by its own name",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 81,
+              "end": 121
+            },
+            "text": ""
+          },
+          {
+            "span": {
+              "start": 266,
+              "end": 271
+            },
+            "text": "Countdown"
+          }
+        ]
+      }
+    ]
+  }
+]

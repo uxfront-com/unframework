@@ -1,0 +1,9 @@
+error[UF1203]: "./Countdown.uf.tsx" is this module's own file: a component renders itself, and the components beside it, by their own names.
+ --> diagnostics/self-import/Countdown.uf.tsx:2:19
+  |
+2 | import Again from "./Countdown.uf.tsx";
+  |                   ^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: Remove the import, and write the tag with the component's name, as in `<Countdown />`.
+  = fix (likely): Remove the import, and render each component by its own name
+  = see: https://unframework.dev/diagnostics/UF1203
