@@ -480,6 +480,42 @@ export function A() { return <div><Plain>{/* note */}</Plain><Field label="a">{/
     });
     expect(codes(diagnostics)).toContain("UF1104");
   });
+
+  it("reports the clash once, with no UF3047 where the alias is rendered", () => {
+    const parsed = parseModule(
+      "Form.uf.tsx",
+      'import Glyph from "./Icon.uf.tsx";\nfunction Icon() { return <i />; }\nexport default function Form() { return <p><Glyph /><Icon /></p>; }',
+    );
+    const api = analyze(
+      parseModule("Icon.uf.tsx", "export default function Icon() { return <b />; }"),
+    ).api!;
+    const { diagnostics } = analyze(parsed, {
+      imports: new Map([["./Icon.uf.tsx", { ...api, file: "Icon.uf.tsx" }]]),
+    });
+    expect(codes(diagnostics)).toEqual(["UF1104"]);
+  });
+
+  it("names the other component's module by its relative path", () => {
+    const icon = analyze(
+      parseModule("ui/Icon.uf.tsx", "export default function Icon() { return <b />; }"),
+    ).api!;
+    const glyph = analyze(
+      parseModule("ui/Glyph.uf.tsx", "export function Icon() { return <i />; }"),
+    ).api!;
+    const parsed = parseModule(
+      "app/Form.uf.tsx",
+      'import Icon from "../ui/Icon.uf.tsx";\nimport { Icon as Glyph } from "../ui/Glyph.uf.tsx";\nexport default function Form() { return <p><Icon /><Glyph /></p>; }',
+    );
+    const { diagnostics } = analyze(parsed, {
+      imports: new Map([
+        ["../ui/Icon.uf.tsx", { ...icon, file: "../ui/Icon.uf.tsx" }],
+        ["../ui/Glyph.uf.tsx", { ...glyph, file: "../ui/Glyph.uf.tsx" }],
+      ]),
+    });
+    expect(diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
+      'Icon from "../ui/Glyph.uf.tsx" and Icon from "../ui/Icon.uf.tsx" write one output file, which each output imports by its name.',
+    ]);
+  });
 });
 
 describe("misuse the second review found (UXF-313)", () => {

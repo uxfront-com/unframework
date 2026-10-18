@@ -717,10 +717,18 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
     const output = `${directory}${component.name}`.toLowerCase();
     const owner = context.outputs.get(output);
     if (owner !== undefined && owner !== `${api.file}#${component.name}`) {
+      // Reported here, once: the tags that render the name are not unknown (UF3047).
+      context.components.set(item.local, undefined);
+      const hash = owner.indexOf("#");
+      const file = owner.slice(0, hash);
+      const other =
+        hash === -1
+          ? `this module's ${owner}`
+          : `${owner.slice(hash + 1)} from "${file.startsWith("../") ? file : `./${file}`}"`;
       reporter.report(
         "UF1104",
         item,
-        `${component.name} from "${specifier}" and ${owner.includes("#") ? `${owner.slice(owner.indexOf("#") + 1)} from "./${owner.slice(0, owner.indexOf("#"))}"` : `this module's ${owner}`} write one output file, which each output imports by its name.`,
+        `${component.name} from "${specifier}" and ${other} write one output file, which each output imports by its name.`,
         { help: "Rename one of the components." },
       );
       continue;
