@@ -951,7 +951,7 @@ const entries: CatalogueEntry[] = [
       "after the model, so the name is a camelCase string literal, and the options, `default` and",
       "`required`, are static values, as a prop's default is. The name is also free: a component",
       "declares each model once, apart from its props, and from an event named `openChange`, whose",
-      "callback (`onOpenChange` on React, Solid and Qwik) would be the model's too.",
+      "callback (`onOpenChange`, and `onOpenChange$` on Qwik) would be the model's too.",
       "",
       "```tsx",
       "const open = defineModel<boolean>({ default: false });         // rejected",

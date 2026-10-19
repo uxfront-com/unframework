@@ -213,7 +213,7 @@ function modelOf(call: AST.CallExpression, context: ApiContext): ApiMember | und
         ((property.key.type === "Identifier" && property.key.name === key) ||
           (property.key.type === "Literal" && property.key.value === key))
       ) {
-        return property.value as AST.Expression;
+        return property.value;
       }
     }
     return undefined;

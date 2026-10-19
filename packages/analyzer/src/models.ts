@@ -39,6 +39,18 @@ const TEXT_TYPES: ReadonlySet<string> = new Set([
   "color",
 ]);
 
+/** Whether `v-model` binds an <input> of this static type, as `controlOf` reads it (UF3042). */
+export function bindsInputType(type: string | undefined): boolean {
+  return (
+    type === undefined ||
+    TEXT_TYPES.has(type) ||
+    type === "number" ||
+    type === "range" ||
+    type === "checkbox" ||
+    type === "radio"
+  );
+}
+
 /** What a control's `v-model` needs to know about its element. */
 export interface ControlContext {
   readonly tag: string;
@@ -308,7 +320,7 @@ export function lowerModelBinding(
       item,
       `${info.name}'s model \`${model}\` can be \`undefined\`, as its type \`${type}\` says, and \`${checked.expression.code}\` cannot hold it: React's output passes the model's changes with that type, which the ref's setter does not take.`,
       {
-        help: `Give \`${model}\` a \`default\` or \`required: true\` in ${info.name}, or let the ref hold \`undefined\`.`,
+        help: `Let the ref hold \`undefined\`, or, where \`${model}\`'s type in ${info.name} excludes it, give the model a \`default\` or \`required: true\`.`,
       },
     );
     return undefined;

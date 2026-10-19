@@ -55,7 +55,7 @@ import type { HtmlOnlyReference, Piece } from "./jsx/text.ts";
 import { listenerName, lowerListener, lowerRef } from "./listeners.ts";
 import { isStaticString, piecesOf, reportCharacters, valueOf } from "./literals.ts";
 import type { StaticString } from "./literals.ts";
-import { CONTROL_MODEL, lowerControlModel } from "./models.ts";
+import { bindsInputType, CONTROL_MODEL, lowerControlModel } from "./models.ts";
 import type { RenderContext } from "./render.ts";
 import { spreadSource } from "./spread-source.ts";
 import { lowerStaticStyle, lowerStyleObject } from "./style.ts";
@@ -1229,7 +1229,7 @@ function elementProblem(
   if (isStateAttribute(tag, name, type)) {
     return name === "muted"
       ? unsupported(`\`muted\` on <${tag}> is not supported yet: ${MUTED_REASON}`)
-      : formState(tag, name);
+      : formState(tag, name, tag === "input" && staticType && bindsInputType(type));
   }
   if (SUBMISSION_OVERRIDES.has(name) && staticType) {
     // A button's missing or invalid `type` is the Submit Button state; an input's is Text.
