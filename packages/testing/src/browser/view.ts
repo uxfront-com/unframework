@@ -17,7 +17,7 @@ import { normalizeDomWithIds } from "../dom/serialize.ts";
 import { formatError } from "../errors.ts";
 import { caseOfFile } from "../harness.ts";
 import { recordLayer } from "../layers.ts";
-import { hostJoins, removeHostSpaces } from "../normalize/rules/aria-hosts.ts";
+import { inlineHosts } from "../normalize/rules/aria-hosts.ts";
 import { isNormalizeTarget } from "../normalize/targets.ts";
 import { assertInteractive } from "./capabilities.ts";
 import { advanceClock, checkTick, installClock } from "./clock.ts";
@@ -259,11 +259,13 @@ async function mountWith(
   const dom = () => normalizeDomWithIds(container, normalizeOptions);
   const html = () => dom().html;
   const aria = async () => {
-    const snapshot = await commands.ufAriaSnapshot(locator.serialize());
-    // Angular's host edges, read from the DOM the snapshot was taken of (ADR-0060).
-    return target === "angular"
-      ? removeHostSpaces(snapshot, hostJoins(container), target)
-      : snapshot;
+    // Angular's hosts are inline for the snapshot alone, so they add no space (ADR-0060).
+    const restore = inlineHosts(container, isNormalizeTarget(target) ? target : undefined);
+    try {
+      return await commands.ufAriaSnapshot(locator.serialize());
+    } finally {
+      restore();
+    }
   };
   /** Fails with what the page or the payloads refused since the last settle. */
   const raise = () => {

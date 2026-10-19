@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import { normalizeHtml } from "../src/normalize/index.ts";
 import { printTree } from "../src/normalize/print.ts";
 import { isAngularHost, unwrapAngularHosts } from "../src/normalize/rules/angular-hosts.ts";
-import { removeHostSpaces } from "../src/normalize/rules/aria-hosts.ts";
 import { removeComments } from "../src/normalize/rules/comments.ts";
 import {
   removeReactDefaultStates,
@@ -341,85 +340,6 @@ describe("rule 4e: removeReactDefaultStates", () => {
     ).not.toBe(normalizeHtml('<input type="checkbox" uf:checked="false">', { target: "vue" }));
     const server = '<input type="checkbox" checked><option selected>o</option>';
     expect(apply(server, react)).toBe(apply(server));
-  });
-});
-
-describe("the ARIA snapshot rule: removeHostSpaces", () => {
-  it("removes the space Playwright puts at each host join, on Angular", () => {
-    expect(
-      removeHostSpaces(
-        "- text: plain wide toggled",
-        [
-          { before: "plain", after: "wide", written: 0 },
-          { before: "wide", after: "toggled", written: 0 },
-        ],
-        "angular",
-      ),
-    ).toBe("- text: plainwidetoggled");
-    expect(
-      removeHostSpaces(
-        "- paragraph: Build passing",
-        [{ before: "Build", after: "passing", written: 0 }],
-        "angular",
-      ),
-    ).toBe("- paragraph: Buildpassing");
-  });
-
-  it("does nothing on any other target", () => {
-    for (const target of NORMALIZE_TARGETS.filter((each) => each !== "angular")) {
-      expect(
-        removeHostSpaces(
-          "- paragraph: Build passing",
-          [{ before: "Build", after: "passing", written: 0 }],
-          target,
-        ),
-      ).toBe("- paragraph: Build passing");
-    }
-  });
-
-  it("removes only the joins' spaces, in order: one the source writes stays", () => {
-    // "Build passing" written as text, then the same words joined by a host, twice.
-    expect(
-      removeHostSpaces(
-        "- paragraph: Build passing\n- paragraph: Build passing\n- paragraph: Build passing",
-        [
-          { before: "Build", after: "passing", written: 1 },
-          { before: "Build", after: "passing", written: 1 },
-        ],
-        "angular",
-      ),
-    ).toBe("- paragraph: Build passing\n- paragraph: Buildpassing\n- paragraph: Buildpassing");
-    // Words on separate lines count for nothing: the join's own space goes.
-    expect(
-      removeHostSpaces(
-        "- paragraph: Build\n- paragraph: passing\n- paragraph: Build passing and Build passing",
-        [{ before: "Build", after: "passing", written: 0 }],
-        "angular",
-      ),
-    ).toBe("- paragraph: Build\n- paragraph: passing\n- paragraph: Buildpassing and Build passing");
-    // The join first, then the source's words.
-    expect(
-      removeHostSpaces(
-        "- paragraph: Build passing\n- paragraph: Build passing",
-        [{ before: "Build", after: "passing", written: 0 }],
-        "angular",
-      ),
-    ).toBe("- paragraph: Buildpassing\n- paragraph: Build passing");
-    expect(
-      removeHostSpaces(
-        "- paragraph: Build passing",
-        [{ before: "Build", after: "failing", written: 0 }],
-        "angular",
-      ),
-    ).toBe("- paragraph: Build passing");
-  });
-
-  it("keeps a real difference: a missing word still differs", () => {
-    const joins = [{ before: "Build", after: "passing", written: 0 }];
-    expect(removeHostSpaces("- paragraph: Build", joins, "angular")).not.toBe(
-      "- paragraph: Buildpassing",
-    );
-    expect(removeHostSpaces("- paragraph: passing", joins, "angular")).toBe("- paragraph: passing");
   });
 });
 

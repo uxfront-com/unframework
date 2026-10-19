@@ -326,9 +326,9 @@ that equals its `uf:value`, an `<input>`'s `checked` where `uf:checked` is `"tru
 Vue's `v-model` does not); markup that differs stays (ADR-0058). On React only, a `checked` or
 `selected` goes wherever its `uf:*` state is there, whatever it says (rule 4e): react-dom writes a
 box's first state as its attribute and never updates it, and the state still compares. On Angular
-only, the view removes from the ARIA snapshot the space at each host edge that joins two words with
-no whitespace between them, which it reads from the live DOM's computed styles
-(`removeHostSpaces`, ADR-0060). Generated ids are the compiler's `uf-id-…` ids, by
+only, the view takes the ARIA snapshot with each host set to `display: inline`, so the host adds no
+space, and then puts the hosts' `style` back; a host among flex or grid items stays as it is
+(`inlineHosts`, ADR-0060). Generated ids are the compiler's `uf-id-…` ids, by
 provenance (the analyzer rejects an authored id or reference with the prefix): each one, a
 `uf-id-` and the characters the frameworks' ids use, is renamed `uf-id-1`, `uf-id-2`… by first
 appearance wherever it appears, in every attribute value (a radio group's `name`, a `data-*`

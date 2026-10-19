@@ -51,16 +51,15 @@ declares it.
   listeners on the element share the callback. A callback written in place (its listeners read a
   list's row or a narrowed value) runs at every render, so it leaves the caret alone, at the start.
   The `two-way-binding` cell stays native: no helper is added.
-- **Angular's host space is removed from the ARIA snapshot at the hosts' positions** (the ARIA
-  snapshot rule, `removeHostSpaces`). On Angular only, the view reads the live DOM's computed styles
-  and lists each host edge with a word on either side and no whitespace between them, inside one
-  run of text (`hostJoins`), with the number of times the text writes `before after`, with its own
-  whitespace, on one line of the snapshot, before the join: words in two nodes of their own
-  (two paragraphs, a `<strong>`) sit on two lines. The rule removes the space in the occurrence of `before after` that
-  follows those, and no other, so a space the source writes between the same words stays. An element that isn't inline, or has a role, ends the run, since the
-  snapshot spaces or splits it on every target. This amends ADR-0010: L7 compares the tree with
-  that space removed, so it shows the host changes nothing else. Attribute selectors stay out of M3
-  (ADR-0056).
+- **Angular's hosts are inline while L7 and L9 take the ARIA snapshot** (the ARIA snapshot rule,
+  `inlineHosts`). On Angular only, the view sets each host, a `uf-` element whose computed
+  `display` is `contents`, to `display: inline` through its `style` attribute, takes the snapshot,
+  and puts each `style` back as it was. Playwright spaces only an element that isn't inline, so an
+  inline host adds no space, and Playwright lays out everything else as it does on every target.
+  The rule edits no text, so a missing word still differs. A host whose box parent lays out flex
+  or grid items stays as it is: CSS would make an inline host a box there. This amends ADR-0010:
+  L7 compares the tree without the host's space, so it shows the host changes nothing else.
+  Attribute selectors stay out of M3 (ADR-0056).
 - **The targets page declares React's native cell.** A note under the table states the `onChange`
   write and the `input` order, react-dom's attribute and the caret, and the Angular host section
   states the space. `AGENTS.md` says the same.
@@ -82,8 +81,11 @@ declares it.
 - Rule 4e also removes the `checked` a source writes on a box with no `v-model`, since every box
   has its `uf:checked`. Once the person clears such a box, Vue keeps the attribute and React
   doesn't, so React fails. No case has one.
-- The host rule matches words in the snapshot's text. A word the snapshot quotes or escapes, or one
-  ARIA text splits, removes nothing, so such a case fails loudly rather than passing.
+- A host inside a flex or grid container keeps its space. Its element children are flex or grid
+  items, which the snapshot spaces on every target, so only text right at such a host's edge reads
+  differently, and that fails loudly. No case has one.
+- A host's `display` changes while the snapshot is taken. A `ResizeObserver` or a transition on its
+  children could see it. No case has one.
 - A React `<textarea>` with a `v-model` and a native listener that reads a list's row or a narrowed
   value keeps the caret at the start. No case has one; the targets page states the exception.
 
@@ -96,6 +98,10 @@ declares it.
   sees, so no rule can remove it without hiding a real difference.
 - **Remove every space next to a host's text from the snapshot string.** The string alone cannot
   tell a host's space from one the source writes between the same words.
+- **Remove the host's space from the snapshot string at the hosts' positions,** counting where
+  the source writes the same words. The count rebuilds Playwright's lines from the DOM by element
+  type, and three review rounds each found valid shapes it got wrong: words in separate nodes, and
+  in unnamed generic elements. Setting the hosts inline leaves the layout to Playwright.
 - **A capability for the host space.** It needs a cell in all seven targets and skips whole tests
   (ADR-0033).
 
@@ -114,3 +120,6 @@ Playwright 1.63.0:
 - `browser:angular`: `- paragraph: Buildpassing` / `+ paragraph: Build passing` and
   `- text: plainwidetoggled` / `+ text: plain wide toggled` alone, and pass with the host rule.
   `browser:vue`, `browser:react` and `browser:angular` pass every case.
+- `@unframework/testing`'s `inlineHosts` tests take Vitest's ARIA snapshot, a fork of Playwright's
+  with its spacing rule: the source's own `Build passing`, in sections, paragraphs, list items and
+  beside a `<strong>`, reads as it does without hosts.
