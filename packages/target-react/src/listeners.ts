@@ -336,7 +336,7 @@ export class ReactListeners {
     const ref = listeners.ref && this.#plan.bindings.get(listeners.ref.binding)!.name;
     const local = locals(
       [...handlers, listen, ref ?? ""],
-      ["element", "stop", "cleanups", "cleanup"],
+      ["element", "stop", "cleanups", "cleanup", "text"],
     );
     const calls = listeners.native.map(([first], index) => {
       const options = first!.capture
@@ -350,9 +350,11 @@ export class ReactListeners {
     if (!ref && !listeners.caret && calls.length === 1) return `${parameter} => ${calls[0]!}`;
     const lines = ref ? [`${ref}.current = ${local.element};`] : [];
     if (listeners.caret) {
-      const { element } = local;
+      // Set as Vue's `vModelText` sets it, on a field that holds no text: the caret ends after the
+      // text, and no `select` fires, as `setSelectionRange` would make it.
+      const { element, text } = local;
       lines.push(
-        `if (${element}) ${element}.setSelectionRange(${element}.value.length, ${element}.value.length);`,
+        `if (${element}) {\nconst ${text} = ${element}.value;\n${element}.value = "";\n${element}.value = ${text};\n}`,
       );
     }
     const stops = [ref ? `${ref}.current = null;` : undefined];

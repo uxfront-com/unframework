@@ -45,15 +45,18 @@ declares it.
   such an attribute on every other target, where only the source's markup writes it, and an element
   without the `uf:*` state (a server render) keeps it on React too (ADR-0031).
 - **React puts a bound `<textarea>`'s caret after its text once it is mounted.** The element's ref
-  callback, declared once with `useState`, calls `setSelectionRange` at the end of the value, as
-  Vue's set value leaves it. A template ref or native listeners on the element share the callback.
-  A callback written in place (its listeners read a list's row or a narrowed value) runs at every
-  render, so it leaves the caret alone. The `two-way-binding` cell stays native: no helper is added.
+  callback, declared once with `useState`, empties the field and sets its text again, as Vue's
+  `vModelText` sets the text of a field that holds none, so the caret ends after it. It fires no
+  event: `setSelectionRange` would fire a `select`, which Vue doesn't. A template ref or native
+  listeners on the element share the callback. A callback written in place (its listeners read a
+  list's row or a narrowed value) runs at every render, so it leaves the caret alone, at the start.
+  The `two-way-binding` cell stays native: no helper is added.
 - **Angular's host space is removed from the ARIA snapshot at the hosts' positions** (the ARIA
   snapshot rule, `removeHostSpaces`). On Angular only, the view reads the live DOM's computed styles
   and lists each host edge with a word on either side and no whitespace between them, inside one
-  run of text (`hostJoins`); the rule removes the space in each such `before after`, in document
-  order, and no other. An element that isn't inline, or has a role, ends the run, since the
+  run of text (`hostJoins`), with the number of times the text writes `before after`, with its own
+  whitespace, before the join. The rule removes the space in the occurrence of `before after` that
+  follows those, and no other, so a space the source writes between the same words stays. An element that isn't inline, or has a role, ends the run, since the
   snapshot spaces or splits it on every target. This amends ADR-0010: L7 compares the tree with
   that space removed, so it shows the host changes nothing else. Attribute selectors stay out of M3
   (ADR-0056).
@@ -75,10 +78,13 @@ declares it.
 - A React box whose `checked` attribute is wrong but whose state is right passes. Only
   `form.reset()` or a `[checked]` selector could tell, and ADR-0058 leaves a bound control's default
   state outside the contract.
+- Rule 4e also removes the `checked` a source writes on a box with no `v-model`, since every box
+  has its `uf:checked`. Once the person clears such a box, Vue keeps the attribute and React
+  doesn't, so React fails. No case has one.
 - The host rule matches words in the snapshot's text. A word the snapshot quotes or escapes, or one
   ARIA text splits, removes nothing, so such a case fails loudly rather than passing.
-- A React `<textarea>` with a `v-model` and a listener that reads a list row keeps the caret at the
-  start. No case has one.
+- A React `<textarea>` with a `v-model` and a native listener that reads a list's row or a narrowed
+  value keeps the caret at the start. No case has one; the targets page states the exception.
 
 ## Alternatives considered
 
@@ -99,7 +105,9 @@ Playwright 1.63.0:
 
 - `browser:react cases/models/textarea`: L7, L9 and L10 fail on `- uf:value="Buy milk and bread"` /
   `+ uf:value=" and breadBuy milk"` alone. With the caret callback they pass, and
-  `target-react`'s `types after a bound textarea's text` fails without it on `' nowBuy milk'`.
+  `target-react`'s `types after a bound textarea's text` fails without it on `' nowBuy milk'`. With
+  `setSelectionRange` in the callback, the same test hears a `select` at mount, which Vue doesn't
+  fire.
 - `browser:react cases/models/checkbox-group cases/models/radio`: L7 and L9 fail on
   `+ <input checked="" … uf:checked="false">` alone, and pass with rule 4e.
 - `browser:angular`: `- paragraph: Buildpassing` / `+ paragraph: Build passing` and

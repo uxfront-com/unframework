@@ -6,6 +6,11 @@ export interface HostJoin {
   before: string;
   /** The word that starts there. */
   after: string;
+  /**
+   * How many times the text before the join writes `before after` with a space of its own, which
+   * the snapshot shows as the join's: the rule passes over that many.
+   */
+  written: number;
 }
 
 /**
@@ -72,38 +77,61 @@ export function hostJoins(root: Element): HostJoin[] {
   };
   for (const child of root.childNodes) visit(child);
 
-  // Each word, split at the host edges inside it: two pieces side by side make a join.
-  const joins: HostJoin[] = [];
-  let pieces = [""];
+  // Each word, split at the host edges inside it: two pieces side by side make a join. `text` is
+  // the text as the other targets' snapshots read it, one space between words and none at a host
+  // edge, and each piece remembers where it starts in it.
+  const found: { before: string; after: string; at: number }[] = [];
+  let text = "";
+  let pieces = [{ word: "", at: 0 }];
   const endWord = () => {
-    const words = pieces.filter(Boolean);
+    const words = pieces.filter(({ word }) => word);
     for (let index = 1; index < words.length; index += 1) {
-      joins.push({ before: words[index - 1]!, after: words[index]! });
+      const { word: before, at } = words[index - 1]!;
+      found.push({ before, after: words[index]!.word, at });
     }
-    pieces = [""];
+    pieces = [{ word: "", at: 0 }];
+    if (text && !text.endsWith(" ")) text += " ";
   };
   for (const token of tokens) {
     if (token === BREAK) endWord();
     else if (token === EDGE) {
-      if (pieces.at(-1)) pieces.push("");
+      if (pieces.at(-1)!.word) pieces.push({ word: "", at: 0 });
     } else {
       for (const character of token) {
-        if (/\s/.test(character)) endWord();
-        else pieces[pieces.length - 1] += character;
+        if (/\s/.test(character)) {
+          endWord();
+          continue;
+        }
+        const piece = pieces.at(-1)!;
+        if (!piece.word) piece.at = text.length;
+        piece.word += character;
+        text += character;
       }
     }
   }
   endWord();
-  return joins;
+  return found.map(({ before, after, at }) => {
+    const pair = `${before} ${after}`;
+    let written = 0;
+    for (
+      let index = text.indexOf(pair);
+      index >= 0 && index < at;
+      index = text.indexOf(pair, index + 1)
+    ) {
+      written += 1;
+    }
+    return { before, after, written };
+  });
 }
 
 /**
  * The ARIA snapshot rule: on Angular only, removes the space Playwright's ARIA snapshot puts at
  * each host join (`hostJoins`, ADR-0060), and no other. The joins come in document order, as the
- * snapshot's text does: each removes the space in the first `before after` from where the
- * previous one's word after starts, so a space the source writes between the same two words
- * elsewhere stays. A join the snapshot does not show (a word the snapshot quotes or splits)
- * removes nothing, and the difference stays visible.
+ * snapshot's text does. Each passes over the `written` times the source writes `before after`
+ * before it, and the joins before it already lost their space, so it removes the space of its own
+ * occurrence: one the source writes between the same two words stays. A join the snapshot does
+ * not show (a word the snapshot quotes or splits) removes nothing, and text the snapshot adds
+ * (an `aria-label`'s name) can move a removal: either way the difference stays visible.
  */
 export function removeHostSpaces(
   snapshot: string,
@@ -112,13 +140,13 @@ export function removeHostSpaces(
 ): string {
   if (target !== "angular") return snapshot;
   let text = snapshot;
-  let cursor = 0;
-  for (const { before, after } of joins) {
-    const at = text.indexOf(`${before} ${after}`, cursor);
+  for (const { before, after, written } of joins) {
+    const pair = `${before} ${after}`;
+    let at = text.indexOf(pair);
+    for (let passed = 0; at >= 0 && passed < written; passed += 1) at = text.indexOf(pair, at + 1);
     if (at < 0) continue;
     const space = at + before.length;
     text = text.slice(0, space) + text.slice(space + 1);
-    cursor = space;
   }
   return text;
 }

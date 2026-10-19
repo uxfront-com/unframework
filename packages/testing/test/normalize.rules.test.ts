@@ -350,8 +350,8 @@ describe("the ARIA snapshot rule: removeHostSpaces", () => {
       removeHostSpaces(
         "- text: plain wide toggled",
         [
-          { before: "plain", after: "wide" },
-          { before: "wide", after: "toggled" },
+          { before: "plain", after: "wide", written: 0 },
+          { before: "wide", after: "toggled", written: 0 },
         ],
         "angular",
       ),
@@ -359,7 +359,7 @@ describe("the ARIA snapshot rule: removeHostSpaces", () => {
     expect(
       removeHostSpaces(
         "- paragraph: Build passing",
-        [{ before: "Build", after: "passing" }],
+        [{ before: "Build", after: "passing", written: 0 }],
         "angular",
       ),
     ).toBe("- paragraph: Buildpassing");
@@ -370,7 +370,7 @@ describe("the ARIA snapshot rule: removeHostSpaces", () => {
       expect(
         removeHostSpaces(
           "- paragraph: Build passing",
-          [{ before: "Build", after: "passing" }],
+          [{ before: "Build", after: "passing", written: 0 }],
           target,
         ),
       ).toBe("- paragraph: Build passing");
@@ -378,25 +378,36 @@ describe("the ARIA snapshot rule: removeHostSpaces", () => {
   });
 
   it("removes only the joins' spaces, in order: one the source writes stays", () => {
-    // "Build passing" written as text, then the same words joined by a host.
+    // "Build passing" written as text, then the same words joined by a host, twice.
+    expect(
+      removeHostSpaces(
+        "- paragraph: Build passing\n- paragraph: Build passing\n- paragraph: Build passing",
+        [
+          { before: "Build", after: "passing", written: 1 },
+          { before: "Build", after: "passing", written: 1 },
+        ],
+        "angular",
+      ),
+    ).toBe("- paragraph: Build passing\n- paragraph: Buildpassing\n- paragraph: Buildpassing");
+    // The join first, then the source's words.
     expect(
       removeHostSpaces(
         "- paragraph: Build passing\n- paragraph: Build passing",
-        [{ before: "Build", after: "passing" }],
+        [{ before: "Build", after: "passing", written: 0 }],
         "angular",
       ),
     ).toBe("- paragraph: Buildpassing\n- paragraph: Build passing");
     expect(
       removeHostSpaces(
         "- paragraph: Build passing",
-        [{ before: "Build", after: "failing" }],
+        [{ before: "Build", after: "failing", written: 0 }],
         "angular",
       ),
     ).toBe("- paragraph: Build passing");
   });
 
   it("keeps a real difference: a missing word still differs", () => {
-    const joins = [{ before: "Build", after: "passing" }];
+    const joins = [{ before: "Build", after: "passing", written: 0 }];
     expect(removeHostSpaces("- paragraph: Build", joins, "angular")).not.toBe(
       "- paragraph: Buildpassing",
     );

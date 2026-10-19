@@ -237,8 +237,10 @@ describe("react output in the browser", () => {
   });
 
   it("types after a bound textarea's text, as Vue's set value leaves the caret", async () => {
-    await start(await component("Notes"), ["mounted"]);
-    // The template ref shares the caret's callback.
+    await start(await component("Notes"), ["mounted", "picked"]);
+    // The template ref and the native listener share the caret's callback, and placing the caret
+    // selects nothing: Vue's set value fires no `select`.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
     expect(events).toEqual([["mounted", true]]);
     for (const [label, text] of [
       ["Note", "Buy milk"],
@@ -251,8 +253,8 @@ describe("react output in the browser", () => {
       expect(field.value).toBe(`${text} now`);
       // Declared once, the callback never runs again: a render keeps the caret where it is.
       field.setSelectionRange(0, 0);
-      await act(() => userEvent.keyboard("A"));
-      expect(field.value).toBe(`A${text} now`);
+      await act(() => userEvent.keyboard("AB"));
+      expect(field.value).toBe(`AB${text} now`);
     }
   });
 

@@ -61,8 +61,24 @@ describe("hostJoins", () => {
     ).toEqual([]);
   });
 
+  it("counts the times the text writes a join's words before it", () => {
+    const root = document.createElement("div");
+    root.innerHTML = `<p>Build passing</p><p><uf-a ${HOST}>Build</uf-a><uf-b ${HOST}>passing</uf-b></p><p><uf-a ${HOST}>Build</uf-a><uf-b ${HOST}>passing</uf-b></p><p>Build passing</p>`;
+    document.body.append(root);
+    expect(hostJoins(root)).toEqual([
+      { before: "Build", after: "passing", written: 1 },
+      { before: "Build", after: "passing", written: 1 },
+    ]);
+  });
+
   it("finds none at an element that only looks like a host, or with nothing on one side", () => {
     expect(joins("<p><uf-x>a</uf-x><uf-y>b</uf-y></p>")).toEqual([]);
+    // `display: contents` alone makes no host: only Angular's `uf-` elements are.
+    expect(
+      joins(
+        '<p><span style="display: contents">a</span><span style="display: contents">b</span></p>',
+      ),
+    ).toEqual([]);
     expect(joins(`<p><uf-x ${HOST}>a</uf-x></p>`)).toEqual([]);
     expect(joins(`<p><uf-x ${HOST}></uf-x>a</p>`)).toEqual([]);
   });

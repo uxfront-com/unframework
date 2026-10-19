@@ -10,7 +10,11 @@ export default function NoteEditor({ className, style }: NoteEditorAttributes) {
   const noteRef = useRef(note);
 
   const [textCaret] = useState(() => (element: HTMLTextAreaElement | null) => {
-    if (element) element.setSelectionRange(element.value.length, element.value.length);
+    if (element) {
+      const text = element.value;
+      element.value = "";
+      element.value = text;
+    }
   });
 
   return (
