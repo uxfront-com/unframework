@@ -1,7 +1,8 @@
 // Composition shapes the corpus has no case for (QA's probes on the Astro lane): slots forwarded
 // in a list, `<component is>` in a list and under a condition, injection keys whose types name
 // strings and globals, an inline props type whose last member ends in a comment, and scoped slots
-// named with a reserved word and `style`. Each output passes Astro's compiler, `astro check` and
+// named with a reserved word and `style`, and a fill through `<component is>` whose candidates name
+// its render prop apart. Each output passes Astro's compiler, `astro check` and
 // the linters, and the ones that render differently when written wrong render through Astro.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -130,6 +131,48 @@ const SOURCES: Record<string, string> = {
     "  );",
     "}",
   ].join("\n"),
+  Swap: [
+    'import { defineSlots } from "unframework";',
+    'import type { Element } from "unframework";',
+    "function A({ items, styleSlot }: { items: string[]; styleSlot?: string }) {",
+    "  const slots = defineSlots<{ style?(props: { item: string }): Element }>();",
+    "  return (",
+    "    <ul title={styleSlot}>",
+    "      {items.map((entry) => (",
+    "        <li key={entry}>{slots.style?.({ item: entry })}</li>",
+    "      ))}",
+    "    </ul>",
+    "  );",
+    "}",
+    "function B({ items }: { items: string[] }) {",
+    "  const slots = defineSlots<{ style?(props: { item: string }): Element }>();",
+    "  return (",
+    "    <ol>",
+    "      {items.map((entry) => (",
+    "        <li key={entry}>{slots.style?.({ item: entry })}</li>",
+    "      ))}",
+    "    </ol>",
+    "  );",
+    "}",
+    "export default function Swap({ flag, rows }: { flag: boolean; rows: string[] }) {",
+    "  return (",
+    "    <div>",
+    '      <component is={flag ? A : B} items={["x"]}>',
+    "        {{ style: ({ item }) => <b>{item}</b> }}",
+    "      </component>",
+    "      <section>",
+    "        {rows.map((row) => (",
+    "          <div key={row}>",
+    '            <component is={row === "a" ? A : B} items={[row]}>',
+    "              {{ style: ({ item: cell }) => <i>{cell}</i> }}",
+    "            </component>",
+    "          </div>",
+    "        ))}",
+    "      </section>",
+    "    </div>",
+    "  );",
+    "}",
+  ].join("\n"),
 };
 
 const scratch = scratchDirectory("composition-probes");
@@ -202,5 +245,14 @@ describe("composition shapes the corpus has no case for", { timeout: 60_000 }, (
     const html = await render("Page", {});
     expect(html).toContain('<ul title="S">');
     expect(html).toContain("<b>a</b>");
+  });
+
+  it("pass a fill through `<component is>` under each candidate's own render-prop name", async () => {
+    expect(await render("Swap", { flag: false, rows: [] })).toContain("<ol><li><b>x</b></li></ol>");
+    expect(await render("Swap", { flag: true, rows: [] })).toContain("<ul><li><b>x</b></li></ul>");
+    // Declared in place, inside the list's callback.
+    expect(await render("Swap", { flag: true, rows: ["a", "b"] })).toContain(
+      "<div><ul><li><i>a</i></li></ul></div><div><ol><li><i>b</i></li></ol></div>",
+    );
   });
 });

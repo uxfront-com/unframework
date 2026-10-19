@@ -6,7 +6,7 @@ import type { Attribute, ComponentAttribute } from "@unframework/ir";
 // Vue is the reference target (ADR-0014): whatever it renders becomes every target's expectation.
 import type { CodeKind } from "../parse.ts";
 import {
-  camelCaseProperty,
+  isIdentifierName,
   escapeHtmlAttribute,
   escapeHtmlText,
   escapeReferences,
@@ -106,13 +106,19 @@ function vueReadsStatic(value: string): boolean {
   return !value.includes("/*") && !/;(?![^(]*\))/.test(value) && !/^[^()]*\)/.test(value);
 }
 
-/** The bound declarations as an object Vue's `:style` takes: camel-case or custom keys. */
+/**
+ * The bound declarations as an object Vue's `:style` takes, keyed by the CSS property as written
+ * (`'background-color'`). Vue keeps a static `style` under those keys too, and its fallthrough
+ * merges the consumer's style into the root's key by key: a camel-case key would leave the
+ * root's hyphenated declaration beside it, which a nullish value then never removes, and which
+ * the server renders twice.
+ */
 function styleObject(parts: readonly StylePart[]): string {
   return `{ ${parts
     .flatMap((part) =>
       part.kind === "Bound"
         ? [
-            `${part.property.startsWith("--") ? JSON.stringify(part.property) : camelCaseProperty(part.property)}: ${part.value}`,
+            `${isIdentifierName(part.property) ? part.property : JSON.stringify(part.property)}: ${part.value}`,
           ]
         : [],
     )

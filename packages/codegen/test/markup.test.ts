@@ -738,7 +738,7 @@ describe("bindings", () => {
         '  class="a"',
         '  :class="[c0T, { on: c0On }, c0Attrs?.class]"',
         '  style="color: red"',
-        '  :style="{ marginTop: c0T }"',
+        `  :style="{ 'margin-top': c0T }"`,
         `  :data-x="c0Attrs?.['data-x']"`,
         "/>",
       ),
@@ -848,7 +848,7 @@ describe("bindings", () => {
       b.el("p", [b.style(["font-family", '"A;B", serif'], ["color", "red"])], "x"),
     );
     expect(style.vue).toBe(
-      `<p style="color: red" :style="{ fontFamily: '&quot;A;B&quot;, serif' }">x</p>`,
+      `<p style="color: red" :style="{ 'font-family': '&quot;A;B&quot;, serif' }">x</p>`,
     );
     expect(style.angular).toBe('<p style="font-family: &quot;A;B&quot;, serif; color: red">x</p>');
   });

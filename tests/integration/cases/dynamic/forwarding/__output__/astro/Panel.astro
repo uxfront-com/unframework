@@ -1,0 +1,14 @@
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<div class:list={["panel", className]} style={style}>
+  <h4>
+    <slot name="title">Untitled</slot>
+  </h4>
+</div>

@@ -1,0 +1,113 @@
+{
+  "irVersion": 1,
+  "file": "dynamic/forwarding/Card.uf.tsx",
+  "components": [
+    {
+      "name": "Card",
+      "span": {
+        "start": 88,
+        "end": 273
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@129",
+        "type": {
+          "code": "{ title?(): Element }",
+          "span": {
+            "start": 149,
+            "end": 170
+          }
+        },
+        "slots": [
+          {
+            "name": "title",
+            "optional": true,
+            "span": {
+              "start": 151,
+              "end": 168
+            }
+          }
+        ],
+        "span": {
+          "start": 123,
+          "end": 174
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@129",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 129,
+            "end": 134
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "card",
+            "span": {
+              "start": 195,
+              "end": 207
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h3",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "SlotOutlet",
+                "slot": "title",
+                "fallback": [
+                  {
+                    "kind": "Text",
+                    "value": "Untitled",
+                    "span": {
+                      "start": 239,
+                      "end": 249
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 219,
+                  "end": 250
+                }
+              }
+            ],
+            "span": {
+              "start": 215,
+              "end": 255
+            }
+          }
+        ],
+        "span": {
+          "start": 190,
+          "end": 266
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Card",
+      "span": {
+        "start": 88,
+        "end": 273
+      }
+    }
+  ],
+  "types": []
+}

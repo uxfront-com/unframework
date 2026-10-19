@@ -220,6 +220,63 @@ export default function Listeners() {
   );
 }
 `,
+  // A field's \`v-model\` beside a capture listener and a bubble listener of its \`input\`: Vue
+  // renders between the capture listener and \`v-model\`'s own, which must not put the old value
+  // back. Every field \`v-model\` writes on \`input\`: text, a trimmed textarea, \`type="number"\`,
+  // a range and \`v-model.number\`, whose values the second paragraph shows with their types.
+  CaptureModel: `import { ref } from "unframework";
+
+export default function CaptureModel() {
+  const text = ref("");
+  const seen = ref("");
+  const count = ref(0);
+  const note = ref("");
+  const amount = ref(1);
+  const level = ref(5);
+  const size = ref(1);
+  const changes = ref(0);
+
+  return (
+    <div>
+      <input
+        aria-label="Text"
+        v-model={text.value}
+        onInputCapture={() => (seen.value = text.value)}
+        onInput={() => count.value++}
+      />
+      <textarea
+        aria-label="Note"
+        v-model_trim={note.value}
+        onInputCapture={(event) => {
+          if (!(event.target as HTMLTextAreaElement).value) return;
+          count.value++;
+        }}
+      />
+      <input
+        aria-label="Amount"
+        type="number"
+        v-model={amount.value}
+        onInputCapture={() => changes.value++}
+      />
+      <input
+        aria-label="Level"
+        type="range"
+        min="0"
+        max="10"
+        v-model={level.value}
+        onInputCapture={() => changes.value++}
+      />
+      <input aria-label="Size" v-model_number={size.value} onInputCapture={() => changes.value++} />
+      <p>
+        {text.value}|{seen.value}|{count.value}|{note.value}
+      </p>
+      <p>
+        {JSON.stringify([amount.value, level.value, size.value])}|{changes.value}
+      </p>
+    </div>
+  );
+}
+`,
   // Template refs keyed by their binding's name, empty while their element is not rendered, and
   // ids unique to each instance, with the \`uf-id-\` prefix.
   Refs: `import { defineEmits, nextTick, ref, useId, useTemplateRef } from "unframework";

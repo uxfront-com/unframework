@@ -1,0 +1,260 @@
+{
+  "irVersion": 1,
+  "file": "dynamic/forwarding/Gallery.uf.tsx",
+  "components": [
+    {
+      "name": "Gallery",
+      "span": {
+        "start": 37,
+        "end": 339
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Frame",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Card\"",
+                  "span": {
+                    "start": 113,
+                    "end": 119
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 107,
+                  "end": 119
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "wide",
+                "value": {
+                  "code": "false",
+                  "span": {
+                    "start": 126,
+                    "end": 131
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 120,
+                  "end": 132
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "title",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Sunset",
+                    "span": {
+                      "start": 160,
+                      "end": 166
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 145,
+                  "end": 169
+                }
+              }
+            ],
+            "span": {
+              "start": 100,
+              "end": 187
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Frame",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Panel\"",
+                  "span": {
+                    "start": 207,
+                    "end": 214
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 201,
+                  "end": 214
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "wide",
+                "value": {
+                  "code": "true",
+                  "span": {
+                    "start": 221,
+                    "end": 225
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 215,
+                  "end": 226
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "title",
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Dawn",
+                    "span": {
+                      "start": 254,
+                      "end": 258
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 239,
+                  "end": 261
+                }
+              }
+            ],
+            "span": {
+              "start": 194,
+              "end": 279
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Frame",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Empty\"",
+                  "span": {
+                    "start": 299,
+                    "end": 306
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 293,
+                  "end": 306
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "wide",
+                "value": {
+                  "code": "true",
+                  "span": {
+                    "start": 313,
+                    "end": 317
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 307,
+                  "end": 318
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 286,
+              "end": 321
+            }
+          }
+        ],
+        "span": {
+          "start": 88,
+          "end": 332
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Gallery",
+      "span": {
+        "start": 37,
+        "end": 339
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Frame.uf.tsx",
+      "file": "Frame.uf.tsx",
+      "api": {
+        "file": "Frame.uf.tsx",
+        "components": [
+          {
+            "name": "Frame",
+            "export": "default",
+            "props": [
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              },
+              {
+                "name": "wide",
+                "optional": false,
+                "type": "boolean"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "title",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "section"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Frame",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    }
+  ]
+}

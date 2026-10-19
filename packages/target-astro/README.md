@@ -103,6 +103,9 @@ per component (ADR-0034, ADR-0046):
   - `<component is>` is a constant, `const Tag = big ? "h2" : "p";`, written as a tag: in the
     frontmatter, or, inside a list, a branch or a fill, where its bindings and guards hold, in a
     function the markup calls at once (`{(() => { const Tag = …; return <Tag>…</Tag>; })()}`).
+    Each candidate names a render prop apart from its own props, so where two candidates name
+    one apart, the tag renders as each candidate in turn, with its own name:
+    `{Tag === List ? <List styleSlot2={…} /> : <Grid styleSlot={…} />}`.
 
   A component whose frontmatter would declare nothing is its markup alone. Astro's
   `compressHTML` must stay `"jsx"`, its default (the M6 unplugin checks it).

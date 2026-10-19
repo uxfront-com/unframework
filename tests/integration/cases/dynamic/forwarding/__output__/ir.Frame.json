@@ -1,0 +1,341 @@
+{
+  "irVersion": 1,
+  "file": "dynamic/forwarding/Frame.uf.tsx",
+  "components": [
+    {
+      "name": "Frame",
+      "span": {
+        "start": 159,
+        "end": 454
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 215,
+              "end": 221
+            }
+          },
+          "binding": "label@191",
+          "span": {
+            "start": 208,
+            "end": 222
+          }
+        },
+        {
+          "name": "wide",
+          "optional": false,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 229,
+              "end": 236
+            }
+          },
+          "binding": "wide@198",
+          "span": {
+            "start": 223,
+            "end": 236
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string; wide: boolean }",
+          "span": {
+            "start": 206,
+            "end": 238
+          }
+        },
+        "span": {
+          "start": 189,
+          "end": 238
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@250",
+        "type": {
+          "code": "{ title?(): Element }",
+          "span": {
+            "start": 270,
+            "end": 291
+          }
+        },
+        "slots": [
+          {
+            "name": "title",
+            "optional": true,
+            "span": {
+              "start": 272,
+              "end": 289
+            }
+          }
+        ],
+        "span": {
+          "start": 244,
+          "end": 295
+        }
+      },
+      "bindings": [
+        {
+          "id": "Card@95",
+          "name": "Card",
+          "kind": "component",
+          "span": {
+            "start": 95,
+            "end": 99
+          }
+        },
+        {
+          "id": "Panel@129",
+          "name": "Panel",
+          "kind": "component",
+          "span": {
+            "start": 129,
+            "end": 134
+          }
+        },
+        {
+          "id": "label@191",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 191,
+            "end": 196
+          }
+        },
+        {
+          "id": "wide@198",
+          "name": "wide",
+          "kind": "prop",
+          "span": {
+            "start": 198,
+            "end": 202
+          }
+        },
+        {
+          "id": "slots@250",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 250,
+            "end": 255
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "frame",
+            "span": {
+              "start": 320,
+              "end": 333
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 346,
+                "end": 351
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@191",
+                  "span": {
+                    "start": 346,
+                    "end": 351
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 334,
+              "end": 352
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Dynamic",
+            "is": {
+              "code": "wide ? Panel : Card",
+              "span": {
+                "start": 375,
+                "end": 394
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "wide@198",
+                  "span": {
+                    "start": 375,
+                    "end": 379
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "Panel@129",
+                  "span": {
+                    "start": 382,
+                    "end": 387
+                  }
+                },
+                {
+                  "kind": "Binding",
+                  "binding": "Card@95",
+                  "span": {
+                    "start": 390,
+                    "end": 394
+                  }
+                }
+              ]
+            },
+            "candidates": [
+              {
+                "kind": "Component",
+                "component": "Panel"
+              },
+              {
+                "kind": "Component",
+                "component": "Card"
+              }
+            ],
+            "attributes": [],
+            "children": [],
+            "fills": [
+              {
+                "slot": "title",
+                "children": [],
+                "forward": "title",
+                "span": {
+                  "start": 399,
+                  "end": 417
+                }
+              }
+            ],
+            "span": {
+              "start": 360,
+              "end": 432
+            }
+          }
+        ],
+        "span": {
+          "start": 311,
+          "end": 447
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Frame",
+      "span": {
+        "start": 159,
+        "end": 454
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Card.uf.tsx",
+      "file": "Card.uf.tsx",
+      "api": {
+        "file": "Card.uf.tsx",
+        "components": [
+          {
+            "name": "Card",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "title",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Card",
+          "span": {
+            "start": 95,
+            "end": 99
+          }
+        }
+      ],
+      "span": {
+        "start": 88,
+        "end": 121
+      }
+    },
+    {
+      "specifier": "./Panel.uf.tsx",
+      "file": "Panel.uf.tsx",
+      "api": {
+        "file": "Panel.uf.tsx",
+        "components": [
+          {
+            "name": "Panel",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "title",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Panel",
+          "span": {
+            "start": 129,
+            "end": 134
+          }
+        }
+      ],
+      "span": {
+        "start": 122,
+        "end": 157
+      }
+    }
+  ]
+}

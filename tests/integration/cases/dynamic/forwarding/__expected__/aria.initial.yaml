@@ -1,0 +1,6 @@
+- region "Card":
+  - heading "Sunset" [level=3]
+- region "Panel":
+  - heading "Dawn" [level=4]
+- region "Empty":
+  - heading "Untitled" [level=4]

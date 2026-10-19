@@ -3,10 +3,23 @@
 // (a separate render function), and rendered by Vue's server renderer, failing on any warning.
 // The render-parity kit compares every target with the reference evaluator; these pin what is
 // Vue's own: how its props declaration treats absent, `undefined` and `null` values, and the
-// names its template compiler reads as globals.
-import { afterAll, describe, expect, it } from "vitest";
+// names its template compiler reads as globals, and how its fallthrough merges a consumer's style.
+import { pathToFileURL } from "node:url";
 
-import { emitSource, removeScratch, renderSfc } from "./helpers.ts";
+import { afterAll, describe, expect, it } from "vitest";
+import { createSSRApp } from "vue";
+import type { Component } from "vue";
+import { compileScript, parse } from "vue/compiler-sfc";
+import { renderToString } from "vue/server-renderer";
+
+import {
+  emitFormatted,
+  emitSource,
+  lower,
+  removeScratch,
+  renderSfc,
+  writeScratch,
+} from "./helpers.ts";
 
 afterAll(removeScratch);
 
@@ -148,6 +161,60 @@ export default function Legend({ Map, label }: { Map: string; label: string }) {
     ].join("\n");
     expect(await renderSfc(contents, { Map: "m", label: "l" }, mode)).toBe(
       "<p>m|function Map() { [native code] }l</p>",
+    );
+  });
+});
+
+/**
+ * Server-renders the main component of a source of several, each compiled as a production build
+ * compiles it, the children beside it.
+ */
+async function renderModule(source: string, props: Record<string, unknown>): Promise<string> {
+  const files = await emitFormatted(lower(source));
+  const modules = Object.fromEntries(
+    files.map(({ path, contents }) => {
+      const id = path.replace(/\.vue$/, "");
+      const { descriptor } = parse(contents, { filename: path });
+      const { content } = compileScript(descriptor, {
+        id,
+        inlineTemplate: true,
+        templateOptions: { ssr: true, ssrCssVars: [], transformAssetUrls: false },
+      });
+      return [`${id}.ts`, content.replace(/(from "\.\/\w+)\.vue"/g, '$1.ts"')];
+    }),
+  );
+  const paths = writeScratch(modules);
+  const main = files.at(-1)!.path.replace(/\.vue$/, ".ts");
+  const { default: component } = (await import(pathToFileURL(paths[main]!).href)) as {
+    default: Component;
+  };
+  return renderToString(createSSRApp(component, props));
+}
+
+describe("vue fallthrough style", () => {
+  // The ruling on nullish style fallthrough (ADR-0054): a nullish value in the consumer's style
+  // removes that property from the child's root, whichever way either side declares it.
+  it("removes the root's declaration of a property the consumer's style leaves nullish", async () => {
+    const source = `
+function Chip({ label }: { label: string }) {
+  return <span style={{ backgroundColor: "red", borderColor: "blue" }}>{label}</span>;
+}
+function Badge({ label, tone }: { label: string; tone?: string }) {
+  return <span style={{ backgroundColor: tone, borderColor: tone }}>{label}</span>;
+}
+export default function Row({ tone }: { tone?: string }) {
+  return (
+    <p>
+      <Chip label="a" style={{ backgroundColor: tone, borderColor: "green" }} />
+      <Badge label="b" tone="red" style={{ backgroundColor: tone }} />
+    </p>
+  );
+}`;
+    expect(await renderModule(source, {})).toBe(
+      '<p><span style="border-color:green;">a</span><span style="border-color:red;">b</span></p>',
+    );
+    expect(await renderModule(source, { tone: "pink" })).toBe(
+      '<p><span style="background-color:pink;border-color:green;">a</span><span style="background-color:pink;border-color:red;">b</span></p>',
     );
   });
 });

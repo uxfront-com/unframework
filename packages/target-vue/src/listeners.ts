@@ -10,6 +10,7 @@ import {
   functionBodyText,
   functionText,
   handlerText,
+  NameScope,
   parametersText,
   parseExpression,
   parseStatementsSource,
@@ -22,9 +23,11 @@ import type {
   BindingKind,
   Code,
   CodeReference,
+  ElementNode,
   EventAttribute,
   EventControl,
   FunctionCode,
+  ModelAttribute,
   UfComponent,
 } from "@unframework/ir";
 
@@ -53,12 +56,19 @@ export function planListeners(
   walk(component.render, {
     enter(node) {
       if (node.kind !== "Element") return;
+      const captures = node.attributes.some(
+        (attribute) =>
+          attribute.kind === "Event" && attribute.capture && attribute.event === "input",
+      );
+      const write = captures ? fieldWrite(node, component, names, rules.script) : undefined;
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event") continue;
-        const planned = listener(attribute, component, names, rules);
+        const then = attribute.capture && attribute.event === "input" ? write?.call : undefined;
+        const planned = listener(attribute, component, names, rules, then);
         attributes.set(attribute, planned.attribute);
         if (planned.function !== undefined) functions.push(planned.function);
       }
+      if (write !== undefined) functions.push(write.function);
     },
   });
   return { attributes, functions };
@@ -70,11 +80,17 @@ interface Planned {
   function?: string;
 }
 
+/**
+ * A listener's attribute, and the script function its handler moves to. `then` is a statement
+ * the listener runs after its handler, in the same listener (`fieldWrite`): the handler is then
+ * called in a statement, with the event where it takes a parameter.
+ */
 function listener(
   attribute: EventAttribute,
   component: UfComponent,
   names: VueNames,
   rules: { script: RewriteRules; template: RewriteRules },
+  then?: string,
 ): Planned {
   // Options are `addEventListener`'s, which Vue's modifiers set (`withModifiers` aside).
   const options = [
@@ -82,20 +98,42 @@ function listener(
     attribute.once ? "once" : undefined,
     attribute.passive ? "passive" : undefined,
   ].filter((option) => option !== undefined);
-  const write = (value: string | undefined, guards: readonly string[] = []) =>
-    `@${attribute.event}${[...guards, ...options].map((modifier) => `.${modifier}`).join("")}${
-      value === undefined ? "" : `="${vueAttributeCode(value)}"`
+  const write = (
+    value: string | undefined,
+    guards: readonly string[] = [],
+    takesEvent?: boolean,
+  ) => {
+    const called =
+      value === undefined || takesEvent === undefined
+        ? value
+        : `${value}(${takesEvent ? "$event" : ""})`;
+    const code = then === undefined ? called : called === undefined ? then : `${called}; ${then}`;
+    return `@${attribute.event}${[...guards, ...options].map((modifier) => `.${modifier}`).join("")}${
+      code === undefined
+        ? ""
+        : `="${vueAttributeCode(code, then === undefined ? undefined : "statements")}"`
     }`;
+  };
   const { handler } = attribute;
   switch (handler.kind) {
-    case "Function":
-      return { attribute: write(handlerText(handler, component, rules.template)) };
+    case "Function": {
+      const declared = component.setup.find(
+        (item) => item.kind === "Function" && item.binding === handler.binding,
+      );
+      const takesEvent =
+        then === undefined
+          ? undefined
+          : declared?.kind === "Function" && declared.function.parameters.length > 0;
+      return { attribute: write(handlerText(handler, component, rules.template), [], takesEvent) };
+    }
     case "Inline":
       break;
     default:
       return unreachable(handler);
   }
   const fn = handler.function;
+  // In a statement, a handler Vue would call with the event moves to the script, which calls it.
+  const held = (value: string) => then === undefined || !calledByVue(value);
   // `.stop` and `.prevent` call `stopPropagation()` and `preventDefault()` before the handler,
   // as a handler that starts with them does: Vue's own spelling of those statements. Vue refuses
   // `.prevent` beside `.passive`, where it would do nothing.
@@ -104,18 +142,75 @@ function listener(
     if (guarded.rest === undefined) return { attribute: write(undefined, guarded.modifiers) };
     if (inTemplate(guarded.rest, component)) {
       const value = templateValue(fn, guarded.rest, component, rules.template);
-      return { attribute: write(value, guarded.modifiers) };
+      if (held(value)) return { attribute: write(value, guarded.modifiers) };
     }
   }
   if (fn.expression && inTemplate(fn.body, component)) {
-    return { attribute: write(templateValue(fn, fn.body, component, rules.template)) };
+    const value = templateValue(fn, fn.body, component, rules.template);
+    if (held(value)) return { attribute: write(value) };
   }
   const name = names.scope.claim(
     `on${attribute.event.charAt(0).toUpperCase()}${attribute.event.slice(1)}`,
   );
   return {
-    attribute: write(name),
+    attribute: write(name, [], then === undefined ? undefined : fn.parameters.length > 0),
     function: scriptFunction(name, attribute.event, fn, component, rules.script),
+  };
+}
+
+/**
+ * What a capture listener of a field's `input` runs after its handler: the field's `v-model`
+ * write, as a script function. `v-model` writes the field from its own `input` listener, which
+ * runs after the capture one, and Vue renders in between when the handler writes state: the
+ * render puts the model's old value back into the field, and `v-model` then writes that. Writing
+ * the model first leaves the render nothing to put back, and `v-model`'s write the same value.
+ * The function writes what Vue's `vModelText` writes: nothing while an input method composes,
+ * the text trimmed for `.trim`, and cast as Vue's `looseToNumber` casts it for `.number`, a
+ * `type="number"` field and a range (whose `v-model` takes `.number`, `../codegen` `vue.ts`).
+ * `vue` exports no `looseToNumber`, so the cast is written in place. A `lazy` field writes on
+ * `change`, which this leaves to `v-model`.
+ */
+function fieldWrite(
+  element: ElementNode,
+  component: UfComponent,
+  names: VueNames,
+  rules: RewriteRules,
+): { call: string; function: string } | undefined {
+  const model = element.attributes.find(
+    (attribute): attribute is ModelAttribute => attribute.kind === "Model",
+  );
+  if (model === undefined || model.lazy) return undefined;
+  if (model.control !== "text" && model.control !== "textarea" && model.control !== "number") {
+    return undefined;
+  }
+  const reference = model.value.refs.find((each) => each.kind === "Binding");
+  const bound = reference ? bindingOf(component, reference.binding).name : "model";
+  const name = names.scope.claim(`write${bound.charAt(0).toUpperCase()}${bound.slice(1)}`);
+  const type = model.control === "textarea" ? "HTMLTextAreaElement" : "HTMLInputElement";
+  const target = rewriteCode(model.value, component, rules, "client");
+  // Its locals are named apart from the model it writes, which a local `text` would shadow.
+  const locals = new NameScope(codeNames(target));
+  const [event, field, text, number] = ["event", "field", "text", "number"].map((each) =>
+    locals.claim(each),
+  );
+  const value = `${field}.value${model.trim ? ".trim()" : ""}`;
+  const write =
+    model.number || model.control === "number"
+      ? [
+          `  const ${text} = ${value};`,
+          `  const ${number} = Number.parseFloat(${text});`,
+          `  ${target} = (Number.isNaN(${number}) ? ${text} : ${number}) as typeof ${target};`,
+        ]
+      : [`  ${target} = ${value};`];
+  return {
+    call: `${name}($event)`,
+    function: [
+      `function ${name}(${event}: ${vueEventInterface("input")}): void {`,
+      `  const ${field} = ${event}.target as ${type} & { composing?: boolean };`,
+      `  if (${field}.composing) return;`,
+      ...write,
+      "}",
+    ].join("\n"),
   };
 }
 

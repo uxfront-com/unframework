@@ -383,7 +383,7 @@ export default function Tile({ tone, gap, big, attrs }: { tone: string; gap?: st
         '    class="tile"',
         '    :class="[attrs?.class, tone, { big }]"',
         '    style="color: red"',
-        "    :style=\"{ marginTop: gap, '--gap': gap }\"",
+        "    :style=\"{ 'margin-top': gap, '--gap': gap }\"",
         "  >Tile</p>",
       ].join("\n"),
     );
@@ -406,7 +406,7 @@ export default function Quote({ tone }: { tone: string }) {
       [
         "<p",
         '    style="margin: 0"',
-        `    :style="{ fontFamily: '&quot;A;B&quot;, serif', content: '&quot;)&quot; &quot;(&quot;', padding: '1px/**/2px' }"`,
+        `    :style="{ 'font-family': '&quot;A;B&quot;, serif', content: '&quot;)&quot; &quot;(&quot;', padding: '1px/**/2px' }"`,
         "  >",
       ].join("\n"),
     );
@@ -784,6 +784,43 @@ export default function Log() {
     );
   });
 
+  it("writes a field's model after a capture listener of its input, as `v-model` writes it", async () => {
+    const source = `
+import { ref } from "unframework";
+
+export default function Amount() {
+  const text = ref(1);
+  const changes = ref(0);
+  return <input type="number" aria-label="Amount" v-model={text.value} onInputCapture={() => changes.value++} />;
+}`;
+    expect(await emitSource(source)).toBe(
+      sfc(
+        [
+          'import { ref } from "vue";',
+          "",
+          "const text = ref(1);",
+          "const changes = ref(0);",
+          "",
+          "function writeText(event: InputEvent): void {",
+          "  const field = event.target as HTMLInputElement & { composing?: boolean };",
+          "  if (field.composing) return;",
+          "  const text_1 = field.value;",
+          "  const number = Number.parseFloat(text_1);",
+          "  text.value = (Number.isNaN(number) ? text_1 : number) as typeof text.value;",
+          "}",
+        ],
+        [
+          "<input",
+          '  v-model="text"',
+          '  type="number"',
+          '  aria-label="Amount"',
+          '  @input.capture="changes++; writeText($event)"',
+          "/>",
+        ],
+      ),
+    );
+  });
+
   it("declares the events without a binding when nothing calls `emit`", async () => {
     const source = `
 import { defineEmits } from "unframework";
@@ -1098,6 +1135,26 @@ export default function Tag() {
       expect(files["Tag.vue"]).toContain(
         "<component :is=\"fade ? 'h2' : 'h3'\" class=\"t\">y</component>",
       );
+    });
+
+    it("binds `slots` where a slot is forwarded through <component :is>", async () => {
+      const files = await emitAll(`import { defineSlots, ref } from "unframework";
+import type { Element } from "unframework";
+function Card() {
+  const slots = defineSlots<{ title?(): Element }>();
+  return <b>{slots.title?.()}</b>;
+}
+function Panel() {
+  const slots = defineSlots<{ title?(): Element }>();
+  return <i>{slots.title?.()}</i>;
+}
+export default function Frame() {
+  const slots = defineSlots<{ title?(): Element }>();
+  const open = ref(true);
+  return <component is={open.value ? Card : Panel}>{{ title: slots.title }}</component>;
+}`);
+      expect(files["Frame.vue"]).toContain("const slots = defineSlots<{ title?(): unknown }>();");
+      expect(files["Frame.vue"]).toContain('<template v-if="slots.title" #title>');
     });
   });
 });
