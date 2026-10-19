@@ -2,7 +2,8 @@
 // HTML (one intrinsic element), `children` of type `string`: several children, a number, `null`
 // or JSX fail L4, though Qwik renders them. So the Qwik output gives a title one child that types
 // as `string | undefined`: the child as written where it does, and otherwise one string, a
-// template literal or a ternary chain of strings, which renders the same text.
+// template literal or a ternary chain of strings, which renders the same text. Qwik types an
+// `<option>`'s `children` as `string` too, so an option's text follows the same rule.
 import {
   expressionCode,
   js,
@@ -12,6 +13,7 @@ import {
   textTemplate,
 } from "@unframework/codegen";
 import type { JsxContext, TextPart } from "@unframework/codegen";
+import { walk } from "@unframework/ir";
 import type {
   ElementNode,
   Expression,
@@ -81,6 +83,26 @@ export function qwikTitles(
     }
   };
   return root.kind === "Element" ? element(root) : { ...root, children: root.children.map(child) };
+}
+
+/**
+ * Each `<option>`'s children, in place, as {@link titleChildren} writes a title's: `{n}`,
+ * `{n + 1}` or `Size {label}` fails L4 as Qwik types an option's `children`. It runs on the tree
+ * {@link qwikTitles} built, once an option a `v-model` selects by its text has read it as written
+ * (./composition.ts). The IR holds no element in an option (its content is text).
+ */
+export function qwikOptionTexts(
+  root: ElementNode | FragmentNode,
+  jsx: JsxContext,
+  module: UfModule,
+): void {
+  walk(root, {
+    enter(node) {
+      if (node.kind === "Element" && node.tag === "option") {
+        node.children = titleChildren(node.children, { jsx, module });
+      }
+    },
+  });
 }
 
 /**

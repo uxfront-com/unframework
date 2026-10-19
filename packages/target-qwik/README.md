@@ -48,6 +48,9 @@ export default component$<BadgeProps>(({ label, tone = "info" }) => {
   only where TypeScript reads its syntax as sometimes nullish: TS2869 and TS2871 reject the
   guard on `n + 1`, on `a ?? "x"` and on `a ?? null`, whose nullish fallback becomes `""`
   instead. A prop whose declared type is never nullish needs no guard.
+- An `<option>`'s text, by the same rule: Qwik types its `children` as a string too, so
+  `<option>{n}</option>` becomes ``<option>{`${n}`}</option>`` and `<option>Size {label}</option>`
+  becomes ``<option>{`Size ${label}`}</option>``.
 - `class` in Qwik's own forms, with no helper: a lone dynamic part as itself (`class={tone}`),
   toggles alone as one object (`class={{ active, "is-busy": busy }}`), anything else as an
   array (`class={["badge", tone, { active }]}`). A toggle whose condition may be an array or an

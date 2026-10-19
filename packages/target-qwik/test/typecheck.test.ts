@@ -115,6 +115,38 @@ describe("SVG titles (L4, tsgo)", () => {
   });
 });
 
+// Qwik types an `<option>`'s children as a string, as a title's: the target writes an option's
+// text as one string child (src/title.ts), with or without a `v-model` on its select.
+describe("option text (L4, tsgo)", () => {
+  it("type-checks an option that holds a number, a sum, or text and a value", async () => {
+    const output = await emitSource(`import { ref } from "unframework";
+
+export default function Sizes({ n, label }: { n: number; label: string }) {
+  const size = ref("1");
+  return (
+    <form>
+      <select aria-label="Plain">
+        <option>{n}</option>
+        <option>{n + 1}</option>
+        <option>Size {label}</option>
+      </select>
+      <select aria-label="Size" v-model={size.value}>
+        <option>{n}</option>
+        <option>{n + 1}</option>
+        <option>Size {label}</option>
+      </select>
+    </form>
+  );
+}
+`);
+    expect(output).toContain("<option>{`${n}`}</option>");
+    expect(output).toContain("<option>{`${n + 1}`}</option>");
+    expect(output).toContain("<option>{`Size ${label}`}</option>");
+    const file = write("Options.tsx", output);
+    expect((await toolchain.typecheck([file], context)).get(file)).toEqual([]);
+  });
+});
+
 describe("Qwik's attribute spellings", () => {
   // An element that carries each attribute in Qwik's JSX types.
   const elements: Record<string, string> = {

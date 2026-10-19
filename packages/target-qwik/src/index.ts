@@ -73,7 +73,7 @@ import { Listeners } from "./listeners.ts";
 import { OutputNames, planSetup } from "./plan.ts";
 import type { SetupPlan } from "./plan.ts";
 import { exposeStatement, fillFunction, printSetup } from "./setup.ts";
-import { qwikTitles } from "./title.ts";
+import { qwikOptionTexts, qwikTitles } from "./title.ts";
 import { isPrimitiveValue } from "./values.ts";
 
 /** The Qwik 2 target (experimental while Qwik 2 is in beta). */
@@ -239,6 +239,7 @@ export const qwik: Target = defineTarget({
       const selected = valued ? undefined : textOptionSelected(option, model, jsx, plan, locals);
       if (selected) option.attributes = [selected, ...option.attributes];
     }
+    qwikOptionTexts(render, jsx, module);
     for (const node of replacedBeforeSiblings(render)) followed.add(node);
     for (const attribute of listsInFills(render)) listeners.explicit.add(attribute);
     const setup = printSetup(plan);
