@@ -1,10 +1,10 @@
 # ADR-0057: Cases hold several sources and compose through harness parents
 
-- **Status:** Proposed
-- **Date:** 2026-10-08
+- **Status:** Accepted
+- **Date:** 2026-10-18
 - **Plan:** §7.1, §7.3, §7.4, §7.7, §9 M3; P1, P2, P8; ADR-0014, ADR-0018, ADR-0021, ADR-0027,
   ADR-0029, ADR-0033, ADR-0043, ADR-0050, ADR-0053; amends ADR-0014 and plan §7.4 (a case may name
-  its own reference target) and plan §7.3's mount options
+  its own reference target), ADR-0050 (L6 skips by capability) and plan §7.3's mount options
 
 ## Context
 
@@ -71,11 +71,22 @@ into practice, and amends plan §7.4's one reference target for such cases. A ca
 expectations Vue cannot write sets
 `"reference": "<target>"` in `case.json`. It is allowed only when the case requires a capability
 whose Vue cell is unsupported (`listbox`), names a target whose cell is native, and keeps the
-review rule: the files it writes are reviewed as Vue's are. `pnpm test:update` writes such cases
-first, in a pass that runs only their reference's projects on them, and then runs every target as
-usual; Vue's tests of the case are skipped by capability. `pnpm test:baselines` takes their pixels
-and geometry from the same reference. M3's form case with a list box removes the `listbox`
+review rule: the files it writes are reviewed as Vue's are. As built, one run does it: the named
+target's projects run after Vue's and before every other target's (`sequence.groupOrder`), in update
+mode with live pixels, and Vue's tests of the case are skipped by capability. A run whose
+`UF_TARGETS` leaves the reference out still runs that case alone on it (`referencesOnly`).
+`pnpm test:baselines` takes the case's pixels and geometry from the same reference, in a pass of its
+own after Vue's (`scripts/references.ts`, with `UF_REFERENCE_PASS=1` and the caller's arguments). M3's form case with a list box removes the `listbox`
 exemption.
+
+**L6 skips by capability.** This amends ADR-0050. The server render (L6, and its L13) skips a case
+on a target when every test of the case requires a capability the target's cell leaves
+unsupported, other than a behavioural one (`BEHAVIOURAL_CAPABILITIES`). The skip reason is
+`requires <capability>: <reason>`, as on the browser layers. A behavioural capability never skips
+L6: it changes what code does in the browser, not what the server renders, so a case whose every
+test requires `interactivity` still checks Astro's server render. `case.json`'s `requires` note is
+there whenever every test of the case requires a capability: the context cases say every test
+reads what a provider passes down, which a target without `context` renders as the fallback.
 
 **Per-target quarantine files.** `harness/quarantine.ts` splits into one file per target
 (`harness/quarantine/<target>.ts`), so each target lane edits only its own; `LIVE_LAYERS` and
@@ -99,6 +110,9 @@ exemption.
 
 ## Alternatives considered
 
+- **As proposed: a separate update pass for the cases with their own reference.** Run groups give
+  the same order in one run, so `pnpm test:update` needs no second pass; only the baseline container
+  runs one.
 - **Mount options for slots and models (plan §7.3).** Adapters would build slot content per
   framework, and scoped slots need functions that Astro's container cannot take; the consumer
   outputs would go untested.

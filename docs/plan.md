@@ -898,9 +898,10 @@ including a negative test proving it does not erase a real difference.
   - A project that collects zero tests fails.
   - Every parity assertion checks how many targets it compared.
   - A toolchain that cannot start fails.
-- **The quarantine only shrinks.** `quarantine.ts` lists entries of the form (case, target, layer,
-  reason, issue). Quarantined entries still run and must still fail. An entry that passes fails the
-  suite until someone removes it.
+- **The quarantine only shrinks.** `quarantine/<target>.ts` lists a target's entries, of the form
+  (case, target, layer, reason, issue), and `quarantine.ts` joins them (ADR-0057). Quarantined
+  entries still run and must still fail. An entry that passes fails the suite until someone removes
+  it.
 - **Coverage gate.** It is derived from the corpus IR, not maintained by hand. Every node kind,
   attribute kind, binding kind, diagnostic code and native or emulated capability cell must have at
   least one case on every target.

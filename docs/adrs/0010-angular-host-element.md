@@ -1,6 +1,6 @@
 # ADR-0010: Angular hosts are elements with `display: contents`
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0056
 - **Date:** 2026-10-02
 - **Plan:** §11 D6; §3 (P6), §6, §7.2, §7.4, §7.5, §9 (M1, M3), R5, Appendix A, Appendix B;
   ADR-0031

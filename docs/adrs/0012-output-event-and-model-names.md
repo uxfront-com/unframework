@@ -1,6 +1,6 @@
 # ADR-0012: Events and models take each target's naming convention
 
-- **Status:** Proposed — the plan proceeds on the recommendation
+- **Status:** Proposed — the plan proceeds on the recommendation, amended by ADR-0056
 - **Date:** 2026-10-01
 - **Plan:** §11 D8; §3 (G2), §4.2, §4.5, §6, §7.1, Appendix A
 

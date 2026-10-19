@@ -8,7 +8,8 @@
 
 The forces behind the decision: the problem, the constraints, and what v1 taught us where it
 applies. Cite plan sections (§), principles (P1–P8), goals (G1–G7) and risks (R1–R14) rather
-than restating them at length.
+than restating them at length. Every cell or rule that differs from plan §6 or from an accepted
+record is named here and in the **Plan** line's amends list.
 
 ## Decision
 

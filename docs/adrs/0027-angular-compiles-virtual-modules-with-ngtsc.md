@@ -1,6 +1,6 @@
 # ADR-0027: Angular compiles the unplugin's virtual modules with our ngtsc step, in the browser and on the server
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0053
 - **Date:** 2026-10-01
 - **Plan:** §8.2 (the bundler plugin), §5.7, §6 (Angular), §7.3, R5, R12; amends ADR-0021 and ADR-0024
 

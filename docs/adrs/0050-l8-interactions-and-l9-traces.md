@@ -1,6 +1,6 @@
 # ADR-0050: L8 runs a person's input, and L9 compares every step it leads through
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR-0057
 - **Date:** 2026-10-07
 - **Plan:** §7.1, §7.2 (L8, L9, L10, L13), §7.3, §7.4, §7.5, §7.6, §7.7, §7.9, §8.5, §9 M2; P1, P2,
   P4; R6, R9; ADR-0012, ADR-0014, ADR-0018, ADR-0029, ADR-0031, ADR-0033, ADR-0043, ADR-0047;

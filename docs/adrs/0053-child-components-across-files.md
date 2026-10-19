@@ -1,7 +1,7 @@
 # ADR-0053: A child's API reaches `compile()` through a resolver
 
-- **Status:** Proposed
-- **Date:** 2026-10-08
+- **Status:** Accepted
+- **Date:** 2026-10-18
 - **Plan:** §4.1, §4.3 (Composition), §5.1, §5.3, §5.6 (layer 2), §5.10, §8.2, §8.4, §9 M3, M5;
   P2, P4, P5, P6, P7, P8; R5, R12; ADR-0021, ADR-0027, ADR-0034, ADR-0036, ADR-0047; amends
   ADR-0021 and ADR-0027
@@ -53,15 +53,15 @@ did-you-mean.
 **How an output imports a child.** Each output imports the child's output file in the same output
 tree, at the same relative path as the sources, by the file name its target gives that component:
 
-| Target  | Import                                                               | Output file    |
-| ------- | -------------------------------------------------------------------- | -------------- |
-| React   | `import Field from "./Field";`                                       | `Field.tsx`    |
-| Vue     | `import Field from "./Field.vue";`                                   | `Field.vue`    |
-| Svelte  | `import Field from "./Field.svelte";`                                | `Field.svelte` |
-| Solid   | `import Field from "./Field";`                                       | `Field.tsx`    |
-| Angular | `import Field from "./field";`, `imports: [forwardRef(() => Field)]` | `field.ts`     |
-| Qwik    | `import Field from "./Field";`                                       | `Field.tsx`    |
-| Astro   | `import Field from "./Field.astro";`                                 | `Field.astro`  |
+| Target  | Import                                             | Output file    |
+| ------- | -------------------------------------------------- | -------------- |
+| React   | `import Field from "./Field";`                     | `Field.tsx`    |
+| Vue     | `import Field from "./Field.vue";`                 | `Field.vue`    |
+| Svelte  | `import Field from "./Field.svelte";`              | `Field.svelte` |
+| Solid   | `import Field from "./Field";`                     | `Field.tsx`    |
+| Angular | `import Field from "./field";`, `imports: [Field]` | `field.ts`     |
+| Qwik    | `import Field from "./Field";`                     | `Field.tsx`    |
+| Astro   | `import Field from "./Field.astro";`               | `Field.astro`  |
 
 - That is what `unframework build` writes (§8.4), what the golden trees hold, and what every L3 and
   L4 checker resolves with no extra configuration.
@@ -70,17 +70,19 @@ tree, at the same relative path as the sources, by the file name its target give
 - **A non-exported component is a sibling file** (§4.1), named and imported like any other. Its
   script output exports it by name, so its siblings can import it; the module's public exports
   (`UfModule.exports`) do not list it, and M6's barrels leave it out.
-- **Recursion.** A component may render itself. React, Solid and Qwik refer to their own function;
-  Vue and Svelte import their own file (`import Tree from "./Tree.vue"`), because a virtual id's
-  file name is not the component's name (ADR-0021); Angular uses its own selector, which ngtsc
-  accepts without `imports` (ADR-0056); Astro uses `Astro.self`. Termination is the author's: a
-  recursion renders under a condition. Two modules that render each other work through ES module
-  cycles. Angular lists every imported component through `forwardRef` (`imports: [forwardRef(() =>
-Field)]`): standalone components that import each other without it fail when they load
-  (`ReferenceError: Cannot access 'A' before initialization`), and the API carries no imports to
-  tell a cycle apart, so every import takes the form that survives one, of any length. The same
-  holds for a child's slot directives (ADR-0056), which the parent lists beside it:
-  `imports: [forwardRef(() => Field), forwardRef(() => FieldTitle)]`.
+- **Recursion.** A component may render itself. React, Solid and Qwik refer to their own
+  function. Svelte imports its own file (`import Tree from "./Tree.svelte"`), the one output that
+  does: Svelte's L5 configuration turns `import/no-self-import` off, with a comment that cites
+  ADR-0054's cell. Vue names the component, `defineOptions({ name: "Tree" })`, and its template
+  writes its own tag, which Vue resolves as a self-reference. Angular uses its own selector, which
+  ngtsc accepts without `imports` (ADR-0056). Astro uses `Astro.self`. Termination is the author's:
+  a recursion renders under a condition.
+- **Vue's built-in names.** A child named like a component Vue's template compiler resolves
+  first (`BaseTransition`, `Component`, `KeepAlive`, `Suspense`, `Teleport`, `Transition`,
+  `TransitionGroup`) is imported and written as `<X>Component` on Vue, and a recursive one names
+  itself so, `defineOptions({ name: "KeepAliveComponent" })`.
+- **Angular's `imports`** list each child as it is, `imports: [Field]`, and a child's slot
+  directives beside it (ADR-0056): `imports: [Notice, NoticeAction]`.
 
 **Components as list items and branch content.** `ForNode.body` widens to
 `ElementNode | ComponentNode`: `items.map((item) => <Item key={item.id} label={item.label} />)`.
@@ -139,6 +141,9 @@ as its event naming says (ADR-0012), and Angular renames an output named like a 
 **Open:**
 
 - M5: the project graph replaces `createFileResolver`, and reports cycles longer than two modules.
+- Two modules that render each other. The spike found that standalone Angular components that
+  import each other fail when they load, with a `ReferenceError`, unless `imports` takes
+  `forwardRef`. The build lists children as they are, and no case renders such a cycle yet.
 - M6: whether a host application may import a markup target's non-main component by name
   (`import { IconButton } from "./Buttons.uf.tsx"` in a Vue app); outputs never need it.
 
@@ -153,6 +158,12 @@ as its event naming says (ADR-0012), and Angular renames an output named like a 
   share a cache entry.
 - **The whole project graph now (§5.10).** Incremental invalidation and type dependencies are M5's
   (plan §5.10, §9 M5); the resolver is the part M3 needs, behind the option M5 keeps.
+- **As proposed: Vue imports its own file** (`import Tree from "./Tree.vue"`). It fails L5's
+  `import/no-self-import`, and Vue's template already resolves the component's own name, so the
+  build names the component with `defineOptions` instead.
+- **As proposed: every Angular import through `forwardRef`.** The build lists each child as it
+  is, which every case passes; a cycle, which needed `forwardRef` in the spike, has no case yet
+  (Open).
 - **The child's full IR as the resolver's result.** It ties the parent's compile to every detail of
   the child's setup and grows each `ir.json`; the API is what a parent reads.
 

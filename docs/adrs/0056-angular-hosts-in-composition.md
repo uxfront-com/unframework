@@ -1,9 +1,10 @@
 # ADR-0056: Angular composition: roots, fallthrough, slots, event names
 
-- **Status:** Proposed
-- **Date:** 2026-10-08
+- **Status:** Accepted
+- **Date:** 2026-10-18
 - **Plan:** §6 (Angular), §7.5, §9 M3; P2, P4, P6; R5; ADR-0010, ADR-0012, ADR-0027, ADR-0031,
-  ADR-0042, ADR-0047, ADR-0053, ADR-0054; amends ADR-0010, ADR-0042 and ADR-0047
+  ADR-0042, ADR-0047, ADR-0053, ADR-0054; amends ADR-0010, ADR-0012 (an output named like a DOM
+  event), ADR-0042 and ADR-0047
 
 ## Context
 
@@ -32,25 +33,38 @@ answered each with Angular 22.2.1 under ngtsc's strict templates (ADR-0053's Evi
   `contextual-root` native.
 
 **Props are bound.** A static prop is written as a binding, `[label]="'Name'"`: a static attribute
-sets the input but also stays on the host, which then is not unwrapped (ADR-0010).
+sets the input but also stays on the host, which then is not unwrapped (ADR-0010). A bound prop
+reads the template's `@let` of its value, `[tone]="tone"`.
 
-**Fallthrough moves `class` and `style` through inputs** (`fallthrough`, emulated). A component
-that inherits them declares `readonly class = input<string>()` and `readonly style = input<…>()`,
-merges them into its root element's `[class]` and `[style]`, and clears them from the host with
-`host: { "[attr.class]": "null", "[attr.style]": "'display: contents'" }`, so the host carries only
-its own style and is unwrapped. A static `class="wide"` and a bound `[class]` both reach the input.
-A component with `inheritAttrs: false` declares neither input and still clears the host. This
-answers ADR-0010's open item without changing ADR-0031's unwrapping rule.
+**The host is not neutral for accessible names.** This amends ADR-0010. Chrome adds a space at every
+`display: contents` element when it computes a name from content, so inline content on either side
+of a child component's host reads `Build passing` on Angular where the other targets read
+`Buildpassing`. L7 shows it in `components/named-import` and `fallthrough/class-and-style`, and L9
+in `fallthrough/class-and-style`'s trace; the DOM, the pixels and the behaviour match. The three
+cells are quarantined until a follow-up either declares the difference per target or adopts
+attribute selectors for a single-root component.
+
+**Fallthrough moves `class` and `style` through inputs** (`fallthrough`, emulated). A component that
+inherits them declares `readonly class = input<string>()` and `readonly style = input<…>()`, merges
+them into its root element's `[class]` and `[style]`, and clears them from the host with `host: {
+"[attr.class]": "null", "[attr.style]": "'display: contents;'" }`, so the host carries only its own
+style and is unwrapped. As built, the merge is inline in the root's bindings, `[class]="[tone,
+this.class()].join(' ')"` and `[style]="{ padding: '2px 6px', color: 'rgb(30, 30, 30)',
+...this.style() }"`: the cell keeps the name `fallthrough`, and no helper function is emitted. A
+static `class="wide"` and a bound `[class]` both reach the input. A component with `inheritAttrs:
+false` declares neither input and still clears the host. This answers ADR-0010's open item without
+changing ADR-0031's unwrapping rule.
 
 **Slots go through `ng-content` and one directive per named slot.**
 
 - The default slot is `<ng-content />`, with its fallback as `<ng-content>`'s content.
-- Each named slot, scoped or not, is a directive the component's file exports,
-  `@Directive({ selector: "ng-template[ufFieldTitle]" })`, with `static ngTemplateContextGuard` so
-  strict templates type the consumer's `let-` variables. The component reads it with
-  `contentChild(FieldTitle, { read: TemplateRef })` and renders it with `ngTemplateOutlet` under
-  `@if`, which gives presence and fallback. It also writes `<ng-content select="[ufFieldTitle]" />`
-  for each, so a slot's template never counts as default-slot content.
+- Each slot but a default slot without props is a directive the component's file exports, a scoped
+  default slot included, `@Directive({ selector: "ng-template[ufFieldTitle]" })`, with `static
+ngTemplateContextGuard` so strict templates type the consumer's `let-` variables; a slot without
+  props has a guard to an empty context. The component reads it with `contentChild(FieldTitle, {
+read: TemplateRef })` and renders it with `ngTemplateOutlet` under `@if`, which gives presence and
+  fallback. It also writes `<ng-content select="[ufFieldTitle]" />` for each, so a slot's template
+  never counts as default-slot content.
 - A consumer writes `<ng-template ufFieldTitle let-item="item">…</ng-template>` and lists the
   directive in `imports` beside the component.
 - Default-slot presence has no Angular API (`default-slot-presence`, UF4001). Forwarding a named
@@ -66,8 +80,22 @@ compiler's list missed fails there. This amends ADR-0047's "outputs keep the sou
 for those names, and ADR-0042's rule set. The mount adapter maps an event to its output by the
 target's rule.
 
-**Models** are `model<T>(default)`, bound with `[(value)]="text"` on a signal; a native control's
-`v-model` is `[value]` and `(input)`, or `[checked]` and `(change)`.
+**Models** are `model<T>(default)`, bound with `[(value)]="text"` on a signal, and aliased to the
+model's name where the binding has another (`model<number>(0, { alias: "value" })`). A native
+control's `v-model` is `[value]` and `(input)`, `[checked]` and `(change)`, or, for a `<select>`,
+`[selected]` on each option with `[defaultSelected]` on the server and `(change)` on the select. Its
+write runs first in the element's one listener of its event. `modelText` comes with `writeModelText`
+and `looseToNumber`, and option text with `optionText`.
+
+**Names.** Angular declares every prop, event, model, exposed function, slot query and the `class`
+and `style` inputs as members of one class. A public name the output would have to rename (one named
+like a slot's query, a lifecycle hook, the fallthrough inputs or another public name) is UF2003, and
+a setup binding of such a name is renamed. Two children of one name, a child named like the
+component, and two slots whose directives share an attribute filled in one template are UF1104.
+
+**Component refs** hold a template reference, `<uf-search-field #search …>`, read with `viewChild<{
+focus(): void }>("search")`; an exposed function is public, and the rest of the class protected
+where the template reads it, private otherwise.
 
 **Recursion** uses the component's own selector, with nothing in `imports`.
 
@@ -96,6 +124,12 @@ target's rule.
 
 - Attribute selectors, in their own record, with a normalisation rule for their marker attribute
   and a `component-selector` lint configuration.
+- The accessible-name space at the host: a difference declared per target, or attribute selectors
+  for a single-root component.
+- Gaps the build left, accepted at review: a rejected model write does not reset the control,
+  fallthrough onto a `<component is>` root, and `NATIVE_EVENTS`, a copy of angular-eslint 22.5.0's
+  list of native event names that an upgrade must refresh (L5's `no-output-native` reports a name it
+  misses).
 
 ## Alternatives considered
 

@@ -1,7 +1,7 @@
 # ADR-0059: L4 consumer type tests: misuse fixtures with inline expectations
 
-- **Status:** Proposed
-- **Date:** 2026-10-08
+- **Status:** Accepted
+- **Date:** 2026-10-18
 - **Plan:** §5.6 (layer 4), §7.2 (L4), §7.7, §7.9, §9 M3, M5, M6; P1, P2; R2, R8; ADR-0022,
   ADR-0028, ADR-0042, ADR-0053, ADR-0054, ADR-0056
 
@@ -25,17 +25,18 @@ write one.
 **Fixtures.** Consumer fixtures are hand-written in each target's language and reviewed like any
 test, in that target's toolchain directory:
 `tests/toolchains/<target>/consumers/<area>/<case>/<Fixture>.<ext>`. A fixture imports the case's
-golden outputs by relative path (`../../../../../integration/cases/<area>/<case>/__output__/vue/Field.vue`)
-and uses them as a consumer would. Each target's checker includes its `consumers/` tree: its
-tsconfig's `include`, or the file list the harness gives `astro check` (ADR-0028). The tsgo
-checkers (React, Solid, Qwik) cannot find their framework's types from `tests/toolchains/<t>` by
-Node resolution, so their tsconfigs map them with `paths` (`"react"`, `"react/*"`), as Angular's
-maps `@angular/*` today; a correct React consumer there fails with `TS2307: Cannot find module
-'react'` without it. Vue, Svelte, Astro and Angular already resolve from their toolchain
-directory. Each case with
-fixtures has, per target, one correct consumer, which must check clean, and one fixture per
-misuse kind the case's components declare: a prop, an event, a model, a slot. Lanes own their
-target's tree, so no two lanes write one fixture.
+golden outputs by relative path
+(`../../../../../integration/cases/<area>/<case>/__output__/vue/Field.vue`) and uses them as a
+consumer would. Each target's checker includes its `consumers/` tree: its tsconfig's `include`, or
+the file list the harness gives `astro check` (ADR-0028). The checkers of React, Solid, Qwik and Vue
+cannot find their framework's types from `tests/toolchains/<t>` by Node resolution, so their
+tsconfigs map them with `paths` (`"react"`, `"react/*"`, `"vue"`) to the copy in
+`tests/integration`, the one the outputs resolve, so both sides see one declaration. Without it, a
+correct React consumer there fails with `TS2307: Cannot find module 'react'`, and vue-tsc checks a
+handler passed by name (`@open="open"`) against nothing. Svelte, Astro and Angular resolve from
+their toolchain directory. Each case with fixtures has, per target, one correct consumer, which must
+check clean, and one fixture per misuse kind the case's components declare: a prop, an event, a
+model, a slot. Lanes own their target's tree, so no two lanes write one fixture.
 
 **Expectations.** An expectation is a comment on the line before the misuse:
 
@@ -72,9 +73,9 @@ instead.
 the same checker run (plan §7.3: one run per target). A fixture tree whose checker cannot start
 fails every case that has fixtures, as L4 does.
 
-**Feasibility.** The spikes ran one misuse of each kind on every typed target (Evidence). Each
-cell is feasible except where the table says otherwise; an infeasible cell is declared in the
-harness with its reason (`CONSUMER_GAPS`), and a fixture for a declared gap fails, so a gap is
+**Feasibility.** The spikes ran one misuse of each kind on every typed target (Evidence). Each cell
+is feasible except where the table says otherwise; an infeasible cell is declared in the harness
+with its reason (`CONSUMER_GAPS`), and a directive that names a declared gap fails, so a gap is
 never filled with a weaker check.
 
 | Target  | Prop type, literal union | Event payload                              | Model type                                         | Slot props                                                                               |
