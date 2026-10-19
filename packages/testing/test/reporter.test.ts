@@ -9,13 +9,14 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { HarnessContext } from "../src/harness.ts";
 import type { QuarantineEntry, UfLayerMeta } from "../src/layers.ts";
 import { buildPartialMatrix, MATRIX_VERSION, stringifyMatrix } from "../src/node/matrix.ts";
 import type { PartialMatrix } from "../src/node/matrix.ts";
-import { ParityReporter, runName, testKey } from "../src/node/reporter.ts";
+import { ParityReporter, readPartialMatrices, runName, testKey } from "../src/node/reporter.ts";
+import { summarise } from "../src/node/summary.ts";
 
 let root: string;
 let reportsDir: string;
@@ -76,11 +77,16 @@ const vitest = (
     related?: string[];
     tagsFilter?: string[];
     harness?: HarnessContext;
+    /** Project → the cases the run adds it for alone (`ufOnly`). */
+    only?: Record<string, string[]>;
   } = {},
 ) => ({
   projects: projects.map((name) => ({
     name,
-    getProvidedContext: () => (options.harness ? { ufHarness: options.harness } : {}),
+    getProvidedContext: () => ({
+      ...(options.harness ? { ufHarness: options.harness } : {}),
+      ...(options.only?.[name] ? { ufOnly: options.only[name] } : {}),
+    }),
   })),
   config: {
     ...(options.testNamePattern ? { testNamePattern: options.testNamePattern } : {}),
@@ -101,6 +107,12 @@ const hello = (target: string, layers: UfLayerMeta["layers"]): UfLayerMeta => ({
   target,
   layers,
 });
+
+/** A target's (case, target) pairs of the two cases a run of some targets is tested with. */
+const both = (target: string): [string, string][] => [
+  ["basics/hello", target],
+  ["semantics/listbox", target],
+];
 
 const read = (name: string): PartialMatrix =>
   JSON.parse(readFileSync(join(reportsDir, name), "utf8")) as PartialMatrix;
@@ -425,6 +437,102 @@ describe("ParityReporter", () => {
     expect(logs.join("\n")).toContain(
       "Removed parity-matrix.older.json: a matrix of an older format.",
     );
+  });
+
+  it("keeps the cells of the targets and cases a run of some targets did not re-judge", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      // `semantics/listbox` names React as its own reference, so a run of Vue alone adds React's
+      // projects for that case alone (ADR-0057): the SSR one is told so, the browser one is not.
+      const context = harness({
+        cases: { "basics/hello": {}, "semantics/listbox": { reference: "react" } },
+      });
+      const kinds: Record<string, keyof UfLayerMeta["layers"]> = {
+        compile: "L1",
+        toolchain: "L3",
+        ssr: "L6",
+        browser: "L7",
+      };
+      const layerOf = (project: string) => kinds[project.split(":")[0]!]!;
+      const all = [
+        "compile",
+        ...["toolchain", "ssr", "browser"].flatMap((kind) => [`${kind}:react`, `${kind}:vue`]),
+      ];
+      const record = (project: string, caseId: string, target: string, newer: boolean) =>
+        test(project, {
+          case: caseId,
+          target,
+          layers: {
+            [layerOf(project)]: newer ? { status: "fail", message: "newer" } : { status: "pass" },
+          },
+        });
+      const moduleOf = (project: string, cells: [string, string][], newer: boolean) =>
+        testModule(
+          project,
+          cells.map(([caseId, target]) => record(project, caseId, target, newer)),
+        );
+
+      vi.setSystemTime(new Date("2026-10-01T10:00:00.000Z"));
+      const full = new ParityReporter({ reportsDir, allProjects: all });
+      full.onInit(vitest(all, { harness: context }));
+      full.onTestRunEnd(
+        [
+          moduleOf("compile", [...both("react"), ...both("vue")], false),
+          ...all.slice(1).map((project) => moduleOf(project, both(project.split(":")[1]!), false)),
+        ],
+        [],
+        "passed",
+      );
+
+      vi.setSystemTime(new Date("2026-10-01T11:00:00.000Z"));
+      const vue = all.filter((project) => project !== "toolchain:react");
+      const narrowed = new ParityReporter({ reportsDir, allProjects: all });
+      narrowed.onInit(
+        vitest(vue, { harness: context, only: { "ssr:react": ["semantics/listbox"] } }),
+      );
+      narrowed.onTestRunEnd(
+        [
+          moduleOf("compile", both("vue"), true),
+          moduleOf("toolchain:vue", both("vue"), true),
+          moduleOf("ssr:vue", both("vue"), true),
+          moduleOf("browser:vue", both("vue"), true),
+          moduleOf("ssr:react", [["semantics/listbox", "react"]], true),
+          moduleOf("browser:react", [["semantics/listbox", "react"]], true),
+        ],
+        [],
+        "failed",
+      );
+
+      const { matrix, problems } = summarise([...readPartialMatrices(reportsDir).values()], {
+        projects: all,
+        cases: ["basics/hello", "semantics/listbox"],
+        targets: ["react", "vue"],
+        liveLayers: ["L1", "L3", "L6", "L7"],
+        notLiveReason: "not live",
+      });
+      const live = (caseId: string, target: string) => {
+        const { L1, L3, L6, L7 } = matrix.cases[caseId]?.[target] ?? {};
+        return { L1, L3, L6, L7 };
+      };
+      const newer = { L1: "fail: newer", L3: "fail: newer", L6: "fail: newer", L7: "fail: newer" };
+      expect(live("basics/hello", "react")).toEqual({
+        L1: "pass",
+        L3: "pass",
+        L6: "pass",
+        L7: "pass",
+      });
+      expect(live("basics/hello", "vue")).toEqual(newer);
+      expect(live("semantics/listbox", "react")).toEqual({
+        L1: "pass",
+        L3: "pass",
+        L6: "fail: newer",
+        L7: "fail: newer",
+      });
+      expect(live("semantics/listbox", "vue")).toEqual(newer);
+      expect(problems.filter((problem) => problem.includes("missing"))).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   describe("the quarantine", () => {

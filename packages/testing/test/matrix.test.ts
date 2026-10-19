@@ -316,6 +316,35 @@ describe("withoutProjects", () => {
     expect(withoutProjects(matrix, new Set(["ssr:vue"]))).toBe(matrix);
     expect(withoutProjects(matrix, new Set(["compile", "browser:vue"]))).toBeUndefined();
   });
+
+  it("drops only the targets and cases a project's scope names, and the project once it is empty", () => {
+    const matrix = partial("all", "2026-10-01T10:00:00.000Z", [
+      { project: "compile", record: record("vue", { L1: { status: "pass" } }) },
+      { project: "compile", record: record("react", { L1: { status: "pass" } }) },
+      { project: "browser:react", record: checked("react", ["initial"]) },
+      { project: "browser:react", record: checked("react", ["initial"], "semantics/listbox") },
+    ]);
+    const kept = withoutProjects(
+      matrix,
+      new Set(["compile", "browser:react"]),
+      new Map([
+        ["compile", { targets: new Set(["vue"]) }],
+        ["browser:react", { cases: new Set(["semantics/listbox"]) }],
+      ]),
+    );
+    expect(kept?.projects).toEqual(["browser:react", "compile"]);
+    expect(kept?.byProject).toEqual({
+      compile: { "basics/hello": { react: { L1: "pass" } } },
+      "browser:react": { "basics/hello": { react: { L7: "pass" } } },
+    });
+    expect(kept?.scenarios).toEqual({ "basics/hello": { react: ["initial"] } });
+    const emptied = withoutProjects(
+      matrix,
+      new Set(["compile"]),
+      new Map([["compile", { targets: new Set(["vue", "react"]) }]]),
+    );
+    expect(emptied?.projects).toEqual(["browser:react"]);
+  });
 });
 
 describe("settleQuarantine", () => {

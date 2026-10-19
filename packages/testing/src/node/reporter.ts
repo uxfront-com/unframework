@@ -18,7 +18,7 @@ import {
   stringifyMatrix,
   withoutProjects,
 } from "./matrix.ts";
-import type { PartialMatrix, ProjectRecord, Shard } from "./matrix.ts";
+import type { PartialMatrix, ProjectRecord, ProjectScope, Shard } from "./matrix.ts";
 
 /** The part of a Vitest test case the reporter reads. */
 interface ReportedTest {
@@ -38,7 +38,7 @@ interface ReportedModule {
 /** The part of a Vitest project the reporter reads. */
 interface ReportedProject {
   name: string;
-  getProvidedContext(): { ufHarness?: HarnessContext };
+  getProvidedContext(): { ufHarness?: HarnessContext; ufOnly?: string[] };
 }
 
 /** The part of the Vitest instance the reporter reads. */
@@ -198,7 +198,8 @@ export class ParityReporter {
       const file = join(this.#options.reportsDir, `parity-matrix.${matrix.run}.json`);
       writeFileSync(file, stringifyMatrix(matrix));
       if (!narrowed) {
-        for (const line of supersede(this.#options.reportsDir, file, new Set(projects))) {
+        const scopes = scopesOf(vitest.projects, records, harness);
+        for (const line of supersede(this.#options.reportsDir, file, new Set(projects), scopes)) {
           vitest.logger.log(`[uf:parity] ${line}`);
         }
       }
@@ -293,11 +294,48 @@ export function readPartialMatrices(reportsDir: string): Map<string, PartialMatr
 }
 
 /**
- * Removes the records of the projects this run ran from every other partial matrix: they are
- * stale, also the cells this run no longer records. A matrix left without projects is deleted;
- * one of another version is deleted too, as nothing can merge it. Returns what it did.
+ * What this run re-judged of each project it ran: the targets it recorded there, as a run of
+ * some targets (`UF_TARGETS`) records only theirs, and only some cases where the run added the
+ * project for the cases that name its target as their own reference (ADR-0057). The SSR
+ * project is told those cases (`ufOnly`); the browser project only runs their specs, so it is
+ * known by recording nothing else. A project that recorded nothing re-judged all of it.
  */
-function supersede(reportsDir: string, written: string, projects: ReadonlySet<string>): string[] {
+function scopesOf(
+  projects: readonly ReportedProject[],
+  records: readonly ProjectRecord[],
+  harness: HarnessContext | undefined,
+): Map<string, ProjectScope> {
+  const scopes = new Map<string, ProjectScope>();
+  for (const project of projects) {
+    const own = records
+      .filter((entry) => entry.project === project.name)
+      .map((entry) => entry.record);
+    const targets = new Set(own.map((record) => record.target));
+    const cases = new Set(own.map((record) => record.case));
+    const [target] = targets;
+    const only = project.getProvidedContext().ufOnly;
+    const ownReference =
+      targets.size === 1 && [...cases].every((id) => harness?.cases[id]?.reference === target);
+    scopes.set(project.name, {
+      ...(targets.size ? { targets } : {}),
+      ...(only ? { cases: new Set(only) } : ownReference ? { cases } : {}),
+    });
+  }
+  return scopes;
+}
+
+/**
+ * Removes the records this run re-judged from every other partial matrix: those of the projects
+ * it ran, within each one's scope (see `scopesOf`). They are stale, also the cells this run no
+ * longer records. A matrix left without projects is deleted; one of another version is deleted
+ * too, as nothing can merge it. Returns what it did.
+ */
+function supersede(
+  reportsDir: string,
+  written: string,
+  projects: ReadonlySet<string>,
+  scopes: ReadonlyMap<string, ProjectScope>,
+): string[] {
   const done: string[] = [];
   for (const name of readdirSync(reportsDir).sort()) {
     if (!/^parity-matrix\..+\.json$/.test(name)) continue;
@@ -309,13 +347,12 @@ function supersede(reportsDir: string, written: string, projects: ReadonlySet<st
       done.push(`Removed ${name}: a matrix of an older format.`);
       continue;
     }
-    const kept = withoutProjects(matrix, projects);
+    const kept = withoutProjects(matrix, projects, scopes);
     if (kept === matrix) continue;
     if (kept) {
       writeFileSync(file, stringifyMatrix(kept));
-      done.push(
-        `Superseded ${matrix.projects.length - kept.projects.length} project(s) of ${name}.`,
-      );
+      const ran = matrix.projects.filter((project) => projects.has(project)).length;
+      done.push(`Superseded ${ran} project(s) of ${name}.`);
     } else {
       rmSync(file);
       done.push(`Superseded ${name}.`);
