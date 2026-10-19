@@ -21,17 +21,20 @@ export default function SelectRows(
 }
 
 /**
- * Selects a `<select>`'s options that hold `value`, or a value of it for an array: as the value
- * changes, and as options come and go.
+ * Selects a `<select>`'s options that hold `value`, or a value of it for an array, and none
+ * where none holds it: as the value changes, and as options come and go.
  */
 function selectOptions(select: HTMLSelectElement, value: () => unknown): void {
   const choose = () => {
     const current = value();
-    for (const option of select.options) {
-      option.selected = Array.isArray(current)
-        ? current.includes(option.value)
-        : option.value === current;
+    if (!Array.isArray(current)) {
+      // `selectedIndex` -1 where no option holds it: unselecting each one selects the first.
+      select.selectedIndex = [...select.options].findIndex(
+        (option) => option.value === String(current),
+      );
+      return;
     }
+    for (const option of select.options) option.selected = current.includes(option.value);
   };
   createEffect(choose);
   const observer = new MutationObserver(choose);
