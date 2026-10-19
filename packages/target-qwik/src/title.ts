@@ -2,7 +2,9 @@
 // HTML (one intrinsic element), `children` of type `string`: several children, a number, `null`
 // or JSX fail L4, though Qwik renders them. So the Qwik output gives a title one child that types
 // as `string | undefined`: the child as written where it does, and otherwise one string, a
-// template literal or a ternary chain of strings, which renders the same text.
+// template literal or a ternary chain of strings, which renders the same text. Qwik types an
+// `<option>`'s `children` as `string` too, so an option's text follows the same rule, and a
+// `v-model` still selects an option without a `value` by its text as written (`optionSource`).
 import {
   expressionCode,
   js,
@@ -13,6 +15,7 @@ import {
 } from "@unframework/codegen";
 import type { JsxContext, TextPart } from "@unframework/codegen";
 import type {
+  ComponentNode,
   ElementNode,
   Expression,
   FragmentNode,
@@ -34,16 +37,41 @@ interface TitleContext {
   readonly placeholders: Placeholders;
 }
 
-/** The render tree with each `<title>`'s children as {@link titleChildren} writes them. */
+/** The children each `<option>` {@link qwikTitles} rewrote held in the source. */
+const optionSources = new WeakMap<ElementNode, readonly RenderNode[]>();
+
+/**
+ * An option's children as the source writes them, before {@link qwikTitles} made them one
+ * string: what a `v-model` selects an option without a `value` by (./composition.ts).
+ */
+export function optionSource(option: ElementNode): readonly RenderNode[] {
+  return optionSources.get(option) ?? option.children;
+}
+
+/**
+ * The render tree, every node of it new, with each `<title>`'s and each `<option>`'s children as
+ * {@link titleChildren} writes them.
+ */
 export function qwikTitles(
   root: ElementNode | FragmentNode,
   jsx: JsxContext,
   module: UfModule,
 ): ElementNode | FragmentNode {
-  const element = (node: ElementNode): ElementNode =>
-    node.tag === "title"
-      ? { ...node, children: titleChildren(node.children, { jsx, module }) }
-      : { ...node, children: node.children.map(child) };
+  const element = (node: ElementNode): ElementNode => {
+    if (node.tag === "title") {
+      return { ...node, children: titleChildren(node.children, { jsx, module }) };
+    }
+    if (node.tag === "option") {
+      const option = { ...node, children: titleChildren(node.children, { jsx, module }) };
+      optionSources.set(option, node.children);
+      return option;
+    }
+    return { ...node, children: node.children.map(child) };
+  };
+  const component = (node: ComponentNode): ComponentNode => ({
+    ...node,
+    fills: node.fills.map((fill) => ({ ...fill, children: fill.children.map(child) })),
+  });
   const child = (node: RenderNode): RenderNode => {
     switch (node.kind) {
       case "Element":
@@ -57,15 +85,15 @@ export function qwikTitles(
           })),
         };
       case "For":
-        return node.body.kind === "Element" ? { ...node, body: element(node.body) } : node;
+        return {
+          ...node,
+          body: node.body.kind === "Element" ? element(node.body) : component(node.body),
+        };
       case "Text":
       case "Interpolation":
         return node;
       case "Component":
-        return {
-          ...node,
-          fills: node.fills.map((fill) => ({ ...fill, children: fill.children.map(child) })),
-        };
+        return component(node);
       case "SlotOutlet":
         return { ...node, fallback: node.fallback.map(child) };
       case "Dynamic":

@@ -125,6 +125,14 @@ describe("solid refs", () => {
     expect(output).toContain("selectOptions(element, size);");
     expect(output).toContain("field = element;");
   });
+
+  it("prints one ref callback for a template ref and a <select>'s marked options", async () => {
+    const output = await emitSource(SOURCES.RefMarkedSelect!);
+    expect(output.match(/\bref=/g)).toHaveLength(1);
+    expect(output).toContain('<option value="s" selected={size() === "s"}>');
+    expect(output).toContain("selectOptions(element, size);");
+    expect(output).toContain("field = element;");
+  });
 });
 
 describe("solid fallthrough", () => {
