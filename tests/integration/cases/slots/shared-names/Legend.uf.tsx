@@ -10,7 +10,7 @@ export default function Legend({ items, label }: { items: string[]; label: strin
     <ul aria-label={label}>
       {items.map((item) => (
         <li key={item}>
-          {slots.swatch?.({ item })} {slots.caption?.({ item })}
+          <span>{slots.swatch?.({ item })}</span> <span>{slots.caption?.({ item })}</span>
         </li>
       ))}
     </ul>
