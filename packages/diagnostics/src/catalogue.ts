@@ -2143,7 +2143,7 @@ const entries: CatalogueEntry[] = [
       "<Field v-model:value={text.value} />; // rejected",
       "```",
       "",
-      'Give the model a `default` or `required: true`, or let the ref hold `undefined`:',
+      "Give the model a `default` or `required: true`, or let the ref hold `undefined`:",
       "`ref<string | undefined>(…)`.",
     ].join("\n"),
   },

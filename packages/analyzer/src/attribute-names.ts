@@ -74,7 +74,10 @@ const FRAMEWORK_PROPS: ReadonlyMap<string, string> = new Map(
 const LATER: ReadonlyMap<string, string> = new Map([
   ["autofocus", "Focus the element from `onMounted`, through a template ref."],
   ["is", "Custom elements are not supported yet."],
-  ["slot", "A component's slots are filled with a slot object: `<Card>{{ title: () => <h2>Notes</h2> }}</Card>`."],
+  [
+    "slot",
+    "A component's slots are filled with a slot object: `<Card>{{ title: () => <h2>Notes</h2> }}</Card>`.",
+  ],
 ]);
 
 /** The SVG attribute names a case-insensitive spelling stands for, on an element. */

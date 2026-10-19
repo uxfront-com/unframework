@@ -603,9 +603,9 @@ describe("checkInvariants on what round 1 left untested", () => {
   // Two fills of `<Field>`, each `({ item })`: each `item` is in scope in its own fill alone.
   const twoFills = (names: readonly [string, string]) => {
     const module = composition();
-    const field = module.imports[0]!.api.components[0]!;
-    module.imports[0]!.api = {
-      ...module.imports[0]!.api,
+    const field = module.imports![0]!.api.components[0]!;
+    module.imports![0]!.api = {
+      ...module.imports![0]!.api,
       components: [
         {
           ...field,
