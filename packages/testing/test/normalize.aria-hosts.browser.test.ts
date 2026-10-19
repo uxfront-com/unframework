@@ -71,6 +71,23 @@ describe("hostJoins", () => {
     ]);
   });
 
+  it("counts no words that the snapshot puts on separate lines", () => {
+    const counted = (html: string) => {
+      const root = document.createElement("div");
+      root.innerHTML = html;
+      document.body.append(root);
+      return hostJoins(root).map(({ written }) => written);
+    };
+    const join = `<p>Build<uf-s ${HOST}>passing</uf-s> and Build passing</p>`;
+    expect(counted(`<p>Build</p><p>passing</p>${join}`)).toEqual([0]);
+    expect(counted(`<ul><li>Build</li><li>passing</li></ul>${join}`)).toEqual([0]);
+    expect(counted(`<h2>Build</h2><p>passing</p>${join}`)).toEqual([0]);
+    expect(counted(`<p>Build <strong>passing</strong></p>${join}`)).toEqual([0]);
+    expect(counted(`<p>Build <button>passing</button></p>${join}`)).toEqual([0]);
+    // A box keeps its text on its parent's line, spaced, so its words count.
+    expect(counted(`<p><span style="display: block">Build</span>passing</p>${join}`)).toEqual([1]);
+  });
+
   it("finds none at an element that only looks like a host, or with nothing on one side", () => {
     expect(joins("<p><uf-x>a</uf-x><uf-y>b</uf-y></p>")).toEqual([]);
     // `display: contents` alone makes no host: only Angular's `uf-` elements are.

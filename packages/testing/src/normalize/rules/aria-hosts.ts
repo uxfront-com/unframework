@@ -38,10 +38,23 @@ const JOINING_TAGS = new Set([
   "var",
 ]);
 
-/** Where the text stops: at a box or a node of its own. */
+/**
+ * The elements with no role, whose text the snapshot keeps on its parent's line when they are a
+ * box: a `<div>`, a custom element, or one of the inline elements above set as a box.
+ */
+function isBox(element: Element): boolean {
+  const role = element.getAttribute("role");
+  if (role !== null) return role === "generic" || role === "none" || role === "presentation";
+  const name = element.localName;
+  return name === "div" || name.includes("-") || JOINING_TAGS.has(name);
+}
+
+/** Where the text stops at a box: the snapshot spaces it, on the same line. */
 const BREAK = 0;
 /** Where a host starts or ends. */
 const EDGE = 1;
+/** Where the text stops at a node of its own, which the snapshot puts on its own line. */
+const NODE = 2;
 
 /**
  * The host joins under `root`, in document order (ADR-0060). Playwright's ARIA snapshot puts a
@@ -52,7 +65,7 @@ const EDGE = 1;
  * DOM's computed styles say which elements are inline, which Playwright's string alone cannot.
  */
 export function hostJoins(root: Element): HostJoin[] {
-  const tokens: (string | typeof BREAK | typeof EDGE)[] = [];
+  const tokens: (string | typeof BREAK | typeof EDGE | typeof NODE)[] = [];
   const visit = (node: Node): void => {
     if (node.nodeType === 3) {
       tokens.push(node.textContent ?? "");
@@ -70,7 +83,7 @@ export function hostJoins(root: Element): HostJoin[] {
     const host = node.localName.startsWith("uf-") && style.display === "contents";
     const joining =
       style.display === "inline" && JOINING_TAGS.has(node.localName) && !node.hasAttribute("role");
-    const mark = host ? EDGE : joining ? undefined : BREAK;
+    const mark = host ? EDGE : joining ? undefined : isBox(node) ? BREAK : NODE;
     if (mark !== undefined) tokens.push(mark);
     for (const child of node.childNodes) visit(child);
     if (mark !== undefined) tokens.push(mark);
@@ -78,28 +91,32 @@ export function hostJoins(root: Element): HostJoin[] {
   for (const child of root.childNodes) visit(child);
 
   // Each word, split at the host edges inside it: two pieces side by side make a join. `text` is
-  // the text as the other targets' snapshots read it, one space between words and none at a host
-  // edge, and each piece remembers where it starts in it.
+  // the text as the other targets' snapshots read it: one space between words and at a box, a
+  // line break at a node of its own, and nothing at a host edge. Each piece remembers where it
+  // starts in it.
   const found: { before: string; after: string; at: number }[] = [];
   let text = "";
   let pieces = [{ word: "", at: 0 }];
-  const endWord = () => {
+  const endWord = (separator: " " | "\n") => {
     const words = pieces.filter(({ word }) => word);
     for (let index = 1; index < words.length; index += 1) {
       const { word: before, at } = words[index - 1]!;
       found.push({ before, after: words[index]!.word, at });
     }
     pieces = [{ word: "", at: 0 }];
-    if (text && !text.endsWith(" ")) text += " ";
+    if (!text) return;
+    if (separator === "\n") text = text.replace(/ ?\n?$/, "\n");
+    else if (!/\s$/.test(text)) text += " ";
   };
   for (const token of tokens) {
-    if (token === BREAK) endWord();
+    if (token === BREAK) endWord(" ");
+    else if (token === NODE) endWord("\n");
     else if (token === EDGE) {
       if (pieces.at(-1)!.word) pieces.push({ word: "", at: 0 });
     } else {
       for (const character of token) {
         if (/\s/.test(character)) {
-          endWord();
+          endWord(" ");
           continue;
         }
         const piece = pieces.at(-1)!;
@@ -109,7 +126,7 @@ export function hostJoins(root: Element): HostJoin[] {
       }
     }
   }
-  endWord();
+  endWord("\n");
   return found.map(({ before, after, at }) => {
     const pair = `${before} ${after}`;
     let written = 0;

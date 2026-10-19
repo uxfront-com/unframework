@@ -389,6 +389,14 @@ describe("the ARIA snapshot rule: removeHostSpaces", () => {
         "angular",
       ),
     ).toBe("- paragraph: Build passing\n- paragraph: Buildpassing\n- paragraph: Buildpassing");
+    // Words on separate lines count for nothing: the join's own space goes.
+    expect(
+      removeHostSpaces(
+        "- paragraph: Build\n- paragraph: passing\n- paragraph: Build passing and Build passing",
+        [{ before: "Build", after: "passing", written: 0 }],
+        "angular",
+      ),
+    ).toBe("- paragraph: Build\n- paragraph: passing\n- paragraph: Buildpassing and Build passing");
     // The join first, then the source's words.
     expect(
       removeHostSpaces(

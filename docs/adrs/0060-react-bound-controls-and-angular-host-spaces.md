@@ -55,7 +55,8 @@ declares it.
   snapshot rule, `removeHostSpaces`). On Angular only, the view reads the live DOM's computed styles
   and lists each host edge with a word on either side and no whitespace between them, inside one
   run of text (`hostJoins`), with the number of times the text writes `before after`, with its own
-  whitespace, before the join. The rule removes the space in the occurrence of `before after` that
+  whitespace, on one line of the snapshot, before the join: words in two nodes of their own
+  (two paragraphs, a `<strong>`) sit on two lines. The rule removes the space in the occurrence of `before after` that
   follows those, and no other, so a space the source writes between the same words stays. An element that isn't inline, or has a role, ends the run, since the
   snapshot spaces or splits it on every target. This amends ADR-0010: L7 compares the tree with
   that space removed, so it shows the host changes nothing else. Attribute selectors stay out of M3
