@@ -1,0 +1,16 @@
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+ --> diagnostics/undefined-model-binding/Search.uf.tsx:8:51
+  |
+8 |   return <input type="search" aria-label="Search" v-model={query.value} />;
+  |                                                   ^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF3050]: SearchField's model `query` can be `undefined`, as its type `string | undefined` says, and `term.value` cannot hold it: React's output passes the model's changes with that type, which the ref's setter does not take.
+  --> diagnostics/undefined-model-binding/Search.uf.tsx:15:20
+   |
+15 |       <SearchField v-model:query={term.value} />
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: Let the ref hold `undefined`, or, where `query`'s type in SearchField excludes it, give the model a `default` or `required: true`.
+   = see: https://unframework.dev/diagnostics/UF3050

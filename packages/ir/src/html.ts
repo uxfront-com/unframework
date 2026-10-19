@@ -276,7 +276,7 @@ export const UNRENDERABLE_ELEMENTS: ReadonlyMap<string, string> = table({
   noscript:
     "<noscript> renders differently with scripting on and off, so the server and the browser disagree.",
   template: "<template> is template syntax in Vue and Astro, and its content is not rendered.",
-  slot: "<slot> is template syntax in Vue, Svelte and Astro. Slots land with composition.",
+  slot: "<slot> is template syntax in Vue, Svelte and Astro. A component renders its slots with `slots.title?.()`.",
 });
 
 /** Elements whose content is text only: the parser reads markup inside them as text. */

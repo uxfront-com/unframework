@@ -1,0 +1,11 @@
+---
+interface Props {
+  query?: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { query, class: className, style } = Astro.props;
+---
+
+<input type="search" aria-label="Search" value={query} class:list={[className]} style={style} />

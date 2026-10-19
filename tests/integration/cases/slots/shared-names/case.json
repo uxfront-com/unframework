@@ -1,0 +1,11 @@
+{
+  "description": "Scoped fills that reuse a parameter name: two fills of one child each destructure `item`, and a sibling child's fill takes it again.",
+  "main": "Chart.uf.tsx",
+  "ssr": {
+    "three": {
+      "props": {
+        "series": ["Rain", "Snow", "Sun"]
+      }
+    }
+  }
+}

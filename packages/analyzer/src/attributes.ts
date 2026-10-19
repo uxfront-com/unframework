@@ -55,7 +55,7 @@ import type { HtmlOnlyReference, Piece } from "./jsx/text.ts";
 import { listenerName, lowerListener, lowerRef } from "./listeners.ts";
 import { isStaticString, piecesOf, reportCharacters, valueOf } from "./literals.ts";
 import type { StaticString } from "./literals.ts";
-import { CONTROL_MODEL, lowerControlModel } from "./models.ts";
+import { bindsInputType, CONTROL_MODEL, lowerControlModel } from "./models.ts";
 import type { RenderContext } from "./render.ts";
 import { spreadSource } from "./spread-source.ts";
 import { lowerStaticStyle, lowerStyleObject } from "./style.ts";
@@ -601,7 +601,8 @@ function readSpread(
   }
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(argument, render);
-  // Fallthrough of a setup value's keys lands with composition (ADR-0045, amending ADR-0039).
+  // A setup value's keys are its inferred type's, which M5's type oracle reads (ADR-0045,
+  // amending ADR-0039).
   const setup = new Set([...render.setup.bindings.values()].map((binding) => binding.id));
   if (
     checked.clean &&
@@ -1228,7 +1229,8 @@ function elementProblem(
   if (isStateAttribute(tag, name, type)) {
     return name === "muted"
       ? unsupported(`\`muted\` on <${tag}> is not supported yet: ${MUTED_REASON}`)
-      : formState(tag, name);
+      : // An empty `type` is the Text state, which UF3004's fix writes out.
+        formState(tag, name, tag === "input" && staticType && bindsInputType(type || undefined));
   }
   if (SUBMISSION_OVERRIDES.has(name) && staticType) {
     // A button's missing or invalid `type` is the Submit Button state; an input's is Text.

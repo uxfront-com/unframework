@@ -74,7 +74,10 @@ const FRAMEWORK_PROPS: ReadonlyMap<string, string> = new Map(
 const LATER: ReadonlyMap<string, string> = new Map([
   ["autofocus", "Focus the element from `onMounted`, through a template ref."],
   ["is", "Custom elements are not supported yet."],
-  ["slot", "Slots land with composition."],
+  [
+    "slot",
+    "A component's slots are filled with a slot object: `<Card>{{ title: () => <h2>Notes</h2> }}</Card>`.",
+  ],
 ]);
 
 /** The SVG attribute names a case-insensitive spelling stands for, on an element. */
@@ -147,8 +150,9 @@ export function nameProblem(
     return unsupported(`The \`${authored}\` attribute is not supported yet.`);
   }
   if (/^default(value|checked|selected)$/.test(lower)) {
+    const advice = modelAdvice(tag);
     return unsupported(
-      `\`${authored}\` is React's name for a form control's initial state; form state is not supported yet, and lands with \`v-model\`.`,
+      `\`${authored}\` is React's name for a form control's initial state.${advice ? ` ${advice}` : ""}`,
     );
   }
   if (lower === "defaultmuted") {
@@ -267,10 +271,37 @@ function unknownProblem(
   };
 }
 
-export function formState(tag: string, name: string): Problem {
+/**
+ * Form state as an attribute (UF1002), with the advice to bind it where `v-model` binds the
+ * element. `inputBinds` says whether it binds an <input> of the element's type.
+ */
+export function formState(tag: string, name: string, inputBinds?: boolean): Problem {
+  const advice = modelAdvice(tag, inputBinds);
   return unsupported(
-    `Form state (\`${name}\` on <${tag}>) is not supported yet: the targets set it as a DOM property or as an attribute, so they render it differently. It lands with \`v-model\`.`,
+    `Form state (\`${name}\` on <${tag}>) is not supported as an attribute: the targets set it as a DOM property or as an attribute, so they render it differently.${advice ? ` ${advice}` : ""}`,
   );
+}
+
+/**
+ * The advice to bind an element's state with `v-model`, where `v-model` binds it: a <textarea>,
+ * a <select>, an <option>'s <select>, and an <input> whose type it binds (`inputBinds`, unknown
+ * where the type is not read). Elsewhere `v-model` is UF3042, so there is none.
+ */
+function modelAdvice(tag: string, inputBinds?: boolean): string | undefined {
+  switch (tag) {
+    case "textarea":
+    case "select":
+      return "Bind the control's state with `v-model`.";
+    case "option":
+      return "Bind the <select>'s state with `v-model`.";
+    case "input":
+      if (inputBinds === undefined) {
+        return "On a text, number, checkbox or radio input, bind the control's state with `v-model`.";
+      }
+      return inputBinds ? "Bind the control's state with `v-model`." : undefined;
+    default:
+      return undefined;
+  }
 }
 
 /**

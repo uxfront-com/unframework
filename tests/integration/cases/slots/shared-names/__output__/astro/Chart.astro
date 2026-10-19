@@ -1,0 +1,25 @@
+---
+import Legend from "./Legend.astro";
+
+interface Props {
+  series: string[];
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { series, class: className, style } = Astro.props;
+---
+
+<div class:list={[className]} style={style}>
+  <Legend
+    items={series}
+    label="Series"
+    swatch={({ item }) => <b>{item.slice(0, 1)}</b>}
+    caption={({ item }) => <i>{item}</i>}
+  />
+  <Legend
+    items={series}
+    label="Captions"
+    caption={({ item }) => <span>{item.toUpperCase()}</span>}
+  />
+</div>

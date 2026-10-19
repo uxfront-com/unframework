@@ -1,0 +1,8 @@
+- list "Series":
+  - listitem: R Rain
+  - listitem: S Snow
+  - listitem: S Sun
+- list "Captions":
+  - listitem: RAIN
+  - listitem: SNOW
+  - listitem: SUN
