@@ -6,7 +6,7 @@ info[UF4001] (astro): The astro target does not support interactivity: Astro com
   |
   = see: https://unframework.dev/diagnostics/UF4001
 
-error[UF3050]: SearchField's model `query` can be `undefined`, as its type `string | undefined` says, and `term.value` cannot hold it: the typed targets write the model's changes back with that type, and would not compile.
+error[UF3050]: SearchField's model `query` can be `undefined`, as its type `string | undefined` says, and `term.value` cannot hold it: React's output passes the model's changes with that type, which the ref's setter does not take.
   --> diagnostics/undefined-model-binding/Search.uf.tsx:15:20
    |
 15 |       <SearchField v-model:query={term.value} />
