@@ -306,7 +306,7 @@ export function lowerModelBinding(
     render.reporter.report(
       "UF3050",
       item,
-      `${info.name}'s model \`${model}\` can be \`undefined\`, as its type \`${type}\` says, and \`${checked.expression.code}\` cannot hold it: the typed targets write the model's changes back with that type, and would not compile.`,
+      `${info.name}'s model \`${model}\` can be \`undefined\`, as its type \`${type}\` says, and \`${checked.expression.code}\` cannot hold it: React's output passes the model's changes with that type, which the ref's setter does not take.`,
       {
         help: `Give \`${model}\` a \`default\` or \`required: true\` in ${info.name}, or let the ref hold \`undefined\`.`,
       },

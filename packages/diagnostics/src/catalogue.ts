@@ -2133,9 +2133,9 @@ const entries: CatalogueEntry[] = [
     title: "A model that can be `undefined` is bound to a ref that cannot hold it",
     description: [
       "A model with neither a `default` nor `required: true` can be `undefined`, since a parent may",
-      "leave it unbound. The typed targets write its changes back with that type: React's",
-      "`onValueChange` takes `string | undefined`. So a ref bound to it with `v-model:value` must",
-      "hold `undefined` too.",
+      "leave it unbound. React's output passes its changes with that type, through an",
+      "`onValueChange` that takes `string | undefined`, and a setter of a `string` state does not",
+      "type-check there. So a ref bound to it with `v-model:value` holds `undefined` too.",
       "",
       "```tsx",
       'const value = defineModel<string>("value"); // in Field',
