@@ -4,5 +4,5 @@ error[UF3005]: `slot` is template syntax: Svelte rejects it outside a component 
 5 |       <h2 slot="title">Settings</h2>
   |           ^^^^
   |
-  = help: Slots land with composition.
+  = help: A component's slots are filled with a slot object: `<Card>{{ title: () => <h2>Notes</h2> }}</Card>`.
   = see: https://unframework.dev/diagnostics/UF3005

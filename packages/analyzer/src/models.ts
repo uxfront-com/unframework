@@ -7,6 +7,7 @@ import type { Fix } from "@unframework/diagnostics";
 import { createModelAttribute, createModelBindingAttribute } from "@unframework/ir";
 import type { ComponentApi, ModelAttribute, ModelBindingAttribute, Span } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
+import { parseModule } from "@unframework/parser";
 
 import { closest, renameFix } from "./cross-component.ts";
 import { checkExpression, isWritableRef, span } from "./expressions.ts";
@@ -37,6 +38,18 @@ const TEXT_TYPES: ReadonlySet<string> = new Set([
   "week",
   "color",
 ]);
+
+/** Whether `v-model` binds an <input> of this static type, as `controlOf` reads it (UF3042). */
+export function bindsInputType(type: string | undefined): boolean {
+  return (
+    type === undefined ||
+    TEXT_TYPES.has(type) ||
+    type === "number" ||
+    type === "range" ||
+    type === "checkbox" ||
+    type === "radio"
+  );
+}
 
 /** What a control's `v-model` needs to know about its element. */
 export interface ControlContext {
@@ -300,7 +313,32 @@ export function lowerModelBinding(
   }
   const checked = boundValue(item, render);
   if (!checked) return undefined;
+  const { type } = api.models.find((each) => each.name === model)!;
+  if (mayBeUndefined(type) && !unknown(checked.kinds) && !has(checked.kinds, "undefined")) {
+    render.reporter.report(
+      "UF3050",
+      item,
+      `${info.name}'s model \`${model}\` can be \`undefined\`, as its type \`${type}\` says, and \`${checked.expression.code}\` cannot hold it: React's output passes the model's changes with that type, which the ref's setter does not take.`,
+      {
+        help: `Let the ref hold \`undefined\`, or, where \`${model}\`'s type in ${info.name} excludes it, give the model a \`default\` or \`required: true\`.`,
+      },
+    );
+    return undefined;
+  }
   return createModelBindingAttribute(model, checked.expression, span(item));
+}
+
+/**
+ * Whether a model's type, as the child's API writes it, holds `undefined`: a member of its
+ * union. `modelOf` adds one to a model with neither `required: true` nor a `default`.
+ */
+function mayBeUndefined(type: string): boolean {
+  const parsed = parseModule("type.ts", `type T = ${type};`);
+  const [statement] = parsed.program.body;
+  if (parsed.errors.length || statement?.type !== "TSTypeAliasDeclaration") return false;
+  const annotation = statement.typeAnnotation;
+  const members = annotation.type === "TSUnionType" ? annotation.types : [annotation];
+  return members.some((member) => member.type === "TSUndefinedKeyword");
 }
 
 /**

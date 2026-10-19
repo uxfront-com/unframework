@@ -197,24 +197,53 @@ function slotsOf(type: AST.TSType, context: ApiContext): ApiSlot[] {
 
 /**
  * A model `defineModel` declares: its name, a string literal, whether a consumer may leave it
- * unbound (anything but `required: true`), and its type argument as written.
+ * unbound (anything but `required: true`), and its type argument as written. A model with
+ * neither `required: true` nor a `default` can be `undefined`, so its type takes `| undefined`,
+ * which a parent's binding is checked against (UF3050) and no target reads.
  */
 function modelOf(call: AST.CallExpression, context: ApiContext): ApiMember | undefined {
   const [name, options] = call.arguments;
   if (name?.type !== "Literal" || typeof name.value !== "string") return undefined;
-  const required =
-    options?.type === "ObjectExpression" &&
-    options.properties.some(
-      (property) =>
+  const option = (key: string): AST.Expression | undefined => {
+    if (options?.type !== "ObjectExpression") return undefined;
+    for (const property of options.properties) {
+      if (
         property.type === "Property" &&
         !property.computed &&
-        ((property.key.type === "Identifier" && property.key.name === "required") ||
-          (property.key.type === "Literal" && property.key.value === "required")) &&
-        property.value.type === "Literal" &&
-        property.value.value === true,
-    );
+        ((property.key.type === "Identifier" && property.key.name === key) ||
+          (property.key.type === "Literal" && property.key.value === key))
+      ) {
+        return property.value;
+      }
+    }
+    return undefined;
+  };
+  const required = option("required");
+  const isRequired = required?.type === "Literal" && required.value === true;
   const [type] = call.typeArguments?.params ?? [];
-  return { name: name.value, optional: !required, type: type ? text(type, context) : "unknown" };
+  if (!type) return { name: name.value, optional: !isRequired, type: "unknown" };
+  const members = type.type === "TSUnionType" ? type.types : [type];
+  const undefinable =
+    !isRequired &&
+    !option("default") &&
+    !members.some(
+      (member) =>
+        member.type === "TSUndefinedKeyword" ||
+        member.type === "TSUnknownKeyword" ||
+        member.type === "TSAnyKeyword",
+    );
+  // A function or conditional type would take `| undefined` into its own result.
+  const written =
+    type.type === "TSFunctionType" ||
+    type.type === "TSConstructorType" ||
+    type.type === "TSConditionalType"
+      ? `(${text(type, context)})`
+      : text(type, context);
+  return {
+    name: name.value,
+    optional: !isRequired,
+    type: undefinable ? `${written} | undefined` : written,
+  };
 }
 
 /** The names `defineExpose`'s object literal exposes, in shorthand. */

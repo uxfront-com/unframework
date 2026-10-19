@@ -1,0 +1,333 @@
+{
+  "irVersion": 1,
+  "file": "slots/shared-names/Legend.uf.tsx",
+  "components": [
+    {
+      "name": "Legend",
+      "span": {
+        "start": 88,
+        "end": 531
+      },
+      "props": [
+        {
+          "name": "items",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 146,
+              "end": 154
+            }
+          },
+          "binding": "items@121",
+          "span": {
+            "start": 139,
+            "end": 155
+          }
+        },
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 163,
+              "end": 169
+            }
+          },
+          "binding": "label@128",
+          "span": {
+            "start": 156,
+            "end": 169
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ items: string[]; label: string }",
+          "span": {
+            "start": 137,
+            "end": 171
+          }
+        },
+        "span": {
+          "start": 119,
+          "end": 171
+        }
+      },
+      "types": [],
+      "slots": {
+        "binding": "slots@183",
+        "type": {
+          "code": "{\n    swatch?(props: { item: string }): Element;\n    caption?(props: { item: string }): Element;\n  }",
+          "span": {
+            "start": 203,
+            "end": 303
+          }
+        },
+        "slots": [
+          {
+            "name": "swatch",
+            "optional": true,
+            "props": {
+              "code": "{ item: string }",
+              "span": {
+                "start": 224,
+                "end": 240
+              }
+            },
+            "span": {
+              "start": 209,
+              "end": 251
+            }
+          },
+          {
+            "name": "caption",
+            "optional": true,
+            "props": {
+              "code": "{ item: string }",
+              "span": {
+                "start": 272,
+                "end": 288
+              }
+            },
+            "span": {
+              "start": 256,
+              "end": 299
+            }
+          }
+        ],
+        "span": {
+          "start": 177,
+          "end": 307
+        }
+      },
+      "bindings": [
+        {
+          "id": "items@121",
+          "name": "items",
+          "kind": "prop",
+          "span": {
+            "start": 121,
+            "end": 126
+          }
+        },
+        {
+          "id": "label@128",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 128,
+            "end": 133
+          }
+        },
+        {
+          "id": "slots@183",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 183,
+            "end": 188
+          }
+        },
+        {
+          "id": "item@365",
+          "name": "item",
+          "kind": "loopVar",
+          "span": {
+            "start": 365,
+            "end": 369
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "ul",
+        "attributes": [
+          {
+            "kind": "Bound",
+            "name": "aria-label",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 339,
+                "end": 344
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@128",
+                  "span": {
+                    "start": 339,
+                    "end": 344
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 327,
+              "end": 345
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "For",
+            "source": {
+              "code": "items",
+              "span": {
+                "start": 354,
+                "end": 359
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "items@121",
+                  "span": {
+                    "start": 354,
+                    "end": 359
+                  }
+                }
+              ]
+            },
+            "item": "item@365",
+            "key": {
+              "code": "item",
+              "span": {
+                "start": 393,
+                "end": 397
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "item@365",
+                  "span": {
+                    "start": 393,
+                    "end": 397
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "li",
+              "attributes": [],
+              "children": [
+                {
+                  "kind": "Element",
+                  "tag": "span",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "SlotOutlet",
+                      "slot": "swatch",
+                      "props": {
+                        "code": "{ item }",
+                        "span": {
+                          "start": 432,
+                          "end": 440
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "item@365",
+                            "span": {
+                              "start": 434,
+                              "end": 438
+                            },
+                            "shorthand": true
+                          }
+                        ]
+                      },
+                      "fallback": [],
+                      "span": {
+                        "start": 416,
+                        "end": 442
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 410,
+                    "end": 449
+                  }
+                },
+                {
+                  "kind": "Text",
+                  "value": " ",
+                  "span": {
+                    "start": 449,
+                    "end": 450
+                  }
+                },
+                {
+                  "kind": "Element",
+                  "tag": "span",
+                  "attributes": [],
+                  "children": [
+                    {
+                      "kind": "SlotOutlet",
+                      "slot": "caption",
+                      "props": {
+                        "code": "{ item }",
+                        "span": {
+                          "start": 473,
+                          "end": 481
+                        },
+                        "refs": [
+                          {
+                            "kind": "Binding",
+                            "binding": "item@365",
+                            "span": {
+                              "start": 475,
+                              "end": 479
+                            },
+                            "shorthand": true
+                          }
+                        ]
+                      },
+                      "fallback": [],
+                      "span": {
+                        "start": 456,
+                        "end": 483
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 450,
+                    "end": 490
+                  }
+                }
+              ],
+              "span": {
+                "start": 384,
+                "end": 504
+              }
+            },
+            "span": {
+              "start": 354,
+              "end": 513
+            }
+          }
+        ],
+        "span": {
+          "start": 323,
+          "end": 524
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Legend",
+      "span": {
+        "start": 88,
+        "end": 531
+      }
+    }
+  ],
+  "types": []
+}

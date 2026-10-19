@@ -234,7 +234,7 @@ describe("props", () => {
 
   it.each([
     ["key", "`key` is the frameworks' list identity, not a prop."],
-    ["class", "`class` falls through to a component's root on Vue (fallthrough lands in M3)."],
+    ["class", "`class` falls through to a component's root on every target."],
     ["as", "`as` is a keyword in Angular's template expressions."],
     ["typeof", "`typeof` is a reserved word in JavaScript's strict mode."],
     [

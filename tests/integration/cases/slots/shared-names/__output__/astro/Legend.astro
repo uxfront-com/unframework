@@ -1,0 +1,20 @@
+---
+interface Props {
+  items: string[];
+  label: string;
+  swatch?: (props: { item: string }) => unknown;
+  caption?: (props: { item: string }) => unknown;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { items, label, swatch, caption, class: className, style } = Astro.props;
+---
+
+<ul aria-label={label} class:list={[className]} style={style}>
+  {items.map((item) => (
+    <li>
+      <span>{swatch?.({ item })}</span> <span>{caption?.({ item })}</span>
+    </li>
+  ))}
+</ul>

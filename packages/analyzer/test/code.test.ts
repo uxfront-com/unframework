@@ -356,7 +356,7 @@ describe("the client code's subset", () => {
     ]);
   });
 
-  it("reports a spread of a setup value as landing in M3 (UF1002)", () => {
+  it("reports a spread of a setup value until M5's type oracle reads its keys (UF1002)", () => {
     const source = [
       'import { ref } from "unframework";',
       "export interface Link { title: string }",

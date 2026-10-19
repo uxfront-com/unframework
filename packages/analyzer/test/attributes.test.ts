@@ -393,6 +393,34 @@ describe("form state", () => {
     expect(only(jsx)).toMatchObject({ code: "UF1002", at: name });
   });
 
+  // `v-model` binds an <input> of a type it reads, a <textarea>, a <select> and an <option>'s
+  // <select>, and is UF3042 elsewhere: the message advises it only where it binds.
+  it.each([
+    ['<input value="v" />', "Bind the control's state with `v-model`."],
+    ['<input type="number" value="1" />', "Bind the control's state with `v-model`."],
+    ['<textarea value="x"></textarea>', "Bind the control's state with `v-model`."],
+    [
+      '<select><option value="b" selected>B</option></select>',
+      "Bind the <select>'s state with `v-model`.",
+    ],
+    [
+      '<input defaultValue="v" />',
+      "On a text, number, checkbox or radio input, bind the control's state with `v-model`.",
+    ],
+  ])("advises v-model for %s", (jsx, advice) => {
+    expect(only(jsx).message).toContain(advice);
+  });
+
+  it.each([
+    '<output value="x">a</output>',
+    '<output defaultValue="x">a</output>',
+    '<input type="file" value="x" />',
+  ])("advises no v-model for %s, where it binds nothing", (jsx) => {
+    const diagnostic = only(jsx);
+    expect(diagnostic).toMatchObject({ code: "UF1002" });
+    expect(diagnostic.message).not.toContain("v-model");
+  });
+
   it.each(["submit", "reset", "button", "hidden", "image", "checkbox", "radio"])(
     "accepts the fixed value of an input of type %s",
     (type) => {

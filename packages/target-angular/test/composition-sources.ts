@@ -164,7 +164,7 @@ function Qty() {
   return <output>{amount.value ?? "None"}</output>;
 }
 export default function Order() {
-  const n = ref(1);
+  const n = ref<number | undefined>(1);
   return <Qty v-model:value={n.value} />;
 }
 `,

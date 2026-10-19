@@ -153,9 +153,9 @@ export const ANGULAR_KEYWORDS: ReadonlySet<string> = words(
 const RESERVED_NAMES: Readonly<Record<string, string>> = {
   key: "`key` is the frameworks' list identity, not a prop.",
   ref: "`ref` gives the frameworks a component instance, not a prop.",
-  children: "`children` is React's and Solid's slot content (slots land in M3).",
-  class: "`class` falls through to a component's root on Vue (fallthrough lands in M3).",
-  style: "`style` falls through to a component's root on Vue (fallthrough lands in M3).",
+  children: "`children` is React's, Svelte's and Solid's default slot content.",
+  class: "`class` falls through to a component's root on every target.",
+  style: "`style` falls through to a component's root on every target.",
   slot: "`slot` places a component into a slot on Vue, Svelte and Astro.",
   is: "`is` is template syntax: Vue resolves `vue:` values as components.",
   props: "`props` names the props object the Solid and object-form outputs declare.",
