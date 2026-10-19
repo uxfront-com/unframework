@@ -297,8 +297,11 @@ export function readPartialMatrices(reportsDir: string): Map<string, PartialMatr
  * What this run re-judged of each project it ran: the targets it recorded there, as a run of
  * some targets (`UF_TARGETS`) records only theirs, and only some cases where the run added the
  * project for the cases that name its target as their own reference (ADR-0057). The SSR
- * project is told those cases (`ufOnly`); the browser project only runs their specs, so it is
- * known by recording nothing else. A project that recorded nothing re-judged all of it.
+ * project is told those cases (`ufOnly`), and the browser project, which only runs their specs,
+ * is added with it, so it takes its SSR sibling's list: both hold even when a spec failed to
+ * load and the project recorded nothing. Without a list, a project that recorded only cases
+ * that name its target as their reference re-judged those, and one that recorded nothing
+ * re-judged all of it.
  */
 function scopesOf(
   projects: readonly ReportedProject[],
@@ -306,6 +309,9 @@ function scopesOf(
   harness: HarnessContext | undefined,
 ): Map<string, ProjectScope> {
   const scopes = new Map<string, ProjectScope>();
+  const lists = new Map(
+    projects.map((project) => [project.name, project.getProvidedContext().ufOnly]),
+  );
   for (const project of projects) {
     const own = records
       .filter((entry) => entry.project === project.name)
@@ -313,7 +319,7 @@ function scopesOf(
     const targets = new Set(own.map((record) => record.target));
     const cases = new Set(own.map((record) => record.case));
     const [target] = targets;
-    const only = project.getProvidedContext().ufOnly;
+    const only = lists.get(project.name) ?? lists.get(project.name.replace(/^browser:/, "ssr:"));
     const ownReference =
       targets.size === 1 && [...cases].every((id) => harness?.cases[id]?.reference === target);
     scopes.set(project.name, {
@@ -351,8 +357,14 @@ function supersede(
     if (kept === matrix) continue;
     if (kept) {
       writeFileSync(file, stringifyMatrix(kept));
-      const ran = matrix.projects.filter((project) => projects.has(project)).length;
-      done.push(`Superseded ${ran} project(s) of ${name}.`);
+      const superseded = matrix.projects.filter(
+        (project) =>
+          !kept.projects.includes(project) ||
+          kept.byProject[project] !== matrix.byProject[project] ||
+          kept.scenariosByProject[project] !== matrix.scenariosByProject[project] ||
+          kept.testsByProject[project] !== matrix.testsByProject[project],
+      );
+      done.push(`Superseded ${superseded.length} project(s) of ${name}.`);
     } else {
       rmSync(file);
       done.push(`Superseded ${name}.`);

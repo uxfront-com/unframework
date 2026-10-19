@@ -118,8 +118,8 @@ describe("react frameworkCompile (L3)", () => {
     );
   }, 60_000);
 
-  // About 1 s alone (the slowest of 5 runs in a 4-CPU container), but CI's `Unit tests` job,
-  // which runs two packages' tests at once, took it past Vitest's 5 s default.
+  // Under 1.5 s alone in a 4-CPU container, but CI's `Unit tests` job, which runs two packages'
+  // tests at once, took it past Vitest's 5 s default.
   it("compiles the shapes M2 emits, with no warning", async () => {
     const files = Object.entries(M2_SHAPES).map(([name, contents]) => ({
       path: join(packageDir, ".uf-tmp", "m2", name),

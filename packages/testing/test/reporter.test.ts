@@ -439,100 +439,131 @@ describe("ParityReporter", () => {
     );
   });
 
-  it("keeps the cells of the targets and cases a run of some targets did not re-judge", () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    try {
-      // `semantics/listbox` names React as its own reference, so a run of Vue alone adds React's
-      // projects for that case alone (ADR-0057): the SSR one is told so, the browser one is not.
-      const context = harness({
-        cases: { "basics/hello": {}, "semantics/listbox": { reference: "react" } },
+  describe("a run of some targets", () => {
+    // `semantics/listbox` names React as its own reference, so a run of Vue alone adds React's
+    // projects for that case alone (ADR-0057): the SSR one is told so, the browser one is not.
+    // A function: `harness` reads the directory each test makes.
+    const context = () =>
+      harness({ cases: { "basics/hello": {}, "semantics/listbox": { reference: "react" } } });
+    const kinds: Record<string, keyof UfLayerMeta["layers"]> = {
+      compile: "L1",
+      toolchain: "L3",
+      ssr: "L6",
+      browser: "L7",
+    };
+    const layerOf = (project: string) => kinds[project.split(":")[0]!]!;
+    const all = [
+      "compile",
+      ...["toolchain", "ssr", "browser"].flatMap((kind) => [`${kind}:react`, `${kind}:vue`]),
+    ];
+    const record = (project: string, caseId: string, target: string, newer: boolean) =>
+      test(project, {
+        case: caseId,
+        target,
+        layers: {
+          [layerOf(project)]: newer ? { status: "fail", message: "newer" } : { status: "pass" },
+        },
       });
-      const kinds: Record<string, keyof UfLayerMeta["layers"]> = {
-        compile: "L1",
-        toolchain: "L3",
-        ssr: "L6",
-        browser: "L7",
-      };
-      const layerOf = (project: string) => kinds[project.split(":")[0]!]!;
-      const all = [
-        "compile",
-        ...["toolchain", "ssr", "browser"].flatMap((kind) => [`${kind}:react`, `${kind}:vue`]),
-      ];
-      const record = (project: string, caseId: string, target: string, newer: boolean) =>
-        test(project, {
-          case: caseId,
-          target,
-          layers: {
-            [layerOf(project)]: newer ? { status: "fail", message: "newer" } : { status: "pass" },
-          },
-        });
-      const moduleOf = (project: string, cells: [string, string][], newer: boolean) =>
-        testModule(
-          project,
-          cells.map(([caseId, target]) => record(project, caseId, target, newer)),
+    const moduleOf = (project: string, cells: [string, string][], newer: boolean) =>
+      testModule(
+        project,
+        cells.map(([caseId, target]) => record(project, caseId, target, newer)),
+      );
+    const live = (
+      matrix: ReturnType<typeof summarise>["matrix"],
+      caseId: string,
+      target: string,
+    ) => {
+      const { L1, L3, L6, L7 } = matrix.cases[caseId]?.[target] ?? {};
+      return { L1, L3, L6, L7 };
+    };
+    const newer = { L1: "fail: newer", L3: "fail: newer", L6: "fail: newer", L7: "fail: newer" };
+
+    /** A full run, then a run of Vue in which React's projects record `react`; the summary. */
+    const runs = (react: (project: string) => [string, string][]) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      try {
+        vi.setSystemTime(new Date("2026-10-01T10:00:00.000Z"));
+        const full = new ParityReporter({ reportsDir, allProjects: all });
+        full.onInit(vitest(all, { harness: context() }));
+        full.onTestRunEnd(
+          [
+            moduleOf("compile", [...both("react"), ...both("vue")], false),
+            ...all
+              .slice(1)
+              .map((project) => moduleOf(project, both(project.split(":")[1]!), false)),
+          ],
+          [],
+          "passed",
         );
 
-      vi.setSystemTime(new Date("2026-10-01T10:00:00.000Z"));
-      const full = new ParityReporter({ reportsDir, allProjects: all });
-      full.onInit(vitest(all, { harness: context }));
-      full.onTestRunEnd(
-        [
-          moduleOf("compile", [...both("react"), ...both("vue")], false),
-          ...all.slice(1).map((project) => moduleOf(project, both(project.split(":")[1]!), false)),
-        ],
-        [],
-        "passed",
-      );
+        vi.setSystemTime(new Date("2026-10-01T11:00:00.000Z"));
+        const vue = all.filter((project) => project !== "toolchain:react");
+        const narrowed = new ParityReporter({ reportsDir, allProjects: all });
+        narrowed.onInit(
+          vitest(vue, { harness: context(), only: { "ssr:react": ["semantics/listbox"] } }),
+        );
+        narrowed.onTestRunEnd(
+          [
+            moduleOf("compile", both("vue"), true),
+            moduleOf("toolchain:vue", both("vue"), true),
+            moduleOf("ssr:vue", both("vue"), true),
+            moduleOf("browser:vue", both("vue"), true),
+            moduleOf("ssr:react", react("ssr:react"), true),
+            moduleOf("browser:react", react("browser:react"), true),
+          ],
+          [],
+          "failed",
+        );
+        return summarise([...readPartialMatrices(reportsDir).values()], {
+          projects: all,
+          cases: ["basics/hello", "semantics/listbox"],
+          targets: ["react", "vue"],
+          liveLayers: ["L1", "L3", "L6", "L7"],
+          notLiveReason: "not live",
+        });
+      } finally {
+        vi.useRealTimers();
+      }
+    };
 
-      vi.setSystemTime(new Date("2026-10-01T11:00:00.000Z"));
-      const vue = all.filter((project) => project !== "toolchain:react");
-      const narrowed = new ParityReporter({ reportsDir, allProjects: all });
-      narrowed.onInit(
-        vitest(vue, { harness: context, only: { "ssr:react": ["semantics/listbox"] } }),
-      );
-      narrowed.onTestRunEnd(
-        [
-          moduleOf("compile", both("vue"), true),
-          moduleOf("toolchain:vue", both("vue"), true),
-          moduleOf("ssr:vue", both("vue"), true),
-          moduleOf("browser:vue", both("vue"), true),
-          moduleOf("ssr:react", [["semantics/listbox", "react"]], true),
-          moduleOf("browser:react", [["semantics/listbox", "react"]], true),
-        ],
-        [],
-        "failed",
-      );
-
-      const { matrix, problems } = summarise([...readPartialMatrices(reportsDir).values()], {
-        projects: all,
-        cases: ["basics/hello", "semantics/listbox"],
-        targets: ["react", "vue"],
-        liveLayers: ["L1", "L3", "L6", "L7"],
-        notLiveReason: "not live",
-      });
-      const live = (caseId: string, target: string) => {
-        const { L1, L3, L6, L7 } = matrix.cases[caseId]?.[target] ?? {};
-        return { L1, L3, L6, L7 };
-      };
-      const newer = { L1: "fail: newer", L3: "fail: newer", L6: "fail: newer", L7: "fail: newer" };
-      expect(live("basics/hello", "react")).toEqual({
+    it("keeps the cells of the targets and cases it did not re-judge", () => {
+      const { matrix, problems } = runs(() => [["semantics/listbox", "react"]]);
+      expect(live(matrix, "basics/hello", "react")).toEqual({
         L1: "pass",
         L3: "pass",
         L6: "pass",
         L7: "pass",
       });
-      expect(live("basics/hello", "vue")).toEqual(newer);
-      expect(live("semantics/listbox", "react")).toEqual({
+      expect(live(matrix, "basics/hello", "vue")).toEqual(newer);
+      expect(live(matrix, "semantics/listbox", "react")).toEqual({
         L1: "pass",
         L3: "pass",
         L6: "fail: newer",
         L7: "fail: newer",
       });
-      expect(live("semantics/listbox", "vue")).toEqual(newer);
+      expect(live(matrix, "semantics/listbox", "vue")).toEqual(newer);
       expect(problems.filter((problem) => problem.includes("missing"))).toEqual([]);
-    } finally {
-      vi.useRealTimers();
-    }
+    });
+
+    it("keeps them when a project it added for some cases recorded nothing", () => {
+      // The listbox spec failed to load on React: the cases each React project was added for
+      // come from `ufOnly` alone, the SSR project's own and the browser project's sibling's.
+      const { matrix, problems } = runs(() => []);
+      expect(live(matrix, "basics/hello", "react")).toEqual({
+        L1: "pass",
+        L3: "pass",
+        L6: "pass",
+        L7: "pass",
+      });
+      const missing = problems.filter((problem) => problem.includes("missing"));
+      expect(missing.length).toBeGreaterThan(0);
+      expect(missing.every((problem) => problem.startsWith("semantics/listbox › react"))).toBe(
+        true,
+      );
+      // compile and Vue's three projects; React's toolchain project did not run.
+      expect(logs).toContain("[uf:parity] Superseded 6 project(s) of parity-matrix.all.json.");
+    });
   });
 
   describe("the quarantine", () => {
