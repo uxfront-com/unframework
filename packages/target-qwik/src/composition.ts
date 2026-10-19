@@ -47,6 +47,7 @@ import { qwikEventProp } from "./events.ts";
 import { unreachable } from "./plan.ts";
 import type { OutputNames, SetupPlan } from "./plan.ts";
 import { printFunction } from "./setup.ts";
+import { optionSource } from "./title.ts";
 import { isAlwaysNullish, nullishness } from "./values.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
@@ -703,7 +704,7 @@ export function textOptionSelected(
     model.control === "select-multiple" ? [`${read}.includes(`, ")"] : [`${read} === `, ""];
   const at = option.span;
   const parts: (string | Expression)[] = [];
-  for (const child of option.children) {
+  for (const child of optionSource(option)) {
     if (child.kind === "Text") parts.push(child.value);
     else if (child.kind === "Interpolation") parts.push(child.value);
     else return undefined;
