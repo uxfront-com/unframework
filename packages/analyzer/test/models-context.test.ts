@@ -284,6 +284,19 @@ describe("v-model on a component", () => {
 `;
     expect(run(source).diagnostics).toEqual([]);
   });
+
+  it("binds a model with a `default` to a ref that cannot hold `undefined`", () => {
+    const source = `${API}function Pick() {
+  const choice = defineModel<string>("choice", { default: "a" });
+  return <input v-model={choice.value} />;
+}
+export function A() {
+  const c = ref("b");
+  return <Pick v-model:choice={c.value} />;
+}
+`;
+    expect(run(source).diagnostics).toEqual([]);
+  });
 });
 
 describe("provide and inject", () => {
