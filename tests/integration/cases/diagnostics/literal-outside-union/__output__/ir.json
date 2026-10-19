@@ -1,0 +1,137 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/literal-outside-union/Status.uf.tsx",
+  "components": [
+    {
+      "name": "Badge",
+      "span": {
+        "start": 160,
+        "end": 272
+      },
+      "props": [
+        {
+          "name": "tone",
+          "optional": false,
+          "type": {
+            "code": "\"info\" | \"warning\"",
+            "span": {
+              "start": 193,
+              "end": 211
+            }
+          },
+          "binding": "tone@177",
+          "span": {
+            "start": 187,
+            "end": 211
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ tone: \"info\" | \"warning\" }",
+          "span": {
+            "start": 185,
+            "end": 213
+          }
+        },
+        "span": {
+          "start": 175,
+          "end": 213
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "tone@177",
+          "name": "tone",
+          "kind": "prop",
+          "span": {
+            "start": 177,
+            "end": 181
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Static",
+                "value": "badge",
+                "span": {
+                  "start": 240,
+                  "end": 247
+                }
+              },
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "tone",
+                  "span": {
+                    "start": 249,
+                    "end": 253
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "tone@177",
+                      "span": {
+                        "start": 249,
+                        "end": 253
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 249,
+                  "end": 253
+                }
+              }
+            ],
+            "span": {
+              "start": 232,
+              "end": 255
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "tone",
+              "span": {
+                "start": 257,
+                "end": 261
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "tone@177",
+                  "span": {
+                    "start": 257,
+                    "end": 261
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 256,
+              "end": 262
+            }
+          }
+        ],
+        "span": {
+          "start": 226,
+          "end": 269
+        }
+      }
+    }
+  ],
+  "exports": [],
+  "types": []
+}

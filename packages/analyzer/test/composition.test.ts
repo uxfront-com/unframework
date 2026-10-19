@@ -480,6 +480,87 @@ export function A() { return <div><Plain>{/* note */}</Plain><Field label="a">{/
     });
     expect(codes(diagnostics)).toContain("UF1104");
   });
+
+  it("reports the clash once, with no UF3047 where the alias is rendered", () => {
+    const parsed = parseModule(
+      "Form.uf.tsx",
+      'import Glyph from "./Icon.uf.tsx";\nfunction Icon() { return <i />; }\nexport default function Form() { return <p><Glyph /><Icon /></p>; }',
+    );
+    const api = analyze(
+      parseModule("Icon.uf.tsx", "export default function Icon() { return <b />; }"),
+    ).api!;
+    const { diagnostics } = analyze(parsed, {
+      imports: new Map([["./Icon.uf.tsx", { ...api, file: "Icon.uf.tsx" }]]),
+    });
+    expect(codes(diagnostics)).toEqual(["UF1104"]);
+  });
+
+  it("names the other component's module by its relative path", () => {
+    const icon = analyze(
+      parseModule("ui/Icon.uf.tsx", "export default function Icon() { return <b />; }"),
+    ).api!;
+    const glyph = analyze(
+      parseModule("ui/Glyph.uf.tsx", "export function Icon() { return <i />; }"),
+    ).api!;
+    const parsed = parseModule(
+      "app/Form.uf.tsx",
+      'import Icon from "../ui/Icon.uf.tsx";\nimport { Icon as Glyph } from "../ui/Glyph.uf.tsx";\nexport default function Form() { return <p><Icon /><Glyph /></p>; }',
+    );
+    const { diagnostics } = analyze(parsed, {
+      imports: new Map([
+        ["../ui/Icon.uf.tsx", { ...icon, file: "../ui/Icon.uf.tsx" }],
+        ["../ui/Glyph.uf.tsx", { ...glyph, file: "../ui/Glyph.uf.tsx" }],
+      ]),
+    });
+    expect(diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
+      'Icon from "../ui/Glyph.uf.tsx" and Icon from "../ui/Icon.uf.tsx" write one output file, which each output imports by its name.',
+    ]);
+  });
+
+  // Recursion has one form, the component's own name (ADR-0053), so a self-import is no clash.
+  it("reports a module that imports itself, and renders the component by its own name", () => {
+    const source = `import Again from "./Tree.uf.tsx";
+export default function Tree({ depth }: { depth: number }) {
+  return <ul>{depth > 0 ? <li><Again depth={depth - 1} /></li> : <li>leaf</li>}</ul>;
+}`;
+    const api = analyze(parseModule("ui/Tree.uf.tsx", source)).api!;
+    const { diagnostics } = analyze(parseModule("ui/Tree.uf.tsx", source), {
+      imports: new Map([["./Tree.uf.tsx", { ...api, file: "Tree.uf.tsx" }]]),
+    });
+    expect(problems(source, diagnostics)).toEqual(['UF1203 "./Tree.uf.tsx"']);
+    const fixed = applyAndRecheck(source, diagnostics);
+    expect(fixed).not.toContain("import");
+    expect(fixed).toContain("<Tree depth={depth - 1} />");
+  });
+
+  /** A self-import's diagnostics, with the module's own API as the resolver gives it. */
+  const selfImported = (source: string) => {
+    const api = analyze(parseModule("ui/Tree.uf.tsx", source)).api!;
+    return analyze(parseModule("ui/Tree.uf.tsx", source), {
+      imports: new Map([["./Tree.uf.tsx", { ...api, file: "Tree.uf.tsx" }]]),
+    }).diagnostics;
+  };
+
+  it("renames every read of a self-import's name, closing tags and `is` included", () => {
+    const source = `import Again from "./Tree.uf.tsx";
+export default function Tree({ depth }: { depth: number }) {
+  return <ul>{depth > 0 ? <li><Again depth={depth - 1}></Again><component is={Again} depth={depth - 1} /></li> : <li>leaf</li>}</ul>;
+}`;
+    expect(applyAndRecheck(source, selfImported(source)))
+      .toBe(`export default function Tree({ depth }: { depth: number }) {
+  return <ul>{depth > 0 ? <li><Tree depth={depth - 1}></Tree><component is={Tree} depth={depth - 1} /></li> : <li>leaf</li>}</ul>;
+}`);
+  });
+
+  it("offers no fix where the component's name means something else", () => {
+    const source = `import Again from "./Tree.uf.tsx";
+export default function Tree({ items }: { items: string[] }) {
+  return <ul>{items.map((Tree) => <li key={Tree}><Again items={[]} /></li>)}</ul>;
+}`;
+    const diagnostics = selfImported(source);
+    expect(problems(source, diagnostics)).toContain('UF1203 "./Tree.uf.tsx"');
+    expect(diagnostics.find((diagnostic) => diagnostic.code === "UF1203")!.fixes).toBeUndefined();
+  });
 });
 
 describe("misuse the second review found (UXF-313)", () => {

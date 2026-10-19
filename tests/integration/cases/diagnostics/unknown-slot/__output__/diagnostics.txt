@@ -1,0 +1,9 @@
+error[UF3038]: Layout declares no slot `tilte`. Did you mean `title`?
+  --> diagnostics/unknown-slot/Page.uf.tsx:17:21
+   |
+17 |   return <Layout>{{ tilte: () => <span>Home</span>, default: () => <p>Welcome</p> }}</Layout>;
+   |                     ^^^^^
+   |
+   = help: Fill a slot Layout declares with `defineSlots`.
+   = fix (likely): Write `title`
+   = see: https://unframework.dev/diagnostics/UF3038

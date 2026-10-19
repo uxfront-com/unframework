@@ -1,0 +1,17 @@
+info[UF4001] (astro): The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.
+ --> diagnostics/unknown-model/Survey.uf.tsx:8:27
+  |
+8 |     <button type="button" onClick={() => (picked.value = "yes")}>
+  |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = see: https://unframework.dev/diagnostics/UF4001
+
+error[UF3037]: Choice declares no model `pikced`. Did you mean `picked`?
+  --> diagnostics/unknown-model/Survey.uf.tsx:18:15
+   |
+18 |       <Choice v-model:pikced={answer.value} />
+   |               ^^^^^^^^^^^^^^
+   |
+   = help: Bind a model Choice declares with `defineModel`.
+   = fix (likely): Write `picked`
+   = see: https://unframework.dev/diagnostics/UF3037

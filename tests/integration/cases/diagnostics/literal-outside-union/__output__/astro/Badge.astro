@@ -1,0 +1,11 @@
+---
+interface Props {
+  tone: "info" | "warning";
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { tone, class: className, style } = Astro.props;
+---
+
+<span class:list={["badge", tone, className]} style={style}>{tone}</span>

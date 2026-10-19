@@ -29,6 +29,7 @@ import {
   findTypeDeclarations,
   isComponentName,
   typeDeclarationOf,
+  visitorKeys,
 } from "@unframework/parser";
 import type { AST, ComponentExport, ParsedModule } from "@unframework/parser";
 
@@ -190,6 +191,8 @@ export function analyzeModule(
     if (candidate.node.id) components.set(candidate.node.id, { name: candidate.name, api });
   }
   const context: ModuleContext = {
+    program: parsed.program,
+    scopes,
     source: parsed.source,
     candidates,
     exported: exportedNames(parsed.program),
@@ -386,6 +389,8 @@ function spanOf(node: { start: number; end: number }): { start: number; end: num
 
 /** What the checks of a module's statements need to know about the module. */
 interface ModuleContext {
+  program: AST.Program;
+  scopes: Scopes;
   source: string;
   candidates: Candidate[];
   /** The local names the module exports as values (`export { name }`, `export default name`). */
@@ -657,6 +662,11 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
     );
     return;
   }
+  // The resolver gives the file relative to the importer: its own file is its own name.
+  if (api.file === reporter.file.slice(reporter.file.lastIndexOf("/") + 1)) {
+    selfImport(statement, api, context);
+    return;
+  }
   const names: ImportedName[] = [];
   for (const item of statement.specifiers) {
     if (item.type === "ImportSpecifier" && item.importKind === "type") {
@@ -717,10 +727,19 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
     const output = `${directory}${component.name}`.toLowerCase();
     const owner = context.outputs.get(output);
     if (owner !== undefined && owner !== `${api.file}#${component.name}`) {
+      // Reported here, once: the tags that render the name are not unknown (UF3047).
+      context.components.set(item.local, undefined);
+      // A component name holds no `#`, and a directory may.
+      const hash = owner.lastIndexOf("#");
+      const file = owner.slice(0, hash);
+      const other =
+        hash === -1
+          ? `this module's ${owner}`
+          : `${owner.slice(hash + 1)} from "${file.startsWith("../") ? file : `./${file}`}"`;
       reporter.report(
         "UF1104",
         item,
-        `${component.name} from "${specifier}" and ${owner.includes("#") ? `${owner.slice(owner.indexOf("#") + 1)} from "./${owner.slice(0, owner.indexOf("#"))}"` : `this module's ${owner}`} write one output file, which each output imports by its name.`,
+        `${component.name} from "${specifier}" and ${other} write one output file, which each output imports by its name.`,
         { help: "Rename one of the components." },
       );
       continue;
@@ -741,6 +760,104 @@ function componentImport(statement: AST.ImportDeclaration, context: ModuleContex
       end: statement.end,
     }),
   );
+}
+
+/**
+ * An import of the module's own file (UF1203). A component renders itself, and the other
+ * components of its module, by the names they are declared with (ADR-0053): recursion has one
+ * form (P3). The likely fix removes the import and writes each tag that renders a name it binds
+ * with the component's own name, when every name it binds is a component's.
+ */
+function selfImport(
+  statement: AST.ImportDeclaration,
+  api: ModuleApi,
+  context: ModuleContext,
+): void {
+  const { reporter, source, scopes } = context;
+  const names = new Map<object, string>();
+  for (const item of statement.specifiers) {
+    // Reported here, once: the tags that render the name are not unknown (UF3047).
+    context.components.set(item.local, undefined);
+    const imported =
+      item.type === "ImportDefaultSpecifier"
+        ? "default"
+        : item.type === "ImportSpecifier" && item.importKind !== "type"
+          ? exportName(item.imported)
+          : undefined;
+    const component = api.components.find((entry) =>
+      imported === "default" ? entry.export === "default" : entry.name === imported,
+    );
+    if (imported !== undefined && component) names.set(item.local, component.name);
+  }
+  const edits: { span: { start: number; end: number }; text: string }[] = [];
+  if (names.size === statement.specifiers.length) {
+    // Every read of a name the import binds, a tag or a value (`is={Again}`), is renamed. The
+    // fix is withheld where a name it writes would mean something else: a binding that shadows
+    // the component, or a shorthand property whose key the rename would change.
+    const written = new Set(names.values());
+    const declarations = new Map(
+      context.candidates.map((candidate) => [candidate.name, candidate.node.id]),
+    );
+    let safe = true;
+    visit(context.program, (node) => {
+      if (node.type === "Property" && node.shorthand && node.value.type === "Identifier") {
+        const resolution = scopes.resolve(node.value as unknown as AST.IdentifierReference);
+        if (resolution.kind === "import" && names.has(resolution.declaration)) safe = false;
+      }
+      if (node.type !== "Identifier" && node.type !== "JSXIdentifier") return;
+      if (node.start >= statement.start && node.end <= statement.end) return;
+      const resolution = scopes.resolve(node as unknown as AST.IdentifierReference);
+      const name = resolution.kind === "import" ? names.get(resolution.declaration) : undefined;
+      if (name) {
+        edits.push({ span: spanOf(node), text: name });
+        return;
+      }
+      if (!written.has(node.name)) return;
+      const declaration = declarations.get(node.name);
+      const component =
+        node === declaration ||
+        (resolution.kind === "variable" && resolution.declaration === declaration);
+      if (!component) safe = false;
+    });
+    const end = source[statement.end] === "\n" ? statement.end + 1 : statement.end;
+    if (safe) edits.unshift({ span: { start: statement.start, end }, text: "" });
+    else edits.length = 0;
+  }
+  const [first] = names.values();
+  reporter.report(
+    "UF1203",
+    statement.source,
+    `"${statement.source.value}" is this module's own file: a component renders itself, and the components beside it, by their own names.`,
+    {
+      help: `Remove the import, and render the component by its own name${first ? `, as in \`<${first} />\`` : ""}.`,
+      ...(edits.length
+        ? {
+            fixes: [
+              {
+                title: "Remove the import, and render each component by its own name",
+                confidence: "likely" as const,
+                edits,
+              },
+            ],
+          }
+        : {}),
+    },
+  );
+}
+
+/** Visits every node in a tree, depth first. */
+function visit(node: unknown, enter: (node: AST.Node) => void): void {
+  if (!node || typeof node !== "object") return;
+  if (Array.isArray(node)) {
+    for (const item of node) visit(item, enter);
+    return;
+  }
+  const typed = node as AST.Node;
+  if (typeof typed.type !== "string") return;
+  enter(typed);
+  for (const key of visitorKeys[typed.type] ?? []) {
+    visit((typed as unknown as Record<string, unknown>)[key], enter);
+  }
 }
 
 /**

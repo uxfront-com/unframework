@@ -1,0 +1,11 @@
+---
+interface Props {
+  label: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, class: className, style } = Astro.props;
+---
+
+<label class:list={[className]} style={style}>{label} <input type="text" /></label>
