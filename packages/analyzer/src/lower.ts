@@ -657,7 +657,7 @@ function lowerIf(
  * Where text that an expression renders cannot sit (ADR-0036): a returned report function
  * that reports it there, or `undefined`. Text the parser moves (a table part), drops (a
  * `<select>`) or reads as raw text (an `<iframe>`) is UF3003; a `<textarea>`'s content is its
- * value, form state that lands in M3 (UF1002); SVG renders text only in its text elements
+ * value, form state that `v-model` binds (UF1002); SVG renders text only in its text elements
  * (UF3003).
  */
 export function textPlacementProblem(
@@ -682,7 +682,7 @@ export function textPlacementProblem(
   if (!reason) return undefined;
   if (parent.tag === "textarea") {
     return (what, at) =>
-      reporter.unsupported(at, `${what} cannot be inside a <textarea> yet: ${reason}`);
+      reporter.unsupported(at, `${what} cannot be inside a <textarea>: ${reason}`);
   }
   return (what, at) =>
     reporter.report("UF3003", at, `${what} cannot be inside <${parent.tag}>: ${reason}`, {

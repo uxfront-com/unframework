@@ -121,8 +121,8 @@ export const UNRENDERED_ATTRIBUTES: ReadonlyMap<string, string> = table({
 });
 
 /**
- * Attributes that hold an element's state, by element: form state (which lands with `v-model`)
- * and a media element's `muted`. Their DOM property does not write the attribute back, and
+ * Attributes that hold an element's state, by element: form state (which `v-model` binds) and
+ * a media element's `muted`. Their DOM property does not write the attribute back, and
  * some targets set the property where others set the attribute, so the server's markup has
  * the attribute where a client's DOM does not.
  */
@@ -277,7 +277,7 @@ export const UNINTERPOLATED_ELEMENTS: ReadonlyMap<string, string> = new Map([
   ),
   [
     "textarea",
-    "a <textarea>'s content is its value, which Svelte sets as a property: form state lands with `v-model` (M3).",
+    "a <textarea>'s content is its value, which Svelte sets as a property: bind it with `v-model`.",
   ],
   [
     "iframe",

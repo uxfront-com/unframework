@@ -599,6 +599,45 @@ describe("checkInvariants on what round 1 left untested", () => {
       "is a scoped fill's name outside its fill",
     );
   });
+
+  // Two fills of `<Field>`, each `({ item })`: each `item` is in scope in its own fill alone.
+  const twoFills = (names: readonly [string, string]) => {
+    const module = composition();
+    const field = module.imports[0]!.api.components[0]!;
+    module.imports[0]!.api = {
+      ...module.imports[0]!.api,
+      components: [
+        {
+          ...field,
+          slots: [
+            { name: "default", optional: true, props: "{ item: string }" },
+            { name: "title", optional: true, props: "{ item: string }" },
+          ],
+        },
+      ],
+    };
+    const [fill] = fieldOf(module).fills;
+    fieldOf(module).fills = (["default", "title"] as const).map((slot, index) => {
+      const declared = find("label", index, find("<Field").start);
+      form(module).bindings.push(createBinding(names[index]!, "slotScope", declared));
+      return createSlotFill(slot, [], fill!.span, {
+        parameter: createParameter(names[index]!, declared),
+      });
+    });
+    return module;
+  };
+
+  it("lets two scoped fills take one name", () => {
+    expect(checkInvariants(twoFills(["item", "item"]))).toEqual([]);
+  });
+
+  it("still reports a scoped fill's name that shadows a setup binding", () => {
+    reports(
+      twoFills(["item", "text"]),
+      "/render/children/1/fills/1/parameter",
+      'must not be named "text": it would shadow the setup binding "text"',
+    );
+  });
 });
 
 describe("checkInvariants on a key of a ref (ADR-0054)", () => {

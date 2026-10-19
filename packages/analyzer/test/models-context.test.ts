@@ -65,12 +65,14 @@ describe("defineModel", () => {
 
   it("joins the component's API with its models", () => {
     const { api } = component(
-      'const open = defineModel<boolean>("open", { required: true });\n  const size = defineModel<number>("size");',
-      "<p>{open.value ? size.value : 0}</p>",
+      'const open = defineModel<boolean>("open", { required: true });\n  const size = defineModel<number>("size");\n  const step = defineModel<number>("step", { default: 1 });',
+      "<p>{open.value ? size.value : step.value}</p>",
     );
+    // `size` can be `undefined`, with neither `required: true` nor a `default` (UF3050).
     expect(api!.components[0]!.models).toEqual([
       { name: "open", optional: false, type: "boolean" },
-      { name: "size", optional: true, type: "number" },
+      { name: "size", optional: true, type: "number | undefined" },
+      { name: "step", optional: true, type: "number" },
     ]);
   });
 
@@ -246,6 +248,41 @@ describe("v-model on a component", () => {
   it("reports a modifier on a component's model (UF3042)", () => {
     const { source, diagnostics } = parent("<Stepper v-model_number:value={n.value} />");
     expect(problems(source, diagnostics)).toEqual(["UF3042 v-model_number:value"]);
+  });
+
+  // A child's model with neither a `default` nor `required: true` can be `undefined` (UF3050).
+  const LABEL = `function Label() {
+  const text = defineModel<string>("text");
+  const size = defineModel<number | undefined>("size", { default: 1 });
+  const tone = defineModel<string>("tone", { required: true });
+  return <input aria-label={tone.value} size={size.value} v-model={text.value} />;
+}
+`;
+
+  it("reports a model that can be `undefined` bound to a ref that cannot hold it (UF3050)", () => {
+    const source = `${API}${LABEL}export function A() {
+  const t = ref("");
+  const n = ref(1);
+  return <Label v-model:text={t.value} v-model:size={n.value} v-model:tone={t.value} />;
+}
+`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual([
+      "UF3050 v-model:text={t.value}",
+      "UF3050 v-model:size={n.value}",
+    ]);
+    expect(diagnostics[0]!.message).toContain("Label's model `text` can be `undefined`");
+  });
+
+  it("binds a model that can be `undefined` to a ref that holds it", () => {
+    const source = `${API}${LABEL}export function A() {
+  const t = ref<string | undefined>(undefined);
+  const n = ref<number | undefined>(1);
+  const tone = ref("a");
+  return <Label v-model:text={t.value} v-model:size={n.value} v-model:tone={tone.value} />;
+}
+`;
+    expect(run(source).diagnostics).toEqual([]);
   });
 });
 

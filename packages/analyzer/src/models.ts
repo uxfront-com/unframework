@@ -7,6 +7,7 @@ import type { Fix } from "@unframework/diagnostics";
 import { createModelAttribute, createModelBindingAttribute } from "@unframework/ir";
 import type { ComponentApi, ModelAttribute, ModelBindingAttribute, Span } from "@unframework/ir";
 import type { AST } from "@unframework/parser";
+import { parseModule } from "@unframework/parser";
 
 import { closest, renameFix } from "./cross-component.ts";
 import { checkExpression, isWritableRef, span } from "./expressions.ts";
@@ -300,7 +301,32 @@ export function lowerModelBinding(
   }
   const checked = boundValue(item, render);
   if (!checked) return undefined;
+  const { type } = api.models.find((each) => each.name === model)!;
+  if (mayBeUndefined(type) && !unknown(checked.kinds) && !has(checked.kinds, "undefined")) {
+    render.reporter.report(
+      "UF3050",
+      item,
+      `${info.name}'s model \`${model}\` can be \`undefined\`, as its type \`${type}\` says, and \`${checked.expression.code}\` cannot hold it: the typed targets write the model's changes back with that type, and would not compile.`,
+      {
+        help: `Give \`${model}\` a \`default\` or \`required: true\` in ${info.name}, or let the ref hold \`undefined\`.`,
+      },
+    );
+    return undefined;
+  }
   return createModelBindingAttribute(model, checked.expression, span(item));
+}
+
+/**
+ * Whether a model's type, as the child's API writes it, holds `undefined`: a member of its
+ * union. `modelOf` adds one to a model with neither `required: true` nor a `default`.
+ */
+function mayBeUndefined(type: string): boolean {
+  const parsed = parseModule("type.ts", `type T = ${type};`);
+  const [statement] = parsed.program.body;
+  if (parsed.errors.length || statement?.type !== "TSTypeAliasDeclaration") return false;
+  const annotation = statement.typeAnnotation;
+  const members = annotation.type === "TSUnionType" ? annotation.types : [annotation];
+  return members.some((member) => member.type === "TSUndefinedKeyword");
 }
 
 /**

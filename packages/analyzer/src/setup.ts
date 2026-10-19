@@ -234,6 +234,8 @@ export function declareSetup(context: SetupContext): Setup {
   const provided = new Map<string, AST.CallExpression>();
   /** The slots' names, with the key that declares each, checked against the events at the end. */
   const slotKeys: { name: string; key: AST.PropertyKey }[] = [];
+  /** The identifier the `slots` binding is declared by, whose reads a slot's rename follows. */
+  let slotsBinding: AST.BindingIdentifier | undefined;
   /** The identifier the `emit` binding is declared by, once its events are read. */
   let emitBinding: AST.BindingIdentifier | undefined;
   /** The events' names, with the key that declares each (UF2008). */
@@ -793,6 +795,7 @@ export function declareSetup(context: SetupContext): Setup {
     call: AST.CallExpression,
   ): void {
     const binding = declare(id, "slots");
+    slotsBinding = id;
     const invalid = (at: { start: number; end: number }, message: string, help?: string) => {
       reporter.report("UF2029", at, message, {
         help:
@@ -1390,6 +1393,22 @@ export function declareSetup(context: SetupContext): Setup {
     }
   }
 
+  /**
+   * The fix of a slot's name (UF2029): its new name in its declaration and in every read of it,
+   * `slots.children`. It renames a slot that parents fill by name, so it is only likely.
+   */
+  function renameSlot(name: string, renamed: string, key: AST.PropertyKey): Fix {
+    const edits: Fix["edits"] = [{ span: span(key), text: renamed }];
+    visit(context.component.body, (node) => {
+      if (node.type !== "MemberExpression" || node.computed) return;
+      if (node.object.type !== "Identifier" || node.property.name !== name) return;
+      const resolution = context.scopes.resolve(node.object);
+      if (resolution.kind !== "variable" || resolution.declaration !== slotsBinding) return;
+      edits.push({ span: span(node.property), text: renamed });
+    });
+    return { title: `Rename the slot \`${name}\` to \`${renamed}\``, confidence: "likely", edits };
+  }
+
   /** The safe fix of UF2008: the event's new name in its declaration and in every emit of it. */
   function renameEvent(name: string, renamed: string, key: AST.PropertyKey): Fix {
     const edits: Fix["edits"] = [{ span: span(key), text: renamed }];
@@ -1535,10 +1554,24 @@ export function declareSetup(context: SetupContext): Setup {
 
   /**
    * Checks the slots' names against the props and the events' callbacks (UF2029), once every
-   * event is declared: React, Solid, Qwik and Astro pass a slot as a prop.
+   * event is declared: React, Solid, Qwik and Astro pass a slot as a prop. A slot named
+   * `children` is also React's, Svelte's and Solid's default slot.
    */
   function checkSlotNames(): void {
     for (const { name, key } of slotKeys) {
+      if (name === "children") {
+        // The rename needs a free name: `content` written nowhere in the module.
+        const fix = /(?<![\p{ID_Continue}$])content(?![\p{ID_Continue}$])/u.test(source)
+          ? undefined
+          : renameSlot(name, "content", key);
+        reporter.report(
+          "UF2029",
+          key,
+          "The slot `children` is named like the prop React, Svelte and Solid pass the default slot as, so the two would collide.",
+          { help: "Rename the slot, such as to `content`.", ...(fix ? { fixes: [fix] } : {}) },
+        );
+        continue;
+      }
       const taken = slotNameTaken(name);
       if (!taken) continue;
       reporter.report(

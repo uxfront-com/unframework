@@ -318,6 +318,37 @@ describe("a component's own slots", () => {
     expect(codes(run(source).diagnostics)).toContain(code);
   });
 
+  it("reports a slot named `children`, with a rename to `content`", () => {
+    const source = `${API}export function A() {
+  const slots = defineSlots<{ default?(): Element; children?(): Element }>();
+  return <section>{slots.default?.()}{slots.children ? <div>{slots.children?.()}</div> : null}</section>;
+}`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF2029 children"]);
+    expect(diagnostics[0]!.message).toContain("React, Svelte and Solid pass the default slot as");
+    expect(applyAndRecheck(source, diagnostics)).toContain(
+      "{slots.content ? <div>{slots.content?.()}</div> : null}",
+    );
+  });
+
+  it("offers no rename of `children` where the module already names `content`", () => {
+    const source = `${API}export function A({ content }: { content: string }) {
+  const slots = defineSlots<{ children?(): Element }>();
+  return <div title={content}>{slots.children?.()}</div>;
+}`;
+    const { diagnostics } = run(source);
+    expect(codes(diagnostics)).toEqual(["UF2029"]);
+    expect(diagnostics[0]!.fixes).toBeUndefined();
+  });
+
+  it.each(["default", "case", "class", "style"])("accepts a slot named `%s`", (name) => {
+    const source = `${API}export function A() {
+  const slots = defineSlots<{ ${name}?(): Element }>();
+  return <div>{slots.${name}?.()}</div>;
+}`;
+    expect(run(source).diagnostics).toEqual([]);
+  });
+
   it.each([
     ["defineExpose({ count })", "UF2030"],
     ["defineExpose({ go: go })", "UF2030"],

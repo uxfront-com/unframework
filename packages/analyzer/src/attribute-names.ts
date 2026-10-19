@@ -74,7 +74,7 @@ const FRAMEWORK_PROPS: ReadonlyMap<string, string> = new Map(
 const LATER: ReadonlyMap<string, string> = new Map([
   ["autofocus", "Focus the element from `onMounted`, through a template ref."],
   ["is", "Custom elements are not supported yet."],
-  ["slot", "Slots land with composition."],
+  ["slot", "A component's slots are filled with a slot object: `<Card>{{ title: () => <h2>Notes</h2> }}</Card>`."],
 ]);
 
 /** The SVG attribute names a case-insensitive spelling stands for, on an element. */
@@ -148,7 +148,7 @@ export function nameProblem(
   }
   if (/^default(value|checked|selected)$/.test(lower)) {
     return unsupported(
-      `\`${authored}\` is React's name for a form control's initial state; form state is not supported yet, and lands with \`v-model\`.`,
+      `\`${authored}\` is React's name for a form control's initial state: bind the control's state with \`v-model\`.`,
     );
   }
   if (lower === "defaultmuted") {
@@ -269,7 +269,7 @@ function unknownProblem(
 
 export function formState(tag: string, name: string): Problem {
   return unsupported(
-    `Form state (\`${name}\` on <${tag}>) is not supported yet: the targets set it as a DOM property or as an attribute, so they render it differently. It lands with \`v-model\`.`,
+    `Form state (\`${name}\` on <${tag}>) is not supported as an attribute: the targets set it as a DOM property or as an attribute, so they render it differently. Bind the control's state with \`v-model\`.`,
   );
 }
 

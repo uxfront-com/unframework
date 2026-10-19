@@ -587,7 +587,10 @@ function checkNames(
   const parameter =
     component.propsParameter?.form === "object" ? component.propsParameter.name : undefined;
   for (const [index, binding] of component.bindings.entries()) {
-    if (binding.kind === "prop" || binding.kind === "loopVar") continue;
+    // A list's or a fill's names are local to it, and checked where it declares them.
+    if (binding.kind === "prop" || binding.kind === "loopVar" || binding.kind === "slotScope") {
+      continue;
+    }
     if (bindings.get(binding.id) !== binding) continue;
     const at = `${path}/bindings/${index}/name`;
     const reserved = reservedSetupName(binding.name);
@@ -1042,8 +1045,8 @@ function checkModelValue(value: Expression, path: string, place: Place, walk: Wa
 
 /**
  * Checks fills (ADR-0054): each fills a slot every one of `declared` declares, once; a forwarded
- * one passes on a slot the component declares and has no children; a scoped fill's names are in
- * scope in its children alone.
+ * one passes on a slot the component declares and has no children; a scoped fill's names shadow
+ * none around it, as a loop variable's (UF3024), and are in scope in its children alone.
  */
 function checkFills(
   fills: readonly SlotFill[],
@@ -1081,6 +1084,13 @@ function checkFills(
       const { parameter } = fill;
       for (const binding of walk.component.bindings) {
         if (binding.kind === "slotScope" && inside(binding.span, parameter.span)) {
+          const taken = takenName(binding.name, place.scope, walk);
+          if (taken) {
+            errors.push({
+              path: `${at}/parameter`,
+              message: `must not be named "${binding.name}": ${taken}`,
+            });
+          }
           scope.add(binding.id);
         }
       }

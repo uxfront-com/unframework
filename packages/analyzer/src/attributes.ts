@@ -601,7 +601,8 @@ function readSpread(
   }
   const mark = reporter.diagnostics.length;
   const checked = checkExpression(argument, render);
-  // Fallthrough of a setup value's keys lands with composition (ADR-0045, amending ADR-0039).
+  // A setup value's keys are its inferred type's, which M5's type oracle reads (ADR-0045,
+  // amending ADR-0039).
   const setup = new Set([...render.setup.bindings.values()].map((binding) => binding.id));
   if (
     checked.clean &&
