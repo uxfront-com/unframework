@@ -1,3 +1,4 @@
+import type { NormalizeTarget } from "../targets.ts";
 import {
   attributeName,
   childrenOf,
@@ -52,6 +53,27 @@ export function removeSettledValues(root: TreeParent): void {
       }
       default:
         return;
+    }
+  });
+}
+
+/**
+ * Rule 4e: on React only, removes a `checked` or `selected` attribute wherever the element's
+ * `uf:checked` or `uf:selected` state is there, whatever that state says (ADR-0060). react-dom
+ * writes a controlled box's or option's first state as its attribute and never updates it, so
+ * the attribute of a box the person cleared shows a state that is gone; the live state compares
+ * in `uf:*`, which a real difference (a box still checked) still changes. Rule 4d keeps such an
+ * attribute on every other target, where only the markup the source wrote puts it there. An
+ * element without the `uf:*` state (a server render) keeps its attribute on React too.
+ */
+export function removeReactDefaultStates(root: TreeParent, target?: NormalizeTarget): void {
+  if (target !== "react") return;
+  forEachElement(root, (element) => {
+    if (element.namespaceURI !== HTML_NAMESPACE) return;
+    if (element.tagName === "input" && getAttribute(element, "uf:checked") !== undefined) {
+      removeAttribute(element, "checked");
+    } else if (element.tagName === "option" && getAttribute(element, "uf:selected") !== undefined) {
+      removeAttribute(element, "selected");
     }
   });
 }

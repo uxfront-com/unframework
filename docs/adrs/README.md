@@ -62,7 +62,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0007](./0007-canonical-forms.md)                                  | One canonical form per concept                                       | Proposed                                                              | §11 D3                  |
 | [0008](./0008-state-updates.md)                                    | State is replaced whole, never mutated in place                      | Proposed                                                              | §11 D4                  |
 | [0009](./0009-css-scoping-algorithm.md)                            | CSS is scoped with Vue's attribute algorithm                         | Proposed                                                              | §11 D5                  |
-| [0010](./0010-angular-host-element.md)                             | Angular hosts are elements with `display: contents`                  | Accepted, amended by ADR-0056                                         | §11 D6, §9 M1           |
+| [0010](./0010-angular-host-element.md)                             | Angular hosts are elements with `display: contents`                  | Accepted, amended by ADR-0056, ADR-0060                               | §11 D6, §9 M1           |
 | [0011](./0011-target-versions.md)                                  | Target framework versions                                            | Proposed                                                              | §11 D7                  |
 | [0012](./0012-output-event-and-model-names.md)                     | Events and models take each target's naming convention               | Proposed, amended by ADR-0056                                         | §11 D8                  |
 | [0013](./0013-visual-baselines.md)                                 | Visual baselines live in Linux CI, plus a live mode                  | Proposed                                                              | §11 D9                  |
@@ -112,6 +112,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0057](./0057-multi-source-cases-and-composed-mounts.md)           | Cases hold several sources and compose through harness parents       | Accepted                                                              | §7.1, §7.3, §9 M3       |
 | [0058](./0058-normalising-slot-templates-and-bound-values.md)      | Normalising Qwik's slot templates and bound `value` attributes       | Accepted                                                              | §4.5, §7.5, §9 M3       |
 | [0059](./0059-l4-consumer-type-tests.md)                           | L4 consumer type tests: misuse fixtures with inline expectations     | Accepted                                                              | §5.6, §7.2, §9 M3       |
+| [0060](./0060-react-bound-controls-and-angular-host-spaces.md)     | React's bound controls and Angular's host spaces                     | Proposed                                                              | §6, §7.5, §9 M3         |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 

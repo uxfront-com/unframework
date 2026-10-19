@@ -98,7 +98,7 @@ export const solid: Target = defineTarget({
     "model-array": {
       support: "emulated",
       helper: "toggle",
-      note: "A checkbox group's array goes through an inline helper, `toggle`, and a multiple select's through `selectedValues`, as Vue's `vModelCheckbox` and `vModelSelect` do (ADR-0054).",
+      note: "A checkbox group's array goes through an inline helper, `toggle`, a multiple select's through `selectedValues`, and the options of a select that a component, a slot or an interpolation renders through `selectOptions`, as Vue's `vModelCheckbox` and `vModelSelect` do (ADR-0054).",
     },
     "model-modifiers": {
       support: "emulated",

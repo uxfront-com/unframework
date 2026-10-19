@@ -150,14 +150,16 @@ export class ReactComposer {
     const merged = this.#listeners!.modelHeads(element, context);
     const container = (code: string) =>
       js.jsxExpressionContainer(context.placeholders.expression(code));
+    const ref = this.#listeners!.modelRef(attribute, element, context);
     if (parts.field && ![...parts.handlers.keys()].some((prop) => merged.has(prop))) {
-      return [js.jsxSpreadAttribute(js.identifier(parts.field))];
+      return [js.jsxSpreadAttribute(js.identifier(parts.field)), ...ref];
     }
     return [
       ...parts.state.map(([name, code]) => js.jsxAttribute(name, container(code))),
       ...[...parts.handlers]
         .filter(([prop]) => !merged.has(prop))
         .map(([prop, handler]) => js.jsxAttribute(prop, container(handler.code))),
+      ...ref,
     ];
   }
 

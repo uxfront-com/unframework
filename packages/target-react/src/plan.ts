@@ -30,6 +30,7 @@ import type {
   EventAttribute,
   FunctionCode,
   FunctionSummary,
+  ModelAttribute,
   Parameter,
   RefAttribute,
   RenderNode,
@@ -89,6 +90,19 @@ export interface NativeElement {
   callback?: string;
 }
 
+/**
+ * A `<textarea>`'s `v-model`, whose ref callback puts the caret after the text once React has
+ * mounted it (ADR-0060). react-dom fills the field as its default value, which leaves the caret
+ * at the start, where Vue sets its value and the caret ends after the text: the next key a person
+ * types would land before it. The callback is declared once, so it runs only when the element is
+ * added: the element's own, named here, or the callback of its native listeners.
+ */
+export interface Caret {
+  element: ElementNode;
+  /** The callback's name, where the element has no native listeners. */
+  callback?: string;
+}
+
 /** The analysis of one component for the React target. */
 export interface ReactPlan {
   readonly component: UfComponent;
@@ -117,6 +131,8 @@ export interface ReactPlan {
   readonly onceGuards: ReadonlyMap<EventAttribute, string>;
   /** The elements with native listeners, in render order. */
   readonly nativeElements: ReadonlyMap<ElementNode, NativeElement>;
+  /** The `<textarea>` models whose ref callback places the caret, in render order. */
+  readonly carets: ReadonlyMap<ModelAttribute, Caret>;
   /** The DOM interface of the element each template ref attribute is on (`HTMLInputElement`). */
   readonly refInterfaces: ReadonlyMap<RefAttribute, string>;
   /**
@@ -505,6 +521,23 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
       native.callback = names.claim(`${callbackBase(element, bindings)}Listeners`);
     }
   }
+  const carets = new Map<ModelAttribute, Caret>();
+  walk(component.render, {
+    enter(node) {
+      if (node.kind !== "Element" || node.tag !== "textarea") return;
+      const model = node.attributes.find((attribute) => attribute.kind === "Model");
+      if (model?.kind !== "Model") return;
+      const native = nativeElements.get(node);
+      // A callback written in place runs at every render, which would move the caret each time.
+      if (native && !native.callback) return;
+      carets.set(
+        model,
+        native
+          ? { element: node }
+          : { element: node, callback: names.claim(`${callbackBase(node, bindings)}Caret`) },
+      );
+    },
+  });
 
   let nextTick: string | undefined;
   for (const { code } of codeOf(component)) {
@@ -537,6 +570,7 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
     listeners,
     onceGuards,
     nativeElements,
+    carets,
     refInterfaces: refInterfaces(component),
     narrowedReads,
     eventModes,

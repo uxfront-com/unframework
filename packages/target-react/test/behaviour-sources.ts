@@ -228,6 +228,25 @@ export default function Fields() {
 }
 `,
 
+  Notes: `import { defineEmits, onMounted, ref, useTemplateRef } from "unframework";
+
+export default function Notes() {
+  const emit = defineEmits<{ mounted: [connected: boolean] }>();
+  const note = ref("Buy milk");
+  const draft = ref("Call Bo");
+  const field = useTemplateRef<HTMLTextAreaElement>();
+
+  onMounted(() => emit("mounted", field.value?.isConnected ?? false));
+
+  return (
+    <form aria-label="Notes">
+      <textarea aria-label="Note" v-model={note.value} />
+      <textarea aria-label="Draft" ref={field} v-model={draft.value} />
+    </form>
+  );
+}
+`,
+
   Deferred: `import { defineEmits } from "unframework";
 
 export interface DeferredProps {

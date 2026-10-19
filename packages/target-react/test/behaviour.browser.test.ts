@@ -236,6 +236,26 @@ describe("react output in the browser", () => {
     expect(log()).toBe("change Ada");
   });
 
+  it("types after a bound textarea's text, as Vue's set value leaves the caret", async () => {
+    await start(await component("Notes"), ["mounted"]);
+    // The template ref shares the caret's callback.
+    expect(events).toEqual([["mounted", true]]);
+    for (const [label, text] of [
+      ["Note", "Buy milk"],
+      ["Draft", "Call Bo"],
+    ] as const) {
+      const field = container.querySelector<HTMLTextAreaElement>(`[aria-label='${label}']`)!;
+      // A script's focus, as Playwright's type, keeps the caret where the page left it.
+      await act(async () => field.focus());
+      await act(() => userEvent.keyboard(" now"));
+      expect(field.value).toBe(`${text} now`);
+      // Declared once, the callback never runs again: a render keeps the caret where it is.
+      field.setSelectionRange(0, 0);
+      await act(() => userEvent.keyboard("A"));
+      expect(field.value).toBe(`A${text} now`);
+    }
+  });
+
   it("emits through the listener and with the props of the latest render after an await", async () => {
     const first = vi.fn();
     const second = vi.fn();

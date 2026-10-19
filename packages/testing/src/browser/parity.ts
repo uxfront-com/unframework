@@ -35,6 +35,8 @@ export interface ParityView {
   target: string;
   container: HTMLElement;
   locator: Locator;
+  /** Playwright's ARIA snapshot of the root, without Angular's host spaces (ADR-0060). */
+  aria(): Promise<string>;
   /** The normalised DOM, and the renaming of the generated ids it found. */
   dom(): { html: string; ids: Map<string, string> };
   settle(): Promise<void>;
@@ -106,10 +108,7 @@ export async function expectParity(
       });
       if (!dom.pass) failures.push(dom.message);
       // A generated id in the tree's text or a link's URL reads as the DOM's renaming has it.
-      const snapshot = renameGeneratedIds(
-        await commands.ufAriaSnapshot(view.locator.serialize()),
-        new Map(ids),
-      );
+      const snapshot = renameGeneratedIds(await view.aria(), new Map(ids));
       const aria = await commands.ufArtefact({
         case: caseId,
         file: `aria.${name}.yaml`,
