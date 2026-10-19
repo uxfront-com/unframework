@@ -425,9 +425,10 @@ function withoutComments(source: string): string {
  *   (`expect.element`, `expect.poll`): on a render of nothing it then fails as a query that
  *   finds nothing, which the L8 canary reads as its evidence on every target, a static one
  *   included, where no action fails first.
- * - `case.json`'s `requires` note is there exactly when every test requires a capability: when
- *   the case's client code changes what it mounts, no test can pass without the capability, and
- *   the server render checks a static target.
+ * - `case.json`'s `requires` note is there exactly when every test requires a capability,
+ *   whatever the capability (ADR-0057's amendment of ADR-0050). L6 then skips the case on a
+ *   target whose cell leaves it unsupported, but only for a capability that is not behavioural:
+ *   a case whose every test requires `interactivity` still checks Astro's server render.
  */
 export function specProblems(info: CaseInfo): string[] {
   if (!info.spec) return [];
