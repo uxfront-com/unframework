@@ -218,6 +218,18 @@ describe("listeners (Listeners)", () => {
   });
 });
 
+describe("a field's model beside a capture listener (CaptureModel)", () => {
+  it("writes the model after the capture listener, which reads the text from before", async () => {
+    await render("CaptureModel", []);
+    await userEvent.type(container.querySelector("input")!, "ab");
+    await mounted!.settle();
+    expect(text()).toBe("ab|a|2|");
+    await userEvent.type(container.querySelector("textarea")!, " c");
+    await mounted!.settle();
+    expect(text()).toBe("ab|a|4|c");
+  });
+});
+
 describe("template refs and ids (Refs)", () => {
   it("sets a ref keyed by its binding's name, and empties it once its element is removed", async () => {
     await render("Refs", ["present", "focused"]);

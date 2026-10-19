@@ -220,6 +220,40 @@ export default function Listeners() {
   );
 }
 `,
+  // A field's \`v-model\` beside a capture listener and a bubble listener of its \`input\`: Vue
+  // renders between the capture listener and \`v-model\`'s own, which must not put the old text
+  // back.
+  CaptureModel: `import { ref } from "unframework";
+
+export default function CaptureModel() {
+  const text = ref("");
+  const seen = ref("");
+  const count = ref(0);
+  const note = ref("");
+
+  return (
+    <div>
+      <input
+        aria-label="Text"
+        v-model={text.value}
+        onInputCapture={() => (seen.value = text.value)}
+        onInput={() => count.value++}
+      />
+      <textarea
+        aria-label="Note"
+        v-model_trim={note.value}
+        onInputCapture={(event) => {
+          if (!(event.target as HTMLTextAreaElement).value) return;
+          count.value++;
+        }}
+      />
+      <p>
+        {text.value}|{seen.value}|{count.value}|{note.value}
+      </p>
+    </div>
+  );
+}
+`,
   // Template refs keyed by their binding's name, empty while their element is not rendered, and
   // ids unique to each instance, with the \`uf-id-\` prefix.
   Refs: `import { defineEmits, nextTick, ref, useId, useTemplateRef } from "unframework";
