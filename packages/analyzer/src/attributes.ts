@@ -1229,7 +1229,8 @@ function elementProblem(
   if (isStateAttribute(tag, name, type)) {
     return name === "muted"
       ? unsupported(`\`muted\` on <${tag}> is not supported yet: ${MUTED_REASON}`)
-      : formState(tag, name, tag === "input" && staticType && bindsInputType(type));
+      : // An empty `type` is the Text state, which UF3004's fix writes out.
+        formState(tag, name, tag === "input" && staticType && bindsInputType(type || undefined));
   }
   if (SUBMISSION_OVERRIDES.has(name) && staticType) {
     // A button's missing or invalid `type` is the Submit Button state; an input's is Text.
