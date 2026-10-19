@@ -73,8 +73,10 @@ target):
   unwraps (`{{ count }}`, `:aria-pressed="selected === task.id"`); everything else as written;
 - `v-if`, `v-else-if` and `v-else` on a branch's element, or on a `<template>` around other
   content; keyed `v-for`, never beside a `v-if`;
-- a static `class` beside `:class`, a static `style` beside `:style`, a spread written out as one
-  binding per declared key;
+- a static `class` beside `:class`, a static `style` beside `:style`, whose keys are the CSS
+  properties as written (`:style="{ color: tone, 'font-weight': weight }"`), the keys Vue gives a
+  static `style`, so that fallthrough merges a consumer's declaration into the root's, a nullish
+  one removing it; a spread written out as one binding per declared key;
 - `ref="field"` for a template ref;
 - listeners (`src/listeners.ts`):
   - a setup function by name: `@click="save"`;
@@ -87,6 +89,10 @@ target):
     (`@click.stop="record('stopped')"`, `@submit.prevent`);
   - any other handler moves to a script function the template names, its unannotated event
     parameter typed as `@vue/runtime-dom` types the event;
+  - a capture listener of a text field's `input` also writes the field's `v-model`, after its
+    handler: `@input.capture="seen = text; text = ($event.target as HTMLInputElement).value"`.
+    `v-model`'s own listener runs after it, and Vue renders in between when the handler writes
+    state, which would put the old text back;
 - attributes in `vue/attributes-order`: `ref` with `key`, listeners last.
 
 ## Capabilities
@@ -107,7 +113,7 @@ Components, slots, fallthrough and `defineExpose` (ADR-0053, ADR-0054) are Vue's
 - a component's props and events are hyphenated in the template (`:item-label`, `@level-change`),
   as `vue/attribute-hyphenation` and `vue/v-on-event-hyphenation` ask;
 - `defineSlots<{ default?(): unknown; item?(props: P): unknown }>()`, bound as `slots` only where
-  the template tests or forwards a slot; slots render as `<slot>`, a scoped slot's props key by
+  the template tests or forwards a slot, through `<component :is>` too; slots render as `<slot>`, a scoped slot's props key by
   key, the fallback as its content; fills are the children, or `<template #title>` and
   `<template #item="{ item }">`, and a forwarded slot is the parent's own `<slot>` in a template
   under its presence, `<template v-if="slots.title" #title>`;

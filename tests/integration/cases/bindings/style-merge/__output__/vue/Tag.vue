@@ -18,6 +18,6 @@ const {
   <span
     class="tag"
     style="display: inline-block; padding: 2px 8px; border-style: solid; border-width: 1px"
-    :style="{ borderColor: colour ?? '#5a5a5a', color: colour, fontWeight: weight, marginLeft: indent }"
+    :style="{ 'border-color': colour ?? '#5a5a5a', color: colour, 'font-weight': weight, 'margin-left': indent }"
   >{{ label }}</span>
 </template>

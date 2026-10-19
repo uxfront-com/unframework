@@ -13,7 +13,7 @@ const { label, percent, colour, thickness } = defineProps<UsageMeterProps>();
   <div class="usage-meter">
     <p
       style="margin-bottom: 4px"
-      :style="{ color: colour, fontWeight: 700, lineHeight: 1.5 }"
+      :style="{ color: colour, 'font-weight': 700, 'line-height': 1.5 }"
     >{{ label }}: {{ percent }}%</p>
     <div
       role="progressbar"
@@ -22,7 +22,7 @@ const { label, percent, colour, thickness } = defineProps<UsageMeterProps>();
       aria-valuemax="100"
       :aria-valuenow="percent"
       style="width: 200px; height: 12px; border-style: solid"
-      :style="{ '--meter-colour': colour, '--meter-value': percent, borderWidth: `${thickness}px`, borderColor: colour }"
+      :style="{ '--meter-colour': colour, '--meter-value': percent, 'border-width': `${thickness}px`, 'border-color': colour }"
     >
       <div
         style="height: 100%; background-color: var(--meter-colour)"

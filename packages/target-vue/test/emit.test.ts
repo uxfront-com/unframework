@@ -383,7 +383,7 @@ export default function Tile({ tone, gap, big, attrs }: { tone: string; gap?: st
         '    class="tile"',
         '    :class="[attrs?.class, tone, { big }]"',
         '    style="color: red"',
-        "    :style=\"{ marginTop: gap, '--gap': gap }\"",
+        "    :style=\"{ 'margin-top': gap, '--gap': gap }\"",
         "  >Tile</p>",
       ].join("\n"),
     );
@@ -406,7 +406,7 @@ export default function Quote({ tone }: { tone: string }) {
       [
         "<p",
         '    style="margin: 0"',
-        `    :style="{ fontFamily: '&quot;A;B&quot;, serif', content: '&quot;)&quot; &quot;(&quot;', padding: '1px/**/2px' }"`,
+        `    :style="{ 'font-family': '&quot;A;B&quot;, serif', content: '&quot;)&quot; &quot;(&quot;', padding: '1px/**/2px' }"`,
         "  >",
       ].join("\n"),
     );
