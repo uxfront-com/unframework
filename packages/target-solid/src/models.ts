@@ -3,7 +3,8 @@
 //
 // - A text field: `value` and `onInput`; a `<textarea>`: its value in the browser and its text
 //   on the server, and `onInput`; a `<select>`: each option's `selected` (src/render.ts), and `onChange`;
-//   where no option holds the state, none is selected, as Vue's `vModelSelect` leaves it.
+//   in the browser, `selectOptions` from the `ref` (below), which selects none where no option
+//   holds the state.
 // - A checkbox: `checked` and `onChange`; a radio: `checked={plan() === "monthly"}`, and
 //   `onChange` writes its value.
 // - Checkboxes into an array: `checked={drinks().includes("tea")}`, and `onChange` writes
@@ -15,7 +16,9 @@
 // - A value that may be `null` or `undefined` shows as no text: `value={name() ?? ""}`.
 // - Options another component renders, which the `<select>` cannot mark, are selected by an
 //   inline `selectOptions` from the `ref`: once they are rendered, as the state changes, and as
-//   options come and go.
+//   options come and go. A single `<select>` calls it with marked options too: Vue's
+//   `vModelSelect` selects none (`selectedIndex` -1) where no option holds the state, also once
+//   the options change, where the browser would select the first.
 // - A helper that needs the element (`modelText`, `selectOptions`) is called from the element's
 //   own `ref` callback where it has one (a template ref, an added listener): one `ref` an element.
 import { js, jsxBinding, jsxExpression } from "@unframework/codegen";
@@ -150,29 +153,17 @@ export function modelAttribute(
       : [prop("value", text(initial())), ...bound];
   }
   // Options another component, a slot or a row renders are not marked: the browser selects them
-  // (`selectOptions`), from the element's own `ref` callback where it has one.
+  // (`selectOptions`), from the element's own `ref` callback where it has one. A single
+  // `<select>` calls it with marked options too (see the module comment).
   const selection = () => {
-    if (carried || !unmarkedOptions(element.children)) return [];
+    if (carried) return [];
+    if (attribute.control !== "select" && !unmarkedOptions(element.children)) return [];
     const select = helpers.select();
     return [
       prop(
         "ref",
         context.placeholders.expression(
           `(${select}) => ${helpers.selectOptions()}(${select}, ${binding.name})`,
-        ),
-      ),
-    ];
-  };
-  // Marked options none of which holds the state leave none selected, from the element's own
-  // `ref` callback where it has one.
-  const unmatched = () => {
-    if (carried || unmarkedOptions(element.children)) return [];
-    const select = helpers.select();
-    return [
-      prop(
-        "ref",
-        context.placeholders.expression(
-          `(${select}) => ${noOptionCall(select, binding.name, helpers)}`,
         ),
       ),
     ];
@@ -185,7 +176,7 @@ export function modelAttribute(
     case "select":
       // Each option is `selected` where it holds the state's value (src/render.ts): Solid's
       // server writes a `<select>`'s `value` as an attribute.
-      return [prop("onChange", listener(set(target("value")))), ...selection(), ...unmatched()];
+      return [prop("onChange", listener(set(target("value")))), ...selection()];
     case "checkbox":
       return [prop("checked", value()), prop("onChange", listener(set(target("checked"))))];
     case "radio":
@@ -235,9 +226,8 @@ export function modelAttribute(
 
 /**
  * What a `v-model` does in its element's `ref`, as a statement of the element's own `ref` callback
- * (src/listeners.ts) given its parameter, where the element has one: `modelText`'s binding,
- * `selectOptions`' selection, or no option selected where no marked one holds the state; none
- * for any other `v-model`.
+ * (src/listeners.ts) given its parameter, where the element has one: `modelText`'s binding, or
+ * `selectOptions`' selection; none for any other `v-model`.
  */
 export function modelRef(
   element: ElementNode,
@@ -256,26 +246,12 @@ export function modelRef(
     return (parameter) => `${call}(${parameter});`;
   }
   if (
-    (attribute.control === "select" || attribute.control === "select-multiple") &&
-    unmarkedOptions(element.children)
+    attribute.control === "select" ||
+    (attribute.control === "select-multiple" && unmarkedOptions(element.children))
   ) {
     return (parameter) => `${helpers.selectOptions()}(${parameter}, ${name});`;
   }
-  if (attribute.control === "select") {
-    return (parameter) => `${noOptionCall(parameter, name, helpers)};`;
-  }
   return undefined;
-}
-
-/**
- * A single `<select>` whose marked options (src/render.ts) none holds the state selects none, as
- * Vue's `vModelSelect` sets `selectedIndex` -1, where the browser would select the first. The
- * effect runs after the marks render, and an option's `value` is its mark's value as a string.
- */
-function noOptionCall(select: string, name: string, helpers: ModelHelpers): string {
-  return `${helpers.solid("createEffect")}(() => {
-    if (${select}.value !== String(${name}())) ${select}.selectedIndex = -1;
-  })`;
 }
 
 /** `modelText(name, setName, { trim: true })`: the `ref` callback of a field's `v-model`. */
@@ -400,7 +376,8 @@ function ${name}(select: HTMLSelectElement): string[] {
  * options are another component's): each option selected where it holds the state, or where
  * the state's array holds it, and none where no option holds a single value (`selectedIndex`
  * -1), as Vue's `vModelSelect` sets them, once they are rendered, as the state changes, and as
- * options come and go or change their value.
+ * options come and go or change their value. A single value is compared as a string, as Vue's
+ * `looseEqual` compares an option's value with it.
  */
 function selectOptionsHelperCode(
   name: string,
@@ -415,7 +392,9 @@ function ${name}(select: HTMLSelectElement, value: () => unknown): void {
     const current = value();
     if (!Array.isArray(current)) {
       // \`selectedIndex\` -1 where no option holds it: unselecting each one selects the first.
-      select.selectedIndex = [...select.options].findIndex((option) => option.value === current);
+      select.selectedIndex = [...select.options].findIndex(
+        (option) => option.value === String(current),
+      );
       return;
     }
     for (const option of select.options) option.selected = current.includes(option.value);

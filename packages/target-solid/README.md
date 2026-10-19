@@ -360,10 +360,11 @@ Everything a parent passes is a prop, read through the props object (`src/compos
   mark: its `ref` selects them, `ref={(select) => selectOptions(select, size)}`, once they are
   rendered, as the state changes, and as options come and go (a `MutationObserver`), as Vue's
   `vModelSelect` does in the browser.
-- Where no option of a `<select>` holds its state, none is selected (`selectedIndex` -1), as
-  Vue's `vModelSelect` leaves it, where the browser would select the first. `selectOptions` sets
-  it, and a `<select>` that marks its options sets it from its `ref` once the marks render:
-  `ref={(select) => createEffect(() => { if (select.value !== String(size())) select.selectedIndex = -1; })}`.
+- A single `<select>` calls `selectOptions` from its `ref` even when it marks its options, the
+  marks then being for the server: where no option holds the state, Vue's `vModelSelect`
+  selects none (`selectedIndex` -1), also once the options change, where the browser would
+  select the first. `selectOptions` compares a single value as a string, as Vue's `looseEqual`
+  does.
 - A helper that needs the element (`modelText`, `selectOptions`) is called from the element's own
   `ref` callback where it has one (a template ref, an added listener), so an element has one
   `ref`: `ref={(element) => { box = element; …; modelText(name, setName, { trim: true })(element); }}`.

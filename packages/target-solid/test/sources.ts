@@ -1600,6 +1600,29 @@ export default function UnmatchedSelect() {
   );
 }
 `,
+  // A `<select>` whose selected option leaves its list while the state stays
+  // (test/composition.browser.test.ts mounts it).
+  ListedSelect: `import { ref } from "unframework";
+
+export default function ListedSelect() {
+  const size = ref("m");
+  const sizes = ref(["s", "m", "l"]);
+  return (
+    <form>
+      <select aria-label="Size" v-model={size.value}>
+        {sizes.value.map((each) => (
+          <option key={each} value={each}>
+            {each}
+          </option>
+        ))}
+      </select>
+      <button type="button" onClick={() => (sizes.value = ["s", "l"])}>
+        Drop M
+      </button>
+    </form>
+  );
+}
+`,
   // A template ref beside a `v-model` that needs the element's `ref` too: one `ref` callback.
   TemplateRefModel: `import { ref, useTemplateRef } from "unframework";
 

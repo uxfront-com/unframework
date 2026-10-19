@@ -29,7 +29,9 @@ function selectOptions(select: HTMLSelectElement, value: () => unknown): void {
     const current = value();
     if (!Array.isArray(current)) {
       // `selectedIndex` -1 where no option holds it: unselecting each one selects the first.
-      select.selectedIndex = [...select.options].findIndex((option) => option.value === current);
+      select.selectedIndex = [...select.options].findIndex(
+        (option) => option.value === String(current),
+      );
       return;
     }
     for (const option of select.options) option.selected = current.includes(option.value);
