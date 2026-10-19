@@ -1,0 +1,4 @@
+{
+  "description": "A component forwards its own slot through `<component is>`: the chosen child renders the fill, or its own fallback where the outer parent filled nothing.",
+  "main": "Gallery.uf.tsx"
+}

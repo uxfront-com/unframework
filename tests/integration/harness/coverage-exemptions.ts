@@ -58,12 +58,7 @@ export const EXEMPT_CAPABILITIES: Readonly<
   "scoped-slot": lanesBut(),
   "slot-fallback": lanesBut(),
   "default-slot-presence": lanesBut("angular", "qwik"),
-  "slot-forwarding": {
-    ...lanesBut(),
-    qwik: "slots/forwarding also forwards the default slot, which needs default-slot-presence (an error on Qwik). M3's repeated-default-slot follow-up adds a case that forwards only a named slot, which covers Qwik's cell, and removes this exemption.",
-    angular:
-      "slots/forwarding also forwards the default slot, which needs default-slot-presence (an error on Angular). M3's repeated-default-slot follow-up adds a case that forwards only a named slot, which covers Angular's cell, and removes this exemption.",
-  },
+  "slot-forwarding": lanesBut(),
   model: lanesBut(),
   "two-way-binding": lanesBut("astro"),
   "model-array": lanesBut("astro"),

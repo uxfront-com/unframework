@@ -1,0 +1,113 @@
+{
+  "irVersion": 1,
+  "file": "dynamic/forwarding/Panel.uf.tsx",
+  "components": [
+    {
+      "name": "Panel",
+      "span": {
+        "start": 88,
+        "end": 275
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@130",
+        "type": {
+          "code": "{ title?(): Element }",
+          "span": {
+            "start": 150,
+            "end": 171
+          }
+        },
+        "slots": [
+          {
+            "name": "title",
+            "optional": true,
+            "span": {
+              "start": 152,
+              "end": 169
+            }
+          }
+        ],
+        "span": {
+          "start": 124,
+          "end": 175
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@130",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 130,
+            "end": 135
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "panel",
+            "span": {
+              "start": 196,
+              "end": 209
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h4",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "SlotOutlet",
+                "slot": "title",
+                "fallback": [
+                  {
+                    "kind": "Text",
+                    "value": "Untitled",
+                    "span": {
+                      "start": 241,
+                      "end": 251
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 221,
+                  "end": 252
+                }
+              }
+            ],
+            "span": {
+              "start": 217,
+              "end": 257
+            }
+          }
+        ],
+        "span": {
+          "start": 191,
+          "end": 268
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Panel",
+      "span": {
+        "start": 88,
+        "end": 275
+      }
+    }
+  ],
+  "types": []
+}

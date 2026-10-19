@@ -1099,5 +1099,25 @@ export default function Tag() {
         "<component :is=\"fade ? 'h2' : 'h3'\" class=\"t\">y</component>",
       );
     });
+
+    it("binds `slots` where a slot is forwarded through <component :is>", async () => {
+      const files = await emitAll(`import { defineSlots, ref } from "unframework";
+import type { Element } from "unframework";
+function Card() {
+  const slots = defineSlots<{ title?(): Element }>();
+  return <b>{slots.title?.()}</b>;
+}
+function Panel() {
+  const slots = defineSlots<{ title?(): Element }>();
+  return <i>{slots.title?.()}</i>;
+}
+export default function Frame() {
+  const slots = defineSlots<{ title?(): Element }>();
+  const open = ref(true);
+  return <component is={open.value ? Card : Panel}>{{ title: slots.title }}</component>;
+}`);
+      expect(files["Frame.vue"]).toContain("const slots = defineSlots<{ title?(): unknown }>();");
+      expect(files["Frame.vue"]).toContain('<template v-if="slots.title" #title>');
+    });
   });
 });

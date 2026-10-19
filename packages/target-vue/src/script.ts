@@ -282,7 +282,10 @@ function readsSlots(component: UfComponent): boolean {
   let forwards = false;
   walk(component.render, {
     enter(node) {
-      if (node.kind === "Component" && node.fills.some((fill) => fill.forward !== undefined)) {
+      if (
+        (node.kind === "Component" || node.kind === "Dynamic") &&
+        (node.fills ?? []).some((fill) => fill.forward !== undefined)
+      ) {
         forwards = true;
       }
     },

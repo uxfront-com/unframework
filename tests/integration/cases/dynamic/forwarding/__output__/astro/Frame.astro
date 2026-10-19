@@ -1,0 +1,29 @@
+---
+import Card from "./Card.astro";
+import Panel from "./Panel.astro";
+
+interface Props {
+  label: string;
+  wide: boolean;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, wide, class: className, style } = Astro.props;
+
+const Tag = wide ? Panel : Card;
+---
+
+<section class:list={["frame", className]} aria-label={label} style={style}>
+  {Astro.slots.has("title") ? (
+    <>
+      <Tag>
+        <slot name="title" slot="title" />
+      </Tag>
+    </>
+  ) : (
+    <>
+      <Tag />
+    </>
+  )}
+</section>
