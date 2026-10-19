@@ -12,5 +12,5 @@ error[UF3050]: SearchField's model `query` can be `undefined`, as its type `stri
 15 |       <SearchField v-model:query={term.value} />
    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: Give `query` a `default` or `required: true` in SearchField, or let the ref hold `undefined`.
+   = help: Let the ref hold `undefined`, or, where `query`'s type in SearchField excludes it, give the model a `default` or `required: true`.
    = see: https://unframework.dev/diagnostics/UF3050

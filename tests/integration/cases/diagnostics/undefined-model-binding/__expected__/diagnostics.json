@@ -31,6 +31,6 @@
       "column": 46,
       "offset": 589
     },
-    "help": "Give `query` a `default` or `required: true` in SearchField, or let the ref hold `undefined`."
+    "help": "Let the ref hold `undefined`, or, where `query`'s type in SearchField excludes it, give the model a `default` or `required: true`."
   }
 ]
