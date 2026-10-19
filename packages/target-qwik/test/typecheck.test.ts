@@ -115,6 +115,61 @@ describe("SVG titles (L4, tsgo)", () => {
   });
 });
 
+// Qwik types an `<option>`'s children as a string, as a title's: the target writes an option's
+// text as one string child (src/title.ts), with or without a `v-model` on its select, and in a
+// component's fill inside a list, where the compiler's IR is frozen.
+describe("option text (L4, tsgo)", () => {
+  it("type-checks an option that holds a number, a sum, or text and a value", async () => {
+    const output = await emitSource(
+      `import { defineSlots, ref } from "unframework";
+import type { Element } from "unframework";
+
+export default function Sizes({ n, label, ns }: { n: number; label: string; ns: number[] }) {
+  const size = ref("1");
+  return (
+    <form>
+      <select aria-label="Plain">
+        <option>{n}</option>
+        <option>{n + 1}</option>
+        <option>Size {label}</option>
+      </select>
+      <select aria-label="Size" v-model={size.value}>
+        <option>{n}</option>
+        <option>{n + 1}</option>
+        <option>Size {label}</option>
+      </select>
+      <select aria-label="Grouped">
+        {ns.map((each) => (
+          <Group key={each}>
+            <option value="x">{each}</option>
+          </Group>
+        ))}
+      </select>
+    </form>
+  );
+}
+
+function Group() {
+  const slots = defineSlots<{ default?(): Element }>();
+  return <optgroup label="g">{slots.default?.()}</optgroup>;
+}
+`,
+      { frozen: true },
+    );
+    const file = write("Options.tsx", output);
+    // The child's own output file, which `Options.tsx` imports.
+    write(
+      "Group.tsx",
+      'import { Slot, component$ } from "@qwik.dev/core";\n\nexport const Group = component$(() => (\n  <optgroup label="g">\n    <Slot />\n  </optgroup>\n));\n',
+    );
+    expect((await toolchain.typecheck([file], context)).get(file)).toEqual([]);
+    expect(output).toContain("<option>{`${n}`}</option>");
+    expect(output).toContain("<option>{`${n + 1}`}</option>");
+    expect(output).toContain("<option>{`Size ${label}`}</option>");
+    expect(output).toContain('<option value="x">{`${each ?? ""}`}</option>');
+  });
+});
+
 describe("Qwik's attribute spellings", () => {
   // An element that carries each attribute in Qwik's JSX types.
   const elements: Record<string, string> = {

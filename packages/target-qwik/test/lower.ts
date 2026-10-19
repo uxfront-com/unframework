@@ -22,13 +22,15 @@ export function lower(source: string, file = "Card.uf.tsx"): UfModule {
  * it. The target reports nothing (ADR-0033: what it cannot render, its capabilities declare).
  * Fallthrough gives every component `class` and `style` props (ADR-0054): the shape tests leave
  * it out, as `defineOptions({ inheritAttrs: false })` does, unless `fallthrough` asks for it.
+ * `frozen` freezes the module, as `compile()` does, so a target that writes into the IR throws.
  */
 export async function emitSource(
   source: string,
-  options: { fallthrough?: boolean } = {},
+  options: { fallthrough?: boolean; frozen?: boolean } = {},
 ): Promise<string> {
   const module = lower(source);
   if (!options.fallthrough) module.components[0]!.inheritAttrs = false;
+  if (options.frozen) deepFreeze(module);
   const reported: unknown[] = [];
   const context: EmitContext = {
     module,
@@ -41,4 +43,11 @@ export async function emitSource(
   const outcome = await formatOutput(file!);
   expect(outcome.error).toBeUndefined();
   return outcome.file.contents;
+}
+
+/** Freezes a value and everything in it, as `compile()` freezes the IR it hands the targets. */
+function deepFreeze(value: unknown): void {
+  if (typeof value !== "object" || value === null || Object.isFrozen(value)) return;
+  Object.freeze(value);
+  for (const item of Object.values(value)) deepFreeze(item);
 }

@@ -46,9 +46,10 @@ function modelText<T extends string | number | null | undefined>(
       const text = modifiers.trim ? field.value.trim() : field.value;
       setValue((modifiers.number ? cast(text) : text) as T);
     });
-    if (modifiers.trim) {
+    if (modifiers.trim || modifiers.number) {
       field.addEventListener("change", () => {
-        field.value = field.value.trim();
+        const text = modifiers.trim ? field.value.trim() : field.value;
+        field.value = String(modifiers.number ? cast(text) : text);
       });
     }
     createRenderEffect(() => {
