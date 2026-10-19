@@ -17,6 +17,7 @@ import type {
   FragmentNode,
   IfNode,
   ModelAttribute,
+  PropAttribute,
   RenderNode,
   SlotFill,
   UfComponent,
@@ -45,8 +46,11 @@ export interface AstroRender {
   fallthrough?: Fallthrough;
   /** Each `<component is>` of the copy, with the constant it is declared as. */
   dynamics: Map<DynamicNode, DynamicTag>;
-  /** The prop each fill the copy passes as a render prop is passed as (`renderPropName`). */
-  renderProps: Map<SlotFill, string>;
+  /**
+   * The props each fill the copy passes as a render prop is passed as (`renderPropName`): one,
+   * or one per name the candidates of a `<component is>` give it.
+   */
+  renderProps: Map<SlotFill, string[]>;
 }
 
 /**
@@ -57,6 +61,12 @@ export interface AstroRender {
 export interface DynamicTag {
   name: string;
   hoisted: boolean;
+  /**
+   * The attributes of each candidate, by its local name, where the candidates name a fill's
+   * render prop apart: the tag then renders as each candidate in turn (`Tag === A ? <A … /> :
+   * …`), so a candidate never takes another's name for a render prop, which can be its prop.
+   */
+  candidates?: Map<string, ComponentAttribute[]>;
 }
 
 /**
@@ -136,17 +146,14 @@ export function astroRender(
   const nodes = (children: readonly RenderNode[]): RenderNode[] => children.map(node);
   const fills = (each: readonly SlotFill[]): SlotFill[] =>
     each.map((fill) => ({ ...fill, children: nested(() => nodes(fill.children)) }));
-  const renderPropNames = new Map<SlotFill, string>();
+  const renderPropNames = new Map<SlotFill, string[]>();
   // The render props of a component's fills, named as the child names them (`taken`: its props).
-  const renderProps = (
-    each: readonly SlotFill[],
-    taken: ReadonlySet<string>,
-  ): ComponentAttribute[] =>
+  const renderProps = (each: readonly SlotFill[], taken: ReadonlySet<string>): PropAttribute[] =>
     each
       .filter((fill) => isRenderProp(fill, component))
       .map((fill) => {
         const name = renderPropName(fill.slot, taken);
-        renderPropNames.set(fill, name);
+        renderPropNames.set(fill, [...new Set([...(renderPropNames.get(fill) ?? []), name])]);
         // The dialect writes the fill's function in its place (`../markup.ts`).
         return { kind: "Prop", name, value: written("undefined", fill), span: fill.span };
       });
@@ -180,16 +187,35 @@ export function astroRender(
         return { ...each, fallback: nodes(each.fallback) };
       case "Dynamic": {
         const tag: DynamicTag = { name: spelling.scope.claim("Tag"), hoisted: depth === 0 };
-        // Each candidate declares the dynamic's props and slots: a name none of them takes.
-        const taken = new Set(
+        const copied = each.fills ? fills(each.fills) : undefined;
+        // Each candidate names a render prop apart from its own props (`renderPropName`).
+        const named = new Map(
           each.candidates.flatMap((candidate) =>
-            candidate.kind === "Component" ? [...childProps(module, candidate.component)] : [],
+            candidate.kind === "Component"
+              ? [
+                  [
+                    candidate.component,
+                    renderProps(copied ?? [], childProps(module, candidate.component)),
+                  ] as const,
+                ]
+              : [],
           ),
         );
-        const copied = each.fills ? fills(each.fills) : undefined;
+        const [first = [], ...others] = [...named.values()];
+        const apart = others.some((props) =>
+          props.some((prop, at) => prop.name !== first[at]!.name),
+        );
+        if (apart) {
+          tag.candidates = new Map(
+            [...named].map(([candidate, props]) => [
+              candidate,
+              [...(each.attributes as ComponentAttribute[]), ...props],
+            ]),
+          );
+        }
         const copy = branched({
           ...each,
-          attributes: [...each.attributes, ...renderProps(copied ?? [], taken)],
+          attributes: [...each.attributes, ...first],
           children: nodes(each.children),
           ...(copied ? { fills: copied } : {}),
         });

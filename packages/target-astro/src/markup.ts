@@ -105,7 +105,7 @@ export function printComponentMarkup(
 /** The dialect, with what composition needs of the component and its spelling. */
 function composition(
   component: UfComponent,
-  { spelling, render }: ComposedMarkup,
+  { spelling, render, tags }: ComposedMarkup,
   options: MarkupOptions,
 ): MarkupDialect {
   const code = (expression: Parameters<typeof rewriteExpression>[0]) =>
@@ -124,8 +124,8 @@ function composition(
     ...dialect,
     // A scoped fill is a render prop named as the slot, the forwarded one the component's own.
     propAttribute(prop, context) {
-      const fill = context.component.fills.find(
-        (each) => render.renderProps.get(each) === prop.name,
+      const fill = context.component.fills.find((each) =>
+        render.renderProps.get(each)?.includes(prop.name),
       );
       if (!fill) return dialect.propAttribute!(prop, context);
       const value =
@@ -181,7 +181,30 @@ function composition(
      * the branch's or the fill's bindings and guards hold (`DynamicTag`).
      */
     dynamic({ node, is }) {
-      const { name, hoisted } = render.dynamics.get(node)!;
+      const { name, hoisted, candidates } = render.dynamics.get(node)!;
+      const component = (tag: string, attributes: ComponentAttribute[]): MarkupPiece => ({
+        kind: "component",
+        component: {
+          kind: "Component",
+          component: tag,
+          attributes,
+          fills: node.fills ?? [],
+          span: node.span,
+        },
+        directives: [],
+      });
+      if (candidates) {
+        // Each candidate in turn, the last one where the others are not the tag.
+        const each = [...candidates];
+        const segments = each.map(([candidate, attributes], at) => ({
+          open: `${at === 0 ? (hoisted ? "{" : `{(() => { const ${name} = ${is}; return `) : " : "}${
+            at < each.length - 1 ? `${name} === ${tags.get(candidate) ?? candidate} ? ` : ""
+          }`,
+          content: component(candidate, attributes),
+          parentheses: true,
+        }));
+        return [{ kind: "block", segments, close: hoisted ? "}" : "; })()}" }];
+      }
       const piece: MarkupPiece = node.candidates.every((candidate) => candidate.kind === "Tag")
         ? {
             kind: "element",
@@ -194,17 +217,7 @@ function composition(
             },
             directives: [],
           }
-        : {
-            kind: "component",
-            component: {
-              kind: "Component",
-              component: name,
-              attributes: node.attributes as ComponentAttribute[],
-              fills: node.fills ?? [],
-              span: node.span,
-            },
-            directives: [],
-          };
+        : component(name, node.attributes as ComponentAttribute[]);
       if (hoisted) return [piece];
       return [
         {
