@@ -412,7 +412,7 @@ export function renderMarkdown(
         ? `Incomplete: ${gaps.join(", and ")}, and every project must run all its tests.`
         : `Partial run: ${gaps.join(", and ")}, so missing cells and stale quarantine entries are not checked.`
       : matrix.runs.length > 1
-        ? `Every project has records, from ${matrix.runs.length} runs: every cell is checked, each against the newest run that recorded it.`
+        ? `Every project has records, from ${matrix.runs.length} runs: every cell is checked, each layer against the newest run that recorded it.`
         : "Every project ran: every cell is checked.",
     `Layers that are not live (${LAYERS.filter((layer) => !layers.includes(layer)).join(", ")}) are recorded as skip(${expected.notLiveReason}).`,
     "",

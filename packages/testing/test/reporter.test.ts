@@ -79,10 +79,13 @@ const vitest = (
     harness?: HarnessContext;
     /** Project → the cases the run adds it for alone (`ufOnly`). */
     only?: Record<string, string[]>;
+    /** Project → the specs it includes, when not every case's. */
+    include?: Record<string, string[]>;
   } = {},
 ) => ({
   projects: projects.map((name) => ({
     name,
+    config: { root, include: options.include?.[name] ?? ["cases/**/*.test.ts"] },
     getProvidedContext: () => ({
       ...(options.harness ? { ufHarness: options.harness } : {}),
       ...(options.only?.[name] ? { ufOnly: options.only[name] } : {}),
@@ -479,8 +482,14 @@ describe("ParityReporter", () => {
     };
     const newer = { L1: "fail: newer", L3: "fail: newer", L6: "fail: newer", L7: "fail: newer" };
 
-    /** A full run, then a run of Vue in which React's projects record `react`; the summary. */
-    const runs = (react: (project: string) => [string, string][]) => {
+    /**
+     * A full run, then a run of Vue that selects `selected` (all of its projects by default), in
+     * which React's projects record `react`; the summary.
+     */
+    const runs = (
+      react: (project: string) => [string, string][],
+      selected = all.filter((project) => project !== "toolchain:react"),
+    ) => {
       vi.useFakeTimers({ toFake: ["Date"] });
       try {
         vi.setSystemTime(new Date("2026-10-01T10:00:00.000Z"));
@@ -498,10 +507,13 @@ describe("ParityReporter", () => {
         );
 
         vi.setSystemTime(new Date("2026-10-01T11:00:00.000Z"));
-        const vue = all.filter((project) => project !== "toolchain:react");
         const narrowed = new ParityReporter({ reportsDir, allProjects: all });
         narrowed.onInit(
-          vitest(vue, { harness: context(), only: { "ssr:react": ["semantics/listbox"] } }),
+          vitest(selected, {
+            harness: context(),
+            only: { "ssr:react": ["semantics/listbox"] },
+            include: { "browser:react": ["cases/semantics/listbox/listbox.test.ts"] },
+          }),
         );
         narrowed.onTestRunEnd(
           [
@@ -511,7 +523,7 @@ describe("ParityReporter", () => {
             moduleOf("browser:vue", both("vue"), true),
             moduleOf("ssr:react", react("ssr:react"), true),
             moduleOf("browser:react", react("browser:react"), true),
-          ],
+          ].filter((module) => selected.includes(module.project.name)),
           [],
           "failed",
         );
@@ -548,7 +560,8 @@ describe("ParityReporter", () => {
 
     it("keeps them when a project it added for some cases recorded nothing", () => {
       // The listbox spec failed to load on React: the cases each React project was added for
-      // come from `ufOnly` alone, the SSR project's own and the browser project's sibling's.
+      // come from the project itself, the SSR project's `ufOnly` and the browser project's
+      // `include`.
       const { matrix, problems } = runs(() => []);
       expect(live(matrix, "basics/hello", "react")).toEqual({
         L1: "pass",
@@ -561,8 +574,53 @@ describe("ParityReporter", () => {
       expect(missing.every((problem) => problem.startsWith("semantics/listbox › react"))).toBe(
         true,
       );
-      // compile and Vue's three projects; React's toolchain project did not run.
+      // compile, Vue's three projects, and React's SSR and browser ones, each of which loses
+      // listbox; React's toolchain project did not run.
       expect(logs).toContain("[uf:parity] Superseded 6 project(s) of parity-matrix.all.json.");
+    });
+
+    it("keeps them when the run selects the browser projects alone", () => {
+      // `--project 'browser:*'`: Vitest leaves `ssr:react` out of the run, so nothing but the
+      // browser project's own `include` tells which cases it was added for.
+      const { matrix } = runs(() => [], ["browser:react", "browser:vue"]);
+      expect(live(matrix, "basics/hello", "react")).toEqual({
+        L1: "pass",
+        L3: "pass",
+        L6: "pass",
+        L7: "pass",
+      });
+      expect(live(matrix, "semantics/listbox", "react").L6).toBe("pass");
+      expect(logs).toContain("[uf:parity] Superseded 2 project(s) of parity-matrix.all.json.");
+    });
+
+    it("counts only the projects that lost records", () => {
+      // An older run's `compile` holds only React's cells, which a run of Vue does not re-judge;
+      // its `browser:vue` holds only Vue's, which it does.
+      const older = new ParityReporter({ reportsDir });
+      older.onInit(vitest(["browser:vue", "compile", "ssr:react"], { harness: context() }));
+      older.onTestRunEnd(
+        [
+          moduleOf("compile", both("react"), false),
+          moduleOf("browser:vue", both("vue"), false),
+          moduleOf("ssr:react", both("react"), false),
+        ],
+        [],
+        "passed",
+      );
+      const newer = new ParityReporter({ reportsDir });
+      newer.onInit(vitest(["browser:vue", "compile"], { harness: context() }));
+      newer.onTestRunEnd(
+        [moduleOf("compile", both("vue"), true), moduleOf("browser:vue", both("vue"), true)],
+        [],
+        "failed",
+      );
+      expect(logs).toContain(
+        "[uf:parity] Superseded 1 project(s) of parity-matrix.browser-vue+compile+ssr-react.json.",
+      );
+      expect(read("parity-matrix.browser-vue+compile+ssr-react.json").projects).toEqual([
+        "compile",
+        "ssr:react",
+      ]);
     });
   });
 

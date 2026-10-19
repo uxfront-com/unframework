@@ -142,7 +142,7 @@ describe("summarise", () => {
     const { markdown, complete } = summarise([compile, browser], expected);
     expect(complete).toBe(true);
     expect(markdown).toContain(
-      "Every project has records, from 2 runs: every cell is checked, each against the newest run that recorded it.",
+      "Every project has records, from 2 runs: every cell is checked, each layer against the newest run that recorded it.",
     );
     expect(markdown).not.toContain("Every project ran");
   });

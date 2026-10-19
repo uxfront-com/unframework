@@ -6,8 +6,9 @@
 // - two tests of a case share a name, so the summary could not tell them apart;
 // - a quarantine entry is stale, once the run has every record of its cell.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
+import { caseOfFile } from "../harness.ts";
 import type { HarnessContext } from "../harness.ts";
 import type { UfLayerMeta } from "../layers.ts";
 import {
@@ -38,6 +39,7 @@ interface ReportedModule {
 /** The part of a Vitest project the reporter reads. */
 interface ReportedProject {
   name: string;
+  config: { root: string; include: string[] };
   getProvidedContext(): { ufHarness?: HarnessContext; ufOnly?: string[] };
 }
 
@@ -297,11 +299,10 @@ export function readPartialMatrices(reportsDir: string): Map<string, PartialMatr
  * What this run re-judged of each project it ran: the targets it recorded there, as a run of
  * some targets (`UF_TARGETS`) records only theirs, and only some cases where the run added the
  * project for the cases that name its target as their own reference (ADR-0057). The SSR
- * project is told those cases (`ufOnly`), and the browser project, which only runs their specs,
- * is added with it, so it takes its SSR sibling's list: both hold even when a spec failed to
- * load and the project recorded nothing. Without a list, a project that recorded only cases
- * that name its target as their reference re-judged those, and one that recorded nothing
- * re-judged all of it.
+ * project is told those cases (`ufOnly`), and the browser project includes their specs alone.
+ * Both come from the project itself, so they hold when a spec failed to load and the project
+ * recorded nothing, whichever other projects the run selected. A project that recorded nothing
+ * and names no cases re-judged all of it.
  */
 function scopesOf(
   projects: readonly ReportedProject[],
@@ -309,25 +310,37 @@ function scopesOf(
   harness: HarnessContext | undefined,
 ): Map<string, ProjectScope> {
   const scopes = new Map<string, ProjectScope>();
-  const lists = new Map(
-    projects.map((project) => [project.name, project.getProvidedContext().ufOnly]),
-  );
   for (const project of projects) {
-    const own = records
-      .filter((entry) => entry.project === project.name)
-      .map((entry) => entry.record);
-    const targets = new Set(own.map((record) => record.target));
-    const cases = new Set(own.map((record) => record.case));
-    const [target] = targets;
-    const only = lists.get(project.name) ?? lists.get(project.name.replace(/^browser:/, "ssr:"));
-    const ownReference =
-      targets.size === 1 && [...cases].every((id) => harness?.cases[id]?.reference === target);
+    const targets = new Set(
+      records.filter((entry) => entry.project === project.name).map((entry) => entry.record.target),
+    );
+    const cases = project.getProvidedContext().ufOnly ?? includedCases(project, harness);
     scopes.set(project.name, {
       ...(targets.size ? { targets } : {}),
-      ...(only ? { cases: new Set(only) } : ownReference ? { cases } : {}),
+      ...(cases ? { cases: new Set(cases) } : {}),
     });
   }
   return scopes;
+}
+
+/**
+ * The cases whose specs a project includes file by file, or none when it includes a pattern or a
+ * file outside every case: the harness lists the specs of a browser project it adds for some
+ * cases alone, and gives every other project a pattern or a harness file.
+ */
+function includedCases(
+  project: ReportedProject,
+  harness: HarnessContext | undefined,
+): string[] | undefined {
+  const { root, include } = project.config;
+  if (!harness || !include.length || include.some((entry) => /[*?[\]{}!]/.test(entry))) {
+    return undefined;
+  }
+  try {
+    return include.map((entry) => caseOfFile(resolve(root, entry), harness));
+  } catch {
+    return undefined;
+  }
 }
 
 /**
