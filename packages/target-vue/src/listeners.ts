@@ -10,6 +10,7 @@ import {
   functionBodyText,
   functionText,
   handlerText,
+  NameScope,
   parametersText,
   parseExpression,
   parseStatementsSource,
@@ -55,14 +56,19 @@ export function planListeners(
   walk(component.render, {
     enter(node) {
       if (node.kind !== "Element") return;
-      const write = fieldWrite(node, component, rules.template);
+      const captures = node.attributes.some(
+        (attribute) =>
+          attribute.kind === "Event" && attribute.capture && attribute.event === "input",
+      );
+      const write = captures ? fieldWrite(node, component, names, rules.script) : undefined;
       for (const attribute of node.attributes) {
         if (attribute.kind !== "Event") continue;
-        const then = attribute.capture && attribute.event === "input" ? write : undefined;
+        const then = attribute.capture && attribute.event === "input" ? write?.call : undefined;
         const planned = listener(attribute, component, names, rules, then);
         attributes.set(attribute, planned.attribute);
         if (planned.function !== undefined) functions.push(planned.function);
       }
+      if (write !== undefined) functions.push(write.function);
     },
   });
   return { attributes, functions };
@@ -153,27 +159,59 @@ function listener(
 }
 
 /**
- * What a capture listener of a text field's `input` runs after its handler: the field's
- * `v-model` write. `v-model` writes the field from its own `input` listener, which runs after
- * the capture one, and Vue renders in between when the handler writes state: the render puts
- * the model's old text back into the field, and `v-model` then writes that. Writing the model
- * first leaves the render nothing to put back, and `v-model`'s write the same text. A `lazy`
- * field writes on `change`, and a number field writes what Vue casts, which this leaves to
- * `v-model`.
+ * What a capture listener of a field's `input` runs after its handler: the field's `v-model`
+ * write, as a script function. `v-model` writes the field from its own `input` listener, which
+ * runs after the capture one, and Vue renders in between when the handler writes state: the
+ * render puts the model's old value back into the field, and `v-model` then writes that. Writing
+ * the model first leaves the render nothing to put back, and `v-model`'s write the same value.
+ * The function writes what Vue's `vModelText` writes: nothing while an input method composes,
+ * the text trimmed for `.trim`, and cast as Vue's `looseToNumber` casts it for `.number`, a
+ * `type="number"` field and a range (whose `v-model` takes `.number`, `../codegen` `vue.ts`).
+ * `vue` exports no `looseToNumber`, so the cast is written in place. A `lazy` field writes on
+ * `change`, which this leaves to `v-model`.
  */
 function fieldWrite(
   element: ElementNode,
   component: UfComponent,
+  names: VueNames,
   rules: RewriteRules,
-): string | undefined {
+): { call: string; function: string } | undefined {
   const model = element.attributes.find(
     (attribute): attribute is ModelAttribute => attribute.kind === "Model",
   );
-  if (model === undefined || model.lazy || model.number) return undefined;
-  if (model.control !== "text" && model.control !== "textarea") return undefined;
-  const field = model.control === "text" ? "HTMLInputElement" : "HTMLTextAreaElement";
-  const text = `($event.target as ${field}).value${model.trim ? ".trim()" : ""}`;
-  return `${rewriteCode(model.value, component, rules, "client")} = ${text}`;
+  if (model === undefined || model.lazy) return undefined;
+  if (model.control !== "text" && model.control !== "textarea" && model.control !== "number") {
+    return undefined;
+  }
+  const reference = model.value.refs.find((each) => each.kind === "Binding");
+  const bound = reference ? bindingOf(component, reference.binding).name : "model";
+  const name = names.scope.claim(`write${bound.charAt(0).toUpperCase()}${bound.slice(1)}`);
+  const type = model.control === "textarea" ? "HTMLTextAreaElement" : "HTMLInputElement";
+  const target = rewriteCode(model.value, component, rules, "client");
+  // Its locals are named apart from the model it writes, which a local `text` would shadow.
+  const locals = new NameScope(codeNames(target));
+  const [event, field, text, number] = ["event", "field", "text", "number"].map((each) =>
+    locals.claim(each),
+  );
+  const value = `${field}.value${model.trim ? ".trim()" : ""}`;
+  const write =
+    model.number || model.control === "number"
+      ? [
+          `  const ${text} = ${value};`,
+          `  const ${number} = Number.parseFloat(${text});`,
+          `  ${target} = (Number.isNaN(${number}) ? ${text} : ${number}) as typeof ${target};`,
+        ]
+      : [`  ${target} = ${value};`];
+  return {
+    call: `${name}($event)`,
+    function: [
+      `function ${name}(${event}: ${vueEventInterface("input")}): void {`,
+      `  const ${field} = ${event}.target as ${type} & { composing?: boolean };`,
+      `  if (${field}.composing) return;`,
+      ...write,
+      "}",
+    ].join("\n"),
+  };
 }
 
 /**

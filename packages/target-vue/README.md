@@ -89,10 +89,14 @@ target):
     (`@click.stop="record('stopped')"`, `@submit.prevent`);
   - any other handler moves to a script function the template names, its unannotated event
     parameter typed as `@vue/runtime-dom` types the event;
-  - a capture listener of a text field's `input` also writes the field's `v-model`, after its
-    handler: `@input.capture="seen = text; text = ($event.target as HTMLInputElement).value"`.
-    `v-model`'s own listener runs after it, and Vue renders in between when the handler writes
-    state, which would put the old text back;
+  - a capture listener of a field's `input` also writes the field's `v-model`, after its
+    handler: `@input.capture="seen = text; writeText($event)"`. `v-model`'s own listener runs
+    after it, and Vue renders in between when the handler writes state, which would put the old
+    value back. `writeText` writes what `vModelText` writes, for a text field, a `<textarea>`,
+    `type="number"`, a range and `v-model.number`: nothing while an input method composes, the
+    text trimmed for `.trim`, and cast as `looseToNumber` casts it where Vue casts. A capture
+    listener on an ancestor, and a `<select>` or a checkbox beside a `change` capture listener,
+    are not covered;
 - attributes in `vue/attributes-order`: `ref` with `key`, listeners last.
 
 ## Capabilities

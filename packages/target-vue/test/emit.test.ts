@@ -784,6 +784,43 @@ export default function Log() {
     );
   });
 
+  it("writes a field's model after a capture listener of its input, as `v-model` writes it", async () => {
+    const source = `
+import { ref } from "unframework";
+
+export default function Amount() {
+  const text = ref(1);
+  const changes = ref(0);
+  return <input type="number" aria-label="Amount" v-model={text.value} onInputCapture={() => changes.value++} />;
+}`;
+    expect(await emitSource(source)).toBe(
+      sfc(
+        [
+          'import { ref } from "vue";',
+          "",
+          "const text = ref(1);",
+          "const changes = ref(0);",
+          "",
+          "function writeText(event: InputEvent): void {",
+          "  const field = event.target as HTMLInputElement & { composing?: boolean };",
+          "  if (field.composing) return;",
+          "  const text_1 = field.value;",
+          "  const number = Number.parseFloat(text_1);",
+          "  text.value = (Number.isNaN(number) ? text_1 : number) as typeof text.value;",
+          "}",
+        ],
+        [
+          "<input",
+          '  v-model="text"',
+          '  type="number"',
+          '  aria-label="Amount"',
+          '  @input.capture="changes++; writeText($event)"',
+          "/>",
+        ],
+      ),
+    );
+  });
+
   it("declares the events without a binding when nothing calls `emit`", async () => {
     const source = `
 import { defineEmits } from "unframework";

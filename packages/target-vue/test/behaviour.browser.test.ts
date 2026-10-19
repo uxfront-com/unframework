@@ -219,14 +219,55 @@ describe("listeners (Listeners)", () => {
 });
 
 describe("a field's model beside a capture listener (CaptureModel)", () => {
+  const field = (label: string) =>
+    container.querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
+  const numbers = () => container.querySelectorAll("p")[1]!.textContent;
+
   it("writes the model after the capture listener, which reads the text from before", async () => {
     await render("CaptureModel", []);
-    await userEvent.type(container.querySelector("input")!, "ab");
+    await userEvent.type(field("Text"), "ab");
     await mounted!.settle();
     expect(text()).toBe("ab|a|2|");
-    await userEvent.type(container.querySelector("textarea")!, " c");
+    await userEvent.type(field("Note"), " c");
     await mounted!.settle();
     expect(text()).toBe("ab|a|4|c");
+  });
+
+  it("writes a number, a range and a `.number` field cast as Vue casts them", async () => {
+    await render("CaptureModel", []);
+    await userEvent.type(field("Amount"), "2");
+    await userEvent.type(field("Size"), "2");
+    field("Level").focus();
+    await userEvent.keyboard("{ArrowRight}");
+    await mounted!.settle();
+    expect(numbers()).toBe("[12,6,12]|3");
+    expect([field("Amount").value, field("Level").value, field("Size").value]).toEqual([
+      "12",
+      "6",
+      "12",
+    ]);
+    await userEvent.clear(field("Amount"));
+    await userEvent.type(field("Amount"), "7");
+    await userEvent.type(field("Size"), "px");
+    await mounted!.settle();
+    // An empty number field is the text Vue writes; a text with a leading number is the number.
+    expect(numbers()).toBe("[7,6,12]|7");
+    expect(field("Size").value).toBe("12px");
+  });
+
+  it("writes nothing while an input method composes, as Vue's own listener", async () => {
+    await render("CaptureModel", []);
+    await userEvent.type(field("Text"), "ab");
+    const input = field("Text");
+    input.dispatchEvent(new CompositionEvent("compositionstart"));
+    input.value = "abか";
+    input.dispatchEvent(new Event("input"));
+    await mounted!.settle();
+    expect(text()).toBe("ab|ab|3|");
+    expect(input.value).toBe("abか");
+    input.dispatchEvent(new CompositionEvent("compositionend"));
+    await mounted!.settle();
+    expect(text()).toBe("abか|ab|4|");
   });
 });
 
