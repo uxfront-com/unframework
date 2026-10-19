@@ -118,6 +118,8 @@ describe("react frameworkCompile (L3)", () => {
     );
   }, 60_000);
 
+  // About 1 s alone (the slowest of 5 runs in a 4-CPU container), but CI's `Unit tests` job,
+  // which runs two packages' tests at once, took it past Vitest's 5 s default.
   it("compiles the shapes M2 emits, with no warning", async () => {
     const files = Object.entries(M2_SHAPES).map(([name, contents]) => ({
       path: join(packageDir, ".uf-tmp", "m2", name),
@@ -127,7 +129,7 @@ describe("react frameworkCompile (L3)", () => {
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file.path, clean])),
     );
-  });
+  }, 60_000);
 
   // What React Compiler 1.0 bails out on in code the client-code subset allows (ADR-0046): the
   // target writes a logical assignment out and turns a captured variable's update into `+= 1`.
