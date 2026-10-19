@@ -1,0 +1,36 @@
+[
+  {
+    "code": "UF4001",
+    "severity": "info",
+    "message": "The astro target does not support interactivity: Astro components render on the server only, and each render is a new instance: event handlers, template refs, watchers and lifecycle hooks never run, and state keeps its initial value.",
+    "file": "diagnostics/undefined-model-binding/Search.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 51,
+      "offset": 411
+    },
+    "end": {
+      "line": 8,
+      "column": 72,
+      "offset": 432
+    },
+    "target": "astro"
+  },
+  {
+    "code": "UF3050",
+    "severity": "error",
+    "message": "SearchField's model `query` can be `undefined`, as its type `string | undefined` says, and `term.value` cannot hold it: the typed targets write the model's changes back with that type, and would not compile.",
+    "file": "diagnostics/undefined-model-binding/Search.uf.tsx",
+    "start": {
+      "line": 15,
+      "column": 20,
+      "offset": 563
+    },
+    "end": {
+      "line": 15,
+      "column": 46,
+      "offset": 589
+    },
+    "help": "Give `query` a `default` or `required: true` in SearchField, or let the ref hold `undefined`."
+  }
+]

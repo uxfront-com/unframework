@@ -5,14 +5,14 @@
     "message": "The slot `default` is required: every slot is optional, since a parent may leave it empty and the fallback renders.",
     "file": "diagnostics/invalid-slots/Dialog.uf.tsx",
     "start": {
-      "line": 7,
+      "line": 8,
       "column": 31,
-      "offset": 367
+      "offset": 453
     },
     "end": {
-      "line": 7,
+      "line": 8,
       "column": 38,
-      "offset": 374
+      "offset": 460
     },
     "help": "Write `default?(…)`."
   },
@@ -22,15 +22,54 @@
     "message": "The slot `title` is named like the prop `title`: React, Solid, Qwik and Astro pass a slot as a prop, so the two would collide.",
     "file": "diagnostics/invalid-slots/Dialog.uf.tsx",
     "start": {
-      "line": 7,
+      "line": 8,
       "column": 51,
-      "offset": 387
+      "offset": 473
     },
     "end": {
-      "line": 7,
+      "line": 8,
       "column": 56,
-      "offset": 392
+      "offset": 478
     },
     "help": "Rename the slot."
+  },
+  {
+    "code": "UF2029",
+    "severity": "error",
+    "message": "The slot `children` is named like the prop React, Svelte and Solid pass the default slot as, so the two would collide.",
+    "file": "diagnostics/invalid-slots/Dialog.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 70,
+      "offset": 492
+    },
+    "end": {
+      "line": 8,
+      "column": 78,
+      "offset": 500
+    },
+    "help": "Rename the slot, such as to `content`.",
+    "fixes": [
+      {
+        "title": "Rename the slot `children` to `content`",
+        "confidence": "likely",
+        "edits": [
+          {
+            "span": {
+              "start": 492,
+              "end": 500
+            },
+            "text": "content"
+          },
+          {
+            "span": {
+              "start": 620,
+              "end": 628
+            },
+            "text": "content"
+          }
+        ]
+      }
+    ]
   }
 ]

@@ -1,0 +1,455 @@
+{
+  "irVersion": 1,
+  "file": "slots/shared-names/Chart.uf.tsx",
+  "components": [
+    {
+      "name": "Chart",
+      "span": {
+        "start": 39,
+        "end": 467
+      },
+      "props": [
+        {
+          "name": "series",
+          "optional": false,
+          "type": {
+            "code": "string[]",
+            "span": {
+              "start": 91,
+              "end": 99
+            }
+          },
+          "binding": "series@71",
+          "span": {
+            "start": 83,
+            "end": 99
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ series: string[] }",
+          "span": {
+            "start": 81,
+            "end": 101
+          }
+        },
+        "span": {
+          "start": 69,
+          "end": 101
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "series@71",
+          "name": "series",
+          "kind": "prop",
+          "span": {
+            "start": 71,
+            "end": 77
+          }
+        },
+        {
+          "id": "item@203",
+          "name": "item",
+          "kind": "slotScope",
+          "span": {
+            "start": 203,
+            "end": 207
+          }
+        },
+        {
+          "id": "item@263",
+          "name": "item",
+          "kind": "slotScope",
+          "span": {
+            "start": 263,
+            "end": 267
+          }
+        },
+        {
+          "id": "item@386",
+          "name": "item",
+          "kind": "slotScope",
+          "span": {
+            "start": 386,
+            "end": 390
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Legend",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "items",
+                "value": {
+                  "code": "series",
+                  "span": {
+                    "start": 147,
+                    "end": 153
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "series@71",
+                      "span": {
+                        "start": 147,
+                        "end": 153
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 140,
+                  "end": 154
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Series\"",
+                  "span": {
+                    "start": 161,
+                    "end": 169
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 155,
+                  "end": 169
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "swatch",
+                "parameter": {
+                  "pattern": {
+                    "code": "{ item }",
+                    "names": [
+                      "item"
+                    ],
+                    "span": {
+                      "start": 201,
+                      "end": 209
+                    }
+                  },
+                  "span": {
+                    "start": 201,
+                    "end": 209
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "b",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "item.slice(0, 1)",
+                          "span": {
+                            "start": 218,
+                            "end": 234
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "item@203",
+                              "span": {
+                                "start": 218,
+                                "end": 222
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 217,
+                          "end": 235
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 214,
+                      "end": 239
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 192,
+                  "end": 239
+                }
+              },
+              {
+                "slot": "caption",
+                "parameter": {
+                  "pattern": {
+                    "code": "{ item }",
+                    "names": [
+                      "item"
+                    ],
+                    "span": {
+                      "start": 261,
+                      "end": 269
+                    }
+                  },
+                  "span": {
+                    "start": 261,
+                    "end": 269
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "i",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "item",
+                          "span": {
+                            "start": 278,
+                            "end": 282
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "item@263",
+                              "span": {
+                                "start": 278,
+                                "end": 282
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 277,
+                          "end": 283
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 274,
+                      "end": 287
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 251,
+                  "end": 287
+                }
+              }
+            ],
+            "span": {
+              "start": 132,
+              "end": 315
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Legend",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "items",
+                "value": {
+                  "code": "series",
+                  "span": {
+                    "start": 337,
+                    "end": 343
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "series@71",
+                      "span": {
+                        "start": 337,
+                        "end": 343
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 330,
+                  "end": 344
+                }
+              },
+              {
+                "kind": "Prop",
+                "name": "label",
+                "value": {
+                  "code": "\"Captions\"",
+                  "span": {
+                    "start": 351,
+                    "end": 361
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 345,
+                  "end": 361
+                }
+              }
+            ],
+            "fills": [
+              {
+                "slot": "caption",
+                "parameter": {
+                  "pattern": {
+                    "code": "{ item }",
+                    "names": [
+                      "item"
+                    ],
+                    "span": {
+                      "start": 384,
+                      "end": 392
+                    }
+                  },
+                  "span": {
+                    "start": 384,
+                    "end": 392
+                  }
+                },
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "span",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "kind": "Interpolation",
+                        "value": {
+                          "code": "item.toUpperCase()",
+                          "span": {
+                            "start": 404,
+                            "end": 422
+                          },
+                          "refs": [
+                            {
+                              "kind": "Binding",
+                              "binding": "item@386",
+                              "span": {
+                                "start": 404,
+                                "end": 408
+                              }
+                            }
+                          ]
+                        },
+                        "span": {
+                          "start": 403,
+                          "end": 423
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 397,
+                      "end": 430
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 374,
+                  "end": 430
+                }
+              }
+            ],
+            "span": {
+              "start": 322,
+              "end": 449
+            }
+          }
+        ],
+        "span": {
+          "start": 120,
+          "end": 460
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Chart",
+      "span": {
+        "start": 39,
+        "end": 467
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Legend.uf.tsx",
+      "file": "Legend.uf.tsx",
+      "api": {
+        "file": "Legend.uf.tsx",
+        "components": [
+          {
+            "name": "Legend",
+            "export": "default",
+            "props": [
+              {
+                "name": "items",
+                "optional": false,
+                "type": "string[]"
+              },
+              {
+                "name": "label",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "swatch",
+                "optional": true,
+                "props": "{ item: string }"
+              },
+              {
+                "name": "caption",
+                "optional": true,
+                "props": "{ item: string }"
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "ul"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Legend",
+          "span": {
+            "start": 7,
+            "end": 13
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 37
+      }
+    }
+  ]
+}

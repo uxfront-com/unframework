@@ -1,0 +1,100 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/undefined-model-binding/Search.uf.tsx",
+  "components": [
+    {
+      "name": "SearchField",
+      "span": {
+        "start": 290,
+        "end": 438
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "query@323",
+          "name": "query",
+          "kind": "model",
+          "span": {
+            "start": 323,
+            "end": 328
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Model",
+          "binding": "query@323",
+          "name": "query",
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 343,
+              "end": 349
+            }
+          },
+          "span": {
+            "start": 317,
+            "end": 360
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "input",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "type",
+            "value": "search",
+            "span": {
+              "start": 377,
+              "end": 390
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Search",
+            "span": {
+              "start": 391,
+              "end": 410
+            }
+          },
+          {
+            "kind": "Model",
+            "value": {
+              "code": "query.value",
+              "span": {
+                "start": 420,
+                "end": 431
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "query@323",
+                  "span": {
+                    "start": 420,
+                    "end": 431
+                  }
+                }
+              ]
+            },
+            "control": "text",
+            "span": {
+              "start": 411,
+              "end": 432
+            }
+          }
+        ],
+        "children": [],
+        "span": {
+          "start": 370,
+          "end": 435
+        }
+      }
+    }
+  ],
+  "exports": [],
+  "types": []
+}

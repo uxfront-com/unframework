@@ -1,17 +1,27 @@
 error[UF2029]: The slot `default` is required: every slot is optional, since a parent may leave it empty and the fallback renders.
- --> diagnostics/invalid-slots/Dialog.uf.tsx:7:31
+ --> diagnostics/invalid-slots/Dialog.uf.tsx:8:31
   |
-7 |   const slots = defineSlots<{ default(): Element; title?(): Element }>();
+8 |   const slots = defineSlots<{ default(): Element; title?(): Element; children?(): Element }>();
   |                               ^^^^^^^
   |
   = help: Write `default?(…)`.
   = see: https://unframework.dev/diagnostics/UF2029
 
 error[UF2029]: The slot `title` is named like the prop `title`: React, Solid, Qwik and Astro pass a slot as a prop, so the two would collide.
- --> diagnostics/invalid-slots/Dialog.uf.tsx:7:51
+ --> diagnostics/invalid-slots/Dialog.uf.tsx:8:51
   |
-7 |   const slots = defineSlots<{ default(): Element; title?(): Element }>();
+8 |   const slots = defineSlots<{ default(): Element; title?(): Element; children?(): Element }>();
   |                                                   ^^^^^
   |
   = help: Rename the slot.
+  = see: https://unframework.dev/diagnostics/UF2029
+
+error[UF2029]: The slot `children` is named like the prop React, Svelte and Solid pass the default slot as, so the two would collide.
+ --> diagnostics/invalid-slots/Dialog.uf.tsx:8:70
+  |
+8 |   const slots = defineSlots<{ default(): Element; title?(): Element; children?(): Element }>();
+  |                                                                      ^^^^^^^^
+  |
+  = help: Rename the slot, such as to `content`.
+  = fix (likely): Rename the slot `children` to `content`
   = see: https://unframework.dev/diagnostics/UF2029
