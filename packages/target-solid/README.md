@@ -360,12 +360,17 @@ Everything a parent passes is a prop, read through the props object (`src/compos
   mark: its `ref` selects them, `ref={(select) => selectOptions(select, size)}`, once they are
   rendered, as the state changes, and as options come and go (a `MutationObserver`), as Vue's
   `vModelSelect` does in the browser.
+- Where no option of a `<select>` holds its state, none is selected (`selectedIndex` -1), as
+  Vue's `vModelSelect` leaves it, where the browser would select the first. `selectOptions` sets
+  it, and a `<select>` that marks its options sets it from its `ref` once the marks render:
+  `ref={(select) => createEffect(() => { if (select.value !== String(size())) select.selectedIndex = -1; })}`.
 - A helper that needs the element (`modelText`, `selectOptions`) is called from the element's own
   `ref` callback where it has one (a template ref, an added listener), so an element has one
   `ref`: `ref={(element) => { box = element; …; modelText(name, setName, { trim: true })(element); }}`.
 - `modelText` reproduces Vue's `vModelText`: the field's initial value is its `value` prop, which
   the server renders, and the `ref` it returns writes what the user types, trimmed or cast as `looseToNumber`
-  casts it, on `input` or, lazy, on `change`, and shows each new value of the state (no text for
+  casts it, on `input` or, lazy, on `change`, shows that text, trimmed or cast, once the field
+  changes (`12.5kg` becomes `12.5`), and shows each new value of the state (no text for
   `null` or `undefined`), except
   where the text already reads as it, or while the user types in a trimmed field what it reads
   as trimmed.

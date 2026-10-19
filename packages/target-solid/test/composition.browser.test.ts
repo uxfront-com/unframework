@@ -101,3 +101,29 @@ it("selects the option a child component renders after the mount", async () => {
   await new Promise((resolve) => setTimeout(resolve));
   expect([select.value, select.selectedIndex]).toEqual(["y", 1]);
 });
+
+it("shows a number field's text as its number once it changes, as Vue's vModelText", async () => {
+  await mount("NumberText", {});
+  const field = container.querySelector("input")!;
+  field.value = "12.5kg";
+  field.dispatchEvent(new Event("input"));
+  expect(field.value).toBe("12.5kg");
+  field.dispatchEvent(new Event("change"));
+  expect(field.value).toBe("12.5");
+});
+
+it("selects no option where the state holds none of the marked ones, as Vue's vModelSelect", async () => {
+  await mount("UnmatchedSelect", {});
+  const select = container.querySelector("select")!;
+  const [m, xs] = container.querySelectorAll("button");
+  expect(select.selectedIndex).toBe(-1);
+  m!.click();
+  expect(select.selectedIndex).toBe(1);
+  xs!.click();
+  expect(select.selectedIndex).toBe(-1);
+});
+
+it("selects no option where the state holds none of a child component's", async () => {
+  await mount("SelectRows", { values: ["a", "b"] });
+  expect(container.querySelector("select")!.selectedIndex).toBe(-1);
+});

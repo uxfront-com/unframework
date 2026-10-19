@@ -1,4 +1,4 @@
-import { type JSX, createSignal } from "solid-js";
+import { type JSX, createEffect, createSignal } from "solid-js";
 
 export default function SizePicker(props: { class?: string; style?: JSX.CSSProperties }) {
   const [size, setSize] = createSignal("m");
@@ -7,7 +7,14 @@ export default function SizePicker(props: { class?: string; style?: JSX.CSSPrope
     <section aria-label="Size" class={props.class} style={props.style}>
       <label>
         Size{" "}
-        <select onChange={(event) => setSize(event.currentTarget.value)}>
+        <select
+          onChange={(event) => setSize(event.currentTarget.value)}
+          ref={(select) =>
+            createEffect(() => {
+              if (select.value !== String(size())) select.selectedIndex = -1;
+            })
+          }
+        >
           <option value="s" selected={size() === "s"}>
             Small
           </option>

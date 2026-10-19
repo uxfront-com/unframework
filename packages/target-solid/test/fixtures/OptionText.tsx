@@ -1,4 +1,4 @@
-import { type JSX, createSignal } from "solid-js";
+import { type JSX, createEffect, createSignal } from "solid-js";
 
 export default function OptionText(
   props: { unit: string } & { class?: string; style?: JSX.CSSProperties },
@@ -9,6 +9,11 @@ export default function OptionText(
     <select
       aria-label="Amount"
       onChange={(event) => setAmount(event.currentTarget.value)}
+      ref={(select) =>
+        createEffect(() => {
+          if (select.value !== String(amount())) select.selectedIndex = -1;
+        })
+      }
       class={props.class}
       style={props.style}
     >

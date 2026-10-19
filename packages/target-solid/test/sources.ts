@@ -1570,6 +1570,36 @@ export default function NullableArea() {
   return <textarea aria-label="Note" v-model_trim={note.value} />;
 }
 `,
+  // A number field that recasts its text once it changes, and a `<select>` whose state matches
+  // none of its options, as Vue's `vModelText` and `vModelSelect` do
+  // (test/composition.browser.test.ts mounts both).
+  NumberText: `import { ref } from "unframework";
+
+export default function NumberText() {
+  const weight = ref(1);
+  return <input aria-label="Weight" v-model_number={weight.value} />;
+}
+`,
+  UnmatchedSelect: `import { ref } from "unframework";
+
+export default function UnmatchedSelect() {
+  const size = ref("xl");
+  return (
+    <form>
+      <select aria-label="Size" v-model={size.value}>
+        <option value="s">S</option>
+        <option value="m">M</option>
+      </select>
+      <button type="button" onClick={() => (size.value = "m")}>
+        M
+      </button>
+      <button type="button" onClick={() => (size.value = "xs")}>
+        XS
+      </button>
+    </form>
+  );
+}
+`,
   // A template ref beside a `v-model` that needs the element's `ref` too: one `ref` callback.
   TemplateRefModel: `import { ref, useTemplateRef } from "unframework";
 
@@ -1607,6 +1637,24 @@ export default function RefSelect({ values }: { values: string[] }) {
 
 function SelectRow({ value }: { value: string }) {
   return <option value={value}>{value}</option>;
+}
+`,
+  RefMarkedSelect: `import { ref, useTemplateRef } from "unframework";
+
+export default function RefMarkedSelect() {
+  const field = useTemplateRef<HTMLSelectElement>();
+  const size = ref("xl");
+  return (
+    <form>
+      <select aria-label="Size" ref={field} v-model={size.value}>
+        <option value="s">S</option>
+        <option value="m">M</option>
+      </select>
+      <button type="button" onClick={() => field.value?.focus()}>
+        Pick
+      </button>
+    </form>
+  );
 }
 `,
 };

@@ -2,7 +2,8 @@
 // the listener that writes it back, Vue's events for each control.
 //
 // - A text field: `value` and `onInput`; a `<textarea>`: its value in the browser and its text
-//   on the server, and `onInput`; a `<select>`: each option's `selected` (src/render.ts), and `onChange`.
+//   on the server, and `onInput`; a `<select>`: each option's `selected` (src/render.ts), and `onChange`;
+//   where no option holds the state, none is selected, as Vue's `vModelSelect` leaves it.
 // - A checkbox: `checked` and `onChange`; a radio: `checked={plan() === "monthly"}`, and
 //   `onChange` writes its value.
 // - Checkboxes into an array: `checked={drinks().includes("tea")}`, and `onChange` writes
@@ -162,6 +163,20 @@ export function modelAttribute(
       ),
     ];
   };
+  // Marked options none of which holds the state leave none selected, from the element's own
+  // `ref` callback where it has one.
+  const unmatched = () => {
+    if (carried || unmarkedOptions(element.children)) return [];
+    const select = helpers.select();
+    return [
+      prop(
+        "ref",
+        context.placeholders.expression(
+          `(${select}) => ${noOptionCall(select, binding.name, helpers)}`,
+        ),
+      ),
+    ];
+  };
   switch (attribute.control) {
     case "text":
       return [prop("value", text(value())), prop("onInput", listener(set(target("value"))))];
@@ -170,7 +185,7 @@ export function modelAttribute(
     case "select":
       // Each option is `selected` where it holds the state's value (src/render.ts): Solid's
       // server writes a `<select>`'s `value` as an attribute.
-      return [prop("onChange", listener(set(target("value")))), ...selection()];
+      return [prop("onChange", listener(set(target("value")))), ...selection(), ...unmatched()];
     case "checkbox":
       return [prop("checked", value()), prop("onChange", listener(set(target("checked"))))];
     case "radio":
@@ -220,8 +235,9 @@ export function modelAttribute(
 
 /**
  * What a `v-model` does in its element's `ref`, as a statement of the element's own `ref` callback
- * (src/listeners.ts) given its parameter, where the element has one: `modelText`'s binding, or
- * `selectOptions`' selection; none for any other `v-model`.
+ * (src/listeners.ts) given its parameter, where the element has one: `modelText`'s binding,
+ * `selectOptions`' selection, or no option selected where no marked one holds the state; none
+ * for any other `v-model`.
  */
 export function modelRef(
   element: ElementNode,
@@ -245,7 +261,21 @@ export function modelRef(
   ) {
     return (parameter) => `${helpers.selectOptions()}(${parameter}, ${name});`;
   }
+  if (attribute.control === "select") {
+    return (parameter) => `${noOptionCall(parameter, name, helpers)};`;
+  }
   return undefined;
+}
+
+/**
+ * A single `<select>` whose marked options (src/render.ts) none holds the state selects none, as
+ * Vue's `vModelSelect` sets `selectedIndex` -1, where the browser would select the first. The
+ * effect runs after the marks render, and an option's `value` is its mark's value as a string.
+ */
+function noOptionCall(select: string, name: string, helpers: ModelHelpers): string {
+  return `${helpers.solid("createEffect")}(() => {
+    if (${select}.value !== String(${name}())) ${select}.selectedIndex = -1;
+  })`;
 }
 
 /** `modelText(name, setName, { trim: true })`: the `ref` callback of a field's `v-model`. */
@@ -309,8 +339,8 @@ function own(element: ElementNode, context: JsxContext): AstExpression {
  * The inline `modelText` helper (emulated `model-modifiers`, ADR-0054): Vue's `vModelText`, as a
  * field's `ref`. The field's initial value is its `value` prop, which the server renders; the
  * helper writes what the user types, trimmed or cast as Vue's `looseToNumber` casts it, on
- * `input` or, when lazy, on `change`, and a trimmed field shows its trimmed text once it
- * changes; it shows each new value of the state (no text for `null` or `undefined`), except
+ * `input` or, when lazy, on `change`, and a trimmed or number field shows that text, trimmed
+ * or cast, once it changes; it shows each new value of the state (no text for `null` or `undefined`), except
  * where the text already reads as it, or while the user is typing in a trimmed field what it
  * reads as trimmed.
  */
@@ -330,9 +360,10 @@ function ${name}<T extends string | number | null | undefined>(
       const text = modifiers.trim ? field.value.trim() : field.value;
       setValue((modifiers.number ? cast(text) : text) as T);
     });
-    if (modifiers.trim) {
+    if (modifiers.trim || modifiers.number) {
       field.addEventListener("change", () => {
-        field.value = field.value.trim();
+        const text = modifiers.trim ? field.value.trim() : field.value;
+        field.value = String(modifiers.number ? cast(text) : text);
       });
     }
     ${createRenderEffect}(() => {
@@ -367,25 +398,27 @@ function ${name}(select: HTMLSelectElement): string[] {
 /**
  * The inline `selectOptions` helper (emulated `model-array` and `two-way-binding` where the
  * options are another component's): each option selected where it holds the state, or where
- * the state's array holds it, as Vue's `vModelSelect` sets them, once they are rendered, as the
- * state changes, and as options come and go or change their value.
+ * the state's array holds it, and none where no option holds a single value (`selectedIndex`
+ * -1), as Vue's `vModelSelect` sets them, once they are rendered, as the state changes, and as
+ * options come and go or change their value.
  */
 function selectOptionsHelperCode(
   name: string,
   solid: { createEffect: string; onCleanup: string },
 ): string {
   return `/**
- * Selects a \`<select>\`'s options that hold \`value\`, or a value of it for an array: as the value
- * changes, and as options come and go.
+ * Selects a \`<select>\`'s options that hold \`value\`, or a value of it for an array, and none
+ * where none holds it: as the value changes, and as options come and go.
  */
 function ${name}(select: HTMLSelectElement, value: () => unknown): void {
   const choose = () => {
     const current = value();
-    for (const option of select.options) {
-      option.selected = Array.isArray(current)
-        ? current.includes(option.value)
-        : option.value === current;
+    if (!Array.isArray(current)) {
+      // \`selectedIndex\` -1 where no option holds it: unselecting each one selects the first.
+      select.selectedIndex = [...select.options].findIndex((option) => option.value === current);
+      return;
     }
+    for (const option of select.options) option.selected = current.includes(option.value);
   };
   ${solid.createEffect}(choose);
   const observer = new MutationObserver(choose);

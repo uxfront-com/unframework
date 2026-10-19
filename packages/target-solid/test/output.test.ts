@@ -208,6 +208,8 @@ describe("solid output where Solid needs a rewrite (src/render.ts, src/attribute
     "ForwardedSlot",
     "OptionText",
     "SelectRow",
+    "NumberText",
+    "UnmatchedSelect",
   ])("is test/fixtures/%s.tsx, which the browser test mounts", async (name) => {
     expect(await emitSource(SOURCES[name]!)).toBe(
       readFileSync(new URL(`./fixtures/${name}.tsx`, import.meta.url), "utf8"),
