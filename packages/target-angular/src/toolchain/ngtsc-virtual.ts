@@ -3,12 +3,14 @@
 // plugin compiles it with `NgtscProgram` over an in-memory host, before Analog sees it. Analog
 // then finds no decorators left and passes the module through (the Angular+Qwik ADR). A child
 // that a module imports is a virtual module too, so it is resolved and loaded first (ADR-0053).
+// The compile itself runs in a worker (ngtsc-worker.ts): Vitest serves every project's
+// transforms from one main thread, and a compile there would stall all of them while it runs.
 import { dirname, resolve } from "node:path";
+import { Worker } from "node:worker_threads";
 
 import type { Plugin } from "vite";
 
-import { createHost, diagnosticCode, formatDiagnostics, strictOptions } from "./ngtsc.ts";
-import type { AngularCompiler, CompilerOptions, Diagnostic, NgtscProgram } from "./tools.ts";
+import type { AngularCompiler } from "./tools.ts";
 
 /**
  * The Angular id scheme of the unframework plugin, not on disk: `<abs>/X.uf.tsx.ts` for a file's
@@ -24,127 +26,85 @@ const VIRTUAL_ID = /\.uf\.tsx(?:\.[^/?]+)?\.ts$/;
 const RELATIVE_IMPORT =
   /^\s*(?:(?:import|export)\b[^"';]*?\bfrom\s*|import\s*)["'](\.\.?\/[^"']+)["']/gm;
 /** An import of another component in generated code: `./Child.uf.tsx`. */
-const COMPONENT_IMPORT = /^\.\.?\/.*\.uf\.tsx$/;
+export const COMPONENT_IMPORT: RegExp = /^\.\.?\/.*\.uf\.tsx$/;
 
 /** What the unframework plugin exposes for reading the code it compiled. */
 export interface UnframeworkApi {
   getCompiled(id: string): string | undefined;
 }
 
+/** One compile, as the worker receives it. */
+export interface CompileRequest {
+  /** The plugin it comes from: each plugin's compiles reuse its own previous program. */
+  plugin: number;
+  id: string;
+  /**
+   * The module's source and the generated source of each virtual module it imports, directly or
+   * not, by id: the worker cannot ask the unframework plugin.
+   */
+  sources: [id: string, source: string][];
+  /** The virtual module each relative import among them resolved to, by `childKey`. */
+  children: [key: string, id: string][];
+}
+
+/** What the worker receives: a compile, or a plugin whose program it can drop. */
+export type WorkerRequest = (CompileRequest & { request: number }) | { release: number };
+
 /** The outcome of one compile: JavaScript and its source map, or what stopped it. */
-interface Compiled {
+export interface Compiled {
   code?: string;
   map?: string;
-  errors: Diagnostic[];
-  warnings: Diagnostic[];
+  /** The errors as ngc prints them, and their codes: none when it compiled. */
+  errors: string;
+  codes: string[];
+  warnings: string;
   /** The module's export names, for a module that has to stand in for a rejected one. */
   exports: string[];
 }
 
+/** What the worker replies to a compile: its outcome, or what it threw. */
+export type WorkerReply = { request: number } & ({ compiled: Compiled } | { failure: unknown });
+
 /**
  * Compiles `<abs>/X.uf.tsx.ts` ids with Angular's AOT compiler under the strict options L3
  * checks with, failing the module on any error (template type errors included) and passing
- * warnings to Vite. Compiles run one at a time, each reusing the previous program, so libraries
- * are analysed once.
+ * warnings to Vite. Compiles run one at a time in a worker, each reusing the previous program, so
+ * libraries are analysed once.
  */
 export function ngtscVirtual(compiler: AngularCompiler): Plugin {
-  const options: CompilerOptions = {
-    ...strictOptions(compiler),
-    noEmit: false,
-    declaration: false,
-    sourceMap: true,
-    inlineSources: true,
-    // AOT only: no TestBed or JIT metadata in what the browser runs.
-    supportTestBed: false,
-    supportJitMode: false,
-  };
+  const pluginId = nextPlugin++;
   let api: UnframeworkApi | undefined;
-  let previous: NgtscProgram | undefined;
   /** The virtual module each relative import of a virtual module resolved to, by importer. */
   const children = new Map<string, string>();
-  // NgtscProgram reuse is sequential: a program can be the previous one of a single successor.
+  // Compiles run in order, and each collects the sources it reads only once the one before it
+  // is done, when its host would have read them on this thread.
   let queue: Promise<unknown> = Promise.resolve();
 
-  async function compile(id: string, code: string): Promise<Compiled> {
-    const { ts } = compiler;
-    const contents = (fileName: string) =>
-      fileName === id ? code : VIRTUAL_ID.test(fileName) ? api!.getCompiled(fileName) : undefined;
-    const host = createHost(compiler, options, contents);
-    // `./Child.uf.tsx` in generated code means the child's generated Angular source, which is
-    // the virtual `<abs>/Child.uf.tsx.ts`, not the unframework source on disk. TypeScript asks
-    // `resolveModuleNameLiterals`; ngtsc's own module resolver asks `resolveModuleNames`.
-    // A child's output (`./field`) means the virtual module Vite resolved it to (ADR-0053).
-    const resolveOne = (
-      name: string,
-      containingFile: string,
-      settings: CompilerOptions,
-      redirect: unknown,
-    ) => {
-      const child = COMPONENT_IMPORT.test(name)
-        ? `${resolve(dirname(containingFile), name)}.ts`
-        : children.get(childKey(containingFile, name));
-      return child
-        ? {
-            resolvedModule: {
-              resolvedFileName: child,
-              extension: ts.Extension.Ts,
-              isExternalLibraryImport: false,
-            },
-          }
-        : ts.resolveModuleName(name, containingFile, settings, host, undefined, redirect);
-    };
-    host.resolveModuleNameLiterals = (literals, containingFile, redirect, settings) =>
-      literals.map(({ text }) => resolveOne(text, containingFile, settings, redirect));
-    host.resolveModuleNames = (names, containingFile, _reused, redirect, settings) =>
-      names.map((name) => resolveOne(name, containingFile, settings, redirect).resolvedModule);
-    const program = new compiler.cli.NgtscProgram([id], options, host, previous);
-    previous = program;
-    const tsProgram = program.getTsProgram();
-    const sourceFile = tsProgram.getSourceFile(id);
-    const isError = (diagnostic: Diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error;
-    const diagnostics = [
-      ...program.getTsOptionDiagnostics(),
-      ...program.getNgOptionDiagnostics(),
-      ...program.getTsSyntacticDiagnostics(),
-    ];
-    const compiled: Compiled = { errors: [], warnings: [], exports: [] };
-    if (!diagnostics.some(isError)) {
-      await program.compiler.analyzeAsync();
-      // This module's own type errors too: an import that does not resolve would otherwise
-      // compile against `any` and surface, if at all, as a misleading template error.
-      diagnostics.push(
-        ...program.getTsSemanticDiagnostics(sourceFile),
-        ...program.getNgStructuralDiagnostics(),
-        ...program.getNgSemanticDiagnostics(id),
-      );
+  function compile(id: string, code: string): Promise<Compiled> {
+    const sources = new Map([[id, code]]);
+    const resolved = new Map<string, string>();
+    // A Map iterates over the entries added while it iterates: each child's imports in turn.
+    for (const [file, text] of sources) {
+      for (const [, specifier = ""] of text.matchAll(RELATIVE_IMPORT)) {
+        const key = childKey(file, specifier);
+        const child = COMPONENT_IMPORT.test(specifier)
+          ? `${resolve(dirname(file), specifier)}.ts`
+          : children.get(key);
+        if (!child) continue;
+        if (!COMPONENT_IMPORT.test(specifier)) resolved.set(key, child);
+        const source = sources.has(child) ? undefined : api!.getCompiled(child);
+        if (source !== undefined) sources.set(child, source);
+      }
     }
-    if (!diagnostics.some(isError)) {
-      const { transformers } = program.compiler.prepareEmit();
-      const emitted = tsProgram.emit(
-        sourceFile,
-        (fileName, text) => {
-          if (fileName.endsWith(".map")) compiled.map = text;
-          else if (/\.[cm]?js$/.test(fileName)) compiled.code = text;
-        },
-        undefined,
-        false,
-        transformers,
-      );
-      diagnostics.push(...emitted.diagnostics);
-      // The map goes to Vite with the code, not through a comment pointing at a file.
-      compiled.code = compiled.code?.replace(/\n\/\/# sourceMappingURL=\S+\s*$/, "\n");
-    }
-    compiled.errors = diagnostics.filter(isError);
-    compiled.warnings = diagnostics.filter((diagnostic) => !isError(diagnostic));
-    if (compiled.errors.length && sourceFile) {
-      const checker = tsProgram.getTypeChecker();
-      const symbol = checker.getSymbolAtLocation(sourceFile);
-      compiled.exports = symbol ? checker.getExportsOfModule(symbol).map(({ name }) => name) : [];
-    }
-    return compiled;
+    return compileWorker(compiler).compile({
+      plugin: pluginId,
+      id,
+      sources: [...sources],
+      children: [...resolved],
+    });
   }
 
-  return {
+  const result: Plugin = {
     name: "unframework:angular-ngtsc",
     enforce: "pre",
     configResolved(config) {
@@ -196,10 +156,9 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
           () => undefined,
         );
         const compiled = await run;
-        if (compiled.warnings.length) this.warn(formatDiagnostics(compiler, compiled.warnings));
-        if (compiled.errors.length) {
-          const codes = [...new Set(compiled.errors.map(diagnosticCode))].join(", ");
-          const message = `ngtsc rejected ${id} (${codes}):\n${formatDiagnostics(compiler, compiled.errors)}`;
+        if (compiled.warnings) this.warn(compiled.warnings);
+        if (compiled.codes.length) {
+          const message = `ngtsc rejected ${id} (${compiled.codes.join(", ")}):\n${compiled.errors}`;
           // A page gets a module that failed to transform only as "Failed to fetch dynamically
           // imported module", without the reason. Served to a browser, the module throws the
           // reason instead, so it reaches the test report; the server log keeps it too.
@@ -214,6 +173,68 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
       },
     },
   };
+  // The worker keeps each plugin's previous program: a plugin that is gone needs it no more.
+  released.register(result, () => workers.get(compiler)?.release(pluginId));
+  return result;
+}
+
+/** A worker thread that compiles for every plugin on one compiler, in the order asked. */
+interface CompileWorker {
+  compile(request: CompileRequest): Promise<Compiled>;
+  release(plugin: number): void;
+}
+
+let nextPlugin = 0;
+const workers = new WeakMap<AngularCompiler, CompileWorker>();
+const released = new FinalizationRegistry<() => void>((release) => release());
+
+/**
+ * The worker of `compiler`, started on its first compile. One per compiler and so per process:
+ * it loads the compiler and parses the library declarations once, as one main thread did for
+ * every plugin. It holds the process open only while a compile waits on it.
+ */
+function compileWorker(compiler: AngularCompiler): CompileWorker {
+  const existing = workers.get(compiler);
+  if (existing) return existing;
+  // `angularScope` is the toolchain directory's `node_modules/@angular` (tools.ts).
+  const toolchainDir = dirname(dirname(compiler.angularScope));
+  const thread = new Worker(new URL("./ngtsc-worker.ts", import.meta.url), {
+    workerData: { toolchainDir },
+  });
+  thread.unref();
+  const pending = new Map<
+    number,
+    { resolve(compiled: Compiled): void; reject(e: unknown): void }
+  >();
+  let nextRequest = 0;
+  thread.on("message", (reply: WorkerReply) => {
+    const waiting = pending.get(reply.request)!;
+    pending.delete(reply.request);
+    if (!pending.size) thread.unref();
+    if ("failure" in reply) waiting.reject(reply.failure);
+    else waiting.resolve(reply.compiled);
+  });
+  // A worker that died fails what it was compiling, and the next compile starts another.
+  thread.on("error", (error) => {
+    workers.delete(compiler);
+    for (const waiting of pending.values()) waiting.reject(error);
+    pending.clear();
+  });
+  const worker: CompileWorker = {
+    compile(request) {
+      const number = nextRequest++;
+      if (!pending.size) thread.ref();
+      return new Promise((fulfil, reject) => {
+        pending.set(number, { resolve: fulfil, reject });
+        thread.postMessage({ ...request, request: number } satisfies WorkerRequest);
+      });
+    },
+    release(plugin) {
+      thread.postMessage({ release: plugin } satisfies WorkerRequest);
+    },
+  };
+  workers.set(compiler, worker);
+  return worker;
 }
 
 /** The values a module's code exports by name, for a module that stands in for it. */
@@ -224,7 +245,7 @@ function exportedNames(code: string): string[] {
 }
 
 /** The key of an import in `children`: the importing file and the specifier. */
-function childKey(importer: string, specifier: string): string {
+export function childKey(importer: string, specifier: string): string {
   return `${importer}\0${specifier}`;
 }
 

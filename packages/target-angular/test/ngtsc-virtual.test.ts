@@ -233,6 +233,59 @@ describe("ngtscVirtual", () => {
     }
   });
 
+  // Vitest serves every project's transforms from one main thread. A compile that held it would
+  // stall the other projects' modules, and Angular's SSR renders behind them, for as long as it
+  // runs: the compile runs in a worker.
+  it("leaves the main thread free while it compiles", async () => {
+    const { transform } = await ngtscPlugin();
+    // Enough bindings that a compile takes a while even on a warm program.
+    const template = Array.from(
+      { length: 400 },
+      (_, index) => `<p [title]="n + ${index}">{{ n }}</p>`,
+    );
+    const code = component("Busy", template.join(""), "\n  readonly n = 1;\n");
+    let last = performance.now();
+    let longest = 0;
+    const timer = setInterval(() => {
+      const now = performance.now();
+      longest = Math.max(longest, now - last);
+      last = now;
+    }, 5);
+    const started = performance.now();
+    try {
+      await transform(id("Busy"), code);
+    } finally {
+      clearInterval(timer);
+    }
+    const ended = performance.now();
+    longest = Math.max(longest, ended - last);
+    expect(longest).toBeLessThan((ended - started) / 2);
+  });
+
+  // The worker has no unframework plugin to ask: every virtual module the compile reads is
+  // posted to it with the request, a child's own imports too. Here the child's input takes its
+  // type from the module it imports.
+  it("compiles against the modules a child imports", async () => {
+    const leaf = (size: string) =>
+      `${component("Leaf", "<em>leaf</em>")}export type Size = ${JSON.stringify(size)};\n`;
+    const child = [
+      'import { Component, input } from "@angular/core";',
+      'import type { Size } from "./Leaf.uf.tsx";',
+      "",
+      '@Component({ selector: "uf-child", template: `<p>{{ size() }}</p>` })',
+      "export default class Child {",
+      "  readonly size = input.required<Size>();",
+      "}",
+      "",
+    ].join("\n");
+    const fits = await ngtscPlugin({ [id("Leaf")]: leaf("x"), [id("Child")]: child });
+    await expect(fits.transform(id("Parent"), parent("[size]"))).resolves.toMatchObject({
+      code: expect.stringContaining("dependencies: [Child]"),
+    });
+    const misfits = await ngtscPlugin({ [id("Leaf")]: leaf("s"), [id("Child")]: child });
+    await expect(misfits.transform(id("Parent"), parent("[size]"))).rejects.toThrow(/TS2322/);
+  });
+
   it("refuses to run without the unframework plugin", async () => {
     const plugin = ngtscVirtual(await loadCompiler(context.toolchainDir));
     expect(() =>
