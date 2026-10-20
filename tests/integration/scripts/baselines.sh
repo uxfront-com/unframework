@@ -94,11 +94,17 @@ if [ "$MODE" = download ]; then
     echo "test:baselines:download: a run id is a number, not $run." >&2
     exit 2
   fi
-  info="$(cd "$REPO" && gh run view "$run" --json status,headSha,jobs \
-    --jq '[.status, .headSha, ([.jobs[] | select(.name == "Baselines")][0].conclusion // "none")] | @tsv')"
-  IFS=$'\t' read -r state head job <<<"$info"
+  # The artefact is complete once the Baselines job is, whatever the run's other jobs are doing.
+  info="$(cd "$REPO" && gh run view "$run" --json headSha,jobs --jq '
+    ([.jobs[] | select(.name == "Baselines")][0] // {}) as $job
+    | [.headSha, ($job.status // "missing"), ($job.conclusion // "none")] | @tsv')"
+  IFS=$'\t' read -r head state job <<<"$info"
+  if [ "$state" = missing ]; then
+    echo "test:baselines:download: run $run has no Baselines job, which runs on pull requests and workflow_dispatch." >&2
+    exit 1
+  fi
   if [ "$state" != completed ]; then
-    echo "test:baselines:download: run $run is $state; wait until it completes." >&2
+    echo "test:baselines:download: run $run's Baselines job is $state; wait until it completes." >&2
     exit 1
   fi
   echo "test:baselines:download: run $run, of $head; its Baselines job: $job."

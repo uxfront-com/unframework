@@ -138,7 +138,7 @@ function run(
       FAKE_CONTAINER_WRITES: WRITES_BASELINE,
       FAKE_CONTAINER_LOG: join(root, "container.log"),
       FAKE_GH_LOG: ghLog,
-      FAKE_GH_RUN: "completed\tabc123\tsuccess",
+      FAKE_GH_RUN: "abc123\tcompleted\tsuccess",
       FAKE_GH_STAGE: join(root, "stage"),
       UF_BASELINE_PLATFORM: "",
       GITHUB_ACTIONS: "",
@@ -508,11 +508,11 @@ describe("baselines.sh download", () => {
   });
 
   it("fails without an artefact when the Baselines job did not succeed", () => {
-    for (const job of ["failure", "none"]) {
+    for (const job of ["failure", "skipped"]) {
       const { status, stderr } = download(
         ["42"],
         {},
-        { FAKE_GH_ARTEFACTS: "0", FAKE_GH_RUN: `completed\tabc123\t${job}` },
+        { FAKE_GH_ARTEFACTS: "0", FAKE_GH_RUN: `abc123\tcompleted\t${job}` },
       );
       expect(status).toBe(1);
       expect(stderr).toContain(
@@ -525,7 +525,7 @@ describe("baselines.sh download", () => {
     const { status, stderr, repo } = download(
       ["42"],
       { [BASELINE]: "png" },
-      { FAKE_GH_RUN: "completed\tabc123\tfailure" },
+      { FAKE_GH_RUN: "abc123\tcompleted\tfailure" },
     );
     expect(status).toBe(1);
     expect(stderr).toContain("Baselines job is failure");
@@ -545,15 +545,18 @@ describe("baselines.sh download", () => {
     expect(existsSync(join(repo, ".github"))).toBe(false);
   });
 
-  it("waits for a run that has not completed, and needs a branch or a run id", () => {
+  it("waits for the Baselines job, and needs one, and a branch or a run id", () => {
     const running = download(
       ["42"],
       { [BASELINE]: "png" },
-      { FAKE_GH_RUN: "in_progress\tabc123\tnone" },
+      { FAKE_GH_RUN: "abc123\tin_progress\tnone" },
     );
     expect(running.status).toBe(1);
-    expect(running.stderr).toContain("run 42 is in_progress");
+    expect(running.stderr).toContain("run 42's Baselines job is in_progress");
     expect(running.gh.some((call) => call[1] === "download")).toBe(false);
+    const push = download(["42"], {}, { FAKE_GH_RUN: "abc123\tmissing\tnone" });
+    expect(push.status).toBe(1);
+    expect(push.stderr).toContain("run 42 has no Baselines job");
     expect(download(["latest"], {}).status).toBe(2);
     const detached = download([], {});
     expect(detached.status).toBe(1);

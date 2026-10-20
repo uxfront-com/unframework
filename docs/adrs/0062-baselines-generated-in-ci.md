@@ -36,8 +36,10 @@ Two items were left open:
     run's matrix is no evidence of parity.
 - **`pnpm test:baselines:download [<run-id>]`** runs `baselines.sh download`.
   - Without a run id, it takes the latest `ci.yml` run of the current branch.
-  - It refuses a run that hasn't completed. With no `baselines` artefact, it writes nothing and
-    says so when the run's `Baselines` job succeeded, and fails otherwise.
+  - It reads the run's `Baselines` job, not the whole run: the artefact is complete once that job
+    is. It refuses a run without the job (a push to `main`) or one whose job hasn't completed.
+  - With no `baselines` artefact, it writes nothing and says so when the job succeeded, and fails
+    otherwise.
   - It downloads the artefact with `gh run download` and copies it through the same filter: only
     regular files at `cases/<area>/<case>/__screenshots__/<scenario>-chromium-linux.png` or
     `__expected__/geometry.<scenario>.json`, or nothing at all.
@@ -55,17 +57,15 @@ Two items were left open:
 - A contributor on any OS gets the Linux baselines without Docker: push, wait for the job, run the
   download, review and commit.
 - Baselines come from the runner CI compares them on, so emulation can no longer make them differ.
+- The baselines made under emulation hold on a real x64 runner (Evidence), which closes ADR-0019's
+  open item.
 
 **Negative:**
 
-- Every pull request pays for one more install and one more `browser:vue` run.
+- Every pull request pays for one more install and one more `browser:vue` run, about six minutes,
+  since the run keeps the container's one test file at a time.
 - A baseline reaches the branch one push later than the change that needs it.
 - The download needs the GitHub CLI, signed in to the repository.
-
-**Open:**
-
-- The first run on a real x64 runner settles ADR-0019's open item. Its result is recorded under
-  Evidence.
 
 ## Alternatives considered
 
@@ -81,3 +81,10 @@ Two items were left open:
 - `harness/baselines.unit.test.ts` runs `ci` with a stand-in container script, and `download`
   with a stand-in `gh`: what each copies, what each refuses, the empty case and the failed job.
 - `harness/summary.unit.test.ts` checks that the parity job doesn't wait for the `Baselines` job.
+- The first `Baselines` run, on `ubuntu-latest` (x64): `browser:vue` passed 418 tests in 155 files
+  with 2 skipped, and its reference pass 2, in 313 s. No baseline differed from the committed ones,
+  which were made under emulation, so the job uploaded nothing. `pnpm test:baselines:download`
+  on that run reported "changed no baseline; nothing was written".
+- A probe branch that deleted one committed screenshot and changed one value in one geometry file
+  got exactly those two files back in its artefact, and after the download its cases equalled the
+  unprobed commit.
