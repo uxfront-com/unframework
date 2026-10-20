@@ -3,9 +3,9 @@
 // plugin compiles it with `NgtscProgram` over an in-memory host, before Analog sees it. Analog
 // then finds no decorators left and passes the module through (the Angular+Qwik ADR). A child
 // that a module imports is a virtual module too, so it is resolved and loaded first (ADR-0053).
-// The compile itself runs in a worker (ngtsc-worker.ts): Vitest serves every project's
-// transforms from one main thread, and a compile there would stall all of them while it runs.
-import { dirname, resolve } from "node:path";
+// The compile itself runs in a worker (ngtsc-worker): Vitest serves every project's transforms
+// from one main thread, and a compile there would stall all of them while it runs.
+import { dirname, extname, resolve } from "node:path";
 import { Worker } from "node:worker_threads";
 
 import type { Plugin } from "vite";
@@ -178,6 +178,14 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
   return result;
 }
 
+/**
+ * The URL of the compile worker beside the module at `moduleUrl`, with the module's own
+ * extension: the source worker from `src`, and the built one from `dist`.
+ */
+export function workerUrl(moduleUrl: string): URL {
+  return new URL(`./ngtsc-worker${extname(new URL(moduleUrl).pathname)}`, moduleUrl);
+}
+
 /** A worker thread that compiles for every plugin on one compiler, in the order asked. */
 interface CompileWorker {
   compile(request: CompileRequest): Promise<Compiled>;
@@ -198,7 +206,7 @@ function compileWorker(compiler: AngularCompiler): CompileWorker {
   if (existing) return existing;
   // `angularScope` is the toolchain directory's `node_modules/@angular` (tools.ts).
   const toolchainDir = dirname(dirname(compiler.angularScope));
-  const thread = new Worker(new URL("./ngtsc-worker.ts", import.meta.url), {
+  const thread = new Worker(workerUrl(import.meta.url), {
     workerData: { toolchainDir },
   });
   thread.unref();

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { ResolvedConfig } from "vite";
 import { afterAll, describe, expect, it } from "vitest";
 
-import { ngtscVirtual } from "../src/toolchain/ngtsc-virtual.ts";
+import { ngtscVirtual, workerUrl } from "../src/toolchain/ngtsc-virtual.ts";
 import { loadCompiler } from "../src/toolchain/tools.ts";
 import { component, context, isolatedDir, ngtscPlugin, removeScratch } from "./helpers.ts";
 
@@ -293,5 +293,16 @@ describe("ngtscVirtual", () => {
         plugins: [plugin],
       } as unknown as ResolvedConfig),
     ).toThrow(/no plugin named "unframework" exposing api\.getCompiled/);
+  });
+});
+
+describe("workerUrl", () => {
+  it("starts the worker beside the module, with the module's own extension", () => {
+    expect(workerUrl("file:///pkg/src/toolchain/ngtsc-virtual.ts").href).toBe(
+      "file:///pkg/src/toolchain/ngtsc-worker.ts",
+    );
+    expect(workerUrl("file:///pkg/dist/toolchain/ngtsc-virtual.js").href).toBe(
+      "file:///pkg/dist/toolchain/ngtsc-worker.js",
+    );
   });
 });

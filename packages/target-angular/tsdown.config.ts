@@ -7,6 +7,8 @@ const config: UserConfig = defineConfig({
     "src/toolchain/index.ts",
     "src/toolchain/client.ts",
     "src/toolchain/server.ts",
+    // Started by URL from ngtsc-virtual, so nothing imports it for the build to follow.
+    "src/toolchain/ngtsc-worker.ts",
   ],
   unbundle: true,
   platform: "node",
@@ -16,6 +18,9 @@ const config: UserConfig = defineConfig({
   dts: true,
   // `.js` and `.d.ts`, which publishConfig.exports name.
   fixedExtension: false,
+  // No `//#region src/….ts` markers: a built file names no source file, so the built
+  // ngtsc-virtual can only start the built worker.
+  inputOptions: { experimental: { attachDebugInfo: "none" } },
 });
 
 export default config;
