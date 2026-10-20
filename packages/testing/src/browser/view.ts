@@ -17,6 +17,7 @@ import { normalizeDomWithIds } from "../dom/serialize.ts";
 import { formatError } from "../errors.ts";
 import { caseOfFile } from "../harness.ts";
 import { recordLayer } from "../layers.ts";
+import { inlineHosts } from "../normalize/rules/aria-hosts.ts";
 import { isNormalizeTarget } from "../normalize/targets.ts";
 import { assertInteractive } from "./capabilities.ts";
 import { advanceClock, checkTick, installClock } from "./clock.ts";
@@ -257,6 +258,15 @@ async function mountWith(
   // A target the normaliser does not know (a test stub) has no framework noise to remove.
   const dom = () => normalizeDomWithIds(container, normalizeOptions);
   const html = () => dom().html;
+  const aria = async () => {
+    // Angular's hosts are inline for the snapshot alone, so they add no space (ADR-0060).
+    const restore = inlineHosts(container, isNormalizeTarget(target) ? target : undefined);
+    try {
+      return await commands.ufAriaSnapshot(locator.serialize());
+    } finally {
+      restore();
+    }
+  };
   /** Fails with what the page or the payloads refused since the last settle. */
   const raise = () => {
     const problems = [...takePreventedNavigations(), ...refused.splice(0)];
@@ -285,7 +295,7 @@ async function mountWith(
   const trace = new Trace({
     root: testId,
     dom,
-    aria: () => commands.ufAriaSnapshot(locator.serialize()),
+    aria,
     events: log,
   });
   /** Settles after a step and records it; a page that never quiets fails L9, which it feeds. */
@@ -389,7 +399,7 @@ async function mountWith(
     },
     events: () => emittedArgs("view.events").map((event) => [event.name, ...event.args]),
     expectParity: (name, parityOptions) =>
-      expectParity({ ...view, trace, dom }, name, parityOptions),
+      expectParity({ ...view, trace, dom, aria }, name, parityOptions),
     async unmount() {
       if (unmounted) return;
       unmounted = true;

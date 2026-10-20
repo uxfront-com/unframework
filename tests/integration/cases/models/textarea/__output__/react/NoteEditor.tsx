@@ -9,6 +9,14 @@ export default function NoteEditor({ className, style }: NoteEditorAttributes) {
   const [note, setNote] = useState("Buy milk");
   const noteRef = useRef(note);
 
+  const [textCaret] = useState(() => (element: HTMLTextAreaElement | null) => {
+    if (element) {
+      const text = element.value;
+      element.value = "";
+      element.value = text;
+    }
+  });
+
   return (
     <section aria-label="Note" className={className} style={style}>
       <textarea
@@ -18,6 +26,7 @@ export default function NoteEditor({ className, style }: NoteEditorAttributes) {
           noteRef.current = event.target.value;
           setNote(noteRef.current);
         }}
+        ref={textCaret}
       />
       <output>{note.length} characters</output>
       <button

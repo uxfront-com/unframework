@@ -150,12 +150,16 @@ DOM's `input`: a listener of the control's `input` reads the model the click wro
 reads the value from before the click. A state or a model that a control's `v-model` writes and client code reads
 has a mirror, so a listener beside the control or around it reads the write. A written model's
 local state holds its value in an object, new on every write, so a write always renders: a parent
-that holds its value resets the model's mirror. A required model is its prop. Two cells of
-ADR-0058's open item are measured here: react-dom writes a controlled checkbox's or radio's first
-`checked` state as its attribute and never updates it, and keeps a controlled `<textarea>`'s text
-in step with its state, so `models/checkbox-group`, `models/radio` and `models/textarea` are
-quarantined until the shared normaliser rule for a native control's initial state lands. A
-`<textarea>` filled from its text also starts the caret at the text's start on focus.
+that holds its value resets the model's mirror. A required model is its prop. ADR-0060 settles
+ADR-0058's open item. react-dom writes a controlled checkbox's or radio's first `checked` state,
+and an option's `selected`, as its attribute and never updates it; the live state still compares,
+so the parity tests leave that attribute out on React only (rule 4e, in `@unframework/testing`).
+react-dom also fills a `<textarea>` as its default value, which leaves the caret at the start, so
+a bound `<textarea>`'s ref callback, declared once with `useState`, empties the field and sets its
+text again, as Vue's `vModelText` does: the caret ends after the text, and no `select` fires. A
+template ref or native listeners on the element share the callback. Where the native listeners'
+callback is written in place (it reads a list's row or a narrowed value), it would run at every
+render, so the caret stays at the start.
 
 ## Toolchain
 

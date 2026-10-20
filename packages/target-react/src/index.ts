@@ -126,7 +126,7 @@ export const react: Target = defineTarget({
     "reactive-context": {
       support: "emulated",
       helper: "refObject",
-      note: "A provided ref is passed as an object with a `value` getter, `refObject`, which descendants read as it changes (ADR-0054).",
+      note: "A provided ref is passed as an object with a `value` getter, `refObject`, made again at each render of the provider: descendants render each change, and their deferred code, after an `await` or in a timer, reads the value of their last render (ADR-0054).",
     },
     "dynamic-component": { support: "native" },
   },

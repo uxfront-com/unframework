@@ -3,7 +3,7 @@
 import { printTree } from "./print.ts";
 import { unwrapAngularHosts } from "./rules/angular-hosts.ts";
 import { removeComments } from "./rules/comments.ts";
-import { removeSettledValues } from "./rules/control-values.ts";
+import { removeReactDefaultStates, removeSettledValues } from "./rules/control-values.ts";
 import { removeFrameworkAttributes } from "./rules/framework-attributes.ts";
 import { canonicalizeGeneratedIds } from "./rules/generated-ids.ts";
 import { canonicalizeClasses, sortAttributes } from "./rules/ordering.ts";
@@ -49,6 +49,7 @@ export function normalizeTree(
   canonicalizeBooleanAttributes(root, target);
   canonicalizeClasses(root);
   removeSettledValues(root);
+  removeReactDefaultStates(root, target);
   sortAttributes(root);
   collapseWhitespace(root);
   canonicalizeGeneratedIds(root, ids);

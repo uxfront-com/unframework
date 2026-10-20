@@ -316,10 +316,19 @@ an attribute that is on that way.
 Only the named target's framework noise is removed (Angular's hosts only from Angular's
 output, Qwik's `preventdefault:`, `stoppropagation:` and `capture:` dispatch attributes and its
 `q:template` elements, where its server render keeps a slot's unclaimed fallback, only from
-Qwik's); without a target nothing is noise. On every target, an `<input>`'s `value` attribute
-that equals its `uf:value` is left out, since it repeats the state (react-dom keeps a controlled
-input's attribute in step with its value, Vue's `v-model` does not); one that differs stays
-(ADR-0058). Generated ids are the compiler's `uf-id-…` ids, by
+Qwik's, React's stale `checked` and `selected` attributes only from React's, and the space
+Playwright's ARIA snapshot puts at an Angular host only from Angular's snapshot); without a
+target nothing is noise. On every target, the markup of a control's initial state is left out
+where its live state, a `uf:*` pseudo-attribute, says the same (rule 4d): an `<input>`'s `value`
+that equals its `uf:value`, an `<input>`'s `checked` where `uf:checked` is `"true"`, an
+`<option>`'s `selected` where `uf:selected` is `"true"`, and a `<textarea>`'s text that equals its
+`uf:value`, since each repeats the state (react-dom writes a controlled control's state as markup,
+Vue's `v-model` does not); markup that differs stays (ADR-0058). On React only, a `checked` or
+`selected` goes wherever its `uf:*` state is there, whatever it says (rule 4e): react-dom writes a
+box's first state as its attribute and never updates it, and the state still compares. On Angular
+only, the view takes the ARIA snapshot with each host set to `display: inline`, so the host adds no
+space, and then puts the hosts' `style` back; a host among flex or grid items stays as it is
+(`inlineHosts`, ADR-0060). Generated ids are the compiler's `uf-id-…` ids, by
 provenance (the analyzer rejects an authored id or reference with the prefix): each one, a
 `uf-id-` and the characters the frameworks' ids use, is renamed `uf-id-1`, `uf-id-2`… by first
 appearance wherever it appears, in every attribute value (a radio group's `name`, a `data-*`

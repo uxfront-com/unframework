@@ -17,6 +17,7 @@ import type {
   ElementNode,
   EventAttribute,
   FunctionCode,
+  ModelAttribute,
   RefAttribute,
 } from "@unframework/ir";
 
@@ -40,6 +41,8 @@ interface ElementListeners {
   refAt?: Attribute;
   /** The ref callback declared once in the component's body, by name. */
   callback?: string;
+  /** Whether the callback puts a `<textarea>`'s caret after its text (`Caret`, ADR-0060). */
+  caret?: boolean;
 }
 
 /** Prints the listeners and template refs of a planned component's elements. */
@@ -110,21 +113,41 @@ export class ReactListeners {
         }
       }
     }
+    const model = element.attributes.find(
+      (attribute) => attribute.kind === "Model" && this.#plan.carets.has(attribute),
+    );
+    if (model?.kind === "Model") {
+      found.caret = true;
+      found.refAt ??= model;
+      const { callback } = this.#plan.carets.get(model)!;
+      if (callback) found.callback ??= callback;
+    }
     this.#elements.set(element, found);
     return found;
   }
 
   /**
    * The ref callbacks declared once, as statements of the component's body, in render order:
-   * `const [nameListeners] = useState(() => (element: Element | null) => listen(…));`.
+   * `const [nameListeners] = useState(() => (element: Element | null) => listen(…));`, then the
+   * callbacks of `<textarea>` models alone (`textCaret`).
    */
   declarations(): string[] {
     const statements: string[] = [];
-    for (const [element, { callback }] of this.#plan.nativeElements) {
+    const elements = [
+      ...this.#plan.nativeElements,
+      ...[...this.#plan.carets.values()].map(
+        ({ element, callback }) => [element, { callback }] as const,
+      ),
+    ];
+    for (const [element, { callback }] of elements) {
       if (!callback) continue;
       const listeners = this.#of(element);
       const useState = this.#plan.names.add("react", "useState");
-      const type = listeners.ref ? templateRefType(this.#plan, listeners.ref.binding) : "Element";
+      const type = listeners.caret
+        ? "HTMLTextAreaElement"
+        : listeners.ref
+          ? templateRefType(this.#plan, listeners.ref.binding)
+          : "Element";
       const arrow = this.#callback(listeners, `${type} | null`);
       statements.push(`const [${callback}] = ${useState}(() => ${arrow});`);
     }
@@ -155,7 +178,7 @@ export class ReactListeners {
   ref(attribute: RefAttribute, element: ElementNode, context: JsxContext): JsxAttributeItem[] {
     const listeners = this.#of(element);
     if (listeners.refAt !== attribute) return [];
-    if (listeners.native.length === 0) {
+    if (listeners.native.length === 0 && !listeners.caret) {
       const { name } = this.#plan.bindings.get(attribute.binding)!;
       const own = this.#plan.refInterfaces.get(attribute);
       if (own === templateRefType(this.#plan, attribute.binding)) {
@@ -171,6 +194,16 @@ export class ReactListeners {
       ];
     }
     return [this.#refAttribute(listeners, context)];
+  }
+
+  /** The `ref` a `<textarea>`'s `v-model` prints, where nothing else on the element does. */
+  modelRef(
+    attribute: ModelAttribute,
+    element: ElementNode,
+    context: JsxContext,
+  ): JsxAttributeItem[] {
+    const listeners = this.#of(element);
+    return listeners.refAt === attribute ? [this.#refAttribute(listeners, context)] : [];
   }
 
   /** The `ref` of an element with native listeners: its declared callback, or one in place. */
@@ -297,12 +330,13 @@ export class ReactListeners {
    * and phase, and sets its template ref; `type` types its parameter where no prop does.
    */
   #callback(listeners: ElementListeners, type?: string): string {
-    const listen = this.#listen;
+    // A `<textarea>`'s caret alone needs no `listen`: the helper is claimed where it is called.
+    const listen = listeners.native.length ? this.#listen : "";
     const handlers = listeners.native.map((group) => this.#nativeHandler(group));
     const ref = listeners.ref && this.#plan.bindings.get(listeners.ref.binding)!.name;
     const local = locals(
       [...handlers, listen, ref ?? ""],
-      ["element", "stop", "cleanups", "cleanup"],
+      ["element", "stop", "cleanups", "cleanup", "text"],
     );
     const calls = listeners.native.map(([first], index) => {
       const options = first!.capture
@@ -313,18 +347,27 @@ export class ReactListeners {
       return `${listen}(${local.element}, "${first!.event}", ${handlers[index]!}${options})`;
     });
     const parameter = type ? `(${local.element}: ${type})` : `(${local.element})`;
-    if (!ref && calls.length === 1) return `${parameter} => ${calls[0]!}`;
+    if (!ref && !listeners.caret && calls.length === 1) return `${parameter} => ${calls[0]!}`;
     const lines = ref ? [`${ref}.current = ${local.element};`] : [];
+    if (listeners.caret) {
+      // Set as Vue's `vModelText` sets it, on a field that holds no text: the caret ends after the
+      // text, and no `select` fires, as `setSelectionRange` would make it.
+      const { element, text } = local;
+      lines.push(
+        `if (${element}) {\nconst ${text} = ${element}.value;\n${element}.value = "";\n${element}.value = ${text};\n}`,
+      );
+    }
     const stops = [ref ? `${ref}.current = null;` : undefined];
     if (calls.length === 1) {
       lines.push(`const ${local.stop} = ${calls[0]!};`);
       stops.push(`${local.stop}();`);
-    } else {
+    } else if (calls.length) {
       lines.push(`const ${local.cleanups} = [${calls.join(", ")}];`);
       stops.push(`for (const ${local.cleanup} of ${local.cleanups}) ${local.cleanup}();`);
     }
     const cleanup = stops.filter((line) => line !== undefined).join("\n");
-    return `${parameter} => {\n${lines.join("\n")}\nreturn () => {\n${cleanup}\n};\n}`;
+    const stop = cleanup ? `return () => {\n${cleanup}\n};\n` : "";
+    return `${parameter} => {\n${lines.join("\n")}\n${stop}}`;
   }
 
   /** The handler of one native event and phase: its listeners in attribute order, guarded. */

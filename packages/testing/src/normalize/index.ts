@@ -29,8 +29,9 @@ export type { NormalizeTarget } from "./targets.ts";
  *    (`unwrapAngularHosts`);
  * 4. style declarations (4a, `canonicalizeStyles`), boolean attributes (4b,
  *    `canonicalizeBooleanAttributes`) and class tokens (4c, `canonicalizeClasses`) get one
- *    canonical form, and a `class` or `style` that holds nothing goes; an `<input>`'s `value`
- *    attribute that equals its `uf:value` goes too (4d, `removeSettledValues`);
+ *    canonical form, and a `class` or `style` that holds nothing goes; the markup of a control's
+ *    initial state that its `uf:*` state repeats goes too (4d, `removeSettledValues`), and on
+ *    React a `checked` or `selected` beside its `uf:*` state (4e, `removeReactDefaultStates`);
  * 5. attributes are sorted by name (`sortAttributes`), before ids are numbered, so the
  *    numbering never depends on a framework's attribute order;
  * 6. whitespace collapses as the browser renders it (`collapseWhitespace`);

@@ -5,7 +5,10 @@ import { normalizeHtml } from "../src/normalize/index.ts";
 import { printTree } from "../src/normalize/print.ts";
 import { isAngularHost, unwrapAngularHosts } from "../src/normalize/rules/angular-hosts.ts";
 import { removeComments } from "../src/normalize/rules/comments.ts";
-import { removeSettledValues } from "../src/normalize/rules/control-values.ts";
+import {
+  removeReactDefaultStates,
+  removeSettledValues,
+} from "../src/normalize/rules/control-values.ts";
 import {
   isFrameworkAttribute,
   removeFrameworkAttributes,
@@ -300,6 +303,43 @@ describe("rule 4d: removeSettledValues", () => {
     expect(apply(typed, removeSettledValues)).toBe(apply(typed));
     const server = "<textarea>initial</textarea>";
     expect(apply(server, removeSettledValues)).toBe(apply(server));
+  });
+});
+
+describe("rule 4e: removeReactDefaultStates", () => {
+  const react = (root: TreeFragment) => removeReactDefaultStates(root, "react");
+  const cleared =
+    '<input type="checkbox" checked uf:checked="false"><option selected uf:selected="false">o</option>';
+
+  it("removes React's first checked or selected attribute wherever the uf:* state is there", () => {
+    expect(apply(cleared, react)).toBe(
+      apply('<input type="checkbox" uf:checked="false"><option uf:selected="false">o</option>'),
+    );
+    // react-dom's attribute of a box the person cleared, against Vue's v-model.
+    expect(normalizeHtml(cleared, { target: "react" })).toBe(
+      normalizeHtml(
+        '<input type="checkbox" uf:checked="false"><option uf:selected="false">o</option>',
+        {
+          target: "vue",
+        },
+      ),
+    );
+  });
+
+  it("does nothing on any other target, where rule 4d keeps the attribute", () => {
+    for (const target of NORMALIZE_TARGETS.filter((each) => each !== "react")) {
+      expect(apply(cleared, (root) => removeReactDefaultStates(root, target))).toBe(apply(cleared));
+    }
+    expect(apply(cleared, (root) => removeReactDefaultStates(root))).toBe(apply(cleared));
+  });
+
+  it("keeps a box whose state still differs, and the attribute of a server render", () => {
+    // The box's state was cleared on the reference, but its checked property is still on here.
+    expect(
+      normalizeHtml('<input type="checkbox" checked uf:checked="true">', { target: "react" }),
+    ).not.toBe(normalizeHtml('<input type="checkbox" uf:checked="false">', { target: "vue" }));
+    const server = '<input type="checkbox" checked><option selected>o</option>';
+    expect(apply(server, react)).toBe(apply(server));
   });
 });
 
