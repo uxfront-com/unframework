@@ -99,6 +99,7 @@ pnpm --filter web build                                           # the docs: pr
 # Commands that write artefacts (never in CI)
 pnpm test:update                      # golden outputs and shared expectations; needs vue among the targets
 pnpm test:baselines                   # the Linux screenshots and geometry, in Docker
+pnpm test:baselines:download          # or the ones CI's Baselines job generated for this branch
 pnpm test:baselines:check             # compare with them as CI does, in Docker
 pnpm test:canaries                    # after a harness change: every live layer must catch its corruption
 
@@ -137,12 +138,12 @@ reference (ADR-0057). CI's parity job requires every (case, target, layer) cell.
 
 Generate each of these with its command. The formatter and the linter skip them on purpose.
 
-| Files                                                       | Command                                     |
-| ----------------------------------------------------------- | ------------------------------------------- |
-| `cases/**/__output__/`, `__expected__/`                     | `pnpm test:update`                          |
-| `cases/**/__screenshots__/`, `__expected__/geometry.*.json` | `pnpm test:baselines` (Docker, linux/amd64) |
-| `packages/ir/schema/`                                       | `pnpm --filter @unframework/ir generate`    |
-| `packages/unframework/src/vendor/`                          | `pnpm --filter unframework vendor:jsx`      |
+| Files                                                       | Command                                                                                       |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `cases/**/__output__/`, `__expected__/`                     | `pnpm test:update`                                                                            |
+| `cases/**/__screenshots__/`, `__expected__/geometry.*.json` | `pnpm test:baselines:download` (CI's artefact) or `pnpm test:baselines` (Docker, linux/amd64) |
+| `packages/ir/schema/`                                       | `pnpm --filter @unframework/ir generate`                                                      |
+| `packages/unframework/src/vendor/`                          | `pnpm --filter unframework vendor:jsx`                                                        |
 
 ### Never weaken a check
 
@@ -240,7 +241,8 @@ Generate each of these with its command. The formatter and the linter skip them 
 3. Write the area, the name and every scenario in kebab-case. Name each scenario of `expectParity`
    with a string literal.
 4. Run `pnpm test:update`.
-5. Run `pnpm test:baselines` for the screenshots and the geometry.
+5. Run `pnpm test:baselines:download` after CI's `Baselines` job, or `pnpm test:baselines`, for
+   the screenshots and the geometry.
 6. Review every new file.
 
 **Change what a target emits.**

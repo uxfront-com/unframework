@@ -15,6 +15,7 @@
     "test:canaries": "pnpm --filter @unframework/integration test:canaries",
     "test:baselines": "pnpm --filter @unframework/integration test:baselines",
     "test:baselines:check": "pnpm --filter @unframework/integration test:baselines:check",
+    "test:baselines:download": "pnpm --filter @unframework/integration test:baselines:download",
     "new:package": "node scripts/new-package.ts",
     "changeset": "changeset"
   },

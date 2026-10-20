@@ -81,7 +81,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0026](./0026-markup-is-never-formatted.md)                        | Markup is never formatted; oxfmt formats code only                   | Accepted, amended by ADR-0041                                         | §5.8, R14               |
 | [0027](./0027-angular-compiles-virtual-modules-with-ngtsc.md)      | Angular compiles virtual modules with our ngtsc step                 | Accepted, amended by ADR-0053                                         | §8.2, R5                |
 | [0028](./0028-checker-details-after-m0.md)                         | How the L3 and L4 checkers changed during M0                         | Accepted                                                              | §7.2, §7.7              |
-| [0029](./0029-artefact-write-policy-as-built.md)                   | The artefact write policy and visual parity, as built                | Accepted                                                              | §7.4, §7.6, D9          |
+| [0029](./0029-artefact-write-policy-as-built.md)                   | The artefact write policy and visual parity, as built                | Accepted, amended by ADR-0062                                         | §7.4, §7.6, D9          |
 | [0030](./0030-jsx-text-and-bare-attributes.md)                     | JSX text where every JSX agrees; bare attributes mean "true"         | Accepted                                                              | §4.3, §4.6              |
 | [0031](./0031-normalisation-removes-only-the-targets-own-noise.md) | Normalisation removes only the target's own noise                    | Accepted, amended by ADR-0044, ADR-0049, ADR-0058                     | §7.5                    |
 | [0032](./0032-ir-semantic-invariants.md)                           | The IR has semantic invariants, checked after every plugin           | Accepted, amended by ADR-0034 to ADR-0040, ADR-0045, ADR-0055         | §5.3, §5.10             |
@@ -113,6 +113,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0058](./0058-normalising-slot-templates-and-bound-values.md)      | Normalising Qwik's slot templates and bound `value` attributes       | Accepted                                                              | §4.5, §7.5, §9 M3       |
 | [0059](./0059-l4-consumer-type-tests.md)                           | L4 consumer type tests: misuse fixtures with inline expectations     | Accepted                                                              | §5.6, §7.2, §9 M3       |
 | [0060](./0060-react-bound-controls-and-angular-host-spaces.md)     | React's bound controls and Angular's host spaces                     | Proposed                                                              | §6, §7.5, §9 M3         |
+| [0062](./0062-baselines-generated-in-ci.md)                        | CI generates the Linux baselines, and a script applies them          | Proposed                                                              | §7.4, §7.9, §9 M4       |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 
