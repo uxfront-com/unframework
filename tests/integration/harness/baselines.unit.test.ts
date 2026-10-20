@@ -367,32 +367,46 @@ describe("baselines.sh check", () => {
   });
 });
 
-describe("baselines.sh ci", () => {
-  /** Runs `ci` as CI's Baselines job does, with the stand-in container script. */
-  function ci(env: Record<string, string> = {}, args: string[] = []) {
-    const outside = realpathSync(mkdtempSync(join(tmpdir(), "uf-baselines-artefact-")));
-    roots.push(outside);
-    const artefact = join(outside, "artefact");
-    const result = run(
-      ["ci", ...args],
-      { GITHUB_ACTIONS: "true", UF_BASELINE_ARTEFACT: artefact, ...env },
-      (_root, repo) =>
-        writeFileSync(
-          join(repo, "tests", "integration", "scripts", "baselines-in-container.sh"),
-          FAKE_CONTAINER,
-        ),
-    );
-    const log = join(result.root, "container.log");
-    const container = existsSync(log) ? readFileSync(log, "utf8").trimEnd().split("\n") : [];
-    return { ...result, artefact, container };
-  }
+/** Runs `ci` as CI's Baselines job does, with the stand-in container script. */
+function runCi(env: Record<string, string> = {}, args: string[] = []) {
+  const outside = realpathSync(mkdtempSync(join(tmpdir(), "uf-baselines-artefact-")));
+  roots.push(outside);
+  const artefact = join(outside, "artefact");
+  const result = run(
+    ["ci", ...args],
+    { GITHUB_ACTIONS: "true", UF_BASELINE_ARTEFACT: artefact, ...env },
+    (_root, repo) =>
+      writeFileSync(
+        join(repo, "tests", "integration", "scripts", "baselines-in-container.sh"),
+        FAKE_CONTAINER,
+      ),
+  );
+  const log = join(result.root, "container.log");
+  const container = existsSync(log) ? readFileSync(log, "utf8").trimEnd().split("\n") : [];
+  return { ...result, artefact, container };
+}
 
+/** Runs `download <args>` against a run whose artefact holds `files`. */
+function runDownload(
+  args: string[],
+  files: Record<string, string>,
+  env: Record<string, string> = {},
+  prepare?: (root: string, repo: string) => void,
+) {
+  return run(["download", ...args], env, (root, repo) => {
+    mkdirSync(join(root, "stage"));
+    stage(root, files);
+    prepare?.(root, repo);
+  });
+}
+
+describe("baselines.sh ci", () => {
   it("runs the update in place of the container, without Docker, and leaves the baselines in the artefact", () => {
     const writes = [
       WRITES_BASELINE,
       `mkdir -p "$out/${dirname(GEOMETRY)}" && printf '{}' >"$out/${GEOMETRY}"`,
     ].join(" && ");
-    const { status, calls, container, repo, temp, stdout, artefact } = ci(
+    const { status, calls, container, repo, temp, stdout, artefact } = runCi(
       { FAKE_CONTAINER_WRITES: writes },
       ["--maxWorkers=2"],
     );
@@ -415,20 +429,20 @@ describe("baselines.sh ci", () => {
   });
 
   it("leaves the artefact empty when no baseline changed", () => {
-    const { status, artefact } = ci({ FAKE_CONTAINER_WRITES: "true" });
+    const { status, artefact } = runCi({ FAKE_CONTAINER_WRITES: "true" });
     expect(status).toBe(0);
     expect(readdirSync(artefact)).toEqual([]);
   });
 
   it("keeps what the reference wrote when the run failed, and fails with it", () => {
-    const { status, artefact } = ci({ FAKE_DOCKER_STATUS: "3" });
+    const { status, artefact } = runCi({ FAKE_DOCKER_STATUS: "3" });
     expect(status).toBe(3);
     expect(existsSync(join(artefact, BASELINE))).toBe(true);
   });
 
   it("puts nothing in the artefact when the run left anything but baselines", () => {
     const writes = `${WRITES_BASELINE} && echo pwned >"$out/package.json"`;
-    const { status, stderr, artefact } = ci({ FAKE_CONTAINER_WRITES: writes });
+    const { status, stderr, artefact } = runCi({ FAKE_CONTAINER_WRITES: writes });
     expect(status).toBe(1);
     expect(stderr).toContain("the run left something other than baselines");
     expect(stderr).toContain("  package.json\n");
@@ -445,22 +459,11 @@ describe("baselines.sh ci", () => {
 });
 
 describe("baselines.sh download", () => {
-  /** Runs `download <args>` against a run whose artefact holds `files`. */
-  function download(
-    args: string[],
-    files: Record<string, string>,
-    env: Record<string, string> = {},
-    prepare?: (root: string, repo: string) => void,
-  ) {
-    return run(["download", ...args], env, (root, repo) => {
-      mkdirSync(join(root, "stage"));
-      stage(root, files);
-      prepare?.(root, repo);
-    });
-  }
-
   it("copies the run's baselines artefact into the cases", () => {
-    const { status, stdout, gh, repo } = download(["42"], { [BASELINE]: "png", [GEOMETRY]: "{}" });
+    const { status, stdout, gh, repo } = runDownload(["42"], {
+      [BASELINE]: "png",
+      [GEOMETRY]: "{}",
+    });
     expect(status).toBe(0);
     expect(readFileSync(join(repo, BASELINE), "utf8")).toBe("png");
     expect(readFileSync(join(repo, GEOMETRY), "utf8")).toBe("{}");
@@ -473,7 +476,7 @@ describe("baselines.sh download", () => {
   });
 
   it("takes the current branch's latest CI run by default", () => {
-    const { status, gh, repo } = download(
+    const { status, gh, repo } = runDownload(
       [],
       { [BASELINE]: "png" },
       { FAKE_GH_LATEST: "7" },
@@ -500,7 +503,7 @@ describe("baselines.sh download", () => {
   });
 
   it("writes nothing, and says so, when the run changed no baseline", () => {
-    const { status, stdout, gh, repo } = download(["42"], {}, { FAKE_GH_ARTEFACTS: "0" });
+    const { status, stdout, gh, repo } = runDownload(["42"], {}, { FAKE_GH_ARTEFACTS: "0" });
     expect(status).toBe(0);
     expect(stdout).toContain("run 42 changed no baseline; nothing was written.");
     expect(gh.some((call) => call[1] === "download")).toBe(false);
@@ -509,7 +512,7 @@ describe("baselines.sh download", () => {
 
   it("fails without an artefact when the Baselines job did not succeed", () => {
     for (const job of ["failure", "skipped"]) {
-      const { status, stderr } = download(
+      const { status, stderr } = runDownload(
         ["42"],
         {},
         { FAKE_GH_ARTEFACTS: "0", FAKE_GH_RUN: `abc123\tcompleted\t${job}` },
@@ -522,7 +525,7 @@ describe("baselines.sh download", () => {
   });
 
   it("copies what a failed job uploaded, and fails", () => {
-    const { status, stderr, repo } = download(
+    const { status, stderr, repo } = runDownload(
       ["42"],
       { [BASELINE]: "png" },
       { FAKE_GH_RUN: "abc123\tcompleted\tfailure" },
@@ -533,7 +536,7 @@ describe("baselines.sh download", () => {
   });
 
   it("refuses the whole artefact when it holds anything but baselines", () => {
-    const { status, stderr, repo } = download(["42"], {
+    const { status, stderr, repo } = runDownload(["42"], {
       [BASELINE]: "png",
       "tests/integration/cases/area/my-case/my-case.test.ts": "pwned",
       ".github/workflows/ci.yml": "pwned",
@@ -546,7 +549,7 @@ describe("baselines.sh download", () => {
   });
 
   it("waits for the Baselines job, and needs one, and a branch or a run id", () => {
-    const running = download(
+    const running = runDownload(
       ["42"],
       { [BASELINE]: "png" },
       { FAKE_GH_RUN: "abc123\tin_progress\tnone" },
@@ -554,11 +557,11 @@ describe("baselines.sh download", () => {
     expect(running.status).toBe(1);
     expect(running.stderr).toContain("run 42's Baselines job is in_progress");
     expect(running.gh.some((call) => call[1] === "download")).toBe(false);
-    const push = download(["42"], {}, { FAKE_GH_RUN: "abc123\tmissing\tnone" });
+    const push = runDownload(["42"], {}, { FAKE_GH_RUN: "abc123\tmissing\tnone" });
     expect(push.status).toBe(1);
     expect(push.stderr).toContain("run 42 has no Baselines job");
-    expect(download(["latest"], {}).status).toBe(2);
-    const detached = download([], {});
+    expect(runDownload(["latest"], {}).status).toBe(2);
+    const detached = runDownload([], {});
     expect(detached.status).toBe(1);
     expect(detached.stderr).toContain("pnpm test:baselines:download <run-id>");
   });
