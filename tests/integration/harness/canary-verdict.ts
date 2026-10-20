@@ -81,7 +81,12 @@ export function judgeCanary(
         );
         judged.add(kind);
         if (!failure) {
-          problems.push(`${where}: ${info.spec} loaded, although the canary corrupted the case`);
+          // A spec that loaded records cells in its project, a skip by capability included; with
+          // none, the project never ran it, which proves nothing of the import.
+          const ran = projects[`${kind}:${target}`]?.[info.id]?.[target] !== undefined;
+          problems.push(
+            `${where}: ${info.spec} ${ran ? "loaded" : "did not run"}, although the canary corrupted the case`,
+          );
           continue;
         }
         const message = failure.errors.join("\n");

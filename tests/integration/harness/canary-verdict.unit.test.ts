@@ -460,7 +460,10 @@ describe("judgeCanary", () => {
       const mounted: CanaryCase = { ...hello, runs: interactive };
       const run = {
         status: 1,
-        projects: cells("L6", { "basics/hello": { astro: fail(guarded("astro")) } }, "ssr"),
+        projects: merged(
+          cells("L6", { "basics/hello": { astro: fail(guarded("astro")) } }, "ssr"),
+          cells("L7", { "basics/hello": { astro: astroSkip } }),
+        ),
         loadFailures: [],
       };
       expect(judgeCanary(guard, run, ["astro"], [mounted]).problems).toEqual([
@@ -471,7 +474,7 @@ describe("judgeCanary", () => {
     it("fails a spec that loaded, or failed to load for another reason", () => {
       const run = {
         status: 1,
-        projects: ssr,
+        projects: merged(ssr, cells("L7", { "basics/hello": { react: pass } })),
         loadFailures: [
           { project: "browser:vue", file: hello.spec!, errors: ["Failed to fetch module"] },
           { project: "ssr:react", file: hello.spec!, errors: [guarded("react")] },
@@ -482,6 +485,13 @@ describe("judgeCanary", () => {
         expect.stringMatching(
           /^vue › basics\/hello › browser:vue: failed, but not in the browser golden guard check .*: Failed to fetch module$/,
         ),
+      ]);
+    });
+
+    it("says a spec did not run where its project recorded no cell of it, rather than loaded", () => {
+      const run = { status: 1, projects: ssr, loadFailures: [] };
+      expect(judgeCanary(guard, run, ["vue"], [hello]).problems).toEqual([
+        `vue › basics/hello › browser:vue: ${hello.spec} did not run, although the canary corrupted the case`,
       ]);
     });
 

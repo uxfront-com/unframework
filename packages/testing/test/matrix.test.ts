@@ -316,6 +316,57 @@ describe("withoutProjects", () => {
     expect(withoutProjects(matrix, new Set(["ssr:vue"]))).toBe(matrix);
     expect(withoutProjects(matrix, new Set(["compile", "browser:vue"]))).toBeUndefined();
   });
+
+  it("drops only the targets and cases a project's scope names, and the project once it is empty", () => {
+    const matrix = {
+      ...partial("all", "2026-10-01T10:00:00.000Z", [
+        { project: "compile", record: record("vue", { L1: { status: "pass" } }) },
+        { project: "compile", record: record("react", { L1: { status: "pass" } }) },
+        {
+          project: "browser:react",
+          record: { ...checked("react", ["initial"]), test: "basics/hello > renders" },
+        },
+        {
+          project: "browser:react",
+          record: {
+            ...checked("react", ["initial"], "semantics/listbox"),
+            test: "semantics/listbox > renders",
+          },
+        },
+      ]),
+      empty: ["browser:react"],
+    };
+    const kept = withoutProjects(
+      matrix,
+      new Set(["compile", "browser:react"]),
+      new Map([
+        ["compile", { targets: new Set(["vue"]) }],
+        ["browser:react", { cases: new Set(["semantics/listbox"]) }],
+      ]),
+    );
+    expect(kept?.projects).toEqual(["browser:react", "compile"]);
+    expect(kept?.byProject).toEqual({
+      compile: { "basics/hello": { react: { L1: "pass" } } },
+      "browser:react": { "basics/hello": { react: { L7: "pass" } } },
+    });
+    expect(kept?.scenarios).toEqual({ "basics/hello": { react: ["initial"] } });
+    expect(Object.keys(kept?.testsByProject["browser:react"] ?? {})).toEqual(["basics/hello"]);
+    expect(kept?.empty).toEqual(["browser:react"]);
+    const emptied = withoutProjects(
+      matrix,
+      new Set(["compile", "browser:react"]),
+      new Map([
+        ["compile", { targets: new Set(["vue", "react"]) }],
+        ["browser:react", { cases: new Set(["semantics/listbox"]) }],
+      ]),
+    );
+    expect(emptied?.projects).toEqual(["browser:react"]);
+    expect(emptied?.empty).toEqual(["browser:react"]);
+    expect(emptied?.byProject.compile).toBeUndefined();
+    // A scope that covers none of a matrix's records leaves it as it is.
+    const untouched = new Map([["compile", { targets: new Set(["svelte"]) }]]);
+    expect(withoutProjects(matrix, new Set(["compile"]), untouched)).toBe(matrix);
+  });
 });
 
 describe("settleQuarantine", () => {

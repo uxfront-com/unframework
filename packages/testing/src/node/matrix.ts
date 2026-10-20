@@ -363,27 +363,56 @@ export function buildPartialMatrix(input: {
   };
 }
 
-/** A partial matrix without some projects' records (a newer run has them), or none if empty. */
+/**
+ * The part of a project a newer run re-judged: only some targets' cells (a run of some targets,
+ * `UF_TARGETS`), or only some cases' (a target the run adds for the cases that name it as their
+ * own reference, ADR-0057). What a scope leaves out is every target, or every case.
+ */
+export interface ProjectScope {
+  targets?: ReadonlySet<string>;
+  cases?: ReadonlySet<string>;
+}
+
+/**
+ * A partial matrix without some projects' records (a newer run has them), or none if empty. A
+ * project with a scope loses only the cells inside it, and goes once it has none left. A matrix
+ * that loses nothing is returned as it is, and a project that loses nothing keeps its records.
+ */
 export function withoutProjects(
   matrix: PartialMatrix,
   projects: ReadonlySet<string>,
+  scopes: ReadonlyMap<string, ProjectScope> = new Map(),
 ): PartialMatrix | undefined {
-  const kept = matrix.projects.filter((project) => !projects.has(project));
-  if (kept.length === matrix.projects.length) return matrix;
+  const byProject: Record<string, MatrixCells> = {};
+  const scenariosByProject: Record<string, MatrixScenarios> = {};
+  const testsByProject: Record<string, MatrixTests> = {};
+  let dropped = false;
+  for (const project of matrix.projects) {
+    const scope = projects.has(project) ? (scopes.get(project) ?? {}) : undefined;
+    const before = [
+      matrix.byProject[project] ?? {},
+      matrix.scenariosByProject[project] ?? {},
+      matrix.testsByProject[project] ?? {},
+    ] as const;
+    const cells = outsideScope(before[0], scope);
+    const scenarios = outsideScope(before[1], scope);
+    const tests = outsideScope(before[2], scope);
+    if (cells !== before[0] || scenarios !== before[1] || tests !== before[2]) dropped = true;
+    if (scope && ![cells, scenarios, tests].some((set) => Object.keys(set).length)) {
+      dropped = true;
+      continue;
+    }
+    byProject[project] = cells;
+    scenariosByProject[project] = scenarios;
+    testsByProject[project] = tests;
+  }
+  if (!dropped) return matrix;
+  const kept = matrix.projects.filter((project) => project in byProject);
   if (!kept.length) return undefined;
-  const byProject = Object.fromEntries(
-    kept.map((project) => [project, matrix.byProject[project] ?? {}]),
-  );
-  const scenariosByProject = Object.fromEntries(
-    kept.map((project) => [project, matrix.scenariosByProject[project] ?? {}]),
-  );
-  const testsByProject = Object.fromEntries(
-    kept.map((project) => [project, matrix.testsByProject[project] ?? {}]),
-  );
   return {
     ...matrix,
     projects: kept,
-    empty: matrix.empty.filter((project) => !projects.has(project)),
+    empty: matrix.empty.filter((project) => kept.includes(project)),
     byProject,
     scenariosByProject,
     testsByProject,
@@ -394,12 +423,35 @@ export function withoutProjects(
 }
 
 /**
+ * Case → target → what is recorded, without what a scope covers; all of it without a scope. The
+ * same object when the scope covers none of it.
+ */
+function outsideScope<T>(
+  byCase: Record<string, Record<string, T>>,
+  scope: ProjectScope | undefined,
+): Record<string, Record<string, T>> {
+  if (!scope) return byCase;
+  const kept: Record<string, Record<string, T>> = {};
+  let dropped = false;
+  for (const [caseId, targets] of Object.entries(byCase)) {
+    for (const [target, value] of Object.entries(targets)) {
+      if ((scope.cases?.has(caseId) ?? true) && (scope.targets?.has(target) ?? true)) {
+        dropped = true;
+        continue;
+      }
+      (kept[caseId] ??= {})[target] = value;
+    }
+  }
+  return dropped ? kept : byCase;
+}
+
+/**
  * Merges partial matrices (CI's jobs, local runs of a subset) into one. For each project the
  * newest record of each cell wins, so a re-run replaces what an earlier run recorded; then the
  * projects merge cell by cell (fail beats pass). Scenarios add up, as cells another run did not
- * record are kept: a run of the whole project replaces its older records (the reporter's
- * `supersede`). The quarantine and the reference are the newest run's: an entry removed since
- * an older run must neither hide that run's failures nor go stale.
+ * record are kept: a run of a project replaces its older records of the targets and cases it
+ * re-judged (the reporter's `supersede`). The quarantine and the reference are the newest run's:
+ * an entry removed since an older run must neither hide that run's failures nor go stale.
  */
 export function mergeMatrices(partials: readonly PartialMatrix[]): {
   matrix: MergedMatrix;
