@@ -9,7 +9,7 @@ pnpm test                 # everything, from the repo root (turbo); or, in this 
 pnpm --filter @unframework/integration test -- --project "browser:vue"   # a subset
 pnpm test:update          # rewrite the golden outputs and the shared expectations (never in CI)
 pnpm test:baselines       # rewrite the Linux screenshot baselines, in Docker
-pnpm test:baselines:download [<run-id>]   # or copy in the ones CI generated for this branch
+pnpm test:baselines:download   # or copy in the ones CI generated for this branch (or a <run-id>)
 pnpm test:baselines:check # compare the browser projects with them, as CI does, in Docker
 pnpm test:canaries        # prove that every live layer catches the corruption it exists for
 pnpm test:canaries L8     # the canaries of one layer, or name canaries by id

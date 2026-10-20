@@ -62,26 +62,101 @@ case "$1" in
 esac
 `;
 
-// Records each call as the stand-in docker does. `run list` prints FAKE_GH_LATEST, `run view` the
-// run's status, head and Baselines job (FAKE_GH_RUN), `api` how many `baselines` artefacts it has
-// (FAKE_GH_ARTEFACTS), and `run download` copies the artefact (FAKE_GH_STAGE) into its --dir.
+// Records each call as the stand-in docker does, and answers as gh does: `run list` with
+// FAKE_GH_RUNS, `run view` with FAKE_GH_RUN, `api` with FAKE_GH_NAMED for a `?name=baselines`
+// query and FAKE_GH_PAGE, the first page of the unfiltered list, for any other. Each answer is
+// JSON, and the call's --jq filter runs on it with jq, as gh's own does. `run download` copies
+// the artefact (FAKE_GH_STAGE) into its --dir.
 const FAKE_GH = `#!/usr/bin/env bash
 { printf '%s\\n' "$@"; echo --end--; } >>"$FAKE_GH_LOG"
+filter=""
+dir=""
+previous=""
+for argument in "$@"; do
+  case "$previous" in
+    --jq) filter="$argument" ;;
+    --dir) dir="$argument" ;;
+  esac
+  previous="$argument"
+done
 case "$1 $2" in
-  "run list") echo "\${FAKE_GH_LATEST:-}" ;;
-  "run view") printf '%s\\n' "$FAKE_GH_RUN" ;;
-  "api "*) echo "\${FAKE_GH_ARTEFACTS:-1}" ;;
+  "run list") response="$FAKE_GH_RUNS" ;;
+  "run view") response="$FAKE_GH_RUN" ;;
+  "api "*"?name=baselines") response="$FAKE_GH_NAMED" ;;
+  "api "*) response="$FAKE_GH_PAGE" ;;
   "run download")
-    dir=""
-    previous=""
-    for argument in "$@"; do
-      if [ "$previous" = --dir ]; then dir="$argument"; fi
-      previous="$argument"
-    done
     cp -R "$FAKE_GH_STAGE/." "$dir"
+    exit 0
+    ;;
+  *)
+    echo "the stand-in gh has no answer to: $*" >&2
+    exit 1
     ;;
 esac
+if [ -z "$filter" ]; then
+  printf '%s\\n' "$response"
+  exit 0
+fi
+if ! command -v jq >/dev/null 2>&1; then
+  echo "the stand-in gh runs --jq filters with jq, which is not on PATH" >&2
+  exit 127
+fi
+printf '%s' "$response" | jq -r "$filter"
 `;
+
+/** A run as `gh run view --json headSha,jobs` gives it, with another job before its Baselines job. */
+function ghRun({
+  head = "abc123",
+  status = "completed",
+  conclusion = "success",
+  baselines = true,
+}: { head?: string; status?: string; conclusion?: string; baselines?: boolean } = {}): string {
+  const jobs = [
+    { name: "Unit tests", status: "completed", conclusion: "failure" },
+    ...(baselines ? [{ name: "Baselines", status, conclusion }] : []),
+  ];
+  return JSON.stringify({ headSha: head, jobs });
+}
+
+/** A page of a run's artefacts, as `GET /actions/runs/<id>/artifacts` gives it. */
+function artefacts(names: readonly string[], total = names.length): string {
+  return JSON.stringify({ total_count: total, artifacts: names.map((name) => ({ name })) });
+}
+
+/**
+ * The first page of a run with 31 artefacts: 30 per page, and `baselines` on the second, as a
+ * run whose baselines changed can have (every browser job uploads its visual diffs).
+ */
+const FIRST_PAGE = artefacts(
+  Array.from({ length: 30 }, (_, index) => `parity-${index}`),
+  31,
+);
+
+/** Makes `repo` a git repository with one commit on `probe`, detached if asked; returns HEAD. */
+function commit(repo: string, { detach = false } = {}): string {
+  const git = (...args: string[]) =>
+    spawnSync(
+      "git",
+      [
+        "-C",
+        repo,
+        "-c",
+        "user.name=probe",
+        "-c",
+        "user.email=probe@example.com",
+        "-c",
+        "commit.gpgsign=false",
+        "-c",
+        "core.hooksPath=/dev/null",
+        ...args,
+      ],
+      { encoding: "utf8" },
+    );
+  git("init", "--quiet", "--initial-branch", "probe");
+  git("commit", "--quiet", "--allow-empty", "--message", "probe");
+  if (detach) git("switch", "--quiet", "--detach");
+  return git("rev-parse", "HEAD").stdout.trim();
+}
 
 // Stands in for baselines-in-container.sh in `ci` mode: records its arguments and the
 // directories it was given, then writes FAKE_CONTAINER_WRITES with `$out` set to its OUT.
@@ -104,7 +179,7 @@ afterEach(() => {
 function run(
   args: string[],
   env: Record<string, string> = {},
-  prepare?: (root: string, repo: string) => void,
+  prepare?: (root: string, repo: string) => Record<string, string> | void,
 ) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "uf-baselines-")));
   roots.push(root);
@@ -126,7 +201,7 @@ function run(
   mkdirSync(temp);
   const log = join(root, "docker.log");
   const ghLog = join(root, "gh.log");
-  prepare?.(root, repo);
+  const prepared = prepare?.(root, repo) || {};
   const result = spawnSync("bash", [join(scripts, "baselines.sh"), ...args], {
     encoding: "utf8",
     env: {
@@ -138,12 +213,16 @@ function run(
       FAKE_CONTAINER_WRITES: WRITES_BASELINE,
       FAKE_CONTAINER_LOG: join(root, "container.log"),
       FAKE_GH_LOG: ghLog,
-      FAKE_GH_RUN: "abc123\tcompleted\tsuccess",
+      FAKE_GH_RUNS: "[]",
+      FAKE_GH_RUN: ghRun(),
+      FAKE_GH_NAMED: artefacts(["baselines"]),
+      FAKE_GH_PAGE: FIRST_PAGE,
       FAKE_GH_STAGE: join(root, "stage"),
       UF_BASELINE_PLATFORM: "",
       GITHUB_ACTIONS: "",
       UF_BASELINE_ARTEFACT: "",
       ...env,
+      ...prepared,
     },
   });
   return {
@@ -391,12 +470,12 @@ function runDownload(
   args: string[],
   files: Record<string, string>,
   env: Record<string, string> = {},
-  prepare?: (root: string, repo: string) => void,
+  prepare?: (root: string, repo: string) => Record<string, string> | void,
 ) {
   return run(["download", ...args], env, (root, repo) => {
     mkdirSync(join(root, "stage"));
     stage(root, files);
-    prepare?.(root, repo);
+    return prepare?.(root, repo);
   });
 }
 
@@ -453,13 +532,14 @@ describe("baselines.sh ci", () => {
     const { status, stderr } = run(["ci"]);
     expect(status).toBe(1);
     expect(stderr).toContain("runs only in CI's Baselines job");
-    // Nor without the artefact's directory.
+    // Nor outside GitHub Actions with the artefact's directory, nor in it without one.
+    expect(run(["ci"], { UF_BASELINE_ARTEFACT: join(tmpdir(), "uf-unused") }).status).toBe(1);
     expect(run(["ci"], { GITHUB_ACTIONS: "true" }).status).toBe(1);
   });
 });
 
 describe("baselines.sh download", () => {
-  it("copies the run's baselines artefact into the cases", () => {
+  it("copies the run's baselines artefact into the cases, whichever page of its artefacts holds it", () => {
     const { status, stdout, gh, repo } = runDownload(["42"], {
       [BASELINE]: "png",
       [GEOMETRY]: "{}",
@@ -470,19 +550,17 @@ describe("baselines.sh download", () => {
     expect(stdout).toContain(`baseline: ${GEOMETRY}`);
     const fetched = gh.find((call) => call[1] === "download");
     expect(fetched!.slice(0, 5)).toEqual(["run", "download", "42", "--name", "baselines"]);
+    // The first page of the unfiltered list (FIRST_PAGE) doesn't hold it: the server filters.
     expect(gh.find((call) => call[0] === "api")![1]).toBe(
-      "repos/{owner}/{repo}/actions/runs/42/artifacts",
+      "repos/{owner}/{repo}/actions/runs/42/artifacts?name=baselines",
     );
   });
 
   it("takes the current branch's latest CI run by default", () => {
-    const { status, gh, repo } = runDownload(
-      [],
-      { [BASELINE]: "png" },
-      { FAKE_GH_LATEST: "7" },
-      (_root, planted) =>
-        spawnSync("git", ["init", "--quiet", "--initial-branch", "probe", planted]),
-    );
+    const { status, gh, repo } = runDownload([], { [BASELINE]: "png" }, {}, (_root, planted) => ({
+      FAKE_GH_RUNS: JSON.stringify([{ databaseId: 7 }]),
+      FAKE_GH_RUN: ghRun({ head: commit(planted) }),
+    }));
     expect(status).toBe(0);
     expect(gh[0]).toEqual([
       "run",
@@ -502,8 +580,34 @@ describe("baselines.sh download", () => {
     expect(existsSync(join(repo, BASELINE))).toBe(true);
   });
 
+  it("refuses the branch's latest run when it is of another commit, unless it is named", () => {
+    const latest = runDownload([], { [BASELINE]: "png" }, {}, (_root, planted) => {
+      commit(planted);
+      return { FAKE_GH_RUNS: JSON.stringify([{ databaseId: 7 }]) };
+    });
+    expect(latest.status).toBe(1);
+    expect(latest.stderr).toContain("the latest run on probe, 7, is of abc123, not of HEAD.");
+    expect(latest.gh.some((call) => call[1] === "download")).toBe(false);
+    expect(existsSync(join(latest.repo, BASELINE))).toBe(false);
+
+    const named = runDownload(["7"], { [BASELINE]: "png" }, {}, (_root, planted) => {
+      commit(planted);
+    });
+    expect(named.status).toBe(0);
+    expect(named.stderr).toContain("run 7 is of abc123, not of HEAD");
+    expect(existsSync(join(named.repo, BASELINE))).toBe(true);
+  });
+
+  it("fails when the branch has no CI run", () => {
+    const { status, stderr } = runDownload([], {}, {}, (_root, planted) => {
+      commit(planted);
+    });
+    expect(status).toBe(1);
+    expect(stderr).toContain("CI has no run on probe.");
+  });
+
   it("writes nothing, and says so, when the run changed no baseline", () => {
-    const { status, stdout, gh, repo } = runDownload(["42"], {}, { FAKE_GH_ARTEFACTS: "0" });
+    const { status, stdout, gh, repo } = runDownload(["42"], {}, { FAKE_GH_NAMED: artefacts([]) });
     expect(status).toBe(0);
     expect(stdout).toContain("run 42 changed no baseline; nothing was written.");
     expect(gh.some((call) => call[1] === "download")).toBe(false);
@@ -511,15 +615,15 @@ describe("baselines.sh download", () => {
   });
 
   it("fails without an artefact when the Baselines job did not succeed", () => {
-    for (const job of ["failure", "skipped"]) {
+    for (const conclusion of ["failure", "skipped"]) {
       const { status, stderr } = runDownload(
         ["42"],
         {},
-        { FAKE_GH_ARTEFACTS: "0", FAKE_GH_RUN: `abc123\tcompleted\t${job}` },
+        { FAKE_GH_NAMED: artefacts([]), FAKE_GH_RUN: ghRun({ conclusion }) },
       );
       expect(status).toBe(1);
       expect(stderr).toContain(
-        `run 42 has no baselines artefact, and its Baselines job is ${job}.`,
+        `run 42 has no baselines artefact, and its Baselines job is ${conclusion}.`,
       );
     }
   });
@@ -528,7 +632,7 @@ describe("baselines.sh download", () => {
     const { status, stderr, repo } = runDownload(
       ["42"],
       { [BASELINE]: "png" },
-      { FAKE_GH_RUN: "abc123\tcompleted\tfailure" },
+      { FAKE_GH_RUN: ghRun({ conclusion: "failure" }) },
     );
     expect(status).toBe(1);
     expect(stderr).toContain("Baselines job is failure");
@@ -548,22 +652,28 @@ describe("baselines.sh download", () => {
     expect(existsSync(join(repo, ".github"))).toBe(false);
   });
 
-  it("waits for the Baselines job, and needs one, and a branch or a run id", () => {
+  it("waits for the Baselines job, and needs one", () => {
     const running = runDownload(
       ["42"],
       { [BASELINE]: "png" },
-      { FAKE_GH_RUN: "abc123\tin_progress\tnone" },
+      { FAKE_GH_RUN: ghRun({ status: "in_progress", conclusion: "" }) },
     );
     expect(running.status).toBe(1);
     expect(running.stderr).toContain("run 42's Baselines job is in_progress");
     expect(running.gh.some((call) => call[1] === "download")).toBe(false);
-    const push = runDownload(["42"], {}, { FAKE_GH_RUN: "abc123\tmissing\tnone" });
+    const push = runDownload(["42"], {}, { FAKE_GH_RUN: ghRun({ baselines: false }) });
     expect(push.status).toBe(1);
     expect(push.stderr).toContain("run 42 has no Baselines job");
+  });
+
+  it("needs a number for a run, and a branch to take the latest run of", () => {
     expect(runDownload(["latest"], {}).status).toBe(2);
-    const detached = runDownload([], {});
+    const detached = runDownload([], {}, {}, (_root, planted) => {
+      commit(planted, { detach: true });
+    });
     expect(detached.status).toBe(1);
-    expect(detached.stderr).toContain("pnpm test:baselines:download <run-id>");
+    expect(detached.stderr).toContain("HEAD is detached");
+    expect(detached.gh).toEqual([]);
   });
 });
 
@@ -578,10 +688,19 @@ describe("CI's Baselines job", () => {
     if (!job) throw new Error("ci.yml has no baselines job.");
     expect(job).toMatch(/^ {4}name: Baselines$/m);
     expect(job).toMatch(/^ {4}if: \$\{\{ github\.event_name != 'push' \}\}$/m);
+    expect(/^on:\n((?: {2}.*\n)+)/m.exec(workflow)?.[1]).toMatch(
+      /^ {2}pull_request:\n(?:.*\n)* {2}workflow_dispatch:$/m,
+    );
+    // GitHub's x64 runner: the one CI compares on, which ADR-0019's open item asked for.
+    expect(job).toMatch(/^ {4}runs-on: ubuntu-latest$/m);
     expect(job).toMatch(/^ {6}image: (\S+)$/m);
     const artefact = /^ {10}UF_BASELINE_ARTEFACT: (\S+)$/m.exec(job)?.[1];
     expect(artefact).toBeDefined();
     expect(job).toContain("run: bash tests/integration/scripts/baselines.sh ci\n");
+    // A failed run still uploads what its reference wrote.
+    expect(job).toMatch(
+      /^ {8}if: \$\{\{ !cancelled\(\) \}\}\n {8}uses: actions\/upload-artifact@/m,
+    );
     expect(job).toMatch(/^ {10}name: baselines$/m);
     expect(job).toContain(`          path: ${artefact}\n`);
     expect(job).toMatch(/^ {10}if-no-files-found: ignore$/m);

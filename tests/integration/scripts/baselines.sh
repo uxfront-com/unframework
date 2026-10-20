@@ -79,6 +79,7 @@ if [ "$MODE" = download ]; then
     exit 1
   fi
   run="${1:-}"
+  named="$run"
   if [ -z "$run" ]; then
     if ! branch="$(git -C "$REPO" symbolic-ref --quiet --short HEAD)"; then
       echo "test:baselines:download: HEAD is detached, so there is no branch to take the latest run of. Name the run: pnpm test:baselines:download <run-id>." >&2
@@ -109,10 +110,17 @@ if [ "$MODE" = download ]; then
   fi
   echo "test:baselines:download: run $run, of $head; its Baselines job: $job."
   if [ "$head" != "$(git -C "$REPO" rev-parse HEAD 2>/dev/null)" ]; then
+    # The branch's latest run may be of an older push, or of another repository's branch of the
+    # same name (a fork's pull request): take it only when it is named.
+    if [ -z "$named" ]; then
+      echo "test:baselines:download: the latest run on $branch, $run, is of $head, not of HEAD. Push HEAD and wait for its run, or name the run: pnpm test:baselines:download $run." >&2
+      exit 1
+    fi
     echo "test:baselines:download: run $run is of $head, not of HEAD; its baselines are that commit's." >&2
   fi
-  artefacts="$(cd "$REPO" && gh api "repos/{owner}/{repo}/actions/runs/$run/artifacts" \
-    --jq '[.artifacts[] | select(.name == "baselines")] | length')"
+  # Filtered by name on the server: the list is paged, and the artefact can be on any page.
+  artefacts="$(cd "$REPO" && gh api "repos/{owner}/{repo}/actions/runs/$run/artifacts?name=baselines" \
+    --jq '.total_count')"
   if [ "$artefacts" = 0 ]; then
     # The job uploads nothing when no baseline changed.
     if [ "$job" = success ]; then

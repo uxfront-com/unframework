@@ -35,7 +35,11 @@ Two items were left open:
     `Integration: browser` stays the check. The parity job doesn't wait for it, because an update
     run's matrix is no evidence of parity.
 - **`pnpm test:baselines:download [<run-id>]`** runs `baselines.sh download`.
-  - Without a run id, it takes the latest `ci.yml` run of the current branch.
+  - Without a run id, it takes the latest `ci.yml` run of the current branch, and refuses it
+    when that run is of another commit than HEAD: an older push, or a fork's branch of the same
+    name. A named run of another commit only gets a warning.
+  - It asks for the artefact by name (`artifacts?name=baselines`), since the list of a run's
+    artefacts is paged and a run whose baselines changed has about 30.
   - It reads the run's `Baselines` job, not the whole run: the artefact is complete once that job
     is. It refuses a run without the job (a push to `main`) or one whose job hasn't completed.
   - With no `baselines` artefact, it writes nothing and says so when the job succeeded, and fails
@@ -49,6 +53,9 @@ Two items were left open:
   `UF_UPDATE=1`, but only inside its own copy of the checkout. What it writes reaches the repository
   only as a reviewed commit, made by a person who ran the download.
 - `pnpm test:baselines` stays the local path, and `pnpm test:baselines:check` the local check.
+- On a pull request, the job checks out the PR's merge commit with its base, as every CI job does,
+  so its baselines are those of the tree `Integration: browser` compares. The run's `headSha` is
+  the PR's head, which is what the download compares with HEAD.
 
 ## Consequences
 
