@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF5005",
+    "severity": "error",
+    "message": "\"./Alert.css\" cannot be read: the compiler finds no stylesheet there.",
+    "file": "diagnostics/stylesheet-not-found/Alert.uf.tsx",
+    "start": {
+      "line": 2,
+      "column": 8,
+      "offset": 95
+    },
+    "end": {
+      "line": 2,
+      "column": 21,
+      "offset": 108
+    },
+    "help": "Check the path and its case, or create the file."
+  }
+]

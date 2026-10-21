@@ -52,6 +52,7 @@
     "@unframework/diagnostics": "workspace:*",
     "@unframework/ir": "workspace:*",
     "@unframework/parser": "workspace:*",
+    "lightningcss": "catalog:",
     "magic-string": "catalog:",
     "oxc-codegen": "catalog:",
     "oxfmt": "catalog:"
@@ -64,7 +65,8 @@
     "playwright": "catalog:",
     "tsdown": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "vue": "catalog:"
   },
   "peerDependencies": {
     "vite": "catalog:"

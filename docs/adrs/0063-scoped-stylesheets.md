@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-10-21
 - **Plan:** §4.4, §5.3, §5.8, §6, §7.2, §7.5, §9 M4, P2, P5, P6, P7, P8; C4 (ADR-0004), D5
-  (ADR-0009); amends ADR-0004, ADR-0009, ADR-0021 and ADR-0025
+  (ADR-0009); amends ADR-0004, ADR-0009, ADR-0021, ADR-0025 and ADR-0053
 
 ## Context
 
@@ -78,12 +78,17 @@ matches nothing.
 
 **Where the work lives:**
 
-- **The scoper** is in `@unframework/codegen`. It runs lightningcss's `transform` with a selector
-  visitor, prints a deterministic, non-minified sheet, and returns its UF5004 diagnostics.
-  `@unframework/parser` only reports a sheet's parse errors (UF5002).
-- `compile()` runs the scoper once per sheet, after analysis and before the targets, and reports
-  what it returns at the selector's span. A scoper error withholds the module from every target, as
-  an analyser error does. The analyser can't run it: codegen depends on the analyser in its tests.
+- **The scoper** is in `@unframework/codegen`. It runs lightningcss's `transform` with a visitor
+  that rewrites the sheet's selectors, prints a deterministic, non-minified sheet, and returns its
+  UF5004 diagnostics. `@unframework/parser` only reports a sheet's parse errors (UF5002).
+- **The resolver reads the sheets.** `compile()` asks the resolver's `stylesheet` for each sheet
+  before analysis, and the codegen scoper whether it uses `:slotted()`; a sheet it cannot read is
+  UF5005. UF5002 and UF5004 point into the sheet, in its file as the resolver names it.
+- `compile()` runs the scoper once per sheet, after analysis and the plugins' `ir` hooks and before
+  the targets, so it scopes the module the targets emit from, and reports what it returns at the
+  selector's span. A hook may keep or drop the analyser's sheets with their scope id, never change
+  them. A scoper error withholds the module from every target, as an analyser error does. The
+  analyser can't run it: codegen depends on the analyser in its tests.
 - **The output file.** Each styled component gets a second `OutputFile` on every target, named
   after its source plus `.css` (`Button.uf.tsx.css`, ADR-0021's id for TSX targets). Every output
   refers to it as `./<source>.css`, so it never collides with the author's `./Button.css`, which is
@@ -185,6 +190,9 @@ Vue      <style src="./Button.uf.tsx.css"></style>
   own.
 - **ADR-0025.** L3 never sees an emitted sheet: the compile project's lightningcss check covers
   every target's.
+- **ADR-0053.** The file resolver reads a child's stylesheets too, for the scope id and the
+  `:slotted()` use its API carries, and caches the child's analysis by their text as well. A
+  child's own `.uf.tsx` imports are still never resolved.
 
 ## Alternatives considered
 

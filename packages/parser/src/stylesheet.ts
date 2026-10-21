@@ -3,8 +3,8 @@ import { transform } from "lightningcss";
 import type { Span } from "./parse.ts";
 
 /**
- * A parsed stylesheet. Scoping (M4) rewrites the selectors through lightningcss's own AST in
- * the target kit, so the parser reports only whether the sheet parses.
+ * A parsed stylesheet. The codegen scoper (`scopeStylesheet`, ADR-0063) rewrites the selectors
+ * through lightningcss's own AST, so the parser reports only whether the sheet parses.
  */
 export interface ParsedStylesheet {
   file: string;

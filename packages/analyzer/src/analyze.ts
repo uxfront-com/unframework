@@ -48,6 +48,8 @@ import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
 import { checkDirective, declareSetup, isDirective, refTypeOf } from "./setup.ts";
 import type { InjectionKeyInfo } from "./setup.ts";
+import { scopeIdOf, STYLESHEET_SPECIFIER, stylesheetImport } from "./styles.ts";
+import type { LoweredSheet, StylesheetSource } from "./styles.ts";
 import { syntaxError } from "./syntax.ts";
 
 /** The result of analysing one module. */
@@ -73,6 +75,11 @@ export interface AnalyzeOptions {
    * compiler's resolver gave it: `undefined` for one it could not resolve (UF1202).
    */
   imports?: ReadonlyMap<string, ModuleApi | undefined>;
+  /**
+   * Each stylesheet the source imports (`stylesheetImports`), by the import's specifier, as the
+   * compiler's resolver read it: `undefined` for one it could not read (UF5005, ADR-0063).
+   */
+  stylesheets?: ReadonlyMap<string, StylesheetSource | undefined>;
 }
 
 /** The specifier of an import of a component module ends in `.uf.tsx` (ADR-0053). */
@@ -204,6 +211,8 @@ export function analyzeModule(
     components,
     keys,
     outputs: new Map(candidates.map((candidate) => [candidate.name.toLowerCase(), candidate.name])),
+    stylesheets: options.stylesheets ?? new Map(),
+    sheets: [],
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
@@ -213,6 +222,22 @@ export function analyzeModule(
   // A module-level error drops every component, but they are still checked: fixing it must
   // reveal nothing new (the harness's L1).
   const moduleErrors = keyErrors || reporter.hasErrorsSince(moduleMark);
+  // The module's one component owns its sheets (ADR-0063): its API carries their scope id, as
+  // the one a parent reads through the resolver, and so does its own render of itself.
+  const [sheetOwner] = candidates;
+  const styles =
+    sheetOwner && context.sheets.length
+      ? {
+          sheets: context.sheets.map(({ sheet }) => sheet),
+          scopeId: scopeIdOf(
+            sheetOwner.name,
+            context.sheets.map(({ sheet }) => sheet.source),
+          ),
+          slotted: context.sheets.some(({ slotted }) => slotted),
+        }
+      : undefined;
+  const ownerApi = sheetOwner && apis.get(sheetOwner);
+  if (styles && ownerApi) ownerApi.styles = { scopeId: styles.scopeId, slotted: styles.slotted };
   const api: ModuleApi = {
     file: parsed.file,
     components: [...apis.values()],
@@ -253,6 +278,9 @@ export function analyzeModule(
     }
   }
   dropFailedRenders(lowered, candidates);
+  if (styles && lowered[0]) {
+    lowered[0] = { ...lowered[0], styles: styles.sheets, scopeId: styles.scopeId };
+  }
   // The output of the module's main component declares its keys, and the types they reach.
   // Codegen's `keyOwner` rule: the default export, else the first exported, else the first.
   const ownerName = (exports.find((entry) => entry.kind === "default") ?? exports[0])?.local;
@@ -415,6 +443,10 @@ interface ModuleContext {
   components: Map<object, ComponentInfo | undefined>;
   /** The injection keys `provide` and `inject` may name, by the identifier that declares each. */
   keys: Map<object, InjectionKeyInfo>;
+  /** Each stylesheet the module imports, by specifier, as the resolver read it (ADR-0063). */
+  stylesheets: ReadonlyMap<string, StylesheetSource | undefined>;
+  /** The module's sheets, collected in source order. */
+  sheets: LoweredSheet[];
 }
 
 /** The local names a module exports as values in `export { name }` and `export default name`. */
@@ -485,6 +517,16 @@ function checkTopLevelStatement(
     case "ImportDeclaration":
       if (COMPONENT_SPECIFIER.test(statement.source.value) && statement.importKind !== "type") {
         componentImport(statement, context);
+        return;
+      }
+      if (STYLESHEET_SPECIFIER.test(statement.source.value)) {
+        stylesheetImport(
+          statement,
+          context.stylesheets,
+          candidates.length,
+          reporter,
+          context.sheets,
+        );
         return;
       }
       checkImport(statement, reporter);
@@ -990,10 +1032,6 @@ function checkImport(statement: AST.ImportDeclaration, reporter: Reporter): void
       "Importing types from other modules is not supported yet: types from other modules land in M5.",
       { help: "Declare the props type in this module." },
     );
-    return;
-  }
-  if (/\.(css|scss|sass|less|styl|pcss)$/.test(specifier)) {
-    reporter.unsupported(statement, "Stylesheets are not supported yet.");
     return;
   }
   reporter.unsupported(statement, "Importing modules is not supported yet.");

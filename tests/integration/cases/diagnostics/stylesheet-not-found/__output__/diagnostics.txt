@@ -1,0 +1,8 @@
+error[UF5005]: "./Alert.css" cannot be read: the compiler finds no stylesheet there.
+ --> diagnostics/stylesheet-not-found/Alert.uf.tsx:2:8
+  |
+2 | import "./Alert.css";
+  |        ^^^^^^^^^^^^^
+  |
+  = help: Check the path and its case, or create the file.
+  = see: https://unframework.dev/diagnostics/UF5005

@@ -14,7 +14,8 @@ Reads Unframework sources (plan §5.1, P1):
 - `visitorKeys` is oxc's child keys for every node type, so a pass can walk the AST without
   importing oxc.
 - `parseStylesheet(file, source)` parses a stylesheet with lightningcss and returns its syntax
-  error, if any, at its exact offset.
+  error, if any, at its exact offset (`offsetOf` maps lightningcss's line and column to it). It
+  only parses: the codegen scoper (`scopeStylesheet`, ADR-0063) rewrites the selectors.
 - `parseDeclarations(source)` reads a `style` attribute's declaration list as written (ADR-0038):
   each property and value with their spans, split at the `;` and `:` outside strings, comments and
   brackets, and lightningcss's syntax errors.

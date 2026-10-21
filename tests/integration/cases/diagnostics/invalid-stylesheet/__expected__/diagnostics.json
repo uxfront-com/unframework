@@ -1,0 +1,18 @@
+[
+  {
+    "code": "UF5002",
+    "severity": "error",
+    "message": "This stylesheet is not valid CSS: Invalid dangling combinator in selector.",
+    "file": "diagnostics/invalid-stylesheet/Badge.css",
+    "start": {
+      "line": 5,
+      "column": 10,
+      "offset": 37
+    },
+    "end": {
+      "line": 5,
+      "column": 10,
+      "offset": 37
+    }
+  }
+]

@@ -47,12 +47,7 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
     "Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
   UF9001:
     "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
-  // M4's styling codes are catalogued before the analyser reports them (ADR-0063).
-  UF5001: "The analyser still rejects stylesheet imports: the case lands in layer 4 of M4.",
-  UF5002: "The analyser still rejects stylesheet imports: the case lands in layer 4 of M4.",
-  UF5003: "The analyser still rejects stylesheet imports: the case lands in layer 4 of M4.",
-  UF5004: "No scoper runs yet: the case lands in layer 4 of M4.",
-  UF5005: "The analyser still rejects stylesheet imports: the case lands in layer 4 of M4.",
+  // M4's Styleframe code is catalogued before the analyser reports it (ADR-0063).
   UF5006: "The analyser still rejects Styleframe's imports: the case lands in layer 10 of M4.",
 };
 

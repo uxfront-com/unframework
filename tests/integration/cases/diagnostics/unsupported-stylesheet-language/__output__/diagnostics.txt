@@ -1,0 +1,8 @@
+error[UF5003]: "./Panel.scss" is written in a preprocessor's language, and the compiler scopes plain CSS only.
+ --> diagnostics/unsupported-stylesheet-language/Panel.uf.tsx:2:8
+  |
+2 | import "./Panel.scss";
+  |        ^^^^^^^^^^^^^^
+  |
+  = help: Compile the sheet to a `.css` file, and import that.
+  = see: https://unframework.dev/diagnostics/UF5003

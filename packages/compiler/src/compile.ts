@@ -1,5 +1,6 @@
-import { analyze, componentImports } from "@unframework/analyzer";
-import { formatOutput } from "@unframework/codegen";
+import { analyze, componentImports, stylesheetImports } from "@unframework/analyzer";
+import type { StylesheetSource } from "@unframework/analyzer";
+import { formatOutput, scopeStylesheet } from "@unframework/codegen";
 import type { OutputFile, Target } from "@unframework/codegen";
 import { createDiagnostic, sortDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
@@ -9,6 +10,7 @@ import { parseModule } from "@unframework/parser";
 
 import { checkCapabilities } from "./capabilities.ts";
 import { isSpanIn, pluginIrProblems } from "./plugin-ir.ts";
+import { stylesheetSource } from "./resolver.ts";
 import type { Resolver } from "./resolver.ts";
 import { resolveTarget } from "./targets.ts";
 import type { TargetName } from "./targets.ts";
@@ -56,7 +58,8 @@ export interface CompileOptions {
    * reads files. `importer` is `filename`. It is pure and deterministic (P8): it analyses the
    * child's declarations, never compiles it, so the output depends only on the source, the
    * options and what it returns. Without it, or when it returns nothing, the import is UF1202;
-   * a resolver that throws is UF9001 as well.
+   * a resolver that throws is UF9001 as well. Its `stylesheet` reads each stylesheet the source
+   * imports (ADR-0063): without it, or when it returns nothing, the import is UF5005.
    */
   resolve?: Resolver;
 }
@@ -101,6 +104,8 @@ export async function compile(source: string, options: CompileOptions): Promise<
   // The analyser's module, frozen: every plugin's module is compared with it, whatever the
   // plugins before it returned.
   let analysed: UfModule | undefined;
+  /** Each stylesheet's file, by its specifier, as the resolver named it. */
+  let sheetFiles = new Map<string, string>();
   try {
     const parsed = parseModule(file, source);
     const imports = new Map<string, ModuleApi | undefined>();
@@ -112,7 +117,20 @@ export async function compile(source: string, options: CompileOptions): Promise<
         diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
       }
     }
-    const analysis = analyze(parsed, { imports });
+    const stylesheets = new Map<string, StylesheetSource | undefined>();
+    for (const specifier of stylesheetImports(parsed)) {
+      try {
+        const sheet = await options.resolve?.stylesheet?.({ specifier, importer: file });
+        stylesheets.set(specifier, sheet && stylesheetSource(sheet.file, sheet.source));
+      } catch (error) {
+        stylesheets.set(specifier, undefined);
+        diagnostics.push(internal(file, error, `The resolver failed on "${specifier}"`));
+      }
+    }
+    sheetFiles = new Map(
+      [...stylesheets].flatMap(([specifier, sheet]) => (sheet ? [[specifier, sheet.file]] : [])),
+    );
+    const analysis = analyze(parsed, { imports, stylesheets });
     diagnostics.push(...analysis.diagnostics);
     // The analyser keeps the IR's invariants by construction; a module that breaks one is a
     // compiler bug, and no target may emit from it.
@@ -145,6 +163,19 @@ export async function compile(source: string, options: CompileOptions): Promise<
       module = deepFreeze(result);
     } catch (error) {
       diagnostics.push(pluginFailed(file, plugin.name, "ir", `threw: ${messageOf(error)}`));
+    }
+  }
+
+  // The scoper runs once per sheet, on the module the targets emit from: after the plugins' `ir`
+  // hooks, which may keep or drop the analyser's sheets, never change them (ADR-0063). A
+  // selector it rejects (UF5004) withholds the module from every target, as an analyser error
+  // does.
+  for (const component of module?.components ?? []) {
+    for (const sheet of component.styles ?? []) {
+      const sheetFile = sheetFiles.get(sheet.specifier) ?? sheet.specifier;
+      const scoped = scopeStylesheet(sheetFile, sheet.source, component.scopeId!);
+      diagnostics.push(...scoped.diagnostics);
+      if (scoped.diagnostics.length) module = undefined;
     }
   }
 

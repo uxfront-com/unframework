@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF5001",
+    "severity": "error",
+    "message": "\"./Toolbar.css\" has no single owner: this module declares 2 components, and a stylesheet scopes the elements of one.",
+    "file": "diagnostics/shared-stylesheet/Toolbar.uf.tsx",
+    "start": {
+      "line": 3,
+      "column": 8,
+      "offset": 120
+    },
+    "end": {
+      "line": 3,
+      "column": 23,
+      "offset": 135
+    },
+    "help": "Move each component that needs styles into a module of its own, with its own stylesheet."
+  }
+]

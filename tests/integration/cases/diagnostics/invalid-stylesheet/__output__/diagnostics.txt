@@ -1,0 +1,7 @@
+error[UF5002]: This stylesheet is not valid CSS: Invalid dangling combinator in selector.
+ --> diagnostics/invalid-stylesheet/Badge.css:5:10
+  |
+5 | .badge > {
+  |          ^
+  |
+  = see: https://unframework.dev/diagnostics/UF5002
