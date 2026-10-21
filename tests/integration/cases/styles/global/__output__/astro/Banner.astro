@@ -1,0 +1,15 @@
+---
+import Hint from "./Hint.astro";
+
+interface Props {
+  tip: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { tip, class: className, style } = Astro.props;
+---
+
+<div class:list={["banner", className]} style={style} data-uf-e25060c2="">
+  <Hint text={tip} data-uf-e25060c2="" />
+</div>

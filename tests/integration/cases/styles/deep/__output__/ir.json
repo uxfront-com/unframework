@@ -1,0 +1,253 @@
+{
+  "irVersion": 1,
+  "file": "styles/deep/Article.uf.tsx",
+  "components": [
+    {
+      "name": "Article",
+      "span": {
+        "start": 59,
+        "end": 269
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 117,
+              "end": 123
+            }
+          },
+          "binding": "title@93",
+          "span": {
+            "start": 110,
+            "end": 124
+          }
+        },
+        {
+          "name": "note",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 131,
+              "end": 137
+            }
+          },
+          "binding": "note@100",
+          "span": {
+            "start": 125,
+            "end": 137
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ title: string; note: string }",
+          "span": {
+            "start": 108,
+            "end": 139
+          }
+        },
+        "span": {
+          "start": 91,
+          "end": 139
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "title@93",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 93,
+            "end": 98
+          }
+        },
+        {
+          "id": "note@100",
+          "name": "note",
+          "kind": "prop",
+          "span": {
+            "start": 100,
+            "end": 104
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "article",
+            "span": {
+              "start": 167,
+              "end": 182
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "title",
+                "span": {
+                  "start": 194,
+                  "end": 207
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "title",
+                  "span": {
+                    "start": 209,
+                    "end": 214
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@93",
+                      "span": {
+                        "start": 209,
+                        "end": 214
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 208,
+                  "end": 215
+                }
+              }
+            ],
+            "span": {
+              "start": 190,
+              "end": 220
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Note",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "note",
+                  "span": {
+                    "start": 239,
+                    "end": 243
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "note@100",
+                      "span": {
+                        "start": 239,
+                        "end": 243
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 233,
+                  "end": 244
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 227,
+              "end": 247
+            }
+          }
+        ],
+        "span": {
+          "start": 158,
+          "end": 262
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Article.css",
+          "source": ".article {\n  padding: 12px;\n  border-left: 4px solid rgb(37, 99, 235);\n}\n\n.title {\n  margin: 0 0 8px;\n  font-size: 20px;\n}\n\n/* Reaches the child's paragraph: the attribute stays on `.article`. */\n.article :deep(.note) {\n  margin: 0;\n  color: rgb(185, 28, 28);\n  font-style: italic;\n}\n\n/* Scoped: the child's paragraph does not carry the attribute, so it is not underlined. */\n.note {\n  text-decoration-line: underline;\n}\n",
+          "span": {
+            "start": 0,
+            "end": 23
+          }
+        }
+      ],
+      "scopeId": "15946226"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Article",
+      "span": {
+        "start": 59,
+        "end": 269
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Note.uf.tsx",
+      "file": "Note.uf.tsx",
+      "api": {
+        "file": "Note.uf.tsx",
+        "components": [
+          {
+            "name": "Note",
+            "export": "default",
+            "props": [
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Note",
+          "span": {
+            "start": 31,
+            "end": 35
+          }
+        }
+      ],
+      "span": {
+        "start": 24,
+        "end": 57
+      }
+    }
+  ]
+}

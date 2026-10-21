@@ -1,0 +1,10 @@
+{
+  "description": "`::before` and `::after` rules, scoped with the attribute before the pseudo-element.",
+  "ssr": {
+    "design": {
+      "props": {
+        "name": "design"
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "description": "A parent's `:deep()` rule reaches an element inside an unstyled child; its scoped rule for the same class does not.",
+  "main": "Article.uf.tsx",
+  "ssr": {
+    "release": {
+      "props": {
+        "title": "Release notes",
+        "note": "Styles arrive in M4."
+      }
+    }
+  }
+}

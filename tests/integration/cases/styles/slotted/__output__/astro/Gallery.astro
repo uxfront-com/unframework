@@ -1,0 +1,17 @@
+---
+import Frame from "./Frame.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<section class:list={[className]} style={style}>
+  <Frame>
+    <p class="caption" data-uf-9dc516fd-s="">A quiet harbour</p>
+  </Frame>
+  <p class="caption">Outside the frame</p>
+</section>

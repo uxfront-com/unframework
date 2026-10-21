@@ -1,0 +1,11 @@
+.banner[data-uf-e25060c2] {
+  padding: 8px 12px;
+  background-color: rgb(254, 243, 199);
+}
+
+/* Unscoped: matches the highlight inside the child, which carries no scope attribute. */
+.uf-highlight {
+  padding: 0 4px;
+  background-color: rgb(250, 204, 21);
+  font-weight: 700;
+}

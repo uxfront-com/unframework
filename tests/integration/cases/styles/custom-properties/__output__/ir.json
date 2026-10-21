@@ -1,0 +1,273 @@
+{
+  "irVersion": 1,
+  "file": "styles/custom-properties/Stack.uf.tsx",
+  "components": [
+    {
+      "name": "Stack",
+      "span": {
+        "start": 23,
+        "end": 298
+      },
+      "props": [
+        {
+          "name": "gap",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 77,
+              "end": 83
+            }
+          },
+          "binding": "gap@55",
+          "span": {
+            "start": 72,
+            "end": 84
+          }
+        },
+        {
+          "name": "accent",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 93,
+              "end": 99
+            }
+          },
+          "binding": "accent@60",
+          "span": {
+            "start": 85,
+            "end": 99
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ gap: string; accent: string }",
+          "span": {
+            "start": 70,
+            "end": 101
+          }
+        },
+        "span": {
+          "start": 53,
+          "end": 101
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "gap@55",
+          "name": "gap",
+          "kind": "prop",
+          "span": {
+            "start": 55,
+            "end": 58
+          }
+        },
+        {
+          "id": "accent@60",
+          "name": "accent",
+          "kind": "prop",
+          "span": {
+            "start": 60,
+            "end": 66
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "ul",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "stack",
+            "span": {
+              "start": 124,
+              "end": 137
+            }
+          },
+          {
+            "kind": "Style",
+            "declarations": [
+              {
+                "kind": "Bound",
+                "property": "--gap",
+                "value": {
+                  "code": "gap",
+                  "span": {
+                    "start": 156,
+                    "end": 159
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "gap@55",
+                      "span": {
+                        "start": 156,
+                        "end": 159
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 147,
+                  "end": 159
+                }
+              },
+              {
+                "kind": "Bound",
+                "property": "--accent",
+                "value": {
+                  "code": "accent",
+                  "span": {
+                    "start": 173,
+                    "end": 179
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "accent@60",
+                      "span": {
+                        "start": 173,
+                        "end": 179
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 161,
+                  "end": 179
+                }
+              }
+            ],
+            "span": {
+              "start": 138,
+              "end": 182
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "li",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "item",
+                "span": {
+                  "start": 194,
+                  "end": 206
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "One",
+                "span": {
+                  "start": 207,
+                  "end": 210
+                }
+              }
+            ],
+            "span": {
+              "start": 190,
+              "end": 215
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "li",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "item",
+                "span": {
+                  "start": 226,
+                  "end": 238
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Two",
+                "span": {
+                  "start": 239,
+                  "end": 242
+                }
+              }
+            ],
+            "span": {
+              "start": 222,
+              "end": 247
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "li",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "item",
+                "span": {
+                  "start": 258,
+                  "end": 270
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Three",
+                "span": {
+                  "start": 271,
+                  "end": 276
+                }
+              }
+            ],
+            "span": {
+              "start": 254,
+              "end": 281
+            }
+          }
+        ],
+        "span": {
+          "start": 120,
+          "end": 291
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Stack.css",
+          "source": ".stack {\n  display: flex;\n  column-gap: var(--gap);\n  margin: 0;\n  padding: 0;\n  list-style-type: none;\n}\n\n.item {\n  padding: 4px 8px;\n  border: 2px solid var(--accent);\n}\n",
+          "span": {
+            "start": 0,
+            "end": 21
+          }
+        }
+      ],
+      "scopeId": "e3a22111"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Stack",
+      "span": {
+        "start": 23,
+        "end": 298
+      }
+    }
+  ],
+  "types": []
+}

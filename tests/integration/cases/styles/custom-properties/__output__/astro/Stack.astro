@@ -1,0 +1,20 @@
+---
+interface Props {
+  gap: string;
+  accent: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { gap, accent, class: className, style } = Astro.props;
+---
+
+<ul
+  class:list={["stack", className]}
+  style={{ "--gap": gap, "--accent": accent, ...style }}
+  data-uf-e3a22111=""
+>
+  <li class="item" data-uf-e3a22111="">One</li>
+  <li class="item" data-uf-e3a22111="">Two</li>
+  <li class="item" data-uf-e3a22111="">Three</li>
+</ul>

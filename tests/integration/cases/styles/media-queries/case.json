@@ -1,0 +1,10 @@
+{
+  "description": "Rules inside `@media` are scoped and the queries kept: at the 800×600 viewport one query matches and one does not.",
+  "ssr": {
+    "notice": {
+      "props": {
+        "text": "Wide enough for padding."
+      }
+    }
+  }
+}

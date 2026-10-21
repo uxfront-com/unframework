@@ -1,0 +1,166 @@
+{
+  "irVersion": 1,
+  "file": "styles/slotted/Gallery.uf.tsx",
+  "components": [
+    {
+      "name": "Gallery",
+      "span": {
+        "start": 37,
+        "end": 242
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Frame",
+            "attributes": [],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "caption",
+                        "span": {
+                          "start": 123,
+                          "end": 138
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "A quiet harbour",
+                        "span": {
+                          "start": 139,
+                          "end": 154
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 120,
+                      "end": 158
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 120,
+                  "end": 158
+                }
+              }
+            ],
+            "span": {
+              "start": 104,
+              "end": 173
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "caption",
+                "span": {
+                  "start": 183,
+                  "end": 198
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Outside the frame",
+                "span": {
+                  "start": 199,
+                  "end": 216
+                }
+              }
+            ],
+            "span": {
+              "start": 180,
+              "end": 220
+            }
+          }
+        ],
+        "span": {
+          "start": 88,
+          "end": 235
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Gallery",
+      "span": {
+        "start": 37,
+        "end": 242
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Frame.uf.tsx",
+      "file": "Frame.uf.tsx",
+      "api": {
+        "file": "Frame.uf.tsx",
+        "components": [
+          {
+            "name": "Frame",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "figure",
+            "styles": {
+              "scopeId": "9dc516fd",
+              "slotted": true
+            }
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Frame",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    }
+  ]
+}

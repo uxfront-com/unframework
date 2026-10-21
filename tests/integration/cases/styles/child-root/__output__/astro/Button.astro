@@ -1,0 +1,15 @@
+---
+interface Props {
+  text: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { text, class: className, style } = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={["button", className]}
+  style={style}
+><span class="icon" aria-hidden="true">+</span>{text}</button>

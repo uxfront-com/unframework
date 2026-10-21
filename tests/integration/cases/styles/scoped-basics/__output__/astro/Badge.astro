@@ -1,0 +1,15 @@
+---
+interface Props {
+  label: string;
+  count: number;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, count, class: className, style } = Astro.props;
+---
+
+<span class:list={["badge", className]} style={style} data-uf-d9cef2e7="">
+  <span class="label" data-uf-d9cef2e7="">{label}</span>
+  <span class="count" data-uf-d9cef2e7="">{count}</span>
+</span>

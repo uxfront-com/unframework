@@ -2,7 +2,8 @@
 
 The Vue 3.5 target of the Unframework compiler, and the reference target (D10): what Vue renders,
 and what it does when a test interacts with it, becomes every target's shared expectation. It
-emits one single-file component per component (plan §6): its script, then its template.
+emits one single-file component per component (plan §6): its script, its template, then, for a
+component that imports a stylesheet, its sheet.
 
 ## The script
 
@@ -98,6 +99,15 @@ target):
     listener on an ancestor, and a `<select>` or a checkbox beside a `change` capture listener,
     are not covered;
 - attributes in `vue/attributes-order`: `ref` with `key`, listeners last.
+
+## The stylesheet
+
+A component that imports a stylesheet (`import "./Card.css"`) ends with
+`<style src="./Card.uf.tsx.css"></style>`: the sheet `compile()` emits beside the source, which
+the compiler has already scoped, so the block has no `scoped` attribute (ADR-0063). plugin-vue
+asks the unplugin for it; the author's `./Card.css` is never loaded. The scope attributes are
+the shared markup printer's, and a child's root takes its parent's through Vue's own
+fallthrough. L3 skips an external `<style src>`: the compile project parses the sheet instead.
 
 ## Capabilities
 

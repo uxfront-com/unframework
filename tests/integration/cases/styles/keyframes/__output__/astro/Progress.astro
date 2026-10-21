@@ -1,0 +1,14 @@
+---
+interface Props {
+  label: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, class: className, style } = Astro.props;
+---
+
+<div class:list={["progress", className]} style={style} data-uf-0738d8af="">
+  <span class="dot" data-uf-0738d8af=""></span>
+  <span data-uf-0738d8af="">{label}</span>
+</div>

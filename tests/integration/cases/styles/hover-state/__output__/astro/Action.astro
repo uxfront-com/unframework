@@ -1,0 +1,16 @@
+---
+interface Props {
+  text: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { text, class: className, style } = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={["action", className]}
+  style={style}
+  data-uf-6173c12c=""
+>{text}</button>

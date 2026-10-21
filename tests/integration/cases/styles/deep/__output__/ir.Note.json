@@ -1,0 +1,136 @@
+{
+  "irVersion": 1,
+  "file": "styles/deep/Note.uf.tsx",
+  "components": [
+    {
+      "name": "Note",
+      "span": {
+        "start": 78,
+        "end": 225
+      },
+      "props": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 125,
+              "end": 131
+            }
+          },
+          "binding": "text@109",
+          "span": {
+            "start": 119,
+            "end": 131
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ text: string }",
+          "span": {
+            "start": 117,
+            "end": 133
+          }
+        },
+        "span": {
+          "start": 107,
+          "end": 133
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "text@109",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 109,
+            "end": 113
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "note-box",
+            "span": {
+              "start": 157,
+              "end": 173
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "note",
+                "span": {
+                  "start": 184,
+                  "end": 196
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "text",
+                  "span": {
+                    "start": 198,
+                    "end": 202
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "text@109",
+                      "span": {
+                        "start": 198,
+                        "end": 202
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 197,
+                  "end": 203
+                }
+              }
+            ],
+            "span": {
+              "start": 181,
+              "end": 207
+            }
+          }
+        ],
+        "span": {
+          "start": 152,
+          "end": 218
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Note",
+      "span": {
+        "start": 78,
+        "end": 225
+      }
+    }
+  ],
+  "types": []
+}

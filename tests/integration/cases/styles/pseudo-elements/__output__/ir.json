@@ -1,0 +1,126 @@
+{
+  "irVersion": 1,
+  "file": "styles/pseudo-elements/Tag.uf.tsx",
+  "components": [
+    {
+      "name": "Tag",
+      "span": {
+        "start": 21,
+        "end": 122
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 67,
+              "end": 73
+            }
+          },
+          "binding": "name@51",
+          "span": {
+            "start": 61,
+            "end": 73
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ name: string }",
+          "span": {
+            "start": 59,
+            "end": 75
+          }
+        },
+        "span": {
+          "start": 49,
+          "end": 75
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "name@51",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 51,
+            "end": 55
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "tag",
+            "span": {
+              "start": 94,
+              "end": 105
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "name",
+              "span": {
+                "start": 107,
+                "end": 111
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "name@51",
+                  "span": {
+                    "start": 107,
+                    "end": 111
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 106,
+              "end": 112
+            }
+          }
+        ],
+        "span": {
+          "start": 88,
+          "end": 119
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Tag.css",
+          "source": ".tag {\n  display: inline-flex;\n  align-items: center;\n  column-gap: 4px;\n  padding: 2px 8px;\n  border: 1px solid rgb(75, 85, 99);\n}\n\n/* The scope attribute goes before the pseudo-element. */\n.tag::before {\n  content: \"#\";\n  color: rgb(37, 99, 235);\n  font-weight: 700;\n}\n\n.tag::after {\n  content: \"\";\n  display: inline-block;\n  width: 8px;\n  height: 8px;\n  border-radius: 4px;\n  background-color: rgb(22, 163, 74);\n}\n",
+          "span": {
+            "start": 0,
+            "end": 19
+          }
+        }
+      ],
+      "scopeId": "ef5e671c"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Tag",
+      "span": {
+        "start": 21,
+        "end": 122
+      }
+    }
+  ],
+  "types": []
+}
