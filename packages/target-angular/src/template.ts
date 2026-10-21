@@ -207,6 +207,10 @@ export function templateReads(plan: Plan, listeners: Listeners): TemplateReads {
           // `undefined` is a keyword of Angular's expression language and needs no member.
           if (reference.name !== "undefined") globals.add(reference.name);
           break;
+        // A template reads a pass-through import through a member, as it reads a global.
+        case "Import":
+          globals.add(reference.name);
+          break;
         case "Slot":
           slots.add(reference.slot);
           break;

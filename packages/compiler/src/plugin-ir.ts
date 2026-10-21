@@ -225,6 +225,8 @@ function referenceValue(reference: CodeReference): unknown[] {
       return [reference.kind, reference.member, spanValue(reference.span), reference.call === true];
     case "Slot":
       return [reference.kind, reference.slot, spanValue(reference.span)];
+    case "Import":
+      return [reference.kind, reference.name, spanValue(reference.span)];
     default:
       return unreachable(reference);
   }

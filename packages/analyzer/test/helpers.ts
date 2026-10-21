@@ -198,6 +198,8 @@ export function referenceOf(source: string, ref: CodeReference): string {
       return `event.${ref.member}${ref.call ? "()" : ""}`;
     case "Slot":
       return `slot:${ref.slot}`;
+    case "Import":
+      return `import:${ref.name}`;
   }
 }
 

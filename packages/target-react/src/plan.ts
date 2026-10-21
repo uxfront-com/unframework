@@ -330,6 +330,7 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
             mirroredEvents.add(reference.event);
             break;
           case "Global":
+          case "Import":
           case "Write":
           case "Api":
           case "Event":
@@ -953,6 +954,7 @@ function hoistable(
         piece.refs.every((reference) => {
           switch (reference.kind) {
             case "Global":
+            case "Import":
             case "Event":
               return true;
             case "Binding": {

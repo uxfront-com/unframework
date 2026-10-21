@@ -1003,6 +1003,7 @@ export function referencedIds(refs: readonly CodeReference[]): Set<BindingId> {
         found.add(reference.binding);
         break;
       case "Global":
+      case "Import":
       case "Emit":
       case "Api":
       case "Event":
@@ -1046,6 +1047,7 @@ function hoistable(component: UfComponent): Set<BindingId> {
           case "Slot":
             return true;
           case "Global":
+          case "Import":
           case "Api":
           case "Event":
             return false;

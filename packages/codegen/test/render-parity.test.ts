@@ -475,6 +475,9 @@ function testTarget(emit: Target["emit"], unsupported?: CapabilityName): Target 
       context: cell("context"),
       "reactive-context": cell("reactive-context"),
       "dynamic-component": cell("dynamic-component"),
+      "scoped-styles": cell("scoped-styles"),
+      "child-root-scope": cell("child-root-scope"),
+      "slotted-styles": cell("slotted-styles"),
     },
     emit,
   });

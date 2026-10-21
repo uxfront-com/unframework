@@ -9,6 +9,7 @@ import type {
   Attribute,
   BindingId,
   Code,
+  CodeReference,
   ComponentAttribute,
   ElementNode,
   EventAttribute,
@@ -99,6 +100,22 @@ const SETUP_ITEM_CAPABILITIES: Readonly<Record<SetupItem["kind"], readonly Capab
   Provide: ["context"],
   Inject: ["context"],
 };
+/**
+ * What each kind of reference in code needs: `nextTick` its own capability, and the others
+ * nothing of their own. A pass-through import needs none: every target keeps it as written, and
+ * Styleframe's own plugin resolves it (ADR-0063).
+ */
+const REFERENCE_CAPABILITIES: Readonly<Record<CodeReference["kind"], CapabilityName | undefined>> =
+  {
+    Binding: undefined,
+    Global: undefined,
+    Write: undefined,
+    Emit: undefined,
+    Api: "next-tick",
+    Event: undefined,
+    Slot: undefined,
+    Import: undefined,
+  };
 /** A listener's options, each a capability of its own (ADR-0047). */
 const OPTION_CAPABILITIES = {
   capture: "event-capture",
@@ -145,7 +162,8 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
   };
   const scan = (code: Code) => {
     for (const reference of code.refs) {
-      if (reference.kind === "Api") use("next-tick", reference.span);
+      const capability = REFERENCE_CAPABILITIES[reference.kind];
+      if (capability) use(capability, reference.span);
     }
   };
   for (const component of module.components) {

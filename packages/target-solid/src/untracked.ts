@@ -420,6 +420,7 @@ export function edited(code: Code, edits: readonly Edit[]): Code {
         return { ...ref, span: span(ref.span), arguments: ref.arguments.map(span) };
       case "Binding":
       case "Global":
+      case "Import":
       case "Event":
       case "Api":
       case "Slot":

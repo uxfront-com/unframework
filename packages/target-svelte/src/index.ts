@@ -67,6 +67,9 @@ export const svelte: Target = defineTarget({
       note: "A provided ref is passed as an object with a `value` getter, `refObject`, which descendants read as it changes (ADR-0054).",
     },
     "dynamic-component": { support: "native" },
+    "scoped-styles": { support: "native" },
+    "child-root-scope": { support: "native" },
+    "slotted-styles": { support: "native" },
     // A capture listener is an attribute, `onclickcapture` (ADR-0047).
     "event-capture": { support: "native" },
     // `once` and `passive` listen through `on` from `svelte/events`, in an attachment (`events.ts`):

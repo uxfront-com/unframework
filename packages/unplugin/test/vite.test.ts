@@ -826,6 +826,9 @@ function htmlTarget() {
     context: { support: "native" },
     "reactive-context": { support: "native" },
     "dynamic-component": { support: "native" },
+    "scoped-styles": { support: "native" },
+    "child-root-scope": { support: "native" },
+    "slotted-styles": { support: "native" },
   };
   return defineTarget({
     name: "html",

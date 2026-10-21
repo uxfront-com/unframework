@@ -315,6 +315,7 @@ function slotsOf(reference: CodeReference): readonly Span[] {
     case "Event":
     case "Api":
     case "Slot":
+    case "Import":
       return [];
     default:
       return unreachable(reference);
@@ -389,6 +390,9 @@ function spell(node: ReferenceNode, written: string, context: Context): string {
       return spellEmit(reference, node.slots, written, context);
     case "Slot":
       return rules.slot?.(reference, site) ?? written;
+    // A pass-through import is printed as written, and Styleframe's plugin resolves it (ADR-0063).
+    case "Import":
+      return written;
     default:
       return unreachable(reference);
   }

@@ -1,6 +1,6 @@
 # ADR-0025: L3 runs each framework's own compiler in-process
 
-- **Status:** Accepted (M0 spike), amended by ADR-0028
+- **Status:** Accepted (M0 spike), amended by ADR-0028 and ADR-0063
 - **Date:** 2026-10-01
 - **Plan:** §9 (M0, an extra spike); §7.2 (L3, L4, L11, L13), §7.3, §7.7, §7.9, R6, R8, Appendix C
 

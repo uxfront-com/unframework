@@ -102,6 +102,7 @@ import type {
   SetupItem,
   SlotFill,
   SlotOutletNode,
+  ImportReference,
   SlotReference,
   Span,
   StyleAttribute,
@@ -136,7 +137,11 @@ const CANONICAL_CLASS = /^\S+(?: \S+)*$/u;
  * - `true` is the value of exactly the HTML boolean attributes, a `class` is canonical and names
  *   each class once, and a `style` sets each property once, without overlap, with custom
  *   properties in lower case and static values Angular's style parser reads as written
- *   (ADR-0038);
+ *   (ADR-0038), or is bound to one value and has no declarations;
+ * - styles (ADR-0063): only the one component of a module imports stylesheets, and it has a
+ *   scope id exactly when it imports any; a pass-through import binds names exactly when it
+ *   imports Styleframe's recipes and tokens, each local name an identifier no other import
+ *   binds, and only a template reads one;
  * - no value holds code or a document the compiler cannot analyse (`srcdoc`, a `javascript:`
  *   URL, a `data:` URL a frame loads), and text and values hold only characters HTML keeps;
  * - text sits where every target renders it alike: no whitespace-only text where Svelte drops
@@ -220,6 +225,8 @@ export function checkInvariants(module: UfModule): IrValidationError[] {
       ),
     ),
   ]);
+  const passThrough = checkPassThroughImports(module, errors);
+  checkStyleSheets(module, errors);
   const components = new Set<string>();
   // Each name names a file, and case-insensitive file systems merge two that differ in case.
   const byFile = new Map<string, string>();
@@ -245,7 +252,7 @@ export function checkInvariants(module: UfModule): IrValidationError[] {
       byFile.set(name.toLowerCase(), name);
     }
     components.add(name);
-    checkComponent(component, path, types, apis, keys, errors);
+    checkComponent(component, path, types, apis, keys, passThrough, errors);
   }
   const exported = new Set<string>();
   for (const [index, entry] of module.exports.entries()) {
@@ -276,6 +283,87 @@ export function checkInvariants(module: UfModule): IrValidationError[] {
     exported.add(entry.name);
   }
   return errors;
+}
+
+/**
+ * Checks the module's pass-through imports (ADR-0063): the side-effect import of Styleframe's
+ * stylesheet binds nothing, and a named import of its recipes and tokens binds identifiers that
+ * no other import binds. Returns the local names a template may read.
+ */
+function checkPassThroughImports(
+  module: UfModule,
+  errors: IrValidationError[],
+): ReadonlySet<string> {
+  const locals = new Set<string>();
+  const taken = new Set([
+    ...module.components.map(({ name }) => name),
+    ...(module.imports ?? []).flatMap(({ names }) => names.map(({ local }) => local)),
+  ]);
+  for (const [index, entry] of (module.passThroughImports ?? []).entries()) {
+    const path = `/passThroughImports/${index}`;
+    if ((entry.specifier === "virtual:styleframe.css") !== (entry.names.length === 0)) {
+      errors.push({
+        path: `${path}/names`,
+        message:
+          entry.specifier === "virtual:styleframe.css"
+            ? `must be empty: "${entry.specifier}" is a stylesheet, which binds nothing`
+            : `must name what "${entry.specifier}" gives the module`,
+      });
+    }
+    for (const [position, { imported, local }] of entry.names.entries()) {
+      const at = `${path}/names/${position}`;
+      if (!isIdentifier(imported)) {
+        errors.push({
+          path: `${at}/imported`,
+          message: `must be an identifier, and "${imported}" is not`,
+        });
+      }
+      if (!isIdentifier(local)) {
+        errors.push({
+          path: `${at}/local`,
+          message: `must be an identifier, and "${local}" is not`,
+        });
+      } else if (locals.has(local) || taken.has(local)) {
+        errors.push({
+          path: `${at}/local`,
+          message: `must differ from every other name the module's imports and components bind, and "${local}" does not`,
+        });
+      } else {
+        locals.add(local);
+      }
+    }
+  }
+  return locals;
+}
+
+/**
+ * Checks the components' stylesheets (ADR-0063): only the one component of a module imports
+ * any, since the sheet's selectors scope one component's elements, and a component has a scope
+ * id exactly when it imports a sheet.
+ */
+function checkStyleSheets(module: UfModule, errors: IrValidationError[]): void {
+  for (const [index, component] of module.components.entries()) {
+    const path = `/components/${index}`;
+    const { styles, scopeId } = component;
+    if (styles && !styles.length) {
+      errors.push({ path: `${path}/styles`, message: "must hold a sheet, or be absent" });
+    }
+    if (styles?.length && module.components.length > 1) {
+      errors.push({
+        path: `${path}/styles`,
+        message: `must be absent: a module that imports a stylesheet declares one component, and this one declares ${module.components.length}`,
+      });
+    }
+    if (Boolean(styles?.length) !== (scopeId !== undefined)) {
+      errors.push({
+        path: `${path}/scopeId`,
+        message:
+          scopeId === undefined
+            ? "must be set: the component imports a stylesheet"
+            : "must be absent: the component imports no stylesheet",
+      });
+    }
+  }
 }
 
 /** What a parent may pass a component: the names its API declares (ADR-0055). */
@@ -434,6 +522,8 @@ interface Walk {
    * ref (`InjectionKey<Ref<number>>`), which is provided whole and injected as a ref.
    */
   readonly keys: ReadonlyMap<string, boolean>;
+  /** The names the module's pass-through imports bind, which a template may read (ADR-0063). */
+  readonly passThrough: ReadonlySet<string>;
 }
 
 /** Where a node sits: what the walk carries down the tree. */
@@ -487,6 +577,7 @@ function checkComponent(
   types: ReadonlyMap<string, number>,
   apis: ReadonlyMap<string, Declared>,
   keys: ReadonlyMap<string, boolean>,
+  passThrough: ReadonlySet<string>,
   errors: IrValidationError[],
 ): void {
   const bindings = checkBindings(component, path, errors);
@@ -514,6 +605,7 @@ function checkComponent(
     ),
     apis,
     keys,
+    passThrough,
   };
   checkComponentTypes(component, path, types, errors);
   checkProps(component, path, walk);
@@ -1574,11 +1666,14 @@ function checkAttributes(
     }
     return true;
   };
-  /** The checks of a bound name, as a bound attribute or a spread's key (ADR-0037). */
-  const checkBoundName = (name: string, path: string): void => {
+  /**
+   * The checks of a bound name, as a bound attribute or a spread's key (ADR-0037). A spread's
+   * `style` is its object's (ADR-0039's deferred form).
+   */
+  const checkBoundName = (name: string, path: string, fromSpread: boolean): void => {
     const reason =
-      name === "style"
-        ? "a `style` is a Style attribute, and a spread's `style` lands in M4"
+      name === "style" && !fromSpread
+        ? "a `style` is a Style attribute (ADR-0038)"
         : namespace === "html"
           ? unbindableAttribute(tag, name)
           : undefined;
@@ -1619,7 +1714,7 @@ function checkAttributes(
               message: "must not be bound: a `class` is a Class attribute (ADR-0038)",
             });
           } else {
-            checkBoundName(name, `${at}/name`);
+            checkBoundName(name, `${at}/name`, false);
           }
         }
         claim(name, `${at}/name`, false);
@@ -1637,7 +1732,7 @@ function checkAttributes(
       case "Spread":
         for (const [key, { name }] of attribute.keys.entries()) {
           const path = `${at}/keys/${key}/name`;
-          if (checkName(name, path)) checkBoundName(name, path);
+          if (checkName(name, path)) checkBoundName(name, path, true);
           claim(name, path, true);
         }
         checkExpression(attribute.value, `${at}/value`, place.scope, walk);
@@ -1871,22 +1966,39 @@ function checkClass(attribute: ClassAttribute, path: string, place: Place, walk:
 }
 
 /**
+ * A vendor-prefixed property in lower case, `-webkit-line-clamp` (ADR-0038's deferred form): no
+ * table lists the prefixed names, so its name is checked by its form alone.
+ */
+const VENDOR_PREFIXED_PROPERTY = /^-[a-z]+-[a-z]+(?:-[a-z]+)*$/;
+
+/**
  * Checks a `style`'s declarations (ADR-0038): CSS property names, in lower case as Angular
  * writes them, none setting what another sets (the object targets cannot keep their order), and
- * static values that are one CSS value, which Angular's style parser reads as written.
+ * static values that are one CSS value, which Angular's style parser reads as written. A `style`
+ * bound to one value has no declarations.
  */
 function checkStyle(attribute: StyleAttribute, path: string, place: Place, walk: Walk): void {
   const { errors } = walk;
+  if (attribute.value) {
+    if (attribute.declarations.length) {
+      errors.push({
+        path: `${path}/declarations`,
+        message: "must be empty: a `style` bound to one value sets what the value holds",
+      });
+    }
+    checkExpression(attribute.value, `${path}/value`, place.scope, walk);
+  }
   const properties: string[] = [];
   for (const [index, declaration] of attribute.declarations.entries()) {
     const at = `${path}/declarations/${index}`;
     const { property } = declaration;
-    if (!isCssPropertyName(property)) {
+    const prefixed = VENDOR_PREFIXED_PROPERTY.test(property);
+    if (!prefixed && !isCssPropertyName(property)) {
       errors.push({
         path: `${at}/property`,
-        message: `must be a CSS property in lower case and without a vendor prefix, or a custom property, and "${property}" is not`,
+        message: `must be a CSS property in lower case, or a custom property, and "${property}" is not`,
       });
-    } else if (!isKnownCssProperty(property)) {
+    } else if (!prefixed && !isKnownCssProperty(property)) {
       errors.push({
         path: `${at}/property`,
         message: `must be a CSS property the browsers know (\`CSS_PROPERTIES\`), or a custom property, and "${property}" is not`,
@@ -1954,6 +2066,8 @@ function checkExpression(
       checkGlobal(ref.name, text, at, "render", walk);
     } else if (ref.kind === "Slot") {
       checkSlotReference(ref, text, at, walk);
+    } else if (ref.kind === "Import") {
+      checkImportReference(ref, text, at, walk);
     } else {
       checkBindingReference(ref, text, at, scope, "render", walk);
       if (ref.narrowed) checkNarrowed(ref, expression, at, "render", walk);
@@ -1975,6 +2089,18 @@ function checkSlotReference(ref: SlotReference, text: string, path: string, walk
       path: `${path}/span`,
       message: `must span "${name ?? "slots"}.${ref.slot}"`,
     });
+  }
+}
+
+/** Checks a read of a pass-through import (ADR-0063): a name one binds, spanning it. */
+function checkImportReference(ref: ImportReference, text: string, path: string, walk: Walk): void {
+  if (!walk.passThrough.has(ref.name)) {
+    walk.errors.push({
+      path: `${path}/name`,
+      message: `must be a name a pass-through import of the module binds, and "${ref.name}" is not one`,
+    });
+  } else if (text !== ref.name) {
+    walk.errors.push({ path: `${path}/span`, message: `must span "${ref.name}"` });
   }
 }
 
@@ -2509,6 +2635,12 @@ function checkCode(
         errors.push({
           path: at,
           message: `must not test a slot's presence in ${CONTEXT_NAMES[context]}: only a template does (ADR-0054)`,
+        });
+        break;
+      case "Import":
+        errors.push({
+          path: at,
+          message: `must not read a pass-through import in ${CONTEXT_NAMES[context]}: only a template does (ADR-0063)`,
         });
         break;
       default:

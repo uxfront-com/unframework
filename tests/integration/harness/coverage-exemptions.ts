@@ -34,7 +34,12 @@ function lanesBut(
  * its corpus case.
  */
 export const EXEMPT_KINDS: Readonly<Partial<Record<KindFamily, Readonly<Record<string, string>>>>> =
-  {};
+  {
+    "code reference": {
+      Import:
+        "A read of a pass-through import (ADR-0063): the analyser lowers Styleframe's imports, and the case lands in layer 10 of M4.",
+    },
+  };
 
 /** Catalogued diagnostic codes that no case triggers, and why none can. */
 export const EXEMPT_CODES: Readonly<Record<string, string>> = {
@@ -42,6 +47,13 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
     "Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
   UF9001:
     "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
+  // M4's styling codes are catalogued before the analyser reports them (ADR-0063).
+  UF5001: "The analyser accepts stylesheets, and the case lands in layer 4 of M4.",
+  UF5002: "The analyser accepts stylesheets, and the case lands in layer 4 of M4.",
+  UF5003: "The analyser accepts stylesheets, and the case lands in layer 4 of M4.",
+  UF5004: "The scoper rejects selectors, and the case lands in layer 4 of M4.",
+  UF5005: "The analyser accepts stylesheets, and the case lands in layer 4 of M4.",
+  UF5006: "The analyser lowers Styleframe's imports, and the case lands in layer 10 of M4.",
 };
 
 /**
@@ -68,4 +80,7 @@ export const EXEMPT_CAPABILITIES: Readonly<
   context: lanesBut("astro"),
   "reactive-context": lanesBut("astro"),
   "dynamic-component": lanesBut(),
+  "scoped-styles": "No target attaches a scoped sheet yet: the cases land in layer 6 of M4.",
+  "child-root-scope": "No target attaches a scoped sheet yet: the cases land in layer 6 of M4.",
+  "slotted-styles": "No target attaches a scoped sheet yet: the cases land in layer 6 of M4.",
 };

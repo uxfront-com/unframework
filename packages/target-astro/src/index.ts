@@ -94,6 +94,9 @@ export const astro: Target = defineTarget({
         "Astro renders each component on its own, so a provided ref reaches no descendant (ADR-0054).",
     },
     "dynamic-component": { support: "native" },
+    "scoped-styles": { support: "native" },
+    "child-root-scope": { support: "native" },
+    "slotted-styles": { support: "native" },
   },
   /**
    * One `.astro` file: the frontmatter at the very top (where Astro reads it, and where the

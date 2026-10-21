@@ -64,6 +64,7 @@ describe("qwik target", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([
       "attribute-spread",
       "bound-attribute",
+      "child-root-scope",
       "class-binding",
       "component",
       "component-event",
@@ -95,8 +96,10 @@ describe("qwik target", () => {
       "props",
       "reactive-context",
       "scoped-slot",
+      "scoped-styles",
       "slot-fallback",
       "slot-forwarding",
+      "slotted-styles",
       "static-attribute",
       "style-binding",
       "svg",

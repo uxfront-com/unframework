@@ -446,6 +446,7 @@ export class SolidCode {
         case "Emit":
           return [ref.span];
         case "Global":
+        case "Import":
         case "Event":
         case "Api":
         case "Slot":
@@ -660,6 +661,7 @@ function hoistable(component: UfComponent): Set<BindingId> {
             case "Emit":
               return !hoisted.has(ref.binding);
             case "Global":
+            case "Import":
             case "Event":
             case "Api":
             case "Slot":
