@@ -122,10 +122,10 @@ export function captureGeometry(container: Element): GeometrySnapshot {
         nodes[next("#text")] = { box: [...range.getClientRects()].map((r) => toBox(r, origin)) };
       } else if (child instanceof Element) {
         const path = next(child.localName);
-        nodes[path] = {
-          box: toBox(child.getBoundingClientRect(), origin),
-          style: styleOf(getComputedStyle(child)),
-        };
+        // The style before the box: reading it updates the style of content Chromium skips (a
+        // closed `<details>`'s), which the box then measures, as the committed geometry does.
+        const style = styleOf(getComputedStyle(child));
+        nodes[path] = { box: toBox(child.getBoundingClientRect(), origin), style };
         for (const pseudo of PSEUDO_ELEMENTS) {
           const computed = getComputedStyle(child, pseudo);
           if (computed.content === "none") continue;

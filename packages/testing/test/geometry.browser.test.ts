@@ -67,3 +67,11 @@ it("captures the computed styles of a ::before and an ::after that generate cont
     style.remove();
   }
 });
+
+it("measures the content of a closed <details> as the committed geometry does", () => {
+  const root = document.createElement("div");
+  root.innerHTML = "<details><summary>More</summary><p>Hidden</p></details>";
+  document.body.append(root);
+  const [, , , height] = captureGeometry(root).nodes["details[0]/p[0]"]!.box as number[];
+  expect(height).toBeGreaterThan(0);
+});
