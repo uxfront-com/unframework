@@ -53,18 +53,26 @@ export class NameScope {
 }
 
 /**
- * The names the earlier components of a module claim for an inline helper, given the names each
- * reserves (`reserved`, in component order): each takes the first free one in its own scope,
- * past those the components before it took. A source's outputs are joined into one module where
- * it is loaded (ADR-0053), so a later component reserves them all and no two declare one name.
+ * The names component `index` of a module leaves to the others for an inline helper, given the
+ * names each component of the module reserves (`reserved`, in component order). A source's
+ * outputs are joined into one module where it is loaded (ADR-0053), and a `const` an output
+ * hoists to module scope is declared there, so every component avoids the helper's names that any
+ * component declares (`cx`, `cx_1`), and the names the components before it claim, each the first
+ * free one past both. No two components then declare one name.
  */
-export function earlierHelperNames(
+export function moduleHelperNames(
   helper: string,
   reserved: readonly Iterable<string>[],
+  index: number,
 ): string[] {
+  const own = new RegExp(`^${helper}(?:_\\d+)?$`);
+  const declared = new Set<string>();
+  for (const names of reserved) for (const name of names) if (own.test(name)) declared.add(name);
   const claimed: string[] = [];
-  for (const names of reserved) claimed.push(new NameScope([...names, ...claimed]).claim(helper));
-  return claimed;
+  for (let earlier = 0; earlier < index; earlier++) {
+    claimed.push(new NameScope([...declared, ...claimed]).claim(helper));
+  }
+  return [...declared, ...claimed];
 }
 
 /**

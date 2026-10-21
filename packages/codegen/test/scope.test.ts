@@ -1,12 +1,12 @@
 // The child-root rule's shared parts (ADR-0063): the root nodes a JSX target spreads a styled
 // parent's scope attributes on, as Vue's attribute fallthrough reaches them, the helper names a
-// module's later components take, and the pattern rest React picks them out of.
+// module's components take, and the pattern rest React picks them out of.
 import { analyze } from "@unframework/analyzer";
 import type { UfComponent } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
 import { describe, expect, it } from "vitest";
 
-import { earlierHelperNames, js, printProgram, scopeRoots } from "../src/index.ts";
+import { js, moduleHelperNames, printProgram, scopeRoots } from "../src/index.ts";
 
 /** The last component of a source, lowered by the analyser. */
 function lowered(source: string): UfComponent {
@@ -68,13 +68,15 @@ export default function A() {
   });
 });
 
-describe("earlierHelperNames", () => {
-  it("gives each earlier component the first name free in its scope, past the earlier ones'", () => {
-    expect(earlierHelperNames("cx", [])).toEqual([]);
-    expect(earlierHelperNames("cx", [[], []])).toEqual(["cx", "cx_1"]);
-    // A source that takes the name moves its component on, and the next one past it.
-    expect(earlierHelperNames("cx", [["cx"], []])).toEqual(["cx_1", "cx"]);
-    expect(earlierHelperNames("cx", [["cx"], ["cx"]])).toEqual(["cx_1", "cx_2"]);
+describe("moduleHelperNames", () => {
+  it("leaves every component the names the module declares, and the earlier ones' claims", () => {
+    expect(moduleHelperNames("cx", [[], []], 0)).toEqual([]);
+    expect(moduleHelperNames("cx", [[], []], 1)).toEqual(["cx"]);
+    // A name any component declares, before or after this one, stays its own: an output hoists
+    // a `const` to the joined module's scope.
+    expect(moduleHelperNames("cx", [["cx"], []], 1)).toEqual(["cx", "cx_1"]);
+    expect(moduleHelperNames("cx", [[], ["cx"]], 0)).toEqual(["cx"]);
+    expect(moduleHelperNames("cx", [["cx_1", "cxs"], [], []], 2)).toEqual(["cx_1", "cx", "cx_2"]);
   });
 });
 

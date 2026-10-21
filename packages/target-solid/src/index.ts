@@ -1,7 +1,7 @@
 import {
   componentTypes,
   defineTarget,
-  earlierHelperNames,
+  moduleHelperNames,
   exportDeclaration,
   exportsOf,
   ImportSet,
@@ -130,15 +130,17 @@ export const solid: Target = defineTarget({
     // (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035).
     const names = sourceNames(component, context.module);
     for (const name of freeNames(component, names)) names.delete(name);
-    // A source's components are joined into one module where it is loaded (ADR-0053): each after
-    // the first takes the scope helper under a name no earlier one takes (`scopeAttributes_1`).
+    // A source's components are joined into one module where it is loaded (ADR-0053): each takes
+    // the class and scope helpers under names no other component declares or takes (`cx_1`).
     const index = context.module.components.findIndex((each) => each.name === component.name);
-    const earlier = context.module.components.slice(0, index).map((each) => {
+    const reserved = context.module.components.map((each) => {
       const taken = sourceNames(each, context.module);
       for (const name of freeNames(each, taken)) taken.delete(name);
       return taken;
     });
-    for (const name of earlierHelperNames(SCOPE_HELPER, earlier)) names.add(name);
+    for (const helper of [CLASS_HELPER, SCOPE_HELPER]) {
+      for (const name of moduleHelperNames(helper, reserved, index)) names.add(name);
+    }
     const imports = new ImportSet(new NameScope(names));
     const placeholders = new Placeholders();
     const composition = new SolidComposition(component, context.module, imports);

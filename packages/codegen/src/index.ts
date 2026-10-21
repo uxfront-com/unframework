@@ -173,8 +173,8 @@ export { childImports, ImportSet, keyImports, keyOwner } from "./imports.ts";
 export type { ChildImport, KeyImport } from "./imports.ts";
 export { isPrimitiveState } from "./kinds.ts";
 export {
-  earlierHelperNames,
   kebabCase,
+  moduleHelperNames,
   NameScope,
   pascalCase,
   sourceNames,

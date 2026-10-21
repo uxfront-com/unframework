@@ -175,8 +175,9 @@ sheet with `parseStylesheet` instead, Vue's and Angular's included.
   the props' `data-uf-*` keys, each with the empty value the parent writes, and reads no value,
   so it runs no Solid getter, and no prop the output leaves unread reaches the root, as a bare
   rest spread would let it. A root component spreads them on, so they reach its own root. Each
-  component of a module takes the helper under a name no earlier component takes
-  (`scopeAttributes_1`), because the unplugin joins them into one module (ADR-0053).
+  component of a module takes the helper under a name no other component declares or takes
+  (`scopeAttributes_1`), because the unplugin joins them into one module, where an output's
+  hoisted `const`s are declared too (ADR-0053).
 - **The cost on Solid.** A spread on the root makes Solid's compiler set the root's attributes
   through `spread` and `mergeProps`, and render it on the server with `ssrElement`, instead of a
   template and `ssrHydrationKey()`. The hydration key is still written. `ssrElement` writes `class`

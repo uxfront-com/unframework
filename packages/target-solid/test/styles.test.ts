@@ -142,8 +142,37 @@ export default function Two() {
       [...(await output(module, index)).matchAll(/^function (\w+)\(/gm)].map((match) => match[1]);
     expect([await helpers(0), await helpers(1)]).toEqual([
       ["scopeAttributes_1"],
-      ["scopeAttributes"],
+      ["scopeAttributes_2"],
     ]);
+  });
+
+  // A local `const` an output hoists to module scope is declared in the joined module too, in an
+  // earlier component or a later one.
+  it.each([
+    [
+      "an earlier component's",
+      `export function First() { const scopeAttributes = "local"; return <b title={scopeAttributes}>F</b>; }
+export default function Second() { return <i>S</i>; }`,
+    ],
+    [
+      "a later component's",
+      `export function First() { return <b>F</b>; }
+export default function Second() { const scopeAttributes = "local"; return <i title={scopeAttributes}>S</i>; }`,
+    ],
+    [
+      "an earlier component's",
+      `export function First() { const cx = "local"; return <><b title={cx}>F</b><i>G</i></>; }
+export default function Second({ k }: { k: string }) { return <><b class={["a", k]}>S</b><i>T</i></>; }`,
+    ],
+  ])("leaves the helper's name to %s module-level const", async (_, source) => {
+    const helper = source.includes("const cx") ? "cx" : "scopeAttributes";
+    const { module } = lowered("Pair.uf.tsx", source);
+    const declared = async (index: number) =>
+      [...(await output(module, index)).matchAll(/^(?:function|const) (\w+)\b/gm)]
+        .map((match) => match[1]!)
+        .filter((name) => name === helper || name.startsWith(`${helper}_`));
+    const [first, second] = [await declared(0), await declared(1)];
+    expect(new Set([...first, ...second]).size).toBe(first.length + second.length);
   });
 });
 
