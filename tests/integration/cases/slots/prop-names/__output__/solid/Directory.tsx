@@ -12,14 +12,14 @@ export default function Directory(
   return (
     <Table
       people={props.people}
+      class={props.class}
+      style={props.style}
+      {...scopeAttributes(props)}
       row={({ name, "data-id": id, index }) => (
         <span>
           {index + 1}: {name} ({id})
         </span>
       )}
-      class={props.class}
-      style={props.style}
-      {...scopeAttributes(props)}
     />
   );
 }

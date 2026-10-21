@@ -70,10 +70,10 @@ function lowered(
   return { module: module!, api: api! };
 }
 
-/** The formatted React output of a module's first component. */
-async function output(module: UfModule): Promise<string> {
+/** The formatted React output of a module's component, its first by default. */
+async function output(module: UfModule, index = 0): Promise<string> {
   const reported: unknown[] = [];
-  const [file] = target.emit(module.components[0]!, {
+  const [file] = target.emit(module.components[index]!, {
     module,
     options: undefined,
     report: (diagnostic) => void reported.push(diagnostic),
@@ -114,7 +114,9 @@ describe("react scoped styles", () => {
     const code = await output(ranking.module);
     const stamped = `className="item" data-uf-${rankingId}="" data-uf-${listId}-s=""`;
     // The child's tag takes the parent's attribute (the child-root rule), not the child's `-s`.
-    expect(code).toContain(`style={style}\n      data-uf-${rankingId}=""\n      renderItem=`);
+    expect(code).toContain(
+      `style={style}\n      data-uf-${rankingId}=""\n      {...scopeAttributes(attributes)}\n      renderItem=`,
+    );
     expect(code).toContain(`<h2 ${stamped}>`);
     expect(code).toContain(`renderItem={({ name }) => (\n        <b ${stamped}>`);
   });
@@ -122,6 +124,26 @@ describe("react scoped styles", () => {
   it("spreads the scope attributes its styled parents pass on the root of a styled child too", async () => {
     const code = await output(list.module);
     expect(code).toContain(`data-uf-${listId}=""\n      {...scopeAttributes(attributes)}\n    >`);
+  });
+
+  // The unplugin joins a source's outputs into one module (ADR-0053): a prop that takes the
+  // helper's name moves the first component's helper on, and the second must not take it too.
+  it("names the helper of each component of a source apart", async () => {
+    const { module } = lowered(
+      "Two.uf.tsx",
+      `export function Item({ scopeAttributes }: { scopeAttributes: string }) {
+  return <li>{scopeAttributes}</li>;
+}
+export default function Two() {
+  return <ul><Item scopeAttributes="a" /></ul>;
+}`,
+    );
+    const helpers = async (index: number) =>
+      [...(await output(module, index)).matchAll(/^function (\w+)\(/gm)].map((match) => match[1]);
+    expect([await helpers(0), await helpers(1)]).toEqual([
+      ["scopeAttributes_1"],
+      ["scopeAttributes"],
+    ]);
   });
 });
 
@@ -198,6 +220,33 @@ describe("react child-root rule, rendered by React", () => {
       html: '<span class="tag" data-uf-0a1b2c3d="">New</span>',
       errors: [],
     });
+  });
+
+  it("puts them on each branch of a root conditional, and on a root <component is>", async () => {
+    const Status = await load([
+      "Status.uf.tsx",
+      `export default function Status({ busy }: { busy: boolean }) {
+  return <>{busy ? <span class="badge">Saving</span> : <button type="button">Save</button>}</>;
+}`,
+    ]);
+    const Heading = await load([
+      "Heading.uf.tsx",
+      `export default function Heading({ big }: { big: boolean }) {
+  return <component is={big ? "h2" : "h3"} class="heading">Notes</component>;
+}`,
+    ]);
+    const scope = { "data-uf-0a1b2c3d": "" };
+    expect(
+      [
+        render(Status, { busy: true, ...scope }),
+        render(Status, { busy: false, ...scope }),
+        render(Heading, { big: false, ...scope }),
+      ].map(({ html, errors }) => ({ html, errors })),
+    ).toEqual([
+      { html: '<span class="badge" data-uf-0a1b2c3d="">Saving</span>', errors: [] },
+      { html: '<button type="button" data-uf-0a1b2c3d="">Save</button>', errors: [] },
+      { html: '<h3 class="heading" data-uf-0a1b2c3d="">Notes</h3>', errors: [] },
+    ]);
   });
 
   it("passes them on through a root component to its element", async () => {

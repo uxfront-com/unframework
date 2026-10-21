@@ -53,6 +53,21 @@ export class NameScope {
 }
 
 /**
+ * The names the earlier components of a module claim for an inline helper, given the names each
+ * reserves (`reserved`, in component order): each takes the first free one in its own scope,
+ * past those the components before it took. A source's outputs are joined into one module where
+ * it is loaded (ADR-0053), so a later component reserves them all and no two declare one name.
+ */
+export function earlierHelperNames(
+  helper: string,
+  reserved: readonly Iterable<string>[],
+): string[] {
+  const claimed: string[] = [];
+  for (const names of reserved) claimed.push(new NameScope([...names, ...claimed]).claim(helper));
+  return claimed;
+}
+
+/**
  * Every name a component's output must leave alone: the component's own name, the module's
  * type declarations, the props parameter, every binding, every variable any of its expressions
  * and its setup code reads or declares (globals, arrow parameters and a function's locals

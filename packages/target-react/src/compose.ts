@@ -30,7 +30,7 @@ import type {
   StyleAttribute,
 } from "@unframework/ir";
 
-import { slotProp } from "./composition.ts";
+import { slotProp, spanKey } from "./composition.ts";
 import type { ReactListeners } from "./listeners.ts";
 import type { ReactPlan } from "./plan.ts";
 import type { ReactCode } from "./rules.ts";
@@ -67,10 +67,13 @@ export class ReactComposer {
   readonly fields: string[] = [];
   readonly #parts = new WeakMap<ModelAttribute, ModelParts>();
   #listeners: ReactListeners | undefined;
+  /** The root nodes still to spread the scope attributes on, by span. */
+  readonly #scopeRoots: Set<string>;
 
   constructor(plan: ReactPlan, code: ReactCode) {
     this.#plan = plan;
     this.#code = code;
+    this.#scopeRoots = new Set(plan.composition.scope?.roots);
   }
 
   /**
@@ -86,6 +89,19 @@ export class ReactComposer {
     );
     if (!node.fallback.length) return value;
     return js.logicalExpression("??", value, jsxBranch(node.fallback, context));
+  }
+
+  /**
+   * The scope attributes of the styled parents that render the component, spread on each of its
+   * root nodes (the child-root rule, ADR-0063): `{...scopeAttributes(attributes)}`.
+   */
+  scopeRootAttributes(element: ElementNode, context: JsxContext): JsxAttributeItem[] {
+    const { scope } = this.#plan.composition;
+    // Each root takes them once: the first node printed with its span, which is the root
+    // itself, printed before what it holds.
+    if (!scope || !this.#scopeRoots.delete(spanKey(element.span))) return [];
+    const picked = context.placeholders.expression(`${scope.helper}(${scope.props})`, "argument");
+    return [js.jsxSpreadAttribute(picked)];
   }
 
   /** One of the component's own slots as a value, which a forwarded fill passes on. */

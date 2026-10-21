@@ -16,9 +16,9 @@ export default function Post({
     <Card
       className={className}
       style={style}
+      {...scopeAttributes(attributes)}
       header={<h2>Release notes</h2>}
       footer={<small>By {author}</small>}
-      {...scopeAttributes(attributes)}
     >
       <p>Slots arrive in M3.</p>
     </Card>

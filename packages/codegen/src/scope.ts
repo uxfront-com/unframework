@@ -2,7 +2,7 @@
 // renders carries `data-uf-<scopeId>`, a child component's tag carries its styled parent's (the
 // child-root rule), and the content a parent fills into a child whose sheets use `:slotted()`
 // carries `data-uf-<childScopeId>-s`. A target owns only how its child takes them (P6).
-import type { ComponentStylesApi, UfModule } from "@unframework/ir";
+import type { ComponentStylesApi, RenderNode, Span, UfComponent, UfModule } from "@unframework/ir";
 
 import { scopeStylesheet } from "./scoper.ts";
 
@@ -14,6 +14,34 @@ export function scopeAttribute(scopeId: string): string {
 /** The attribute a child's `:slotted()` rules match, `data-uf-<scopeId>-s`. */
 export function slottedAttribute(scopeId: string): string {
   return `data-uf-${scopeId}-s`;
+}
+
+/**
+ * The nodes a component's root is, where the scope attributes of the styled parents that render
+ * it land (the child-root rule): the ones Vue's attribute fallthrough reaches, since Vue passes
+ * them as attributes. That is the root element, component or `<component is>`, or one of those
+ * that a branch of a root conditional renders alone. Any other root is a fragment to Vue, which
+ * takes none: several nodes, a list, a slot, text, or a branch that holds a conditional (Vue's
+ * `<template v-if>`). So is a component with `inheritAttrs: false`. The JSX targets spread the
+ * attributes on these nodes, by their spans.
+ */
+export function scopeRoots(component: UfComponent): Span[] {
+  if (component.inheritAttrs === false) return [];
+  const { render } = component;
+  if (render.kind === "Element") return [render.span];
+  if (render.children.length !== 1) return [];
+  const [root] = render.children as [RenderNode];
+  if (root.kind !== "If") return single(root);
+  return root.branches.flatMap((branch) =>
+    branch.children.length === 1 ? single(branch.children[0]!) : [],
+  );
+}
+
+/** A node's span where it is one element, component or `<component is>`, which Vue scopes. */
+function single(node: RenderNode): Span[] {
+  return node.kind === "Element" || node.kind === "Component" || node.kind === "Dynamic"
+    ? [node.span]
+    : [];
 }
 
 /**

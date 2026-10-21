@@ -19,6 +19,7 @@ import {
   LEADING_LINE_FEED_ELEMENTS,
   parseExpression,
   rewriteExpression,
+  scopeRoots,
 } from "@unframework/codegen";
 import type { RewriteRules } from "@unframework/codegen";
 import type {
@@ -38,6 +39,20 @@ import type { BindingTypes } from "./narrowing.ts";
 import type { ReferencePath } from "./narrowing.ts";
 
 /**
+ * A text child as a scope root prints it: one holding a character HTML reads there becomes a
+ * string literal, `{"a < b"}`, which Solid's compiler escapes, as it doesn't JSX text inside a
+ * spread element on the server.
+ */
+function escapedText(node: RenderNode): RenderNode {
+  if (node.kind !== "Text" || !/[<>&]/.test(node.value)) return node;
+  return {
+    kind: "Interpolation",
+    value: { code: JSON.stringify(node.value), span: node.span, refs: [] },
+    span: node.span,
+  };
+}
+
+/**
  * A component's render tree as Solid prints it, with references spelled by `rules`: see the
  * module comment.
  */
@@ -46,6 +61,9 @@ export function forSolid(
   rules: RewriteRules,
   types: BindingTypes,
 ): UfComponent["render"] {
+  // A root that spreads its styled parents' scope attributes renders through Solid's
+  // `ssrElement`, which writes its JSX text decoded and unescaped (ADR-0063).
+  const roots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
   const element = <T extends ElementNode | FragmentNode>(node: T): T => {
     const model =
       node.kind === "Element"
@@ -55,11 +73,14 @@ export function forSolid(
               (attribute.control === "select" || attribute.control === "select-multiple"),
           )
         : undefined;
-    const content = children(
+    const printed = children(
       model?.kind === "Model"
         ? selectedOptions(node.children, model.value, model.control === "select-multiple")
         : node.children,
     );
+    const content = roots.has(`${node.span.start}:${node.span.end}`)
+      ? printed.map(escapedText)
+      : printed;
     return {
       ...node,
       ...(node.kind === "Element"

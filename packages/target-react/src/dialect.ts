@@ -158,6 +158,7 @@ export function reactDialect(
       composer.modelAttribute(attribute, element, context),
     modelBinding: (attribute, node, context) => composer.modelBinding(attribute, node, context),
     dynamic: (node, context) => composer.dynamic(node, context),
+    scopeRootAttributes: (element, context) => composer.scopeRootAttributes(element, context),
   };
 }
 

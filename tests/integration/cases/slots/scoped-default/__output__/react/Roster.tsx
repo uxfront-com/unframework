@@ -17,8 +17,8 @@ export default function Roster({
       names={names}
       className={className}
       style={style}
-      renderDefault={({ item }) => <b>{item}!</b>}
       {...scopeAttributes(attributes)}
+      renderDefault={({ item }) => <b>{item}!</b>}
     />
   );
 }

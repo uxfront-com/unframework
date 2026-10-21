@@ -6,11 +6,11 @@ export default function Post(
 ) {
   return (
     <Card
-      header={<h2>Release notes</h2>}
-      footer={<small>By {props.author}</small>}
       class={props.class}
       style={props.style}
       {...scopeAttributes(props)}
+      header={<h2>Release notes</h2>}
+      footer={<small>By {props.author}</small>}
     >
       <p>Slots arrive in M3.</p>
     </Card>

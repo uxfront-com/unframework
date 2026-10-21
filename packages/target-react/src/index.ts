@@ -141,7 +141,7 @@ export const react: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: SCOPE_HELPER,
-      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root.",
+      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
     },
     "slotted-styles": { support: "native" },
   },
@@ -183,15 +183,7 @@ export const react: Target = defineTarget({
     // A lone component or `<component is>` is the root itself, never in a fragment.
     const [only] = root.kind === "Fragment" && root.children.length === 1 ? root.children : [];
     const lone = only?.kind === "Component" || only?.kind === "Dynamic" ? only : root;
-    const printed = jsxNode(lone, jsx);
-    // The child-root rule (ADR-0063): the root carries its styled parents' scope attributes.
-    if (composition.fallthrough && printed.type === "JSXElement") {
-      const { helper, scope } = composition.fallthrough;
-      printed.openingElement.attributes.push(
-        js.jsxSpreadAttribute(jsx.placeholders.expression(`${helper}(${scope})`, "argument")),
-      );
-    }
-    const tree = provided(plan, printed);
+    const tree = provided(plan, jsxNode(lone, jsx));
     const rendered = [
       ...[...composition.dynamic.values()]
         .filter(({ hoisted }) => hoisted)
@@ -498,9 +490,7 @@ function parametersOf(fn: FunctionCode): string {
 function compositionHelpers(plan: ReactPlan): string[] {
   const { helpers, names } = plan;
   return [
-    ...(plan.composition.fallthrough
-      ? [scopeAttributesHelper(plan.composition.fallthrough.helper)]
-      : []),
+    ...(plan.composition.scope ? [scopeAttributesHelper(plan.composition.scope.helper)] : []),
     ...(helpers.refObject ? [refObjectHelper(helpers.refObject)] : []),
     ...(helpers.toggle ? [toggleHelper(helpers.toggle)] : []),
     ...(helpers.modelText
@@ -598,8 +588,11 @@ function propsParameters(
   const typeCode = [parameter?.type.code, plan.eventsInterface, models, slots, attributes]
     .filter((part) => part !== undefined)
     .join(" & ");
-  if (!typeCode) return [];
-  const type = context.placeholders.type(typeCode);
+  const { scope } = composition;
+  // A component without props still takes the scope attributes of the styled parents that
+  // render it, as an object (ADR-0063).
+  if (!typeCode && !scope) return [];
+  const type = context.placeholders.type(typeCode || "object");
   const read = (parameter ? component.props : []).filter(
     (prop) => prop.binding !== undefined && context.referenced.has(prop.binding),
   );
@@ -617,14 +610,14 @@ function propsParameters(
   if (fallthrough)
     composed.push(["className", fallthrough.className], ["style", fallthrough.style]);
   if (expose) composed.push(["ref", expose.ref]);
-  // The rest the root picks its styled parents' scope attributes out of (ADR-0063).
-  const rest = fallthrough && parameter?.form !== "object" ? fallthrough.scope : undefined;
+  // The rest the roots pick their styled parents' scope attributes out of (ADR-0063).
+  const rest = scope && parameter?.form !== "object" ? scope.props : undefined;
   if (parameter?.form === "object") {
     // A name `_` and more says it is unused already: it stays the source's (oxlint still
     // reports a bare `_`).
     const emitted = [...plan.events.values()].some((event) => event.emitted);
     const name =
-      read.length || emitted || composed.length || /^_./.test(parameter.name!)
+      read.length || emitted || composed.length || scope || /^_./.test(parameter.name!)
         ? parameter.name!
         : names.claim(`_${parameter.name!}`);
     return [js.bindingIdentifier(name, type)];
@@ -646,7 +639,7 @@ function propsParameters(
       renamedProperty(prop, local, initial && context.placeholders.expression(initial.code)),
     );
   }
-  if (!properties.length) return [js.bindingIdentifier(names.claim("_props"), type)];
+  if (!properties.length) return [js.bindingIdentifier(rest ?? names.claim("_props"), type)];
   return [js.objectPattern([...properties, ...(rest ? [js.bindingRestElement(rest)] : [])], type)];
 }
 

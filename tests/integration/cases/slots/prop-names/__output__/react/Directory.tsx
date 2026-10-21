@@ -22,12 +22,12 @@ export default function Directory({
       people={people}
       className={className}
       style={style}
+      {...scopeAttributes(attributes)}
       renderRow={({ name, "data-id": id, index }) => (
         <span>
           {index + 1}: {name} ({id})
         </span>
       )}
-      {...scopeAttributes(attributes)}
     />
   );
 }

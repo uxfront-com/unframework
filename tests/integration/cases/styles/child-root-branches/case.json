@@ -1,0 +1,4 @@
+{
+  "description": "A styled parent's sheet reaches the root of a child whose root is a conditional or a <component is>, whichever branch or tag renders.",
+  "main": "Panel.uf.tsx"
+}

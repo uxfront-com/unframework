@@ -33,9 +33,10 @@
     ],
     // Angular components are decorated classes, which may have no member.
     "typescript/no-extraneous-class": ["error", { "allowWithDecorator": true }],
-    // A styled output imports its scoped sheet for its side effect, `import "./Card.uf.tsx.css"`
-    // (ADR-0063): the bundler attaches it.
-    "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
+    // A styled output imports the sheet the compiler scoped for its side effect,
+    // `import "./Card.uf.tsx.css"` (ADR-0063): the bundler attaches it. An author's own sheet
+    // stays an error.
+    "import/no-unassigned-import": ["error", { "allow": ["**/*.uf.tsx.css"] }],
     // A useless escape in an output is in code it copies, so it is the author's, `<\/script`
     // included: UF1002 asks for it where a copied string would end a Vue or Svelte script block.
     // Only the Vue target escapes one itself, as a guard (ADR-0051).

@@ -1,6 +1,7 @@
 import {
   componentTypes,
   defineTarget,
+  earlierHelperNames,
   exportDeclaration,
   exportsOf,
   ImportSet,
@@ -27,7 +28,6 @@ import { SolidCode, solidSetup } from "./setup.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type JsxExpression = ReturnType<typeof jsxNode>;
-type JsxAttributeItem = ReturnType<typeof js.jsxAttribute | typeof js.jsxSpreadAttribute>;
 
 /** The Solid 1.9 target. Solid's JSX takes HTML attribute names as they are. */
 export const solid: Target = defineTarget({
@@ -121,7 +121,7 @@ export const solid: Target = defineTarget({
     "child-root-scope": {
       support: "emulated",
       helper: SCOPE_HELPER,
-      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root.",
+      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
     },
     "slotted-styles": { support: "native" },
   },
@@ -131,11 +131,14 @@ export const solid: Target = defineTarget({
     const names = sourceNames(component, context.module);
     for (const name of freeNames(component, names)) names.delete(name);
     // A source's components are joined into one module where it is loaded (ADR-0053): each after
-    // the first takes the scope helper under a name of its own (`scopeAttributes_1`).
+    // the first takes the scope helper under a name no earlier one takes (`scopeAttributes_1`).
     const index = context.module.components.findIndex((each) => each.name === component.name);
-    for (let suffix = 0; suffix < index; suffix++) {
-      names.add(suffix ? `${SCOPE_HELPER}_${suffix}` : SCOPE_HELPER);
-    }
+    const earlier = context.module.components.slice(0, index).map((each) => {
+      const taken = sourceNames(each, context.module);
+      for (const name of freeNames(each, taken)) taken.delete(name);
+      return taken;
+    });
+    for (const name of earlierHelperNames(SCOPE_HELPER, earlier)) names.add(name);
     const imports = new ImportSet(new NameScope(names));
     const placeholders = new Placeholders();
     const composition = new SolidComposition(component, context.module, imports);
@@ -157,7 +160,7 @@ export const solid: Target = defineTarget({
     const listeners = solidListeners(code, imports, placeholders, narrowings, (element, context) =>
       modelRef(element, context, code, models),
     );
-    const { dialect, helpers, fallthrough } = solidJsx(
+    const { dialect, helpers } = solidJsx(
       imports,
       narrowings,
       [component.propsParameter?.type.code ?? "", ...types.map((declaration) => declaration.code)],
@@ -179,7 +182,7 @@ export const solid: Target = defineTarget({
       ...composition.statements(object).map((text) => placeholders.statements(text)),
       ...setup.statements,
       ...(exposed ? [placeholders.statements(`${exposed}\n`)] : []),
-      js.returnStatement(rendered(component, code, narrowings.types, jsx, fallthrough)),
+      js.returnStatement(rendered(component, code, narrowings.types, jsx)),
     ]);
     const statements = exportDeclaration(
       component.name,
@@ -214,8 +217,7 @@ export const solid: Target = defineTarget({
 });
 
 /**
- * What the component returns: its template, with what falls through added to its root where
- * the root has no `class` or `style` of its own, inside the providers of what it provides, the
+ * What the component returns: its template, inside the providers of what it provides, the
  * first outermost (ADR-0054). A root that is one component, or one `<component is>`, is printed
  * as it is, not in a fragment.
  */
@@ -224,7 +226,6 @@ function rendered(
   code: SolidCode,
   types: BindingTypes,
   context: JsxContext,
-  fallthrough: (context: JsxContext) => JsxAttributeItem[],
 ): JsxExpression {
   const render = forSolid(component, code.rules, types);
   const [only] = render.children;
@@ -234,10 +235,7 @@ function rendered(
     (only?.kind === "Component" || only?.kind === "Dynamic")
       ? only
       : render;
-  const printed = jsxNode(root, context);
-  if (printed.type === "JSXElement")
-    printed.openingElement.attributes.push(...fallthrough(context));
-  let wrapped: JsxExpression = printed;
+  let wrapped: JsxExpression = jsxNode(root, context);
   for (const item of component.setup.toReversed()) {
     if (item.kind !== "Provide") continue;
     const value = context.placeholders.expression(code.provided(item.key, item.value));

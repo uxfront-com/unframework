@@ -9,6 +9,7 @@ import type { LayerName, QuarantineEntry } from "@unframework/testing/node";
  */
 const UNATTACHED: Readonly<Record<string, readonly LayerName[]>> = {
   "styles/child-root": ["L6", "L7", "L10"],
+  "styles/child-root-branches": ["L6", "L7", "L10"],
   "styles/custom-properties": ["L10"],
   "styles/data-attribute-variants": ["L10"],
   "styles/deep": ["L6", "L7", "L10"],

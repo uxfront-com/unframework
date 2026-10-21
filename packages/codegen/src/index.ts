@@ -7,7 +7,7 @@ export {
 export { compositionUse, requiredCapabilities } from "./capabilities.ts";
 export { scopeStylesheet } from "./scoper.ts";
 export type { ScopedStylesheet } from "./scoper.ts";
-export { childStyles, scopeAttribute, slottedAttribute } from "./scope.ts";
+export { childStyles, scopeAttribute, scopeRoots, slottedAttribute } from "./scope.ts";
 export { eventCalls, handedControls, handlerControls, ownControls } from "./controls.ts";
 export type { ControlTest, EventCall, HandlerControls, LiftedControl } from "./controls.ts";
 export type {
@@ -172,6 +172,13 @@ export type { FormatOutcome } from "./format.ts";
 export { childImports, ImportSet, keyImports, keyOwner } from "./imports.ts";
 export type { ChildImport, KeyImport } from "./imports.ts";
 export { isPrimitiveState } from "./kinds.ts";
-export { kebabCase, NameScope, pascalCase, sourceNames, typeNames } from "./names.ts";
+export {
+  earlierHelperNames,
+  kebabCase,
+  NameScope,
+  pascalCase,
+  sourceNames,
+  typeNames,
+} from "./names.ts";
 export type { Diagnostic, DiagnosticCode } from "@unframework/diagnostics";
 export type * from "./toolchain.ts";

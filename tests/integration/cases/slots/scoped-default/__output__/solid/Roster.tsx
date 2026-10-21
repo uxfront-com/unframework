@@ -7,10 +7,10 @@ export default function Roster(
   return (
     <Names
       names={props.names}
-      children={({ item }) => <b>{item}!</b>}
       class={props.class}
       style={props.style}
       {...scopeAttributes(props)}
+      children={({ item }) => <b>{item}!</b>}
     />
   );
 }

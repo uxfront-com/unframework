@@ -168,11 +168,13 @@ A component that imports a stylesheet imports the sheet `compile()` scoped for i
 other imports: `import "./Badge.uf.tsx.css";` (ADR-0063). The shared JSX builder prints
 `data-uf-<id>=""` on each element it renders, the parent's attribute on a child's tag, and the
 child's `-s` on the content filled into a child whose sheet uses `:slotted()`, children and render
-props alike. A component that takes `className` and `style` also takes the scope attributes of its
-styled parents, which its root spreads: the rest of its props pattern, picked by the inline
-`scopeAttributes` helper (`{...scopeAttributes(attributes)}`), or the props object in the object
-form. The helper keeps only the `data-uf-*` keys, so no prop the output leaves unread reaches the
-root.
+props alike. A component also takes the scope attributes of its styled parents, which each of its root
+nodes spreads: its root element, component or `<component is>`, or each branch of a root
+conditional that renders one alone (`scopeRoots`, where Vue's fallthrough reaches). They come from
+the rest of its props pattern, picked by the inline `scopeAttributes` helper
+(`{...scopeAttributes(attributes)}`), or from the props object in the object form, and a component
+without props takes one, typed `object`. The helper keeps only the `data-uf-*` keys, so no prop
+the output leaves unread reaches the root.
 
 ## Toolchain
 

@@ -74,12 +74,6 @@ export interface SolidJsx {
   dialect: JsxDialect;
   /** The inline helpers to print after the component, as source code. */
   helpers: () => string[];
-  /**
-   * The fallthrough attributes the root has not printed with its own (`class={props.class}`,
-   * `style={props.style}`), then the scope attributes its styled parents pass it
-   * (`{...scopeAttributes(props)}`), to add once it is printed: none without fallthrough.
-   */
-  fallthrough: (context: JsxContext) => JsxAttributeItem[];
 }
 
 /** What a file's composition prints with: its code, its composition and its props object. */
@@ -114,6 +108,7 @@ export function solidJsx(
   // added after them where it has none.
   const root = composition.fallthrough;
   const printed = { class: false, style: false };
+  const pending = new Set(composition.scopeRoots);
   const isRoot = (element: ElementNode) => isSpan(root, element.span);
   const passed = (name: "class" | "style", context: JsxContext): AstExpression =>
     context.placeholders.expression(`${object!}.${name}`, "argument");
@@ -241,6 +236,23 @@ export function solidJsx(
       jsxDynamic(node, imports.add("solid-js/web", "Dynamic"), context, [
         js.jsxAttribute("component", js.jsxExpressionContainer(jsxExpression(node.is, context))),
       ]),
+    // After a root's own attributes: the `class` and `style` it has not merged with its own
+    // (`class={props.class}`), then the `data-uf-*` attributes of the styled parents that render
+    // it, whose names only they know, picked out of the props by name (the child-root rule,
+    // ADR-0063).
+    // Each root takes them once: the first node printed with its span, which is the root
+    // itself, printed before what it holds.
+    scopeRootAttributes(element, context) {
+      if (!pending.delete(`${element.span.start}:${element.span.end}`)) return [];
+      const fallthrough = isRoot(element)
+        ? (["class", "style"] as const)
+            .filter((name) => !printed[name])
+            .map((name) => js.jsxAttribute(name, js.jsxExpressionContainer(passed(name, context))))
+        : [];
+      scopeHelper ??= imports.claim(SCOPE_HELPER);
+      const picked = context.placeholders.expression(`${scopeHelper}(${object!})`, "argument");
+      return [...fallthrough, js.jsxSpreadAttribute(picked)];
+    },
   };
   return {
     dialect,
@@ -249,22 +261,6 @@ export function solidJsx(
       ...(scopeHelper ? [scopeHelperCode(scopeHelper)] : []),
       ...models.helpers(),
     ],
-    fallthrough(context) {
-      if (!root) return [];
-      const missing = (["class", "style"] as const).filter((name) => !printed[name]);
-      // The child-root rule (ADR-0063): the root carries the `data-uf-*` attributes of the
-      // styled parents that render it, whose names only they know, so it picks them out of the
-      // props by name.
-      scopeHelper ??= imports.claim(SCOPE_HELPER);
-      return [
-        ...missing.map((name) =>
-          js.jsxAttribute(name, js.jsxExpressionContainer(passed(name, context))),
-        ),
-        js.jsxSpreadAttribute(
-          context.placeholders.expression(`${scopeHelper}(${object!})`, "argument"),
-        ),
-      ];
-    },
   };
 }
 

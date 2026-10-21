@@ -7,7 +7,7 @@
 // merged into the root. What `defineExpose` exposes is the `ref` prop's handle
 // (`useImperativeHandle`). An injection key is a React context, provided around the template and
 // read with `use`. `<component is>` renders a `const` the body declares.
-import { childImports, keyImports, keyOwner, pascalCase } from "@unframework/codegen";
+import { childImports, keyImports, keyOwner, pascalCase, scopeRoots } from "@unframework/codegen";
 import type { ChildImport, ImportSet, KeyImport } from "@unframework/codegen";
 import { codeOf, walk } from "@unframework/ir";
 import type {
@@ -21,6 +21,7 @@ import type {
   ProvideItem,
   RefType,
   RenderNode,
+  Span,
   UfComponent,
   UfModule,
 } from "@unframework/ir";
@@ -67,22 +68,33 @@ export interface ModelPlan {
   mirror?: string;
 }
 
-/**
- * What the component's root takes of a consumer's `class` and `style` (ADR-0054), and of the
- * scope attributes its styled parents pass (the child-root rule, ADR-0063).
- */
+/** What the component's root takes of a consumer's `class` and `style` (ADR-0054). */
 export interface FallthroughPlan {
   /** The root they merge into: the render root's element, or its one component. */
   root: ElementNode | ComponentNode;
   className: string;
   style: string;
+}
+
+/**
+ * Where the scope attributes of the styled parents that render the component land (the
+ * child-root rule, ADR-0063): its root nodes (`scopeRoots`), each of which spreads them.
+ */
+export interface ScopePlan {
+  /** The root nodes, by `start:end` of their spans. */
+  roots: ReadonlySet<string>;
   /**
-   * What the root picks the scope attributes out of: the props pattern's rest (`attributes`),
-   * or the props object of the object form.
+   * What the roots pick the attributes out of: the props pattern's rest (`attributes`), or the
+   * props object of the object form.
    */
-  scope: string;
+  props: string;
   /** The inline helper that picks them, `scopeAttributes`. */
   helper: string;
+}
+
+/** A span's key in {@link ScopePlan.roots}. */
+export function spanKey(span: Span): string {
+  return `${span.start}:${span.end}`;
 }
 
 /** The composition of one component on React. */
@@ -98,6 +110,7 @@ export interface CompositionPlan {
   /** The models, by binding, in source order. */
   readonly models: ReadonlyMap<BindingId, ModelPlan>;
   readonly fallthrough?: FallthroughPlan;
+  readonly scope?: ScopePlan;
   /** The `ref` prop's local and the handle's interface, where the component exposes functions. */
   readonly expose?: { ref: string; handle: string };
   /** The local each `provide` names its value by. */
@@ -227,9 +240,15 @@ export function planComposition(
     root,
     className: propLocal("className"),
     style: propLocal("style"),
-    scope: object || names.claim("attributes"),
-    helper: names.claim(SCOPE_HELPER),
   };
+  const roots = scopeRoots(component);
+  const scope: ScopePlan | undefined = roots.length
+    ? {
+        roots: new Set(roots.map(spanKey)),
+        props: object || names.claim("attributes"),
+        helper: names.claim(SCOPE_HELPER),
+      }
+    : undefined;
   const expose = component.exposes && {
     ref: propLocal("ref"),
     handle: names.claim(`${component.name}Handle`),
@@ -310,6 +329,7 @@ export function planComposition(
     slots,
     models,
     ...(fallthrough ? { fallthrough } : {}),
+    ...(scope ? { scope } : {}),
     ...(expose ? { expose } : {}),
     provided,
     dynamic,

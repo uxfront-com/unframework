@@ -1,0 +1,14 @@
+---
+interface Props {
+  busy: boolean;
+  text: string;
+}
+
+const { busy, text } = Astro.props;
+---
+
+{busy ? (
+  <span class="badge" role="status">Saving</span>
+) : (
+  <button type="button" class="badge">{text}</button>
+)}

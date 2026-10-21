@@ -99,7 +99,7 @@ export default function Frame() {
     expect(box).toContain('{children ?? "Empty"}');
     expect(box).toContain("{renderItem?.({ n: 1 })}");
     expect(files.get("Frame")).toContain(
-      "<Box\n      className={className}\n      style={style}\n      renderItem={({ n }) => <b>{n}</b>}\n      {...scopeAttributes_1(attributes)}\n    >\n      {children}\n    </Box>",
+      "<Box\n      className={className}\n      style={style}\n      {...scopeAttributes_1(attributes)}\n      renderItem={({ n }) => <b>{n}</b>}\n    >\n      {children}\n    </Box>",
     );
   });
 
@@ -143,7 +143,8 @@ export default function Page() {
 }`);
     const heading = files.get("Heading")!;
     expect(heading).toContain("const Tag = level;");
-    expect(heading).toContain('<Tag className="title">Hi</Tag>');
+    // The tag a root `<component is>` renders takes its styled parents' scope attributes (ADR-0063).
+    expect(heading).toContain('<Tag className="title" {...scopeAttributes(attributes)}>');
   });
 
   it("merges a consumer's class and style into the root, the consumer's style last", async () => {

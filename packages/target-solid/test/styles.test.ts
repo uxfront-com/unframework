@@ -72,10 +72,10 @@ function lowered(
   return { module: module!, api: api! };
 }
 
-/** The formatted Solid output of a module's first component. */
-async function output(module: UfModule): Promise<string> {
+/** The formatted Solid output of a module's component, its first by default. */
+async function output(module: UfModule, index = 0): Promise<string> {
   const reported: unknown[] = [];
-  const [file] = target.emit(module.components[0]!, {
+  const [file] = target.emit(module.components[index]!, {
     module,
     options: undefined,
     report: (diagnostic) => void reported.push(diagnostic),
@@ -113,6 +113,8 @@ describe("solid scoped styles", () => {
   it("stamps the child's `-s` on the children and on a render function's content", async () => {
     const code = await output(ranking.module);
     const stamped = `class="item" data-uf-${rankingId}="" data-uf-${listId}-s=""`;
+    // The child's tag takes the parent's attribute (the child-root rule), not the child's `-s`.
+    expect(code).toContain(`<List\n      names={props.names}\n      data-uf-${rankingId}=""\n`);
     expect(code).toContain(`<h2 ${stamped}>`);
     expect(code).toContain(`<b ${stamped}>`);
   });
@@ -122,6 +124,26 @@ describe("solid scoped styles", () => {
     expect(code).toContain(
       `data-uf-${listId}=""\n      style={props.style}\n      {...scopeAttributes(props)}\n    >`,
     );
+  });
+
+  // The unplugin joins a source's outputs into one module (ADR-0053): a prop that takes the
+  // helper's name moves the first component's helper on, and the second must not take it too.
+  it("names the helper of each component of a source apart", async () => {
+    const { module } = lowered(
+      "Two.uf.tsx",
+      `export function Item({ scopeAttributes }: { scopeAttributes: string }) {
+  return <li>{scopeAttributes}</li>;
+}
+export default function Two() {
+  return <ul><Item scopeAttributes="a" /></ul>;
+}`,
+    );
+    const helpers = async (index: number) =>
+      [...(await output(module, index)).matchAll(/^function (\w+)\(/gm)].map((match) => match[1]);
+    expect([await helpers(0), await helpers(1)]).toEqual([
+      ["scopeAttributes_1"],
+      ["scopeAttributes"],
+    ]);
   });
 });
 
@@ -184,6 +206,51 @@ describe("solid child-root rule, rendered by Solid's server", () => {
     ).toBe(
       '<button type="button" class="button " style="" data-uf-0a1b2c3d="" data-uf-1a2b3c4d="">Save</button>',
     );
+  });
+
+  it("puts them on each branch of a root conditional, and on a root <component is>", async () => {
+    const Status = await load([
+      "Status.uf.tsx",
+      `export default function Status({ busy }: { busy: boolean }) {
+  return <>{busy ? <span class="badge">Saving</span> : <button type="button">Save</button>}</>;
+}`,
+    ]);
+    const Heading = await load([
+      "Heading.uf.tsx",
+      `export default function Heading({ big }: { big: boolean }) {
+  return <component is={big ? "h2" : "h3"} class="heading">Notes</component>;
+}`,
+    ]);
+    const scope = { "data-uf-0a1b2c3d": "" };
+    expect([
+      await render(Status, { busy: true, ...scope }),
+      await render(Status, { busy: false, ...scope }),
+      await render(Heading, { big: false, ...scope }),
+    ]).toEqual([
+      '<span class="badge " data-uf-0a1b2c3d="">Saving</span>',
+      '<button type="button" data-uf-0a1b2c3d="">Save</button>',
+      // `<Dynamic>` passes its `component` key to `ssrElement`, which skips it after a space.
+      '<h3 class="heading " data-uf-0a1b2c3d="" >Notes</h3>',
+    ]);
+  });
+
+  // `ssrElement` writes a spread element's JSX text decoded, so the root's text that holds a
+  // character HTML reads there prints as a string literal, which the compiler escapes.
+  it("escapes the root's text on the server", async () => {
+    const Sum = await load([
+      "Sum.uf.tsx",
+      `export default function Sum() { return <p>a &lt; b &amp;&amp; c &gt; d</p>; }`,
+    ]);
+    const Title = await load([
+      "Title.uf.tsx",
+      `export default function Title({ big }: { big: boolean }) {
+  return <component is={big ? "h2" : "h3"}>a &lt; b</component>;
+}`,
+    ]);
+    expect([await render(Sum, {}), await render(Title, { big: true })]).toEqual([
+      '<p class="" style="">a &lt; b &amp;&amp; c > d</p>',
+      "<h2 >a &lt; b</h2>",
+    ]);
   });
 
   it("passes them on through a root component to its element", async () => {

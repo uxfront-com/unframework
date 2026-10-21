@@ -162,18 +162,20 @@ sheet with `parseStylesheet` instead, Vue's and Angular's included.
   after its other imports, so a child's sheet loads before its parent's, as plugin-vue imports a
   component's style after its script. The toolchain projects hand the checker a
   `declare module "*.css" {}` file from the target's toolchain package (`sheets.d.ts`), and every
-  toolchain's lint baseline allows a `.css` import that binds nothing
-  (`import/no-unassigned-import`).
+  toolchain's lint baseline allows that import, and only an emitted sheet's
+  (`import/no-unassigned-import` on `*.uf.tsx.css`).
 - **`child-root-scope`, emulated (`scopeAttributes`).** The parent passes its attribute on the
   child's tag, `<Button data-uf-a33d603f="" />`, which a typed JSX consumer may write, since JSX
-  checks no hyphenated name. Each name is a parent's id, which the child can't know, so every
-  component that takes `class` and `style` (ADR-0054) spreads an inline helper's pick of them on
-  its root: `{...scopeAttributes(attributes)}`, from the rest of a React props pattern, or from the
-  props object (`props` on Solid, and React's object form). The helper keeps only the props'
-  `data-uf-*` keys, each with the empty value the parent writes, and reads no value, so it runs no
-  Solid getter, and no prop the output leaves unread reaches the root, as a bare rest spread would
-  let it. A root component spreads them on, so they reach the first element, as Vue's scope id
-  does. Each component of a module takes the helper under a name of its own
+  checks no hyphenated name. Each name is a parent's id, which the child can't know, so the child
+  spreads an inline helper's pick of them, `{...scopeAttributes(attributes)}`, on each node Vue's
+  attribute fallthrough reaches (codegen's `scopeRoots`): its root element, component or
+  `<component is>`, or each branch of a root conditional that renders one of those alone. The
+  helper reads the rest of a React props pattern, or the props object (`props` on Solid, and
+  React's object form), and a component without props takes one, typed `object`. It keeps only
+  the props' `data-uf-*` keys, each with the empty value the parent writes, and reads no value,
+  so it runs no Solid getter, and no prop the output leaves unread reaches the root, as a bare
+  rest spread would let it. A root component spreads them on, so they reach its own root. Each
+  component of a module takes the helper under a name no earlier component takes
   (`scopeAttributes_1`), because the unplugin joins them into one module (ADR-0053).
 - **The cost on Solid.** A spread on the root makes Solid's compiler set the root's attributes
   through `spread` and `mergeProps`, and render it on the server with `ssrElement`, instead of a
@@ -184,17 +186,16 @@ sheet with `parseStylesheet` instead, Vue's and Angular's included.
 - **`slotted-styles`, native.** The shared JSX builder stamps the child's `-s` on the content a
   parent fills in, so it holds on `children`, named slot props and render props, whose function
   returns the stamped content.
-- **Not covered.** A child whose root is a conditional, a list or a fragment, and one with
-  `inheritAttrs: false`, takes no `class`, `style` or scope attribute, so a parent's sheet does
-  not reach its root on React and Solid. Vue gives the scope id to a conditional's rendered root
-  and to a root with `inheritAttrs: false`, so those two differ, and no diagnostic says so yet:
-  `ComponentApi.root` does not tell a conditional from a fragment, which no target scopes.
+- **What no target scopes.** Vue treats any other root as a fragment, and gives it none: several
+  nodes, a list, a slot, text, a branch that holds a conditional (Vue's `<template v-if>`), and a
+  root with `inheritAttrs: false`, which drops the attribute with the rest. React and Solid leave
+  them unscoped too, so every target renders the same DOM.
 
 **The capabilities:** `scoped-styles` (a component with a sheet), `child-root-scope` (a child a
 styled component renders) and `slotted-styles` (content filled into a child whose sheet uses
-`:slotted()`). Each target declares all three `native`, the cell its lane is expected to reach. A
-lane that can't reach it declares the cell `emulated` or `unsupported`, with the next free UF4 code,
-and adds a section here.
+`:slotted()`). Each target first declared all three `native`, the cell its lane was expected to
+reach. A lane that can't reach it declares the cell `emulated` or `unsupported`, with the next free
+UF4 code, and adds a section here: React and Solid emulate `child-root-scope`.
 
 **The codes** are UF5001 `shared-stylesheet`, UF5002 `invalid-stylesheet`, UF5003
 `unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`), UF5004
