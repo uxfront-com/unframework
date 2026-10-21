@@ -7,11 +7,17 @@ export {
   browserCommands,
   ufAriaSnapshot,
   ufArtefact,
+  ufColorScheme,
   ufComponentEvents,
   ufFocus,
   ufResetInput,
 } from "./commands.ts";
-export type { AriaCommandContext, FocusCommandContext, InputCommandContext } from "./commands.ts";
+export type {
+  AriaCommandContext,
+  ColorSchemeContext,
+  FocusCommandContext,
+  InputCommandContext,
+} from "./commands.ts";
 export { compiledEvents, eventsOfModule, recordCompiledModule } from "./events.ts";
 export type { CompiledModule } from "./events.ts";
 export { caseDirectory, displayRoot, projectHarness, sharedArtefactContext } from "./context.ts";
@@ -68,10 +74,17 @@ export {
   caseOfFile,
   caseReference,
   caseReferences,
+  COLOR_SCHEMES,
   isReference,
   ssrScenarios,
 } from "../harness.ts";
-export type { CaseConfig, HarnessContext, PixelMode, SsrScenario } from "../harness.ts";
+export type {
+  CaseConfig,
+  ColorScheme,
+  HarnessContext,
+  PixelMode,
+  SsrScenario,
+} from "../harness.ts";
 export {
   checkLayers,
   LAYERS,

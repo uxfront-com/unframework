@@ -13,6 +13,8 @@ import type {
   InputResult,
   SerializedLocatorLike,
 } from "../commands.ts";
+import { COLOR_SCHEMES } from "../harness.ts";
+import type { ColorScheme } from "../harness.ts";
 import { caseDirectory, projectHarness } from "./context.ts";
 import type { CommandProject } from "./context.ts";
 import { sharedArtefactContext } from "./context.ts";
@@ -191,6 +193,29 @@ export async function ufResetInput(context: InputCommandContext): Promise<void> 
   await context.page.mouse.move((box?.x ?? 0) + width - 1, (box?.y ?? 0) + height - 1);
 }
 
+/** What the colour-scheme command needs from Vitest's command context (Playwright provider). */
+export interface ColorSchemeContext {
+  page: { emulateMedia(options: { colorScheme: ColorScheme }): Promise<void> };
+}
+
+/**
+ * `ufColorScheme`: emulates the `prefers-color-scheme` a case opts into (`case.json`'s
+ * `colorScheme`, ADR-0061) for the page its spec file runs in, before anything mounts. The setup
+ * file sets it for every spec file, `light` by default, so no file runs in the scheme of the file
+ * before it.
+ */
+export async function ufColorScheme(
+  context: ColorSchemeContext,
+  scheme: ColorScheme,
+): Promise<void> {
+  if (!COLOR_SCHEMES.includes(scheme)) {
+    throw new TypeError(
+      `ufColorScheme: ${JSON.stringify(scheme)} is not a colour scheme (${COLOR_SCHEMES.join(", ")}).`,
+    );
+  }
+  await context.page.emulateMedia({ colorScheme: scheme });
+}
+
 /**
  * `ufComponentEvents`: the events the component of a case declares, from the project's own
  * compile of the case's main `.uf.tsx` (`recordCompiledModule`), so a mount listens to exactly
@@ -224,6 +249,7 @@ export const browserCommands: {
   ufFocus: typeof ufFocus;
   ufInput: typeof ufInput;
   ufResetInput: typeof ufResetInput;
+  ufColorScheme: typeof ufColorScheme;
   ufComponentEvents: typeof ufComponentEvents;
 } = {
   ufArtefact,
@@ -232,5 +258,6 @@ export const browserCommands: {
   ufFocus,
   ufInput,
   ufResetInput,
+  ufColorScheme,
   ufComponentEvents,
 };

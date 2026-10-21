@@ -40,6 +40,17 @@ describe("diffGeometry", () => {
     ]);
   });
 
+  it("compares a pseudo-element's computed styles, which have no box", () => {
+    const quoted = (content: string): GeometrySnapshot => ({
+      version: 1,
+      nodes: { "q[0]::before": { style: { content, color: "rgb(0, 0, 0)" } } },
+    });
+    expect(diffGeometry(quoted("open-quote"), quoted("open-quote"))).toEqual([]);
+    expect(diffGeometry(quoted("open-quote"), quoted('"«"'))).toEqual([
+      { path: "q[0]::before", property: "content", expected: "open-quote", actual: '"«"' },
+    ]);
+  });
+
   it("formats the first deltas, then a count", () => {
     const deltas = diffGeometry(snapshot("0px", 100), snapshot("1px", 101));
     expect(formatGeometryDiff(deltas, "cases/x/__expected__/geometry.initial.json", 2)).toEqual([

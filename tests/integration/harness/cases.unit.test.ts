@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { settleArtefactDirectory } from "@unframework/testing/node";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -163,6 +164,42 @@ describe("listCases", () => {
     );
   });
 
+  it("reads the colour scheme a case opts into, and refuses any other value (ADR-0061)", () => {
+    const dir = makeCorpus({
+      "theming/dark/Dark.uf.tsx": input,
+      "theming/dark/case.json": '{ "colorScheme": "dark" }',
+      "theming/light/Light.uf.tsx": input,
+      "theming/light/case.json": '{ "colorScheme": "light" }',
+    });
+    expect(listCases(dir).map((info) => info.config)).toEqual([
+      { colorScheme: "dark" },
+      { colorScheme: "light" },
+    ]);
+    for (const value of ['"dim"', '"Dark"', "true", "null"]) {
+      expect(() =>
+        listCases(
+          makeCorpus({
+            "theming/dark/Dark.uf.tsx": input,
+            "theming/dark/case.json": `{ "colorScheme": ${value} }`,
+          }),
+        ),
+      ).toThrow('Case theming/dark: case.json has "colorScheme" must be one of "light", "dark".');
+    }
+  });
+
+  it("accepts a stylesheet beside a case's inputs, which is neither an input nor a spec", () => {
+    const dir = makeCorpus({
+      "styles/card/Card.uf.tsx": 'import "./Card.css";\n' + input,
+      "styles/card/Card.css": ".card { color: red; }\n",
+      "styles/card/card.test.ts": spec('"initial"'),
+    });
+    expect(
+      listCases(dir).map((info) => [info.id, info.sources.map((s) => s.filename), info.spec]),
+    ).toEqual([
+      ["styles/card", ["styles/card/Card.uf.tsx"], join(dir, "styles/card/card.test.ts")],
+    ]);
+  });
+
   it("reads the note that says why every test of a case requires a capability", () => {
     const note = "onMounted writes the state, so every browser capture depends on client code.";
     const dir = makeCorpus({
@@ -277,6 +314,34 @@ describe("the shared artefacts a case owns", () => {
       "__screenshots__/card.test.ts/renders-1.png",
       "__screenshots__/initial-chromium-linux.png",
     ]);
+  });
+
+  it("include the stylesheets a target emits under __output__/<target>/, stale ones too", () => {
+    const dir = makeCorpus({
+      "styles/card/__output__/vue/Card.vue": "<template />\n",
+      "styles/card/__output__/vue/Card.uf.tsx.css": ".card[data-uf-1] { color: red; }\n",
+      "styles/card/__output__/vue/Old.uf.tsx.css": ".old { color: red; }\n",
+    });
+    const output = join(dir, "styles/card/__output__/vue");
+    const emitted = new Map([
+      ["Card.vue", "<template />\n"],
+      ["Card.uf.tsx.css", ".card[data-uf-1] { color: red; }\n"],
+    ]);
+    const checked = settleArtefactDirectory(output, emitted, { update: false, root: dir });
+    expect(checked.pass).toBe(false);
+    expect(checked.message).toContain(
+      "Stale artefact styles/card/__output__/vue/Old.uf.tsx.css: this run no longer produces it.",
+    );
+    const changed = new Map([
+      ...emitted,
+      ["Card.uf.tsx.css", ".card[data-uf-2] { color: red; }\n"],
+    ]);
+    expect(
+      settleArtefactDirectory(output, changed, { update: false, root: dir }).message,
+    ).toContain("styles/card/__output__/vue/Card.uf.tsx.css");
+    expect(settleArtefactDirectory(output, emitted, { update: true, root: dir }).pass).toBe(true);
+    expect(readdirSync(output).toSorted()).toEqual(["Card.uf.tsx.css", "Card.vue"]);
+    expect(settleArtefactDirectory(output, emitted, { update: false, root: dir }).pass).toBe(true);
   });
 
   it("are deleted in update mode, with the directories they leave empty", () => {

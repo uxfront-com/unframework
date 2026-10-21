@@ -137,6 +137,12 @@ errors>` on every layer, and the summary excuses it on that target alone.
   not kebab-case or that the spec checked already, a tolerance without a reason). No landmark wraps the mount root, so a
   component may render its own `<main>`; axe's `region` rule (all content inside landmarks) is
   off, because placing a component in the page's landmarks is the page's job.
+- **L10 captures what styles change.** Each element records its border box and 68 computed
+  properties (`GEOMETRY_STYLE_PROPERTIES`), offsets, `text-shadow` and `outline-offset` among
+  them, and each text run its line boxes. A `::before` or `::after` whose `content` is not
+  `none` is keyed `<path>::before` or `<path>::after`, with the same properties and `content`,
+  and no box: the DOM gives it none. `filter` is left out, so the `L10-root-inverted` canary
+  proves the pixel comparison alone (ADR-0061).
 - **L10 sees each run of text as one node.** Frameworks split one run of text into DOM text
   nodes differently (`Price: {price} EUR` is three nodes on React, Solid and Qwik, one on Vue,
   and Vue splits a text branch from the text beside it), and Chromium starts each node at a
@@ -220,7 +226,8 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
 
 - **`@unframework/testing/setup`**, loaded first by every browser project: the bundled Inter font
   as "UF Test Sans", the motion and caret reset, the startup assertions (DPR 1, reduced motion,
-  light scheme), console capture recorded as **L13** for every test of a case (plus the
+  and the case's colour scheme: `case.json`'s `colorScheme`, `light` by default, which the file
+  emulates through `ufColorScheme` before anything mounts, ADR-0061), console capture recorded as **L13** for every test of a case (plus the
   adapter's server-side console, at mount and at each rerender), and cleanup (the unmount, then
   the real intervals back if a view had a clock). The capture starts
   when the file loads and discards nothing: a message logged while the modules evaluate or in a
@@ -264,13 +271,14 @@ case)`); its projects run after the run's reference and before every other targe
 - **Browser commands:** `browserCommands` (`ufArtefact`, which settles `dom.`, `aria.` and
   `trace.<name>.*`, a trace with no contents being one that must not exist; `ufAriaSnapshot`,
   `ufVisualCapture`, `ufFocus`, `ufInput` (one input of a `view.user` action: a hover, a mouse
-  button's press or release, a wheel step, a key's press or release), `ufResetInput`, and
+  button's press or release, a wheel step, a key's press or release), `ufResetInput`,
+  `ufColorScheme` (Playwright's `emulateMedia` with the case's `prefers-color-scheme`), and
   `ufComponentEvents`, which answers from the
   compiles a project's unplugin reported to `recordCompiledModule`, for the case's only source or
   the one its `case.json` names as `main`, ADR-0057), and
   `parityBrowser({ name, commands })`, the deterministic Chromium every parity project runs
-  (800×600 at DPR 1, `--font-render-hinting=none`, `--disable-partial-raster`, light scheme,
-  reduced motion, a 5 s action timeout). A target's command may not take one of the testing
+  (800×600 at DPR 1, `--font-render-hinting=none`, `--disable-partial-raster`, light scheme
+  until a case opts into dark, reduced motion, a 5 s action timeout). A target's command may not take one of the testing
   API's names.
 - **Layers:** `checkLayers(task, subject, { L1: () => …, L2: … })` runs checks, records each
   outcome and throws one error with every failure (`expectParity` records the same way without
@@ -340,7 +348,12 @@ and bidi isolates included; a whitespace text that collapses away beside a ruby 
 as `""`, because Chromium's ruby layout still sees it. Where a table-internal box (a bound
 `display: table-cell`, say) sits in an inline box, Chromium wraps it in an anonymous inline
 table, which the model does not build: that line keeps its whitespace as written, so outputs
-that write it differently differ. `serializeDom` and `normalizeDom` read a
+that write it differently differ. The static reading takes `display`, `position`, `float`,
+`unicode-bidi` and `white-space` from the inline style and the user-agent defaults; on a live
+subtree `normalizeDom` takes them from Chromium's computed styles instead, so a stylesheet
+counts, except where Chromium computes a value the element does not lay out by (a replaced
+element or `<br>` computing `inline`, `<wbr>`, SVG children, raw text, a `<textarea>`'s value, a
+`<select>`'s `white-space`), ADR-0061. `serializeDom` and `normalizeDom` read a
 live subtree, form-control state included, and mark the element that has the focus
 `uf:focused` (Playwright's default ARIA snapshot never shows it), so L7 and L9 see where the
 focus is; `normalizeDom` throws on a live element, attribute

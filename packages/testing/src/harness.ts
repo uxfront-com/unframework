@@ -11,6 +11,12 @@ export interface SsrScenario {
   props?: Record<string, unknown>;
 }
 
+/** The `prefers-color-scheme` a browser project emulates for a case. */
+export type ColorScheme = "light" | "dark";
+
+/** Every {@link ColorScheme}, the first the default. */
+export const COLOR_SCHEMES: readonly ColorScheme[] = ["light", "dark"];
+
 /** A case's optional `case.json` (plan §7.1). */
 export interface CaseConfig {
   description?: string;
@@ -38,6 +44,12 @@ export interface CaseConfig {
    * compile project checks that Vue declares the capability unsupported and this target native.
    */
   reference?: string;
+  /**
+   * The `prefers-color-scheme` the browser projects emulate before the case's spec mounts
+   * anything, `light` by default: a dark-theme case opts in (plan §7.6, ADR-0061). The server
+   * render (L6) has no colour scheme.
+   */
+  colorScheme?: ColorScheme;
 }
 
 /**

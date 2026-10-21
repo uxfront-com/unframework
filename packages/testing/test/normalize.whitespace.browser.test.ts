@@ -1,8 +1,15 @@
 // The whitespace rule checked against Chromium's own layout: two fragments the normaliser calls
 // equal must render identically (no element moves, the rendered text is the same), and two it
-// calls different must render differently. This is the rule's ground truth.
+// calls different must render differently. This is the rule's ground truth, for the static path
+// and for the live DOM path, which reads Chromium's computed styles: with no stylesheet the live
+// path normalises every fixture as the static path does, and it never calls two fuzzed fragments
+// equal that render differently. It is the more exact of the two where a flex or grid container
+// blockifies a ruby annotation, which then lays out as a plain block (computed `display: block`)
+// while the static path keeps its ruby traits. normalize.stylesheet.browser.test.ts covers a
+// stylesheet.
 import { afterEach, describe, expect, it } from "vitest";
 
+import { normalizeDom, serializeDom } from "../src/dom/serialize.ts";
 import { normalizeHtml } from "../src/normalize/index.ts";
 
 /** Every element's box, relative to the container, and the rendered text (`innerText`). */
@@ -20,6 +27,19 @@ function layout(html: string): string {
   const text = root.innerText;
   root.remove();
   return JSON.stringify({ boxes, text });
+}
+
+/**
+ * A fragment mounted with no stylesheet, normalised by the live DOM path, which reads Chromium's
+ * computed styles, and by the static path from the same serialised HTML.
+ */
+function bothPaths(html: string): { live: string; static: string } {
+  const root = document.createElement("div");
+  root.innerHTML = html;
+  document.body.append(root);
+  const paths = { live: normalizeDom(root), static: normalizeHtml(serializeDom(root)) };
+  root.remove();
+  return paths;
 }
 
 afterEach(() => {
@@ -317,11 +337,19 @@ describe("rule 6 against Chromium's layout", () => {
   it.each(SAME)("renders %s identically, and normalises them equal", (_, a, b) => {
     expect(layout(a)).toBe(layout(b));
     expect(normalizeHtml(a)).toBe(normalizeHtml(b));
+    for (const html of [a, b]) {
+      const paths = bothPaths(html);
+      expect(paths.live).toBe(paths.static);
+    }
   });
 
   it.each(DIFFERENT)("renders %s differently, and keeps them different", (_, a, b) => {
     expect(layout(a)).not.toBe(layout(b));
     expect(normalizeHtml(a)).not.toBe(normalizeHtml(b));
+    for (const html of [a, b]) {
+      const paths = bothPaths(html);
+      expect(paths.live).toBe(paths.static);
+    }
   });
 });
 
@@ -348,8 +376,8 @@ const WORDS = ["a", "bb", "ccc", "a\u200Bb", "dd\u200B"];
  * out-of-flow boxes, list items, rubies and their annotations (in a ruby container or not),
  * bidi isolates, quotation marks, preserved whitespace, line breaks and break opportunities,
  * and table-internal boxes, which a bound `display` puts anywhere (M1): inside a table, or in
- * an anonymous one. Stylesheets are out of scope: the rule reads inline styles only
- * (display.ts).
+ * an anonymous one. No stylesheet applies, so the live path must read what the inline
+ * styles say (display.ts).
  */
 const ELEMENTS = [
   "<span>",
@@ -445,9 +473,11 @@ function render(items: readonly Item[], spaces: readonly string[]): string {
 }
 
 describe("rule 6 against Chromium's layout, fuzzed", () => {
-  it("never calls two fragments equal that Chromium lays out differently", () => {
+  it("never calls two fragments equal that Chromium lays out differently, on either path", () => {
     const falseEquals: string[] = [];
+    const liveFalseEquals: string[] = [];
     let equal = 0;
+    let liveEqual = 0;
     for (let seed = 1; seed <= 20_000; seed += 1) {
       const next = random(seed);
       const { items, slots } = fragment(next);
@@ -461,14 +491,22 @@ describe("rule 6 against Chromium's layout, fuzzed", () => {
       }
       const a = `<div>${render(items, spaces)}</div>`;
       const b = `<div>${render(items, changed)}</div>`;
-      if (a === b || normalizeHtml(a) !== normalizeHtml(b)) continue;
-      equal += 1;
+      if (a === b) continue;
+      const staticEquals = normalizeHtml(a) === normalizeHtml(b);
+      const liveEquals = bothPaths(a).live === bothPaths(b).live;
+      if (!staticEquals && !liveEquals) continue;
+      if (staticEquals) equal += 1;
+      if (liveEquals) liveEqual += 1;
       if (layout(a) !== layout(b)) {
-        falseEquals.push(`seed ${seed}: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`);
+        const pair = `seed ${seed}: ${JSON.stringify(a)} vs ${JSON.stringify(b)}`;
+        if (staticEquals) falseEquals.push(pair);
+        if (liveEquals) liveFalseEquals.push(pair);
       }
     }
     // The fuzz has to exercise the rule: thousands of pairs it equates, each laid out twice.
     expect(equal).toBeGreaterThan(5_000);
+    expect(liveEqual).toBeGreaterThan(5_000);
     expect(falseEquals).toEqual([]);
+    expect(liveFalseEquals).toEqual([]);
   }, 120_000);
 });
