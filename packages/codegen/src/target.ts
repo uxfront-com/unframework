@@ -125,7 +125,22 @@ export type CapabilityName =
   /** A provided `state`, `derived` or `model` binding, which descendants read as it changes. */
   | "reactive-context"
   /** `<component is>` over a statically known set (`DynamicNode`). */
-  | "dynamic-component";
+  | "dynamic-component"
+  /**
+   * A component that imports a stylesheet (`UfComponent.styles`), which the compiler scopes
+   * once and the target attaches its own way (ADR-0063).
+   */
+  | "scoped-styles"
+  /**
+   * A child component a styled component renders: the child's root takes the parent's scope
+   * attribute, as Vue's scope id does (the child-root rule, ADR-0063).
+   */
+  | "child-root-scope"
+  /**
+   * Content a component fills into a slot of a child whose sheet uses `:slotted()`
+   * (`ComponentApi.styles`): it takes the child's `data-uf-<id>-s` attribute (ADR-0063).
+   */
+  | "slotted-styles";
 
 /** Every capability name, in a stable order. */
 export const CAPABILITY_NAMES: readonly CapabilityName[] = [
@@ -170,6 +185,9 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "context",
   "reactive-context",
   "dynamic-component",
+  "scoped-styles",
+  "child-root-scope",
+  "slotted-styles",
 ];
 
 /**

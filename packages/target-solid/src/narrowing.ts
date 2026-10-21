@@ -1292,6 +1292,7 @@ function replaced(
         return [{ ...ref, span: moved(ref.span), arguments: ref.arguments.map(moved) }];
       case "Binding":
       case "Global":
+      case "Import":
       case "Event":
       case "Api":
       case "Slot":

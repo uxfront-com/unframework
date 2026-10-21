@@ -358,6 +358,7 @@ function readsOf(code: Expression | Code, found: Set<BindingId>): void {
       case "Event":
       case "Api":
       case "Slot":
+      case "Import":
         break;
       default:
         unreachable(reference);

@@ -146,6 +146,7 @@ function movedReference(reference: CodeReference, moved: (span: Span) => Span): 
         arguments: reference.arguments.map(moved),
       };
     case "Global":
+    case "Import":
     case "Event":
     case "Api":
     case "Slot":

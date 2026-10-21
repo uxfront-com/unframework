@@ -709,6 +709,7 @@ function simpleRead(plan: Plan, reference: CodeReference): boolean {
     case "Event":
       return true;
     case "Global":
+    case "Import":
     case "Slot":
     case "Write":
     case "Api":

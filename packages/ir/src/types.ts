@@ -50,6 +50,33 @@ export interface UfModule {
   imports?: ModuleImport[];
   /** The injection keys the module declares and exports, in source order (ADR-0054). */
   keys?: InjectionKeyDeclaration[];
+  /**
+   * The module's pass-through imports, in source order (plan §4.4, ADR-0004, ADR-0063): every
+   * output keeps them as written, and Styleframe's own plugin resolves them. Absent when it has
+   * none.
+   */
+  passThroughImports?: PassThroughImport[];
+}
+
+/**
+ * An import every output keeps as written (ADR-0063): named imports of Styleframe's recipes and
+ * tokens, `import { button } from "virtual:styleframe"`, or its stylesheet,
+ * `import "virtual:styleframe.css"`.
+ */
+export interface PassThroughImport {
+  specifier: "virtual:styleframe" | "virtual:styleframe.css";
+  /** The names a named import binds, in source order: none for the side-effect import. */
+  names: PassThroughName[];
+  /** The import declaration. */
+  span: Span;
+}
+
+/** A name a pass-through import binds, which an {@link ImportReference} reads. */
+export interface PassThroughName {
+  imported: string;
+  /** The local name the module uses. */
+  local: string;
+  span: Span;
 }
 
 /**
@@ -138,6 +165,19 @@ export interface ComponentApi {
   root: "element" | "component" | "other";
   /** The root element's tag, when the root is an element. */
   rootTag?: string;
+  /** The component's scoped styles, when it imports a stylesheet (ADR-0063). */
+  styles?: ComponentStylesApi;
+}
+
+/**
+ * What a parent reads of a styled child (ADR-0063): the child's scope id, which the child-root
+ * rule stamps on the child's root, and whether its sheets use `:slotted()`, so the parent stamps
+ * `data-uf-<scopeId>-s` on the content it fills into the child's slots.
+ */
+export interface ComponentStylesApi {
+  /** @pattern ^[0-9a-f]{8}$ */
+  scopeId: string;
+  slotted: boolean;
 }
 
 /** A prop or a model of a child's API: its name, its optionality and its type as written. */
@@ -247,6 +287,32 @@ export interface UfComponent {
   setup: SetupItem[];
   /** The returned JSX: one element, or several roots in a fragment. */
   render: ElementNode | FragmentNode;
+  /**
+   * The stylesheets the component imports, `import "./Button.css"`, in source order (plan §4.4,
+   * ADR-0063): the compiler scopes them under `scopeId`. Only the one component of a module
+   * imports any. Absent when it imports none.
+   */
+  styles?: StyleSheet[];
+  /**
+   * The id that scopes the component's sheets, in the attribute `data-uf-<scopeId>` (ADR-0063):
+   * eight hex digits of a hash of the component's name and its sheets' text, never of a path
+   * (P8). Set exactly when `styles` is.
+   * @pattern ^[0-9a-f]{8}$
+   */
+  scopeId?: string;
+}
+
+/** A sibling stylesheet a component imports, `import "./Button.css"` (ADR-0063). */
+export interface StyleSheet {
+  /**
+   * The specifier as written: a relative path that ends in `.css`.
+   * @pattern ^\.\.?/.*\.css$
+   */
+  specifier: string;
+  /** The sheet's text, as the compiler's resolver read it: what the compiler scopes. */
+  source: string;
+  /** The import declaration. */
+  span: Span;
 }
 
 /** How a component declares its props: `({ label, tone = "info" }: Props)` or `(props: Props)`. */
@@ -357,7 +423,20 @@ export interface Expression {
 }
 
 /** A resolved identifier in an expression. */
-export type Reference = BindingReference | GlobalReference | SlotReference;
+export type Reference = BindingReference | GlobalReference | SlotReference | ImportReference;
+
+/**
+ * A read of a name a pass-through import binds, `button` in `class={button({ size })}`
+ * (ADR-0063): every target prints it as written. Only a render expression holds one, never setup
+ * code.
+ */
+export interface ImportReference {
+  kind: "Import";
+  /** The local name, as the module's pass-through import binds it. */
+  name: string;
+  /** The identifier. */
+  span: Span;
+}
 
 /**
  * `slots.title` as a condition (ADR-0054): whether the parent filled the slot. Only a render
@@ -478,7 +557,8 @@ export type CodeReference =
   | EmitReference
   | ApiReference
   | EventReference
-  | SlotReference;
+  | SlotReference
+  | ImportReference;
 
 /**
  * A write of a `state` or `model` binding's value or of a `localVar`: `count.value = 1`, `count.value += step`,
@@ -1270,21 +1350,36 @@ export interface ToggleClass {
   span: Span;
 }
 
-/** An expression whose string value holds class names separated by whitespace, or nothing. */
+/**
+ * An expression whose string value holds class names separated by whitespace, or nothing; or,
+ * where `collection` is set, an array or an object.
+ */
 export interface DynamicClass {
   kind: "Dynamic";
   value: Expression;
+  /**
+   * Set where the value may be an array or an object at run time (a prop typed `string[]`), whose
+   * names render as Vue's `normalizeClass` reads them: an array's entries, recursively, and an
+   * object's keys whose values are truthy (ADR-0038's deferred form).
+   */
+  collection?: true;
   span: Span;
 }
 
 /**
  * A `style` (ADR-0038): `style="color: red"` or `style={{ color: tone }}`, as declarations. The
  * declarations whose value is present render, in no particular order, so no two of them set
- * the same property. A `style` with none renders as no `style` attribute.
+ * the same property. A `style` with none, and no value, renders as no `style` attribute.
  */
 export interface StyleAttribute {
   kind: "Style";
   declarations: StyleDeclaration[];
+  /**
+   * A `style` bound to an expression that is not an object literal, `style={styles}` (ADR-0038's
+   * deferred form): a style object keyed as an object literal's are, a style string, or nothing.
+   * Its properties are known only at run time, so the Style then has no declarations.
+   */
+  value?: Expression;
   span: Span;
 }
 

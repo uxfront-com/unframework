@@ -115,6 +115,9 @@ export const solid: Target = defineTarget({
       note: "A provided ref is passed as an object with a `value` getter, `refObject`, which descendants read as it changes (ADR-0054).",
     },
     "dynamic-component": { support: "native" },
+    "scoped-styles": { support: "native" },
+    "child-root-scope": { support: "native" },
+    "slotted-styles": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     // Every name the source declares or reads is taken before the output claims its own

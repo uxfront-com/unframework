@@ -48,6 +48,13 @@
             "$ref": "#/definitions/InjectionKeyDeclaration"
           },
           "description": "The injection keys the module declares and exports, in source order (ADR-0054)."
+        },
+        "passThroughImports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PassThroughImport"
+          },
+          "description": "The module's pass-through imports, in source order (plan §4.4, ADR-0004, ADR-0063): every output keeps them as written, and Styleframe's own plugin resolves them. Absent when it has none."
         }
       },
       "required": [
@@ -129,6 +136,18 @@
             }
           ],
           "description": "The returned JSX: one element, or several roots in a fragment."
+        },
+        "styles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StyleSheet"
+          },
+          "description": "The stylesheets the component imports, `import \"./Button.css\"`, in source order (plan §4.4, ADR-0063): the compiler scopes them under `scopeId`. Only the one component of a module imports any. Absent when it imports none."
+        },
+        "scopeId": {
+          "type": "string",
+          "description": "The id that scopes the component's sheets, in the attribute `data-uf-<scopeId>` (ADR-0063): eight hex digits of a hash of the component's name and its sheets' text, never of a path (P8). Set exactly when `styles` is.",
+          "pattern": "^[0-9a-f]{8}$"
         }
       },
       "required": [
@@ -249,6 +268,9 @@
         },
         {
           "$ref": "#/definitions/SlotReference"
+        },
+        {
+          "$ref": "#/definitions/ImportReference"
         }
       ],
       "description": "A resolved identifier in an expression."
@@ -374,6 +396,30 @@
       ],
       "additionalProperties": false,
       "description": "`slots.title` as a condition (ADR-0054): whether the parent filled the slot. Only a render expression holds one, never setup code; rendering a slot is a  {@link  SlotOutletNode } ."
+    },
+    "ImportReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "Import"
+        },
+        "name": {
+          "type": "string",
+          "description": "The local name, as the module's pass-through import binds it."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The identifier."
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A read of a name a pass-through import binds, `button` in `class={button({ size })}` (ADR-0063): every target prints it as written. Only a render expression holds one, never setup code."
     },
     "PropsParameter": {
       "type": "object",
@@ -745,6 +791,9 @@
         },
         {
           "$ref": "#/definitions/SlotReference"
+        },
+        {
+          "$ref": "#/definitions/ImportReference"
         }
       ],
       "description": "A resolved name in setup code."
@@ -1694,6 +1743,11 @@
         "value": {
           "$ref": "#/definitions/Expression"
         },
+        "collection": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set where the value may be an array or an object at run time (a prop typed `string[]`), whose names render as Vue's `normalizeClass` reads them: an array's entries, recursively, and an object's keys whose values are truthy (ADR-0038's deferred form)."
+        },
         "span": {
           "$ref": "#/definitions/Span"
         }
@@ -1704,7 +1758,7 @@
         "span"
       ],
       "additionalProperties": false,
-      "description": "An expression whose string value holds class names separated by whitespace, or nothing."
+      "description": "An expression whose string value holds class names separated by whitespace, or nothing; or, where `collection` is set, an array or an object."
     },
     "StyleAttribute": {
       "type": "object",
@@ -1719,6 +1773,10 @@
             "$ref": "#/definitions/StyleDeclaration"
           }
         },
+        "value": {
+          "$ref": "#/definitions/Expression",
+          "description": "A `style` bound to an expression that is not an object literal, `style={styles}` (ADR-0038's deferred form): a style object keyed as an object literal's are, a style string, or nothing. Its properties are known only at run time, so the Style then has no declarations."
+        },
         "span": {
           "$ref": "#/definitions/Span"
         }
@@ -1729,7 +1787,7 @@
         "span"
       ],
       "additionalProperties": false,
-      "description": "A `style` (ADR-0038): `style=\"color: red\"` or `style={{ color: tone }}`, as declarations. The declarations whose value is present render, in no particular order, so no two of them set the same property. A `style` with none renders as no `style` attribute."
+      "description": "A `style` (ADR-0038): `style=\"color: red\"` or `style={{ color: tone }}`, as declarations. The declarations whose value is present render, in no particular order, so no two of them set the same property. A `style` with none, and no value, renders as no `style` attribute."
     },
     "StyleDeclaration": {
       "anyOf": [
@@ -2550,6 +2608,31 @@
       "additionalProperties": false,
       "description": "Several root nodes, `<>…</>`: only ever a component's render root."
     },
+    "StyleSheet": {
+      "type": "object",
+      "properties": {
+        "specifier": {
+          "type": "string",
+          "description": "The specifier as written: a relative path that ends in `.css`.",
+          "pattern": "^\\.\\.?/.*\\.css$"
+        },
+        "source": {
+          "type": "string",
+          "description": "The sheet's text, as the compiler's resolver read it: what the compiler scopes."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The import declaration."
+        }
+      },
+      "required": [
+        "specifier",
+        "source",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A sibling stylesheet a component imports, `import \"./Button.css\"` (ADR-0063)."
+    },
     "UfExport": {
       "type": "object",
       "properties": {
@@ -2743,6 +2826,10 @@
         "rootTag": {
           "type": "string",
           "description": "The root element's tag, when the root is an element."
+        },
+        "styles": {
+          "$ref": "#/definitions/ComponentStylesApi",
+          "description": "The component's scoped styles, when it imports a stylesheet (ADR-0063)."
         }
       },
       "required": [
@@ -2843,6 +2930,24 @@
       "additionalProperties": false,
       "description": "A slot of a child's API: its name, its optionality and its props' type as written."
     },
+    "ComponentStylesApi": {
+      "type": "object",
+      "properties": {
+        "scopeId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}$"
+        },
+        "slotted": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "scopeId",
+        "slotted"
+      ],
+      "additionalProperties": false,
+      "description": "What a parent reads of a styled child (ADR-0063): the child's scope id, which the child-root rule stamps on the child's root, and whether its sheets use `:slotted()`, so the parent stamps `data-uf-<scopeId>-s` on the content it fills into the child's slots."
+    },
     "KeyApi": {
       "type": "object",
       "properties": {
@@ -2939,6 +3044,58 @@
       ],
       "additionalProperties": false,
       "description": "`export const ThemeKey: InjectionKey<Theme> = Symbol(\"theme\")` (ADR-0054): a key `provide` and `inject` name, declared in the providing `.uf.tsx`."
+    },
+    "PassThroughImport": {
+      "type": "object",
+      "properties": {
+        "specifier": {
+          "type": "string",
+          "enum": [
+            "virtual:styleframe",
+            "virtual:styleframe.css"
+          ]
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PassThroughName"
+          },
+          "description": "The names a named import binds, in source order: none for the side-effect import."
+        },
+        "span": {
+          "$ref": "#/definitions/Span",
+          "description": "The import declaration."
+        }
+      },
+      "required": [
+        "specifier",
+        "names",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "An import every output keeps as written (ADR-0063): named imports of Styleframe's recipes and tokens, `import { button } from \"virtual:styleframe\"`, or its stylesheet, `import \"virtual:styleframe.css\"`."
+    },
+    "PassThroughName": {
+      "type": "object",
+      "properties": {
+        "imported": {
+          "type": "string"
+        },
+        "local": {
+          "type": "string",
+          "description": "The local name the module uses."
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        }
+      },
+      "required": [
+        "imported",
+        "local",
+        "span"
+      ],
+      "additionalProperties": false,
+      "description": "A name a pass-through import binds, which an  {@link  ImportReference }  reads."
     }
   },
   "$id": "https://unframework.dev/schemas/ir-v1.json"

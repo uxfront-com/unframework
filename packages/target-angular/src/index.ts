@@ -160,6 +160,9 @@ export const angular: Target = defineTarget({
       helper: "@switch",
       note: "Angular has no `<component is>` over a known set in a strict template: an `@switch` renders each candidate (ADR-0054).",
     },
+    "scoped-styles": { support: "native" },
+    "child-root-scope": { support: "native" },
+    "slotted-styles": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     return [emitComponent(component, context)];

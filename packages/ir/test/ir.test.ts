@@ -57,7 +57,7 @@ import {
   walk,
 } from "../src/index.ts";
 import type { UfComponent, VisitedNode } from "../src/index.ts";
-import { counterIds, everyKind, expression, ids } from "./fixtures.ts";
+import { counterIds, everyKind, expression, ids, styled } from "./fixtures.ts";
 
 const at = span(0, 1);
 
@@ -788,9 +788,49 @@ function valueAt(value: unknown, pointer: string): unknown {
     .reduce<unknown>((parent, key) => (parent as Record<string, unknown>)[key], value);
 }
 
+describe("styles and pass-through imports (ADR-0063)", () => {
+  it("builds a styled module that keeps the invariants, with keys in the order of the types", () => {
+    const module = styled();
+    expect(checkInvariants(module)).toEqual([]);
+    expect(Object.keys(module)).toEqual([
+      "irVersion",
+      "file",
+      "components",
+      "exports",
+      "types",
+      "passThroughImports",
+    ]);
+    const [component] = module.components;
+    expect(Object.keys(component!).slice(-3)).toEqual(["render", "styles", "scopeId"]);
+    const { render } = component!;
+    const [classAttribute, style] = render.kind === "Element" ? render.attributes : [];
+    expect(classAttribute?.kind === "Class" && Object.keys(classAttribute.items[0]!)).toEqual([
+      "kind",
+      "value",
+      "collection",
+      "span",
+    ]);
+    expect(Object.keys(style!)).toEqual(["kind", "declarations", "value", "span"]);
+  });
+
+  it("counts a pass-through import's read as a code reference kind", () => {
+    expect([...collectFeatures(styled()).codeReferenceKinds]).toContain("Import");
+  });
+
+  it("finds a style's value among the component's expressions", () => {
+    expect(expressionsOf(styled().components[0]!).map(({ path }) => path)).toEqual([
+      "/render/attributes/0/items/0/value",
+      "/render/attributes/1/value",
+    ]);
+  });
+});
+
 describe("spansOf", () => {
-  it("finds every span in the module, each at its pointer", () => {
-    const module = everyKind();
+  it.each([
+    ["every kind", everyKind],
+    ["a styled module", styled],
+  ])("finds every span in %s, each at its pointer", (_, build) => {
+    const module = build();
     const located = spansOf(module);
     for (const entry of located) expect(valueAt(module, entry.path), entry.path).toBe(entry.span);
     // Every span, found by a blind walk of the JSON, is among them: a `span`, and a write's

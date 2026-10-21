@@ -80,9 +80,11 @@ function factsOf(refs: readonly CodeReference[]): Facts {
       case "Api":
         facts.api = true;
         break;
-      // A slot's presence reads no binding: the parent's fill is the slot's.
+      // A slot's presence reads no binding: the parent's fill is the slot's. A pass-through
+      // import is the module's, not the component's (ADR-0063).
       case "Event":
       case "Slot":
+      case "Import":
         break;
       default:
         unreachable(ref);

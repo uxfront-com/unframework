@@ -129,6 +129,9 @@ export const react: Target = defineTarget({
       note: "A provided ref is passed as an object with a `value` getter, `refObject`, made again at each render of the provider: descendants render each change, and their deferred code, after an `await` or in a timer, reads the value of their last render (ADR-0054).",
     },
     "dynamic-component": { support: "native" },
+    "scoped-styles": { support: "native" },
+    "child-root-scope": { support: "native" },
+    "slotted-styles": { support: "native" },
   },
   // A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
   // declarations and the events' props, the setup's hooks in source order, and the render tree in

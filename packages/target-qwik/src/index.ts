@@ -177,6 +177,9 @@ export const qwik: Target = defineTarget({
     context: { support: "native" },
     "reactive-context": { support: "native" },
     "dynamic-component": { support: "native" },
+    "scoped-styles": { support: "native" },
+    "child-root-scope": { support: "native" },
+    "slotted-styles": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { module } = context;
