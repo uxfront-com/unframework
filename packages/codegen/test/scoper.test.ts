@@ -134,6 +134,55 @@ describe("scopeStylesheet", () => {
     [":nth-child() of a selector", ".a :nth-child(2n + 1 of .b) { color: red }"],
     ["an escaped class", ".sm\\:p-2 { padding: 2px }"],
     ["an attribute holding a bracket", '[data-x="]"] { color: red }'],
+    ["a /* in an unquoted url()", ".a { background: url(/*.png) } .b { color: red }"],
+    ["a { in an unquoted url()", ".a { background: url(x{y.png) } .b { color: red }"],
+    ["an @import of an unquoted url() with a {", "@import url(a{b.css); .a { color: red }"],
+    ["an @import of an unquoted url() with a /*", "@import url(/*.css); .a { color: red }"],
+    [":deep() after a leading *", "* :deep(.a) { color: red }"],
+    [":deep() after a nested leading *", ".x { * :deep(.a) { color: red } }"],
+    [
+      "animation-name with !important",
+      "@keyframes spin { to { opacity: 1 } } .a { animation-name: spin !important }",
+    ],
+    [
+      "animation-name lists with !important",
+      "@keyframes spin { to { opacity: 1 } } .a { animation-name: other, spin !important }",
+    ],
+    [
+      "animation-name with !important unspaced",
+      "@keyframes spin { to { opacity: 1 } } .a { animation-name: spin!important }",
+    ],
+    ["an escaped quote in an attribute value", '[data-x=\\"a\\"] { color: red }'],
+    ["an escaped space in an attribute value", "[data-x=a\\ b] { color: red }"],
+    ["a hex escape in an attribute value", "[data-x=\\31 0] { color: red }"],
+    ["a hex escape in an attribute name", "[\\64 ata-x] { color: red }"],
+    ["a comment in an attribute selector", '[data-x/*c*/=a], [data-x="a"/*c*/] { color: red }'],
+    [
+      "a plain selector before :deep() with nested rules",
+      ".c, .a :deep(.b) { color: red; .d { color: blue } }",
+    ],
+    [
+      ":deep() before a plain selector with nested rules",
+      ".a :deep(.b), .c { color: red; .d { color: blue } }",
+    ],
+    [
+      "an animation moved with nested rules",
+      "@keyframes spin { to { opacity: 1 } } .a { animation: spin 1s; .b { color: blue } }",
+    ],
+    [
+      "two animations moved with nested rules",
+      "@keyframes spin { to { opacity: 1 } } @keyframes fade { to { opacity: 0 } } .a { animation: spin 1s, fade 2s; .b { color: blue } }",
+    ],
+    [
+      "an animation in @media",
+      "@keyframes spin { to { opacity: 1 } } @media (min-width: 1px) { .a { animation: spin 1s } }",
+    ],
+    ["a minified grouping rule", "@media print{:deep(.b){color:red}}"],
+    ["a custom property holding braces", ".a { --x: { a: b }; color: red }"],
+    ["@starting-style", "@starting-style { .a { opacity: 0 } }"],
+    ["@scope", "@scope (.card) { .a { color: red } }"],
+    ["@-moz-document", "@-moz-document url-prefix() { .a { color: red } }"],
+    ["non-ASCII identifiers", ".café .b { color: red }"],
   ])("rewrites %s as Vue does", (_name, source) => {
     expect(squashed(scoped(source))).toBe(squashed(vue(source)));
   });
@@ -170,6 +219,16 @@ describe("scopeStylesheet", () => {
       "quoted keyframe names",
       '@keyframes "q" { to { opacity: 1 } } .a { animation: "q" 1s } .b { animation-name: q }',
       `@keyframes "q-${ID}" { to { opacity: 1 } } .a[data-uf-${ID}] { animation: "q-${ID}" 1s } .b[data-uf-${ID}] { animation-name: q-${ID} }`,
+    ],
+    [
+      "a leading * before a pseudo-element",
+      "* + ::before { content: '' }",
+      `*[data-uf-${ID}] + ::before { content: '' }`,
+    ],
+    [
+      ":deep() after a comment",
+      ".a/*c*/:deep(.p) { color: red }",
+      `.a[data-uf-${ID}]/*c*/ .p { color: red }`,
     ],
   ])("writes %s so that it parses", (_name, source, expected) => {
     expect(scoped(source)).toBe(expected);
@@ -268,6 +327,11 @@ describe("scopeStylesheet's rejected selectors (UF5004)", () => {
     [":deep() without an argument", ".a :deep .b { color: red }"],
     ["::v-deep()", ".a ::v-deep(.b) { color: red }"],
     ["::slotted()", "::slotted(.b) { color: red }"],
+    [":slotted() in a rule with nested rules", ".a:slotted(*) { .b { color: red } }"],
+    [
+      ":slotted() with declarations and nested rules",
+      ":slotted(.a) { color: red; .b { color: blue } }",
+    ],
   ])("rejects %s as misused", (_name, source) => {
     expect(rejected(source)).toEqual([source.slice(0, source.indexOf("{")).trim()]);
   });
@@ -280,6 +344,14 @@ describe("scopeStylesheet's rejected selectors (UF5004)", () => {
     ["svg|circle", ".a svg|circle { fill: red }"],
   ])("rejects the namespace prefix of %s", (_name, source) => {
     expect(rejected(source)).toEqual([source.slice(0, source.indexOf("{")).trim()]);
+  });
+
+  it("rejects :slotted() inside a rule that uses :deep()", () => {
+    expect(rejected(":deep(.p) { div:slotted(*) { color: red } }")).toEqual(["div:slotted(*)"]);
+  });
+
+  it("reads an escaped attribute name before it checks it", () => {
+    expect(rejected('[cl\\61ss=""] { color: red }')).toEqual(['[cl\\61ss=""]']);
   });
 
   it("points at the rejected selector of a list, in a nested rule", () => {

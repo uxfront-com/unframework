@@ -74,9 +74,10 @@ longer exist:
 | `@keyframes "spin"`                           | `@keyframes "spin-x"`, which `animation: spin` names too: Vue writes `"spin"-x`            |
 | `--gap: 4px`                                  | unchanged                                                                                  |
 
-**Rejected selectors (UF5004):** `:root`, `html` and `body` outside `:global()`, `:host`, a namespace
-prefix (`svg|`, `*|`), whose rewrite by Vue drops it or doesn't parse, a misused
-or empty `:deep()`, `:slotted()` or `:global()`, and a selector that tells an empty `class` or
+**Rejected selectors (UF5004):** `:root`, `html` and `body` outside `:global()`, `:host`, a
+namespace prefix (`svg|`, `*|`), whose rewrite by Vue drops it or doesn't parse, a misused or empty
+`:deep()`, `:slotted()` or `:global()` (`:slotted()` in a rule with nested rules or under `:deep()`,
+where Vue drops `-s` or writes `.a*`, included), and a selector that tells an empty `class` or
 `style` from none (ADR-0044). Vue scopes `:root` and `:host` instead, and the scoped selector then
 matches nothing.
 
@@ -134,8 +135,8 @@ lane that can't reach it declares the cell `emulated` or `unsupported`, with the
 and adds a section here.
 
 **The codes** are UF5001 `shared-stylesheet`, UF5002 `invalid-stylesheet`, UF5003
-`unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`), UF5004 `unscopable-selector`, UF5005 `stylesheet-not-found` and UF5006
-`unsupported-styleframe-import`. All are errors.
+`unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`), UF5004
+`unscopable-selector`, UF5005 `stylesheet-not-found` and UF5006 `unsupported-styleframe-import`. All are errors.
 
 A `Button` whose `Button.css` holds `.label { color: red }` and a line feed has the id
 `70af206b`:

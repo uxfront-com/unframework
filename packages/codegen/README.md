@@ -31,14 +31,17 @@ framework-specific.
 - **The scoper** (`scopeStylesheet(file, source, scopeId)`, ADR-0063): a component's sheet,
   scoped once with Vue's algorithm. As Vue does, it rewrites only selectors and keyframe names, in
   the sheet's own text, so every declaration stays as written; lightningcss checks that the sheet
-  parses (UF5002 otherwise, an unknown at-rule included) and never prints it. `data-uf-<scopeId>` goes after the last simple selector that is no pseudo-class or
+  parses (UF5002 otherwise, an unknown at-rule included) and never prints it.
+  `data-uf-<scopeId>` goes after the last simple selector that is no pseudo-class or
   pseudo-element, `:deep()`, `:slotted()` (`data-uf-<scopeId>-s`) and `:global()` read as Vue reads
   them, the rules of grouping at-rules and nested rules are scoped in place, and `@keyframes`
   names take the id as a suffix, with `animation` and `animation-name` rewritten to match. Its
-  tests compare every rewrite with `@vue/compiler-sfc`'s `compileStyle({ scoped: true })`. It
-  reports UF5004 where Vue would scope a selector into one that matches nothing, or drop part of
-  it: `:root`, `html` and `body` outside `:global()`, `:host`, a namespace prefix, a misused or
-  empty scoping pseudo-class, and a selector that tells an empty `class` or `style` from none (ADR-0044).
+  tests compare each rewrite with `@vue/compiler-sfc`'s `compileStyle({ scoped: true })`, but
+  where Vue's own output doesn't parse. It reports UF5004 where Vue would scope a selector into one
+  that matches nothing, or drop part of it: `:root`, `html` and `body` outside `:global()`,
+  `:host`, a namespace prefix, a misused or empty scoping pseudo-class (`:slotted()` in a rule with
+  nested rules or under `:deep()` included), and a selector that tells an empty `class` or `style`
+  from none (ADR-0044).
   `requiredCapabilities` derives `scoped-styles` at a component's first sheet, `child-root-scope`
   at a child a styled component renders, and `slotted-styles` at a fill of a child whose sheets use
   `:slotted()` (its API's `styles.slotted`, or the scoper's reading of a component's own sheets).

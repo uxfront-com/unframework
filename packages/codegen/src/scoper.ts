@@ -179,12 +179,15 @@ class Parser {
         continue;
       }
       const colon = scan(source, index, stop, ":");
+      const valueStart = Math.min(colon + 1, stop);
+      // The value ends before its `!important`, which names no keyframes.
+      const important = /!\s*important\s*$/i.exec(source.slice(valueStart, stop));
       nodes.push({
         kind: "declaration",
         span: trimmed(source, { start: index, end: stop }),
         end: Math.min(stop + 1, end),
         property: source.slice(index, colon).trim().toLowerCase(),
-        value: { start: Math.min(colon + 1, stop), end: stop },
+        value: { start: valueStart, end: important ? valueStart + important.index : stop },
       });
       index = stop + 1;
     }
@@ -295,19 +298,60 @@ function simpleSelector(source: string, start: number, end: number): Item | unde
   return at("type", to, { name: source.slice(start, to).toLowerCase() });
 }
 
-const ATTRIBUTE =
-  /^\s*(?:(?:[\w-]*|\*)\|(?!=))?((?:[\w-]|\\.|\P{ASCII})+)\s*(?:([~|^$*]?=)\s*("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|[^\s"']+)\s*(?:[iIsS]\s*)?)?$/su;
+/** An identifier's characters: CSS escapes and non-ASCII included. */
+const IDENTIFIER = String.raw`(?:[\w-]|\\[0-9a-fA-F]{1,6}\s?|\\[^0-9a-fA-F\n]|\P{ASCII})+`;
+const STRING = String.raw`"(?:[^"\\\n]|\\[^])*"|'(?:[^'\\\n]|\\[^])*'`;
+const ATTRIBUTE = new RegExp(
+  String.raw`^\s*(?:(?:[\w-]*|\*)\|(?!=))?(${IDENTIFIER})\s*(?:([~|^$*]?=)\s*(${STRING}|${IDENTIFIER})\s*(?:[iIsS]\s*)?)?$`,
+  "u",
+);
 
-/** An attribute selector's name, operator and value, from the text between its brackets. */
+/**
+ * An attribute selector's name, unescaped and in lower case, operator and value, from the text
+ * between its brackets, read past comments.
+ */
 function readAttribute(text: string): Item["attribute"] | undefined {
-  const match = ATTRIBUTE.exec(text);
+  const match = ATTRIBUTE.exec(withoutComments(text));
   if (!match) return undefined;
   const [, name, operator, value] = match;
   return {
-    name: name!.toLowerCase(),
+    name: unescaped(name!).toLowerCase(),
     ...(operator ? { operator } : {}),
-    ...(value === undefined ? {} : { value: /^["']/.test(value) ? value.slice(1, -1) : value }),
+    ...(value === undefined
+      ? {}
+      : { value: unescaped(/^["']/.test(value) ? value.slice(1, -1) : value) }),
   };
+}
+
+/** `text` with its comments outside strings replaced by a space. */
+function withoutComments(text: string): string {
+  let out = "";
+  for (let index = 0; index < text.length;) {
+    if (text.startsWith("/*", index)) {
+      const close = text.indexOf("*/", index + 2);
+      index = close === -1 ? text.length : close + 2;
+      out += " ";
+    } else if (text[index] === '"' || text[index] === "'") {
+      const end = stringEnd(text, index, text.length);
+      out += text.slice(index, end);
+      index = end;
+    } else if (text[index] === "\\") {
+      out += text.slice(index, index + 2);
+      index += 2;
+    } else out += text[index++];
+  }
+  return out;
+}
+
+/** A code point an escape names, or U+FFFD for one CSS Syntax replaces. */
+const codePoint = (value: number) =>
+  value === 0 || value > 0x10ffff || (value >= 0xd800 && value <= 0xdfff) ? 0xfffd : value;
+
+/** An identifier or a string's content with its CSS escapes decoded. */
+function unescaped(text: string): string {
+  return text.replace(/\\(?:([0-9a-fA-F]{1,6})\s?|([^]))/g, (_, hex: string, char: string) =>
+    hex ? String.fromCodePoint(codePoint(Number.parseInt(hex, 16))) : char,
+  );
 }
 
 const isScopingCall = (item: Item) =>
@@ -322,7 +366,10 @@ interface RuleState {
   deep: boolean;
   /** Whether a rule around it used `:deep()`. */
   inDeep: boolean;
-  /** Whether its declarations moved into a `&` rule of their own already. */
+  /**
+   * Whether its declarations move into a `&` rule of their own, written once its selectors are
+   * read: the `&` rule is unscoped if any of them used `:deep()`, as Vue reads it then.
+   */
   wrapped: boolean;
 }
 
@@ -434,7 +481,7 @@ class Scoper {
     };
     for (const span of splitList(this.#source, rule.prelude)) {
       const items = tokenize(this.#source, span);
-      const problem = items ? this.#check(items) : UNREADABLE;
+      const problem = items ? this.#check(items, state) : UNREADABLE;
       if (problem) {
         this.diagnostics.push(
           createDiagnostic("UF5004", {
@@ -448,6 +495,7 @@ class Scoper {
       }
       this.#rewrite(items!, span, deep, false, state);
     }
+    if (state.wrapped) this.#wrap(state);
     this.rules(rule.children, deep || state.deep);
   }
 
@@ -471,10 +519,9 @@ class Scoper {
         const args = item.args!;
         if (item.name === "deep") {
           state.deep = true;
-          // `.a :deep(.b)` is `.a[x] .b`: the argument replaces the call, after a space unless a
-          // combinator is before it.
-          if (previous?.type === "combinator") code.remove(item.span.start, args.start);
-          else code.overwrite(item.span.start, args.start, " ");
+          // `.a :deep(.b)` is `.a[x] .b`: the argument replaces the call, after a space, since a
+          // combinator before it may be a comment or a `* ` the rewrite removed.
+          code.overwrite(item.span.start, args.start, " ");
           code.remove(args.end, item.span.end);
           break;
         }
@@ -520,7 +567,7 @@ class Scoper {
     if (state.nested) {
       // A rule with nested rules scopes its own declarations through a `&` rule of their own,
       // unless it used `:deep()`, whose nested rules are unscoped.
-      if (!state.deep) this.#wrap(state);
+      if (!state.deep) state.wrapped = true;
       inject = state.deep;
     }
     if (node?.args && (node.name === "is" || node.name === "where")) {
@@ -545,13 +592,12 @@ class Scoper {
    * move into a `&` rule at the top of each, scoped unless a rule around it used `:deep()`.
    */
   #wrap(state: RuleState): void {
-    if (state.wrapped) return;
-    state.wrapped = true;
     const { rule } = state;
-    this.#wrapIn(rule.block.start, rule.children, state.inDeep);
+    const deep = state.inDeep || state.deep;
+    this.#wrapIn(rule.block.start, rule.children, deep);
     for (const child of rule.children) {
       if (child.kind === "at-rule" && child.block && GROUPING.has(child.name)) {
-        this.#wrapIn(child.block.start, child.children, state.inDeep);
+        this.#wrapIn(child.block.start, child.children, deep);
       }
     }
   }
@@ -597,7 +643,7 @@ class Scoper {
   }
 
   /** Why a selector cannot be scoped, or `undefined`. */
-  #check(items: readonly Item[]): Problem | undefined {
+  #check(items: readonly Item[], state: RuleState): Problem | undefined {
     const calls = items.filter(isScopingCall);
     if (calls.length > 1) {
       return {
@@ -605,6 +651,14 @@ class Scoper {
       };
     }
     const [call] = calls;
+    if (call?.name === "slotted" && (state.nested || state.inDeep)) {
+      // Vue drops the `-s` attribute there, or writes a selector that doesn't parse.
+      return {
+        message:
+          "`:slotted()` cannot be scoped in a rule with nested rules, or inside a rule that uses `:deep()`.",
+        help: "Write the `:slotted()` rule at the top of the sheet, without nested rules.",
+      };
+    }
     if (call) {
       const name = `:${call.name}()`;
       if (call.name === "global" && items.length > 1) {
@@ -773,6 +827,21 @@ function identifierEnd(source: string, index: number): number {
   return index;
 }
 
+/**
+ * The index after the unquoted `url(…)` at `index`, which CSS reads to its `)` whatever it holds,
+ * `/*` and `{` included, or `undefined`.
+ */
+function urlEnd(source: string, index: number, end: number): number | undefined {
+  if (source[index] !== "u" && source[index] !== "U") return undefined;
+  if (!/^url\(\s*[^\s"')]/i.test(source.slice(index, index + 64))) return undefined;
+  if (index > 0 && /[\w-]/.test(source[index - 1]!)) return undefined;
+  for (let at = index + 4; at < end; at++) {
+    if (source[at] === "\\") at++;
+    else if (source[at] === ")") return at + 1;
+  }
+  return end;
+}
+
 /** The index after the string that opens at `start`. */
 function stringEnd(source: string, start: number, end: number): number {
   const quote = source[start];
@@ -792,7 +861,9 @@ function scan(source: string, index: number, end: number, stops: string): number
   let depth = 0;
   while (index < end) {
     const char = source[index]!;
-    if (char === "\\") index += 2;
+    const url = urlEnd(source, index, end);
+    if (url !== undefined) index = url;
+    else if (char === "\\") index += 2;
     else if (char === '"' || char === "'") index = stringEnd(source, index, end);
     else if (source.startsWith("/*", index)) index = skipTrivia(source, index, end);
     else if (depth === 0 && stops.includes(char)) return index;
@@ -812,7 +883,9 @@ function closing(source: string, start: number, end: number, open: string, close
   let depth = 0;
   for (let index = start; index < end; index++) {
     const char = source[index]!;
-    if (char === "\\") index++;
+    const url = urlEnd(source, index, end);
+    if (url !== undefined) index = url - 1;
+    else if (char === "\\") index++;
     else if (char === '"' || char === "'") index = stringEnd(source, index, end) - 1;
     else if (source.startsWith("/*", index)) index = skipTrivia(source, index, end) - 1;
     else if (char === open) depth++;
@@ -841,7 +914,9 @@ function valueTokens(source: string, span: Span): Span[] {
     let end = index;
     while (end < span.end && !/\s/.test(source[end]!) && !source.startsWith("/*", end)) {
       const char = source[end]!;
-      if (char === '"' || char === "'") end = stringEnd(source, end, span.end);
+      const url = urlEnd(source, end, span.end);
+      if (url !== undefined) end = url;
+      else if (char === '"' || char === "'") end = stringEnd(source, end, span.end);
       else if (char === "(") end = closing(source, end, span.end, "(", ")") + 1;
       else end += char === "\\" ? 2 : 1;
     }

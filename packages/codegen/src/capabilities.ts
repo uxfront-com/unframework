@@ -150,8 +150,8 @@ const OPTION_CAPABILITIES = {
  * `slot-forwarding` for a forwarded slot, the default one's needing `default-slot-presence`
  * too), `child-root-scope` at a child a styled component renders and `slotted-styles` at a fill
  * of a child whose sheets use `:slotted()` (ADR-0063), `model-array` and `model-modifiers` at an
- * element's `v-model` that needs them, `svg` at an `<svg>`, `listbox` at what may make a `<select>` a
- * single-selection list box (`listBoxSize`), and at a listener `event-semantics`, its option's
+ * element's `v-model` that needs them, `svg` at an `<svg>`, `listbox` at what may make a
+ * `<select>` a single-selection list box (`listBoxSize`), and at a listener `event-semantics`, its option's
  * capability (`event-capture`, `event-once`, `event-passive`), `next-tick` in an inline handler,
  * and `conditional-event-control` at a control, or a call that reaches one, that is not at the
  * top of the listener, at a `once` listener whose control depends on more than the event
