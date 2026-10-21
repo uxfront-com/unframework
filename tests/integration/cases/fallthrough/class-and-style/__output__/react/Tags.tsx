@@ -6,12 +6,12 @@ export interface TagsAttributes {
   style?: CSSProperties;
 }
 
-export default function Tags({ className, style }: TagsAttributes) {
+export default function Tags({ className, style, ...attributes }: TagsAttributes) {
   const [active, setActive] = useState(false);
   const activeRef = useRef(active);
 
   return (
-    <div className={cx("tags", className)} style={style}>
+    <div className={cx("tags", className)} style={style} {...scopeAttributes(attributes)}>
       <Tag label="plain" />
       <Tag label="wide" className="wide" style={{ marginLeft: "8px" }} />
       <Tag
@@ -45,4 +45,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

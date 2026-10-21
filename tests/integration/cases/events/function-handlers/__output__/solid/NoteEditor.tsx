@@ -40,6 +40,7 @@ export default function NoteEditor(
       class={props.class ? `note-editor ${props.class}` : "note-editor"}
       aria-label="Note"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <button type="button" onClick={save}>
         Save
@@ -78,4 +79,11 @@ export default function NoteEditor(
       <p>Tags: {tags().join(", ")}</p>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

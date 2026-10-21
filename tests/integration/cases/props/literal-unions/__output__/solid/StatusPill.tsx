@@ -23,6 +23,7 @@ export default function StatusPill(
         props.class,
       )}
       style={props.style}
+      {...scopeAttributes(props)}
     >
       {props.status === "active" ? "Active" : props.status === "paused" ? "Paused" : "Archived"}
       {props.level === 3 ? " (critical)" : ""}
@@ -40,4 +41,11 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

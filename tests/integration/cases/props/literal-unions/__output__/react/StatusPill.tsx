@@ -17,11 +17,13 @@ export default function StatusPill({
   level = 1,
   className,
   style,
+  ...attributes
 }: StatusPillProps & StatusPillAttributes) {
   return (
     <span
       className={cx("pill", `pill-${status}`, `pill-${size}`, `pill-level-${level}`, className)}
       style={style}
+      {...scopeAttributes(attributes)}
     >
       {status === "active" ? "Active" : status === "paused" ? "Paused" : "Archived"}
       {level === 3 ? " (critical)" : ""}
@@ -42,4 +44,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

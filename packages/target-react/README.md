@@ -109,7 +109,8 @@ and `use-id` are native;
 `event-once` (`useOnce`), `event-semantics` (`listen`) and `next-tick` (`useNextTick`) are
 emulated with inline helpers, and `class-binding` with `cx`. Of composition's cells,
 `model-array` (`toggle`), `model-modifiers` (`modelText`) and `reactive-context` (`refObject`)
-are emulated, and the others native.
+are emulated, and the others native. Of the styles' cells, `child-root-scope` is emulated
+(`scopeAttributes`), and the others native.
 
 Every name the output introduces (`cx`, `setCount`, `countRef`, `CounterEvents`, `listen`,
 `CSSProperties`, `_props`) is claimed around the source's own names, so none captures another.
@@ -160,6 +161,18 @@ text again, as Vue's `vModelText` does: the caret ends after the text, and no `s
 template ref or native listeners on the element share the callback. Where the native listeners'
 callback is written in place (it reads a list's row or a narrowed value), it would run at every
 render, so the caret stays at the start.
+
+## Scoped styles (M4)
+
+A component that imports a stylesheet imports the sheet `compile()` scoped for it, after its
+other imports: `import "./Badge.uf.tsx.css";` (ADR-0063). The shared JSX builder prints
+`data-uf-<id>=""` on each element it renders, the parent's attribute on a child's tag, and the
+child's `-s` on the content filled into a child whose sheet uses `:slotted()`, children and render
+props alike. A component that takes `className` and `style` also takes the scope attributes of its
+styled parents, which its root spreads: the rest of its props pattern, picked by the inline
+`scopeAttributes` helper (`{...scopeAttributes(attributes)}`), or the props object in the object
+form. The helper keeps only the `data-uf-*` keys, so no prop the output leaves unread reaches the
+root.
 
 ## Toolchain
 

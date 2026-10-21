@@ -17,9 +17,15 @@ export default function Banner({
   emphasis,
   className,
   style,
+  ...attributes
 }: BannerProps & BannerAttributes) {
   return (
-    <div className={cx("banner", tone, className)} role="note" style={style}>
+    <div
+      className={cx("banner", tone, className)}
+      role="note"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p className={cx(emphasis)}>{message}</p>
       <p className={cx(`banner-footer banner-footer-${tone}`)}>Shown to every visitor.</p>
     </div>
@@ -39,4 +45,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

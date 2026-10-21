@@ -5,7 +5,7 @@ export interface EventLogAttributes {
   style?: CSSProperties;
 }
 
-export default function EventLog({ className, style }: EventLogAttributes) {
+export default function EventLog({ className, style, ...attributes }: EventLogAttributes) {
   const [log, setLog] = useState<string[]>([]);
   const logRef = useRef(log);
   const [volume, setVolume] = useState(5);
@@ -30,7 +30,12 @@ export default function EventLog({ className, style }: EventLogAttributes) {
   const clickOnce_1 = useOnce();
 
   return (
-    <section className={cx("event-log", className)} aria-label="Event options" style={style}>
+    <section
+      className={cx("event-log", className)}
+      aria-label="Event options"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <div
         className="panel"
         role="presentation"
@@ -107,4 +112,13 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
     fired.current.add(target);
     return true;
   };
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

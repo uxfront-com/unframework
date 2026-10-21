@@ -99,7 +99,7 @@ export default function Frame() {
     expect(box).toContain('{children ?? "Empty"}');
     expect(box).toContain("{renderItem?.({ n: 1 })}");
     expect(files.get("Frame")).toContain(
-      "<Box className={className} style={style} renderItem={({ n }) => <b>{n}</b>}>\n      {children}\n    </Box>",
+      "<Box\n      className={className}\n      style={style}\n      renderItem={({ n }) => <b>{n}</b>}\n      {...scopeAttributes_1(attributes)}\n    >\n      {children}\n    </Box>",
     );
   });
 

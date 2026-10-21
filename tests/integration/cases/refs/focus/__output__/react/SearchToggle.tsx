@@ -5,7 +5,7 @@ export interface SearchToggleAttributes {
   style?: CSSProperties;
 }
 
-export default function SearchToggle({ className, style }: SearchToggleAttributes) {
+export default function SearchToggle({ className, style, ...attributes }: SearchToggleAttributes) {
   const field = useRef<HTMLInputElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
 
@@ -18,7 +18,12 @@ export default function SearchToggle({ className, style }: SearchToggleAttribute
   }
 
   return (
-    <div className={cx("search-toggle", className)} role="search" style={style}>
+    <div
+      className={cx("search-toggle", className)}
+      role="search"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <button type="button" ref={trigger} onClick={focusField}>
         Search
       </button>
@@ -40,4 +45,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

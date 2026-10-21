@@ -23,6 +23,7 @@ export default function FruitPicker({
   onKept,
   className,
   style,
+  ...attributes
 }: FruitPickerProps & FruitPickerEvents & FruitPickerAttributes) {
   const [selected, setSelected] = useState<Fruit | null>(null);
   const selectedRef = useRef(selected);
@@ -44,7 +45,12 @@ export default function FruitPicker({
   }
 
   return (
-    <section className={cx("fruit-picker", className)} aria-label="Fruit" style={style}>
+    <section
+      className={cx("fruit-picker", className)}
+      aria-label="Fruit"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <ul aria-label="Fruits">
         {fruits.map((fruit) => (
           <li key={fruit.name}>
@@ -79,4 +85,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

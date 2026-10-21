@@ -34,10 +34,16 @@ import { compilerBailout, declaredNames } from "./bailouts.ts";
 import type { ComponentCode } from "./bailouts.ts";
 import { placeConditionals } from "./branches.ts";
 import { ReactComposer } from "./compose.ts";
-import { exposedType, refValueType, slotProp } from "./composition.ts";
+import { exposedType, refValueType, SCOPE_HELPER, slotProp } from "./composition.ts";
 import { cxHelper, reactDialect } from "./dialect.ts";
 import type { ReactNames } from "./dialect.ts";
-import { modelTextHelper, nextTickHelper, refObjectHelper, toggleHelper } from "./helpers.ts";
+import {
+  modelTextHelper,
+  nextTickHelper,
+  refObjectHelper,
+  scopeAttributesHelper,
+  toggleHelper,
+} from "./helpers.ts";
 import type { NextTickHooks } from "./helpers.ts";
 import { listenerHelpers, ReactListeners } from "./listeners.ts";
 import { planComponent } from "./plan.ts";
@@ -130,7 +136,13 @@ export const react: Target = defineTarget({
     },
     "dynamic-component": { support: "native" },
     "scoped-styles": { support: "native" },
-    "child-root-scope": { support: "native" },
+    // The child's root picks its styled parents' `data-uf-*` attributes out of its props
+    // (ADR-0063): their names are the parents', which the child cannot know.
+    "child-root-scope": {
+      support: "emulated",
+      helper: SCOPE_HELPER,
+      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root.",
+    },
     "slotted-styles": { support: "native" },
   },
   // A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
@@ -171,7 +183,15 @@ export const react: Target = defineTarget({
     // A lone component or `<component is>` is the root itself, never in a fragment.
     const [only] = root.kind === "Fragment" && root.children.length === 1 ? root.children : [];
     const lone = only?.kind === "Component" || only?.kind === "Dynamic" ? only : root;
-    const tree = provided(plan, jsxNode(lone, jsx));
+    const printed = jsxNode(lone, jsx);
+    // The child-root rule (ADR-0063): the root carries its styled parents' scope attributes.
+    if (composition.fallthrough && printed.type === "JSXElement") {
+      const { helper, scope } = composition.fallthrough;
+      printed.openingElement.attributes.push(
+        js.jsxSpreadAttribute(jsx.placeholders.expression(`${helper}(${scope})`, "argument")),
+      );
+    }
+    const tree = provided(plan, printed);
     const rendered = [
       ...[...composition.dynamic.values()]
         .filter(({ hoisted }) => hoisted)
@@ -205,29 +225,42 @@ export const react: Target = defineTarget({
     const hoisted = [...keyDeclarations(plan), ...setup.module].map((statement) =>
       jsx.placeholders.statements(`${statement}\n`),
     );
+    const types = [
+      ...componentTypes(component, module),
+      ...eventsInterface(plan),
+      ...compositionInterfaces(plan),
+    ];
+    const helpers = [
+      ...(names.cx ? [cxHelper(names.cx)] : []),
+      ...listenerHelpers(plan),
+      ...(plan.helpers.nextTick
+        ? [nextTickHelper(plan.helpers.nextTick, nextTickHooks(plan))]
+        : []),
+      ...compositionHelpers(plan),
+    ];
+    // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
+    // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
+    // component's style after its script. Collected last: the types and the helpers import
+    // what they name.
+    const file = module.file;
+    const imports = [
+      ...names.imports.toDeclarations(),
+      ...(component.styles
+        ? [js.importDeclaration(`./${file.slice(file.lastIndexOf("/") + 1)}.css`, [])]
+        : []),
+    ];
     return [
       {
         path: `${component.name}.tsx`,
         contents: printComponentModule(
           {
-            imports: names.imports,
-            types: [
-              ...componentTypes(component, module),
-              ...eventsInterface(plan),
-              ...compositionInterfaces(plan),
-            ],
+            imports,
+            types,
             body: [
               ...hoisted,
               ...exportDeclaration(component.name, fn, exportsOf(component.name, module.exports)),
             ],
-            helpers: [
-              ...(names.cx ? [cxHelper(names.cx)] : []),
-              ...listenerHelpers(plan),
-              ...(plan.helpers.nextTick
-                ? [nextTickHelper(plan.helpers.nextTick, nextTickHooks(plan))]
-                : []),
-              ...compositionHelpers(plan),
-            ],
+            helpers,
             placeholders: jsx.placeholders,
           },
           { jsx: true },
@@ -465,6 +498,9 @@ function parametersOf(fn: FunctionCode): string {
 function compositionHelpers(plan: ReactPlan): string[] {
   const { helpers, names } = plan;
   return [
+    ...(plan.composition.fallthrough
+      ? [scopeAttributesHelper(plan.composition.fallthrough.helper)]
+      : []),
     ...(helpers.refObject ? [refObjectHelper(helpers.refObject)] : []),
     ...(helpers.toggle ? [toggleHelper(helpers.toggle)] : []),
     ...(helpers.modelText
@@ -581,6 +617,8 @@ function propsParameters(
   if (fallthrough)
     composed.push(["className", fallthrough.className], ["style", fallthrough.style]);
   if (expose) composed.push(["ref", expose.ref]);
+  // The rest the root picks its styled parents' scope attributes out of (ADR-0063).
+  const rest = fallthrough && parameter?.form !== "object" ? fallthrough.scope : undefined;
   if (parameter?.form === "object") {
     // A name `_` and more says it is unused already: it stays the source's (oxlint still
     // reports a bare `_`).
@@ -609,7 +647,7 @@ function propsParameters(
     );
   }
   if (!properties.length) return [js.bindingIdentifier(names.claim("_props"), type)];
-  return [js.objectPattern(properties, type)];
+  return [js.objectPattern([...properties, ...(rest ? [js.bindingRestElement(rest)] : [])], type)];
 }
 
 /**

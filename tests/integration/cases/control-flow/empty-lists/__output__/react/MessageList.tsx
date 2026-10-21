@@ -22,9 +22,15 @@ export default function MessageList({
   emptyText = "Nothing here yet.",
   className,
   style,
+  ...attributes
 }: MessageListProps & MessageListAttributes) {
   return (
-    <section className={cx("message-list", className)} aria-label="Messages" style={style}>
+    <section
+      className={cx("message-list", className)}
+      aria-label="Messages"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <h2>Inbox</h2>
       <ul>
         {messages.map((message) => (
@@ -56,4 +62,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

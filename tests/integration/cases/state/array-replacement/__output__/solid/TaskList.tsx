@@ -43,6 +43,7 @@ export default function TaskList(
       class={props.class ? `task-list ${props.class}` : "task-list"}
       aria-label="Tasks"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <Show
         when={tasks().length === 0}
@@ -81,4 +82,11 @@ export default function TaskList(
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

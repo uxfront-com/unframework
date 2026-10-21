@@ -156,6 +156,40 @@ sheet with `parseStylesheet` instead, Vue's and Angular's included.
   compile project parses every emitted sheet with `parseStylesheet`, as part of L2, and fails one
   with an error or an unknown at-rule.
 
+**React and Solid**, as built:
+
+- **The attachment.** The output imports its sheet for its side effect, `import "./Card.uf.tsx.css"`,
+  after its other imports, so a child's sheet loads before its parent's, as plugin-vue imports a
+  component's style after its script. The toolchain projects hand the checker a
+  `declare module "*.css" {}` file from the target's toolchain package (`sheets.d.ts`), and every
+  toolchain's lint baseline allows a `.css` import that binds nothing
+  (`import/no-unassigned-import`).
+- **`child-root-scope`, emulated (`scopeAttributes`).** The parent passes its attribute on the
+  child's tag, `<Button data-uf-a33d603f="" />`, which a typed JSX consumer may write, since JSX
+  checks no hyphenated name. Each name is a parent's id, which the child can't know, so every
+  component that takes `class` and `style` (ADR-0054) spreads an inline helper's pick of them on
+  its root: `{...scopeAttributes(attributes)}`, from the rest of a React props pattern, or from the
+  props object (`props` on Solid, and React's object form). The helper keeps only the props'
+  `data-uf-*` keys, each with the empty value the parent writes, and reads no value, so it runs no
+  Solid getter, and no prop the output leaves unread reaches the root, as a bare rest spread would
+  let it. A root component spreads them on, so they reach the first element, as Vue's scope id
+  does. Each component of a module takes the helper under a name of its own
+  (`scopeAttributes_1`), because the unplugin joins them into one module (ADR-0053).
+- **The cost on Solid.** A spread on the root makes Solid's compiler set the root's attributes
+  through `spread` and `mergeProps`, and render it on the server with `ssrElement`, instead of a
+  template and `ssrHydrationKey()`. The hydration key is still written. `ssrElement` writes `class`
+  for a key that holds nothing and a space after a class (`class="card "`), as it writes
+  `style=""`: the server HTML differs from Vue's in an empty `class` and the class's whitespace,
+  which hydration sets right and the normaliser reads as the same (ADR-0044).
+- **`slotted-styles`, native.** The shared JSX builder stamps the child's `-s` on the content a
+  parent fills in, so it holds on `children`, named slot props and render props, whose function
+  returns the stamped content.
+- **Not covered.** A child whose root is a conditional, a list or a fragment, and one with
+  `inheritAttrs: false`, takes no `class`, `style` or scope attribute, so a parent's sheet does
+  not reach its root on React and Solid. Vue gives the scope id to a conditional's rendered root
+  and to a root with `inheritAttrs: false`, so those two differ, and no diagnostic says so yet:
+  `ComponentApi.root` does not tell a conditional from a fragment, which no target scopes.
+
 **The capabilities:** `scoped-styles` (a component with a sheet), `child-root-scope` (a child a
 styled component renders) and `slotted-styles` (content filled into a child whose sheet uses
 `:slotted()`). Each target declares all three `native`, the cell its lane is expected to reach. A
@@ -205,8 +239,8 @@ Vue      <style src="./Button.uf.tsx.css"></style>
 
 - Astro's attachment: an import that the Container API collects, or an inline `<style is:global>`
   (its lane, ADR-0020).
-- Each lane's `child-root-scope` and `slotted-styles` cells on React's children, Svelte's snippets,
-  Angular's projection and Qwik's `<Slot />`, recorded here as they settle.
+- Each lane's `child-root-scope` and `slotted-styles` cells on Svelte's snippets, Angular's
+  projection and Qwik's `<Slot />`, recorded here as they settle. React's and Solid's are above.
 - No watch or HMR edge runs from the author's `X.css` to its sheet module until M6.
 - A sheet that two modules import is not yet a diagnostic: detecting it needs M5's project graph,
   and until then each module scopes its own copy.

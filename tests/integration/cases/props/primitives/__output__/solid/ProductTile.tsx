@@ -16,6 +16,7 @@ export default function ProductTile(
       class={props.class ? `product-tile ${props.class}` : "product-tile"}
       aria-label={props.name}
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <h2>{props.name}</h2>
       <p>Price: {props.price} EUR</p>
@@ -26,4 +27,11 @@ export default function ProductTile(
       </button>
     </article>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

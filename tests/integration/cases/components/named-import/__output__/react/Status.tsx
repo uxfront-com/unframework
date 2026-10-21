@@ -7,9 +7,14 @@ export interface StatusAttributes {
   style?: CSSProperties;
 }
 
-export default function Status({ state, className, style }: { state: string } & StatusAttributes) {
+export default function Status({
+  state,
+  className,
+  style,
+  ...attributes
+}: { state: string } & StatusAttributes) {
   return (
-    <p className={cx("status", className)} style={style}>
+    <p className={cx("status", className)} style={style} {...scopeAttributes(attributes)}>
       <Badge text="Build" />
       <Tag text={state} />
     </p>
@@ -29,4 +34,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

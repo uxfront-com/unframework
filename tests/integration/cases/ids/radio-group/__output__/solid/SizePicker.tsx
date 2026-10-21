@@ -21,6 +21,7 @@ export default function SizePicker(
       class={props.class ? `size-picker ${props.class}` : "size-picker"}
       aria-describedby={hintId}
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <legend>{props.legend}</legend>
       <p id={hintId}>Pick one size.</p>
@@ -41,4 +42,11 @@ export default function SizePicker(
       <output>{picked() || "none"}</output>
     </fieldset>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

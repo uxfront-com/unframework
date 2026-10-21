@@ -17,6 +17,7 @@ export default function CommentComposer({
   onFirstSave,
   className,
   style,
+  ...attributes
 }: CommentComposerEvents & CommentComposerAttributes) {
   const [tags, setTags] = useState<string[]>([]);
   const tagsRef = useRef(tags);
@@ -72,7 +73,12 @@ export default function CommentComposer({
   const clickOnce_1 = useOnce();
 
   return (
-    <section className={cx("comment-composer", className)} aria-label="Composer" style={style}>
+    <section
+      className={cx("comment-composer", className)}
+      aria-label="Composer"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <label>
         Comment
         <textarea name="comment" onKeyDown={send} />
@@ -246,4 +252,13 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
     fired.current.add(target);
     return true;
   };
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

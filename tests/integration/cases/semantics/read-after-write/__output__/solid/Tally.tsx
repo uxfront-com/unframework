@@ -53,6 +53,7 @@ export default function Tally(props: TallyEvents & { class?: string; style?: JSX
       class={props.class ? `tally ${props.class}` : "tally"}
       aria-label="Tally"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p role="status">Count: {count()}</p>
       <button type="button" onClick={addTwice}>
@@ -77,4 +78,11 @@ export default function Tally(props: TallyEvents & { class?: string; style?: JSX
       <p>Phases: {trail().join(" then ")}</p>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

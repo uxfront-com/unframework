@@ -18,6 +18,7 @@ export default function TaskList({
   initial,
   className,
   style,
+  ...attributes
 }: TaskListProps & TaskListAttributes) {
   const [tasks, setTasks] = useState(initial);
   const tasksRef = useRef(tasks);
@@ -55,7 +56,12 @@ export default function TaskList({
   }
 
   return (
-    <section className={cx("task-list", className)} aria-label="Tasks" style={style}>
+    <section
+      className={cx("task-list", className)}
+      aria-label="Tasks"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       {tasks.length === 0 ? (
         <p>No tasks yet.</p>
       ) : (
@@ -103,4 +109,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

@@ -5,9 +5,19 @@ export interface BaseAttributes {
   style?: CSSProperties;
 }
 
-export default function Base({ text, className, style }: { text: string } & BaseAttributes) {
+export default function Base({
+  text,
+  className,
+  style,
+  ...attributes
+}: { text: string } & BaseAttributes) {
   return (
-    <button type="button" className={cx("base", className)} style={style}>
+    <button
+      type="button"
+      className={cx("base", className)}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       {text}
     </button>
   );
@@ -26,4 +36,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

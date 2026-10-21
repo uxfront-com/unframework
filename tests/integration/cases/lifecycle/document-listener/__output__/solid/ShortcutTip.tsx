@@ -54,6 +54,7 @@ export default function ShortcutTip(
       class={props.class ? `shortcut-tip ${props.class}` : "shortcut-tip"}
       aria-label="Shortcuts"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p>{open() ? "Press Escape to hide this tip." : "Tip hidden."}</p>
       <button type="button" aria-pressed={enabled()} onClick={toggle}>
@@ -62,6 +63,13 @@ export default function ShortcutTip(
       <p role="status">Used: {count()}</p>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

@@ -5,7 +5,7 @@ export interface ProfileAttributes {
   style?: CSSProperties;
 }
 
-export default function Profile({ className, style }: ProfileAttributes) {
+export default function Profile({ className, style, ...attributes }: ProfileAttributes) {
   const [name, setName] = useState("");
   const [city, setCity] = useState("Lisbon");
   const [weight, setWeight] = useState(0);
@@ -14,7 +14,7 @@ export default function Profile({ className, style }: ProfileAttributes) {
   const weightField = useModelText(weight, setWeight, { number: true });
 
   return (
-    <form aria-label="Profile" className={className} style={style}>
+    <form aria-label="Profile" className={className} style={style} {...scopeAttributes(attributes)}>
       <label>
         Name <input {...nameField} />
       </label>
@@ -29,6 +29,15 @@ export default function Profile({ className, style }: ProfileAttributes) {
       </output>
     </form>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }
 
 /**

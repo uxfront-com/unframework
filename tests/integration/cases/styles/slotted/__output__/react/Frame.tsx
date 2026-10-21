@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import "./Frame.uf.tsx.css";
 
 export interface FrameSlots {
   children?: ReactNode;
@@ -9,9 +10,19 @@ export interface FrameAttributes {
   style?: CSSProperties;
 }
 
-export default function Frame({ children, className, style }: FrameSlots & FrameAttributes) {
+export default function Frame({
+  children,
+  className,
+  style,
+  ...attributes
+}: FrameSlots & FrameAttributes) {
   return (
-    <figure className={cx("frame", className)} style={style} data-uf-9dc516fd="">
+    <figure
+      className={cx("frame", className)}
+      style={style}
+      data-uf-9dc516fd=""
+      {...scopeAttributes(attributes)}
+    >
       {children}
     </figure>
   );
@@ -30,4 +41,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

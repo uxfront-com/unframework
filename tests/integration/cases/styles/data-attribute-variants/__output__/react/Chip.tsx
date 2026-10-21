@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import "./Chip.uf.tsx.css";
 
 export interface ChipAttributes {
   className?: string;
@@ -11,6 +12,7 @@ export default function Chip({
   pressed = false,
   className,
   style,
+  ...attributes
 }: { label: string; variant?: "neutral" | "danger"; pressed?: boolean } & ChipAttributes) {
   return (
     <button
@@ -21,6 +23,7 @@ export default function Chip({
       aria-pressed={pressed ? "true" : "false"}
       style={style}
       data-uf-69db3802=""
+      {...scopeAttributes(attributes)}
     >
       {label}
     </button>
@@ -40,4 +43,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

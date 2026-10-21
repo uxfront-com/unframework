@@ -5,9 +5,14 @@ export interface ProfileCardAttributes {
   style?: CSSProperties;
 }
 
-export default function ProfileCard({ className, style }: ProfileCardAttributes) {
+export default function ProfileCard({ className, style, ...attributes }: ProfileCardAttributes) {
   return (
-    <article className={cx("profile", className)} aria-labelledby="profile-name" style={style}>
+    <article
+      className={cx("profile", className)}
+      aria-labelledby="profile-name"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <header className="profile-header">
         <img
           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%23345'/%3E%3C/svg%3E"
@@ -42,4 +47,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

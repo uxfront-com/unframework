@@ -39,6 +39,7 @@ export default function PriceRange(
       class={props.class ? `price-range ${props.class}` : "price-range"}
       aria-label="Price range"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p role="status">
         {low()} to {high()} {props.currency}
@@ -57,6 +58,13 @@ export default function PriceRange(
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

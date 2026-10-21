@@ -55,6 +55,7 @@ export default function SyncDesk({
   onClamped,
   className,
   style,
+  ...attributes
 }: SyncDeskProps & SyncDeskEvents & SyncDeskAttributes) {
   const filesRef = useRef(files);
   const onFocusedRef = useRef(onFocused);
@@ -374,7 +375,12 @@ export default function SyncDesk({
   }, [email, valid, checking, level, waits]);
 
   return (
-    <section className={cx("sync-desk", className)} aria-label="Sync desk" style={style}>
+    <section
+      className={cx("sync-desk", className)}
+      aria-label="Sync desk"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <button type="button" onClick={suggest}>
         Suggest
       </button>
@@ -510,4 +516,13 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

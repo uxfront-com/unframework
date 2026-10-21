@@ -19,6 +19,7 @@ export default function ProfileCard({
   initial,
   className,
   style,
+  ...attributes
 }: ProfileCardProps & ProfileCardAttributes) {
   const [profile, setProfile] = useState(initial);
   const profileRef = useRef(profile);
@@ -34,7 +35,12 @@ export default function ProfileCard({
   }
 
   return (
-    <article className={cx("profile-card", className)} aria-label="Profile" style={style}>
+    <article
+      className={cx("profile-card", className)}
+      aria-label="Profile"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <h2>{profile.name}</h2>
       <p>{profile.title}</p>
       <p role="status">{profile.available ? "Available" : "Away"}</p>
@@ -61,4 +67,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

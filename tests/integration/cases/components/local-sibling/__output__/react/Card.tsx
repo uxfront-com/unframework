@@ -6,9 +6,14 @@ export interface CardAttributes {
   style?: CSSProperties;
 }
 
-export default function Card({ title, className, style }: { title: string } & CardAttributes) {
+export default function Card({
+  title,
+  className,
+  style,
+  ...attributes
+}: { title: string } & CardAttributes) {
   return (
-    <div className={cx_1("card", className)} style={style}>
+    <div className={cx_1("card", className)} style={style} {...scopeAttributes_1(attributes)}>
       <CardIcon symbol="+" />
       <h3>{title}</h3>
       <CardIcon symbol="-" />
@@ -29,4 +34,13 @@ function cx_1(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes_1(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

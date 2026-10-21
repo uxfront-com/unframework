@@ -20,6 +20,7 @@ export default function ArticlePreview({
   onReady,
   className,
   style,
+  ...attributes
 }: ArticlePreviewProps & ArticlePreviewEvents & ArticlePreviewAttributes) {
   const body = useRef<HTMLParagraphElement>(null);
   const [characters, setCharacters] = useState(0);
@@ -40,7 +41,12 @@ export default function ArticlePreview({
   }, []);
 
   return (
-    <article className={cx("article-preview", className)} aria-label={title} style={style}>
+    <article
+      className={cx("article-preview", className)}
+      aria-label={title}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <h2>{title}</h2>
       <p ref={body}>{text}</p>
       <p role="status">{counted ? `${characters} characters` : "Counting the characters"}</p>
@@ -61,4 +67,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

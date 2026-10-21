@@ -4,7 +4,7 @@ export default function SizePicker(props: { class?: string; style?: JSX.CSSPrope
   const [size, setSize] = createSignal("m");
 
   return (
-    <section aria-label="Size" class={props.class} style={props.style}>
+    <section aria-label="Size" class={props.class} style={props.style} {...scopeAttributes(props)}>
       <label>
         Size{" "}
         <select
@@ -28,6 +28,13 @@ export default function SizePicker(props: { class?: string; style?: JSX.CSSPrope
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /**

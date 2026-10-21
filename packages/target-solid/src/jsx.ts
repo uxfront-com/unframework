@@ -66,6 +66,9 @@ type JsxChild = ReturnType<typeof jsxChildren>[number];
 /** The class helper's name, before the name scope makes it unique. */
 export const CLASS_HELPER = "cx";
 
+/** The scope helper's name, before the name scope makes it unique. */
+export const SCOPE_HELPER = "scopeAttributes";
+
 /** The Solid dialect of one output file, and the helpers its JSX ended up calling. */
 export interface SolidJsx {
   dialect: JsxDialect;
@@ -73,9 +76,10 @@ export interface SolidJsx {
   helpers: () => string[];
   /**
    * The fallthrough attributes the root has not printed with its own (`class={props.class}`,
-   * `style={props.style}`), to add once it is printed: none without fallthrough.
+   * `style={props.style}`), then the scope attributes its styled parents pass it
+   * (`{...scopeAttributes(props)}`), to add once it is printed: none without fallthrough.
    */
-  fallthrough: (context: JsxContext) => JsxAttribute[];
+  fallthrough: (context: JsxContext) => JsxAttributeItem[];
 }
 
 /** What a file's composition prints with: its code, its composition and its props object. */
@@ -102,6 +106,7 @@ export function solidJsx(
   compose: SolidCompose,
 ): SolidJsx {
   let helper: string | undefined;
+  let scopeHelper: string | undefined;
   const classHelper = () => (helper ??= imports.claim(CLASS_HELPER));
   const flow: Flow = { imports, narrowings, falsy: declaresFalsyLiteral(types) };
   const { code, composition, object, models } = compose;
@@ -239,13 +244,26 @@ export function solidJsx(
   };
   return {
     dialect,
-    helpers: () => [...(helper ? [classHelperCode(helper)] : []), ...models.helpers()],
+    helpers: () => [
+      ...(helper ? [classHelperCode(helper)] : []),
+      ...(scopeHelper ? [scopeHelperCode(scopeHelper)] : []),
+      ...models.helpers(),
+    ],
     fallthrough(context) {
       if (!root) return [];
       const missing = (["class", "style"] as const).filter((name) => !printed[name]);
-      return missing.map((name) =>
-        js.jsxAttribute(name, js.jsxExpressionContainer(passed(name, context))),
-      );
+      // The child-root rule (ADR-0063): the root carries the `data-uf-*` attributes of the
+      // styled parents that render it, whose names only they know, so it picks them out of the
+      // props by name.
+      scopeHelper ??= imports.claim(SCOPE_HELPER);
+      return [
+        ...missing.map((name) =>
+          js.jsxAttribute(name, js.jsxExpressionContainer(passed(name, context))),
+        ),
+        js.jsxSpreadAttribute(
+          context.placeholders.expression(`${scopeHelper}(${object!})`, "argument"),
+        ),
+      ];
     },
   };
 }
@@ -897,5 +915,20 @@ function ${name}(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}`;
+}
+
+/**
+ * The inline scope helper (emulated `child-root-scope`, ADR-0063), printed after the component:
+ * the props' `data-uf-*` keys, each with the empty value the parent passes. It reads the names
+ * alone, so it never runs a prop's getter (a slot's `children`), and passes on no prop the
+ * component declares.
+ */
+function scopeHelperCode(name: string): string {
+  return `/** The scope attributes of the styled parents that render this component, for its root. */
+function ${name}(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }`;
 }

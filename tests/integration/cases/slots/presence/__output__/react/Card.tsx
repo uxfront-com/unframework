@@ -16,9 +16,15 @@ export default function Card({
   children,
   className,
   style,
+  ...attributes
 }: { label: string } & CardSlots & CardAttributes) {
   return (
-    <section className={cx("card", className)} aria-label={label} style={style}>
+    <section
+      className={cx("card", className)}
+      aria-label={label}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       {title != null ? <header className="title">{title}</header> : null}
       {children != null ? <div className="body">{children}</div> : <p>Empty card</p>}
     </section>
@@ -38,4 +44,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

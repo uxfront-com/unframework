@@ -26,6 +26,7 @@ export default function DraftPanel({
   onKey: onKey_1,
   className,
   style,
+  ...attributes
 }: DraftPanelEvents & DraftPanelAttributes) {
   const onClosedRef = useRef(onClosed);
   const onKeyRef = useRef(onKey_1);
@@ -117,7 +118,12 @@ export default function DraftPanel({
   useEffect(() => () => onUnmount(), []);
 
   return (
-    <section className={cx("draft-panel", className)} aria-label="Draft" style={style}>
+    <section
+      className={cx("draft-panel", className)}
+      aria-label="Draft"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <button type="button" aria-expanded={open} onClick={show}>
         Options
       </button>
@@ -165,4 +171,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

@@ -62,7 +62,9 @@ describe("solid slots", () => {
         return "Body";
       },
     });
-    expect(html).toBe('<section data-filled="yes" style=""><h2>Title</h2>Body</section>');
+    // A root that spreads its scope attributes renders through Solid's \`ssrElement\` (ADR-0063),
+    // which writes \`class\` where the key holds nothing, and a space after a class.
+    expect(html).toBe('<section data-filled="yes" class="" style=""><h2>Title</h2>Body</section>');
     expect(reads).toEqual({ title: 1, children: 1 });
   });
 });
@@ -83,8 +85,10 @@ describe("solid models", () => {
     expect(output).toContain('value={name() ?? ""}');
     expect(output).toContain('value={untrack(note) ?? ""}');
     expect(output).toContain('const next = value() ?? "";');
+    // A root that spreads its scope attributes renders through Solid's \`ssrElement\` (ADR-0063),
+    // which writes \`class\` where the key holds nothing, and a space after a class.
     expect(await serverHtml("NullableFields", {})).toBe(
-      '<form style=""><input aria-label="Name" value=""><input aria-label="Note" value=""><textarea aria-label="Memo">Buy milk</textarea></form>',
+      '<form class="" style=""><input aria-label="Name" value=""><input aria-label="Note" value=""><textarea aria-label="Memo">Buy milk</textarea></form>',
     );
   });
 
@@ -140,8 +144,10 @@ describe("solid fallthrough", () => {
     const output = await emitSource(SOURCES.SpreadRoot!);
     expect(output).toContain("class={cx(props.attrs.class, props.class)}");
     expect(output.match(/\bclass=/g)).toHaveLength(1);
+    // A root that spreads its scope attributes renders through Solid's \`ssrElement\` (ADR-0063),
+    // which writes \`class\` where the key holds nothing, and a space after a class.
     expect(await serverHtml("SpreadRoot", { attrs: { class: "a", title: "t" }, class: "b" })).toBe(
-      '<div class="a b" title="t" style="">x</div>',
+      '<div class="a b " title="t" style="">x</div>',
     );
   });
 });

@@ -44,6 +44,7 @@ export default function PriceTag(
       class={props.class ? `price-tag ${props.class}` : "price-tag"}
       aria-label="Price"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p>Unit: {unit()}</p>
       <p role="status">{summary()}</p>
@@ -57,6 +58,13 @@ export default function PriceTag(
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

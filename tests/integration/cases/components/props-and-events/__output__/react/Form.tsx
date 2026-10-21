@@ -6,7 +6,12 @@ export interface FormAttributes {
   style?: CSSProperties;
 }
 
-export default function Form({ city, className, style }: { city: string } & FormAttributes) {
+export default function Form({
+  city,
+  className,
+  style,
+  ...attributes
+}: { city: string } & FormAttributes) {
   const [cleared, setCleared] = useState("nothing");
   const clearedRef = useRef(cleared);
 
@@ -16,10 +21,24 @@ export default function Form({ city, className, style }: { city: string } & Form
   }
 
   return (
-    <section aria-label="Address" className={className} style={style}>
+    <section
+      aria-label="Address"
+      className={className}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <Field label="Street" onClear={clear} />
       <Field label={city} tone="warn" onClear={(label) => clear(label.toUpperCase())} />
       <output>Cleared: {cleared}</output>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

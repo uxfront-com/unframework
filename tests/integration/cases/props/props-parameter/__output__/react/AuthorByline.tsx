@@ -14,7 +14,7 @@ export interface AuthorBylineAttributes {
 
 export default function AuthorByline(props: AuthorBylineProps & AuthorBylineAttributes) {
   return (
-    <p className={cx("byline", props.className)} style={props.style}>
+    <p className={cx("byline", props.className)} style={props.style} {...scopeAttributes(props)}>
       By {props.author}, {props.affiliation ?? "independent"}
       <br />
       <time dateTime={props.published}>{props.published}</time> · {props.minutes} min read
@@ -35,4 +35,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

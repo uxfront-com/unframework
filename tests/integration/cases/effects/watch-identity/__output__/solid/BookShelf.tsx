@@ -88,6 +88,7 @@ export default function BookShelf(
       class={props.class ? `book-shelf ${props.class}` : "book-shelf"}
       aria-label="Books"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <ul aria-label="Shelf">
         <For each={props.books}>
@@ -123,6 +124,13 @@ export default function BookShelf(
       </p>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

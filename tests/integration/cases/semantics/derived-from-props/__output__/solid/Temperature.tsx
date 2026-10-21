@@ -28,12 +28,20 @@ export default function Temperature(
       class={props.class ? `temperature ${props.class}` : "temperature"}
       data-level={level()}
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p>{props.celsius} °C</p>
       <p>{fahrenheit()} °F</p>
       <figcaption>Feels {level()}</figcaption>
     </figure>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

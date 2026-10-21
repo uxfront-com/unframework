@@ -13,6 +13,7 @@ export default function NoteEditor({
   onSaved,
   className,
   style,
+  ...attributes
 }: NoteEditorEvents & NoteEditorAttributes) {
   const [title, setTitle] = useState("");
   const titleRef = useRef(title);
@@ -33,6 +34,7 @@ export default function NoteEditor({
       aria-label="Note"
       onSubmit={(event) => event.preventDefault()}
       style={style}
+      {...scopeAttributes(attributes)}
     >
       <label>
         Title
@@ -82,4 +84,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

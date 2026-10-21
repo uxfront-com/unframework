@@ -5,7 +5,11 @@ export interface ListenerOrderAttributes {
   style?: CSSProperties;
 }
 
-export default function ListenerOrder({ className, style }: ListenerOrderAttributes) {
+export default function ListenerOrder({
+  className,
+  style,
+  ...attributes
+}: ListenerOrderAttributes) {
   const [log, setLog] = useState<string[]>([]);
   const logRef = useRef(log);
   const [resets, setResets] = useState(0);
@@ -31,7 +35,12 @@ export default function ListenerOrder({ className, style }: ListenerOrderAttribu
   );
 
   return (
-    <section className={cx("listener-order", className)} aria-label="Listener order" style={style}>
+    <section
+      className={cx("listener-order", className)}
+      aria-label="Listener order"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <div className="toolbar" role="presentation" onClick={() => record("toolbar")}>
         <button
           type="button"
@@ -158,4 +167,13 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
     fired.current.add(target);
     return true;
   };
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

@@ -27,6 +27,7 @@ export default function UnreadBadge({
   onTitleRelease,
   className,
   style,
+  ...attributes
 }: UnreadBadgeProps & UnreadBadgeEvents & UnreadBadgeAttributes) {
   const onTitleReleaseRef = useRef(onTitleRelease);
   useLayoutEffect(() => {
@@ -58,7 +59,12 @@ export default function UnreadBadge({
   }, [unread, appName]);
 
   return (
-    <section className={cx("unread-badge", className)} aria-label="Inbox" style={style}>
+    <section
+      className={cx("unread-badge", className)}
+      aria-label="Inbox"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p role="status">{unread} unread</p>
       <button
         type="button"
@@ -95,4 +101,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

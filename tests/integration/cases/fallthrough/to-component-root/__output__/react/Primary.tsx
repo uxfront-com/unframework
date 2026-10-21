@@ -6,8 +6,20 @@ export interface PrimaryAttributes {
   style?: CSSProperties;
 }
 
-export default function Primary({ text, className, style }: { text: string } & PrimaryAttributes) {
-  return <Base text={text} className={cx("primary", className)} style={style} />;
+export default function Primary({
+  text,
+  className,
+  style,
+  ...attributes
+}: { text: string } & PrimaryAttributes) {
+  return (
+    <Base
+      text={text}
+      className={cx("primary", className)}
+      style={style}
+      {...scopeAttributes(attributes)}
+    />
+  );
 }
 
 /** Joins class names, and the keys of an object's truthy entries, into one `className`. */
@@ -23,4 +35,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

@@ -6,12 +6,17 @@ export interface InboxAttributes {
   style?: CSSProperties;
 }
 
-export default function Inbox({ unread, className, style }: { unread: number } & InboxAttributes) {
+export default function Inbox({
+  unread,
+  className,
+  style,
+  ...attributes
+}: { unread: number } & InboxAttributes) {
   const [count, setCount] = useState(unread);
   const countRef = useRef(count);
 
   return (
-    <div className={cx("inbox", className)} style={style}>
+    <div className={cx("inbox", className)} style={style} {...scopeAttributes(attributes)}>
       {count > 0 ? (
         <Notice text={`${count} unread`} tone="info" />
       ) : (
@@ -43,4 +48,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

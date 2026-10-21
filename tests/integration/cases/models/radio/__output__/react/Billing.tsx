@@ -5,12 +5,12 @@ export interface BillingAttributes {
   style?: CSSProperties;
 }
 
-export default function Billing({ className, style }: BillingAttributes) {
+export default function Billing({ className, style, ...attributes }: BillingAttributes) {
   const [plan, setPlan] = useState("monthly");
   const planRef = useRef(plan);
 
   return (
-    <fieldset className={className} style={style}>
+    <fieldset className={className} style={style} {...scopeAttributes(attributes)}>
       <legend>Billing</legend>
       <label>
         <input
@@ -50,4 +50,13 @@ export default function Billing({ className, style }: BillingAttributes) {
       </button>
     </fieldset>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

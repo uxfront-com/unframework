@@ -15,6 +15,7 @@ export function SearchField({
   onQueryChange,
   className,
   style,
+  ...attributes
 }: SearchFieldModels & SearchFieldAttributes) {
   const [localQuery, setLocalQuery] = useState<{ value: string | undefined }>({ value: undefined });
   const query = queryProp === undefined ? localQuery.value : queryProp;
@@ -30,6 +31,16 @@ export function SearchField({
       }}
       className={className}
       style={style}
+      {...scopeAttributes(attributes)}
     />
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

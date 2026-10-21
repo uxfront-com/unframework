@@ -17,6 +17,7 @@ export default function OrderSummary(
       class={props.class ? `order-summary ${props.class}` : "order-summary"}
       aria-label="Order summary"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <h2>Order {String(props.orderNumber).padStart(6, "0")}</h2>
       <p>Customer: {props.customer.trim().toUpperCase()}</p>
@@ -38,4 +39,11 @@ export default function OrderSummary(
       <p>Points earned: {Math.round(props.unitPrice * props.quantity) % 100}</p>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

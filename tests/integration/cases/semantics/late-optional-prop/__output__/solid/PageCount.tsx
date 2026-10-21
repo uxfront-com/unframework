@@ -27,11 +27,19 @@ export default function PageCount(
       class={props.class ? `page-count ${props.class}` : "page-count"}
       aria-label="Pages"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p role="status">{label()}</p>
       <p>Direct: {props.page}</p>
     </nav>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

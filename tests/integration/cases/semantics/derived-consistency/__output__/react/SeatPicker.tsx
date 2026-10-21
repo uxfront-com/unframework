@@ -18,6 +18,7 @@ export default function SeatPicker({
   onQuote,
   className,
   style,
+  ...attributes
 }: SeatPickerProps & SeatPickerEvents & SeatPickerAttributes) {
   const [seats, setSeats] = useState(1);
   const seatsRef = useRef(seats);
@@ -58,7 +59,12 @@ export default function SeatPicker({
   }
 
   return (
-    <section className={cx("seat-picker", className)} aria-label="Seats" style={style}>
+    <section
+      className={cx("seat-picker", className)}
+      aria-label="Seats"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p role="status">{summary}</p>
       <button type="button" onClick={addSeat}>
         Add a seat
@@ -83,4 +89,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

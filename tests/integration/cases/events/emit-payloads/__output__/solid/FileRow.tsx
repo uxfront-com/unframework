@@ -32,6 +32,7 @@ export default function FileRow(
       role="group"
       aria-label={props.path}
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <span>
         {props.path} ({props.size} bytes)
@@ -56,4 +57,11 @@ export default function FileRow(
       </button>
     </div>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

@@ -19,9 +19,10 @@ export default function UsageMeter({
   thickness,
   className,
   style,
+  ...attributes
 }: UsageMeterProps & UsageMeterAttributes) {
   return (
-    <div className={cx("usage-meter", className)} style={style}>
+    <div className={cx("usage-meter", className)} style={style} {...scopeAttributes(attributes)}>
       <p style={{ color: colour, fontWeight: 700, lineHeight: 1.5, marginBottom: "4px" }}>
         {label}: {percent}%
       </p>
@@ -70,4 +71,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

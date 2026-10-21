@@ -17,7 +17,7 @@ import type { UfComponent } from "@unframework/ir";
 
 import { SolidComposition } from "./composition.ts";
 import { NEXT_TICK_HELPER, WATCHER_HELPER } from "./helpers.ts";
-import { CLASS_HELPER, solidJsx } from "./jsx.ts";
+import { CLASS_HELPER, SCOPE_HELPER, solidJsx } from "./jsx.ts";
 import { solidListeners } from "./listeners.ts";
 import { ModelHelpers, modelRef } from "./models.ts";
 import { BindingTypes, Narrowings } from "./narrowing.ts";
@@ -27,7 +27,7 @@ import { SolidCode, solidSetup } from "./setup.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type JsxExpression = ReturnType<typeof jsxNode>;
-type JsxAttribute = ReturnType<typeof js.jsxAttribute>;
+type JsxAttributeItem = ReturnType<typeof js.jsxAttribute | typeof js.jsxSpreadAttribute>;
 
 /** The Solid 1.9 target. Solid's JSX takes HTML attribute names as they are. */
 export const solid: Target = defineTarget({
@@ -116,7 +116,13 @@ export const solid: Target = defineTarget({
     },
     "dynamic-component": { support: "native" },
     "scoped-styles": { support: "native" },
-    "child-root-scope": { support: "native" },
+    // The child's root picks its styled parents' `data-uf-*` attributes out of its props
+    // (ADR-0063): their names are the parents', which the child cannot know.
+    "child-root-scope": {
+      support: "emulated",
+      helper: SCOPE_HELPER,
+      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root.",
+    },
     "slotted-styles": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
@@ -124,6 +130,12 @@ export const solid: Target = defineTarget({
     // (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035).
     const names = sourceNames(component, context.module);
     for (const name of freeNames(component, names)) names.delete(name);
+    // A source's components are joined into one module where it is loaded (ADR-0053): each after
+    // the first takes the scope helper under a name of its own (`scopeAttributes_1`).
+    const index = context.module.components.findIndex((each) => each.name === component.name);
+    for (let suffix = 0; suffix < index; suffix++) {
+      names.add(suffix ? `${SCOPE_HELPER}_${suffix}` : SCOPE_HELPER);
+    }
     const imports = new ImportSet(new NameScope(names));
     const placeholders = new Placeholders();
     const composition = new SolidComposition(component, context.module, imports);
@@ -175,15 +187,23 @@ export const solid: Target = defineTarget({
       exportsOf(component.name, context.module.exports),
     );
     const keys = composition.keys().map((text) => placeholders.statements(`${text}\n`));
+    // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
+    // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
+    // component's style after its script.
+    const file = context.module.file;
+    const sheet = component.styles
+      ? [js.importDeclaration(`./${file.slice(file.lastIndexOf("/") + 1)}.css`, [])]
+      : [];
     return [
       {
         path: `${component.name}.tsx`,
         contents: printComponentModule(
           {
-            imports,
             types: [...types, ...(props.events ? [props.events] : []), ...composition.types],
             body: [...keys, ...setup.hoisted, ...statements],
             helpers: [...helpers(), ...code.helpers()],
+            // Collected last: the helpers import what they call.
+            imports: [...imports.toDeclarations(), ...sheet],
             placeholders,
           },
           { jsx: true },
@@ -204,7 +224,7 @@ function rendered(
   code: SolidCode,
   types: BindingTypes,
   context: JsxContext,
-  fallthrough: (context: JsxContext) => JsxAttribute[],
+  fallthrough: (context: JsxContext) => JsxAttributeItem[],
 ): JsxExpression {
   const render = forSolid(component, code.rules, types);
   const [only] = render.children;

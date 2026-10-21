@@ -592,6 +592,7 @@ const HELPER_NAMES = [
   "toggle",
   "useModelText",
   "looseToNumber",
+  "scopeAttributes",
 ];
 
 /** Whether a binding's value changes as the component runs: a prop, state or a derived value. */

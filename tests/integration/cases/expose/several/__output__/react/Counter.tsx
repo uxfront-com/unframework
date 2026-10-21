@@ -16,6 +16,7 @@ export default function Counter({
   className,
   style,
   ref,
+  ...attributes
 }: { start: number } & CounterAttributes) {
   const [count, setCount] = useState(start);
   const countRef = useRef(count);
@@ -33,7 +34,7 @@ export default function Counter({
   useImperativeHandle(ref, () => ({ increment, reset }));
 
   return (
-    <output className={cx("count", className)} style={style}>
+    <output className={cx("count", className)} style={style} {...scopeAttributes(attributes)}>
       {count}
     </output>
   );
@@ -52,4 +53,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

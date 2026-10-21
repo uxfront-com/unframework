@@ -43,6 +43,20 @@ export function el(
   );
 }
 
+/** The scopeAttributes helper as every output with a fallthrough root prints it, under its name. */
+export const scopeHelper = (name = "scopeAttributes"): string =>
+  [
+    "/** The scope attributes of the styled parents that render this component, for its root. */",
+    `function ${name}(props: object): Record<string, ""> {`,
+    '  const scope: Record<string, ""> = {};',
+    "  for (const key of Object.keys(props)) {",
+    '    if (key.startsWith("data-uf-")) scope[key] = "";',
+    "  }",
+    "  return scope;",
+    "}",
+    "",
+  ].join("\n");
+
 /** `basics/hello`, as the analyser lowers it. */
 export const hello = (): ElementNode => el("p", { class: "greeting" }, "Hello, world!");
 

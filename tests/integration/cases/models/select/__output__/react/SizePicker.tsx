@@ -5,12 +5,12 @@ export interface SizePickerAttributes {
   style?: CSSProperties;
 }
 
-export default function SizePicker({ className, style }: SizePickerAttributes) {
+export default function SizePicker({ className, style, ...attributes }: SizePickerAttributes) {
   const [size, setSize] = useState("m");
   const sizeRef = useRef(size);
 
   return (
-    <section aria-label="Size" className={className} style={style}>
+    <section aria-label="Size" className={className} style={style} {...scopeAttributes(attributes)}>
       <label>
         Size{" "}
         <select
@@ -37,4 +37,13 @@ export default function SizePicker({ className, style }: SizePickerAttributes) {
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

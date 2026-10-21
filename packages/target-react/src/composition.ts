@@ -25,6 +25,9 @@ import type {
   UfModule,
 } from "@unframework/ir";
 
+/** The scope helper's name, before the name scope makes it unique. */
+export const SCOPE_HELPER = "scopeAttributes";
+
 /** A slot the component declares: the prop it is passed as, and how code reads it. */
 export interface SlotPlan {
   /** `children`, `title`, or `renderItem` for a scoped slot. */
@@ -64,12 +67,22 @@ export interface ModelPlan {
   mirror?: string;
 }
 
-/** What the component's root takes of a consumer's `class` and `style` (ADR-0054). */
+/**
+ * What the component's root takes of a consumer's `class` and `style` (ADR-0054), and of the
+ * scope attributes its styled parents pass (the child-root rule, ADR-0063).
+ */
 export interface FallthroughPlan {
   /** The root they merge into: the render root's element, or its one component. */
   root: ElementNode | ComponentNode;
   className: string;
   style: string;
+  /**
+   * What the root picks the scope attributes out of: the props pattern's rest (`attributes`),
+   * or the props object of the object form.
+   */
+  scope: string;
+  /** The inline helper that picks them, `scopeAttributes`. */
+  helper: string;
 }
 
 /** The composition of one component on React. */
@@ -214,6 +227,8 @@ export function planComposition(
     root,
     className: propLocal("className"),
     style: propLocal("style"),
+    scope: object || names.claim("attributes"),
+    helper: names.claim(SCOPE_HELPER),
   };
   const expose = component.exposes && {
     ref: propLocal("ref"),

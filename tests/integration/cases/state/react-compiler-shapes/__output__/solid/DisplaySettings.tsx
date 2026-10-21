@@ -59,6 +59,7 @@ export default function DisplaySettings(
       class={props.class ? `display-settings ${props.class}` : "display-settings"}
       aria-label="Display"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p role="status">
         Theme {settings().theme}, size {settings().size}
@@ -89,4 +90,11 @@ export default function DisplaySettings(
       </div>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

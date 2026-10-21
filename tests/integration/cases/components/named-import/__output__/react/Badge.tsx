@@ -5,9 +5,14 @@ export interface BadgeAttributes {
   style?: CSSProperties;
 }
 
-export function Badge({ text, className, style }: { text: string } & BadgeAttributes) {
+export function Badge({
+  text,
+  className,
+  style,
+  ...attributes
+}: { text: string } & BadgeAttributes) {
   return (
-    <span className={cx("badge", className)} style={style}>
+    <span className={cx("badge", className)} style={style} {...scopeAttributes(attributes)}>
       {text}
     </span>
   );
@@ -26,4 +31,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

@@ -54,6 +54,7 @@ export default function NameSorter(
       class={props.class ? `name-sorter ${props.class}` : "name-sorter"}
       aria-label="Names"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p>Names: {names().join(", ")}</p>
       <p>Added: {count()}</p>
@@ -65,6 +66,13 @@ export default function NameSorter(
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

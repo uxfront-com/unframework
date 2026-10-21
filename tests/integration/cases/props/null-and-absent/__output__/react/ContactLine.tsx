@@ -17,9 +17,15 @@ export default function ContactLine({
   verified,
   className,
   style,
+  ...attributes
 }: ContactLineProps & ContactLineAttributes) {
   return (
-    <section className={cx("contact-line", className)} aria-label={name} style={style}>
+    <section
+      className={cx("contact-line", className)}
+      aria-label={name}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p data-phone={phone === null ? "withheld" : phone}>
         Phone: {phone === null ? "withheld" : (phone ?? "not given yet")}
       </p>
@@ -41,4 +47,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

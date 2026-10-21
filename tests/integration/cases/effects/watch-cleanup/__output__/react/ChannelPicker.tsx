@@ -23,6 +23,7 @@ export default function ChannelPicker({
   onLeave,
   className,
   style,
+  ...attributes
 }: ChannelPickerEvents & ChannelPickerAttributes) {
   const onLeaveRef = useRef(onLeave);
   useLayoutEffect(() => {
@@ -57,7 +58,12 @@ export default function ChannelPicker({
   }, [watchedName]);
 
   return (
-    <section className={cx("channel-picker", className)} aria-label="Channels" style={style}>
+    <section
+      className={cx("channel-picker", className)}
+      aria-label="Channels"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p role="status">Channel: #{channel}</p>
       <button
         type="button"
@@ -94,4 +100,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }
