@@ -9,6 +9,7 @@ pnpm test                 # everything, from the repo root (turbo); or, in this 
 pnpm --filter @unframework/integration test -- --project "browser:vue"   # a subset
 pnpm test:update          # rewrite the golden outputs and the shared expectations (never in CI)
 pnpm test:baselines       # rewrite the Linux screenshot baselines, in Docker
+pnpm test:baselines:download   # or copy in the ones CI generated for this branch (or a <run-id>)
 pnpm test:baselines:check # compare the browser projects with them, as CI does, in Docker
 pnpm test:canaries        # prove that every live layer catches the corruption it exists for
 pnpm test:canaries L8     # the canaries of one layer, or name canaries by id
@@ -212,7 +213,9 @@ merges them too, ADR-0044). The details are in `packages/testing/README.md` (Nor
 2. Run `pnpm test:update`. The compile project writes `__output__` and
    `__expected__/diagnostics.json`; the reference target (Vue, decision D10) writes the shared
    expectations, and every other target is compared with them in the same run.
-3. Run `pnpm test:baselines` for the Linux screenshots and geometry (Docker).
+3. Push, and once CI's `Baselines` job has run, `pnpm test:baselines:download` copies in the
+   Linux screenshots and geometry it generated. `pnpm test:baselines` makes the same files
+   locally, in Docker.
 4. Review every new file as carefully as code: the expectations are the contract.
 
 ## The layers
@@ -285,6 +288,11 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   and copies only regular files at a baseline's path into the repository; anything else there
   refuses the copy. Elsewhere, every target is compared with the Vue capture from the same run (live mode),
   and nothing visual is written.
+- **CI generates them too (ADR-0062).** On every pull request, the `Baselines` job runs the same
+  update in the same image on a real x64 runner, without Docker, and uploads the baselines that
+  changed or are new as the `baselines` artefact. It never commits, and it uploads nothing when
+  nothing changed. `pnpm test:baselines:download [<run-id>]` takes the artefact of a run (by
+  default the current branch's latest), through the same filter, and copies it into the cases.
 - **No stale expectations.** Every file under a case's `__expected__` and `__screenshots__`
   belongs to its diagnostics, an SSR scenario of its `case.json`, or an `expectParity` scenario
   of its spec (named with a string literal, so the harness can read it). The compile project

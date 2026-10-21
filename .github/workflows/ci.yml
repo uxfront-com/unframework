@@ -270,6 +270,44 @@ jobs:
           overwrite: true
           retention-days: 7
 
+  # The Linux screenshots and geometry, generated where CI compares them (ADR-0062): `pnpm
+  # test:baselines`' update run, in the same image on a real x64 runner, without Docker. The
+  # baselines that changed or are new go up as the `baselines` artefact, which
+  # `pnpm test:baselines:download` copies into the cases; with none, nothing is uploaded. CI
+  # never commits, and a baseline that differs fails no PR here: `Integration: browser` does.
+  # The job fails only where the update run fails, a DOM, ARIA, trace or server HTML expectation
+  # among them that reads otherwise on Linux. The script installs into its own copy of the
+  # checkout, as the container does, so the job sets up neither pnpm nor Node. The artefact's
+  # directory is under the checkout's .reports, which that copy leaves out.
+  baselines:
+    name: Baselines
+    if: ${{ github.event_name != 'push' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Generate the baselines
+        env:
+          UF_BASELINE_ARTEFACT: tests/integration/.reports/baselines
+        run: bash tests/integration/scripts/baselines.sh ci
+
+      - name: Upload the baselines
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: baselines
+          path: tests/integration/.reports/baselines
+          include-hidden-files: true
+          if-no-files-found: ignore
+          overwrite: true
+          retention-days: 7
+
   # Each live layer has a canary: a corruption that layer must catch. A job fails if any of its
   # canaries passes (plan §7.7). Each entry's `canaries` is what `pnpm test:canaries` takes: a
   # layer's canaries, or one canary where a layer has two that run the browser projects. A

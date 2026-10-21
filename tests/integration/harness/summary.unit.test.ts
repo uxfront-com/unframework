@@ -73,13 +73,20 @@ interface JobRun {
   uploads: boolean;
 }
 
+/** Each job's block in ci.yml, from its id's line. */
+function jobBlocks(): string[] {
+  const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", "ci.yml"), "utf8");
+  return workflow
+    .slice(workflow.indexOf("\njobs:\n"))
+    .split(/^ {2}(?=[a-z0-9-]+:\n)/m)
+    .slice(1);
+}
+
 /** The CI jobs that run harness projects, and the jobs the parity job waits for, from ci.yml. */
 function ciJobs(): { runs: JobRun[]; parityNeeds: string[] } {
-  const workflow = readFileSync(join(REPO_ROOT, ".github", "workflows", "ci.yml"), "utf8");
-  const jobs = workflow.slice(workflow.indexOf("\njobs:\n")).split(/^ {2}(?=[a-z0-9-]+:\n)/m);
   const runs: JobRun[] = [];
   let parityNeeds: string[] = [];
-  for (const block of jobs.slice(1)) {
+  for (const block of jobBlocks()) {
     const job = block.slice(0, block.indexOf(":"));
     if (job === "parity") {
       parityNeeds = /^ {4}needs: \[([^\]]*)\]/m.exec(block)![1]!.split(/,\s*/);
@@ -136,6 +143,14 @@ describe("CI's parity job", () => {
     expect(runs.flatMap((run) => run.projects).toSorted()).toEqual(ALL.toSorted());
     expect(runs.filter((run) => !run.uploads)).toEqual([]);
     expect(parityNeeds.toSorted()).toEqual([...new Set(runs.map((run) => run.job))].toSorted());
+  });
+
+  it("leaves out the Baselines job: an update run, which no summary judges (ADR-0062)", () => {
+    const baselines = jobBlocks().find((block) => block.startsWith("baselines:\n"));
+    if (!baselines) throw new Error("ci.yml has no baselines job.");
+    expect(baselines).toContain("run: bash tests/integration/scripts/baselines.sh ci\n");
+    expect(baselines).not.toMatch(/^ {10}name: parity-/m);
+    expect(parityNeeds).not.toContain("baselines");
   });
 
   it("is green with every job's matrix", () => {

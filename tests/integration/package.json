@@ -11,6 +11,7 @@
     "test:canaries": "node scripts/canaries.ts",
     "test:baselines": "bash scripts/baselines.sh update",
     "test:baselines:check": "bash scripts/baselines.sh check",
+    "test:baselines:download": "bash scripts/baselines.sh download",
     "summary": "node scripts/summary.ts",
     "check-types": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.cases.json"
   },

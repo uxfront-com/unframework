@@ -38,19 +38,20 @@ pnpm dev
 
 ## Scripts
 
-| Command               | Does                                                                               |
-| --------------------- | ---------------------------------------------------------------------------------- |
-| `pnpm build`          | Builds every workspace (`turbo run build`)                                         |
-| `pnpm dev`            | Runs every workspace's `dev` task                                                  |
-| `pnpm check-types`    | Type-checks every workspace with TypeScript 7 (tsgo)                               |
-| `pnpm test`           | Runs every workspace's tests, the integration corpus on all seven targets included |
-| `pnpm test:update`    | Rewrites the corpus's golden outputs and shared expectations (refused in CI)       |
-| `pnpm test:baselines` | Rewrites the Linux screenshot baselines in Docker                                  |
-| `pnpm test:canaries`  | Checks that every live test layer catches the corruption it exists for             |
-| `pnpm lint`           | Lints the repo with oxlint (type-aware)                                            |
-| `pnpm format`         | Formats the repo with oxfmt                                                        |
-| `pnpm new:package`    | Creates a package from the package template                                        |
-| `pnpm changeset`      | Records a change to a published package                                            |
+| Command                        | Does                                                                               |
+| ------------------------------ | ---------------------------------------------------------------------------------- |
+| `pnpm build`                   | Builds every workspace (`turbo run build`)                                         |
+| `pnpm dev`                     | Runs every workspace's `dev` task                                                  |
+| `pnpm check-types`             | Type-checks every workspace with TypeScript 7 (tsgo)                               |
+| `pnpm test`                    | Runs every workspace's tests, the integration corpus on all seven targets included |
+| `pnpm test:update`             | Rewrites the corpus's golden outputs and shared expectations (refused in CI)       |
+| `pnpm test:baselines`          | Rewrites the Linux screenshot baselines in Docker                                  |
+| `pnpm test:baselines:download` | Copies in the Linux screenshot baselines that CI generated for the branch          |
+| `pnpm test:canaries`           | Checks that every live test layer catches the corruption it exists for             |
+| `pnpm lint`                    | Lints the repo with oxlint (type-aware)                                            |
+| `pnpm format`                  | Formats the repo with oxfmt                                                        |
+| `pnpm new:package`             | Creates a package from the package template                                        |
+| `pnpm changeset`               | Records a change to a published package                                            |
 
 ## Verifying a change
 
@@ -61,8 +62,9 @@ code (plan P1):
 2. `pnpm test`. When a change is meant to change the output, run `pnpm test:update` and review
    every changed file under `tests/integration/cases`: the golden outputs and expectations are
    reviewed like code.
-3. If the change touches what the browser renders, `pnpm test:baselines` (Docker) rewrites the
-   Linux screenshots. On macOS, the browser tests compare the targets with each other live, so a
+3. If the change touches what the browser renders, push it, and once CI's `Baselines` job has
+   run, `pnpm test:baselines:download` copies in the Linux screenshots it generated.
+   `pnpm test:baselines` (Docker) rewrites them locally. On macOS, the browser tests compare the targets with each other live, so a
    visual difference between targets fails locally without a baseline.
 4. If the change touches the harness, `pnpm test:canaries`.
 
