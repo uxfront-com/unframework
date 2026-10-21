@@ -727,7 +727,7 @@ export function canaryPlugins(
   const canary = findCanary(id);
   if (!canary.plugin) return [];
   if (target !== undefined && !corrupts(canary, target)) return [];
-  if (!canary.followersOnly) return [canary.plugin()];
+  if (!canary.followersOnly) return [keepingSheets(canary.plugin())];
   if (target === undefined) {
     throw new Error(
       `The ${id} canary spares the reference target, so it needs the project's target.`,
@@ -735,7 +735,28 @@ export function canaryPlugins(
   }
   if (target === REFERENCE) return [];
   const spared = Object.keys(references).filter((caseId) => references[caseId] === target);
-  return [sparing(canary.plugin(), spared)];
+  return [sparing(keepingSheets(canary.plugin()), spared)];
+}
+
+/**
+ * A plugin whose output hook sees a component's own files only. A styled component's files end
+ * with its scoped sheet, `<source>.css` (ADR-0063), which has no template or script to corrupt:
+ * a hook that threw on it would become a UF8001, and the compiler would emit the module
+ * uncorrupted. The sheet follows the hook's files as `compile()` emitted it.
+ */
+function keepingSheets(plugin: CompilerPlugin): CompilerPlugin {
+  const { output } = plugin;
+  if (!output) return plugin;
+  return {
+    ...plugin,
+    output: (files, context) => {
+      const sheets = files.filter(({ path }) => path.endsWith(".css"));
+      if (!sheets.length) return output(files, context);
+      const own = files.filter(({ path }) => !path.endsWith(".css"));
+      const result = output(own, context);
+      return result ? [...result, ...sheets] : undefined;
+    },
+  };
 }
 
 /** A plugin that leaves the modules of some cases, by id, as they are. */

@@ -45,6 +45,7 @@ import { listCases } from "./cases.ts";
 import { checkFixes, formattingProblems, nondeterminism } from "./compile-checks.ts";
 import { CASES_DIR, REPO_ROOT } from "./paths.ts";
 import { LIVE_LAYERS } from "./quarantine.ts";
+import { caseResolver } from "./sources.ts";
 import { REFERENCE } from "./targets.ts";
 
 const filename = "fixture/task-list/TaskList.uf.tsx";
@@ -538,6 +539,41 @@ describe("canaries", () => {
     const corrupted = await compileWith("L2-output-edited");
     expect(corrupted.ir).toEqual(clean.ir);
     expect(corrupted.outputs).not.toEqual(clean.outputs);
+  });
+
+  // A styled component's files end with its scoped sheet (ADR-0063), which has no template or
+  // script to corrupt: a hook that threw on it would become a UF8001, and the compiler would
+  // emit the module uncorrupted.
+  it("corrupt a styled component's own files and leave its emitted sheet as it was", async () => {
+    const dir = join(CASES_DIR, "styles", "scoped-basics");
+    const text = readFileSync(join(dir, "Badge.uf.tsx"), "utf8");
+    const compileStyled = (id: string | null, target: TargetName) =>
+      compile(canarySource(id, text), {
+        filename: "styles/scoped-basics/Badge.uf.tsx",
+        targets: [target],
+        resolve: caseResolver({ dir }, CASES_DIR),
+        plugins: canaryPlugins(id, target),
+        format: canaryFormats(id),
+      });
+    const hooked = CANARIES.filter((canary) => canary.plugin?.().output);
+    expect(hooked.length).toBeGreaterThan(0);
+    for (const canary of hooked) {
+      for (const target of TARGET_NAMES.filter(
+        (name) => corrupts(canary, name) && !(canary.followersOnly && name === REFERENCE),
+      )) {
+        const where = `${canary.id} on ${target}`;
+        const clean = await compileStyled(null, target);
+        const corrupted = await compileStyled(canary.id, target);
+        expect(
+          corrupted.diagnostics.map(({ code }) => code),
+          where,
+        ).not.toContain("UF8001");
+        const sheet = (result: CompileResult) =>
+          result.outputs[target]?.find(({ path }) => path === "Badge.uf.tsx.css");
+        expect(sheet(corrupted), where).toEqual(sheet(clean));
+        expect(sheet(clean), where).toBeDefined();
+      }
+    }
   });
 
   it("needs the project's target for a canary that spares the reference", () => {

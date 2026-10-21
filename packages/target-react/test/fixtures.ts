@@ -116,12 +116,16 @@ export function lower(source: string, file = "Fixture.uf.tsx"): UfModule {
   return module;
 }
 
-/** Every committed golden output of a target, read from the integration corpus. */
+/**
+ * Every committed golden output of a target, read from the integration corpus, but the scoped
+ * sheets (`<source>.css`), which no framework compiler or checker reads: the compile project
+ * parses them instead (ADR-0063).
+ */
 export function goldens(targetName: string): ToolchainFile[] {
   const pattern = new RegExp(`(?:^|/)__output__/${targetName}/[^/]+$`);
   return readdirSync(cases, { recursive: true })
     .map((entry) => String(entry).split("\\").join("/"))
-    .filter((entry) => pattern.test(entry))
+    .filter((entry) => pattern.test(entry) && !entry.endsWith(".css"))
     .toSorted()
     .map((entry) => {
       const path = join(cases, entry);

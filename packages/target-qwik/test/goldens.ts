@@ -24,10 +24,13 @@ function expectsErrors(golden: string): boolean {
   );
 }
 
-/** The absolute paths of the goldens matching `pattern` (from the repository's root), sorted. */
+/**
+ * The absolute paths of the goldens matching `pattern` (from the repository's root), sorted, but
+ * the scoped sheets (`<source>.css`), which the compile project parses instead (ADR-0063).
+ */
 export function goldens(pattern: string): string[] {
   return globSync(pattern, { cwd: repo })
     .toSorted()
     .map((file) => join(repo, file))
-    .filter((file) => !expectsErrors(file));
+    .filter((file) => !file.endsWith(".css") && !expectsErrors(file));
 }
