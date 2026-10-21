@@ -3,8 +3,8 @@ import { transform } from "lightningcss";
 import type { Span } from "./parse.ts";
 
 /**
- * A parsed stylesheet. Scoping (M4) rewrites the selectors through lightningcss's own AST in
- * the target kit, so the parser reports only whether the sheet parses.
+ * A parsed stylesheet. The codegen scoper (`scopeStylesheet`, ADR-0063) rewrites the selectors, so
+ * the parser reports only what lightningcss cannot read: a syntax error, or an unknown at-rule.
  */
 export interface ParsedStylesheet {
   file: string;
@@ -14,11 +14,25 @@ export interface ParsedStylesheet {
 
 const encoder = new TextEncoder();
 
-/** Parses a stylesheet with lightningcss. Never throws: a syntax error is returned in `errors`. */
+/**
+ * Parses a stylesheet with lightningcss. Never throws: a syntax error is returned in `errors`, and
+ * so is an at-rule lightningcss does not know, whose content it cannot read: rules inside one would
+ * reach the page unread (P2).
+ */
 export function parseStylesheet(file: string, source: string): ParsedStylesheet {
   try {
-    transform({ filename: file, code: encoder.encode(source), errorRecovery: false });
-    return { file, source, errors: [] };
+    const { warnings } = transform({
+      filename: file,
+      code: encoder.encode(source),
+      errorRecovery: false,
+    });
+    const errors = warnings
+      .filter((warning) => warning.type === "AtRuleInvalid")
+      .map(({ message, loc }) => {
+        const offset = offsetOf(source, loc.line, loc.column);
+        return { message, span: { start: offset, end: offset } };
+      });
+    return { file, source, errors };
   } catch (error) {
     const { message, loc } = error as { message: string; loc?: { line: number; column: number } };
     const offset = loc ? offsetOf(source, loc.line, loc.column) : 0;

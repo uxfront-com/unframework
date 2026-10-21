@@ -1,0 +1,8 @@
+error[UF5004]: `:root` matches an element of the page, never one of this component, so it cannot be scoped.
+ --> diagnostics/unscopable-selector/Page.css:1:1
+  |
+1 | :root {
+  | ^^^^^
+  |
+  = help: Wrap the selector in `:global()`, or move the rule to a global stylesheet.
+  = see: https://unframework.dev/diagnostics/UF5004

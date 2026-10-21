@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF5004",
+    "severity": "error",
+    "message": "`:root` matches an element of the page, never one of this component, so it cannot be scoped.",
+    "file": "diagnostics/unscopable-selector/Page.css",
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 1,
+      "column": 6,
+      "offset": 5
+    },
+    "help": "Wrap the selector in `:global()`, or move the rule to a global stylesheet."
+  }
+]

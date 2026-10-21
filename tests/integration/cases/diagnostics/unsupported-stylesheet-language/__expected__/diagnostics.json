@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF5003",
+    "severity": "error",
+    "message": "\"./Panel.scss\" is written in a preprocessor's language, and the compiler scopes plain CSS only.",
+    "file": "diagnostics/unsupported-stylesheet-language/Panel.uf.tsx",
+    "start": {
+      "line": 2,
+      "column": 8,
+      "offset": 91
+    },
+    "end": {
+      "line": 2,
+      "column": 22,
+      "offset": 105
+    },
+    "help": "Compile the sheet to a `.css` file, and import that."
+  }
+]

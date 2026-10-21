@@ -84,6 +84,7 @@ export function pluginIrProblems(
       check(key, path, NOT_ANALYSED.code);
     }
     if (component.emits) check(emitsKey(component.emits), `${base}/emits`, NOT_ANALYSED.emits);
+    if (component.styles) check(stylesKey(component), `${base}/styles`, NOT_ANALYSED.styles);
   }
   for (const [index, declaration] of result.types.entries()) {
     check(declarationKey(declaration), `/types/${index}`, NOT_ANALYSED.declaration);
@@ -100,6 +101,8 @@ const NOT_ANALYSED = {
   type: "must be a type annotation the analyser produced, with its span and code",
   emits: "must be the events the analyser produced, as it produced them",
   declaration: "must be a type declaration the analyser produced, as it produced it",
+  styles:
+    "must be the stylesheets the analyser produced, with their scope id, as it produced them: the compiler scopes them (ADR-0063)",
 } as const;
 
 /**
@@ -120,6 +123,7 @@ function analysedCode(module: UfModule): ReadonlySet<string> {
     for (const located of functions) keys.add(functionKey(located));
     for (const { key } of codeKeys(component, functions)) keys.add(key);
     if (component.emits) keys.add(emitsKey(component.emits));
+    if (component.styles) keys.add(stylesKey(component));
   }
   return keys;
 }
@@ -173,6 +177,15 @@ function emitsKey({ binding, type, events, span }: Emits): string {
       spanValue(event.span),
     ]),
     spanValue(span),
+  ]);
+}
+
+/** A component's sheets and their scope id, which a plugin may drop together, or keep. */
+function stylesKey({ styles, scopeId }: UfComponent): string {
+  return JSON.stringify([
+    "Styles",
+    scopeId ?? null,
+    (styles ?? []).map(({ specifier, source, span }) => [specifier, source, spanValue(span)]),
   ]);
 }
 

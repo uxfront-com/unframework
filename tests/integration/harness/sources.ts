@@ -2,6 +2,7 @@
 // every target, and the case's artefacts join the results: one `diagnostics.json` and one
 // `diagnostics.txt` for every source, and one `__output__/<target>/` tree that every source's
 // files share. Plain functions, so `sources.unit.test.ts` proves them on a fixture of its own.
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 
@@ -20,9 +21,20 @@ export interface SourceCompile {
   result: Pick<CompileResult, "diagnostics" | "outputs">;
 }
 
-/** Every source's text by its file name, as its diagnostics name it. */
+/**
+ * Every source's text by its file name, as its diagnostics name it, and the text of each other
+ * file a diagnostic points into: a stylesheet beside the sources (UF5002, UF5004, ADR-0063).
+ */
 export function sourceTexts(compiles: readonly SourceCompile[]): Map<string, string> {
-  return new Map(compiles.map(({ source, text }) => [source.filename, text]));
+  const texts = new Map(compiles.map(({ source, text }) => [source.filename, text]));
+  for (const { source, result } of compiles) {
+    // The cases directory: the source's path, without its file name relative to it.
+    const root = source.source.slice(0, source.source.length - source.filename.length);
+    for (const { file } of result.diagnostics) {
+      if (!texts.has(file)) texts.set(file, readFileSync(join(root, file), "utf8"));
+    }
+  }
+  return texts;
 }
 
 /** Every source's diagnostics in one list, sorted by file, then by span. */

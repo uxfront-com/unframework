@@ -6,14 +6,17 @@ import {
   createBranch,
   createClassAttribute,
   createComponent,
+  createComponentNode,
   createDynamicClass,
   createElement,
   createExpression,
   createFor,
   createFragment,
   createIf,
+  createImportedName,
   createInterpolation,
   createModule,
+  createModuleImport,
   createProp,
   createPropsParameter,
   createSpreadAttribute,
@@ -42,6 +45,7 @@ import {
   createSlotReference,
   createStaticClass,
   createStaticStyle,
+  createStyleSheet,
   createWatchEffectItem,
   createWatchItem,
 } from "@unframework/ir";
@@ -50,6 +54,7 @@ import type {
   ElementNode,
   IfNode,
   ModelAttribute,
+  ModuleApi,
   ProvideItem,
   SlotOutletNode,
   UfModule,
@@ -342,6 +347,8 @@ describe("requiredCapabilities over composition", () => {
       ["component", { start: field, end: find("</Field>").end }],
       ["interactivity", find("v-model:value={text.value}")],
       ["component-event", find("onClear={() => (open.value = false)}")],
+      // The fixture's `Field` is styled, and its sheets use `:slotted()` (ADR-0063).
+      ["slotted-styles", find("{label}", 0, find(">{label}").start)],
       ["default-slot", find("{label}", 0, find(">{label}").start)],
       ["two-way-binding", find("v-model={text.value}", 0, find("<input").start)],
       ["slot-fallback", find("{slots.default?.() ?? label}")],
@@ -484,5 +491,154 @@ describe("requiredCapabilities over a component's attributes, slots and `<compon
     const module = createModule("Item.uf.tsx", [item]);
     expect(requiredCapabilities(module).get("contextual-root")).toEqual(at);
     expect(compositionUse(module, item)).toBeUndefined();
+  });
+});
+
+describe("requiredCapabilities over styles (ADR-0063)", () => {
+  const sheet = createStyleSheet("./Card.css", ".card { color: red }", at(1));
+  const styles = { sheets: [sheet], scopeId: "0123abcd" };
+  /**
+   * A module importing `Child`, as the default or by name, from a module whose sheets do or do not
+   * use `:slotted()`.
+   */
+  const parent = (
+    render: ElementNode,
+    options: { styled: boolean; slotted?: boolean; named?: boolean },
+  ) => {
+    const api: ModuleApi = {
+      file: "./Child.uf.tsx",
+      components: [
+        {
+          name: "Child",
+          export: options.named ? "named" : "default",
+          props: [],
+          events: [],
+          models: [],
+          slots: [{ name: "default", optional: true }],
+          exposes: [],
+          inheritAttrs: true,
+          root: "element",
+          rootTag: "div",
+          ...(options.slotted === undefined
+            ? {}
+            : { styles: { scopeId: "89abcdef", slotted: options.slotted } }),
+        },
+      ],
+      keys: [],
+    };
+    const card = createComponent(
+      "Card",
+      render,
+      at(0),
+      [],
+      undefined,
+      [],
+      [],
+      [],
+      undefined,
+      options.styled ? { styles } : {},
+    );
+    const child = createModuleImport(
+      "./Child.uf.tsx",
+      "Child.uf.tsx",
+      api,
+      [createImportedName("Component", options.named ? "Child" : "default", "Child", at(2))],
+      at(2),
+    );
+    return createModule("Card.uf.tsx", [card], [], [], [child]);
+  };
+  const fill = createSlotFill("default", [createText("Hi", at(31))], at(30));
+  const withChild = () =>
+    createElement("div", [], [createComponentNode("Child", [], [fill], at(20))], at(10));
+
+  it("derives scoped-styles at a component's first stylesheet", () => {
+    const module = parent(createElement("div", [], [], at(10)), { styled: true });
+    const required = requiredCapabilities(module);
+    expect(required.get("scoped-styles")).toEqual(sheet.span);
+    expect(required.has("child-root-scope")).toBe(false);
+  });
+
+  it("derives child-root-scope at any child a styled component renders", () => {
+    const required = requiredCapabilities(parent(withChild(), { styled: true }));
+    expect(required.get("child-root-scope")).toEqual(at(20));
+    expect(required.has("slotted-styles")).toBe(false);
+    expect(
+      requiredCapabilities(parent(withChild(), { styled: false })).has("child-root-scope"),
+    ).toBe(false);
+  });
+
+  it("derives slotted-styles at what fills a child whose sheets use :slotted()", () => {
+    const required = requiredCapabilities(parent(withChild(), { styled: false, slotted: true }));
+    expect(required.get("slotted-styles")).toEqual(at(30));
+    expect(required.has("scoped-styles")).toBe(false);
+    expect(required.has("child-root-scope")).toBe(false);
+    const plain = requiredCapabilities(parent(withChild(), { styled: true, slotted: false }));
+    expect(plain.has("slotted-styles")).toBe(false);
+  });
+
+  it("reads the API of a child imported by name", () => {
+    const named = { styled: false, slotted: true, named: true };
+    expect(requiredCapabilities(parent(withChild(), named)).get("slotted-styles")).toEqual(at(30));
+  });
+
+  it("derives both at a `<component is>` of components", () => {
+    const dynamic = createElement(
+      "div",
+      [],
+      [
+        createDynamicNode(
+          createExpression("x", at(40)),
+          [{ kind: "Component", component: "Child" }],
+          [],
+          [],
+          at(20),
+          [fill],
+        ),
+      ],
+      at(10),
+    );
+    const required = requiredCapabilities(parent(dynamic, { styled: true, slotted: true }));
+    expect(required.get("child-root-scope")).toEqual(at(20));
+    expect(required.get("slotted-styles")).toEqual(at(30));
+    const tags = createElement(
+      "div",
+      [],
+      [
+        createDynamicNode(
+          createExpression("x", at(40)),
+          [{ kind: "Tag", tag: "a" }],
+          [],
+          [],
+          at(20),
+        ),
+      ],
+      at(10),
+    );
+    expect(requiredCapabilities(parent(tags, { styled: true })).has("child-root-scope")).toBe(
+      false,
+    );
+  });
+
+  it("reads the sheets of a component that renders itself", () => {
+    const self = (source: string) => {
+      const card = createComponent(
+        "Card",
+        createElement("div", [], [createComponentNode("Card", [], [fill], at(20))], at(10)),
+        at(0),
+        [],
+        undefined,
+        [],
+        [],
+        [],
+        undefined,
+        {
+          styles: { sheets: [createStyleSheet("./Card.css", source, at(1))], scopeId: "0123abcd" },
+        },
+      );
+      return requiredCapabilities(createModule("Card.uf.tsx", [card]));
+    };
+    expect(self(":slotted(.label) { color: red }").get("slotted-styles")).toEqual(at(30));
+    expect(self(".label { color: red }").has("slotted-styles")).toBe(false);
+    expect(self(".label { color: red }").get("child-root-scope")).toEqual(at(20));
   });
 });

@@ -10,7 +10,8 @@ import type { ModuleApi } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
 import { describe, expect, it } from "vitest";
 
-import { analyze, componentImports } from "../src/index.ts";
+import { analyze, componentImports, stylesheetImports } from "../src/index.ts";
+import type { StylesheetSource } from "../src/index.ts";
 
 const CASES = new URL("../../../tests/integration/cases/", import.meta.url).pathname;
 
@@ -34,6 +35,12 @@ const NAMED_OTHERWISE: Readonly<Record<string, string>> = {
   "nullable-bound-value": "UF1002",
 };
 
+/**
+ * The diagnostics cases whose code `compile()` reports after the analyser, which finds nothing:
+ * the codegen scoper's (ADR-0063).
+ */
+const AFTER_ANALYSIS: ReadonlySet<string> = new Set(["unscopable-selector"]);
+
 /** The warnings the corpus's feature cases hold on purpose. */
 const WARNINGS: Readonly<Record<string, readonly string[]>> = {
   "jsx/escaping/TemplateTip.uf.tsx": ["UF3011"],
@@ -44,7 +51,8 @@ const codesByName = new Map([...catalogue.values()].map((entry) => [entry.name, 
 
 /**
  * A case source analysed with the APIs of the files it imports in its case, as the compiler's
- * file resolver gives them (ADR-0053).
+ * file resolver gives them (ADR-0053), and the stylesheets beside it (ADR-0063), whose use of
+ * `:slotted()` only the codegen scoper reads: no case here needs it.
  */
 function analyzeCase(file: string) {
   const parsed = parseModule(file, readFileSync(join(CASES, file), "utf8"));
@@ -62,7 +70,17 @@ function analyzeCase(file: string) {
     const api = analyze(parseModule(child, source)).api;
     imports.set(specifier, api && { ...api, file: specifier.slice(2) });
   }
-  return analyze(parsed, { imports });
+  const stylesheets = new Map<string, StylesheetSource | undefined>();
+  for (const specifier of stylesheetImports(parsed)) {
+    const sheet = join(directory, specifier);
+    try {
+      const source = readFileSync(join(CASES, sheet), "utf8");
+      stylesheets.set(specifier, { file: sheet, source, slotted: false });
+    } catch {
+      stylesheets.set(specifier, undefined);
+    }
+  }
+  return analyze(parsed, { imports, stylesheets });
 }
 
 describe("the corpus", () => {
@@ -75,6 +93,10 @@ describe("the corpus", () => {
       const code = NAMED_OTHERWISE[name] ?? codesByName.get(name);
       expect(code, `no code is named ${name}`).toBeDefined();
       const { diagnostics } = analyzeCase(file);
+      if (AFTER_ANALYSIS.has(name)) {
+        expect(diagnostics).toEqual([]);
+        return;
+      }
       expect(diagnostics.length).toBeGreaterThan(0);
       expect(new Set(diagnostics.map((diagnostic) => diagnostic.code))).toEqual(new Set([code]));
     },

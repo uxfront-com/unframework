@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-10-21
 - **Plan:** §4.4, §5.3, §5.8, §6, §7.2, §7.5, §9 M4, P2, P5, P6, P7, P8; C4 (ADR-0004), D5
-  (ADR-0009); amends ADR-0004, ADR-0009, ADR-0021 and ADR-0025
+  (ADR-0009); amends ADR-0004, ADR-0009, ADR-0021, ADR-0025 and ADR-0053
 
 ## Context
 
@@ -58,7 +58,8 @@ layers, and each layer needs the same contract before it starts:
   as Vue's scope id does).
 
 **The rewrites**, which match `@vue/compiler-sfc`'s `compileStyle({ scoped: true })` but for the
-attribute's name:
+attribute's name, and for the forms whose rewrite by Vue doesn't parse or names keyframes that no
+longer exist:
 
 | Source                                        | Scoped                                                                                     |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -67,23 +68,40 @@ attribute's name:
 | `:global(.b)`                                 | `.b`                                                                                       |
 | `:slotted(.b)`                                | `.b[data-uf-x-s]`                                                                          |
 | `.a::before`                                  | `.a[data-uf-x]::before`                                                                    |
+| `* + *`, `* > .a`                             | `* + *[data-uf-x]`, `* > .a[data-uf-x]`: Vue drops the `*`, and its selector doesn't parse |
 | `@media`, `@supports`, `@layer`, `@container` | kept, and the rules inside scoped                                                          |
 | `@keyframes spin`                             | `@keyframes spin-x`, with `animation` and `animation-name` in the sheet rewritten to match |
+| `@keyframes "spin"`                           | `@keyframes "spin-x"`, which `animation: spin` names too: Vue writes `"spin"-x`            |
 | `--gap: 4px`                                  | unchanged                                                                                  |
 
-**Rejected selectors (UF5004):** `:root`, `html` and `body` outside `:global()`, `:host`, a misused
-or empty `:deep()`, `:slotted()` or `:global()`, and a selector that tells an empty `class` or
-`style` from none (ADR-0044). Vue scopes `:root` and `:host` instead, and the scoped selector then
+**Rejected selectors (UF5004):** `:root`, `html` and `body` outside `:global()`, `:host`, a
+namespace prefix (`svg|`, `*|`: Vue drops the prefix of `svg|*` and `*|*`, so the compiler scopes
+no prefixed selector rather than some), a misused or empty `:deep()`, `:slotted()` or `:global()`
+(`:slotted()` in a rule with nested rules or under `:deep()`, where Vue drops `-s` or writes `.a*`,
+and a selector beside a `:deep()` one in a rule with nested rules, which Vue leaves unscoped,
+included), an empty `:is()` or `:where()`, and a selector that tells an empty `class` or `style`
+from none (ADR-0044). Vue scopes `:root` and `:host` instead, and the scoped selector then
 matches nothing.
 
 **Where the work lives:**
 
-- **The scoper** is in `@unframework/codegen`. It runs lightningcss's `transform` with a selector
-  visitor, prints a deterministic, non-minified sheet, and returns its UF5004 diagnostics.
-  `@unframework/parser` only reports a sheet's parse errors (UF5002).
-- `compile()` runs the scoper once per sheet, after analysis and before the targets, and reports
-  what it returns at the selector's span. A scoper error withholds the module from every target, as
-  an analyser error does. The analyser can't run it: codegen depends on the analyser in its tests.
+- **The scoper** is in `@unframework/codegen`: Vue's scoped plugin, ported onto the parsers Vue
+  uses, postcss and postcss-selector-parser, both pinned exactly (P8). They keep the sheet's own
+  text, so only the selectors and the keyframe names change, and every declaration, custom
+  properties included, reaches the targets as written. It returns its UF5004 diagnostics, and
+  UF5002 for a sheet postcss cannot read. lightningcss only checks that the sheet parses:
+  `@unframework/parser` reports its parse errors and the at-rules it does not know (UF5002), whose
+  rules would otherwise reach the page unscoped. This amends plan §4.4's "lightningcss parses and
+  rewrites the selectors": lightningcss's printer drops a declaration a later one overrides and
+  rewrites values, and it gives no spans to splice into the author's text.
+- **The resolver reads the sheets.** `compile()` asks the resolver's `stylesheet` for each sheet
+  before analysis, and the codegen scoper whether it uses `:slotted()`; a sheet it cannot read is
+  UF5005. UF5002 and UF5004 point into the sheet, in its file as the resolver names it.
+- `compile()` runs the scoper once per sheet, after analysis and the plugins' `ir` hooks and before
+  the targets, so it scopes the module the targets emit from, and reports what it returns at the
+  selector's span. A hook may keep or drop the analyser's sheets with their scope id, never change
+  them. A scoper error withholds the module from every target, as an analyser error does. The
+  analyser can't run it: codegen depends on the analyser in its tests.
 - **The output file.** Each styled component gets a second `OutputFile` on every target, named
   after its source plus `.css` (`Button.uf.tsx.css`, ADR-0021's id for TSX targets). Every output
   refers to it as `./<source>.css`, so it never collides with the author's `./Button.css`, which is
@@ -121,9 +139,8 @@ lane that can't reach it declares the cell `emulated` or `unsupported`, with the
 and adds a section here.
 
 **The codes** are UF5001 `shared-stylesheet`, UF5002 `invalid-stylesheet`, UF5003
-`unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`, which are UF1002
-until it lands), UF5004 `unscopable-selector`, UF5005 `stylesheet-not-found` and UF5006
-`unsupported-styleframe-import`. All are errors.
+`unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`), UF5004
+`unscopable-selector`, UF5005 `stylesheet-not-found` and UF5006 `unsupported-styleframe-import`. All are errors.
 
 A `Button` whose `Button.css` holds `.label { color: red }` and a line feed has the id
 `70af206b`:
@@ -157,8 +174,8 @@ Vue      <style src="./Button.uf.tsx.css"></style>
   twice.
 - Every rendered element carries one more attribute, and each scoped selector gains its
   specificity, as in Vue.
-- Until the analyser lowers them, the IR admits shapes no target emits yet: a plugin's IR with a
-  sheet compiles to outputs without it.
+- Until the targets emit them, a styled module compiles to outputs without its sheet and its
+  attributes.
 
 **Open:**
 
@@ -185,9 +202,19 @@ Vue      <style src="./Button.uf.tsx.css"></style>
   own.
 - **ADR-0025.** L3 never sees an emitted sheet: the compile project's lightningcss check covers
   every target's.
+- **ADR-0053.** The file resolver reads a child's stylesheets too, for the scope id and the
+  `:slotted()` use its API carries, and caches the child's analysis by their text as well. A
+  child's own `.uf.tsx` imports are still never resolved.
 
 ## Alternatives considered
 
+- **lightningcss's `transform` and printer**, as plan §4.4 first said. It prints its own CSS: it
+  drops `height: 100vh` before `height: 100dvh`, rewrites `#ff0000` and custom properties, and its
+  visitor cannot read some values back (`calc(infinity * 1px)`). A splice into the author's text
+  needs a reader of its own, which lightningcss's tree, without spans, cannot give.
+- **A hand-written CSS reader** that splices the rewrites into the text. Each review round found
+  new edge cases of CSS Syntax in it (escapes, `url()`, line continuations), each silent. postcss
+  and postcss-selector-parser have handled them for Vue for years.
 - **A hash of the file's path, as Vue does.** It changes with the checkout's place and the
   relative path the caller passes, which P8 rules out, and every target would need the same path.
 - **A longer id.** Sixteen hex digits make a collision negligible, but every element carries the
