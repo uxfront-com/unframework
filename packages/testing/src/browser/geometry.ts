@@ -6,13 +6,19 @@
 // siblings and `#text[i]` for non-blank text nodes. The capture merges each run of adjacent text
 // nodes into one first (./text-runs.ts), so a target's text-node split never shifts the keys.
 // `display: contents` elements (Angular hosts under D6) are transparent: their children are keyed
-// as children of the parent, so wrapper differences between targets do not shift paths.
+// as children of the parent, so wrapper differences between targets do not shift paths. An
+// element's `::before` and `::after` are keyed `<path>::before` and `<path>::after` where they
+// generate content (ADR-0061): the DOM gives them no box, so they hold computed styles only.
 import type { GeometrySnapshot, GeometryBox, GeometryNode } from "../visual-types.ts";
 
 /** The computed properties that explain how a box looks. Width and height come from the box. */
 export const GEOMETRY_STYLE_PROPERTIES: readonly string[] = [
   "display",
   "position",
+  "top",
+  "right",
+  "bottom",
+  "left",
   "float",
   "box-sizing",
   "margin-top",
@@ -54,6 +60,7 @@ export const GEOMETRY_STYLE_PROPERTIES: readonly string[] = [
   "text-align",
   "text-decoration-line",
   "text-transform",
+  "text-shadow",
   "white-space",
   "vertical-align",
   "overflow-x",
@@ -64,6 +71,7 @@ export const GEOMETRY_STYLE_PROPERTIES: readonly string[] = [
   "outline-style",
   "outline-width",
   "outline-color",
+  "outline-offset",
   "list-style-type",
   "flex-direction",
   "flex-wrap",
@@ -74,6 +82,18 @@ export const GEOMETRY_STYLE_PROPERTIES: readonly string[] = [
   "grid-template-columns",
   "grid-template-rows",
 ];
+
+/** The pseudo-elements captured where their computed `content` is not `none`. */
+const PSEUDO_ELEMENTS = ["::before", "::after"] as const;
+
+/** The captured properties of a computed style. */
+function styleOf(computed: CSSStyleDeclaration): Record<string, string> {
+  const style: Record<string, string> = {};
+  for (const property of GEOMETRY_STYLE_PROPERTIES) {
+    style[property] = computed.getPropertyValue(property);
+  }
+  return style;
+}
 
 const toBox = (rect: DOMRect, origin: DOMRect): GeometryBox => [
   rect.x - origin.x,
@@ -102,12 +122,17 @@ export function captureGeometry(container: Element): GeometrySnapshot {
         nodes[next("#text")] = { box: [...range.getClientRects()].map((r) => toBox(r, origin)) };
       } else if (child instanceof Element) {
         const path = next(child.localName);
-        const computed = getComputedStyle(child);
-        const style: Record<string, string> = {};
-        for (const property of GEOMETRY_STYLE_PROPERTIES) {
-          style[property] = computed.getPropertyValue(property);
-        }
+        // The style before the box: reading it updates the style of content Chromium skips (a
+        // closed `<details>`'s), which the box then measures, as the committed geometry does.
+        const style = styleOf(getComputedStyle(child));
         nodes[path] = { box: toBox(child.getBoundingClientRect(), origin), style };
+        for (const pseudo of PSEUDO_ELEMENTS) {
+          const computed = getComputedStyle(child, pseudo);
+          if (computed.content === "none") continue;
+          nodes[`${path}${pseudo}`] = {
+            style: { ...styleOf(computed), content: computed.content },
+          };
+        }
         // A `<textarea>`'s text is its default value, which it shows as its value, never laid out:
         // the box holds what it shows, and L7 compares the value (`uf:value`, ADR-0058's 4d).
         if (child.localName !== "textarea") visit(child, `${path}/`);

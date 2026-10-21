@@ -5,8 +5,12 @@
 // while a static target writes `value` and `checked` attributes, and a user's typing changes
 // only the property. The serialiser therefore writes that state as pseudo-attributes.
 //
+// The normaliser lays the text out as Chromium does, so the walk that checks the parsed tree
+// against the live one also records each element's computed layout for it (`ComputedLayout`).
+//
 // Nodes are told apart by `nodeType`, `namespaceURI` and `localName`, not `instanceof`, so a
 // subtree from another frame serialises the same way.
+import { recordComputedLayout } from "../normalize/display.ts";
 import { checkOptions, normalizeTree } from "../normalize/pipeline.ts";
 import type { NormalizeOptions } from "../normalize/pipeline.ts";
 import {
@@ -269,8 +273,27 @@ function compareTrees(live: Node, parsed: TreeParent, path: string): string | un
       compareElements(element, rebuilt.element, here) ??
       compareTrees(holderOf(element), rebuilt.element, here);
     if (mismatch) return mismatch;
+    recordLayout(element, rebuilt.element);
   }
   return undefined;
+}
+
+/**
+ * Records the computed values the normaliser reads in place of the inline style (see
+ * `ComputedLayout`) under the element's rebuild. An element in a `<template>`'s inert content
+ * has no window and no computed style: it keeps the static reading.
+ */
+function recordLayout(element: Element, rebuilt: TreeElement): void {
+  const view = element.ownerDocument.defaultView;
+  if (!view || !element.isConnected) return;
+  const computed = view.getComputedStyle(element);
+  recordComputedLayout(rebuilt, {
+    display: computed.display,
+    position: computed.position,
+    float: computed.float,
+    unicodeBidi: computed.unicodeBidi,
+    whiteSpaceCollapse: computed.whiteSpaceCollapse,
+  });
 }
 
 /** Describes the namespace, name and attributes in which a live element and its rebuild differ. */

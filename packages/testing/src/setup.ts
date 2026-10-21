@@ -1,5 +1,6 @@
 // The setup file every browser project loads first (plan §7.3):
-// - determinism: the bundled font, the motion and caret reset, and the startup assertions;
+// - determinism: the case's colour scheme, the bundled font, the motion and caret reset, and the
+//   startup assertions;
 // - console capture from the moment this file loads, recorded as L13 for every test of a case,
 //   then failed on; a message logged outside a test is judged with the next test, and one
 //   logged after the last test is recorded on the file and fails it;
@@ -38,6 +39,7 @@ import { closeTraces } from "./browser/trace.ts";
 import { releaseKeys } from "./browser/user.ts";
 import { cleanup } from "./browser/view.ts";
 import { caseOfFile } from "./harness.ts";
+import type { ColorScheme } from "./harness.ts";
 import { recordLayer } from "./layers.ts";
 import type { LayerName, LayerSubject } from "./layers.ts";
 
@@ -48,9 +50,22 @@ installNavigationGuard();
 /** The layers a browser test records, which a test skipped by capability records as skipped. */
 const BROWSER_LAYERS: readonly LayerName[] = ["L7", "L8", "L9", "L10", "L11", "L13"];
 
-beforeAll(async () => {
-  await installDeterminism();
+// The first parameter is the file's fixtures, a destructuring pattern (see the afterAll below).
+// oxlint-disable-next-line no-empty-pattern
+beforeAll(async ({}, suite) => {
+  await installDeterminism(await emulateColorScheme(suite.file.filepath));
 });
+
+/**
+ * Emulates the colour scheme the spec file's case opts into (`case.json`'s `colorScheme`, ADR-0061),
+ * `light` by default, before anything mounts, and returns it for the startup check.
+ */
+async function emulateColorScheme(file: string): Promise<ColorScheme> {
+  const harness = inject("ufHarness");
+  const scheme = harness.cases[caseOfFile(file, harness)]?.colorScheme ?? "light";
+  await commands.ufColorScheme(scheme);
+  return scheme;
+}
 
 beforeEach(({ task, skip }) => {
   beginTestConsole();

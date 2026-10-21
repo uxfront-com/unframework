@@ -66,13 +66,40 @@ export interface Box {
   listItem: boolean;
   /**
    * Whether the box is table-internal: a row group, a row, a column group, a column, a cell or
-   * a caption, by its inline `display` or the user-agent default. Unless its parent is a table
+   * a caption, by its `display` (see `boxOf`) or the user-agent default. Unless its parent is a table
    * part, CSS wraps it in an anonymous table (CSS 2.1 §17.2.1), an atomic `inline-table` when
    * the parent is an inline box, with rules for the whitespace around it this model does not
    * follow: the whitespace rule keeps that line as written. In a block container the wrapper
    * is a block-level `table`, which is what `outer` says.
    */
   tableInternal: boolean;
+}
+
+/**
+ * The computed values the live DOM path reads from Chromium for an element, in place of its
+ * inline style, so that a stylesheet counts: every property the static reading takes from the
+ * `style` attribute.
+ */
+export interface ComputedLayout {
+  display: string;
+  position: string;
+  float: string;
+  unicodeBidi: string;
+  whiteSpaceCollapse: string;
+}
+
+/**
+ * The live DOM path's side table. It normalises a tree parsed again from serialised HTML
+ * (`normalizeDomWithIds`), which carries no computed style, so the walk that checks the parsed
+ * tree against the live one records each live element's values under its parsed element. An
+ * element without an entry, on the server path (L6) or in a `<template>`'s inert content, keeps
+ * the static reading.
+ */
+const computedLayouts = new WeakMap<TreeElement, ComputedLayout>();
+
+/** Records the computed values of the live element a parsed element was rebuilt from. */
+export function recordComputedLayout(element: TreeElement, layout: ComputedLayout): void {
+  computedLayouts.set(element, layout);
 }
 
 /** What the element's parent does to its box, besides what the element's own style says. */
@@ -122,6 +149,11 @@ const NONE_TAGS = words(
  */
 const PRESERVING_TAGS = words(
   "iframe listing noembed noframes noscript plaintext pre script style textarea title xmp",
+);
+
+/** The preserving elements whose text is raw text or a `<textarea>`'s value. */
+const KEPT_TEXT_TAGS = words(
+  "iframe noembed noframes noscript plaintext script style textarea title xmp",
 );
 
 /** `white-space` and `white-space-collapse` keywords that keep spaces or line breaks. */
@@ -309,10 +341,10 @@ export function boxFromDisplay(value: string, mathml = false): Box | undefined {
 }
 
 /**
- * The element's box: its inline `display` if it has a valid one, else the user-agent default,
- * as its parent lays it out:
+ * The element's box: its `display` if it has a valid one, else the user-agent default, as its
+ * parent lays it out:
  *
- * - A float or an absolutely positioned box (inline `float`, `position`) is out of flow, apart
+ * - A float or an absolutely positioned box (its `float`, `position`) is out of flow, apart
  *   from `none` and `contents`, which have no box to take out.
  * - Inside a flex or grid container every other child is blockified.
  * - Blockified (out of flow, or in a flex or grid container), a table-internal box is a plain
@@ -322,10 +354,11 @@ export function boxFromDisplay(value: string, mathml = false): Box | undefined {
  *   float loses its float and is inlinified the same way; a `<br>` is content that does not break the line (`ruby-break`). An absolutely
  *   positioned box stays out of flow.
  *
- * Only inline styles and the user-agent defaults are read: a class whose stylesheet changes
- * `display`, `float`, `position` or `white-space` is invisible here. M0 has no stylesheets;
- * M4 brings them, and with them the live DOM path should read Chromium's computed styles
- * instead (the server path, L6, keeps this static reading and its limits).
+ * The live DOM path reads `display`, `float`, `position` and `unicode-bidi` from Chromium's
+ * computed styles (`recordComputedLayout`), so a stylesheet that changes them counts, as it
+ * does `white-space` (see `preservesWhitespace`). The
+ * server path, L6, has no computed styles: it reads the inline style and the user-agent
+ * defaults, and a class whose stylesheet changes the layout is invisible there.
  */
 export function boxOf(element: TreeElement, parent: ParentLayout): Box {
   const placed = placedBox(element, parent);
@@ -337,19 +370,53 @@ export function boxOf(element: TreeElement, parent: ParentLayout): Box {
   };
 }
 
+/** The box an inline `display` gives, or the user-agent default. */
+function declaredBox(element: TreeElement, display: string | undefined): Box {
+  return (
+    (display !== undefined
+      ? boxFromDisplay(display, element.namespaceURI === MATHML_NAMESPACE)
+      : undefined) ?? defaultBox(element)
+  );
+}
+
+/**
+ * The box Chromium's computed `display` gives. Some elements compute a `display` that their
+ * layout ignores, so they keep their user-agent box:
+ *
+ * - A replaced element (`<img>`, `<video>`, `<svg>`) computes `inline` but is atomic, and `<br>`
+ *   computes `inline` but is a break.
+ * - `<wbr>` lays out as text, an empty one, which a flex or grid container does not blockify,
+ *   though its computed `display` is blockified.
+ * - An element inside `<svg>` is laid out by SVG.
+ *
+ * The last two read only `display: none`.
+ */
+function computedBox(element: TreeElement, display: string): Box {
+  const fallback = defaultBox(element);
+  if (
+    isHtmlElement(element, "wbr") ||
+    (element.namespaceURI === SVG_NAMESPACE && element.tagName !== "svg")
+  ) {
+    return display === "none" ? box("none") : fallback;
+  }
+  if (display === "inline" && (fallback.outer === "atomic" || fallback.outer === "break")) {
+    return fallback;
+  }
+  return boxFromDisplay(display, element.namespaceURI === MATHML_NAMESPACE) ?? fallback;
+}
+
 /** The element's box, laid out by its parent (see `boxOf`), its edges aside. */
 function placedBox(element: TreeElement, parent: ParentLayout): Box {
   const forced = forcedBox(element);
   if (forced) return forced;
+  const computed = computedLayouts.get(element);
   const style = getAttribute(element, "style");
-  const display = styleValue(style, "display");
-  const declared =
-    (display !== undefined
-      ? boxFromDisplay(display, element.namespaceURI === MATHML_NAMESPACE)
-      : undefined) ?? defaultBox(element);
+  const declared = computed
+    ? computedBox(element, computed.display)
+    : declaredBox(element, styleValue(style, "display"));
   if (declared.outer === "none" || declared.outer === "contents") return declared;
-  const position = styleValue(style, "position");
-  const float = styleValue(style, "float");
+  const position = computed ? computed.position : styleValue(style, "position");
+  const float = computed ? computed.float : styleValue(style, "float");
   const floats = float !== undefined && FLOATING_KEYWORDS.has(float);
   const positioned = position !== undefined && OUT_OF_FLOW_POSITIONS.has(position);
   // Blockified, a table-internal box is a block container, in no anonymous table: its inner
@@ -375,11 +442,14 @@ function placedBox(element: TreeElement, parent: ParentLayout): Box {
 }
 
 /**
- * Whether the element's `unicode-bidi` is not `normal`: its inline style, else the user-agent
- * default, which isolates `<bdi>`, `<bdo>`, `<output>`, `<li>` and every HTML element with a
- * valid `dir` (`inherit` and `revert` defer to the default, as Chromium computes them).
+ * Whether the element's `unicode-bidi` is not `normal`: its computed value on the live DOM path,
+ * else its inline style, else the user-agent default, which isolates `<bdi>`, `<bdo>`,
+ * `<output>`, `<li>` and every HTML element with a valid `dir` (`inherit` and `revert` defer to
+ * the default, as Chromium computes them).
  */
 function isolatesBidi(element: TreeElement): boolean {
+  const computed = computedLayouts.get(element);
+  if (computed) return BIDI_KEYWORDS.has(computed.unicodeBidi);
   const value = styleValue(getAttribute(element, "style"), "unicode-bidi");
   if (value === "normal" || value === "initial" || value === "unset") return false;
   if (value !== undefined && BIDI_KEYWORDS.has(value)) return true;
@@ -392,15 +462,32 @@ function isolatesBidi(element: TreeElement): boolean {
  * Whether the element's text keeps its whitespace. Inherited, and overridden by an inline
  * `white-space` or `white-space-collapse`. `pre-line` (`preserve-breaks`) counts as
  * preserving: keeping more whitespace than the browser renders never hides a difference.
+ *
+ * On the live DOM path, Chromium's computed `white-space-collapse` decides, inheritance and
+ * stylesheets included, with two exceptions. Raw text and a `<textarea>`'s value always keep
+ * their whitespace: they are not laid out as flowing text. A `<select>` keeps the static
+ * reading: Chromium never renders its own text, whatever its user-agent `white-space: pre` says.
  */
 export function preservesWhitespace(element: TreeElement, inherited: boolean): boolean {
+  const computed = computedLayouts.get(element);
+  if (computed && !isHtmlElement(element, "select")) {
+    return PRESERVING_KEYWORDS.has(computed.whiteSpaceCollapse) || keepsText(element);
+  }
   const value = styleValue(getAttribute(element, "style"), "white-space", "white-space-collapse");
   const keywords = value?.split(/\s+/) ?? [];
   if (keywords.some((keyword) => PRESERVING_KEYWORDS.has(keyword))) return true;
   if (keywords.some((keyword) => COLLAPSING_KEYWORDS.has(keyword))) return false;
   return (
     inherited ||
-    (element.namespaceURI === HTML_NAMESPACE && PRESERVING_TAGS.has(element.tagName)) ||
+    keepsText(element) ||
+    (element.namespaceURI === HTML_NAMESPACE && PRESERVING_TAGS.has(element.tagName))
+  );
+}
+
+/** Whether the element's text is raw text or a value, which is never laid out as flowing text. */
+function keepsText(element: TreeElement): boolean {
+  return (
+    (element.namespaceURI === HTML_NAMESPACE && KEPT_TEXT_TAGS.has(element.tagName)) ||
     (element.namespaceURI === SVG_NAMESPACE && SVG_PRESERVING_TAGS.has(element.tagName))
   );
 }

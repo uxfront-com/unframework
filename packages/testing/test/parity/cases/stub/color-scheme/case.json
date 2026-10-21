@@ -1,0 +1,4 @@
+{
+  "description": "A dark-theme case: the browser project emulates prefers-color-scheme: dark before it mounts.",
+  "colorScheme": "dark"
+}

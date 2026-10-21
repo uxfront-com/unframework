@@ -2,6 +2,7 @@
 // Types only: the browser side imports them through the `vitest/browser` augmentation.
 import type { MountEvent } from "@unframework/codegen";
 
+import type { ColorScheme } from "./harness.ts";
 import type { CaptureRequest, CaptureResult } from "./visual-types.ts";
 
 /** A shared expectation the browser computed, to settle under the write policy (ADR-0029). */
@@ -80,6 +81,8 @@ declare module "vitest/browser" {
     ufInput: (request: InputRequest) => Promise<InputResult>;
     /** Moves the mouse to the corner of the viewport, off every mount root, between tests. */
     ufResetInput: () => Promise<void>;
+    /** Emulates the `prefers-color-scheme` a case opts into, for the page its spec runs in. */
+    ufColorScheme: (scheme: ColorScheme) => Promise<void>;
     /** The events a case's component declares, as the project's compile of it says (ADR-0050). */
     ufComponentEvents: (request: ComponentEventsRequest) => Promise<ComponentEventsResult>;
   }

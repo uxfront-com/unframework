@@ -4,7 +4,7 @@ import { existsSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync } fr
 import { basename, dirname, join, sep } from "node:path";
 
 import { TARGET_NAMES } from "@unframework/compiler";
-import { KEBAB_CASE, ssrScenarios } from "@unframework/testing/node";
+import { COLOR_SCHEMES, KEBAB_CASE, ssrScenarios } from "@unframework/testing/node";
 import type { CaseConfig } from "@unframework/testing/node";
 
 import { CASES_DIR } from "./paths.ts";
@@ -40,7 +40,15 @@ export interface CaseInfo {
   config: CaseConfig;
 }
 
-const CASE_KEYS = new Set(["description", "main", "ssr", "axe", "requires", "reference"]);
+const CASE_KEYS = new Set([
+  "description",
+  "main",
+  "ssr",
+  "axe",
+  "requires",
+  "reference",
+  "colorScheme",
+]);
 
 /** Every case, sorted by id. Throws on a malformed case, so a broken corpus is loud. */
 export function listCases(casesDir: string = CASES_DIR): CaseInfo[] {
@@ -141,6 +149,13 @@ function readConfig(id: string, file: string): CaseConfig {
     (typeof config.requires !== "string" || !config.requires.trim())
   ) {
     problems.push(`"requires" must be a sentence saying why every test requires a capability`);
+  }
+  // The scheme the browser projects emulate (`CaseConfig.colorScheme`, ADR-0061).
+  if (
+    config.colorScheme !== undefined &&
+    !(COLOR_SCHEMES as readonly unknown[]).includes(config.colorScheme)
+  ) {
+    problems.push(`"colorScheme" must be one of ${COLOR_SCHEMES.map((s) => `"${s}"`).join(", ")}`);
   }
   if (
     config.axe !== undefined &&

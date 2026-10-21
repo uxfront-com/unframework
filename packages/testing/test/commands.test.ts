@@ -10,6 +10,7 @@ import { ACTION_TIMEOUT, parityBrowser } from "../src/node/browser.ts";
 import {
   ufAriaSnapshot,
   ufArtefact,
+  ufColorScheme,
   ufComponentEvents,
   ufFocus,
   ufInput,
@@ -197,6 +198,21 @@ describe("ufFocus and ufResetInput", () => {
       [809, 619],
       [799, 599],
     ]);
+  });
+});
+
+describe("ufColorScheme", () => {
+  it("emulates the case's colour scheme on the page, and refuses any other value", async () => {
+    const emulated: unknown[] = [];
+    const context = {
+      page: { emulateMedia: async (options: unknown) => void emulated.push(options) },
+    };
+    await ufColorScheme(context, "dark");
+    await ufColorScheme(context, "light");
+    await expect(ufColorScheme(context, "dim" as "dark")).rejects.toThrow(
+      'ufColorScheme: "dim" is not a colour scheme (light, dark).',
+    );
+    expect(emulated).toEqual([{ colorScheme: "dark" }, { colorScheme: "light" }]);
   });
 });
 
@@ -394,6 +410,7 @@ describe("parityBrowser", () => {
       "ufAriaSnapshot",
       "ufArtefact",
       "ufAstroRender",
+      "ufColorScheme",
       "ufComponentEvents",
       "ufFocus",
       "ufInput",

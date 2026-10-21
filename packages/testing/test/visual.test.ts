@@ -12,6 +12,11 @@ const snapshot = (padding: string, width: number): GeometrySnapshot => ({
   },
 });
 
+const quoted = (content: string): GeometrySnapshot => ({
+  version: 1,
+  nodes: { "q[0]::before": { style: { content, color: "rgb(0, 0, 0)" } } },
+});
+
 describe("diffGeometry", () => {
   it("finds nothing between equal snapshots", () => {
     expect(diffGeometry(snapshot("0px", 100), snapshot("0px", 100))).toEqual([]);
@@ -37,6 +42,13 @@ describe("diffGeometry", () => {
     };
     expect(diffGeometry(snapshot("0px", 1), fewer)).toEqual([
       { path: "p[0]/#text[0]", property: "(node)", expected: "present", actual: "absent" },
+    ]);
+  });
+
+  it("compares a pseudo-element's computed styles, which have no box", () => {
+    expect(diffGeometry(quoted("open-quote"), quoted("open-quote"))).toEqual([]);
+    expect(diffGeometry(quoted("open-quote"), quoted('"«"'))).toEqual([
+      { path: "q[0]::before", property: "content", expected: "open-quote", actual: '"«"' },
     ]);
   });
 

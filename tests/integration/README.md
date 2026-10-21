@@ -22,7 +22,7 @@ pnpm test:canaries L8 --shard 1/2   # a part of the cases, as CI runs a browser 
 cases/basics/hello/
 ├── Hello.uf.tsx                       the input
 ├── hello.test.ts                      the browser spec, written once and run on every target
-├── case.json                          optional: { description, main, ssr: { <scenario>: { props } }, axe: [rule ids], requires: why, reference }
+├── case.json                          optional: { description, main, ssr: { <scenario>: { props } }, axe: [rule ids], requires: why, reference, colorScheme }
 ├── __output__/
 │   ├── ir.json                        the IR snapshot, validated against @unframework/ir's schema
 │   └── <target>/<files>               the golden outputs: formatted, reviewed, checked in place
@@ -38,6 +38,12 @@ cases/basics/hello/
 
 A diagnostics case (`cases/diagnostics/*`) has no spec: its `__expected__/diagnostics.json` lists
 the diagnostics, and `__output__/diagnostics.txt` is the code frame people and agents read.
+
+The browser projects run every case in the light colour scheme. A dark-theme case opts in with
+`"colorScheme": "dark"`: the setup file emulates `prefers-color-scheme: dark` before the spec
+mounts anything, and the startup check asserts it (ADR-0061). A case may also hold `.css` files
+beside its inputs; the loader reads them as neither inputs nor specs, and a stylesheet a target
+emits is a golden file under `__output__/<target>/` like any other.
 
 ### A case of several sources
 

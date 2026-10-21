@@ -6,9 +6,13 @@ import regular from "@fontsource/inter/files/inter-latin-400-normal.woff2?url";
 //   fonts Chromium actually used, so a fallback to a system font fails instead of passing.
 // - Motion: animations, transitions and the caret are off here; the browser context also sets
 //   prefers-reduced-motion (the project's `contextOptions`), which the startup check asserts.
+// - Colour scheme: light, unless the case opts into dark (`case.json`'s `colorScheme`,
+//   ADR-0061); the setup file emulates it, and the startup check asserts the case's scheme.
 // - Viewport and DPR: fixed by the project (800×600, deviceScaleFactor 1), asserted here.
 // The font files are imported with Vite's `?url`, typed by vite/client (see tsconfig.json).
 import bold from "@fontsource/inter/files/inter-latin-700-normal.woff2?url";
+
+import type { ColorScheme } from "../harness.ts";
 
 /** The only family allowed to render text in a capture. No system has a font by this name. */
 export const FONT_FAMILY = "UF Test Sans";
@@ -48,25 +52,27 @@ let ready: Promise<void> | undefined;
 
 /**
  * Installs the fonts and the reset once per page, after checking that the browser context is
- * the deterministic one. Every later call returns the same promise, so a failure fails every
- * test that depends on it.
+ * the deterministic one, in the case's colour scheme. The first call decides: the setup file's,
+ * with the scheme it emulated. Every later call returns the same promise, so a failure fails
+ * every test that depends on it.
  */
-export function installDeterminism(): Promise<void> {
-  ready ??= install();
+export function installDeterminism(colorScheme: ColorScheme = "light"): Promise<void> {
+  ready ??= install(colorScheme);
   return ready;
 }
 
-async function install(): Promise<void> {
+async function install(colorScheme: ColorScheme): Promise<void> {
   const environment: Record<string, boolean> = {
     "devicePixelRatio: 1": window.devicePixelRatio === 1,
     "prefers-reduced-motion: reduce": matchMedia("(prefers-reduced-motion: reduce)").matches,
-    "prefers-color-scheme: light": matchMedia("(prefers-color-scheme: light)").matches,
+    [`prefers-color-scheme: ${colorScheme}`]: matchMedia(`(prefers-color-scheme: ${colorScheme})`)
+      .matches,
     "forced-colors: none": matchMedia("(forced-colors: none)").matches,
   };
   const wrong = Object.keys(environment).filter((name) => !environment[name]);
   if (wrong.length) {
     throw new Error(
-      `Visual determinism: the browser context does not satisfy ${wrong.join(", ")}. The project must set the provider's contextOptions (see the screenshot ADR).`,
+      `Visual determinism: the browser context does not satisfy ${wrong.join(", ")}. The project must set the provider's contextOptions (see the screenshot ADR), and the setup file emulate the case's colour scheme (ADR-0061).`,
     );
   }
   const style = document.createElement("style");

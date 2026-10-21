@@ -9,9 +9,13 @@ export const LIVE_REFERENCE_SKIP = "live pixels: the reference's capture is this
 /** `[x, y, width, height]`, relative to the capture container. */
 export type GeometryBox = [x: number, y: number, width: number, height: number];
 
-/** One element (its border box and computed styles) or text node (one box per line fragment). */
+/**
+ * One element (its border box and computed styles), text node (one box per line fragment), or
+ * `::before` or `::after` pseudo-element (its computed styles and `content`: the DOM gives it
+ * no box).
+ */
 export interface GeometryNode {
-  box: GeometryBox | GeometryBox[];
+  box?: GeometryBox | GeometryBox[];
   style?: Record<string, string>;
 }
 
