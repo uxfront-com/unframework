@@ -1,0 +1,10 @@
+{
+  "description": "A scoped `:hover` rule, captured at rest and under the pointer.",
+  "ssr": {
+    "publish": {
+      "props": {
+        "text": "Publish"
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "hover getByRole('button', { name: 'Publish' })",
+      "dom": [
+        "<button class=\"action\" data-uf-6173c12c=\"\" type=\"button\">",
+        "  \"Publish\"",
+        "</button>"
+      ],
+      "aria": [
+        "- button \"Publish\""
+      ],
+      "events": {}
+    }
+  ]
+}

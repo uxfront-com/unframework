@@ -1,0 +1,17 @@
+---
+import Note from "./Note.astro";
+
+interface Props {
+  title: string;
+  note: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { title, note, class: className, style } = Astro.props;
+---
+
+<article class:list={["article", className]} style={style} data-uf-15946226="">
+  <h2 class="title" data-uf-15946226="">{title}</h2>
+  <Note text={note} data-uf-15946226="" />
+</article>

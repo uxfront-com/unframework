@@ -86,10 +86,17 @@ export const vue: Target = defineTarget({
         attribute.kind === "Event" ? listeners.attributes.get(attribute) : undefined,
       componentTag: (name) => components.get(name),
     });
+    // The sheet `compile()` emits beside the source, already scoped, so the block is not
+    // `scoped`; plugin-vue resolves its `src` through the unplugin (ADR-0063).
+    const file = context.module.file;
+    const sheet = component.styles
+      ? [`<style src="./${file.slice(file.lastIndexOf("/") + 1)}.css"></style>`]
+      : [];
     const parts = [
       ...(keys === undefined ? [] : [keys]),
       ...(block === undefined ? [] : [block]),
       `<template>\n${template}\n</template>`,
+      ...sheet,
     ];
     return [{ path: `${component.name}.vue`, contents: `${parts.join("\n\n")}\n` }];
   },

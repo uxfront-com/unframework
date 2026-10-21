@@ -1,0 +1,135 @@
+{
+  "irVersion": 1,
+  "file": "styles/hover-state/Action.uf.tsx",
+  "components": [
+    {
+      "name": "Action",
+      "span": {
+        "start": 24,
+        "end": 171
+      },
+      "props": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 73,
+              "end": 79
+            }
+          },
+          "binding": "text@57",
+          "span": {
+            "start": 67,
+            "end": 79
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ text: string }",
+          "span": {
+            "start": 65,
+            "end": 81
+          }
+        },
+        "span": {
+          "start": 55,
+          "end": 81
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "text@57",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 57,
+            "end": 61
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "button",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "type",
+            "value": "button",
+            "span": {
+              "start": 108,
+              "end": 121
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "action",
+            "span": {
+              "start": 122,
+              "end": 136
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "text",
+              "span": {
+                "start": 145,
+                "end": 149
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "text@57",
+                  "span": {
+                    "start": 145,
+                    "end": 149
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 144,
+              "end": 150
+            }
+          }
+        ],
+        "span": {
+          "start": 100,
+          "end": 164
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Action.css",
+          "source": ".action {\n  padding: 6px 14px;\n  border: 2px solid rgb(17, 24, 39);\n  background-color: rgb(255, 255, 255);\n  color: rgb(17, 24, 39);\n}\n\n.action:hover {\n  background-color: rgb(17, 24, 39);\n  color: rgb(255, 255, 255);\n}\n",
+          "span": {
+            "start": 0,
+            "end": 22
+          }
+        }
+      ],
+      "scopeId": "6173c12c"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Action",
+      "span": {
+        "start": 24,
+        "end": 171
+      }
+    }
+  ],
+  "types": []
+}

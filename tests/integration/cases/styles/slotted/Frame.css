@@ -1,0 +1,11 @@
+.frame {
+  margin: 0;
+  padding: 12px;
+  border: 2px dashed rgb(107, 114, 128);
+}
+
+/* Matches the content a parent fills into the frame's slot, which carries the frame's `-s`. */
+:slotted(.caption) {
+  color: rgb(21, 128, 61);
+  font-weight: 700;
+}

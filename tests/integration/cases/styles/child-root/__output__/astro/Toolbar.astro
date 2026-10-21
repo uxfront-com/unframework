@@ -1,0 +1,21 @@
+---
+import Button from "./Button.astro";
+
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<div
+  role="toolbar"
+  aria-label="Actions"
+  class:list={["toolbar", className]}
+  style={style}
+  data-uf-a33d603f=""
+>
+  <Button text="Save" data-uf-a33d603f="" />
+  <Button text="Cancel" data-uf-a33d603f="" />
+</div>

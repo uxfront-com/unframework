@@ -1,0 +1,12 @@
+---
+interface Props {
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { class: className, style } = Astro.props;
+---
+
+<figure class:list={["frame", className]} style={style} data-uf-9dc516fd="">
+  <slot />
+</figure>

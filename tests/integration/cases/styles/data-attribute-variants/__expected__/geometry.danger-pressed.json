@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "nodes": {
+    "button[0]": {
+      "box": [
+        8,
+        8,
+        68.390625,
+        28
+      ],
+      "style": {
+        "display": "inline-block",
+        "position": "static",
+        "top": "auto",
+        "right": "auto",
+        "bottom": "auto",
+        "left": "auto",
+        "float": "none",
+        "box-sizing": "border-box",
+        "margin-top": "0px",
+        "margin-right": "0px",
+        "margin-bottom": "0px",
+        "margin-left": "0px",
+        "padding-top": "4px",
+        "padding-right": "12px",
+        "padding-bottom": "4px",
+        "padding-left": "12px",
+        "border-top-width": "2px",
+        "border-right-width": "2px",
+        "border-bottom-width": "2px",
+        "border-left-width": "2px",
+        "border-top-style": "solid",
+        "border-right-style": "solid",
+        "border-bottom-style": "solid",
+        "border-left-style": "solid",
+        "border-top-color": "rgb(185, 28, 28)",
+        "border-right-color": "rgb(185, 28, 28)",
+        "border-bottom-color": "rgb(185, 28, 28)",
+        "border-left-color": "rgb(185, 28, 28)",
+        "border-top-left-radius": "16px",
+        "border-top-right-radius": "16px",
+        "border-bottom-right-radius": "16px",
+        "border-bottom-left-radius": "16px",
+        "color": "rgb(255, 255, 255)",
+        "background-color": "rgb(185, 28, 28)",
+        "background-image": "none",
+        "opacity": "1",
+        "visibility": "visible",
+        "font-family": "\"UF Test Sans\"",
+        "font-size": "13.3333px",
+        "font-weight": "400",
+        "font-style": "normal",
+        "line-height": "normal",
+        "letter-spacing": "normal",
+        "word-spacing": "0px",
+        "text-align": "center",
+        "text-decoration-line": "none",
+        "text-transform": "none",
+        "text-shadow": "none",
+        "white-space": "normal",
+        "vertical-align": "baseline",
+        "overflow-x": "visible",
+        "overflow-y": "visible",
+        "z-index": "auto",
+        "transform": "none",
+        "box-shadow": "none",
+        "outline-style": "none",
+        "outline-width": "3px",
+        "outline-color": "rgb(255, 255, 255)",
+        "outline-offset": "0px",
+        "list-style-type": "disc",
+        "flex-direction": "row",
+        "flex-wrap": "nowrap",
+        "justify-content": "normal",
+        "align-items": "normal",
+        "row-gap": "normal",
+        "column-gap": "normal",
+        "grid-template-columns": "none",
+        "grid-template-rows": "none"
+      }
+    },
+    "button[0]/#text[0]": {
+      "box": [
+        [
+          22,
+          14,
+          40.390625,
+          16
+        ]
+      ]
+    }
+  }
+}

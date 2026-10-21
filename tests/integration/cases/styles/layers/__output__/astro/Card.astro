@@ -1,0 +1,13 @@
+---
+interface Props {
+  title: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { title, class: className, style } = Astro.props;
+---
+
+<section class:list={["card", className]} style={style} data-uf-bb60e985="">
+  <h2 class="title" data-uf-bb60e985="">{title}</h2>
+</section>

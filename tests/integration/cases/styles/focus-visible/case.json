@@ -1,0 +1,10 @@
+{
+  "description": "A scoped `:focus-visible` rule, captured before and after the keyboard moves the focus onto the button.",
+  "ssr": {
+    "next": {
+      "props": {
+        "text": "Continue"
+      }
+    }
+  }
+}

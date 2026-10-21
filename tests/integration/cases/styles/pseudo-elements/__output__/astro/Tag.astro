@@ -1,0 +1,11 @@
+---
+interface Props {
+  name: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { name, class: className, style } = Astro.props;
+---
+
+<span class:list={["tag", className]} style={style} data-uf-ef5e671c="">{name}</span>

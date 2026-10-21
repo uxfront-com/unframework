@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "steps": [
+    {
+      "action": "tab",
+      "dom": [
+        "<button class=\"continue\" data-uf-bb3adc28=\"\" type=\"button\" uf:focused=\"\">",
+        "  \"Continue\"",
+        "</button>"
+      ],
+      "aria": [
+        "- button \"Continue\""
+      ],
+      "events": {}
+    }
+  ]
+}

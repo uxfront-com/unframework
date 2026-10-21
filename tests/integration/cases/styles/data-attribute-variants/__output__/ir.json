@@ -1,0 +1,276 @@
+{
+  "irVersion": 1,
+  "file": "styles/data-attribute-variants/Chip.uf.tsx",
+  "components": [
+    {
+      "name": "Chip",
+      "span": {
+        "start": 22,
+        "end": 407
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 118,
+              "end": 124
+            }
+          },
+          "binding": "label@55",
+          "span": {
+            "start": 111,
+            "end": 125
+          }
+        },
+        {
+          "name": "variant",
+          "optional": true,
+          "type": {
+            "code": "\"neutral\" | \"danger\"",
+            "span": {
+              "start": 138,
+              "end": 158
+            }
+          },
+          "default": {
+            "code": "\"neutral\"",
+            "span": {
+              "start": 74,
+              "end": 83
+            },
+            "refs": []
+          },
+          "binding": "variant@64",
+          "span": {
+            "start": 128,
+            "end": 159
+          }
+        },
+        {
+          "name": "pressed",
+          "optional": true,
+          "type": {
+            "code": "boolean",
+            "span": {
+              "start": 172,
+              "end": 179
+            }
+          },
+          "default": {
+            "code": "false",
+            "span": {
+              "start": 97,
+              "end": 102
+            },
+            "refs": []
+          },
+          "binding": "pressed@87",
+          "span": {
+            "start": 162,
+            "end": 180
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{\n  label: string;\n  variant?: \"neutral\" | \"danger\";\n  pressed?: boolean;\n}",
+          "span": {
+            "start": 107,
+            "end": 182
+          }
+        },
+        "span": {
+          "start": 51,
+          "end": 182
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@55",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 55,
+            "end": 60
+          }
+        },
+        {
+          "id": "variant@64",
+          "name": "variant",
+          "kind": "prop",
+          "span": {
+            "start": 64,
+            "end": 71
+          }
+        },
+        {
+          "id": "pressed@87",
+          "name": "pressed",
+          "kind": "prop",
+          "span": {
+            "start": 87,
+            "end": 94
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "button",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "type",
+            "value": "button",
+            "span": {
+              "start": 215,
+              "end": 228
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "chip",
+            "span": {
+              "start": 235,
+              "end": 247
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "data-variant",
+            "value": {
+              "code": "variant",
+              "span": {
+                "start": 268,
+                "end": 275
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "variant@64",
+                  "span": {
+                    "start": 268,
+                    "end": 275
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 254,
+              "end": 276
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "data-state",
+            "value": {
+              "code": "pressed ? \"on\" : \"off\"",
+              "span": {
+                "start": 295,
+                "end": 317
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "pressed@87",
+                  "span": {
+                    "start": 295,
+                    "end": 302
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 283,
+              "end": 318
+            }
+          },
+          {
+            "kind": "Bound",
+            "name": "aria-pressed",
+            "value": {
+              "code": "pressed ? \"true\" : \"false\"",
+              "span": {
+                "start": 339,
+                "end": 365
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "pressed@87",
+                  "span": {
+                    "start": 339,
+                    "end": 346
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 325,
+              "end": 366
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 380,
+                "end": 385
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@55",
+                  "span": {
+                    "start": 380,
+                    "end": 385
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 379,
+              "end": 386
+            }
+          }
+        ],
+        "span": {
+          "start": 201,
+          "end": 400
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Chip.css",
+          "source": ".chip {\n  padding: 4px 12px;\n  border: 2px solid rgb(107, 114, 128);\n  border-radius: 16px;\n  background-color: rgb(255, 255, 255);\n  color: rgb(55, 65, 81);\n}\n\n.chip[data-variant=\"danger\"] {\n  border-color: rgb(185, 28, 28);\n  color: rgb(185, 28, 28);\n}\n\n.chip[data-state=\"on\"] {\n  background-color: rgb(55, 65, 81);\n  color: rgb(255, 255, 255);\n}\n\n.chip[data-variant=\"danger\"][data-state=\"on\"] {\n  background-color: rgb(185, 28, 28);\n}\n",
+          "span": {
+            "start": 0,
+            "end": 20
+          }
+        }
+      ],
+      "scopeId": "69db3802"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Chip",
+      "span": {
+        "start": 22,
+        "end": 407
+      }
+    }
+  ],
+  "types": []
+}

@@ -1,0 +1,4 @@
+{
+  "description": "A styled parent's sheet reaches the root of an unstyled child, which carries the parent's scope attribute, and nothing inside it.",
+  "main": "Toolbar.uf.tsx"
+}

@@ -1,0 +1,21 @@
+---
+interface Props {
+  label: string;
+  variant?: "neutral" | "danger";
+  pressed?: boolean;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, variant = "neutral", pressed = false, class: className, style } = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={["chip", className]}
+  data-variant={variant}
+  data-state={pressed ? "on" : "off"}
+  aria-pressed={pressed ? "true" : "false"}
+  style={style}
+  data-uf-69db3802=""
+>{label}</button>

@@ -1,0 +1,13 @@
+---
+interface Props {
+  text: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { text, class: className, style } = Astro.props;
+---
+
+<aside class:list={["panel", className]} style={style} data-uf-48dda3f4="">
+  <p class="text" data-uf-48dda3f4="">{text}</p>
+</aside>

@@ -1,0 +1,17 @@
+{
+  "description": "Open Components–style variants: `[data-variant]` and `[data-state]` selectors match the attributes the props set.",
+  "ssr": {
+    "neutral": {
+      "props": {
+        "label": "Draft"
+      }
+    },
+    "danger-pressed": {
+      "props": {
+        "label": "Delete",
+        "variant": "danger",
+        "pressed": true
+      }
+    }
+  }
+}

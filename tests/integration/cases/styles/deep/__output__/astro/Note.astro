@@ -1,0 +1,13 @@
+---
+interface Props {
+  text: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { text, class: className, style } = Astro.props;
+---
+
+<div class:list={["note-box", className]} style={style}>
+  <p class="note">{text}</p>
+</div>

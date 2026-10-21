@@ -1,0 +1,178 @@
+{
+  "irVersion": 1,
+  "file": "styles/child-root/Toolbar.uf.tsx",
+  "components": [
+    {
+      "name": "Toolbar",
+      "span": {
+        "start": 63,
+        "end": 249
+      },
+      "props": [],
+      "types": [],
+      "bindings": [],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "role",
+            "value": "toolbar",
+            "span": {
+              "start": 119,
+              "end": 133
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "aria-label",
+            "value": "Actions",
+            "span": {
+              "start": 134,
+              "end": 154
+            }
+          },
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "toolbar",
+            "span": {
+              "start": 155,
+              "end": 170
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Button",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "\"Save\"",
+                  "span": {
+                    "start": 191,
+                    "end": 197
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 186,
+                  "end": 197
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 178,
+              "end": 200
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Button",
+            "attributes": [
+              {
+                "kind": "Prop",
+                "name": "text",
+                "value": {
+                  "code": "\"Cancel\"",
+                  "span": {
+                    "start": 220,
+                    "end": 228
+                  },
+                  "refs": []
+                },
+                "span": {
+                  "start": 215,
+                  "end": 228
+                }
+              }
+            ],
+            "fills": [],
+            "span": {
+              "start": 207,
+              "end": 231
+            }
+          }
+        ],
+        "span": {
+          "start": 114,
+          "end": 242
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Toolbar.css",
+          "source": ".toolbar {\n  display: flex;\n  column-gap: 8px;\n  padding: 8px;\n  background-color: rgb(243, 244, 246);\n}\n\n/* The child's root carries the toolbar's attribute, as Vue's scope id does. */\n.button {\n  padding: 6px 12px;\n  border: 2px solid rgb(17, 24, 39);\n  background-color: rgb(255, 255, 255);\n}\n\n/* The child's own elements do not: its icon keeps its colour. */\n.icon {\n  color: rgb(220, 38, 38);\n}\n",
+          "span": {
+            "start": 0,
+            "end": 23
+          }
+        }
+      ],
+      "scopeId": "a33d603f"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Toolbar",
+      "span": {
+        "start": 63,
+        "end": 249
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Button.uf.tsx",
+      "file": "Button.uf.tsx",
+      "api": {
+        "file": "Button.uf.tsx",
+        "components": [
+          {
+            "name": "Button",
+            "export": "default",
+            "props": [
+              {
+                "name": "text",
+                "optional": false,
+                "type": "string"
+              }
+            ],
+            "events": [],
+            "models": [],
+            "slots": [],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "button"
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Button",
+          "span": {
+            "start": 31,
+            "end": 37
+          }
+        }
+      ],
+      "span": {
+        "start": 24,
+        "end": 61
+      }
+    }
+  ]
+}

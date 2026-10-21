@@ -75,7 +75,4 @@ export const EXEMPT_CAPABILITIES: Readonly<
   context: lanesBut("astro"),
   "reactive-context": lanesBut("astro"),
   "dynamic-component": lanesBut(),
-  "scoped-styles": "No target attaches a scoped sheet yet: the cases land in layer 6 of M4.",
-  "child-root-scope": "No target attaches a scoped sheet yet: the cases land in layer 6 of M4.",
-  "slotted-styles": "No target attaches a scoped sheet yet: the cases land in layer 6 of M4.",
 };

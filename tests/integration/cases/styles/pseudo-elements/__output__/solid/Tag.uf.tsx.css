@@ -1,0 +1,23 @@
+.tag[data-uf-ef5e671c] {
+  display: inline-flex;
+  align-items: center;
+  column-gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid rgb(75, 85, 99);
+}
+
+/* The scope attribute goes before the pseudo-element. */
+.tag[data-uf-ef5e671c]::before {
+  content: "#";
+  color: rgb(37, 99, 235);
+  font-weight: 700;
+}
+
+.tag[data-uf-ef5e671c]::after {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background-color: rgb(22, 163, 74);
+}

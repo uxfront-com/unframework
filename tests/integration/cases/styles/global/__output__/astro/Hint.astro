@@ -1,0 +1,11 @@
+---
+interface Props {
+  text: string;
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { text, class: className, style } = Astro.props;
+---
+
+<p class:list={["hint", className]} style={style}>Tip: <span class="uf-highlight">{text}</span></p>

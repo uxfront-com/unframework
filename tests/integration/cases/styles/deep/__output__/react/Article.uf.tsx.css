@@ -1,0 +1,21 @@
+.article[data-uf-15946226] {
+  padding: 12px;
+  border-left: 4px solid rgb(37, 99, 235);
+}
+
+.title[data-uf-15946226] {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+
+/* Reaches the child's paragraph: the attribute stays on `.article`. */
+.article[data-uf-15946226] .note {
+  margin: 0;
+  color: rgb(185, 28, 28);
+  font-style: italic;
+}
+
+/* Scoped: the child's paragraph does not carry the attribute, so it is not underlined. */
+.note[data-uf-15946226] {
+  text-decoration-line: underline;
+}
