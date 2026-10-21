@@ -45,7 +45,8 @@ M4 brings stylesheets (§9). Three parts of the harness were built for component
   - A replaced element (`<img>`, `<video>`, `<svg>`) and `<br>` compute `inline`, but are atomic
     and a break.
   - `<wbr>` and every element inside `<svg>` read only `display: none`: `<wbr>` lays out as text,
-    which a flex container does not blockify, though its computed `display` is, and SVG lays out
+    which a flex or grid container does not blockify, though its computed `display` is, and SVG
+    lays out
     its own children.
   - Raw text and a `<textarea>`'s value always keep their whitespace: they aren't flowing text.
   - A `<select>` keeps the static reading for `white-space`: Chromium never renders its own text,
@@ -70,8 +71,8 @@ M4 brings stylesheets (§9). Three parts of the harness were built for component
   the pixels do.
 - The normaliser respects author CSS on the live path, which every browser layer that compares
   DOMs uses (L7, L9).
-- A dark-theme case runs in the scheme it styles, and a case that forgets to opt in fails its
-  startup check instead of passing in light.
+- A dark-theme case runs in the scheme it styles, and its startup check asserts that scheme. A
+  case that doesn't opt in runs in light, and a case with any other value fails in the loader.
 
 **Negative:**
 
@@ -108,7 +109,10 @@ M4 brings stylesheets (§9). Three parts of the harness were built for component
   seven pairs of fragments that Chromium lays out the same or differently (a span made a block, a
   float, an absolutely positioned box, a `<pre>` made to collapse, a block made inline, an
   isolate, a paragraph made to preserve) are normalised the same or differently by the live
-  path, as Chromium lays them out, and the opposite way by the static path.
+  path, as Chromium lays them out, and the opposite way by the static path. Two more pairs, the
+  spaces around a float and around an absolutely positioned box, fail when the live path reads
+  `float` and `position` from the inline style: Chromium computes both boxes' `display` as
+  `block`, so only the computed `float` and `position` take them out of flow.
 - `packages/testing/test/normalize.whitespace.browser.test.ts`: every fixture is normalised the
   same by both paths with no stylesheet; on 20,000 fuzzed fragments neither path calls two
   fragments equal that Chromium lays out differently. Without the `<wbr>` exception the live path

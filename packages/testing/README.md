@@ -227,9 +227,10 @@ Every spec of the corpus follows these rules, which L8, L9 and their canaries re
 - **`@unframework/testing/setup`**, loaded first by every browser project: the bundled Inter font
   as "UF Test Sans", the motion and caret reset, the startup assertions (DPR 1, reduced motion,
   and the case's colour scheme: `case.json`'s `colorScheme`, `light` by default, which the file
-  emulates through `ufColorScheme` before anything mounts, ADR-0061), console capture recorded as **L13** for every test of a case (plus the
-  adapter's server-side console, at mount and at each rerender), and cleanup (the unmount, then
-  the real intervals back if a view had a clock). The capture starts
+  emulates through `ufColorScheme` before anything mounts, ADR-0061), console capture recorded
+  as **L13** for every test of a case (plus the adapter's server-side console, at mount and at
+  each rerender), and cleanup (the unmount, then the real intervals back if a view had a clock).
+  The capture starts
   when the file loads and discards nothing: a message logged while the modules evaluate or in a
   `beforeAll` hook fails the next test, marked as logged before it; the console is judged after
   the unmount's scheduled work has run; and a message after a file's last test fails the file.
@@ -278,8 +279,8 @@ case)`); its projects run after the run's reference and before every other targe
   the one its `case.json` names as `main`, ADR-0057), and
   `parityBrowser({ name, commands })`, the deterministic Chromium every parity project runs
   (800×600 at DPR 1, `--font-render-hinting=none`, `--disable-partial-raster`, light scheme
-  until a case opts into dark, reduced motion, a 5 s action timeout). A target's command may not take one of the testing
-  API's names.
+  until a case opts into dark, reduced motion, a 5 s action timeout). A target's command may
+  not take one of the testing API's names.
 - **Layers:** `checkLayers(task, subject, { L1: () => …, L2: … })` runs checks, records each
   outcome and throws one error with every failure (`expectParity` records the same way without
   throwing). A check skips only by returning

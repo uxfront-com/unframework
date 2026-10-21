@@ -97,6 +97,25 @@ const DIFFERENT: readonly (readonly [string, string, string])[] = [
   ],
 ];
 
+/**
+ * Pairs the static path tells apart only by reading the span as inline. Chromium blockifies a
+ * float and an absolutely positioned box, so their computed `display` is `block`: the live path
+ * keeps them apart only because it reads the computed `float` and `position`, which take the
+ * box out of flow, where whitespace collapses across it instead of ending at it.
+ */
+const DIFFERENT_OUT_OF_FLOW: readonly (readonly [string, string, string])[] = [
+  [
+    "spaces around a float",
+    '<p>a <span class="float">x</span> b</p>',
+    '<p>a<span class="float">x</span>b</p>',
+  ],
+  [
+    "spaces around an absolutely positioned box",
+    '<p>a <span class="absolute">x</span> b</p>',
+    '<p>a<span class="absolute">x</span>b</p>',
+  ],
+];
+
 describe("rule 6 under a stylesheet, against Chromium's layout", () => {
   it.each(SAME)("renders %s identically, and the live path normalises them equal", (_, a, b) => {
     expect(layout(a)).toBe(layout(b));
@@ -110,6 +129,14 @@ describe("rule 6 under a stylesheet, against Chromium's layout", () => {
       expect(layout(a)).not.toBe(layout(b));
       expect(live(a)).not.toBe(live(b));
       expect(normalizeHtml(a)).toBe(normalizeHtml(b));
+    },
+  );
+
+  it.each(DIFFERENT_OUT_OF_FLOW)(
+    "renders %s differently, and the live path keeps them different",
+    (_, a, b) => {
+      expect(layout(a)).not.toBe(layout(b));
+      expect(live(a)).not.toBe(live(b));
     },
   );
 });

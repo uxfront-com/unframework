@@ -66,7 +66,7 @@ export interface Box {
   listItem: boolean;
   /**
    * Whether the box is table-internal: a row group, a row, a column group, a column, a cell or
-   * a caption, by its inline `display` or the user-agent default. Unless its parent is a table
+   * a caption, by its `display` (see `boxOf`) or the user-agent default. Unless its parent is a table
    * part, CSS wraps it in an anonymous table (CSS 2.1 §17.2.1), an atomic `inline-table` when
    * the parent is an inline box, with rules for the whitespace around it this model does not
    * follow: the whitespace rule keeps that line as written. In a block container the wrapper
@@ -341,10 +341,10 @@ export function boxFromDisplay(value: string, mathml = false): Box | undefined {
 }
 
 /**
- * The element's box: its inline `display` if it has a valid one, else the user-agent default,
- * as its parent lays it out:
+ * The element's box: its `display` if it has a valid one, else the user-agent default, as its
+ * parent lays it out:
  *
- * - A float or an absolutely positioned box (inline `float`, `position`) is out of flow, apart
+ * - A float or an absolutely positioned box (its `float`, `position`) is out of flow, apart
  *   from `none` and `contents`, which have no box to take out.
  * - Inside a flex or grid container every other child is blockified.
  * - Blockified (out of flow, or in a flex or grid container), a table-internal box is a plain
@@ -355,7 +355,8 @@ export function boxFromDisplay(value: string, mathml = false): Box | undefined {
  *   positioned box stays out of flow.
  *
  * The live DOM path reads `display`, `float`, `position` and `unicode-bidi` from Chromium's
- * computed styles (`recordComputedLayout`), so a stylesheet that changes them counts. The
+ * computed styles (`recordComputedLayout`), so a stylesheet that changes them counts, as it
+ * does `white-space` (see `preservesWhitespace`). The
  * server path, L6, has no computed styles: it reads the inline style and the user-agent
  * defaults, and a class whose stylesheet changes the layout is invisible there.
  */
@@ -463,9 +464,9 @@ function isolatesBidi(element: TreeElement): boolean {
  * preserving: keeping more whitespace than the browser renders never hides a difference.
  *
  * On the live DOM path, Chromium's computed `white-space-collapse` decides, inheritance and
- * stylesheets included. Two kinds of element keep the static reading: raw text and a
- * `<textarea>`'s value, which are not laid out as flowing text, and a `<select>`, whose own
- * text Chromium never renders, whatever its user-agent `white-space: pre` says.
+ * stylesheets included, with two exceptions. Raw text and a `<textarea>`'s value always keep
+ * their whitespace: they are not laid out as flowing text. A `<select>` keeps the static
+ * reading: Chromium never renders its own text, whatever its user-agent `white-space: pre` says.
  */
 export function preservesWhitespace(element: TreeElement, inherited: boolean): boolean {
   const computed = computedLayouts.get(element);
