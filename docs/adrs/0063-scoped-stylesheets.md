@@ -75,21 +75,25 @@ longer exist:
 | `--gap: 4px`                                  | unchanged                                                                                  |
 
 **Rejected selectors (UF5004):** `:root`, `html` and `body` outside `:global()`, `:host`, a
-namespace prefix (`svg|`, `*|`), whose rewrite by Vue drops it or doesn't parse, a misused or empty
-`:deep()`, `:slotted()` or `:global()` (`:slotted()` in a rule with nested rules or under `:deep()`,
-where Vue drops `-s` or writes `.a*`, included), and a selector that tells an empty `class` or
-`style` from none (ADR-0044). Vue scopes `:root` and `:host` instead, and the scoped selector then
+namespace prefix (`svg|`, `*|`: Vue drops the prefix of `svg|*` and `*|*`, so the compiler scopes
+no prefixed selector rather than some), a misused or empty `:deep()`, `:slotted()` or `:global()`
+(`:slotted()` in a rule with nested rules or under `:deep()`, where Vue drops `-s` or writes `.a*`,
+and a selector beside a `:deep()` one in a rule with nested rules, which Vue leaves unscoped,
+included), an empty `:is()` or `:where()`, and a selector that tells an empty `class` or `style`
+from none (ADR-0044). Vue scopes `:root` and `:host` instead, and the scoped selector then
 matches nothing.
 
 **Where the work lives:**
 
-- **The scoper** is in `@unframework/codegen`. As Vue's plugin does, it rewrites only the
-  selectors and the keyframe names, in the sheet's own text, and returns its UF5004 diagnostics:
-  every declaration, custom properties included, reaches the targets as written. lightningcss
-  checks that the sheet parses and parses each scoping pseudo-class's argument, but never prints
-  the sheet: its printer drops a declaration a later one overrides, and its visitor cannot read
-  some values back. `@unframework/parser` only reports a sheet's parse errors and the at-rules
-  lightningcss does not know (UF5002), whose rules would otherwise reach the page unscoped.
+- **The scoper** is in `@unframework/codegen`: Vue's scoped plugin, ported onto the parsers Vue
+  uses, postcss and postcss-selector-parser, both pinned exactly (P8). They keep the sheet's own
+  text, so only the selectors and the keyframe names change, and every declaration, custom
+  properties included, reaches the targets as written. It returns its UF5004 diagnostics, and
+  UF5002 for a sheet postcss cannot read. lightningcss only checks that the sheet parses:
+  `@unframework/parser` reports its parse errors and the at-rules it does not know (UF5002), whose
+  rules would otherwise reach the page unscoped. This amends plan §4.4's "lightningcss parses and
+  rewrites the selectors": lightningcss's printer drops a declaration a later one overrides and
+  rewrites values, and it gives no spans to splice into the author's text.
 - **The resolver reads the sheets.** `compile()` asks the resolver's `stylesheet` for each sheet
   before analysis, and the codegen scoper whether it uses `:slotted()`; a sheet it cannot read is
   UF5005. UF5002 and UF5004 point into the sheet, in its file as the resolver names it.
@@ -204,6 +208,13 @@ Vue      <style src="./Button.uf.tsx.css"></style>
 
 ## Alternatives considered
 
+- **lightningcss's `transform` and printer**, as plan §4.4 first said. It prints its own CSS: it
+  drops `height: 100vh` before `height: 100dvh`, rewrites `#ff0000` and custom properties, and its
+  visitor cannot read some values back (`calc(infinity * 1px)`). A splice into the author's text
+  needs a reader of its own, which lightningcss's tree, without spans, cannot give.
+- **A hand-written CSS reader** that splices the rewrites into the text. Each review round found
+  new edge cases of CSS Syntax in it (escapes, `url()`, line continuations), each silent. postcss
+  and postcss-selector-parser have handled them for Vue for years.
 - **A hash of the file's path, as Vue does.** It changes with the checkout's place and the
   relative path the caller passes, which P8 rules out, and every target would need the same path.
 - **A longer id.** Sixteen hex digits make a collision negligible, but every element carries the

@@ -52,10 +52,11 @@
     "@unframework/diagnostics": "workspace:*",
     "@unframework/ir": "workspace:*",
     "@unframework/parser": "workspace:*",
-    "lightningcss": "catalog:",
     "magic-string": "catalog:",
     "oxc-codegen": "catalog:",
-    "oxfmt": "catalog:"
+    "oxfmt": "catalog:",
+    "postcss": "catalog:",
+    "postcss-selector-parser": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

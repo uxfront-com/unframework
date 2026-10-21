@@ -1,7 +1,9 @@
 // The scoper (ADR-0063): every rewrite equals `@vue/compiler-sfc`'s `compileStyle({ scoped: true })`
-// on the same input, but for the attribute's name and the whitespace between tokens: both keep
-// every declaration as written. Vue scopes what the scoper rejects, so each rejection has a test
-// of its own, and so has each form where Vue's output does not parse.
+// on the same input, byte for byte, but for the attribute's name. Vue scopes what the scoper
+// rejects, so each rejection has a test of its own, and so has each form where Vue's output does
+// not parse.
+import postcss from "postcss";
+import type { AcceptedPlugin } from "postcss";
 import { describe, expect, it } from "vitest";
 import { compileStyle } from "vue/compiler-sfc";
 
@@ -10,16 +12,22 @@ import { scopeStylesheet } from "../src/index.ts";
 const ID = "70af206b";
 
 /**
- * A sheet without the whitespace around its punctuation, which Vue's printer and the scoper's
- * splices lay out differently, and without the `;` before a `}`. Nothing else changes.
+ * Vue's `trimPlugin`, which `compileStyle` runs beside its scoped plugin: it sets the whitespace
+ * before and after each rule to a line break. The scoper keeps the sheet's own, so the comparison
+ * runs it on the scoper's output too.
  */
-function squashed(css: string): string {
-  return css
-    .replace(/\s+/g, " ")
-    .replace(/\s*([{};,>+~])\s*/g, "$1")
-    .replaceAll(";}", "}")
-    .trim();
-}
+const trim: AcceptedPlugin = {
+  postcssPlugin: "trim",
+  Once(root) {
+    root.walk(({ type, raws }) => {
+      if (type !== "rule" && type !== "atrule") return;
+      if (raws.before) raws.before = "\n";
+      if ("after" in raws && raws.after) raws.after = "\n";
+    });
+  },
+};
+
+const trimmed = (css: string) => postcss([trim]).process(css, { from: undefined }).css;
 
 /** Vue's scoped sheet, with Vue's attribute renamed to Unframework's. */
 function vue(source: string): string {
@@ -158,14 +166,6 @@ describe("scopeStylesheet", () => {
     ["a hex escape in an attribute name", "[\\64 ata-x] { color: red }"],
     ["a comment in an attribute selector", '[data-x/*c*/=a], [data-x="a"/*c*/] { color: red }'],
     [
-      "a plain selector before :deep() with nested rules",
-      ".c, .a :deep(.b) { color: red; .d { color: blue } }",
-    ],
-    [
-      ":deep() before a plain selector with nested rules",
-      ".a :deep(.b), .c { color: red; .d { color: blue } }",
-    ],
-    [
       "an animation moved with nested rules",
       "@keyframes spin { to { opacity: 1 } } .a { animation: spin 1s; .b { color: blue } }",
     ],
@@ -183,8 +183,33 @@ describe("scopeStylesheet", () => {
     ["@scope", "@scope (.card) { .a { color: red } }"],
     ["@-moz-document", "@-moz-document url-prefix() { .a { color: red } }"],
     ["non-ASCII identifiers", ".café .b { color: red }"],
+    ["a hex escape before a space in an attribute flag", "[a=b \\69] { color: red }"],
+    ["a namespaced attribute with a comment", "[*/**/|a] { color: red }"],
+    ["an escaped attribute namespace", "[\\6a|b] { color: red }"],
+    [
+      "animation-name with !important and a comment",
+      "@keyframes spin { to { opacity: 1 } } .a { animation-name: spin !important /* c */ }",
+    ],
+    [
+      "animation-name with a comment in !important",
+      "@keyframes spin { to { opacity: 1 } } .a { animation-name: spin !/**/important }",
+    ],
+    [
+      "animation-name with !IMPORTANT",
+      "@keyframes spin { to { opacity: 1 } } .a { animation-name: spin !IMPORTANT }",
+    ],
+    [
+      "a CRLF continuation in an attribute string",
+      '[data-x="a\\\r\nb"] { color: red }\r\n.b { color: red }',
+    ],
+    ["a CRLF continuation in a value string", '.a { content: "x\\\r\ny" }\r\n.b { color: red }'],
+    [
+      "a url() after many spaces",
+      `.a { background: url(${" ".repeat(70)}x{y.png) } .b { color: red }`,
+    ],
+    ["a url() after a non-ASCII character", '.a { --x: éurl(a, "x)") } .b { color: red }'],
   ])("rewrites %s as Vue does", (_name, source) => {
-    expect(squashed(scoped(source))).toBe(squashed(vue(source)));
+    expect(trimmed(scoped(source))).toBe(vue(source));
   });
 
   it("keeps the sheet's text, and changes only selectors and keyframe names", () => {
@@ -213,7 +238,7 @@ describe("scopeStylesheet", () => {
     [
       "a lone * with nested rules",
       "* { color: red; .b { color: blue } }",
-      `* { &[data-uf-${ID}] { color: red; }  .b[data-uf-${ID}] { color: blue } }`,
+      `* { &[data-uf-${ID}] { color: red } .b[data-uf-${ID}] { color: blue } }`,
     ],
     [
       "quoted keyframe names",
@@ -259,6 +284,13 @@ describe("scopeStylesheet", () => {
     expect(scopeStylesheet("Card.css", source, ID)).toEqual(
       scopeStylesheet("Card.css", source, ID),
     );
+  });
+
+  // postcss reads only a lower-case `url(` to its `)`, as Vue's `compileStyle`, which fails too.
+  it("reports a sheet postcss cannot read as UF5002, rather than scoping part of it", () => {
+    const result = scopeStylesheet("Card.css", ".a { background: URL(/*.png) } .b {}", ID);
+    expect(result.code).toBe("");
+    expect(result.diagnostics.map(({ code }) => code)).toEqual(["UF5002"]);
   });
 
   it("reports a sheet that does not parse as UF5002, in the sheet", () => {
@@ -336,7 +368,7 @@ describe("scopeStylesheet's rejected selectors (UF5004)", () => {
     expect(rejected(source)).toEqual([source.slice(0, source.indexOf("{")).trim()]);
   });
 
-  // Vue's `[data-v-x]` for `*|*` drops the namespace, and its `svg|[data-v-x]*` does not parse.
+  // Vue drops the prefix of `*|*` and `svg|*`: the compiler scopes no prefixed selector rather than some.
   it.each([
     ["*|*", "*|* { color: red }"],
     ["svg|*", "svg|* { color: red }"],
@@ -348,6 +380,37 @@ describe("scopeStylesheet's rejected selectors (UF5004)", () => {
 
   it("rejects :slotted() inside a rule that uses :deep()", () => {
     expect(rejected(":deep(.p) { div:slotted(*) { color: red } }")).toEqual(["div:slotted(*)"]);
+  });
+
+  it("reads an attribute of many escapes in linear time", () => {
+    const source = `[data-x=${"\\00006a".repeat(16)}z \\69] { color: red }`;
+    const started = performance.now();
+    expect(scopeStylesheet("Card.css", source, ID).diagnostics).toEqual([]);
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+
+  it("never throws on an escape past the last code point", () => {
+    expect(() => scopeStylesheet("Card.css", "[\\110000x] { color: red }", ID)).not.toThrow();
+  });
+
+  it("reads a line continuation in an attribute value as nothing", () => {
+    expect(rejected("[style='\\\r\n'] { color: red }")).toEqual(["[style='\\\r\n']"]);
+  });
+
+  it("rejects an empty :is() or :where(), which matches nothing", () => {
+    expect(rejected(":is() { color: red } .a:where() { color: red }")).toEqual([
+      ":is()",
+      ".a:where()",
+    ]);
+  });
+
+  it("rejects a selector beside a :deep() one in a rule with nested rules", () => {
+    expect(rejected(".a, .b :deep(.c) { color: red; .d { color: blue } }")).toEqual([".a"]);
+    expect(rejected(".b :deep(.c), .a { color: red; .d { color: blue } }")).toEqual([".a"]);
+  });
+
+  it("reads escaped attribute names before it checks them", () => {
+    expect(rejected("[\\63 lass] { color: red }")).toEqual(["[\\63 lass]"]);
   });
 
   it("reads an escaped attribute name before it checks it", () => {

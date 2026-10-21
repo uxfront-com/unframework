@@ -171,6 +171,12 @@ catalogs:
     pngjs:
       specifier: ^7.0.0
       version: 7.0.0
+    postcss:
+      specifier: 8.5.28
+      version: 8.5.28
+    postcss-selector-parser:
+      specifier: 7.1.6
+      version: 7.1.6
     react:
       specifier: 19.3.0
       version: 19.3.0
@@ -371,9 +377,6 @@ importers:
       '@unframework/parser':
         specifier: workspace:*
         version: link:../parser
-      lightningcss:
-        specifier: 'catalog:'
-        version: 1.33.0
       magic-string:
         specifier: 'catalog:'
         version: 1.4.2
@@ -383,6 +386,12 @@ importers:
       oxfmt:
         specifier: 'catalog:'
         version: 0.71.0(svelte@5.57.1(@typescript-eslint/types@8.71.0))
+      postcss:
+        specifier: 'catalog:'
+        version: 8.5.28
+      postcss-selector-parser:
+        specifier: 'catalog:'
+        version: 7.1.6
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
