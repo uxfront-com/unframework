@@ -37,7 +37,7 @@ export const EXEMPT_KINDS: Readonly<Partial<Record<KindFamily, Readonly<Record<s
   {
     "code reference": {
       Import:
-        "A read of a pass-through import (ADR-0063): the analyser lowers Styleframe's imports, and the case lands in layer 10 of M4.",
+        "A read of a pass-through import (ADR-0063): the analyser still rejects Styleframe's imports, and the case lands in layer 10 of M4.",
     },
   };
 
@@ -48,12 +48,12 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
   UF9001:
     "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
   // M4's styling codes are catalogued before the analyser reports them (ADR-0063).
-  UF5001: "The analyser accepts stylesheets, and the case lands in layer 4 of M4.",
-  UF5002: "The analyser accepts stylesheets, and the case lands in layer 4 of M4.",
-  UF5003: "The analyser accepts stylesheets, and the case lands in layer 4 of M4.",
-  UF5004: "The scoper rejects selectors, and the case lands in layer 4 of M4.",
-  UF5005: "The analyser accepts stylesheets, and the case lands in layer 4 of M4.",
-  UF5006: "The analyser lowers Styleframe's imports, and the case lands in layer 10 of M4.",
+  UF5001: "The analyser still rejects stylesheet imports: the case lands in layer 4 of M4.",
+  UF5002: "The analyser still rejects stylesheet imports: the case lands in layer 4 of M4.",
+  UF5003: "The analyser still rejects stylesheet imports: the case lands in layer 4 of M4.",
+  UF5004: "No scoper runs yet: the case lands in layer 4 of M4.",
+  UF5005: "The analyser still rejects stylesheet imports: the case lands in layer 4 of M4.",
+  UF5006: "The analyser still rejects Styleframe's imports: the case lands in layer 10 of M4.",
 };
 
 /**

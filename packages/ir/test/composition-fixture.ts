@@ -113,6 +113,7 @@ const FIELD: ComponentApi = {
   inheritAttrs: true,
   root: "element",
   rootTag: "label",
+  styles: { scopeId: "0a1b2c3d", slotted: true },
 };
 
 /** A module whose component uses components, slots, models and context, keeping the invariants. */

@@ -42,6 +42,8 @@ import {
   createGlobalReference,
   createIdItem,
   createImportReference,
+  createImportedName,
+  createModuleImport,
   createPassThroughImport,
   createPassThroughName,
   createStyleSheet,
@@ -727,6 +729,20 @@ describe("checkInvariants on M1's IR", () => {
       node("p", [style(createStaticStyle("marginTop", "0", at))]),
       "/declarations/0/property",
       "must be a CSS property",
+    ],
+    [
+      "a vendor prefix in upper case",
+      node("p", [style(createStaticStyle("-Webkit-line-clamp", "2", at))]),
+      "/declarations/0/property",
+      "must be a CSS property in lower case",
+    ],
+    [
+      "a style bound to one value that reads no binding of the component",
+      node("p", [
+        createStyleAttribute([], at, expression("styles", 0, [["styles", "styles@900"]])),
+      ]),
+      "/attributes/0/value/refs/0/binding",
+      "must name a binding of the component",
     ],
     [
       "a style bound to one value that has declarations",
@@ -3569,6 +3585,65 @@ describe("checkInvariants on styles (ADR-0063)", () => {
       }),
       "/passThroughImports/0/names/0/local",
       "must be an identifier",
+    ],
+    [
+      "an imported name that is no identifier",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [
+          createPassThroughImport(
+            "virtual:styleframe",
+            [createPassThroughName("my-button", "button", at)],
+            at,
+          ),
+        ];
+      }),
+      "/passThroughImports/0/names/0/imported",
+      "must be an identifier",
+    ],
+    [
+      "two names that bind one local",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [
+          createPassThroughImport(
+            "virtual:styleframe",
+            [
+              createPassThroughName("button", "button", at),
+              createPassThroughName("badge", "button", at),
+            ],
+            at,
+          ),
+        ];
+      }),
+      "/passThroughImports/0/names/1/local",
+      "must differ from every other name",
+    ],
+    [
+      "a name a module import binds",
+      changedModule(node("p"), (module) => {
+        const api = {
+          file: "./Theme.uf.tsx",
+          components: [],
+          keys: [{ name: "ThemeKey", description: "theme", type: "Theme" }],
+        };
+        module.imports = [
+          createModuleImport(
+            "./Theme.uf.tsx",
+            "./Theme.uf.tsx",
+            api,
+            [createImportedName("Key", "ThemeKey", "ThemeKey", at)],
+            at,
+          ),
+        ];
+        module.passThroughImports = [
+          createPassThroughImport(
+            "virtual:styleframe",
+            [createPassThroughName("button", "ThemeKey", at)],
+            at,
+          ),
+        ];
+      }),
+      "/passThroughImports/0/names/0/local",
+      "must differ from every other name",
     ],
     [
       "a name a component takes",

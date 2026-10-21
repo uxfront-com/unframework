@@ -167,12 +167,16 @@ Vue      <style src="./Button.uf.tsx.css"></style>
 - Each lane's `child-root-scope` and `slotted-styles` cells on React's children, Svelte's snippets,
   Angular's projection and Qwik's `<Slot />`, recorded here as they settle.
 - No watch or HMR edge runs from the author's `X.css` to its sheet module until M6.
+- A sheet that two modules import is not yet a diagnostic: detecting it needs M5's project graph,
+  and until then each module scopes its own copy.
 
 ## Amendments
 
 - **ADR-0004.** The attachment table names the emitted `./<source>.css`, never the author's
   `./Button.css`. Vue's `<style src>` has no `scoped`, and Qwik's import is `?inline`. A module that
-  imports a sheet declares one component.
+  imports a sheet declares one component. "A stylesheet imported by two components is a
+  diagnostic" holds within a module only (UF5001): a sheet that two modules import is scoped by
+  each, until M5's project graph can see both.
 - **ADR-0009.** The id is FNV-1a over the name and the sheets' text. `:slotted()` uses
   `data-uf-<id>-s`, which the parent stamps at compile time. `@keyframes` names take the id, and
   the selectors above are UF5004.
