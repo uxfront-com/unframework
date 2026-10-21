@@ -30,6 +30,7 @@ import {
   display,
   frameworkCompileProblems,
   lintProblems,
+  toolchainFiles,
   typecheckProblems,
 } from "./toolchain-results.ts";
 
@@ -153,7 +154,9 @@ function casesFiles(files: Map<string, string[]>, info: CaseInfo): string[] {
 
 /**
  * Each case's output files: the committed `__output__/<target>/` tree, or, with a canary, a
- * fresh compile written to `.canary/<id>/<target>/cases/<case>/__output__/<target>/`.
+ * fresh compile written to `.canary/<id>/<target>/cases/<case>/__output__/<target>/`. Scoped
+ * sheets are left out (`toolchainFiles`), after a canary's are written: an output may read its
+ * sheet from the disk (Angular's `styleUrl`).
  */
 async function outputFiles(): Promise<Map<string, string[]>> {
   const files = new Map<string, string[]>();
@@ -163,7 +166,7 @@ async function outputFiles(): Promise<Map<string, string[]>> {
   if (!canary) {
     for (const info of checked) {
       const directory = join(info.dir, "__output__", target);
-      files.set(info.id, existsSync(directory) ? listFiles(directory) : []);
+      files.set(info.id, toolchainFiles(existsSync(directory) ? listFiles(directory) : []));
     }
     return files;
   }
@@ -188,7 +191,7 @@ async function outputFiles(): Promise<Map<string, string[]>> {
         paths.push(path);
       }
     }
-    files.set(info.id, paths.sort());
+    files.set(info.id, toolchainFiles(paths).sort());
   }
   return files;
 }

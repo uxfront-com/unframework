@@ -217,6 +217,7 @@ export const qwik: Target = defineTarget({
     const locals = new RenderLocals(plan);
     const jsx = jsxContext({
       component,
+      module,
       dialect: qwikDialect(
         component,
         module,

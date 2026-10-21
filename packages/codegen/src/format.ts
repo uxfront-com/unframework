@@ -58,9 +58,11 @@ export interface FormatOutcome {
  * TypeScript block is formatted as TypeScript on its own (ADR-0041): a `.vue` file's
  * `<script lang="ts">` blocks, a `.svelte` file's (indented two spaces, as Svelte code is
  * written) and an `.astro` file's frontmatter. The markup keeps the printer's layout, and the
- * file ends in one newline. Idempotent, and never throws.
+ * file ends in one newline. A scoped sheet (`.css`) is kept as the scoper printed it, the
+ * author's text with its selectors rewritten (ADR-0063). Idempotent, and never throws.
  */
 export async function formatOutput(file: OutputFile): Promise<FormatOutcome> {
+  if (file.path.endsWith(".css")) return { file };
   try {
     if (isFormatted(file.path)) {
       const result = await format(file.path, file.contents, OUTPUT_FORMAT);

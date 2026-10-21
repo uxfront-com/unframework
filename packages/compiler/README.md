@@ -28,8 +28,11 @@ stylesheet the source imports (ADR-0063), and `createFileResolver` also reads a 
 the scope id its API carries, and caches by their text too: a sheet it cannot read is UF5005.
 After the `ir` hooks, `compile()` runs the codegen scoper once per sheet of the module the targets
 emit from; a selector it rejects (UF5004, in the sheet's file) withholds the module from every
-target, as an analyser error does. `CompileResult.owners` names the
-component each output file is written for, by target, which the unplugin loads files by.
+target, as an analyser error does. A styled component's files end, on every target, with its
+scoped sheet, `<source>.css` (`Button.uf.tsx.css`): its sheets scoped and joined in import order,
+which the `output` hooks see and formatting keeps as printed. `CompileResult.owners` names the
+component each output file is written for, by target, which the unplugin loads files by; the
+sheet is no component's module, and is left out.
 A capability that refines one the target cannot support (a listener's options and semantics, and
 `nextTick`, refine `interactivity`: codegen's `CAPABILITY_PREREQUISITES`) is not reported again, so
 Astro reports one inert listener once.

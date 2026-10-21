@@ -24,7 +24,7 @@ import type {
 } from "@unframework/ir";
 
 import { handedControls, handlerControls } from "./controls.ts";
-import { scopeStylesheet } from "./scoper.ts";
+import { childStyles } from "./scope.ts";
 import type { CapabilityName } from "./target.ts";
 
 // Records, so that a node, attribute or setup item kind added to the IR cannot be left without
@@ -303,20 +303,7 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
  * module's own component, which renders itself, says through its sheets.
  */
 function usesSlotted(module: UfModule, local: string): boolean {
-  for (const entry of module.imports ?? []) {
-    const imported = entry.names.find((name) => name.kind === "Component" && name.local === local);
-    if (!imported) continue;
-    const api = entry.api.components.find((each) =>
-      imported.imported === "default"
-        ? each.export === "default"
-        : each.export === "named" && each.name === imported.imported,
-    );
-    return api?.styles?.slotted === true;
-  }
-  const own = module.components.find((component) => component.name === local);
-  return (own?.styles ?? []).some(
-    (sheet) => scopeStylesheet(sheet.specifier, sheet.source, own!.scopeId!).slotted,
-  );
+  return childStyles(module, local)?.slotted === true;
 }
 
 /**

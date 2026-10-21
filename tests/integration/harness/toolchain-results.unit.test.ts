@@ -7,7 +7,12 @@ import type { FrameworkCompileResult, ToolchainMessage } from "@unframework/code
 import { describe, expect, it } from "vitest";
 
 import { ROOT } from "./paths.ts";
-import { frameworkCompileProblems, lintProblems, typecheckProblems } from "./toolchain-results.ts";
+import {
+  frameworkCompileProblems,
+  lintProblems,
+  toolchainFiles,
+  typecheckProblems,
+} from "./toolchain-results.ts";
 
 const hello = join(ROOT, "cases/basics/hello/__output__/react/Hello.tsx");
 const card = join(ROOT, "cases/basics/card/__output__/react/Card.tsx");
@@ -16,6 +21,13 @@ const helper = join(ROOT, "../toolchains/react/helper.ts");
 const oxlintrc = join(ROOT, "../toolchains/react/output.oxlintrc.json");
 const outputs = new Set([hello, card]);
 const clean: FrameworkCompileResult = { errors: [], warnings: [] };
+
+describe("toolchainFiles", () => {
+  it("leaves the scoped sheets out of what the tools check (ADR-0063)", () => {
+    const sheet = join(ROOT, "cases/basics/card/__output__/react/Card.uf.tsx.css");
+    expect(toolchainFiles([card, sheet, hello])).toEqual([card, hello]);
+  });
+});
 
 describe("typecheckProblems", () => {
   it("reports each diagnostic on the case's own files, and nothing for clean files", () => {

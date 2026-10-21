@@ -92,7 +92,61 @@ describe("compile() with stylesheets", () => {
       scopeId: scopeIdOf("Card", [".card { color: red }\n"]),
     });
     expect(Object.keys(result.outputs)).toEqual(["vue", "react"]);
-    expect(result.outputs.vue).toHaveLength(1);
+  });
+
+  it("emits the scoped sheet as <source>.css on every target, as printed", async () => {
+    const id = scopeIdOf("Card", [".card { color: red }"]);
+    const result = await compileCard({ "/project/src/Card.css": ".card { color: red }" });
+    expect(result.diagnostics).toEqual([]);
+    for (const target of ["vue", "react"]) {
+      // Formatting keeps the sheet as the scoper printed it: no newline is added.
+      expect(result.outputs[target]?.at(-1)).toEqual({
+        path: "Card.uf.tsx.css",
+        contents: `.card[data-uf-${id}] { color: red }`,
+      });
+    }
+    // Every element carries the scope attribute.
+    expect(result.outputs.vue?.[0]?.contents).toContain(`<p class="card" data-uf-${id}="">Hi</p>`);
+    expect(result.outputs.react?.[0]?.contents).toContain(`style={style} data-uf-${id}="">`);
+    // The sheet is no component's module: the unplugin serves it on an id of its own.
+    expect(result.owners).toEqual({ vue: { "Card.vue": "Card" }, react: { "Card.tsx": "Card" } });
+  });
+
+  it("joins a component's sheets in import order, on a line each", async () => {
+    const source = CARD.replace(
+      'import "./Card.css";',
+      'import "./Card.css";\nimport "./More.css";',
+    );
+    const result = await compile(source, {
+      filename: "src/Card.uf.tsx",
+      targets: ["vue"],
+      resolve: memoryResolver({
+        "/project/src/Card.css": ".card { color: red }",
+        "/project/src/More.css": ".more { color: blue }\n",
+      }).resolve,
+    });
+    const id = scopeIdOf("Card", [".card { color: red }", ".more { color: blue }\n"]);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.outputs.vue?.at(-1)?.contents).toBe(
+      `.card[data-uf-${id}] { color: red }\n.more[data-uf-${id}] { color: blue }\n`,
+    );
+  });
+
+  it("hands the sheet to the `output` hooks with the component's files", async () => {
+    const seen: string[][] = [];
+    const drop: CompilerPlugin = {
+      name: "drop-sheet",
+      output: (files) => {
+        seen.push(files.map((file) => file.path));
+        return files.filter((file) => !file.path.endsWith(".css"));
+      },
+    };
+    const result = await compileCard({ "/project/src/Card.css": ".card { color: red }" }, [drop]);
+    expect(seen).toEqual([
+      ["Card.vue", "Card.uf.tsx.css"],
+      ["Card.tsx", "Card.uf.tsx.css"],
+    ]);
+    expect(result.outputs.vue?.map((file) => file.path)).toEqual(["Card.vue"]);
   });
 
   it("reports a sheet it cannot read as UF5005, without a resolver too", async () => {

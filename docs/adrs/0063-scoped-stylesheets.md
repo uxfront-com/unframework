@@ -132,6 +132,30 @@ An output that imports the sheet type-checks only with `declare module "*.css" {
 they hand the frameworks' compilers, checkers and linters. The compile project parses every emitted
 sheet with `parseStylesheet` instead, Vue's and Angular's included.
 
+**Emission**, as built:
+
+- **The attributes.** The shared JSX and markup builders print each one as `data-uf-<id>=""`
+  after an element's own attributes: a bare JSX attribute is `true`, which React writes as
+  `"true"`, and an empty value renders the same on every target. A child component's tag takes
+  its styled parent's attribute, whether or not the child is styled; each lane settles how the
+  child's root takes it (`child-root-scope`). The content a parent fills into a child whose
+  sheets use `:slotted()` takes the child's `-s`, read from the resolver's API or, for one of the
+  module's own components, from its sheets: every element and component tag of the fill, but not
+  the content of a fill nested inside it, which takes only its own child's. A `<component is>`'s
+  fills take the `-s` of each candidate that has one, so every target writes the same DOM.
+- **The output file.** `compile()` scopes a component's sheets and joins them in import order,
+  with a line feed between two only where the first lacks one. The file follows the target's
+  own files, so `output` hooks see it, and `formatOutput` returns a `.css` file as it is.
+  `CompileResult.owners` leaves it out: it is no component's module.
+- **The unplugin.** `resolveId` takes `./<source>.css` only from one of its own modules or a Qwik
+  segment, and an absolute or root-relative sheet id coming back, each with its query, and
+  answers `/abs/<source>.css` when the `.uf.tsx` file exists. `load` serves the sheet from the
+  compile cache for any query, and fails a sheet id whose file imports no stylesheet.
+- **The checks.** The toolchain projects drop emitted `.css` paths from their file lists after a
+  canary's compile writes them, since Angular's checks read a `styleUrl` from the disk. The
+  compile project parses every emitted sheet with `parseStylesheet`, as part of L2, and fails one
+  with an error or an unknown at-rule.
+
 **The capabilities:** `scoped-styles` (a component with a sheet), `child-root-scope` (a child a
 styled component renders) and `slotted-styles` (content filled into a child whose sheet uses
 `:slotted()`). Each target declares all three `native`, the cell its lane is expected to reach. A
@@ -150,7 +174,7 @@ Source   import "./Button.css";
          <button class="button"><span class="label">{text}</span></button>
 Sheet    .label[data-uf-70af206b] { color: red }          (Button.uf.tsx.css)
 React    import "./Button.uf.tsx.css";
-         <button className="button" data-uf-70af206b><span className="label" data-uf-70af206b>
+         <button className="button" data-uf-70af206b=""><span className="label" data-uf-70af206b="">
 Vue      <style src="./Button.uf.tsx.css"></style>
 ```
 
@@ -174,8 +198,8 @@ Vue      <style src="./Button.uf.tsx.css"></style>
   twice.
 - Every rendered element carries one more attribute, and each scoped selector gains its
   specificity, as in Vue.
-- Until the targets emit them, a styled module compiles to outputs without its sheet and its
-  attributes.
+- Until each target attaches its sheet, a styled module's outputs carry the sheet and the
+  attributes, but no output loads the sheet.
 
 **Open:**
 

@@ -6,19 +6,32 @@
 import {
   createBinding,
   createComponent,
+  createComponentNode,
   createElement,
   createEventAttribute,
   createFor,
   createFunctionCode,
   createFunctionHandler,
+  createImportedName,
   createInlineHandler,
+  createModule,
+  createModuleImport,
   createParameter,
   createRefAttribute,
+  createSlotFill,
   createStaticAttribute,
+  createStyleSheet,
   createText,
   span,
 } from "@unframework/ir";
-import type { Attribute, ElementNode, FragmentNode, Handler, RenderNode } from "@unframework/ir";
+import type {
+  Attribute,
+  ComponentApi,
+  ElementNode,
+  FragmentNode,
+  Handler,
+  RenderNode,
+} from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -1352,5 +1365,109 @@ describe("listeners and template refs", () => {
     expect(printMarkup(render, svelteDialect, { printWidth: Infinity })).toBe(
       "<button onclick={save} onkeydown={() => count.value++}></button>",
     );
+  });
+});
+
+describe("scope attributes (ADR-0063)", () => {
+  const api = (name: string, styles?: ComponentApi["styles"]): ComponentApi => ({
+    name,
+    export: "default",
+    props: [],
+    events: [],
+    models: [],
+    slots: [],
+    exposes: [],
+    inheritAttrs: true,
+    root: "element",
+    ...(styles ? { styles } : {}),
+  });
+  const imported = (name: string, styles?: ComponentApi["styles"]) =>
+    createModuleImport(
+      `./${name}.uf.tsx`,
+      `${name}.uf.tsx`,
+      { file: `${name}.uf.tsx`, components: [api(name, styles)], keys: [] },
+      [createImportedName("Component", "default", name, at)],
+      at,
+    );
+  /** Field's sheets use `:slotted()`, Plain has none. */
+  const imports = [imported("Field", { scopeId: "bbbbbbbb", slotted: true }), imported("Plain")];
+  const tree = el("div", [
+    el("p", [text("Hi")], [["class", "a"]]),
+    createComponentNode(
+      "Field",
+      [],
+      [
+        createSlotFill(
+          "default",
+          [
+            el("span", [text("Name")]),
+            createComponentNode("Plain", [], [createSlotFill("default", [el("i")], at)], at),
+          ],
+          at,
+        ),
+        createSlotFill("title", [el("h2", [text("T")])], at),
+      ],
+      at,
+    ),
+  ]);
+  const options = (styled: boolean): MarkupOptions => {
+    const styles = {
+      sheets: [createStyleSheet("./Badge.css", ".badge {}", at)],
+      scopeId: "aaaaaaaa",
+    };
+    const component = createComponent(
+      "Badge",
+      tree,
+      at,
+      [],
+      undefined,
+      [],
+      [],
+      [],
+      undefined,
+      styled ? { styles } : {},
+    );
+    return {
+      component,
+      module: createModule("Badge.uf.tsx", [component], [], [], imports),
+      printWidth: Number.POSITIVE_INFINITY,
+    };
+  };
+
+  it("stamps every element, and a child's tag, with a styled component's attribute", () => {
+    expect(printMarkup(tree, vueDialect, options(true)).split("\n")).toEqual([
+      '<div data-uf-aaaaaaaa="">',
+      '  <p class="a" data-uf-aaaaaaaa="">Hi</p>',
+      '  <Field data-uf-aaaaaaaa="">',
+      "    <template #default>",
+      '      <span data-uf-aaaaaaaa="" data-uf-bbbbbbbb-s="">Name</span>',
+      '      <Plain data-uf-aaaaaaaa="" data-uf-bbbbbbbb-s="">',
+      '        <i data-uf-aaaaaaaa=""></i>',
+      "      </Plain>",
+      "    </template>",
+      "    <template #title>",
+      '      <h2 data-uf-aaaaaaaa="" data-uf-bbbbbbbb-s="">T</h2>',
+      "    </template>",
+      "  </Field>",
+      "</div>",
+    ]);
+  });
+
+  it("stamps a fill's content with the `-s` of a child whose sheets use :slotted()", () => {
+    // An unstyled parent stamps nothing of its own, and a child without `:slotted()` nothing.
+    expect(printMarkup(tree, svelteDialect, options(false)).split("\n")).toEqual([
+      "<div>",
+      '  <p class="a">Hi</p',
+      "  ><Field>",
+      '    <span data-uf-bbbbbbbb-s="">Name</span><Plain data-uf-bbbbbbbb-s=""><i></i></Plain',
+      "    >{#snippet title()}",
+      '      <h2 data-uf-bbbbbbbb-s="">T</h2>',
+      "    {/snippet}",
+      "  </Field>",
+      "</div>",
+    ]);
+    // Without the module, the printer cannot read a child's styles.
+    const { module: _module, ...withoutModule } = options(false);
+    expect(printMarkup(tree, svelteDialect, withoutModule)).not.toContain("data-uf-");
   });
 });

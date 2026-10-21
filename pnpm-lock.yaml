@@ -1011,6 +1011,9 @@ importers:
       '@unframework/ir':
         specifier: workspace:*
         version: link:../../packages/ir
+      '@unframework/parser':
+        specifier: workspace:*
+        version: link:../../packages/parser
       '@unframework/target-angular':
         specifier: workspace:*
         version: link:../../packages/target-angular

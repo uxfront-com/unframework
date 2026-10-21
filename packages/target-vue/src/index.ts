@@ -80,6 +80,7 @@ export const vue: Target = defineTarget({
     const template = printMarkup(component.render, vueDialect, {
       level: 1,
       component,
+      module: context.module,
       rewrite,
       attribute: (attribute) =>
         attribute.kind === "Event" ? listeners.attributes.get(attribute) : undefined,

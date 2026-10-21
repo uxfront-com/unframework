@@ -1,5 +1,5 @@
 // The compile project's checks besides the artefact comparisons: L1's fixes and what a case
-// may expect, and L2's determinism and formatting. Plain functions, so `compile-checks.unit.test.ts` can prove each
+// may expect, L2's determinism and formatting, and the scoped sheets' parse. Plain functions, so `compile-checks.unit.test.ts` can prove each
 // one catches what it exists for, on the real compiler; the compile project runs them on every
 // case and target.
 import { formatOutput } from "@unframework/codegen";
@@ -8,6 +8,7 @@ import { builtinTargets } from "@unframework/compiler";
 import type { CompileResult } from "@unframework/compiler";
 import { applyFixes } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
+import { parseStylesheet } from "@unframework/parser";
 import { diffLines } from "@unframework/testing/node";
 
 /** The diagnostics that concern a target: its own, and those of every target. */
@@ -198,6 +199,22 @@ export function nondeterminism(
     });
   if (stable(first) === stable(second)) return undefined;
   return `Compiling twice gave different results:\n${diffLines(stable(first).replaceAll(",", ",\n"), stable(second).replaceAll(",", ",\n"))}`;
+}
+
+/**
+ * Every scoped sheet (`.css`) of a target's output that lightningcss cannot read, or that holds an
+ * at-rule it does not know: the check that stands in for L3 on sheets, which no framework
+ * compiler reads (ADR-0063, closing ADR-0025's open item).
+ */
+export function stylesheetProblems(target: string, files: readonly OutputFile[]): string[] {
+  return files
+    .filter((file) => file.path.endsWith(".css"))
+    .flatMap((file) =>
+      parseStylesheet(file.path, file.contents).errors.map(
+        ({ message, span }) =>
+          `${target}/${file.path} is not valid CSS at offset ${span.start}: ${message}`,
+      ),
+    );
 }
 
 /** L2: every output file that formatting again would change, or that no longer parses. */

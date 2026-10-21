@@ -33,6 +33,7 @@ import {
   forTarget,
   nondeterminism,
   referenceProblems,
+  stylesheetProblems,
 } from "./compile-checks.ts";
 import { coverageProblems } from "./coverage.ts";
 import { ROOT } from "./paths.ts";
@@ -299,6 +300,7 @@ async function checkOutputs(
     const different = nondeterminism(first, second, target);
     if (different) problems.push(different);
     problems.push(...(await formattingProblems(target, first.outputs[target] ?? [])));
+    problems.push(...stylesheetProblems(target, first.outputs[target] ?? []));
   }
 
   if (problems.length) throw new Error(problems.join("\n\n"));
