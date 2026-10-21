@@ -153,6 +153,19 @@ describe("compile() with stylesheets", () => {
     expect(result.ir?.components[0]).not.toHaveProperty("styles");
   });
 
+  it("accepts a plugin's copy of the analyser's sheets, and scopes them", async () => {
+    const copy: CompilerPlugin = {
+      name: "copy",
+      ir: (module: UfModule) => structuredClone(module),
+    };
+    const sheet = ".card { color: red }";
+    const result = await compileCard({ "/project/src/Card.css": sheet }, [copy]);
+    expect(result.diagnostics).toEqual([]);
+    expect(result.ir?.components[0]?.styles?.[0]?.source).toBe(sheet);
+    const rejected = await compileCard({ "/project/src/Card.css": ":root { --x: 1 }" }, [copy]);
+    expect(rejected.diagnostics.map(({ code }) => code)).toEqual(["UF5004"]);
+  });
+
   it("refuses a plugin's sheet the analyser did not produce (UF8001)", async () => {
     const edit: CompilerPlugin = {
       name: "edit-styles",

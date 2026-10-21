@@ -37,9 +37,9 @@ Astro reports one inert listener once.
 An `ir` hook's module must be valid IR (its schema and `checkInvariants`), keep the analysed file
 and every span inside the source, and hold only the expressions, setup code, functions (their
 parameters, types, defaults, bodies, event controls and flags), type annotations, declared events,
-type declarations and stylesheets with their scope id the analyser produced for that source, each whole (span, code and every
-reference with all its fields: a write stays a write, a call a call): a plugin may move, copy or
-drop analysed code, never write its own, because every target copies that code into its output
+type declarations and stylesheets with their scope id the analyser produced for that source, each
+whole (span, code and every reference with all its fields: a write stays a write, a call a call):
+a plugin may move, copy or drop analysed code, never write its own, because every target copies that code into its output
 and the IR cannot parse it (ADR-0032). Each function stays in a place of its context and role,
 and each piece of code in a place of its context and kind (statements or an expression): the
 analyser judges client code by looser rules than a getter or an initial value (ADR-0045), so a

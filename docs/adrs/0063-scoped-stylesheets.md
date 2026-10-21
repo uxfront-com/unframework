@@ -58,7 +58,8 @@ layers, and each layer needs the same contract before it starts:
   as Vue's scope id does).
 
 **The rewrites**, which match `@vue/compiler-sfc`'s `compileStyle({ scoped: true })` but for the
-attribute's name:
+attribute's name, and for the forms whose rewrite by Vue doesn't parse or names keyframes that no
+longer exist:
 
 | Source                                        | Scoped                                                                                     |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -67,20 +68,27 @@ attribute's name:
 | `:global(.b)`                                 | `.b`                                                                                       |
 | `:slotted(.b)`                                | `.b[data-uf-x-s]`                                                                          |
 | `.a::before`                                  | `.a[data-uf-x]::before`                                                                    |
+| `* + *`, `* > .a`                             | `* + *[data-uf-x]`, `* > .a[data-uf-x]`: Vue drops the `*`, and its selector doesn't parse |
 | `@media`, `@supports`, `@layer`, `@container` | kept, and the rules inside scoped                                                          |
 | `@keyframes spin`                             | `@keyframes spin-x`, with `animation` and `animation-name` in the sheet rewritten to match |
+| `@keyframes "spin"`                           | `@keyframes "spin-x"`, which `animation: spin` names too: Vue writes `"spin"-x`            |
 | `--gap: 4px`                                  | unchanged                                                                                  |
 
-**Rejected selectors (UF5004):** `:root`, `html` and `body` outside `:global()`, `:host`, a misused
+**Rejected selectors (UF5004):** `:root`, `html` and `body` outside `:global()`, `:host`, a namespace
+prefix (`svg|`, `*|`), whose rewrite by Vue drops it or doesn't parse, a misused
 or empty `:deep()`, `:slotted()` or `:global()`, and a selector that tells an empty `class` or
 `style` from none (ADR-0044). Vue scopes `:root` and `:host` instead, and the scoped selector then
 matches nothing.
 
 **Where the work lives:**
 
-- **The scoper** is in `@unframework/codegen`. It runs lightningcss's `transform` with a visitor
-  that rewrites the sheet's selectors, prints a deterministic, non-minified sheet, and returns its
-  UF5004 diagnostics. `@unframework/parser` only reports a sheet's parse errors (UF5002).
+- **The scoper** is in `@unframework/codegen`. As Vue's plugin does, it rewrites only the
+  selectors and the keyframe names, in the sheet's own text, and returns its UF5004 diagnostics:
+  every declaration, custom properties included, reaches the targets as written. lightningcss
+  checks that the sheet parses and parses each scoping pseudo-class's argument, but never prints
+  the sheet: its printer drops a declaration a later one overrides, and its visitor cannot read
+  some values back. `@unframework/parser` only reports a sheet's parse errors and the at-rules
+  lightningcss does not know (UF5002), whose rules would otherwise reach the page unscoped.
 - **The resolver reads the sheets.** `compile()` asks the resolver's `stylesheet` for each sheet
   before analysis, and the codegen scoper whether it uses `:slotted()`; a sheet it cannot read is
   UF5005. UF5002 and UF5004 point into the sheet, in its file as the resolver names it.
@@ -126,8 +134,7 @@ lane that can't reach it declares the cell `emulated` or `unsupported`, with the
 and adds a section here.
 
 **The codes** are UF5001 `shared-stylesheet`, UF5002 `invalid-stylesheet`, UF5003
-`unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`, which are UF1002
-until it lands), UF5004 `unscopable-selector`, UF5005 `stylesheet-not-found` and UF5006
+`unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`), UF5004 `unscopable-selector`, UF5005 `stylesheet-not-found` and UF5006
 `unsupported-styleframe-import`. All are errors.
 
 A `Button` whose `Button.css` holds `.label { color: red }` and a line feed has the id
@@ -162,8 +169,8 @@ Vue      <style src="./Button.uf.tsx.css"></style>
   twice.
 - Every rendered element carries one more attribute, and each scoped selector gains its
   specificity, as in Vue.
-- Until the analyser lowers them, the IR admits shapes no target emits yet: a plugin's IR with a
-  sheet compiles to outputs without it.
+- Until the targets emit them, a styled module compiles to outputs without its sheet and its
+  attributes.
 
 **Open:**
 

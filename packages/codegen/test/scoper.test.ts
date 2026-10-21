@@ -1,26 +1,31 @@
 // The scoper (ADR-0063): every rewrite equals `@vue/compiler-sfc`'s `compileStyle({ scoped: true })`
-// on the same input, but for the attribute's name, and both are compared as lightningcss prints
-// them. Vue scopes what the scoper rejects, so each rejection has a test of its own.
-import { transform } from "lightningcss";
+// on the same input, but for the attribute's name and the whitespace between tokens: both keep
+// every declaration as written. Vue scopes what the scoper rejects, so each rejection has a test
+// of its own, and so has each form where Vue's output does not parse.
 import { describe, expect, it } from "vitest";
 import { compileStyle } from "vue/compiler-sfc";
 
 import { scopeStylesheet } from "../src/index.ts";
 
 const ID = "70af206b";
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
 
-/** A sheet as lightningcss prints it, which is how the scoper prints its own. */
-function printed(css: string): string {
-  return decoder.decode(transform({ filename: "Card.css", code: encoder.encode(css) }).code);
+/**
+ * A sheet without the whitespace around its punctuation, which Vue's printer and the scoper's
+ * splices lay out differently, and without the `;` before a `}`. Nothing else changes.
+ */
+function squashed(css: string): string {
+  return css
+    .replace(/\s+/g, " ")
+    .replace(/\s*([{};,>+~])\s*/g, "$1")
+    .replaceAll(";}", "}")
+    .trim();
 }
 
 /** Vue's scoped sheet, with Vue's attribute renamed to Unframework's. */
 function vue(source: string): string {
   const result = compileStyle({ source, filename: "Card.css", id: `data-v-${ID}`, scoped: true });
   expect(result.errors).toEqual([]);
-  return printed(result.code.replaceAll(`data-v-${ID}`, `data-uf-${ID}`));
+  return result.code.replaceAll(`data-v-${ID}`, `data-uf-${ID}`);
 }
 
 function scoped(source: string): string {
@@ -100,25 +105,86 @@ describe("scopeStylesheet", () => {
     [":deep() with a nested rule", ".a :deep(.b) { color: red; .c { color: blue } }"],
     [":deep() first in a nested rule", ".a { :deep(.b) { color: blue } }"],
     ["!important", ".a { color: red !important }"],
+    [
+      "an animation with !important",
+      "@keyframes spin { to { opacity: 1 } } .a { animation: spin 1s !important }",
+    ],
+    [
+      "an animation through var()",
+      "@keyframes spin { to { opacity: 1 } } .a { animation: spin var(--d) }",
+    ],
+    [
+      "fallback declarations",
+      ".a { height: 100vh; height: 100dvh; color: red; color: oklch(70% 0.1 200) }",
+    ],
+    [
+      "values lightningcss cannot read back",
+      ".a { border-radius: calc(infinity * 1px); opacity: 1e10; font-weight: 2147483648 }",
+    ],
+    [
+      "custom properties as written",
+      ".a { --z: rgb(255, 0, 0); --t: 1000ms; --w: calc(100% - 1px) }",
+    ],
+    [
+      "a prefixed animation beside a longhand",
+      "@keyframes spin { to { opacity: 1 } } .a { -webkit-animation: spin 1s; animation-name: spin }",
+    ],
+    ["an @import into a layer", '@import "x.css" layer; .a { color: red }'],
+    ["comments", "/* a */ .a /* b */ { color: red /* c */ }"],
+    [":nth-child() of a selector", ".a :nth-child(2n + 1 of .b) { color: red }"],
+    ["an escaped class", ".sm\\:p-2 { padding: 2px }"],
+    ["an attribute holding a bracket", '[data-x="]"] { color: red }'],
   ])("rewrites %s as Vue does", (_name, source) => {
-    expect(scoped(source)).toBe(vue(source));
+    expect(squashed(scoped(source))).toBe(squashed(vue(source)));
   });
 
-  it("scopes with the attribute and the keyframes suffix of the id", () => {
-    expect(scoped(".label { color: red }\n@keyframes spin { to { opacity: 1 } }")).toBe(
-      [
-        `.label[data-uf-${ID}] {`,
-        "  color: red;",
-        "}",
-        "",
-        `@keyframes spin-${ID} {`,
-        "  to {",
-        "    opacity: 1;",
-        "  }",
-        "}",
-        "",
-      ].join("\n"),
+  it("keeps the sheet's text, and changes only selectors and keyframe names", () => {
+    expect(scoped(".label { color: #ff0000 }\n@keyframes spin { to { opacity: 1 } }\n")).toBe(
+      `.label[data-uf-${ID}] { color: #ff0000 }\n@keyframes spin-${ID} { to { opacity: 1 } }\n`,
     );
+  });
+
+  // Vue's output for these does not parse, or names keyframes that no longer exist.
+  it.each([
+    [
+      "a leading * before a sibling combinator",
+      "* + * { margin: 0 }",
+      `* + *[data-uf-${ID}] { margin: 0 }`,
+    ],
+    [
+      "a leading * before a child combinator",
+      "* > .a { margin: 0 }",
+      `* > .a[data-uf-${ID}] { margin: 0 }`,
+    ],
+    [
+      "a nested * + *",
+      ".stack { * + * { margin-top: 1em } }",
+      `.stack { * + *[data-uf-${ID}] { margin-top: 1em } }`,
+    ],
+    [
+      "a lone * with nested rules",
+      "* { color: red; .b { color: blue } }",
+      `* { &[data-uf-${ID}] { color: red; }  .b[data-uf-${ID}] { color: blue } }`,
+    ],
+    [
+      "quoted keyframe names",
+      '@keyframes "q" { to { opacity: 1 } } .a { animation: "q" 1s } .b { animation-name: q }',
+      `@keyframes "q-${ID}" { to { opacity: 1 } } .a[data-uf-${ID}] { animation: "q-${ID}" 1s } .b[data-uf-${ID}] { animation-name: q-${ID} }`,
+    ],
+  ])("writes %s so that it parses", (_name, source, expected) => {
+    expect(scoped(source)).toBe(expected);
+    expect(scopeStylesheet("Out.css", expected, "0000ffff").diagnostics).toEqual([]);
+  });
+
+  it("reports an at-rule lightningcss does not know as UF5002, since its rules would leak", () => {
+    for (const source of [
+      "@unknown-rule foo { .a { color: red } }",
+      "@document url(http://x) { .a { color: red } }",
+    ]) {
+      const result = scopeStylesheet("Card.css", source, ID);
+      expect(result.code).toBe("");
+      expect(result.diagnostics.map(({ code }) => code)).toEqual(["UF5002"]);
+    }
   });
 
   it("stamps the -s attribute for :slotted(), and says the sheet uses it", () => {
@@ -206,13 +272,23 @@ describe("scopeStylesheet's rejected selectors (UF5004)", () => {
     expect(rejected(source)).toEqual([source.slice(0, source.indexOf("{")).trim()]);
   });
 
+  // Vue's `[data-v-x]` for `*|*` drops the namespace, and its `svg|[data-v-x]*` does not parse.
+  it.each([
+    ["*|*", "*|* { color: red }"],
+    ["svg|*", "svg|* { color: red }"],
+    ["|*", "|* { color: red }"],
+    ["svg|circle", ".a svg|circle { fill: red }"],
+  ])("rejects the namespace prefix of %s", (_name, source) => {
+    expect(rejected(source)).toEqual([source.slice(0, source.indexOf("{")).trim()]);
+  });
+
   it("points at the rejected selector of a list, in a nested rule", () => {
     const source = ".a,\n  .b { color: red; .c, html .d { color: blue } }\n:root, .e { --x: 1 }";
     expect(rejected(source)).toEqual(["html .d", ":root"]);
   });
 
   it("reads past comments, strings and escapes to find the selector", () => {
-    const source = '.a /* :deep( */, [data-x=":global("] .b\\:c, :host { color: red }';
+    const source = '.a /* :deep( */, [data-x=":global("] .b\\:c, /* x */ :host { color: red }';
     expect(rejected(source)).toEqual([":host"]);
   });
 

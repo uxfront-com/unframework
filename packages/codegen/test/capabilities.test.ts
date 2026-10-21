@@ -497,14 +497,20 @@ describe("requiredCapabilities over a component's attributes, slots and `<compon
 describe("requiredCapabilities over styles (ADR-0063)", () => {
   const sheet = createStyleSheet("./Card.css", ".card { color: red }", at(1));
   const styles = { sheets: [sheet], scopeId: "0123abcd" };
-  /** A module importing `Child` from a module whose sheets do or do not use `:slotted()`. */
-  const parent = (render: ElementNode, options: { styled: boolean; slotted?: boolean }) => {
+  /**
+   * A module importing `Child`, as the default or by name, from a module whose sheets do or do not
+   * use `:slotted()`.
+   */
+  const parent = (
+    render: ElementNode,
+    options: { styled: boolean; slotted?: boolean; named?: boolean },
+  ) => {
     const api: ModuleApi = {
       file: "./Child.uf.tsx",
       components: [
         {
           name: "Child",
-          export: "default",
+          export: options.named ? "named" : "default",
           props: [],
           events: [],
           models: [],
@@ -536,7 +542,7 @@ describe("requiredCapabilities over styles (ADR-0063)", () => {
       "./Child.uf.tsx",
       "Child.uf.tsx",
       api,
-      [createImportedName("Component", "default", "Child", at(2))],
+      [createImportedName("Component", options.named ? "Child" : "default", "Child", at(2))],
       at(2),
     );
     return createModule("Card.uf.tsx", [card], [], [], [child]);
@@ -568,6 +574,49 @@ describe("requiredCapabilities over styles (ADR-0063)", () => {
     expect(required.has("child-root-scope")).toBe(false);
     const plain = requiredCapabilities(parent(withChild(), { styled: true, slotted: false }));
     expect(plain.has("slotted-styles")).toBe(false);
+  });
+
+  it("reads the API of a child imported by name", () => {
+    const named = { styled: false, slotted: true, named: true };
+    expect(requiredCapabilities(parent(withChild(), named)).get("slotted-styles")).toEqual(at(30));
+  });
+
+  it("derives both at a `<component is>` of components", () => {
+    const dynamic = createElement(
+      "div",
+      [],
+      [
+        createDynamicNode(
+          createExpression("x", at(40)),
+          [{ kind: "Component", component: "Child" }],
+          [],
+          [],
+          at(20),
+          [fill],
+        ),
+      ],
+      at(10),
+    );
+    const required = requiredCapabilities(parent(dynamic, { styled: true, slotted: true }));
+    expect(required.get("child-root-scope")).toEqual(at(20));
+    expect(required.get("slotted-styles")).toEqual(at(30));
+    const tags = createElement(
+      "div",
+      [],
+      [
+        createDynamicNode(
+          createExpression("x", at(40)),
+          [{ kind: "Tag", tag: "a" }],
+          [],
+          [],
+          at(20),
+        ),
+      ],
+      at(10),
+    );
+    expect(requiredCapabilities(parent(tags, { styled: true })).has("child-root-scope")).toBe(
+      false,
+    );
   });
 
   it("reads the sheets of a component that renders itself", () => {
