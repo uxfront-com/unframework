@@ -555,7 +555,7 @@ describe("canaries", () => {
         plugins: canaryPlugins(id, target),
         format: canaryFormats(id),
       });
-    const hooked = CANARIES.filter((canary) => canary.plugin?.().output);
+    const hooked = CANARIES.filter((canary) => canary.plugin && "output" in canary.plugin());
     expect(hooked.length).toBeGreaterThan(0);
     for (const canary of hooked) {
       for (const target of TARGET_NAMES.filter(

@@ -745,15 +745,14 @@ export function canaryPlugins(
  * uncorrupted. The sheet follows the hook's files as `compile()` emitted it.
  */
 function keepingSheets(plugin: CompilerPlugin): CompilerPlugin {
-  const { output } = plugin;
-  if (!output) return plugin;
+  if (!plugin.output) return plugin;
   return {
     ...plugin,
     output: (files, context) => {
       const sheets = files.filter(({ path }) => path.endsWith(".css"));
-      if (!sheets.length) return output(files, context);
+      if (!sheets.length) return plugin.output!(files, context);
       const own = files.filter(({ path }) => !path.endsWith(".css"));
-      const result = output(own, context);
+      const result = plugin.output!(own, context);
       return result ? [...result, ...sheets] : undefined;
     },
   };
