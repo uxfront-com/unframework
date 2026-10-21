@@ -183,6 +183,15 @@ describe("scopeStylesheet", () => {
     ["@scope", "@scope (.card) { .a { color: red } }"],
     ["@-moz-document", "@-moz-document url-prefix() { .a { color: red } }"],
     ["non-ASCII identifiers", ".café .b { color: red }"],
+    [":deep() after a comment", ".a/*c*/:deep(.p) { color: red }"],
+    ["a comment in a compound", ".a/*c*/:hover { color: red }"],
+    ["a comment after a universal selector", ".z */*c*/:hover { color: red }"],
+    ["a space before a comma", ".b .a , .c { color: red }"],
+    [":is() in :slotted()", ":slotted(:is(.a, .b)) { color: red }"],
+    [
+      "a keyframe name after other values in animation",
+      "@keyframes spin { to { opacity: 1 } } .a { animation: 1s linear spin }",
+    ],
     ["a hex escape before a space in an attribute flag", "[a=b \\69] { color: red }"],
     ["a namespaced attribute with a comment", "[*/**/|a] { color: red }"],
     ["an escaped attribute namespace", "[\\6a|b] { color: red }"],
@@ -249,11 +258,6 @@ describe("scopeStylesheet", () => {
       "a leading * before a pseudo-element",
       "* + ::before { content: '' }",
       `*[data-uf-${ID}] + ::before { content: '' }`,
-    ],
-    [
-      ":deep() after a comment",
-      ".a/*c*/:deep(.p) { color: red }",
-      `.a[data-uf-${ID}]/*c*/ .p { color: red }`,
     ],
   ])("writes %s so that it parses", (_name, source, expected) => {
     expect(scoped(source)).toBe(expected);
@@ -407,6 +411,39 @@ describe("scopeStylesheet's rejected selectors (UF5004)", () => {
   it("rejects a selector beside a :deep() one in a rule with nested rules", () => {
     expect(rejected(".a, .b :deep(.c) { color: red; .d { color: blue } }")).toEqual([".a"]);
     expect(rejected(".b :deep(.c), .a { color: red; .d { color: blue } }")).toEqual([".a"]);
+  });
+
+  it.each([
+    [":global() on a compound", ".a:global(.b) { color: red }"],
+    ["[CLASS]", "[CLASS] { color: red }"],
+    ["HTML", "HTML { color: red }"],
+    ['[class=""/**/]', '[class=""/**/] { color: red }'],
+    ["[style=''/**/]", "[style=''/**/] { color: red }"],
+    ['[class=""/**/i]', '[class=""/**/i] { color: red }'],
+    [':not([style=""/**/])', '.a:not([style=""/**/]) { color: red }'],
+  ])("rejects %s, whatever its case or comments", (_name, source) => {
+    expect(rejected(source)).toEqual([source.slice(0, source.indexOf("{")).trim()]);
+  });
+
+  it("rejects a selector nested past postcss-selector-parser's depth, rather than throw", () => {
+    const source = `${":is(".repeat(300)}.a${")".repeat(300)} { color: red }`;
+    let result: ReturnType<typeof scopeStylesheet> | undefined;
+    expect(() => (result = scopeStylesheet("Card.css", source, ID))).not.toThrow();
+    expect(result!.diagnostics.map(({ code }) => code)).toEqual(["UF5004"]);
+  });
+
+  it("points postcss's UF5002 into the sheet after a byte-order mark", () => {
+    const source = "\ufeff.a { background: URL(/*.png) } .b {}";
+    const { diagnostics } = scopeStylesheet("Card.css", source, ID);
+    expect(diagnostics.map(({ code, span }) => [code, span.start])).toEqual([
+      ["UF5002", source.indexOf("/*")],
+    ]);
+  });
+
+  it("points into the sheet after a byte-order mark", () => {
+    const source = "\ufeff.card {}\n:root { color: red }";
+    const { diagnostics } = scopeStylesheet("Card.css", source, ID);
+    expect(diagnostics.map(({ span }) => source.slice(span.start, span.end))).toEqual([":root"]);
   });
 
   it("reads escaped attribute names before it checks them", () => {

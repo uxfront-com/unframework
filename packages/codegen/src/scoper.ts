@@ -54,15 +54,17 @@ export function scopeStylesheet(file: string, source: string, scopeId: string): 
   // lightningcss judges validity, an unknown at-rule included, as for the analyser (UF5002).
   const [error] = parseStylesheet(file, source).errors;
   if (error) return invalid(error.message, error.span);
+  // postcss drops a byte-order mark, and counts its offsets without it.
+  const bom = source.charCodeAt(0) === 0xfeff ? 1 : 0;
   let root: Root;
   try {
     root = postcss.parse(source);
   } catch (caught) {
     const { reason, input } = caught as { reason?: string; input?: { offset?: number } };
-    const offset = input?.offset ?? 0;
+    const offset = (input?.offset ?? 0) + bom;
     return invalid(reason ?? String(caught), { start: offset, end: offset });
   }
-  const scoper = new Scoper(file, scopeId);
+  const scoper = new Scoper(file, scopeId, bom);
   scoper.check(root);
   if (scoper.diagnostics.length) {
     return { code: "", diagnostics: scoper.diagnostics, slotted: false };
@@ -142,14 +144,17 @@ class Scoper {
   slotted = false;
   readonly #file: string;
   readonly #id: string;
+  /** What postcss's offsets lack: 1 after a byte-order mark. */
+  readonly #bom: number;
   /** Each `@keyframes` name of the sheet, by the name it had. */
   readonly #keyframes = new Map<string, string>();
   /** Vue's `rule.__deep`: the rules one of whose selectors used `:deep()`. */
   readonly #deep = new WeakSet<Rule>();
 
-  constructor(file: string, id: string) {
+  constructor(file: string, id: string, bom: number) {
     this.#file = file;
     this.#id = id;
+    this.#bom = bom;
   }
 
   /** Reports UF5004 at each selector that cannot be scoped, before anything is rewritten. */
@@ -157,7 +162,7 @@ class Scoper {
     root.walkRules((rule) => {
       if (inKeyframes(rule)) return;
       const text = rule.raws.selector?.raw ?? rule.selector;
-      const offset = rule.source?.start?.offset ?? 0;
+      const offset = (rule.source?.start?.offset ?? 0) + this.#bom;
       const parsed = parseSelectors(text);
       if (!parsed) {
         this.#report(UNREADABLE, { start: offset, end: offset + text.length });
@@ -330,7 +335,7 @@ class Scoper {
         if (node) return undefined;
       }
       if (
-        (item.type !== "pseudo" && item.type !== "combinator" && item.type !== "comment") ||
+        (item.type !== "pseudo" && item.type !== "combinator") ||
         (item.type === "pseudo" && (item.value === ":is" || item.value === ":where") && !node)
       ) {
         node = item;
@@ -480,7 +485,9 @@ function problemIn(selector: Selector, global: boolean, top: boolean): Problem |
       const value =
         raw === undefined
           ? item.value
-          : raw.replace(/^(["'])([^]*)\1$/, "$2").replace(/\\(?:\r\n|[\n\r\f])/g, "");
+          : raw
+              .replace(/^(["'])([^]*)\1(?:\/\*[^]*?\*\/)*$/, "$2")
+              .replace(/\\(?:\r\n|[\n\r\f])/g, "");
       if (
         (name === "class" || name === "style") &&
         (!operator || (value === "" && (operator === "=" || operator === "|=")))
