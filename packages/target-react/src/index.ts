@@ -153,6 +153,7 @@ export const react: Target = defineTarget({
     listeners.connect(composer);
     const jsx = jsxContext({
       component,
+      module,
       dialect: reactDialect(names, listeners, composer),
       rules: code.rules,
     });

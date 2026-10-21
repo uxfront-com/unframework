@@ -91,6 +91,13 @@ How `resolveId` answers:
   own loaders, so a module id would fail the whole scan, and the authored file would expose its
   compile-time imports as dependencies; it externalises ids that contain `\0`. Each target's
   toolchain lists the runtime imports of its compiled output in `optimizeDeps.include` instead.
+- **A scoped sheet** (ADR-0063), `./Hello.uf.tsx.css`, which every target's output imports for
+  a component with a stylesheet, resolves to `/abs/Hello.uf.tsx.css` with its query, from one of
+  the plugin's modules or a segment Qwik's optimizer splits off one (`?inline`), and so does its
+  id coming back. It is checked before an output's import of another output, and it is no
+  component's output, so `owners` never names it. The id ends in `.css`, without a `\0`, so
+  Vite's CSS pipeline handles it; from any other importer it is left to Vite, which finds no
+  such file.
 - **The watch edge.** The pre plugin's `transform` calls `this.addWatchFile(<abs>.uf.tsx)` for
   every id but a `.tsx` one. Vite resolves that file with the module as its importer, and the
   plugin answers with the real file, so the module graph holds the file as an import of the
@@ -99,7 +106,14 @@ How `resolveId` answers:
   child the compile resolved too, whose API the output depends on, so an edit to `Field.uf.tsx`
   invalidates `Form`'s module.
 
-How `load` answers a query is decided by the query alone, never by what the process resolved
+`load` answers a scoped sheet's id with the sheet this target's compile emitted, whatever its
+query: plugin-vue's request for `<style src>` (`?vue&type=style&index=0&src=true&lang.css`), which
+the plugin serves before plugin-vue reads the disk, and Qwik's `?inline` give the same text. The
+author's `Hello.css` is never loaded: no output imports it. A file that imports no stylesheet has
+no sheet, and its sheet id fails. No edit of the author's sheet invalidates the sheet module
+until M6.
+
+How `load` answers any other query is decided by the query alone, never by what the process resolved
 before: a parameter named after the id's extension (`?vue&type=style&index=0&lang.css`,
 `?svelte&type=style&lang.css`, `?astro&type=script…`) is the framework plugin's request for a part
 of the module, which `load` leaves to that plugin; Vite's file queries are left to Vite; any other

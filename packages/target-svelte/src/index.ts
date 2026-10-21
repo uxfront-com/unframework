@@ -96,7 +96,11 @@ export const svelte: Target = defineTarget({
     const script = instanceScript(component, context.module);
     const { module, block, markup: options, render } = script;
     // The component resolves the names of loop variables and setup bindings.
-    const markup = printMarkup(render, svelteDialect, { component: script.component, ...options });
+    const markup = printMarkup(render, svelteDialect, {
+      component: script.component,
+      module: context.module,
+      ...options,
+    });
     const parts = [OPTIONS, ...(module ? [module] : []), ...(block ? [block] : []), markup];
     return [{ path: `${component.name}.svelte`, contents: `${parts.join("\n\n")}\n` }];
   },

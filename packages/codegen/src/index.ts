@@ -7,6 +7,7 @@ export {
 export { compositionUse, requiredCapabilities } from "./capabilities.ts";
 export { scopeStylesheet } from "./scoper.ts";
 export type { ScopedStylesheet } from "./scoper.ts";
+export { childStyles, scopeAttribute, slottedAttribute } from "./scope.ts";
 export { eventCalls, handedControls, handlerControls, ownControls } from "./controls.ts";
 export type { ControlTest, EventCall, HandlerControls, LiftedControl } from "./controls.ts";
 export type {

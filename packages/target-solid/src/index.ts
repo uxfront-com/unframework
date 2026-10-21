@@ -154,6 +154,7 @@ export const solid: Target = defineTarget({
     );
     const jsx = jsxContext({
       component,
+      module: context.module,
       dialect,
       rules: code.rules,
       placeholders,

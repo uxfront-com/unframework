@@ -30,6 +30,7 @@
     "@unframework/compiler": "workspace:*",
     "@unframework/diagnostics": "workspace:*",
     "@unframework/ir": "workspace:*",
+    "@unframework/parser": "workspace:*",
     "@unframework/target-angular": "workspace:*",
     "@unframework/target-astro": "workspace:*",
     "@unframework/target-qwik": "workspace:*",

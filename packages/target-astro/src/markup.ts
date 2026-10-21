@@ -22,6 +22,7 @@ import type {
   FragmentNode,
   SlotFill,
   UfComponent,
+  UfModule,
 } from "@unframework/ir";
 
 import { isRenderProp, SPREAD_STYLE } from "./composition.ts";
@@ -77,6 +78,8 @@ export interface ComposedMarkup {
   render: AstroRender;
   /** The tag each child is written with, where it is not its local name (`Astro.self`). */
   tags: ReadonlyMap<string, string>;
+  /** The component's module, whose imports give a child's scoped styles (ADR-0063). */
+  module: UfModule;
 }
 
 /**
@@ -95,6 +98,7 @@ export function printComponentMarkup(
   }
   const options: MarkupOptions = {
     component,
+    module: composed.module,
     rewrite: composed.spelling.rules,
     componentTag: (name) => composed.tags.get(name),
   };

@@ -98,6 +98,7 @@ export function template(
     indent: INDENT,
     level: LEVEL,
     component,
+    module: plan.module,
     rewrite: templateRules(plan, reads.signals),
     handler: (attribute) => listeners.statements.get(attribute),
     attribute: (attribute) =>

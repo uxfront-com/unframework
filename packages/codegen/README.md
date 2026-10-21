@@ -44,6 +44,12 @@ true })`, but where Vue's own output doesn't parse. It reports UF5004 where Vue 
   in a rule with nested rules or under `:deep()`, and a selector beside a `:deep()` one in a rule
   with nested rules, included), an empty `:is()`, and a selector that tells an empty `class` or
   `style` from none (ADR-0044).
+  The shared builders print the scope attributes (`data-uf-<scopeId>=""`, `scope.ts`): on every
+  element of a styled component, on a child component's tag (the child-root rule), and, with
+  the module (`JsxContextOptions.module`, `MarkupOptions.module`), the `-s` of each child whose
+  sheets use `:slotted()` on the elements and component tags of the content filled into it,
+  read through the resolver's API (`childStyles`) or the module's own sheets; a target owns
+  how its child takes them. `formatOutput` keeps an emitted `.css` sheet as printed.
   `requiredCapabilities` derives `scoped-styles` at a component's first sheet, `child-root-scope`
   at a child a styled component renders, and `slotted-styles` at a fill of a child whose sheets use
   `:slotted()` (its API's `styles.slotted`, or the scoper's reading of a component's own sheets).

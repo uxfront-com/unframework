@@ -103,6 +103,13 @@ interface CachedCompile {
 /** A relative specifier: an output's import of another output (`./Field.vue`, ADR-0053). */
 const RELATIVE = /^\.\.?\//;
 
+/**
+ * What a `.uf.tsx` path appends to name its scoped sheet, `X.uf.tsx.css` (ADR-0063): every
+ * target's output imports it as `./X.uf.tsx.css`, never the author's `./X.css`.
+ */
+const SHEET_SUFFIX = ".css";
+const SHEET_ID_FILTER = moduleIdFilter(SHEET_SUFFIX);
+
 /** The output files a script target joins into one module (`.tsx`, `.ts`). */
 const SCRIPT = /^\.tsx?$/;
 
@@ -132,7 +139,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
   const moduleIds = [moduleIdFilter(suffix), COMPONENT_ID_FILTER];
   // With a suffix, the authored file is never a module id. One that reaches `load` came through
   // an import `resolveId` never saw, and must fail rather than load as plain TSX.
-  const loadIds = suffix ? [...moduleIds, moduleIdFilter("")] : moduleIds;
+  const loadIds = [...(suffix ? [...moduleIds, moduleIdFilter("")] : moduleIds), SHEET_ID_FILTER];
   const joins = SCRIPT.test(extension);
   // A framework plugin requests parts of a module with a query parameter named after its
   // extension (`?vue&type=style…`, `?svelte&type=style…`, `?astro&type=script…`), and serves
@@ -304,6 +311,29 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     return undefined;
   };
 
+  /**
+   * The scoped sheet this target's compile of `file` emitted (ADR-0063), whatever the id's
+   * query: plugin-vue's style request and Qwik's `?inline` load the same text.
+   */
+  const sheetOf = async (
+    id: string,
+    file: string,
+  ): Promise<{ code: string } | { error: string }> => {
+    const source = await readFile(file, "utf8");
+    const filename = filenameOf(file);
+    const result = await compileFile(file, filename, source);
+    const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === "error");
+    if (errors.length > 0) return { error: formatDiagnostics(errors, { [filename]: source }) };
+    const path = `${basename(file)}${SHEET_SUFFIX}`;
+    const emitted = (result.outputs[target.name] ?? []).find((output) => output.path === path);
+    if (!emitted) {
+      return {
+        error: `The ${target.name} target emitted no ${path} for ${filename}, which the id ${id} loads: ${basename(file)} imports no stylesheet.`,
+      };
+    }
+    return { code: emitted.contents };
+  };
+
   /** The files a compile resolved its children from: its watch edges (ADR-0053). */
   const childFiles = async (file: string): Promise<string[]> => {
     const result = await cache.get(file)?.result.catch(() => undefined);
@@ -318,11 +348,33 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
         root = config.root;
       },
       resolveId: {
-        filter: { id: [specifierFilter(suffix), COMPONENT_ID_FILTER, RELATIVE] },
+        filter: { id: [specifierFilter(suffix), COMPONENT_ID_FILTER, RELATIVE, SHEET_ID_FILTER] },
         async handler(source, importer, resolveOptions) {
           const index = source.indexOf("?");
           const path = index === -1 ? source : source.slice(0, index);
           const query = index === -1 ? "" : source.slice(index);
+          // A component's scoped sheet (ADR-0063): `./X.uf.tsx.css` from a module of ours, or
+          // from one a framework split off it (Qwik's `?inline` import), or its id coming back,
+          // with its query (plugin-vue's `?vue&type=style&index=0&src=true&lang.css`). It is no
+          // component's output, so it never reaches `childId`. Its id ends in `.css`, without a
+          // `\0`, so Vite's CSS pipeline handles it.
+          if (parseModuleId(path, SHEET_SUFFIX)) {
+            if (
+              RELATIVE.test(path) &&
+              !(
+                importer &&
+                (parseModuleId(importer, suffix) ??
+                  componentRequest(importer) ??
+                  splitFrom(importer))
+              )
+            ) {
+              return null;
+            }
+            const id = moduleIdCandidates(path, root, importer).find((candidate) =>
+              existsSync(parseModuleId(candidate, SHEET_SUFFIX)!.file),
+            );
+            return id === undefined ? null : `${id}${query}`;
+          }
           // A component id coming back: from a framework plugin's sub-request, absolute.
           const component = componentRequest(path);
           if (component) {
@@ -383,6 +435,12 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
       load: {
         filter: { id: loadIds },
         async handler(id) {
+          const sheet = parseModuleId(id, SHEET_SUFFIX);
+          if (sheet) {
+            if (!isAbsolute(sheet.file)) return null;
+            const loaded = await sheetOf(id, sheet.file);
+            return "error" in loaded ? this.error(loaded.error) : loaded;
+          }
           const component = componentRequest(id);
           const request = component ?? parseModuleId(id, suffix);
           if (!request) {

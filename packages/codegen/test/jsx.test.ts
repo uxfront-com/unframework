@@ -13,6 +13,7 @@ import {
   createFor,
   createFunctionCode,
   createFunctionHandler,
+  createImportedName,
   createInlineHandler,
   createFragment,
   createIf,
@@ -20,6 +21,8 @@ import {
   createListenerAttribute,
   createModelAttribute,
   createModelBindingAttribute,
+  createModule,
+  createModuleImport,
   createParameter,
   createParameterPattern,
   createProp,
@@ -34,12 +37,20 @@ import {
   createStaticClass,
   createStaticStyle,
   createStyleAttribute,
+  createStyleSheet,
   createText,
   createToggleClass,
   createTypeText,
   span,
 } from "@unframework/ir";
-import type { Binding, ElementNode, FragmentNode, RenderNode, UfComponent } from "@unframework/ir";
+import type {
+  Binding,
+  ComponentApi,
+  ElementNode,
+  FragmentNode,
+  RenderNode,
+  UfComponent,
+} from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
 import { describe, expect, it } from "vitest";
 
@@ -834,6 +845,119 @@ describe("composition (ADR-0053, ADR-0054)", () => {
     );
     expect(() => print(el("div", [], child), {})).toThrow(
       "The JSX dialect does not print composition yet (slotValue).",
+    );
+  });
+});
+
+describe("scope attributes (ADR-0063)", () => {
+  /** A child's API: Field's sheets use `:slotted()`, Plain has none. */
+  const api = (name: string, styles?: ComponentApi["styles"]): ComponentApi => ({
+    name,
+    export: "default",
+    props: [],
+    events: [],
+    models: [],
+    slots: [],
+    exposes: [],
+    inheritAttrs: true,
+    root: "element",
+    ...(styles ? { styles } : {}),
+  });
+  const imported = (name: string, styles?: ComponentApi["styles"]) =>
+    createModuleImport(
+      `./${name}.uf.tsx`,
+      `${name}.uf.tsx`,
+      { file: `${name}.uf.tsx`, components: [api(name, styles)], keys: [] },
+      [createImportedName("Component", "default", name, at)],
+      at,
+    );
+  const imports = [
+    imported("Field", { scopeId: "bbbbbbbb", slotted: true }),
+    imported("Plain"),
+    imported("Card", { scopeId: "cccccccc", slotted: false }),
+  ];
+  const styled = (render: ElementNode) =>
+    createComponent("Badge", render, at, [], undefined, [], bindings, [], undefined, {
+      styles: { sheets: [createStyleSheet("./Badge.css", ".badge {}", at)], scopeId: "aaaaaaaa" },
+    });
+  const tree = el(
+    "div",
+    [],
+    el("p", [createStaticAttribute("class", "a", at)], text("Hi")),
+    createComponentNode(
+      "Field",
+      [],
+      [
+        createSlotFill(
+          "default",
+          [
+            el("span", [], text("Name")),
+            createComponentNode("Plain", [], [createSlotFill("default", [el("i", [])], at)], at),
+          ],
+          at,
+        ),
+        createSlotFill("title", [el("h2", [], text("T"))], at),
+      ],
+      at,
+    ),
+    createComponentNode("Card", [], [createSlotFill("default", [el("b", [])], at)], at),
+  );
+  const printed = (owner: UfComponent, withModule = true) => {
+    const module = createModule("Badge.uf.tsx", [owner], [], [], imports);
+    const context = jsxContext({ component: owner, ...(withModule ? { module } : {}) });
+    const node = jsxNode(owner.render, context);
+    return context.placeholders.print(() => printExpression(node));
+  };
+
+  it("stamps every element, and a child's tag, with a styled component's attribute", () => {
+    expect(printed(styled(tree))).toBe(
+      [
+        '<div data-uf-aaaaaaaa=""><p class="a" data-uf-aaaaaaaa="">Hi</p>',
+        '<Field data-uf-aaaaaaaa="" title={<h2 data-uf-aaaaaaaa="" data-uf-bbbbbbbb-s="">T</h2>}>',
+        '<span data-uf-aaaaaaaa="" data-uf-bbbbbbbb-s="">Name</span>',
+        '<Plain data-uf-aaaaaaaa="" data-uf-bbbbbbbb-s=""><i data-uf-aaaaaaaa="" /></Plain></Field>',
+        '<Card data-uf-aaaaaaaa=""><b data-uf-aaaaaaaa="" /></Card></div>',
+      ].join(""),
+    );
+  });
+
+  it("stamps a fill's content with the `-s` of a child whose sheets use :slotted()", () => {
+    // An unstyled parent stamps nothing of its own, and a child without `:slotted()` nothing.
+    expect(printed(component(tree))).toBe(
+      [
+        '<div><p class="a">Hi</p><Field title={<h2 data-uf-bbbbbbbb-s="">T</h2>}>',
+        '<span data-uf-bbbbbbbb-s="">Name</span><Plain data-uf-bbbbbbbb-s=""><i /></Plain>',
+        "</Field><Card><b /></Card></div>",
+      ].join(""),
+    );
+    // Without the module, the builder cannot read a child's styles.
+    expect(printed(component(tree), false)).toBe(
+      '<div><p class="a">Hi</p><Field title={<h2>T</h2>}><span>Name</span><Plain><i /></Plain></Field><Card><b /></Card></div>',
+    );
+  });
+
+  it("stamps a <component is>'s fills with each candidate's `-s`", () => {
+    const dynamic = createDynamicNode(
+      expr("tone", ["tone", tone]),
+      [
+        { kind: "Component", component: "Field" },
+        { kind: "Component", component: "Plain" },
+      ],
+      [],
+      [],
+      at,
+      [createSlotFill("default", [el("span", [])], at)],
+    );
+    const owner = styled(el("div", [], dynamic));
+    const module = createModule("Badge.uf.tsx", [owner], [], [], imports);
+    const context = jsxContext({
+      component: owner,
+      module,
+      dialect: { dynamic: (node, each) => jsxDynamic(node, "Tag", each) },
+    });
+    const node = jsxNode(owner.render, context);
+    expect(context.placeholders.print(() => printExpression(node))).toBe(
+      '<div data-uf-aaaaaaaa=""><Tag data-uf-aaaaaaaa=""><span data-uf-aaaaaaaa="" data-uf-bbbbbbbb-s="" /></Tag></div>',
     );
   });
 });

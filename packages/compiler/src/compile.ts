@@ -75,7 +75,8 @@ export interface CompileResult {
   outputs: Record<string, OutputFile[]>;
   /**
    * The component each output file is written for, by target name, then by the file's path:
-   * the unplugin loads a file's components under ids of their own (ADR-0053).
+   * the unplugin loads a file's components under ids of their own (ADR-0053). The scoped sheet,
+   * `<source>.css`, is no component's module, and is left out (ADR-0063).
    */
   owners: Record<string, Record<string, string>>;
 }
@@ -170,19 +171,24 @@ export async function compile(source: string, options: CompileOptions): Promise<
   // hooks, which may keep or drop the analyser's sheets, never change them (ADR-0063). A
   // selector it rejects (UF5004) withholds the module from every target, as an analyser error
   // does.
+  /** Each styled component's scoped sheets, joined in import order, by its name. */
+  const sheets = new Map<string, string>();
   for (const component of module?.components ?? []) {
+    let joined = "";
     for (const sheet of component.styles ?? []) {
       const sheetFile = sheetFiles.get(sheet.specifier) ?? sheet.specifier;
       const scoped = scopeStylesheet(sheetFile, sheet.source, component.scopeId!);
       diagnostics.push(...scoped.diagnostics);
       if (scoped.diagnostics.length) module = undefined;
+      joined += joined && !joined.endsWith("\n") ? `\n${scoped.code}` : scoped.code;
     }
+    if (component.styles?.length) sheets.set(component.name, joined);
   }
 
   if (module) {
     for (const target of targets) {
       try {
-        const emitted = await emitTarget(target, module, source, options, diagnostics);
+        const emitted = await emitTarget(target, module, source, options, diagnostics, sheets);
         outputs[target.name] = emitted.files;
         owners[target.name] = emitted.owners;
       } catch (error) {
@@ -202,8 +208,11 @@ export async function compile(source: string, options: CompileOptions): Promise<
 
 /**
  * Checks a target's capabilities, then emits, transforms and formats each component's files.
- * The files of two components, or two files of one, may not share a path, compared without
- * case: case-insensitive file systems would write one over the other.
+ * A styled component's files end with its scoped sheet, `<source>.css` (ADR-0063), which the
+ * `output` hooks see and formatting keeps as printed, and which `owners` leaves out: the
+ * unplugin serves it on an id of its own. The files of two components, or two files of one,
+ * may not share a path, compared without case: case-insensitive file systems would write one
+ * over the other.
  */
 async function emitTarget(
   target: Target,
@@ -211,8 +220,10 @@ async function emitTarget(
   source: string,
   options: CompileOptions,
   diagnostics: Diagnostic[],
+  sheets: ReadonlyMap<string, string>,
 ): Promise<{ files: OutputFile[]; owners: Record<string, string> }> {
   const file = options.filename;
+  const sheetPath = `${file.slice(file.lastIndexOf("/") + 1)}.css`;
   diagnostics.push(...checkCapabilities(module, target));
   const written: OutputFile[] = [];
   const owners = new Map<string, { path: string; component: string }>();
@@ -227,6 +238,8 @@ async function emitTarget(
         }),
       );
       if ("problem" in emitted) throw new TypeError(`emit returned ${emitted.problem}`);
+      const sheet = sheets.get(component.name);
+      if (sheet !== undefined) emitted.files.push({ path: sheetPath, contents: sheet });
       files = deepFreeze(emitted.files);
     } catch (error) {
       const what = `The ${target.name} target failed on ${component.name}`;
@@ -285,7 +298,9 @@ async function emitTarget(
   return {
     files: written,
     owners: Object.fromEntries(
-      [...owners.values()].map(({ path, component }) => [path, component]),
+      [...owners.values()]
+        .filter(({ path }) => path !== sheetPath)
+        .map(({ path, component }) => [path, component]),
     ),
   };
 }

@@ -1,10 +1,10 @@
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { defineTarget } from "@unframework/codegen";
 import type { Capabilities, CapabilityCell } from "@unframework/codegen";
-import { compile, TARGET_NAMES } from "@unframework/compiler";
+import { compile, createFileResolver, TARGET_NAMES } from "@unframework/compiler";
 import type { CompilerPlugin } from "@unframework/compiler";
 import { isRunnableDevEnvironment, optimizeDeps, resolveConfig } from "vite";
 import type { Plugin } from "vite";
@@ -21,6 +21,9 @@ const BAD =
 const MULTI =
   'export default function Card() {\n  return <section class="card">Card</section>;\n}\n\nexport function Badge() {\n  return <span class="badge">New</span>;\n}\n';
 const NAMED = HELLO.replace("export default function", "export function");
+const CARD =
+  'import "./Card.css";\n\nexport default function Card() {\n  return <p class="card">Hi</p>;\n}\n';
+const AUTHORED_SHEET = ".card { color: red }\n";
 
 let project: Project;
 beforeAll(() => {
@@ -29,6 +32,8 @@ beforeAll(() => {
     "Bad.uf.tsx": BAD,
     "Multi.uf.tsx": MULTI,
     "Named.uf.tsx": NAMED,
+    "Card.uf.tsx": CARD,
+    "Card.css": AUTHORED_SHEET,
     "main.ts": 'import Hello from "./Hello.uf.tsx";\nexport default Hello;\n',
     "sub/Hello.uf.tsx": HELLO.replace("Hello, world!", "Hello, sub!"),
     "sub/main.ts": 'import Hello from "./Hello.uf.tsx";\nexport default Hello;\n',
@@ -151,6 +156,79 @@ describe.each(TARGET_NAMES)("the %s target", (target) => {
       });
     },
   );
+});
+
+// Every target's output imports the scoped sheet as `./Card.uf.tsx.css`, never the author's
+// `./Card.css` (ADR-0063): the unplugin serves what the target's compile emitted.
+describe.each(TARGET_NAMES)("the scoped sheet on the %s target", (target) => {
+  const sheet = () => `${file("Card.uf.tsx")}.css`;
+  /** The sheet this target's compile emits, through the same file resolver as the plugin's. */
+  const scoped = async () => {
+    const resolve = createFileResolver({
+      root: project.root,
+      readFile: (path) => Promise.resolve(readFileSync(path, "utf8")),
+    });
+    const result = await compile(CARD, { filename: "Card.uf.tsx", targets: [target], resolve });
+    const emitted = result.outputs[target]!.find((output) => output.path === "Card.uf.tsx.css");
+    return emitted!.contents;
+  };
+
+  it("loads from the module id's import, and the author's sheet never does", async () => {
+    const expected = await scoped();
+    expect(expected).toMatch(/^\.card\[data-uf-[0-9a-f]{8}\] \{ color: red \}\n$/);
+    await withServer(unframework({ target }), async ({ client }) => {
+      const module = `${file("Card.uf.tsx")}${ID_SUFFIXES[target]}`;
+      const resolve = async (source: string, from: string | undefined) =>
+        (await client.pluginContainer.resolveId(source, from))?.id;
+      // The module itself loads its component alone: the sheet is no part of it.
+      expect(codeOf(await client.pluginContainer.load(module))).not.toContain("color: red");
+      expect(await resolve("./Card.uf.tsx.css", module)).toBe(sheet());
+      // Its id coming back, absolute or as a root-relative URL from the browser.
+      expect(await resolve(sheet(), undefined)).toBe(sheet());
+      expect(await resolve("/Card.uf.tsx.css", undefined)).toBe(sheet());
+      expect(codeOf(await client.pluginContainer.load(sheet()))).toBe(expected);
+      // Vite's CSS pipeline takes the id as any stylesheet's: it ends in `.css`, without `\0`.
+      const inline = await client.transformRequest(`${sheet()}?inline`);
+      expect(inline?.code).toContain(JSON.stringify(expected));
+      expect(client.moduleGraph.getModulesByFile(file("Card.css"))).toBeUndefined();
+    });
+  });
+
+  it(
+    target === "vue"
+      ? "loads for plugin-vue's <style src> request"
+      : target === "qwik"
+        ? "loads for the ?inline import of a segment the optimizer splits off"
+        : "is left alone where no module of ours imports it",
+    async () => {
+      const expected = await scoped();
+      await withServer(unframework({ target }), async ({ client }) => {
+        const module = `${file("Card.uf.tsx")}${ID_SUFFIXES[target]}`;
+        const resolve = async (source: string, from: string) =>
+          (await client.pluginContainer.resolveId(source, from))?.id;
+        if (target === "vue") {
+          // plugin-vue resolves `src` from the module, then imports it with its style query.
+          const style = "?vue&type=style&index=0&src=true&lang.css";
+          expect(await resolve(`./Card.uf.tsx.css${style}`, module)).toBe(`${sheet()}${style}`);
+          expect(codeOf(await client.pluginContainer.load(`${sheet()}${style}`))).toBe(expected);
+        } else if (target === "qwik") {
+          const segment = `${module}_Card_component_useStyles_Jf8mu3bRpe0.js`;
+          expect(await resolve("./Card.uf.tsx.css?inline", segment)).toBe(`${sheet()}?inline`);
+          expect(codeOf(await client.pluginContainer.load(`${sheet()}?inline`))).toBe(expected);
+        }
+        // A file that is no module of ours gets no sheet: Vite finds none on disk.
+        expect(await resolve("./Card.uf.tsx.css", importer())).toBeUndefined();
+      });
+    },
+  );
+
+  it("fails a sheet id whose file imports no stylesheet", async () => {
+    await withServer(unframework({ target }), async ({ client }) => {
+      await expect(client.pluginContainer.load(`${file("Hello.uf.tsx")}.css`)).rejects.toThrow(
+        `The ${target} target emitted no Hello.uf.tsx.css for Hello.uf.tsx`,
+      );
+    });
+  });
 });
 
 describe("resolveId", () => {

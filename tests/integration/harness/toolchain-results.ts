@@ -10,6 +10,15 @@ import type { FrameworkCompileResult, ToolchainMessage } from "@unframework/code
 
 import { ROOT } from "./paths.ts";
 
+/**
+ * The output files L3, L4 and L5 hand their tools: all but the scoped sheets (`.css`, ADR-0063).
+ * Babel and tsgo would fail on one, and the compile project parses each with lightningcss
+ * instead (`stylesheetProblems`).
+ */
+export function toolchainFiles(paths: readonly string[]): string[] {
+  return paths.filter((path) => !path.endsWith(".css"));
+}
+
 /** L3: the framework compiler's errors and warnings on a case's files, and outside the outputs. */
 export function frameworkCompileProblems(
   results: ReadonlyMap<string, FrameworkCompileResult>,

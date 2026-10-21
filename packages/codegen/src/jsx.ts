@@ -34,6 +34,7 @@ import type {
   StaticAttribute,
   StyleAttribute,
   UfComponent,
+  UfModule,
 } from "@unframework/ir";
 
 import { handlerText } from "./functions.ts";
@@ -42,6 +43,7 @@ import { Placeholders } from "./js/placeholders.ts";
 import { referencedBindings } from "./references.ts";
 import { bindingOf, rewriteExpression } from "./rewrite.ts";
 import type { ParenthesesSlot, RewriteRules, RewriteSite } from "./rewrite.ts";
+import { scopeAttribute, slottedAttributes } from "./scope.ts";
 
 /**
  * How a JSX target writes what its framework writes differently from the defaults. Each hook
@@ -194,11 +196,23 @@ export interface JsxContext {
    * outside it is left out (an unused parameter fails L5).
    */
   readonly referenced: ReadonlySet<BindingId>;
+  /** The module, whose imports give a child's scoped styles (ADR-0063). */
+  readonly module?: UfModule | undefined;
+  /**
+   * The `-s` attributes of the children whose slot the nodes being printed fill: set while a
+   * fill's content prints, for each child whose sheets use `:slotted()` (ADR-0063).
+   */
+  readonly slotted?: readonly string[] | undefined;
 }
 
 /** The options of {@link jsxContext}. */
 export interface JsxContextOptions {
   component: UfComponent;
+  /**
+   * The component's module: without it, the content filled into a styled child carries no
+   * `-s` attribute (ADR-0063).
+   */
+  module?: UfModule;
   dialect?: JsxDialect;
   rules?: RewriteRules;
   placeholders?: Placeholders;
@@ -215,6 +229,7 @@ export interface JsxContextOptions {
 export function jsxContext(options: JsxContextOptions): JsxContext {
   return {
     component: options.component,
+    module: options.module,
     dialect: options.dialect ?? {},
     rules: options.rules,
     placeholders: options.placeholders ?? new Placeholders(),
@@ -409,13 +424,18 @@ export function jsxComponent(
   leading: readonly AST.JSXAttributeItem[] = [],
 ): AST.JSXElement {
   const tag = context.dialect.componentTag?.(node, context) ?? node.component;
-  return componentElement(node, tag, context, leading);
+  return componentElement(node, tag, [node.component], context, leading);
 }
 
-/** A component element written with `tag`: its attributes, then its fills. */
+/**
+ * A component element written with `tag`: its attributes, then the scope attributes (ADR-0063),
+ * then its fills. `children` are the components it may render: the content filled into them
+ * carries the `-s` attribute of each whose sheets use `:slotted()`.
+ */
 function componentElement(
   node: ComponentNode,
   tag: string,
+  children: readonly string[],
   context: JsxContext,
   leading: readonly AST.JSXAttributeItem[],
 ): AST.JSXElement {
@@ -456,19 +476,26 @@ function componentElement(
         return unreachable(attribute);
     }
   });
-  const children: AST.JSXChild[] = [];
+  attributes.push(...scopeJsxAttributes(element, context));
+  // A fill's content is the parent's, so it keeps the parent's attribute, and takes the `-s` of
+  // this child alone: a child further out stamps only the content filled into it.
+  const fillContext: JsxContext = {
+    ...context,
+    slotted: slottedAttributes(context.module, children),
+  };
+  const content: AST.JSXChild[] = [];
   for (const fill of node.fills) {
     if (fill.slot === "default" && fill.forward === undefined && !fill.parameter) {
-      children.push(...jsxChildren(fill.children, context));
+      content.push(...jsxChildren(fill.children, fillContext));
     } else {
       attributes.push(
         ...(dialect.fillAttribute
-          ? dialect.fillAttribute(fill, node, context)
-          : fillJsxAttribute(fill, node, context)),
+          ? dialect.fillAttribute(fill, node, fillContext)
+          : fillJsxAttribute(fill, node, fillContext)),
       );
     }
   }
-  return js.jsxElement(tag, [...leading, ...attributes], children);
+  return js.jsxElement(tag, [...leading, ...attributes], content);
 }
 
 /**
@@ -492,7 +519,10 @@ export function jsxDynamic(
       fills: node.fills ?? [],
       span: node.span,
     };
-    return componentElement(component, name, context, leading);
+    const children = node.candidates.flatMap((each) =>
+      each.kind === "Component" ? [each.component] : [],
+    );
+    return componentElement(component, name, children, context, leading);
   }
   const element: ElementNode = {
     kind: "Element",
@@ -577,10 +607,13 @@ function hook<K extends "slotValue" | "slotOutlet" | "modelAttribute" | "modelBi
   return found.bind(context.dialect) as NonNullable<JsxDialect[K]>;
 }
 
-/** An element's attributes, in source order, each through its dialect hook. */
+/**
+ * An element's attributes, in source order, each through its dialect hook, then its scope
+ * attributes ({@link scopeJsxAttributes}).
+ */
 export function jsxAttributes(node: ElementNode, context: JsxContext): AST.JSXAttributeItem[] {
   const { dialect } = context;
-  return node.attributes.flatMap((attribute) => {
+  const attributes = node.attributes.flatMap((attribute) => {
     switch (attribute.kind) {
       case "Static":
         return dialect.staticAttribute
@@ -616,6 +649,24 @@ export function jsxAttributes(node: ElementNode, context: JsxContext): AST.JSXAt
         return unreachable(attribute);
     }
   });
+  return [...attributes, ...scopeJsxAttributes(node, context)];
+}
+
+/**
+ * The scope attributes an element or a component's tag carries after its own (ADR-0063): the
+ * styled component's `data-uf-<scopeId>`, which a child's root takes too (the child-root rule),
+ * and the `-s` of each child whose slot it fills. Each is `name=""`, as every framework renders
+ * it: a bare JSX attribute is `true`, which React writes as `"true"`.
+ */
+export function scopeJsxAttributes(
+  element: ElementNode,
+  context: JsxContext,
+): AST.JSXAttributeItem[] {
+  const { scopeId } = context.component;
+  const names = [...(scopeId ? [scopeAttribute(scopeId)] : []), ...(context.slotted ?? [])];
+  return names.flatMap((name) =>
+    staticJsxAttribute({ kind: "Static", name, value: "", span: element.span }, element, context),
+  );
 }
 
 /** The attribute name a dialect writes. */
