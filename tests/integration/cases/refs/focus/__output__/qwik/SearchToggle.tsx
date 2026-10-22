@@ -1,7 +1,7 @@
 import { $, type CSSProperties, type ClassList, component$, useSignal } from "@qwik.dev/core";
 
 export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style }) => {
+  ({ class: className, style, ...attributes }) => {
     const field = useSignal<HTMLInputElement>();
     const trigger = useSignal<HTMLButtonElement>();
 
@@ -14,7 +14,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
     });
 
     return (
-      <div class={["search-toggle", className]} role="search" style={style}>
+      <div
+        class={["search-toggle", className]}
+        role="search"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <button type="button" ref={trigger} onClick$={focusField}>
           Search
         </button>
@@ -23,3 +28,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

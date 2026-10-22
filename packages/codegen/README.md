@@ -24,10 +24,11 @@ framework-specific.
   module uses from its IR, with where each capability is first used (each component's props, then
   its setup items through the exhaustive `SETUP_ITEM_CAPABILITIES`, then its render tree): the
   compiler's capability check and the render-parity tests read it. `BEHAVIOURAL_CAPABILITIES`
-  change what code does in the browser, not what renders, so the render-parity tests compare a
-  case that uses one its target leaves unsupported as any other (ADR-0033, as amended by
-  ADR-0047); `CAPABILITY_PREREQUISITES` names what each refines (`interactivity`), which the
-  compiler reports alone where the target lacks it.
+  change what code does in the browser, or the cascade (`sheet-order`), not the markup that
+  renders, so the render-parity tests compare a case that uses one its target leaves unsupported
+  as any other (ADR-0033, as amended by ADR-0047 and ADR-0063); `CAPABILITY_PREREQUISITES` names
+  what each refines (`interactivity`), which the compiler reports alone where the target lacks
+  it.
 - **The scoper** (`scopeStylesheet(file, source, scopeId)`, ADR-0063): a component's sheet,
   scoped once with Vue's algorithm: Vue's scoped plugin ported onto postcss and
   postcss-selector-parser, which keep the sheet's own text, so only selectors and keyframe names
@@ -50,9 +51,10 @@ true })`, but where Vue's own output doesn't parse. It reports UF5004 where Vue 
   sheets use `:slotted()` on the elements and component tags of the content filled into it,
   read through the resolver's API (`childStyles`) or the module's own sheets; a target owns
   how its child takes them. `formatOutput` keeps an emitted `.css` sheet as printed.
-  `requiredCapabilities` derives `scoped-styles` at a component's first sheet, `child-root-scope`
-  at a child a styled component renders, and `slotted-styles` at a fill of a child whose sheets use
-  `:slotted()` (its API's `styles.slotted`, or the scoper's reading of a component's own sheets).
+  `requiredCapabilities` derives `scoped-styles` and `sheet-order` at a component's first sheet,
+  `child-root-scope` at a child a styled component renders, and `slotted-styles` at a fill of a
+  child whose sheets use `:slotted()` (its API's `styles.slotted`, or the scoper's reading of a
+  component's own sheets).
 - **Event controls** (`handlerControls`, `ownControls`, `eventCalls`, `handedControls`, ADR-0047):
   the `preventDefault()` and `stopPropagation()` calls a target that runs them apart from the
   handler (Qwik) can run as the event is dispatched, read from the body by the IR's event

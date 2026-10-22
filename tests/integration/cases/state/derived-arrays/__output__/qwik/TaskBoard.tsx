@@ -32,7 +32,7 @@ function sizeSummary(event: Event, element: Element) {
 }
 
 export default component$<TaskBoardProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ initial, class: className, style }) => {
+  ({ initial, class: className, style, ...attributes }) => {
     const tasks = useSignal(initial);
     const filters = useSignal<Filters>({ query: "", tags: [] });
     const notes = useSignal<HTMLTextAreaElement>();
@@ -101,7 +101,12 @@ export default component$<TaskBoardProps & { class?: ClassList; style?: CSSPrope
     });
 
     return (
-      <section class={["task-board", className]} aria-label="Tasks" style={style}>
+      <section
+        class={["task-board", className]}
+        aria-label="Tasks"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <ol aria-label="Open">
           {open.value.map((task) => (
             <li key={task.id} class={{ first: task.rank === 1 }}>
@@ -146,3 +151,12 @@ export default component$<TaskBoardProps & { class?: ClassList; style?: CSSPrope
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

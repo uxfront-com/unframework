@@ -13,7 +13,7 @@ export interface CommentCardEvents {
 }
 
 export default component$<CommentCardEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onLiked$, class: className, style }) => {
+  ({ onLiked$, class: className, style, ...attributes }) => {
     const text = useSignal("");
     const liked = useSignal(false);
 
@@ -33,7 +33,12 @@ export default component$<CommentCardEvents & { class?: ClassList; style?: CSSPr
     });
 
     return (
-      <section class={["comment-card", className]} aria-label="Comment" style={style}>
+      <section
+        class={["comment-card", className]}
+        aria-label="Comment"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <label>
           Comment
           <textarea name="comment" rows={2} onInput$={autosize} />
@@ -61,3 +66,12 @@ export default component$<CommentCardEvents & { class?: ClassList; style?: CSSPr
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

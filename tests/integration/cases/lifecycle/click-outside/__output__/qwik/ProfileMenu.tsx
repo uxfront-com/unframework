@@ -14,7 +14,7 @@ export interface ProfileMenuEvents {
 }
 
 export default component$<ProfileMenuEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onClosed$, class: className, style }) => {
+  ({ onClosed$, class: className, style, ...attributes }) => {
     const open = useSignal(false);
     const menu = useSignal<HTMLDivElement>();
 
@@ -45,7 +45,12 @@ export default component$<ProfileMenuEvents & { class?: ClassList; style?: CSSPr
     );
 
     return (
-      <section class={["profile-menu", className]} aria-label="Profile" style={style}>
+      <section
+        class={["profile-menu", className]}
+        aria-label="Profile"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <div class="menu" ref={menu}>
           <button
             type="button"
@@ -70,3 +75,12 @@ export default component$<ProfileMenuEvents & { class?: ClassList; style?: CSSPr
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

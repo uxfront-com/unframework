@@ -80,6 +80,8 @@ export interface CanaryCase {
   rerenders(target: string): boolean;
   /** Whether a source's committed IR has an element listener (an `Event` attribute) to unwire. */
   listens: boolean;
+  /** Whether a source's committed IR imports a stylesheet, so its compile emits a scoped sheet. */
+  styled: boolean;
   /**
    * The target that writes the case's shared artefacts (ADR-0057): a canary that spares the
    * reference spares it there.
@@ -136,6 +138,11 @@ export interface Canary {
   format?: false;
   /** The compiler plugin, made afresh for each compile. */
   plugin?(): CompilerPlugin;
+  /**
+   * `true`: the plugin's output hook sees the scoped sheets too (ADR-0063). Every other canary's
+   * hook sees a styled component's own files only (`keepingSheets`).
+   */
+  sheets?: true;
   /**
    * Corrupts a target's diagnostics before the compile project's fix check applies their fixes
    * (L1). No compiler hook reaches the fixes, so the harness corrupts them; a case with compile
@@ -573,6 +580,25 @@ export const CANARIES: readonly Canary[] = [
     }),
   },
   {
+    id: "L10-stylesheet-rule-dropped",
+    layer: "L10",
+    description:
+      "Drops the first style rule outside `@keyframes` from every scoped sheet on every target but the reference, on the cases that emit one: the rule's declarations no longer apply, so the geometry differs from the reference's.",
+    evidence: { browser: { geometry: /geometry-mismatch \(/ } },
+    followersOnly: true,
+    sheets: true,
+    // Every styled case's first such rule sets a property the geometry captures (`layers` has
+    // none at the top level, and `keyframes` starts with its `@keyframes`).
+    appliesTo: (info) => info.styled,
+    plugin: () => ({
+      name: "uf-canary-L10-sheet",
+      output: (files) =>
+        files.map((file) =>
+          file.path.endsWith(".css") ? { ...file, contents: dropFirstRule(file) } : file,
+        ),
+    }),
+  },
+  {
     id: "L11-invalid-role",
     layer: "L11",
     description: "Gives every component's root an invalid ARIA role: axe-core reports aria-roles.",
@@ -727,7 +753,8 @@ export function canaryPlugins(
   const canary = findCanary(id);
   if (!canary.plugin) return [];
   if (target !== undefined && !corrupts(canary, target)) return [];
-  if (!canary.followersOnly) return [keepingSheets(canary.plugin())];
+  const plugin = canary.sheets ? canary.plugin() : keepingSheets(canary.plugin());
+  if (!canary.followersOnly) return [plugin];
   if (target === undefined) {
     throw new Error(
       `The ${id} canary spares the reference target, so it needs the project's target.`,
@@ -735,7 +762,7 @@ export function canaryPlugins(
   }
   if (target === REFERENCE) return [];
   const spared = Object.keys(references).filter((caseId) => references[caseId] === target);
-  return [sparing(keepingSheets(canary.plugin()), spared)];
+  return [sparing(plugin, spared)];
 }
 
 /**
@@ -840,6 +867,13 @@ export function canaryCase(info: CaseInfo): CanaryCase {
     listens: irs.some(
       (ir) => existsSync(ir) && listens(JSON.parse(readFileSync(ir, "utf8")) as UfModule),
     ),
+    styled: irs.some(
+      (ir) =>
+        existsSync(ir) &&
+        (JSON.parse(readFileSync(ir, "utf8")) as UfModule).components.some(
+          (component) => component.styles?.length,
+        ),
+    ),
     reference: info.config.reference ?? REFERENCE,
   };
 }
@@ -900,6 +934,66 @@ function unwire(render: ElementNode | FragmentNode): void {
   for (const element of elementsOf([render])) {
     element.attributes = element.attributes.filter((attribute) => attribute.kind !== "Event");
   }
+}
+
+/**
+ * A scoped sheet without its first style rule outside `@keyframes`, in document order (inside
+ * `@media` or `@layer` too): from its selector to its block's closing brace. The sheets are
+ * postcss's printing of the author's text (ADR-0063), so braces and semicolons outside comments
+ * and strings delimit the rules. Throws for a sheet that has no such rule, which the canary
+ * would leave as it was.
+ */
+export function dropFirstRule(file: OutputFile): string {
+  const text = file.contents;
+  /** The index of the last character of a comment or a string that starts at `at`, or `at`. */
+  const skip = (at: number): number => {
+    if (text.startsWith("/*", at)) {
+      const close = text.indexOf("*/", at + 2);
+      return close === -1 ? text.length : close + 1;
+    }
+    const quote = text[at];
+    if (quote !== '"' && quote !== "'") return at;
+    let end = at + 1;
+    for (; end < text.length && text[end] !== quote; end++) if (text[end] === "\\") end++;
+    return end;
+  };
+  /** The open blocks: whether each is a `@keyframes` block. */
+  const blocks: boolean[] = [];
+  /** Where the current statement's prelude starts, past whitespace and comments. */
+  let start: number | undefined;
+  for (let at = 0; at < text.length; at++) {
+    const skipped = skip(at);
+    if (skipped !== at) {
+      if (start === undefined && !text.startsWith("/*", at)) start = at;
+      at = skipped;
+      continue;
+    }
+    const char = text[at]!;
+    if (char === "{") {
+      const prelude = text.slice(start ?? at, at);
+      if (!prelude.startsWith("@") && blocks.at(-1) !== true) {
+        let depth = 1;
+        let end = at + 1;
+        for (; end < text.length && depth > 0; end++) {
+          end = skip(end);
+          if (text[end] === "{") depth++;
+          else if (text[end] === "}") depth--;
+        }
+        // From the start of its line, and up to the next line that holds anything.
+        const line = text.lastIndexOf("\n", start! - 1) + 1;
+        const from = /^[ \t]*$/.test(text.slice(line, start)) ? line : start;
+        return `${text.slice(0, from)}${text.slice(end).replace(/^\s*\n/, "")}`;
+      }
+      blocks.push(/^@(?:-[a-z]+-)?keyframes\b/i.test(prelude));
+      start = undefined;
+    } else if (char === "}" || char === ";") {
+      if (char === "}") blocks.pop();
+      start = undefined;
+    } else if (start === undefined && !/\s/.test(char)) {
+      start = at;
+    }
+  }
+  throw new Error(`${MARKER} ${file.path} has no style rule outside @keyframes to drop.`);
 }
 
 /** Whether a cell is a skip by a capability the target lacks, which no canary can corrupt. */
@@ -1329,18 +1423,22 @@ export function injectScript(
   }
   if (where === "module") return `${contents.trimEnd()}\n\nexport ${statement}\n`;
   if (target === "angular") {
+    // The component's class, after its decorator: a directive the file declares before it (a
+    // listener's option, the scope directive of ADR-0063) has a class of its own.
+    const decorator = Math.max(contents.indexOf("@Component("), 0);
+    const before = contents.slice(0, decorator);
+    const component = contents.slice(decorator);
     // The constructor runs once per render: an existing one's body gets the statement first,
     // before the effects and hooks it registers (M2's outputs have one).
-    const existing = insertAfter(contents, /\bconstructor\s*\([^)]*\)\s*\{/, `\n    ${statement}`);
-    if (existing !== undefined) return existing;
+    const existing = insertAfter(component, /\bconstructor\s*\([^)]*\)\s*\{/, `\n    ${statement}`);
+    if (existing !== undefined) return `${before}${existing}`;
     // The class's members follow: a constructor before them still runs once per render.
-    return (
-      insertAfter(
-        contents,
-        /export\s+(?:default\s+)?class\s+\w+[^{]*\{/,
-        `\n  constructor() {\n    ${statement}\n  }\n`,
-      ) ?? fail("component class")
+    const added = insertAfter(
+      component,
+      /export\s+(?:default\s+)?class\s+\w+[^{]*\{/,
+      `\n  constructor() {\n    ${statement}\n  }\n`,
     );
+    return added === undefined ? fail("component class") : `${before}${added}`;
   }
   const body = componentBodyStart(contents);
   if (body === undefined) {

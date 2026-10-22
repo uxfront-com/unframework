@@ -246,6 +246,8 @@ export interface NgtscVite {
   lazy?: boolean;
   /** Fails each load with this reason, as the unframework plugin fails a module it rejects. */
   loadError?: string;
+  /** The scoped sheet the unframework plugin emitted for each `.uf.tsx` file (ADR-0063). */
+  sheets?: Record<string, string>;
 }
 
 /**
@@ -262,7 +264,10 @@ export async function ngtscPlugin(
   const served = new Set<string>(vite.lazy ? [] : Object.keys(sources));
   const unframework = {
     name: "unframework",
-    api: { getCompiled: (id: string) => (served.has(id) ? sources[id] : undefined) },
+    api: {
+      getCompiled: (id: string) => (served.has(id) ? sources[id] : undefined),
+      getSheet: (file: string) => vite.sheets?.[file],
+    },
   };
   (plugin.configResolved as (config: ResolvedConfig) => void)({
     plugins: [unframework as Plugin, plugin],

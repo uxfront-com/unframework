@@ -286,13 +286,29 @@ describe("ngtscVirtual", () => {
     await expect(misfits.transform(id("Parent"), parent("[size]"))).rejects.toThrow(/TS2322/);
   });
 
+  // ADR-0063: the sheet is in no file on disk, and ngtsc reads a `styleUrl` itself.
+  it("compiles a component's scoped sheet, which the unframework plugin serves", async () => {
+    const styled = component("Card", '<p class="label">Hi</p>').replace(
+      "  template:",
+      '  styleUrl: "./Card.uf.tsx.css",\n  template:',
+    );
+    const sheet = ".label[data-uf-0a1b2c3d] { color: rgb(1, 2, 3); }\n";
+    const { transform } = await ngtscPlugin({}, "server", {
+      sheets: { [join(directory, "Card.uf.tsx")]: sheet },
+    });
+    const { code } = await transform(id("Card"), styled);
+    expect(code).toContain("rgb(1, 2, 3)");
+    const unserved = await ngtscPlugin();
+    await expect(unserved.transform(id("Card"), styled)).rejects.toThrow(/Card\.uf\.tsx\.css/);
+  });
+
   it("refuses to run without the unframework plugin", async () => {
     const plugin = ngtscVirtual(await loadCompiler(context.toolchainDir));
     expect(() =>
       (plugin.configResolved as (config: ResolvedConfig) => void)({
         plugins: [plugin],
       } as unknown as ResolvedConfig),
-    ).toThrow(/no plugin named "unframework" exposing api\.getCompiled/);
+    ).toThrow(/no plugin named "unframework" exposing api\.getCompiled\(id\) and api\.getSheet/);
   });
 });
 

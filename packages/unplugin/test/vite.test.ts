@@ -563,8 +563,9 @@ describe("files with several components", () => {
         const code = codeOf(
           await client.pluginContainer.load(`${file("Multi.uf.tsx")}${ID_SUFFIXES[target]}`),
         );
-        // Each file's code, with an import the first file already made written once.
-        const imports = card!.contents.match(/^import .*$/gm) ?? [];
+        // Each file's code, with an import the first file already made written once, on one
+        // line or on several.
+        const imports = card!.contents.match(/^import\b[^;]*;$/gm) ?? [];
         expect(code).toBe(
           `${card!.contents}\n${imports.reduce((rest, line) => rest.replace(`${line}\n`, ""), badge!.contents)}`,
         );
@@ -869,6 +870,42 @@ describe("api.getCompiled", () => {
   });
 });
 
+// Angular's ngtsc reads a `styleUrl` itself, so Vite never loads its sheet (ADR-0063).
+describe("api.getSheet", () => {
+  it("returns the sheet the last load of a file emitted, after the output hooks", async () => {
+    const marked: CompilerPlugin = {
+      name: "marked-sheet",
+      output: (files) =>
+        files.map((output) =>
+          output.path.endsWith(".css")
+            ? { ...output, contents: `/* hooked */\n${output.contents}` }
+            : output,
+        ),
+    };
+    await withServer(
+      unframework({ target: "angular", plugins: [marked] }),
+      async ({ server, client }) => {
+        const api = apiOf(server);
+        expect(api.getSheet(file("Card.uf.tsx"))).toBeUndefined();
+        await client.pluginContainer.load(`${file("Card.uf.tsx")}.ts`);
+        expect(api.getSheet(file("Card.uf.tsx"))).toMatch(
+          /^\/\* hooked \*\/\n\.card\[data-uf-[0-9a-f]{8}\] \{ color: red \}\n$/,
+        );
+        // A file that imports no stylesheet emits none, and one that stops importing its own
+        // has none from then on.
+        await client.pluginContainer.load(`${file("Hello.uf.tsx")}.ts`);
+        expect(api.getSheet(file("Hello.uf.tsx"))).toBeUndefined();
+        const styled = project.write("Restyled.uf.tsx", CARD);
+        await client.pluginContainer.load(`${styled}.ts`);
+        expect(api.getSheet(styled)).toContain(".card[data-uf-");
+        writeFileSync(styled, CARD.replace('import "./Card.css";\n\n', ""));
+        await client.pluginContainer.load(`${styled}.ts`);
+        expect(api.getSheet(styled)).toBeUndefined();
+      },
+    );
+  });
+});
+
 /** A capability cell the target cannot support, reported with `severity`. */
 function unsupported(severity: "warning" | "info"): CapabilityCell {
   return { support: "unsupported", code: "UF4001", severity, reason: "it is a test target." };
@@ -921,6 +958,7 @@ function htmlTarget() {
     "scoped-styles": { support: "native" },
     "child-root-scope": { support: "native" },
     "slotted-styles": { support: "native" },
+    "sheet-order": { support: "native" },
   };
   return defineTarget({
     name: "html",

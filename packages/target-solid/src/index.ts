@@ -124,6 +124,8 @@ export const solid: Target = defineTarget({
       note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
     },
     "slotted-styles": { support: "native" },
+    // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
+    "sheet-order": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     // Every name the source declares or reads is taken before the output claims its own

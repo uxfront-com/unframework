@@ -18,7 +18,7 @@ export interface SeatPickerEvents {
 
 export default component$<
   SeatPickerProps & SeatPickerEvents & { class?: ClassList; style?: CSSProperties }
->(({ pricePerSeat, onQuote$, class: className, style }) => {
+>(({ pricePerSeat, onQuote$, class: className, style, ...attributes }) => {
   const seats = useSignal(1);
   const total = useComputed$(() => seats.value * pricePerSeat);
   const summary = useComputed$(() =>
@@ -38,7 +38,12 @@ export default component$<
   });
 
   return (
-    <section class={["seat-picker", className]} aria-label="Seats" style={style}>
+    <section
+      class={["seat-picker", className]}
+      aria-label="Seats"
+      {...scopeAttributes(attributes)}
+      style={style}
+    >
       <p role="status">{summary.value}</p>
       <button type="button" onClick$={addSeat}>
         Add a seat
@@ -49,3 +54,12 @@ export default component$<
     </section>
   );
 });
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

@@ -7,6 +7,7 @@ import { removeReactDefaultStates, removeSettledValues } from "./rules/control-v
 import { removeFrameworkAttributes } from "./rules/framework-attributes.ts";
 import { canonicalizeGeneratedIds } from "./rules/generated-ids.ts";
 import { canonicalizeClasses, sortAttributes } from "./rules/ordering.ts";
+import { removeQwikStyles } from "./rules/qwik-styles.ts";
 import { removeQwikTemplates } from "./rules/qwik-templates.ts";
 import { canonicalizeBooleanAttributes, canonicalizeStyles } from "./rules/values.ts";
 import { collapseWhitespace } from "./rules/whitespace.ts";
@@ -42,6 +43,7 @@ export function normalizeTree(
   checkOptions(options);
   const { target } = options;
   removeComments(root);
+  removeQwikStyles(root, target);
   removeFrameworkAttributes(root, target);
   removeQwikTemplates(root, target);
   unwrapAngularHosts(root, target);

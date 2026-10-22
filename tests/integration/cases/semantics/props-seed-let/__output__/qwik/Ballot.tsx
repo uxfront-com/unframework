@@ -39,6 +39,7 @@ export default component$<
     onCounted$,
     class: className,
     style,
+    ...attributes
   }) => {
     const votes = useSignal(limit);
     const picked = useSignal("none");
@@ -95,7 +96,12 @@ export default component$<
     });
 
     return (
-      <section class={["ballot", className]} aria-label={label} style={style}>
+      <section
+        class={["ballot", className]}
+        aria-label={label}
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <p role="status">{votes.value} votes left</p>
         <p>Picked: {picked.value}</p>
         <ul aria-label="Choices">
@@ -114,3 +120,12 @@ export default component$<
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

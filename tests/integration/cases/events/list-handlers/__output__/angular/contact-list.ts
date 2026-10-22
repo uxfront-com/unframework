@@ -1,6 +1,10 @@
 import {
   Component,
+  Directive,
+  ElementRef,
   type OnInit,
+  Renderer2,
+  inject,
   input,
   linkedSignal,
   output,
@@ -17,8 +21,34 @@ export interface ContactListProps {
   initial: Contact[];
 }
 
+/** The scope attributes taken off each host, for the roots its component renders later. */
+const scopes = new WeakMap<Element, string[]>();
+
+/**
+ * Gives a root node of its component the scope attributes the component's styled parents put on
+ * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.
+ */
+@Directive({ selector: "[ufScope]" })
+export class ScopeAttributes implements OnInit {
+  readonly ufScope = input.required<HTMLElement>();
+  private readonly element = inject<ElementRef<Element>>(ElementRef);
+  private readonly renderer = inject(Renderer2);
+
+  ngOnInit(): void {
+    const host = this.ufScope();
+    let names = scopes.get(host);
+    if (!names) {
+      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));
+      for (const name of names) this.renderer.removeAttribute(host, name);
+      scopes.set(host, names);
+    }
+    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");
+  }
+}
+
 @Component({
   selector: "uf-contact-list",
+  imports: [ScopeAttributes],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
@@ -29,6 +59,7 @@ export interface ContactListProps {
       aria-label="Contacts"
       [class]="this.class()"
       [style]="this.style()"
+      [ufScope]="this.host"
     >
       <ul>
         @for (contact of contacts; track contact.id; let index = $index) {
@@ -73,4 +104,5 @@ export default class ContactList implements OnInit {
     this.contacts.set(this.contacts().filter((other) => other.id !== entry.id));
     this.removed.emit(entry.name);
   }
+  protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

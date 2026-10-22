@@ -9,9 +9,15 @@ export interface ContactCardProps {
 }
 
 export default component$<ContactCardProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ name, jobTitle, team, pronouns, phone, class: className, style }) => {
+  ({ name, jobTitle, team, pronouns, phone, class: className, style, ...attributes }) => {
     return (
-      <article class={["contact-card", className]} aria-label={name} data-team={team} style={style}>
+      <article
+        class={["contact-card", className]}
+        aria-label={name}
+        data-team={team}
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <h2 title={pronouns}>{name}</h2>
         <p>{jobTitle}</p>
         <p>Phone: {phone ?? "not listed"}</p>
@@ -19,3 +25,12 @@ export default component$<ContactCardProps & { class?: ClassList; style?: CSSPro
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

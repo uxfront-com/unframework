@@ -141,7 +141,8 @@ const OPTION_CAPABILITIES = {
  * provides a `state`, `derived` or `model` binding, `contextual-root` at a root element HTML
  * ties to its parent (`CONTEXTUAL_ROOT_ELEMENTS`), and a slot's presence (`named-slot`, or
  * `default-slot-presence` for the default slot's) where an expression tests it;
- * then its styles (ADR-0063): `scoped-styles` at its first stylesheet import;
+ * then its styles (ADR-0063): `scoped-styles` and `sheet-order` at its first stylesheet import,
+ * since any meeting of two sheets' rules of equal specificity involves a styled module;
  * then its render tree: the node and attribute kinds (a listener, a template ref, an element's
  * `v-model`, a component's model, listener and `ref` need `interactivity`; on a component a
  * prop needs `component`, a listener `component-event`, a model `model`, a `class` or a `style`
@@ -217,7 +218,10 @@ export function requiredCapabilities(module: UfModule): ReadonlyMap<CapabilityNa
       }
     }
     const [sheet] = component.styles ?? [];
-    if (sheet) use("scoped-styles", sheet.span);
+    if (sheet) {
+      use("scoped-styles", sheet.span);
+      use("sheet-order", sheet.span);
+    }
     const mixed = bothPhaseEvents(component);
     const fills = (list: readonly SlotFill[], slotted: boolean) => {
       for (const fill of list) {

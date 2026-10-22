@@ -13,7 +13,7 @@ export interface OrderSummaryProps {
 }
 
 export default component$<OrderSummaryProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ price, taxRate, class: className, style }) => {
+  ({ price, taxRate, class: className, style, ...attributes }) => {
     const quantity = useSignal(1);
     const subtotal = useComputed$(() => quantity.value * price);
     const tax = useComputed$(() => Math.round(subtotal.value * taxRate));
@@ -28,6 +28,7 @@ export default component$<OrderSummaryProps & { class?: ClassList; style?: CSSPr
         class={["order-summary", className]}
         aria-label="Order summary"
         data-tier={tier.value}
+        {...scopeAttributes(attributes)}
         style={style}
       >
         <p role="status">Quantity: {quantity.value}</p>
@@ -44,3 +45,12 @@ export default component$<OrderSummaryProps & { class?: ClassList; style?: CSSPr
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

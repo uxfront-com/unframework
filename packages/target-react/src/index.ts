@@ -144,6 +144,8 @@ export const react: Target = defineTarget({
       note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
     },
     "slotted-styles": { support: "native" },
+    // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
+    "sheet-order": { support: "native" },
   },
   // A function component in TSX (plan §6, ADR-0045 to ADR-0047): the copied type
   // declarations and the events' props, the setup's hooks in source order, and the render tree in

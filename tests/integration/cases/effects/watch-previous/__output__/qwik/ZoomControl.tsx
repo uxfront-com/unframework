@@ -7,7 +7,7 @@ import {
 } from "@qwik.dev/core";
 
 export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style }) => {
+  ({ class: className, style, ...attributes }) => {
     const zoom = useSignal(100);
     const history = useSignal<string[]>([]);
 
@@ -24,7 +24,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
     );
 
     return (
-      <section class={["zoom-control", className]} aria-label="Zoom" style={style}>
+      <section
+        class={["zoom-control", className]}
+        aria-label="Zoom"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <output>{zoom.value}%</output>
         <button type="button" onClick$={() => (zoom.value += 25)}>
           Zoom in
@@ -44,3 +49,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

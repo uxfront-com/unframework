@@ -13,7 +13,7 @@ export interface TagFormEvents {
 }
 
 export default component$<TagFormEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onTagsChange$, class: className, style }) => {
+  ({ onTagsChange$, class: className, style, ...attributes }) => {
     const tags = useSignal<string[]>([]);
     const draft = useSignal("");
     const helpOpen = useSignal(false);
@@ -43,6 +43,7 @@ export default component$<TagFormEvents & { class?: ClassList; style?: CSSProper
         aria-label="Tags"
         preventdefault:submit
         onSubmit$={addTag}
+        {...scopeAttributes(attributes)}
         style={style}
       >
         <label>
@@ -70,3 +71,12 @@ export default component$<TagFormEvents & { class?: ClassList; style?: CSSProper
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

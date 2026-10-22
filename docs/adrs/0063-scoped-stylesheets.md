@@ -3,8 +3,8 @@
 - **Status:** Proposed
 - **Date:** 2026-10-21
 - **Plan:** §4.4, §5.3, §5.8, §6, §7.2, §7.5, §9 M4, P2, P5, P6, P7, P8; C4 (ADR-0004), D5
-  (ADR-0009); amends ADR-0004, ADR-0009, ADR-0021, ADR-0025 and ADR-0053; settles the open item
-  of ADR-0020 on CSS
+  (ADR-0009); amends ADR-0004, ADR-0009, ADR-0021, ADR-0025, ADR-0047 and ADR-0053; settles the
+  open item of ADR-0020 on CSS
 
 ## Context
 
@@ -239,15 +239,94 @@ sheet with `parseStylesheet` instead, Vue's and Angular's included.
   target's `ImportSet` does, and its children's sheets load in Vue's order whatever the order
   the markup first uses them in (`styles/slotted-order`).
 
+**Angular and Qwik**, as built:
+
+- **Angular's attachment.** A styled component's metadata names its sheet,
+  `styleUrl: "./Card.uf.tsx.css"`, with `encapsulation: ViewEncapsulation.None`: the sheet is
+  scoped already, and Angular's emulated encapsulation would scope it again. ngtsc reads a
+  `styleUrl` itself, and Vite never loads the sheet, so the unplugin's API gives it to the
+  toolchain: `UnframeworkApi.getSheet(file)` returns the sheet this target's last finished load
+  of the file emitted, after the plugins' `output` hooks, and `ngtscVirtual` puts each
+  `styleUrl`'s sheet into the worker's in-memory sources beside the generated modules (ADR-0027).
+  The toolchain projects read it from the disk, beside the golden output. Angular imports
+  nothing, so it needs no `*.css` declaration.
+- **Qwik's attachment.** The output imports the sheet as a string after its other imports,
+  `import styles from "./Card.uf.tsx.css?inline"`, and attaches it first in the component's
+  body, `useStyles$(styles)`. The import from a segment module reaches the unplugin through its
+  `splitFrom`, as the emission section says. The toolchain's `sheets.d.ts` declares `*.css` and
+  `*.css?inline`. Qwik's server writes a `<style q:style>` where the component renders, and its
+  client writes it in `<head>`, so the normaliser removes that element from Qwik's output only
+  (rule 2c), as it removes `q:template` (ADR-0058). Unlike every other target's server HTML,
+  Qwik's then holds the sheet, before the component's root, where `:first-child`, `:nth-child()`
+  and `+` count it: the `sheet-order` cell names it.
+- **`child-root-scope`, emulated on Qwik, unsupported on Angular.** Qwik's child spreads `{...scopeAttributes(attributes)}`
+  on each node Vue's fallthrough reaches, as React's does, with the rest of its props pattern,
+  or its props object, and a component without props takes one, typed `object`. Each candidate
+  of a root `<component is>` with listeners, which Qwik writes one tag each, takes it too.
+  Angular's parent writes its attribute on the child's tag, the host, which must keep only
+  `display: contents` to be unwrapped (ADR-0056), and an Angular template cannot write an
+  attribute whose name it does not know. So each root node binds an inline attribute directive
+  to the component's host, `<button [ufScope]="this.host">`, through a member that holds it,
+  `protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement`. In
+  `ngOnInit` the directive takes the host's `data-uf-*` attributes off the host, keeps their
+  names in the module's `WeakMap` for a root the component renders later (another branch), and
+  sets them on its node. It reads them in `ngOnInit`, not as it is made: a root component's own
+  root directive then runs after its parent's has set them on its host, so they pass through a
+  root component, as Vue's fallthrough does. The directive and the map take their names from a
+  base of each component's own (`ScopeAttributes_1`), as React's helper does. Two things still
+  differ on Angular, so its cell is `unsupported`, with UF4003 `component-host` at `info`,
+  reported at the first child a styled component renders. The root renders inside its host,
+  which selectors see: a parent's rule that reaches it through a combinator (`.list > .row`,
+  `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's
+  place, not the root's. And a root Angular binds nothing on (`{{` in an attribute, ADR-0037)
+  takes no directive, so it takes no scope attribute. The corpus covers UF4003 through the
+  `info` diagnostics of the styled cases that render a child (`styles/child-root`, `deep`,
+  `global`, …), with no `diagnostics/` case, as UF4002: a `diagnostics/` case is one whose
+  compile fails, and a case with only an `info` diagnostic has output, which a browser spec and
+  its baselines would have to render.
+- **`slotted-styles`, native on both.** The shared builders stamp a child's `-s` on the content a
+  parent fills in, which Angular projects through `<ng-content>` and `ng-template` slots, and
+  Qwik through `<Slot />` and QRL render props: the content is the parent's markup in both.
+
+**Sheet order** (`sheet-order`, unsupported on Angular and Qwik):
+
+- **The difference.** Vue, React, Solid, Svelte and Astro load a sheet as its module evaluates,
+  in import order: a child's before its parent's, and siblings by their imports. Angular's
+  `SharedStylesHost` and Qwik's `useStyles$` add a sheet to `<head>` as the component first
+  renders: a parent's before its children's, and siblings in the order they render. Where two
+  sheets' rules of equal specificity match one element, the later sheet wins, so the winner can
+  differ: on a child's root, which carries its styled parent's attribute too, on content filled
+  into a child's slot, and under `:deep()` and `:global()`. `styles/slotted-order` shows it: its
+  fill takes Blue's colour on Vue and Amber's on Angular and Qwik.
+- **Why it is declared, not matched.** A parent sees only its direct children's APIs (ADR-0053),
+  so no output can attach its subtree's sheets in Vue's order through a grandchild. A side-effect
+  import would match it, but is neither framework's idiom, and Qwik's server would no longer
+  write the sheet.
+- **The cells.** `native` on five targets, and `unsupported` on Angular and Qwik with UF4002
+  `sheet-order`, at severity `info`, so the output is still emitted. It is required wherever
+  `scoped-styles` is, at every module's first stylesheet import: any meeting of two sheets' rules
+  involves a styled module, so the rule is complete by construction, at the cost of an `info`
+  diagnostic on every styled module there. The corpus covers UF4002 through those diagnostics,
+  with no `diagnostics/` case: this departs from the "Add a diagnostic" recipe, a case or an
+  exemption.
+- **Tests opt out only where the order shows.** A test whose captures depend on which sheet wins
+  declares `requires: ["sheet-order"]`, so it skips on Angular and Qwik, visibly in the parity
+  matrix: `styles/slotted-order` does. Every other styled case runs L10 on all seven targets.
+- **It changes no markup**, so it is behavioural (`BEHAVIOURAL_CAPABILITIES`): the render-parity
+  tests compare a static render's markup, which is the same.
+
 **The capabilities:** `scoped-styles` (a component with a sheet), `child-root-scope` (a child a
-styled component renders) and `slotted-styles` (content filled into a child whose sheet uses
-`:slotted()`). Each target first declared all three `native`, the cell its lane was expected to
-reach. A lane that can't reach it declares the cell `emulated` or `unsupported`, with the next free
-UF4 code, and adds a section here: React, Solid, Svelte and Astro emulate `child-root-scope`.
+styled component renders), `slotted-styles` (content filled into a child whose sheet uses
+`:slotted()`) and `sheet-order` (the order sheets cascade in, above). Each target first declared
+the first three `native`, the cell its lane was expected to reach. A lane that can't reach it
+declares the cell `emulated` or `unsupported`, with the next free UF4 code, and adds a section
+here: React, Solid, Svelte, Astro and Qwik emulate `child-root-scope`, and Angular declares it
+`unsupported` (UF4003).
 
 **The codes** are UF5001 `shared-stylesheet`, UF5002 `invalid-stylesheet`, UF5003
 `unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`), UF5004
 `unscopable-selector`, UF5005 `stylesheet-not-found` and UF5006 `unsupported-styleframe-import`. All are errors.
+UF4002 `sheet-order` and UF4003 `component-host`, portability codes, are `info`.
 
 A `Button` whose `Button.css` holds `.label { color: red }` and a line feed has the id
 `70af206b`:
@@ -281,13 +360,11 @@ Vue      <style src="./Button.uf.tsx.css"></style>
   twice.
 - Every rendered element carries one more attribute, and each scoped selector gains its
   specificity, as in Vue.
-- Until each target attaches its sheet, a styled module's outputs carry the sheet and the
-  attributes, but no output loads the sheet.
+- On Angular and Qwik, two components' rules of equal specificity on one element may resolve
+  otherwise than on the other targets (`sheet-order`), and every styled module reports UF4002 there.
 
 **Open:**
 
-- Each lane's `child-root-scope` and `slotted-styles` cells on Angular's projection and Qwik's
-  `<Slot />`, recorded here as they settle. React's, Solid's, Svelte's and Astro's are above.
 - No watch or HMR edge runs from the author's `X.css` to its sheet module until M6.
 - A sheet that two modules import is not yet a diagnostic: detecting it needs M5's project graph,
   and until then each module scopes its own copy.
@@ -307,6 +384,9 @@ Vue      <style src="./Button.uf.tsx.css"></style>
   own.
 - **ADR-0025.** L3 never sees an emitted sheet: the compile project's lightningcss check covers
   every target's.
+- **ADR-0047.** Its behavioural capabilities (amending ADR-0033) change nothing the markup of a
+  static render shows, though the cascade may differ: `sheet-order` joins them, and changes the
+  computed styles L10 captures, not the markup the render-parity tests compare.
 - **ADR-0053.** The file resolver reads a child's stylesheets too, for the scope id and the
   `:slotted()` use its API carries, and caches the child's analysis by their text as well. A
   child's own `.uf.tsx` imports are still never resolved.

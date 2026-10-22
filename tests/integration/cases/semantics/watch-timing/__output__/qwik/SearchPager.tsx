@@ -18,7 +18,7 @@ export interface SearchPagerEvents {
 }
 
 export default component$<SearchPagerEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onQueryRun$, onPageRun$, onCleanedUp$, class: className, style }) => {
+  ({ onQueryRun$, onPageRun$, onCleanedUp$, class: className, style, ...attributes }) => {
     const query = useSignal("");
     const page = useSignal(1);
 
@@ -76,7 +76,12 @@ export default component$<SearchPagerEvents & { class?: ClassList; style?: CSSPr
     });
 
     return (
-      <section class={["search-pager", className]} aria-label="Search" style={style}>
+      <section
+        class={["search-pager", className]}
+        aria-label="Search"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <p role="status">
           {query.value === "" ? "All results" : `Results for ${query.value}`}, page {page.value}
         </p>
@@ -96,3 +101,12 @@ export default component$<SearchPagerEvents & { class?: ClassList; style?: CSSPr
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

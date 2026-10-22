@@ -24,7 +24,8 @@ export type { NormalizeTarget } from "./targets.ts";
  *
  * 1. comments are removed (`removeComments`);
  * 2. attributes the target's framework adds are removed (`removeFrameworkAttributes`), and so
- *    are Qwik's `q:template` elements (2b, `removeQwikTemplates`);
+ *    are Qwik's `q:template` elements (2b, `removeQwikTemplates`) and its `<style q:style>`
+ *    elements (2c, `removeQwikStyles`, which runs first: it finds them by that attribute);
  * 3. Angular's `uf-*` host elements with `display: contents` are unwrapped
  *    (`unwrapAngularHosts`);
  * 4. style declarations (4a, `canonicalizeStyles`), boolean attributes (4b,

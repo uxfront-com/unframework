@@ -53,6 +53,7 @@ const html = defineTarget({
     "scoped-styles": { support: "native" },
     "child-root-scope": { support: "native" },
     "slotted-styles": { support: "native" },
+    "sheet-order": { support: "native" },
   },
   emit: (component) => [{ path: `${component.name}.html`, contents: "<p></p>\n" }],
 });

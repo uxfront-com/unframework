@@ -8,7 +8,7 @@ import {
 } from "@qwik.dev/core";
 
 export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style }) => {
+  ({ class: className, style, ...attributes }) => {
     const started = useSignal(false);
     const suggesting = useSignal(false);
     const accepted = useSignal(0);
@@ -19,7 +19,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
     });
 
     return (
-      <section class={["reply-box", className]} aria-label="Reply" style={style}>
+      <section
+        class={["reply-box", className]}
+        aria-label="Reply"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <label>
           Message
           <textarea
@@ -61,3 +66,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
 
 // The elements each `once` listener ran for: Qwik's listeners have no `once` option.
 const onceKeydown = new WeakSet<Element>();
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

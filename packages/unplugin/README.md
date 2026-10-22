@@ -153,5 +153,10 @@ const api = config.plugins.find((plugin) => plugin.name === "unframework")?.api;
 api.getCompiled("/abs/Child.uf.tsx.ts");
 ```
 
+It exposes `api.getSheet(file)` too: the scoped sheet this target's last finished load of the
+`.uf.tsx` file emitted, after the plugins' `output` hooks, or `undefined` when no load finished or
+the file imports no stylesheet (ADR-0063). Vite never loads an Angular component's sheet: ngtsc
+reads its `styleUrl` itself, so `ngtscVirtual` hands it the sheet from here.
+
 Compiles are cached per file and source content, so every id of a file shares one compile until
 the file changes.

@@ -17,37 +17,57 @@ export interface PriceRangeModels {
 
 export default component$<
   { label: string } & PriceRangeModels & { class?: ClassList; style?: CSSProperties }
->(({ label, min: minProp, onMinChange$, max: maxProp, onMaxChange$, class: className, style }) => {
-  const minLocal = useSignal<number>(0);
-  const min = useComputed$(() => (minProp === undefined ? minLocal.value : minProp));
+>(
+  ({
+    label,
+    min: minProp,
+    onMinChange$,
+    max: maxProp,
+    onMaxChange$,
+    class: className,
+    style,
+    ...attributes
+  }) => {
+    const minLocal = useSignal<number>(0);
+    const min = useComputed$(() => (minProp === undefined ? minLocal.value : minProp));
 
-  const setMin = $(async (next: number) => {
-    if (minProp === undefined) minLocal.value = next;
-    await onMinChange$?.(next);
-  });
+    const setMin = $(async (next: number) => {
+      if (minProp === undefined) minLocal.value = next;
+      await onMinChange$?.(next);
+    });
 
-  const maxLocal = useSignal<number>(100);
-  const max = useComputed$(() => (maxProp === undefined ? maxLocal.value : maxProp));
+    const maxLocal = useSignal<number>(100);
+    const max = useComputed$(() => (maxProp === undefined ? maxLocal.value : maxProp));
 
-  const setMax = $(async (next: number) => {
-    if (maxProp === undefined) maxLocal.value = next;
-    await onMaxChange$?.(next);
-  });
+    const setMax = $(async (next: number) => {
+      if (maxProp === undefined) maxLocal.value = next;
+      await onMaxChange$?.(next);
+    });
 
-  const widen = $(async () => {
-    await setMin(min.value - 10);
-    await setMax(max.value + 10);
-  });
+    const widen = $(async () => {
+      await setMin(min.value - 10);
+      await setMax(max.value + 10);
+    });
 
-  return (
-    <fieldset class={className} style={style}>
-      <legend>{label}</legend>
-      <p>
-        From {min.value} to {max.value}
-      </p>
-      <button type="button" onClick$={widen}>
-        Widen
-      </button>
-    </fieldset>
-  );
-});
+    return (
+      <fieldset {...scopeAttributes(attributes)} class={className} style={style}>
+        <legend>{label}</legend>
+        <p>
+          From {min.value} to {max.value}
+        </p>
+        <button type="button" onClick$={widen}>
+          Widen
+        </button>
+      </fieldset>
+    );
+  },
+);
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

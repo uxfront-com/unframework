@@ -11,7 +11,7 @@ import {
 
 export default component$<
   { label: string } & { class?: ClassList; style?: CSSProperties; ref?: Signal<object | undefined> }
->(({ label, class: className, style, ref }) => {
+>(({ label, class: className, style, ref, ...attributes }) => {
   const input = useSignal<HTMLInputElement>();
 
   const focus = $(() => {
@@ -29,7 +29,7 @@ export default component$<
   );
 
   return (
-    <label class={["search", className]} style={style}>
+    <label class={["search", className]} {...scopeAttributes(attributes)} style={style}>
       {label}
       <input ref={input} type="search" />
     </label>
@@ -42,4 +42,13 @@ export default component$<
  */
 function exposeRef(ref: Signal<object | undefined> | undefined, exposed: object | undefined): void {
   if (ref) ref.value = exposed;
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

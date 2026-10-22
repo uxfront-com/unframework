@@ -18,8 +18,10 @@ import {
   keyImports,
   keyOwner,
   mapCall,
+  moduleHelperName,
   printComponentModule,
   rewriteExpression,
+  scopeRoots,
   sourceNames,
   spreadRead,
   staticJsxAttribute,
@@ -75,6 +77,9 @@ import type { SetupPlan } from "./plan.ts";
 import { exposeStatement, fillFunction, printSetup } from "./setup.ts";
 import { qwikTitles } from "./title.ts";
 import { isPrimitiveValue } from "./values.ts";
+
+/** The scope helper's name, before the name scope makes it unique. */
+const SCOPE_HELPER = "scopeAttributes";
 
 /** The Qwik 2 target (experimental while Qwik 2 is in beta). */
 export const qwik: Target = defineTarget({
@@ -178,16 +183,45 @@ export const qwik: Target = defineTarget({
     "reactive-context": { support: "native" },
     "dynamic-component": { support: "native" },
     "scoped-styles": { support: "native" },
-    "child-root-scope": { support: "native" },
+    // The child's root picks its styled parents' `data-uf-*` attributes out of its props
+    // (ADR-0063): their names are the parents', which the child cannot know.
+    "child-root-scope": {
+      support: "emulated",
+      helper: SCOPE_HELPER,
+      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root.",
+    },
     "slotted-styles": { support: "native" },
+    // Sheets cascade in render order, not Vue's import order (ADR-0063): declared, since a
+    // parent sees too little of its subtree to attach its sheets in Vue's order.
+    "sheet-order": {
+      support: "unsupported",
+      code: "UF4002",
+      severity: "info",
+      reason:
+        "Qwik adds a component's sheet to the page when the component first renders (`useStyles$`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ. Qwik's server render also writes the sheet as a `<style>` element where the component renders, before its root, which `:first-child`, `:nth-child()` and `+` count in the server's markup.",
+    },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { module } = context;
     // Every name the source declares or reads is taken before the output names its own, but for
     // the authoring APIs code calls (`nextTick`), which the output replaces with its own.
-    const reserved = sourceNames(component, module);
-    for (const name of apiNames(component)) reserved.delete(name);
+    const ownNames = (each: UfComponent) => {
+      const names = sourceNames(each, module);
+      for (const name of apiNames(each)) names.delete(name);
+      return names;
+    };
+    const reserved = ownNames(component);
     const imports = new ImportSet(reserved);
+    // A source's components are joined into one module where it is loaded (ADR-0053): each
+    // claims the scope helper from a base of its own (`scopeAttributes_1`), past the names any
+    // other component declares.
+    const { base, others } = moduleHelperName(
+      SCOPE_HELPER,
+      module.components.map(ownNames),
+      module.components.findIndex((each) => each.name === component.name),
+    );
+    imports.reserve(...others);
+    imports.scope.rebase(SCOPE_HELPER, base);
     // Each child's output by the name the template uses (ADR-0053), and each key from the output
     // of its module's main component (ADR-0054). A component that renders itself names its own
     // `const`.
@@ -206,6 +240,7 @@ export const qwik: Target = defineTarget({
     const componentFn = imports.add("@qwik.dev/core", "component$");
     const names = new OutputNames(imports);
     const plan = planSetup(component, module, names);
+    const scope = scopePlan(component, names);
     const listeners = new Listeners(plan);
     // The dialect reads the namespaces of the tree it prints, which is the render tree with
     // Qwik's form of each `<title>`: they are filled in once that tree is built.
@@ -227,6 +262,7 @@ export const qwik: Target = defineTarget({
         listeners,
         plan,
         locals,
+        scope,
       ),
       rules: plan.rules(),
     });
@@ -249,13 +285,24 @@ export const qwik: Target = defineTarget({
     const root = jsxNode(render, jsx);
     if (plan.composition.fallthrough) mergeFallthrough(root, plan.composition.fallthrough);
     const returned = js.returnStatement(root);
-    const body = [setup.body, exposeStatement(plan), locals.statements.join("\n")]
+    // The sheet `compile()` emits beside the source, already scoped (ADR-0063), as a string
+    // Qwik attaches once per component: `useStyles$(styles)`.
+    const sheet = component.styles && {
+      specifier: `./${module.file.slice(module.file.lastIndexOf("/") + 1)}.css?inline`,
+      local: names.fresh("styles"),
+    };
+    const body = [
+      sheet ? `${names.core("useStyles$")}(${sheet.local});` : "",
+      setup.body,
+      exposeStatement(plan),
+      locals.statements.join("\n"),
+    ]
       .filter(Boolean)
       .join("\n\n");
     const events = eventsInterface(component, plan);
     const slots = slotsInterface(component, plan);
     const models = modelsInterface(component, plan);
-    const parameter = propsParameter(component, jsx, plan);
+    const parameter = propsParameter(component, jsx, plan, scope);
     const propsType = [
       component.propsParameter?.type.code,
       events?.name,
@@ -263,6 +310,8 @@ export const qwik: Target = defineTarget({
       slots?.name,
       ownProps(component, plan),
     ].filter((type) => type !== undefined);
+    // The rest the root picks the scope attributes out of needs a props type to destructure.
+    if (scope && !propsType.length) propsType.push("object");
     const definition = js.callExpression(
       js.identifier(componentFn),
       [
@@ -279,6 +328,17 @@ export const qwik: Target = defineTarget({
     const keys = keyDeclarations(component, module, plan);
     const exported = exportsOf(component.name, module.exports);
     // A component that renders itself refers to its own `const` (ADR-0053).
+    const helperCode = helpers(plan, listeners);
+    if (scope) helperCode.push(scopeAttributesHelper(scope.helper));
+    // The sheet's import comes after the other imports, as on the other targets: an `?inline`
+    // import loads nothing, and `useStyles$` attaches the sheet as the component first renders
+    // (`sheet-order`). Collected last: the types and the helpers import what they name.
+    const declarations = [
+      ...imports.toDeclarations(),
+      ...(sheet
+        ? [js.importDeclaration(sheet.specifier, [js.importDefaultSpecifier(sheet.local)])]
+        : []),
+    ];
     const declared = children.some((child) => child.self)
       ? [
           js.variableDeclaration("const", component.name, definition),
@@ -294,7 +354,7 @@ export const qwik: Target = defineTarget({
         path: `${component.name}.tsx`,
         contents: printComponentModule(
           {
-            imports,
+            imports: declarations,
             types: [
               ...componentTypes(component, module),
               ...(events ? [events] : []),
@@ -306,7 +366,7 @@ export const qwik: Target = defineTarget({
               ...hoisted,
               ...declared,
             ],
-            helpers: helpers(plan, listeners),
+            helpers: helperCode,
             placeholders: jsx.placeholders,
           },
           { jsx: true },
@@ -325,17 +385,67 @@ type JsxAttribute = ReturnType<typeof js.jsxAttribute> | ReturnType<typeof js.js
 type JsxAttributeNode = ReturnType<typeof js.jsxAttribute>;
 
 /**
+ * Where the scope attributes of the styled parents that render the component land (the
+ * child-root rule, ADR-0063): each of its root nodes (`scopeRoots`) spreads
+ * `{...scopeAttributes(attributes)}`, picked out of its props.
+ */
+interface ScopePlan {
+  /** The root nodes still to spread them on, by `start:end` of their spans. */
+  pending: Set<string>;
+  /** What the roots pick them out of: the props pattern's rest, or the props object. */
+  props: string;
+  /** The inline helper that picks them. */
+  helper: string;
+}
+
+/** The component's {@link ScopePlan}, or none where Vue gives no node the attributes. */
+function scopePlan(component: UfComponent, names: OutputNames): ScopePlan | undefined {
+  const roots = scopeRoots(component);
+  if (!roots.length) return undefined;
+  const parameter = component.propsParameter;
+  return {
+    pending: new Set(roots.map(spanKey)),
+    props: parameter?.form === "object" ? parameter.name! : names.fresh("attributes"),
+    helper: names.once(SCOPE_HELPER),
+  };
+}
+
+/** A span's key in {@link ScopePlan.pending}. */
+function spanKey({ start, end }: { start: number; end: number }): string {
+  return `${start}:${end}`;
+}
+
+/**
+ * `child-root-scope`: the scope attributes a component's styled parents pass it (ADR-0063),
+ * which its root carries. Their names are the parents' ids, which the component cannot know, so
+ * it picks the props' `data-uf-*` keys by name, each with the empty value the parent passes: a
+ * rest spread alone would also pass on the props the output leaves unread.
+ */
+function scopeAttributesHelper(name: string): string {
+  return `/** The scope attributes of the styled parents that render this component, for its root. */
+function ${name}(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}`;
+}
+
+/**
  * The props as `component$`'s parameter, typed by its type argument (`component$<Props>`,
  * ADR-0034): the source's destructuring, with its defaults, or its `props` object. A prop
  * no printed expression reads is left out (an unused binding fails L5), and so is the whole
  * parameter when none is read. Qwik's optimizer turns destructured props into reactive reads
  * of the props object, and applies a default as `??` (ADR-0034: the analyser rejects a default
- * on a prop that admits `null`, so `??` and destructuring agree).
+ * on a prop that admits `null`, so `??` and destructuring agree). A component whose root takes
+ * its styled parents' scope attributes destructures the rest of its props too (`...attributes`).
  */
 function propsParameter(
   component: UfComponent,
   jsx: JsxContext,
   plan: SetupPlan,
+  scope: ScopePlan | undefined,
 ): Parameter | undefined {
   const parameter = component.propsParameter;
   const read = component.props.filter(
@@ -352,11 +462,11 @@ function propsParameter(
   });
   const composition = compositionProps(plan);
   if (parameter?.form === "object") {
-    return read.length || plan.emitted.size || composition.length
+    return read.length || plan.emitted.size || composition.length || scope
       ? js.bindingIdentifier(parameter.name!)
       : undefined;
   }
-  if (!read.length && !events.length && !composition.length) return undefined;
+  if (!read.length && !events.length && !composition.length && !scope) return undefined;
   // In the order the source destructures them, which may differ from the type's.
   const start = (binding: string) => bindingOf(component, binding).span.start;
   return js.objectPattern([
@@ -375,6 +485,7 @@ function propsParameter(
         ? property
         : { ...property, value: js.bindingIdentifier(local), shorthand: false };
     }),
+    ...(scope ? [js.bindingRestElement(scope.props)] : []),
   ]);
 }
 
@@ -741,6 +852,7 @@ function qwikDialect(
   listeners: Listeners,
   plan: SetupPlan,
   locals: RenderLocals,
+  scope: ScopePlan | undefined,
 ): JsxDialect {
   const namespaceOf = (element: ElementNode) => namespaces.get(element) ?? "html";
   const { composition } = plan;
@@ -832,8 +944,12 @@ function qwikDialect(
       // In a fill, it may call a function only the fill declares (./composition.ts).
       const local = readsRenderLocal(node.is, component) || locals.inFill;
       const name = locals.declare("Tag", expressionCode(node.is, context), local);
+      // Each candidate tag is a root node of its own.
+      const root = scope?.pending.has(spanKey(node.span)) ?? false;
       const element = node.attributes.some((attribute) => attribute.kind === "Event")
-        ? candidateBranches(node, name, context, listeners)
+        ? candidateBranches(node, name, context, listeners, () => {
+            if (root) scope!.pending.add(spanKey(node.span));
+          })
         : jsxDynamic(node, name, context);
       return followed.has(node)
         ? js.jsxFragment([
@@ -902,6 +1018,18 @@ function qwikDialect(
       qwikClassAttribute(attribute, element, context, (condition) =>
         isPrimitiveValue(condition, component, module),
       ),
+    // The `data-uf-*` attributes of the styled parents that render the component, whose names
+    // only they know, picked out of its props by name (the child-root rule, ADR-0063). Each
+    // root takes them once: the first node printed with its span, which is the root itself,
+    // printed before what it holds.
+    scopeRootAttributes(element, context) {
+      if (!scope?.pending.delete(spanKey(element.span))) return [];
+      return [
+        js.jsxSpreadAttribute(
+          context.placeholders.expression(`${scope.helper}(${scope.props})`, "argument"),
+        ),
+      ];
+    },
   };
 }
 
@@ -916,12 +1044,14 @@ function candidateBranches(
   name: string,
   context: JsxContext,
   listeners: Listeners,
+  reroot: () => void,
 ): AstExpression {
   const tags = node.candidates.flatMap((candidate) =>
     candidate.kind === "Tag" ? [candidate.tag] : [],
   );
   const branches = tags.map((tag) => {
     listeners.reprint(node);
+    reroot();
     return jsxElement(
       {
         kind: "Element",

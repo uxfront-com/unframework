@@ -189,7 +189,9 @@ describe("listeners (ADR-0047)", () => {
         "}",
       ),
     );
-    expect(contents).toContain("imports: [ClickCapture, ClickOnce, TouchstartPassive],");
+    expect(contents).toContain(
+      "imports: [ClickCapture, ClickOnce, TouchstartPassive, ScopeAttributes],",
+    );
     expect(contents).toContain(
       '<button type="button" (ufClickOnce)="note(row)">{{ row }}</button>',
     );
@@ -630,6 +632,7 @@ describe("outputs named like a setup binding (ADR-0047)", () => {
         '      (submit)="onSave($event)"',
         '      [class]="this.class()"',
         '      [style]="this.style()"',
+        '      [ufScope]="this.host"',
         "    >",
       ),
     );

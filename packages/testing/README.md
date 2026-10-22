@@ -324,9 +324,11 @@ broken merge. A boolean attribute's `="true"` is written empty on Qwik only, who
 an attribute that is on that way.
 Only the named target's framework noise is removed (Angular's hosts only from Angular's
 output, Qwik's `preventdefault:`, `stoppropagation:` and `capture:` dispatch attributes and its
-`q:template` elements, where its server render keeps a slot's unclaimed fallback, only from
-Qwik's, React's stale `checked` and `selected` attributes only from React's, and the space
-Playwright's ARIA snapshot puts at an Angular host only from Angular's snapshot); without a
+`q:template` elements, where its server render keeps a slot's unclaimed fallback, and its
+`<style q:style>` elements, where its server render writes a `useStyles$` sheet that its client
+writes in `<head>`, only from Qwik's, React's stale `checked` and `selected` attributes only from
+React's, and the space Playwright's ARIA snapshot puts at an Angular host only from Angular's
+snapshot); without a
 target nothing is noise. On every target, the markup of a control's initial state is left out
 where its live state, a `uf:*` pseudo-attribute, says the same (rule 4d): an `<input>`'s `value`
 that equals its `uf:value`, an `<input>`'s `checked` where `uf:checked` is `"true"`, an

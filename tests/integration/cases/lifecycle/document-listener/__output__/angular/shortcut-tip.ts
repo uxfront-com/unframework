@@ -1,10 +1,13 @@
 import { isPlatformBrowser } from "@angular/common";
 import {
   Component,
+  Directive,
+  ElementRef,
   Injector,
   type OnDestroy,
   type OnInit,
   PLATFORM_ID,
+  Renderer2,
   afterNextRender,
   afterRenderEffect,
   computed,
@@ -15,8 +18,34 @@ import {
   untracked,
 } from "@angular/core";
 
+/** The scope attributes taken off each host, for the roots its component renders later. */
+const scopes = new WeakMap<Element, string[]>();
+
+/**
+ * Gives a root node of its component the scope attributes the component's styled parents put on
+ * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.
+ */
+@Directive({ selector: "[ufScope]" })
+export class ScopeAttributes implements OnInit {
+  readonly ufScope = input.required<HTMLElement>();
+  private readonly element = inject<ElementRef<Element>>(ElementRef);
+  private readonly renderer = inject(Renderer2);
+
+  ngOnInit(): void {
+    const host = this.ufScope();
+    let names = scopes.get(host);
+    if (!names) {
+      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));
+      for (const name of names) this.renderer.removeAttribute(host, name);
+      scopes.set(host, names);
+    }
+    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");
+  }
+}
+
 @Component({
   selector: "uf-shortcut-tip",
+  imports: [ScopeAttributes],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
@@ -28,6 +57,7 @@ import {
       aria-label="Shortcuts"
       [class]="this.class()"
       [style]="this.style()"
+      [ufScope]="this.host"
     >
       <p>{{ open ? "Press Escape to hide this tip." : "Tip hidden." }}</p>
       <button type="button" [attr.aria-pressed]="enabled" (click)="toggle()">Shortcut K</button>
@@ -94,4 +124,5 @@ export default class ShortcutTip implements OnInit, OnDestroy {
   protected toggle() {
     this.enabled.set(!this.enabled());
   }
+  protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

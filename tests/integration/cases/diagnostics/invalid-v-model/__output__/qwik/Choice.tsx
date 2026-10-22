@@ -14,7 +14,7 @@ export interface ChoiceModels {
 }
 
 export const Choice = component$<ChoiceModels & { class?: ClassList; style?: CSSProperties }>(
-  ({ picked: pickedProp, onPickedChange$, class: className, style }) => {
+  ({ picked: pickedProp, onPickedChange$, class: className, style, ...attributes }) => {
     const pickedLocal = useSignal<string>("");
     const picked = useComputed$(() => (pickedProp === undefined ? pickedLocal.value : pickedProp));
 
@@ -24,9 +24,24 @@ export const Choice = component$<ChoiceModels & { class?: ClassList; style?: CSS
     });
 
     return (
-      <button type="button" onClick$={() => setPicked("yes")} class={className} style={style}>
+      <button
+        type="button"
+        onClick$={() => setPicked("yes")}
+        {...scopeAttributes(attributes)}
+        class={className}
+        style={style}
+      >
         Yes ({picked.value})
       </button>
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

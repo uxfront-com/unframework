@@ -1,1 +1,70 @@
-[]
+[
+  {
+    "code": "UF4002",
+    "severity": "info",
+    "message": "The angular target does not support sheet-order: Angular adds a component's sheet to the page when the component first renders (`styleUrl`, through `SharedStylesHost`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.",
+    "file": "styles/slotted-order/Amber.uf.tsx",
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 1,
+      "column": 22,
+      "offset": 21
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF4002",
+    "severity": "info",
+    "message": "The qwik target does not support sheet-order: Qwik adds a component's sheet to the page when the component first renders (`useStyles$`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ. Qwik's server render also writes the sheet as a `<style>` element where the component renders, before its root, which `:first-child`, `:nth-child()` and `+` count in the server's markup.",
+    "file": "styles/slotted-order/Amber.uf.tsx",
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 1,
+      "column": 22,
+      "offset": 21
+    },
+    "target": "qwik"
+  },
+  {
+    "code": "UF4002",
+    "severity": "info",
+    "message": "The angular target does not support sheet-order: Angular adds a component's sheet to the page when the component first renders (`styleUrl`, through `SharedStylesHost`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.",
+    "file": "styles/slotted-order/Blue.uf.tsx",
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 1,
+      "column": 21,
+      "offset": 20
+    },
+    "target": "angular"
+  },
+  {
+    "code": "UF4002",
+    "severity": "info",
+    "message": "The qwik target does not support sheet-order: Qwik adds a component's sheet to the page when the component first renders (`useStyles$`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ. Qwik's server render also writes the sheet as a `<style>` element where the component renders, before its root, which `:first-child`, `:nth-child()` and `+` count in the server's markup.",
+    "file": "styles/slotted-order/Blue.uf.tsx",
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 1,
+      "column": 21,
+      "offset": 20
+    },
+    "target": "qwik"
+  }
+]

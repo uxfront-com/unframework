@@ -15,7 +15,7 @@ export interface SearchFieldModels {
 
 export const SearchField = component$<
   SearchFieldModels & { class?: ClassList; style?: CSSProperties }
->(({ query: queryProp, onQueryChange$, class: className, style }) => {
+>(({ query: queryProp, onQueryChange$, class: className, style, ...attributes }) => {
   const queryLocal = useSignal<string>();
   const query = useComputed$(() => (queryProp === undefined ? queryLocal.value : queryProp));
 
@@ -32,8 +32,18 @@ export const SearchField = component$<
       aria-label="Search"
       value={currentQuery}
       onInput$={(_, element) => setQuery(element.value)}
+      {...scopeAttributes(attributes)}
       class={className}
       style={style}
     />
   );
 });
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

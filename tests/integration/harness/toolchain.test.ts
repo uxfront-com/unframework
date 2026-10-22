@@ -63,6 +63,7 @@ const DECLARATIONS: Readonly<Record<string, readonly string[]>> = {
   solid: ["sheets.d.ts"],
   svelte: ["sheets.d.ts"],
   astro: ["sheets.d.ts"],
+  qwik: ["sheets.d.ts"],
 };
 
 /** The tool that decides each layer, as its failure names it. */

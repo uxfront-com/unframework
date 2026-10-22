@@ -288,7 +288,13 @@ describe("stylesheetProblems (ADR-0063)", () => {
       targets: TARGET_NAMES,
       resolve,
     });
-    expect(result.diagnostics).toEqual([]);
+    // Only the sheet order Angular and Qwik declare, for information (ADR-0063).
+    expect(
+      result.diagnostics.map(({ code, severity, target }) => [code, severity, target]),
+    ).toEqual([
+      ["UF4002", "info", "angular"],
+      ["UF4002", "info", "qwik"],
+    ]);
     for (const target of TARGET_NAMES) {
       const outputs = result.outputs[target] ?? [];
       expect(outputs.map((file) => file.path)).toContain("Card.uf.tsx.css");

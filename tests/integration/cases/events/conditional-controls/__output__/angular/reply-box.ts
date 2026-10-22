@@ -3,12 +3,38 @@ import {
   DestroyRef,
   Directive,
   ElementRef,
+  type OnInit,
   Renderer2,
   inject,
   input,
   output,
   signal,
 } from "@angular/core";
+
+/** The scope attributes taken off each host, for the roots its component renders later. */
+const scopes = new WeakMap<Element, string[]>();
+
+/**
+ * Gives a root node of its component the scope attributes the component's styled parents put on
+ * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.
+ */
+@Directive({ selector: "[ufScope]" })
+export class ScopeAttributes implements OnInit {
+  readonly ufScope = input.required<HTMLElement>();
+  private readonly element = inject<ElementRef<Element>>(ElementRef);
+  private readonly renderer = inject(Renderer2);
+
+  ngOnInit(): void {
+    const host = this.ufScope();
+    let names = scopes.get(host);
+    if (!names) {
+      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));
+      for (const name of names) this.renderer.removeAttribute(host, name);
+      scopes.set(host, names);
+    }
+    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");
+  }
+}
 
 @Directive({ selector: "[ufKeydownOnce]" })
 export class KeydownOnce {
@@ -28,14 +54,20 @@ export class KeydownOnce {
 
 @Component({
   selector: "uf-reply-box",
-  imports: [KeydownOnce],
+  imports: [KeydownOnce, ScopeAttributes],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let started = this.started();
     @let suggesting = this.suggesting();
     @let accepted = this.accepted();
-    <section class="reply-box" aria-label="Reply" [class]="this.class()" [style]="this.style()">
+    <section
+      class="reply-box"
+      aria-label="Reply"
+      [class]="this.class()"
+      [style]="this.style()"
+      [ufScope]="this.host"
+    >
       <label>Message<textarea name="message" (ufKeydownOnce)="onMessageKeydown($event)"></textarea></label>
       <p>{{ started ? "Started" : "Not started" }}</p>
       <label>Answer<textarea name="answer" (keydown)="onAnswerKeydown($event)"></textarea></label>
@@ -73,4 +105,5 @@ export default class ReplyBox {
   protected onSuggestions() {
     this.suggesting.set(!this.suggesting());
   }
+  protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

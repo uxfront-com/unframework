@@ -478,6 +478,7 @@ function testTarget(emit: Target["emit"], unsupported?: CapabilityName): Target 
       "scoped-styles": cell("scoped-styles"),
       "child-root-scope": cell("child-root-scope"),
       "slotted-styles": cell("slotted-styles"),
+      "sheet-order": cell("sheet-order"),
     },
     emit,
   });

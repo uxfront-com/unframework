@@ -21,9 +21,16 @@ export default component$<NoticeProps & { class?: ClassList; style?: CSSProperti
     author = { name: "System" },
     class: className,
     style,
+    ...attributes
   }) => {
     return (
-      <section class={["notice", className]} aria-label={title} data-tone={tone} style={style}>
+      <section
+        class={["notice", className]}
+        aria-label={title}
+        data-tone={tone}
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <h2>{title}</h2>
         <p>{message}</p>
         <details open={expanded}>
@@ -36,3 +43,12 @@ export default component$<NoticeProps & { class?: ClassList; style?: CSSProperti
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

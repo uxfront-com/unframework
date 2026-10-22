@@ -13,9 +13,15 @@ export interface NoticeSlots {
 
 export default component$<
   { label: string } & NoticeSlots & { class?: ClassList; style?: CSSProperties }
->(({ label, action$: actionSlot$, class: className, style }) => {
+>(({ label, action$: actionSlot$, class: className, style, ...attributes }) => {
   return (
-    <div role="note" aria-label={label} class={["notice", className]} style={style}>
+    <div
+      role="note"
+      aria-label={label}
+      class={["notice", className]}
+      {...scopeAttributes(attributes)}
+      style={style}
+    >
       <p>
         <Slot>
           <em>Nothing to report.</em>
@@ -25,3 +31,12 @@ export default component$<
     </div>
   );
 });
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}
