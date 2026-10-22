@@ -5,8 +5,8 @@
     {
       "name": "Badge",
       "span": {
-        "start": 78,
-        "end": 188
+        "start": 79,
+        "end": 189
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 128,
-              "end": 134
+              "start": 129,
+              "end": 135
             }
           },
-          "binding": "label@110",
+          "binding": "label@111",
           "span": {
-            "start": 121,
-            "end": 134
+            "start": 122,
+            "end": 135
           }
         }
       ],
@@ -31,24 +31,24 @@
         "type": {
           "code": "{ label: string }",
           "span": {
-            "start": 119,
-            "end": 136
+            "start": 120,
+            "end": 137
           }
         },
         "span": {
-          "start": 108,
-          "end": 136
+          "start": 109,
+          "end": 137
         }
       },
       "types": [],
       "bindings": [
         {
-          "id": "label@110",
+          "id": "label@111",
           "name": "label",
           "kind": "prop",
           "span": {
-            "start": 110,
-            "end": 115
+            "start": 111,
+            "end": 116
           }
         }
       ],
@@ -65,29 +65,29 @@
                 "value": {
                   "code": "badge()",
                   "span": {
-                    "start": 162,
-                    "end": 169
+                    "start": 163,
+                    "end": 170
                   },
                   "refs": [
                     {
                       "kind": "Import",
                       "name": "badge",
                       "span": {
-                        "start": 162,
-                        "end": 167
+                        "start": 163,
+                        "end": 168
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 162,
-                  "end": 169
+                  "start": 163,
+                  "end": 170
                 }
               }
             ],
             "span": {
-              "start": 155,
-              "end": 170
+              "start": 156,
+              "end": 171
             }
           }
         ],
@@ -97,29 +97,29 @@
             "value": {
               "code": "label",
               "span": {
-                "start": 172,
-                "end": 177
+                "start": 173,
+                "end": 178
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "label@110",
+                  "binding": "label@111",
                   "span": {
-                    "start": 172,
-                    "end": 177
+                    "start": 173,
+                    "end": 178
                   }
                 }
               ]
             },
             "span": {
-              "start": 171,
-              "end": 178
+              "start": 172,
+              "end": 179
             }
           }
         ],
         "span": {
-          "start": 149,
-          "end": 185
+          "start": 150,
+          "end": 186
         }
       }
     }
@@ -130,8 +130,8 @@
       "name": "default",
       "local": "Badge",
       "span": {
-        "start": 78,
-        "end": 188
+        "start": 79,
+        "end": 189
       }
     }
   ],
@@ -158,8 +158,8 @@
       "specifier": "virtual:styleframe.css",
       "names": [],
       "span": {
-        "start": 44,
-        "end": 76
+        "start": 45,
+        "end": 77
       }
     }
   ]

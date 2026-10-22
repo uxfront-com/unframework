@@ -5,8 +5,8 @@
     {
       "name": "Button",
       "span": {
-        "start": 79,
-        "end": 321
+        "start": 80,
+        "end": 322
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 151,
-              "end": 157
+              "start": 152,
+              "end": 158
             }
           },
-          "binding": "label@114",
+          "binding": "label@115",
           "span": {
-            "start": 144,
-            "end": 158
+            "start": 145,
+            "end": 159
           }
         },
         {
@@ -31,14 +31,14 @@
           "type": {
             "code": "\"sm\" | \"lg\"",
             "span": {
-              "start": 168,
-              "end": 179
+              "start": 169,
+              "end": 180
             }
           },
-          "binding": "size@123",
+          "binding": "size@124",
           "span": {
-            "start": 161,
-            "end": 180
+            "start": 162,
+            "end": 181
           }
         },
         {
@@ -47,14 +47,14 @@
           "type": {
             "code": "\"neutral\" | \"primary\"",
             "span": {
-              "start": 190,
-              "end": 211
+              "start": 191,
+              "end": 212
             }
           },
-          "binding": "tone@131",
+          "binding": "tone@132",
           "span": {
-            "start": 183,
-            "end": 212
+            "start": 184,
+            "end": 213
           }
         }
       ],
@@ -63,42 +63,42 @@
         "type": {
           "code": "{\n  label: string;\n  size?: \"sm\" | \"lg\";\n  tone?: \"neutral\" | \"primary\";\n}",
           "span": {
-            "start": 140,
-            "end": 214
+            "start": 141,
+            "end": 215
           }
         },
         "span": {
-          "start": 110,
-          "end": 214
+          "start": 111,
+          "end": 215
         }
       },
       "types": [],
       "bindings": [
         {
-          "id": "label@114",
+          "id": "label@115",
           "name": "label",
           "kind": "prop",
           "span": {
-            "start": 114,
-            "end": 119
+            "start": 115,
+            "end": 120
           }
         },
         {
-          "id": "size@123",
+          "id": "size@124",
           "name": "size",
           "kind": "prop",
           "span": {
-            "start": 123,
-            "end": 127
+            "start": 124,
+            "end": 128
           }
         },
         {
-          "id": "tone@131",
+          "id": "tone@132",
           "name": "tone",
           "kind": "prop",
           "span": {
-            "start": 131,
-            "end": 135
+            "start": 132,
+            "end": 136
           }
         }
       ],
@@ -112,8 +112,8 @@
             "name": "type",
             "value": "button",
             "span": {
-              "start": 241,
-              "end": 254
+              "start": 242,
+              "end": 255
             }
           },
           {
@@ -124,47 +124,47 @@
                 "value": {
                   "code": "button({ size, tone })",
                   "span": {
-                    "start": 262,
-                    "end": 284
+                    "start": 263,
+                    "end": 285
                   },
                   "refs": [
                     {
                       "kind": "Import",
                       "name": "button",
                       "span": {
-                        "start": 262,
-                        "end": 268
+                        "start": 263,
+                        "end": 269
                       }
                     },
                     {
                       "kind": "Binding",
-                      "binding": "size@123",
+                      "binding": "size@124",
                       "span": {
-                        "start": 271,
-                        "end": 275
+                        "start": 272,
+                        "end": 276
                       },
                       "shorthand": true
                     },
                     {
                       "kind": "Binding",
-                      "binding": "tone@131",
+                      "binding": "tone@132",
                       "span": {
-                        "start": 277,
-                        "end": 281
+                        "start": 278,
+                        "end": 282
                       },
                       "shorthand": true
                     }
                   ]
                 },
                 "span": {
-                  "start": 262,
-                  "end": 284
+                  "start": 263,
+                  "end": 285
                 }
               }
             ],
             "span": {
-              "start": 255,
-              "end": 285
+              "start": 256,
+              "end": 286
             }
           }
         ],
@@ -174,29 +174,29 @@
             "value": {
               "code": "label",
               "span": {
-                "start": 294,
-                "end": 299
+                "start": 295,
+                "end": 300
               },
               "refs": [
                 {
                   "kind": "Binding",
-                  "binding": "label@114",
+                  "binding": "label@115",
                   "span": {
-                    "start": 294,
-                    "end": 299
+                    "start": 295,
+                    "end": 300
                   }
                 }
               ]
             },
             "span": {
-              "start": 293,
-              "end": 300
+              "start": 294,
+              "end": 301
             }
           }
         ],
         "span": {
-          "start": 233,
-          "end": 314
+          "start": 234,
+          "end": 315
         }
       }
     }
@@ -207,8 +207,8 @@
       "name": "default",
       "local": "Button",
       "span": {
-        "start": 79,
-        "end": 321
+        "start": 80,
+        "end": 322
       }
     }
   ],
@@ -235,8 +235,8 @@
       "specifier": "virtual:styleframe.css",
       "names": [],
       "span": {
-        "start": 45,
-        "end": 77
+        "start": 46,
+        "end": 78
       }
     }
   ]

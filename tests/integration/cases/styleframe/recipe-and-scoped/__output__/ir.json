@@ -5,8 +5,8 @@
     {
       "name": "Card",
       "span": {
-        "start": 100,
-        "end": 302
+        "start": 101,
+        "end": 303
       },
       "props": [
         {
@@ -15,14 +15,14 @@
           "type": {
             "code": "string",
             "span": {
-              "start": 149,
-              "end": 155
+              "start": 150,
+              "end": 156
             }
           },
-          "binding": "title@131",
+          "binding": "title@132",
           "span": {
-            "start": 142,
-            "end": 155
+            "start": 143,
+            "end": 156
           }
         }
       ],
@@ -31,24 +31,24 @@
         "type": {
           "code": "{ title: string }",
           "span": {
-            "start": 140,
-            "end": 157
+            "start": 141,
+            "end": 158
           }
         },
         "span": {
-          "start": 129,
-          "end": 157
+          "start": 130,
+          "end": 158
         }
       },
       "types": [],
       "bindings": [
         {
-          "id": "title@131",
+          "id": "title@132",
           "name": "title",
           "kind": "prop",
           "span": {
-            "start": 131,
-            "end": 136
+            "start": 132,
+            "end": 137
           }
         }
       ],
@@ -64,8 +64,8 @@
                 "kind": "Static",
                 "value": "card",
                 "span": {
-                  "start": 193,
-                  "end": 199
+                  "start": 194,
+                  "end": 200
                 }
               },
               {
@@ -73,29 +73,29 @@
                 "value": {
                   "code": "button({ size: \"lg\", tone: \"primary\" })",
                   "span": {
-                    "start": 201,
-                    "end": 240
+                    "start": 202,
+                    "end": 241
                   },
                   "refs": [
                     {
                       "kind": "Import",
                       "name": "button",
                       "span": {
-                        "start": 201,
-                        "end": 207
+                        "start": 202,
+                        "end": 208
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 201,
-                  "end": 240
+                  "start": 202,
+                  "end": 241
                 }
               }
             ],
             "span": {
-              "start": 185,
-              "end": 242
+              "start": 186,
+              "end": 243
             }
           }
         ],
@@ -109,8 +109,8 @@
                 "name": "class",
                 "value": "title",
                 "span": {
-                  "start": 254,
-                  "end": 267
+                  "start": 255,
+                  "end": 268
                 }
               }
             ],
@@ -120,35 +120,35 @@
                 "value": {
                   "code": "title",
                   "span": {
-                    "start": 269,
-                    "end": 274
+                    "start": 270,
+                    "end": 275
                   },
                   "refs": [
                     {
                       "kind": "Binding",
-                      "binding": "title@131",
+                      "binding": "title@132",
                       "span": {
-                        "start": 269,
-                        "end": 274
+                        "start": 270,
+                        "end": 275
                       }
                     }
                   ]
                 },
                 "span": {
-                  "start": 268,
-                  "end": 275
+                  "start": 269,
+                  "end": 276
                 }
               }
             ],
             "span": {
-              "start": 250,
-              "end": 280
+              "start": 251,
+              "end": 281
             }
           }
         ],
         "span": {
-          "start": 176,
-          "end": 295
+          "start": 177,
+          "end": 296
         }
       },
       "styles": [
@@ -156,8 +156,8 @@
           "specifier": "./Card.css",
           "source": ".card {\n  width: 240px;\n  border: 2px solid rgb(17, 24, 39);\n}\n\n.title {\n  margin: 0;\n  font-size: 16px;\n  font-weight: 600;\n}\n",
           "span": {
-            "start": 78,
-            "end": 98
+            "start": 79,
+            "end": 99
           }
         }
       ],
@@ -170,8 +170,8 @@
       "name": "default",
       "local": "Card",
       "span": {
-        "start": 100,
-        "end": 302
+        "start": 101,
+        "end": 303
       }
     }
   ],
@@ -198,8 +198,8 @@
       "specifier": "virtual:styleframe.css",
       "names": [],
       "span": {
-        "start": 45,
-        "end": 77
+        "start": 46,
+        "end": 78
       }
     }
   ]
