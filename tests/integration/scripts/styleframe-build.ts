@@ -22,9 +22,7 @@ const entry: Plugin = {
   name: "uf-styleframe-build",
   resolveId: (id) => (id === ENTRY ? id : null),
   load: (id) =>
-    id === ENTRY
-      ? 'import "virtual:styleframe.css";\nexport * from "virtual:styleframe";\n'
-      : null,
+    id === ENTRY ? 'import "virtual:styleframe.css";\nexport * from "virtual:styleframe";\n' : null,
 };
 
 await build({
