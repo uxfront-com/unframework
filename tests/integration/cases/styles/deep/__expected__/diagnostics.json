@@ -19,7 +19,7 @@
   {
     "code": "UF4002",
     "severity": "info",
-    "message": "The qwik target does not support sheet-order: Qwik adds a component's sheet to the page when the component first renders (`useStyles$`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.",
+    "message": "The qwik target does not support sheet-order: Qwik adds a component's sheet to the page when the component first renders (`useStyles$`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ. Qwik's server render also writes the sheet as a `<style>` element where the component renders, before its root, which `:first-child`, `:nth-child()` and `+` count in the server's markup.",
     "file": "styles/deep/Article.uf.tsx",
     "start": {
       "line": 1,
@@ -32,5 +32,22 @@
       "offset": 23
     },
     "target": "qwik"
+  },
+  {
+    "code": "UF4003",
+    "severity": "info",
+    "message": "The angular target does not support child-root-scope: Each root node of a child binds an inline attribute directive, `[ufScope]`, that moves the scope attributes its styled parents put on its host onto the node, so their rules reach it. But the root renders inside its host element, which selectors see: a parent's rule that reaches the root through a combinator (`>`, `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's place, not the root's, and may match differently. A root Angular binds nothing on (`{{` in an attribute, ADR-0037) takes no scope attribute.",
+    "file": "styles/deep/Article.uf.tsx",
+    "start": {
+      "line": 8,
+      "column": 7,
+      "offset": 227
+    },
+    "end": {
+      "line": 8,
+      "column": 27,
+      "offset": 247
+    },
+    "target": "angular"
   }
 ]

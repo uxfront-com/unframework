@@ -1,0 +1,115 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/component-host/Row.uf.tsx",
+  "components": [
+    {
+      "name": "Row",
+      "span": {
+        "start": 0,
+        "end": 99
+      },
+      "props": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 46,
+              "end": 52
+            }
+          },
+          "binding": "text@30",
+          "span": {
+            "start": 40,
+            "end": 52
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ text: string }",
+          "span": {
+            "start": 38,
+            "end": 54
+          }
+        },
+        "span": {
+          "start": 28,
+          "end": 54
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "text@30",
+          "name": "text",
+          "kind": "prop",
+          "span": {
+            "start": 30,
+            "end": 34
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "row",
+            "span": {
+              "start": 72,
+              "end": 83
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "text",
+              "span": {
+                "start": 85,
+                "end": 89
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "text@30",
+                  "span": {
+                    "start": 85,
+                    "end": 89
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 84,
+              "end": 90
+            }
+          }
+        ],
+        "span": {
+          "start": 67,
+          "end": 96
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Row",
+      "span": {
+        "start": 0,
+        "end": 99
+      }
+    }
+  ],
+  "types": []
+}

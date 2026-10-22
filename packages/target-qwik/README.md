@@ -113,10 +113,12 @@ error: a control anywhere but at the top of a template listener, after a test th
 control changes (`event.defaultPrevented`), a `once` listener's control under a condition or on
 an element listening to the event in both phases, a capture listener's control that runs from the
 window, which no `sync$` can run, or a control in a local function that reads the component's
-state and that client code hands to `addEventListener` or calls outside a template listener) and `late-prop` (unsupported, a warning: Qwik 2.0.0-beta.47's props proxy subscribes a
-`useComputed$` or a task only to the keys the props hold, so a derived value or a watcher misses
-an optional prop a parent's spread adds after the mount; `test/behaviour.browser.test.ts` pins
-it).
+state and that client code hands to `addEventListener` or calls outside a template listener),
+`late-prop` (unsupported, a warning: Qwik 2.0.0-beta.47's props proxy subscribes a `useComputed$`
+or a task only to the keys the props hold, so a derived value or a watcher misses an optional
+prop a parent's spread adds after the mount; `test/behaviour.browser.test.ts` pins it),
+`child-root-scope` (emulated: `scopeAttributes`, Scoped styles below) and `sheet-order`
+(unsupported, for information, UF4002: sheets load in render order).
 
 ## Composition (M3)
 
@@ -170,8 +172,10 @@ component's own in a module of several (`scopeAttributes_1`).
 
 `useStyles$` adds a sheet to the page as its component first renders, a parent's before its
 children's, where the other targets load sheets in import order: `sheet-order` is unsupported
-(UF4002, info), reported at every stylesheet import. Qwik's server writes the sheet as a
-`<style q:style>` where the component renders, which the normaliser leaves out of Qwik's markup.
+(UF4002, info), reported at a component's first stylesheet import. Qwik's server writes the sheet
+as a `<style q:style>` where the component renders, before its root, which the normaliser leaves
+out of Qwik's markup, and which `:first-child`, `:nth-child()` and `+` count in the server's
+markup.
 
 ## Toolchain
 

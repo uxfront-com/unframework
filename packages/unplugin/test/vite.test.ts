@@ -891,9 +891,16 @@ describe("api.getSheet", () => {
         expect(api.getSheet(file("Card.uf.tsx"))).toMatch(
           /^\/\* hooked \*\/\n\.card\[data-uf-[0-9a-f]{8}\] \{ color: red \}\n$/,
         );
-        // A file that imports no stylesheet emits none.
+        // A file that imports no stylesheet emits none, and one that stops importing its own
+        // has none from then on.
         await client.pluginContainer.load(`${file("Hello.uf.tsx")}.ts`);
         expect(api.getSheet(file("Hello.uf.tsx"))).toBeUndefined();
+        const styled = project.write("Restyled.uf.tsx", CARD);
+        await client.pluginContainer.load(`${styled}.ts`);
+        expect(api.getSheet(styled)).toContain(".card[data-uf-");
+        writeFileSync(styled, CARD.replace('import "./Card.css";\n\n', ""));
+        await client.pluginContainer.load(`${styled}.ts`);
+        expect(api.getSheet(styled)).toBeUndefined();
       },
     );
   });

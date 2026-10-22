@@ -589,7 +589,7 @@ describe("canaries", () => {
   it("L10-stylesheet-rule-dropped drops a rule of each styled case's sheet, on the followers only", async () => {
     const styled = listCases().filter((info) => canaryCase(info).styled);
     expect(styled.map(({ id }) => id.split("/")[0])).toEqual(styled.map(() => "styles"));
-    expect(styled.length).toBeGreaterThanOrEqual(13);
+    expect(styled.length).toBeGreaterThanOrEqual(15);
     /** The cases a sheet of which the reference emitted. */
     const sheets = new Set<string>();
     for (const info of styled) {

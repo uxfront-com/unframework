@@ -64,7 +64,7 @@ describe("frameworkCompile (L3)", () => {
     expect(errors[0]!.line).toBe(line);
     // A template that does not parse uses none of the directives it imports (the scope
     // directive, ADR-0063), which Angular reports too.
-    expect(codes(warnings).filter((code) => code !== "NG8113")).toEqual([]);
+    expect(codes(warnings)).toEqual(["NG8113"]);
     for (const other of others) {
       expect(results.get(other.path), other.path).toEqual({ errors: [], warnings: [] });
     }

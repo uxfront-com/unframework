@@ -198,7 +198,7 @@ export const qwik: Target = defineTarget({
       code: "UF4002",
       severity: "info",
       reason:
-        "Qwik adds a component's sheet to the page when the component first renders (`useStyles$`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.",
+        "Qwik adds a component's sheet to the page when the component first renders (`useStyles$`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ. Qwik's server render also writes the sheet as a `<style>` element where the component renders, before its root, which `:first-child`, `:nth-child()` and `+` count in the server's markup.",
     },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
@@ -330,9 +330,9 @@ export const qwik: Target = defineTarget({
     // A component that renders itself refers to its own `const` (ADR-0053).
     const helperCode = helpers(plan, listeners);
     if (scope) helperCode.push(scopeAttributesHelper(scope.helper));
-    // The sheet's import comes after the children's outputs, so a child's sheet loads first,
-    // as plugin-vue imports a component's style after its script. Collected last: the types
-    // and the helpers import what they name.
+    // The sheet's import comes after the other imports, as on the other targets: an `?inline`
+    // import loads nothing, and `useStyles$` attaches the sheet as the component first renders
+    // (`sheet-order`). Collected last: the types and the helpers import what they name.
     const declarations = [
       ...imports.toDeclarations(),
       ...(sheet

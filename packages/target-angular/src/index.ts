@@ -172,11 +172,13 @@ export const angular: Target = defineTarget({
     },
     "scoped-styles": { support: "native" },
     // The child's root takes the `data-uf-*` attributes its styled parents put on its host
-    // (ADR-0063): their names are the parents', which the child cannot know.
+    // through `[ufScope]` (ADR-0063), but it renders inside the host, which selectors see.
     "child-root-scope": {
-      support: "emulated",
-      helper: "ufScope",
-      note: "A child cannot know the scope attributes its styled parents put on its host, so each of its root nodes binds an attribute directive, `[ufScope]`, that reads them off the host, which keeps only `display: contents`, and sets them on the node.",
+      support: "unsupported",
+      code: "UF4003",
+      severity: "info",
+      reason:
+        "Each root node of a child binds an inline attribute directive, `[ufScope]`, that moves the scope attributes its styled parents put on its host onto the node, so their rules reach it. But the root renders inside its host element, which selectors see: a parent's rule that reaches the root through a combinator (`>`, `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's place, not the root's, and may match differently. A root Angular binds nothing on (`{{` in an attribute, ADR-0037) takes no scope attribute.",
     },
     "slotted-styles": { support: "native" },
     // Sheets cascade in render order, not Vue's import order (ADR-0063): declared, since a

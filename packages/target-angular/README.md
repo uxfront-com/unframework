@@ -258,11 +258,15 @@ keeps their names in a module `WeakMap` for a root that renders later, and sets 
 Its root nodes are those Vue's fallthrough reaches (`scopeRoots`): the root element, component or
 each candidate of a root `<component is>`, or each branch of a root conditional that renders one
 alone. A root component's own root directive runs after this one has set them on its host, so they
-pass through it.
+pass through it. A root Angular binds nothing on (`{{` in an attribute, ADR-0037) takes none. The
+root still renders inside its host, which selectors see: a parent's rule that reaches it through
+a combinator or a structural pseudo-class (`>`, `+`, `:first-child`, …) matches the host's place.
+So `child-root-scope` is unsupported (UF4003, info), reported at the first child a styled
+component renders.
 
 Angular adds a sheet to the page as its component first renders, a parent's before its children's,
 where the other targets load sheets in import order: `sheet-order` is unsupported (UF4002, info),
-reported at every stylesheet import.
+reported at a component's first stylesheet import.
 
 ### Capabilities
 
@@ -271,9 +275,9 @@ above, helper `uf<Event><Option>`), `use-id` (emulated, `nextId`), `next-tick` (
 `nextTick`) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
 `slot-forwarding` (emulated, the slot directives `uf<Component><Slot>`), `model-array`
 (`toggle`), `model-modifiers` (`modelText`), `fallthrough` (`fallthrough`), `reactive-context`
-(`refObject`) and `dynamic-component` (`@switch`), all emulated, `child-root-scope` (emulated,
-the `[ufScope]` directive), `default-slot-presence` and `contextual-root`, unsupported (UF4001,
-errors), and `sheet-order`, unsupported (UF4002, info). Where an unsupported cell is reported, the
+(`refObject`) and `dynamic-component` (`@switch`), all emulated, `default-slot-presence` and
+`contextual-root`, unsupported (UF4001, errors), and `child-root-scope` and `sheet-order`,
+unsupported (UF4003 and UF4002, info). Where an unsupported cell is reported, the
 output still compiles: default-slot presence reads `true`, and the forwarded default slot
 re-projects `<ng-content />`.
 

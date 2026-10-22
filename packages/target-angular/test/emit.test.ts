@@ -119,7 +119,7 @@ describe("angular target", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual(CAPABILITY_NAMES.toSorted());
   });
 
-  it("emulates the listener options, ids, nextTick, composition's cells and the child root, declares the sheet order, and supports the rest natively", () => {
+  it("emulates the listener options, ids, nextTick and composition's cells, declares the child root and the sheet order, and supports the rest natively", () => {
     const emulated = Object.entries(target.capabilities)
       .filter(([, cell]) => cell.support !== "native")
       .map(([name, cell]) => [name, cell.support, "helper" in cell ? cell.helper : undefined]);
@@ -139,7 +139,7 @@ describe("angular target", () => {
       ["contextual-root", "unsupported", undefined],
       ["reactive-context", "emulated", "refObject"],
       ["dynamic-component", "emulated", "@switch"],
-      ["child-root-scope", "emulated", "ufScope"],
+      ["child-root-scope", "unsupported", undefined],
       ["sheet-order", "unsupported", undefined],
     ]);
   });

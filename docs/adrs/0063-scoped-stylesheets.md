@@ -256,8 +256,10 @@ sheet with `parseStylesheet` instead, Vue's and Angular's included.
   `splitFrom`, as the emission section says. The toolchain's `sheets.d.ts` declares `*.css` and
   `*.css?inline`. Qwik's server writes a `<style q:style>` where the component renders, and its
   client writes it in `<head>`, so the normaliser removes that element from Qwik's output only
-  (rule 2c), as it removes `q:template` (ADR-0058).
-- **`child-root-scope`, emulated on both.** Qwik's child spreads `{...scopeAttributes(attributes)}`
+  (rule 2c), as it removes `q:template` (ADR-0058). Unlike every other target's server HTML,
+  Qwik's then holds the sheet, before the component's root, where `:first-child`, `:nth-child()`
+  and `+` count it: the `sheet-order` cell names it.
+- **`child-root-scope`, emulated on Qwik, unsupported on Angular.** Qwik's child spreads `{...scopeAttributes(attributes)}`
   on each node Vue's fallthrough reaches, as React's does, with the rest of its props pattern,
   or its props object, and a component without props takes one, typed `object`. Each candidate
   of a root `<component is>` with listeners, which Qwik writes one tag each, takes it too.
@@ -271,7 +273,14 @@ sheet with `parseStylesheet` instead, Vue's and Angular's included.
   sets them on its node. It reads them in `ngOnInit`, not as it is made: a root component's own
   root directive then runs after its parent's has set them on its host, so they pass through a
   root component, as Vue's fallthrough does. The directive and the map take their names from a
-  base of each component's own (`ScopeAttributes_1`), as React's helper does.
+  base of each component's own (`ScopeAttributes_1`), as React's helper does. Two things still
+  differ on Angular, so its cell is `unsupported`, with UF4003 `component-host` at `info`,
+  reported at the first child a styled component renders. The root renders inside its host,
+  which selectors see: a parent's rule that reaches it through a combinator (`.list > .row`,
+  `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's
+  place, not the root's. And a root Angular binds nothing on (`{{` in an attribute, ADR-0037)
+  takes no directive, so it takes no scope attribute. `diagnostics/component-host` covers the
+  code.
 - **`slotted-styles`, native on both.** The shared builders stamp a child's `-s` on the content a
   parent fills in, which Angular projects through `<ng-content>` and `ng-template` slots, and
   Qwik through `<Slot />` and QRL render props: the content is the parent's markup in both.
@@ -308,12 +317,13 @@ styled component renders), `slotted-styles` (content filled into a child whose s
 `:slotted()`) and `sheet-order` (the order sheets cascade in, above). Each target first declared
 the first three `native`, the cell its lane was expected to reach. A lane that can't reach it
 declares the cell `emulated` or `unsupported`, with the next free UF4 code, and adds a section
-here: React, Solid, Svelte, Astro, Angular and Qwik emulate `child-root-scope`.
+here: React, Solid, Svelte, Astro and Qwik emulate `child-root-scope`, and Angular declares it
+`unsupported` (UF4003).
 
 **The codes** are UF5001 `shared-stylesheet`, UF5002 `invalid-stylesheet`, UF5003
 `unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`), UF5004
 `unscopable-selector`, UF5005 `stylesheet-not-found` and UF5006 `unsupported-styleframe-import`. All are errors.
-UF4002 `sheet-order`, a portability code, is `info`.
+UF4002 `sheet-order` and UF4003 `component-host`, portability codes, are `info`.
 
 A `Button` whose `Button.css` holds `.label { color: red }` and a line feed has the id
 `70af206b`:

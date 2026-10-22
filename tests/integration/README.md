@@ -97,8 +97,9 @@ per line, JSON-quoted text and attribute values, and form-control state as `uf:*
 pseudo-attributes. The normaliser removes framework noise, and only the target's own (ADR-0031):
 every comment, which frameworks use as anchors; the attributes its framework adds, such as
 `_ngcontent-*`, `q:*`, `data-hk` and `data-astro-cid-*`; Angular's `uf-*` host elements with
-`display: contents`; and Qwik's `q:template` elements, where its server render keeps a slot's
-unclaimed fallback (ADR-0058). For every target, the reference included, it also writes one form of what
+`display: contents`; Qwik's `q:template` elements, where its server render keeps a slot's
+unclaimed fallback (ADR-0058); and Qwik's `<style q:style>` elements, where its server render
+writes a component's `useStyles$` sheet, which its client writes in `<head>` (ADR-0063). For every target, the reference included, it also writes one form of what
 renders alike however it is written:
 
 - attributes sorted by name, and a `class`'s tokens sorted, one space apart;

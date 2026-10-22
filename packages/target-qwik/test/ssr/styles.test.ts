@@ -66,4 +66,13 @@ export default function Toolbar() {
     expect(html).toMatch(/^<style q:style="[^"]+" :><\/style><div class="toolbar" /);
     expect(html).toMatch(new RegExp(`<button [^>]*data-uf-${id}=""[^>]*>Save</button>`));
   });
+
+  it("passes the scope attributes alone, never another prop the output leaves unread", async () => {
+    const Button = await load(["Button.uf.tsx", BUTTON]);
+    const html = await renderToString(Button, {
+      props: { text: "Save", title: "unread", "data-uf-0a1b2c3d": "" },
+    });
+    expect(html).toMatch(/<button [^>]*data-uf-0a1b2c3d=""[^>]*>Save<\/button>/);
+    expect(html).not.toMatch(/\btitle=/);
+  });
 });
