@@ -31,6 +31,8 @@ import { M2_SHAPES } from "./lint-probes.ts";
 const context: ToolchainContext = { toolchainDir, root: packageDir };
 /** The declaration a styled golden's sheet import needs, as the toolchain project passes it. */
 const SHEETS = join(toolchainDir, "sheets.d.ts");
+/** The declarations of Styleframe's virtual modules, which the styled goldens import (ADR-0064). */
+const STYLEFRAME = join(toolchainDir, "../../integration/styleframe.d.ts");
 
 /** Every committed React golden; the corpus has at least the two `basics` cases. */
 function reactGoldens(): ToolchainFile[] {
@@ -451,7 +453,7 @@ describe("react typecheck (L4)", () => {
 
   // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output in one run", async () => {
-    const files = [...reactGoldens().map((file) => file.path), SHEETS];
+    const files = [...reactGoldens().map((file) => file.path), SHEETS, STYLEFRAME];
     const results = await toolchain.typecheck(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file, []])),
@@ -560,7 +562,7 @@ describe("react typecheck (L4)", () => {
   });
 
   it("reports each injected type error against its own file", async () => {
-    const goldenFiles = [...reactGoldens().map((file) => file.path), SHEETS];
+    const goldenFiles = [...reactGoldens().map((file) => file.path), SHEETS, STYLEFRAME];
     const script = scratchFile(
       "Script.tsx",
       'const count: number = "one";\n\nexport default function Script() {\n  return <p>{count}</p>;\n}\n',

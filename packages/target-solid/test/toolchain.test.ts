@@ -16,6 +16,8 @@ import { goldens, packageDir, toolchainDir } from "./fixtures.ts";
 const context: ToolchainContext = { toolchainDir, root: packageDir };
 /** The declaration a styled golden's sheet import needs, as the toolchain project passes it. */
 const SHEETS = join(toolchainDir, "sheets.d.ts");
+/** The declarations of Styleframe's virtual modules, which the styled goldens import (ADR-0064). */
+const STYLEFRAME = join(toolchainDir, "../../integration/styleframe.d.ts");
 const require = createRequire(import.meta.url);
 const scratch = join(packageDir, ".uf-tmp", `toolchain-${randomUUID()}`);
 beforeAll(() => mkdirSync(scratch, { recursive: true }));
@@ -167,7 +169,7 @@ describe("solid frameworkCompile (L3)", () => {
 describe("solid typecheck (L4)", () => {
   // It checks every committed golden output, so its time grows with the corpus.
   it("accepts every committed golden output in one run", async () => {
-    const files = [...solidGoldens().map((file) => file.path), SHEETS];
+    const files = [...solidGoldens().map((file) => file.path), SHEETS, STYLEFRAME];
     const results = await toolchain.typecheck(files, context);
     expect(Object.fromEntries(results)).toEqual(
       Object.fromEntries(files.map((file) => [file, []])),
@@ -175,7 +177,7 @@ describe("solid typecheck (L4)", () => {
   }, 60_000);
 
   it("reports each injected type error against its own file", async () => {
-    const goldenFiles = [...solidGoldens().map((file) => file.path), SHEETS];
+    const goldenFiles = [...solidGoldens().map((file) => file.path), SHEETS, STYLEFRAME];
     const script = scratchFile(
       "Script.tsx",
       'const count: number = "one";\n\nexport default function Script() {\n  return <p>{count}</p>;\n}\n',

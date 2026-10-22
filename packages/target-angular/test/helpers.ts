@@ -35,6 +35,8 @@ export const casesDir: string = join(repoRoot, "tests/integration/cases");
 export const context: ToolchainContext = {
   toolchainDir: join(repoRoot, "tests/toolchains/angular"),
   root: join(repoRoot, "tests/integration"),
+  // Styleframe's virtual modules, which the styled goldens import (ADR-0064).
+  declarations: [join(repoRoot, "tests/integration/styleframe.d.ts")],
 };
 
 function filesUnder(directory: string): string[] {

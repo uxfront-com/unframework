@@ -23,6 +23,8 @@ afterAll(removeScratch);
 
 /** The declaration a styled golden's sheet import needs, as the toolchain project passes it. */
 const SHEETS = join(toolchainDir, "sheets.d.ts");
+/** The declarations of Styleframe's virtual modules, which the styled goldens import (ADR-0064). */
+const STYLEFRAME = join(toolchainDir, "../../integration/styleframe.d.ts");
 
 /**
  * Type-checks a golden output with a toolchain tsconfig that extends the real one with
@@ -75,7 +77,7 @@ describe("svelte typecheck", () => {
       ].join("\n"),
     });
 
-    const clean = [...golden, ...fresh, SHEETS];
+    const clean = [...golden, ...fresh, SHEETS, STYLEFRAME];
     const results = await toolchain.typecheck([...clean, broken!], context);
 
     expect([...results.keys()].toSorted()).toEqual([...clean, broken!].toSorted());

@@ -16,6 +16,8 @@ const context = { toolchainDir, root: join(repo, "tests/integration") };
 const goldens = qwikGoldens("tests/integration/cases/**/__output__/qwik/*");
 /** The declarations a styled golden's sheet import needs, as the toolchain project passes them. */
 const SHEETS = join(toolchainDir, "sheets.d.ts");
+/** The declarations of Styleframe's virtual modules, which the styled goldens import (ADR-0064). */
+const STYLEFRAME = join(toolchainDir, "../../integration/styleframe.d.ts");
 // Qwik components shaped like the target's output. This package's tsconfig excludes them: the
 // Qwik checker types them here, under the same tsconfig as the golden files.
 const fixtures = ["Attributes.tsx", "Counter.tsx", "Greeting.tsx", "NullProps.tsx"].map((name) =>
@@ -43,7 +45,7 @@ describe("typecheck (L4, tsgo)", () => {
   // default. This test and the next take the batch timeout of the other targets' L4 tests.
   it("passes every committed golden output and the fixtures, in one run", async () => {
     expect(goldens.length).toBeGreaterThanOrEqual(2);
-    const files = [...goldens, ...fixtures, SHEETS];
+    const files = [...goldens, ...fixtures, SHEETS, STYLEFRAME];
     const results = await toolchain.typecheck(files, context);
     expect([...results.entries()]).toEqual(files.map((file) => [file, []]));
   }, 60_000);
@@ -57,7 +59,7 @@ describe("typecheck (L4, tsgo)", () => {
     );
     const template = write("TemplateError.tsx", component("  return <p>{greet()}</p>;"));
     const results = await toolchain.typecheck(
-      [...goldens, SHEETS, clean, script, template],
+      [...goldens, SHEETS, STYLEFRAME, clean, script, template],
       context,
     );
     expect(results.get(clean)).toEqual([]);
@@ -73,7 +75,7 @@ describe("typecheck (L4, tsgo)", () => {
       { message: "Cannot find name 'greet'.", line: 4, column: 14, code: "TS2304" },
     ]);
     for (const golden of goldens) expect(results.get(golden)).toEqual([]);
-    expect(results.size).toBe(goldens.length + 4);
+    expect(results.size).toBe(goldens.length + 5);
   }, 60_000);
 
   it("keeps an elaborated message whole", async () => {

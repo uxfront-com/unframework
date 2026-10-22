@@ -9,6 +9,8 @@ import { goldenFiles, removeScratch, toolchainDir, writeScratch } from "./helper
 import { M2_SHAPES } from "./lint-probes.ts";
 
 const context = { toolchainDir, root: toolchainDir };
+/** The declarations of Styleframe's virtual modules, which the styled goldens import (ADR-0064). */
+const STYLEFRAME = join(toolchainDir, "../../integration/styleframe.d.ts");
 /** vue-tsc takes about a second; give it room on a loaded machine. */
 const checker = { timeout: 60_000 };
 
@@ -35,10 +37,11 @@ describe("vue typecheck", () => {
       ].join("\n"),
     });
 
-    const results = await toolchain.typecheck([...golden, child!, broken!], context);
+    const clean = [...golden, child!, STYLEFRAME];
+    const results = await toolchain.typecheck([...clean, broken!], context);
 
-    expect([...results.keys()].toSorted()).toEqual([...golden, child!, broken!].toSorted());
-    for (const path of [...golden, child!]) expect(results.get(path), path).toEqual([]);
+    expect([...results.keys()].toSorted()).toEqual([...clean, broken!].toSorted());
+    for (const path of clean) expect(results.get(path), path).toEqual([]);
     expect(results.get(broken!)).toEqual([
       {
         message: "Type 'string' is not assignable to type 'number'.",

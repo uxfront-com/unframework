@@ -20,7 +20,12 @@ function write(name: string, contents: string): string {
 
 describe("astro check over output (L4)", { timeout: 60_000 }, () => {
   it("passes every golden output, in one run, with an entry per file", async () => {
-    const files = goldenAstroFiles().map((golden) => golden.path);
+    // With the declarations of Styleframe's virtual modules, which the styled goldens import
+    // (ADR-0064).
+    const files = [
+      ...goldenAstroFiles().map((golden) => golden.path),
+      join(toolchainDir, "../../integration/styleframe.d.ts"),
+    ];
     const results = await astroTypecheck(files, context);
     expect([...results]).toEqual(files.map((file) => [file, []]));
   });
