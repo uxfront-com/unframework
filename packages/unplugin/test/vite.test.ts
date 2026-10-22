@@ -882,17 +882,20 @@ describe("api.getSheet", () => {
             : output,
         ),
     };
-    await withServer(unframework({ target: "angular", plugins: [marked] }), async ({ server, client }) => {
-      const api = apiOf(server);
-      expect(api.getSheet(file("Card.uf.tsx"))).toBeUndefined();
-      await client.pluginContainer.load(`${file("Card.uf.tsx")}.ts`);
-      expect(api.getSheet(file("Card.uf.tsx"))).toMatch(
-        /^\/\* hooked \*\/\n\.card\[data-uf-[0-9a-f]{8}\] \{ color: red \}\n$/,
-      );
-      // A file that imports no stylesheet emits none.
-      await client.pluginContainer.load(`${file("Hello.uf.tsx")}.ts`);
-      expect(api.getSheet(file("Hello.uf.tsx"))).toBeUndefined();
-    });
+    await withServer(
+      unframework({ target: "angular", plugins: [marked] }),
+      async ({ server, client }) => {
+        const api = apiOf(server);
+        expect(api.getSheet(file("Card.uf.tsx"))).toBeUndefined();
+        await client.pluginContainer.load(`${file("Card.uf.tsx")}.ts`);
+        expect(api.getSheet(file("Card.uf.tsx"))).toMatch(
+          /^\/\* hooked \*\/\n\.card\[data-uf-[0-9a-f]{8}\] \{ color: red \}\n$/,
+        );
+        // A file that imports no stylesheet emits none.
+        await client.pluginContainer.load(`${file("Hello.uf.tsx")}.ts`);
+        expect(api.getSheet(file("Hello.uf.tsx"))).toBeUndefined();
+      },
+    );
   });
 });
 

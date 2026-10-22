@@ -29,7 +29,9 @@ export default function Card() {
   it("spreads the scope attributes its styled parents pass on its root", async () => {
     const code = await output(lowered("Button.uf.tsx", BUTTON).module);
     expect(code).toContain("({ text, class: className, style, ...attributes })");
-    expect(code).toContain('class={["button", className]}\n        {...scopeAttributes(attributes)}');
+    expect(code).toContain(
+      'class={["button", className]}\n        {...scopeAttributes(attributes)}',
+    );
   });
 
   it("picks them out of the props object in the object form", async () => {

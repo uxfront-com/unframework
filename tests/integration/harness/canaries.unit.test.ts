@@ -525,23 +525,20 @@ describe("canaries", () => {
         canary.id !== "L9-unwired-handler" &&
         canary.id !== "L10-stylesheet-rule-dropped",
     ),
-  )(
-    "$id changes the output of every target it corrupts, without plugin errors",
-    async (canary) => {
-      const clean = await compileWith(null);
-      for (const target of TARGET_NAMES) {
-        const corrupted = await compileWith(canary.id, target);
-        expect(corrupted.diagnostics.filter((diagnostic) => diagnostic.code === "UF8001")).toEqual(
-          [],
-        );
-        if (!corruptedTargets(canary).includes(target)) {
-          expect(corrupted.outputs[target], target).toEqual(clean.outputs[target]);
-        } else {
-          expect(corrupted.outputs[target], target).not.toEqual(clean.outputs[target]);
-        }
+  )("$id changes the output of every target it corrupts, without plugin errors", async (canary) => {
+    const clean = await compileWith(null);
+    for (const target of TARGET_NAMES) {
+      const corrupted = await compileWith(canary.id, target);
+      expect(corrupted.diagnostics.filter((diagnostic) => diagnostic.code === "UF8001")).toEqual(
+        [],
+      );
+      if (!corruptedTargets(canary).includes(target)) {
+        expect(corrupted.outputs[target], target).toEqual(clean.outputs[target]);
+      } else {
+        expect(corrupted.outputs[target], target).not.toEqual(clean.outputs[target]);
       }
-    },
-  );
+    }
+  });
 
   it("L2-output-edited leaves the IR alone, so only the golden comparison can catch it", async () => {
     const clean = await compileWith(null);
@@ -593,7 +590,8 @@ describe("canaries", () => {
     const styled = listCases().filter((info) => canaryCase(info).styled);
     expect(styled.map(({ id }) => id.split("/")[0])).toEqual(styled.map(() => "styles"));
     expect(styled.length).toBeGreaterThanOrEqual(13);
-    let sheets = 0;
+    /** The cases a sheet of which the reference emitted. */
+    const sheets = new Set<string>();
     for (const info of styled) {
       for (const { source, filename } of info.sources) {
         const text = readFileSync(source, "utf8");
@@ -615,7 +613,7 @@ describe("canaries", () => {
           const [sheet, ...more] = part(clean, true);
           expect(more, where).toEqual([]);
           if (!sheet) continue;
-          if (target === REFERENCE) sheets++;
+          if (target === REFERENCE) sheets.add(info.id);
           const [dropped] = part(corrupted, true);
           if (target === REFERENCE) {
             expect(dropped, where).toEqual(sheet);
@@ -626,7 +624,7 @@ describe("canaries", () => {
         }
       }
     }
-    expect(sheets).toBe(styled.length);
+    expect(sheets.size).toBe(styled.length);
   });
 
   it("drops the first style rule outside @keyframes, inside an at-rule block too", () => {
@@ -640,7 +638,9 @@ describe("canaries", () => {
       "@layer a, b;\n\n@layer b {\n  .b { margin: 0; }\n}\n",
     );
     expect(
-      drop("@keyframes spin {\n  from { opacity: 0; }\n  to { opacity: 1; }\n}\n.a { color: red; }\n"),
+      drop(
+        "@keyframes spin {\n  from { opacity: 0; }\n  to { opacity: 1; }\n}\n.a { color: red; }\n",
+      ),
     ).toBe("@keyframes spin {\n  from { opacity: 0; }\n  to { opacity: 1; }\n}\n");
     expect(() => drop("@keyframes spin {\n  to { opacity: 1; }\n}\n")).toThrow(
       /no style rule outside @keyframes/,

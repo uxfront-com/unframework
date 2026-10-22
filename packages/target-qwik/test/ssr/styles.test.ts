@@ -30,7 +30,8 @@ async function load(...sources: [file: string, source: string, sheet?: string][]
     const { module, api } = lowered(file, source, sheet ? { [`./${css}`]: sheet } : {}, apis);
     apis[`./${file}`] = { ...api, file };
     const { name, scopeId } = module.components[0]!;
-    if (sheet) writeFileSync(join(scratch, `${file}.css`), scopeStylesheet(css, sheet, scopeId!).code);
+    if (sheet)
+      writeFileSync(join(scratch, `${file}.css`), scopeStylesheet(css, sheet, scopeId!).code);
     path = join(scratch, `${name}.tsx`);
     writeFileSync(path, await output(module));
   }

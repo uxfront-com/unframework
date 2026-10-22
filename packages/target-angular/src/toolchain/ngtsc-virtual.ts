@@ -124,7 +124,10 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
     configResolved(config) {
       const plugin = config.plugins.find((candidate) => candidate.name === "unframework");
       const candidate = (plugin as { api?: Partial<UnframeworkApi> } | undefined)?.api;
-      if (typeof candidate?.getCompiled !== "function" || typeof candidate.getSheet !== "function") {
+      if (
+        typeof candidate?.getCompiled !== "function" ||
+        typeof candidate.getSheet !== "function"
+      ) {
         throw new Error(
           "The Angular toolchain compiles the unframework plugin's output, but this Vite config " +
             'has no plugin named "unframework" exposing api.getCompiled(id) and api.getSheet(file). Add ' +
