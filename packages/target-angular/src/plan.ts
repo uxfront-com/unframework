@@ -176,7 +176,11 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
   const members = new NameScope(memberNames);
   // A recipe's member takes no name a member has, those composition declares (the `class` and
   // `style` inputs, a slot's query) included; the members the emitter claims later (`host`)
-  // then take others.
+  // then take others. Nor a list's variable's name, which would shadow it in the list, as
+  // `templateMember` keeps the other members the template reads.
+  const loopNames = new Set(
+    component.bindings.filter(({ kind }) => isLoopVariable(kind)).map(({ name }) => name),
+  );
   const composition = new NameScope([
     ...memberNames,
     "class",
@@ -186,7 +190,8 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
   const recipes = new Map<string, string>();
   for (const { names } of passThroughImports(component, module)) {
     for (const { local } of names) {
-      const member = composition.claim(local);
+      let member = composition.claim(local);
+      while (loopNames.has(member)) member = composition.claim(local);
       members.reserve(member);
       recipes.set(local, member);
     }
@@ -213,9 +218,7 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
     ],
     ...formsOf(component),
     events,
-    loopNames: new Set(
-      component.bindings.filter(({ kind }) => isLoopVariable(kind)).map(({ name }) => name),
-    ),
+    loopNames,
     recipes,
   };
 }

@@ -328,6 +328,26 @@ describe("angular output", () => {
     },
   );
 
+  // A recipe's renamed member skips a list's variable's name, which would shadow it in the list.
+  it(
+    "passes them for a recipe read inside a list with a variable of its member's name",
+    { timeout: 120_000 },
+    async () => {
+      const source = [
+        'import { badge as style } from "virtual:styleframe";',
+        "export default function Probe(props: { items: string[] }) {",
+        "  return <ul>{props.items.map((style_1) => <li key={style_1} class={style()}>{style_1}</li>)}</ul>;",
+        "}",
+      ].join("\n");
+      const files = await emitFormatted(lower(source, "Probe.uf.tsx"));
+      const code = files.map((file) => file.contents).join("\n");
+      expect(code).toContain('[class]="style_2()"');
+      expect(code).toContain("protected readonly style_2 = style;");
+      const messages = await toolchainMessages(files);
+      expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
+    },
+  );
+
   it(
     "passes them for composition's forms the corpus does not reach",
     { timeout: 120_000 },
