@@ -15,7 +15,7 @@ export interface StepperModels {
 
 export default component$<
   { label: string } & StepperModels & { class?: ClassList; style?: CSSProperties }
->(({ label, value: valueProp, onValueChange$, class: className, style }) => {
+>(({ label, value: valueProp, onValueChange$, class: className, style, ...attributes }) => {
   const valueLocal = useSignal<number>(0);
   const value = useComputed$(() => (valueProp === undefined ? valueLocal.value : valueProp));
 
@@ -25,7 +25,7 @@ export default component$<
   });
 
   return (
-    <div class={["stepper", className]} style={style}>
+    <div class={["stepper", className]} {...scopeAttributes(attributes)} style={style}>
       <button
         type="button"
         aria-label={`Fewer ${label}`}
@@ -42,3 +42,12 @@ export default component$<
     </div>
   );
 });
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

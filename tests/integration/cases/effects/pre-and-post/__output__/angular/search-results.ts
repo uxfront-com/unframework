@@ -1,9 +1,11 @@
 import {
   ApplicationRef,
   Component,
+  Directive,
   ElementRef,
   Injector,
   type OnInit,
+  Renderer2,
   afterNextRender,
   afterRenderEffect,
   computed,
@@ -16,8 +18,34 @@ import {
   viewChild,
 } from "@angular/core";
 
+/** The scope attributes taken off each host, for the roots its component renders later. */
+const scopes = new WeakMap<Element, string[]>();
+
+/**
+ * Gives a root node of its component the scope attributes the component's styled parents put on
+ * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.
+ */
+@Directive({ selector: "[ufScope]" })
+export class ScopeAttributes implements OnInit {
+  readonly ufScope = input.required<HTMLElement>();
+  private readonly element = inject<ElementRef<Element>>(ElementRef);
+  private readonly renderer = inject(Renderer2);
+
+  ngOnInit(): void {
+    const host = this.ufScope();
+    let names = scopes.get(host);
+    if (!names) {
+      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));
+      for (const name of names) this.renderer.removeAttribute(host, name);
+      scopes.set(host, names);
+    }
+    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");
+  }
+}
+
 @Component({
   selector: "uf-search-results",
+  imports: [ScopeAttributes],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
@@ -29,6 +57,7 @@ import {
       aria-label="Search"
       [class]="this.class()"
       [style]="this.style()"
+      [ufScope]="this.host"
     >
       <p #banner>{{ status }}</p>
       <label>Query<input name="query" (input)="onQueryInput($event)" /></label>
@@ -125,4 +154,5 @@ export default class SearchResults implements OnInit {
     await Promise.resolve();
     this.appRef.tick();
   }
+  protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

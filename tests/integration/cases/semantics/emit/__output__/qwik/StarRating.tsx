@@ -16,7 +16,7 @@ export interface StarRatingEvents {
 const choices = [1, 2, 3, 4, 5];
 
 export default component$<StarRatingEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onPreview$, onRate$, onCleared$, class: className, style }) => {
+  ({ onPreview$, onRate$, onCleared$, class: className, style, ...attributes }) => {
     const stars = useSignal(0);
 
     const choose = $((next: number) => {
@@ -35,7 +35,13 @@ export default component$<StarRatingEvents & { class?: ClassList; style?: CSSPro
     });
 
     return (
-      <div class={["star-rating", className]} role="group" aria-label="Rating" style={style}>
+      <div
+        class={["star-rating", className]}
+        role="group"
+        aria-label="Rating"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <ul>
           {choices.map((choice) => (
             <li key={choice}>
@@ -57,3 +63,12 @@ export default component$<StarRatingEvents & { class?: ClassList; style?: CSSPro
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

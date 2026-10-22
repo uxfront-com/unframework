@@ -10,7 +10,7 @@ export interface TaskListProps {
 }
 
 export default component$<TaskListProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ initial, class: className, style }) => {
+  ({ initial, class: className, style, ...attributes }) => {
     const tasks = useSignal(initial);
     const selected = useSignal<string>();
     const added = useSignal(0);
@@ -41,7 +41,12 @@ export default component$<TaskListProps & { class?: ClassList; style?: CSSProper
     });
 
     return (
-      <section class={["task-list", className]} aria-label="Tasks" style={style}>
+      <section
+        class={["task-list", className]}
+        aria-label="Tasks"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <>
           {tasks.value.length === 0 ? (
             <p>No tasks yet.</p>
@@ -78,3 +83,12 @@ export default component$<TaskListProps & { class?: ClassList; style?: CSSProper
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

@@ -9,7 +9,7 @@ export interface NavItemProps {
 }
 
 export default component$<NavItemProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ label, href, active, muted, danger = false, class: className, style }) => {
+  ({ label, href, active, muted, danger = false, class: className, style, ...attributes }) => {
     return (
       <a
         href={href}
@@ -18,6 +18,7 @@ export default component$<NavItemProps & { class?: ClassList; style?: CSSPropert
           className,
         ]}
         aria-current={active ? "page" : undefined}
+        {...scopeAttributes(attributes)}
         style={style}
       >
         {label}
@@ -25,3 +26,12 @@ export default component$<NavItemProps & { class?: ClassList; style?: CSSPropert
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

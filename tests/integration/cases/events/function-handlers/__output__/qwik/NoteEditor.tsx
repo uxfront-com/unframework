@@ -13,7 +13,7 @@ export interface NoteEditorEvents {
 }
 
 export default component$<NoteEditorEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onSaved$, onTagged$, class: className, style }) => {
+  ({ onSaved$, onTagged$, class: className, style, ...attributes }) => {
     const saves = useSignal(0);
     const lastKey = useSignal("none");
     const tags = useSignal<string[]>([]);
@@ -42,7 +42,12 @@ export default component$<NoteEditorEvents & { class?: ClassList; style?: CSSPro
     });
 
     return (
-      <section class={["note-editor", className]} aria-label="Note" style={style}>
+      <section
+        class={["note-editor", className]}
+        aria-label="Note"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <button type="button" onClick$={save}>
           Save
         </button>
@@ -77,3 +82,12 @@ export default component$<NoteEditorEvents & { class?: ClassList; style?: CSSPro
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

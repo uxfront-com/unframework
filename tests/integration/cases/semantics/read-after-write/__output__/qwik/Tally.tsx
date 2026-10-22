@@ -14,7 +14,7 @@ export interface TallyEvents {
 }
 
 export default component$<TallyEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onTotal$, onSteps$, onLogged$, class: className, style }) => {
+  ({ onTotal$, onSteps$, onLogged$, class: className, style, ...attributes }) => {
     const count = useSignal(0);
     const trail = useSignal<string[]>([]);
 
@@ -53,7 +53,12 @@ export default component$<TallyEvents & { class?: ClassList; style?: CSSProperti
     });
 
     return (
-      <section class={["tally", className]} aria-label="Tally" style={style}>
+      <section
+        class={["tally", className]}
+        aria-label="Tally"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <p role="status">Count: {count.value}</p>
         <button type="button" onClick$={addTwice}>
           Add two
@@ -82,3 +87,12 @@ export default component$<TallyEvents & { class?: ClassList; style?: CSSProperti
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

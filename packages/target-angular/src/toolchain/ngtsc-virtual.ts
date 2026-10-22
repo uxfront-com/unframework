@@ -25,12 +25,18 @@ const VIRTUAL_ID = /\.uf\.tsx(?:\.[^/?]+)?\.ts$/;
  */
 const RELATIVE_IMPORT =
   /^\s*(?:(?:import|export)\b[^"';]*?\bfrom\s*|import\s*)["'](\.\.?\/[^"']+)["']/gm;
+/**
+ * A component's scoped sheet in generated code, `styleUrl: "./Card.uf.tsx.css"` (ADR-0063): its
+ * specifier is the first group.
+ */
+const STYLE_URL = /\bstyleUrl:\s*["'](\.\/[^"']+\.uf\.tsx\.css)["']/g;
 /** An import of another component in generated code: `./Child.uf.tsx`. */
 export const COMPONENT_IMPORT: RegExp = /^\.\.?\/.*\.uf\.tsx$/;
 
 /** What the unframework plugin exposes for reading the code it compiled. */
 export interface UnframeworkApi {
   getCompiled(id: string): string | undefined;
+  getSheet(file: string): string | undefined;
 }
 
 /** One compile, as the worker receives it. */
@@ -40,7 +46,8 @@ export interface CompileRequest {
   id: string;
   /**
    * The module's source and the generated source of each virtual module it imports, directly or
-   * not, by id: the worker cannot ask the unframework plugin.
+   * not, by id, and the scoped sheet each of them names as its `styleUrl`, by its path: the
+   * worker cannot ask the unframework plugin.
    */
   sources: [id: string, source: string][];
   /** The virtual module each relative import among them resolved to, by `childKey`. */
@@ -82,9 +89,16 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
 
   function compile(id: string, code: string): Promise<Compiled> {
     const sources = new Map([[id, code]]);
+    const sheets = new Map<string, string>();
     const resolved = new Map<string, string>();
     // A Map iterates over the entries added while it iterates: each child's imports in turn.
     for (const [file, text] of sources) {
+      // The sheet is in no file on disk, and ngtsc reads a `styleUrl` through its host.
+      for (const [, specifier = ""] of text.matchAll(STYLE_URL)) {
+        const path = resolve(dirname(file), specifier);
+        const sheet = api!.getSheet(path.slice(0, -".css".length));
+        if (sheet !== undefined) sheets.set(path, sheet);
+      }
       for (const [, specifier = ""] of text.matchAll(RELATIVE_IMPORT)) {
         const key = childKey(file, specifier);
         const child = COMPONENT_IMPORT.test(specifier)
@@ -99,7 +113,7 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
     return compileWorker(compiler).compile({
       plugin: pluginId,
       id,
-      sources: [...sources],
+      sources: [...sources, ...sheets],
       children: [...resolved],
     });
   }
@@ -110,10 +124,10 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
     configResolved(config) {
       const plugin = config.plugins.find((candidate) => candidate.name === "unframework");
       const candidate = (plugin as { api?: Partial<UnframeworkApi> } | undefined)?.api;
-      if (typeof candidate?.getCompiled !== "function") {
+      if (typeof candidate?.getCompiled !== "function" || typeof candidate.getSheet !== "function") {
         throw new Error(
           "The Angular toolchain compiles the unframework plugin's output, but this Vite config " +
-            'has no plugin named "unframework" exposing api.getCompiled(id). Add ' +
+            'has no plugin named "unframework" exposing api.getCompiled(id) and api.getSheet(file). Add ' +
             "@unframework/unplugin/vite before the Angular toolchain's plugins.",
         );
       }

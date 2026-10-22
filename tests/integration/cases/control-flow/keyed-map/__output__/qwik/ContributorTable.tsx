@@ -12,9 +12,9 @@ export interface ContributorTableProps {
 }
 
 export default component$<ContributorTableProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ caption, contributors, class: className, style }) => {
+  ({ caption, contributors, class: className, style, ...attributes }) => {
     return (
-      <table class={["contributors", className]} style={style}>
+      <table class={["contributors", className]} {...scopeAttributes(attributes)} style={style}>
         <caption>{caption}</caption>
         <thead>
           <tr>
@@ -36,3 +36,12 @@ export default component$<ContributorTableProps & { class?: ClassList; style?: C
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

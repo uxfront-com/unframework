@@ -12,9 +12,21 @@ export interface MessageListProps {
 }
 
 export default component$<MessageListProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ messages, archived = [], emptyText = "Nothing here yet.", class: className, style }) => {
+  ({
+    messages,
+    archived = [],
+    emptyText = "Nothing here yet.",
+    class: className,
+    style,
+    ...attributes
+  }) => {
     return (
-      <section class={["message-list", className]} aria-label="Messages" style={style}>
+      <section
+        class={["message-list", className]}
+        aria-label="Messages"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <h2>Inbox</h2>
         <ul>
           {messages.map((message) => (
@@ -33,3 +45,12 @@ export default component$<MessageListProps & { class?: ClassList; style?: CSSPro
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

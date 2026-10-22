@@ -12,7 +12,7 @@ export interface SignupFormEvents {
 }
 
 export default component$<SignupFormEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onSignup$, class: className, style }) => {
+  ({ onSignup$, class: className, style, ...attributes }) => {
     const fullName = useSignal("");
     const email = useSignal("");
     const plan = useSignal("free");
@@ -29,6 +29,7 @@ export default component$<SignupFormEvents & { class?: ClassList; style?: CSSPro
         aria-label="Sign up"
         preventdefault:submit
         onSubmit$={submit}
+        {...scopeAttributes(attributes)}
         style={style}
       >
         <label>
@@ -74,3 +75,12 @@ export default component$<SignupFormEvents & { class?: ClassList; style?: CSSPro
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

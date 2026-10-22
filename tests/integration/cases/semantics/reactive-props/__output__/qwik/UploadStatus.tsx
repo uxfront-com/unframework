@@ -14,7 +14,7 @@ export interface UploadStatusProps {
 }
 
 export default component$<UploadStatusProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ fileName, state, percent, steps, error, class: className, style }) => {
+  ({ fileName, state, percent, steps, error, class: className, style, ...attributes }) => {
     return (
       <section
         class={["upload", `upload-${state}`, className]}
@@ -24,6 +24,7 @@ export default component$<UploadStatusProps & { class?: ClassList; style?: CSSPr
           "--upload-percent": percent,
           ...style,
         }}
+        {...scopeAttributes(attributes)}
       >
         <h2>{fileName}</h2>
         <div
@@ -51,3 +52,12 @@ export default component$<UploadStatusProps & { class?: ClassList; style?: CSSPr
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

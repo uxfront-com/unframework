@@ -405,6 +405,13 @@ export interface MarkupOptions {
    */
   module?: UfModule;
   /**
+   * What an element or a component's tag carries after its scope attributes: Angular binds, on
+   * the component's root nodes (`scopeRoots`), a directive that gives them the scope attributes
+   * its styled parents put on its host (the child-root rule, ADR-0063). The element is the node,
+   * or the tag in an element's shape, with the node's span.
+   */
+  scopeRootAttributes?(element: ElementNode): PrintedAttribute[];
+  /**
    * The tag a component element is written with, where the target declares the component under
    * another name than its own (Vue's alias for a child named like one of its built-ins), or
    * `undefined` to leave it to the dialect (`MarkupDialect.componentTag`).
@@ -943,7 +950,7 @@ export function printMarkup(
       }
     }
     const scoped = scopeAttributes(at, attributeContext);
-    printed.push(...scoped);
+    printed.push(...scoped, ...(options.scopeRootAttributes?.(element) ?? []));
     return (of.orderAttributes?.(printed) ?? printed).map((each) => ({
       text: each.text,
       code: !scoped.includes(each),
@@ -1171,6 +1178,7 @@ export function printMarkup(
       values.add(scoped);
       printed.push(scoped);
     }
+    printed.push(...(options.scopeRootAttributes?.(element) ?? []));
     return (of.orderAttributes?.(printed) ?? printed).map((each) => ({
       text: each.text,
       code: !values.has(each),

@@ -1,13 +1,18 @@
 import { type CSSProperties, type ClassList, component$, useSignal } from "@qwik.dev/core";
 
 export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style }) => {
+  ({ class: className, style, ...attributes }) => {
     const open = useSignal(false);
     const colour = useSignal<string | null>(null);
     const note = useSignal<string | null>(null);
 
     return (
-      <section class={["filter-panel", className]} aria-label="Filters" style={style}>
+      <section
+        class={["filter-panel", className]}
+        aria-label="Filters"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <>
           {open.value ? (
             <button type="button" aria-expanded="true" onClick$={() => (open.value = false)}>
@@ -77,3 +82,12 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

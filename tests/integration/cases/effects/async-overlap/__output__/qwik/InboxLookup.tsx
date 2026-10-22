@@ -32,6 +32,7 @@ export default component$<InboxLookupEvents & { class?: ClassList; style?: CSSPr
     onCounted$,
     class: className,
     style,
+    ...attributes
   }) => {
     const sender = useSignal("");
     const order = useSignal("newest");
@@ -212,7 +213,12 @@ export default component$<InboxLookupEvents & { class?: ClassList; style?: CSSPr
     });
 
     return (
-      <section class={["inbox-lookup", className]} aria-label="Inbox" style={style}>
+      <section
+        class={["inbox-lookup", className]}
+        aria-label="Inbox"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <button type="button" onClick$={() => (sender.value = "Ann")}>
           Find Ann
         </button>
@@ -268,4 +274,13 @@ export default component$<InboxLookupEvents & { class?: ClassList; style?: CSSPr
  */
 function nextTick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve));
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

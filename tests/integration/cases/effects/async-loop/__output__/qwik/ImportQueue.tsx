@@ -18,7 +18,7 @@ export interface ImportQueueEvents {
 
 export default component$<
   ImportQueueProps & ImportQueueEvents & { class?: ClassList; style?: CSSProperties }
->(({ files, onProgress$, class: className, style }) => {
+>(({ files, onProgress$, class: className, style, ...attributes }) => {
   const status = useSignal("idle");
   const attempts = useSignal(0);
 
@@ -48,7 +48,12 @@ export default component$<
   });
 
   return (
-    <section class={["import-queue", className]} aria-label="Import" style={style}>
+    <section
+      class={["import-queue", className]}
+      aria-label="Import"
+      {...scopeAttributes(attributes)}
+      style={style}
+    >
       <button type="button" onClick$={importAll}>
         Import all
       </button>
@@ -65,4 +70,13 @@ export default component$<
  */
 function nextTick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve));
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

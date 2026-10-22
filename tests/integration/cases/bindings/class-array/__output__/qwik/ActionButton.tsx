@@ -9,7 +9,7 @@ export interface ActionButtonProps {
 }
 
 export default component$<ActionButtonProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ label, size, primary, busy = false, badge, class: className, style }) => {
+  ({ label, size, primary, busy = false, badge, class: className, style, ...attributes }) => {
     return (
       <button
         type="button"
@@ -20,6 +20,7 @@ export default component$<ActionButtonProps & { class?: ClassList; style?: CSSPr
           primary ? "solid" : "outline",
           className,
         ]}
+        {...scopeAttributes(attributes)}
         style={style}
       >
         {label}
@@ -27,3 +28,12 @@ export default component$<ActionButtonProps & { class?: ClassList; style?: CSSPr
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

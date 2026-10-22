@@ -12,7 +12,7 @@ export interface SaveDraftEvents {
 }
 
 export default component$<SaveDraftEvents & { class?: ClassList; style?: CSSProperties }>(
-  ({ onSaved$, class: className, style }) => {
+  ({ onSaved$, class: className, style, ...attributes }) => {
     const status = useSignal("Not saved");
     const attempts = useSignal(0);
 
@@ -27,7 +27,12 @@ export default component$<SaveDraftEvents & { class?: ClassList; style?: CSSProp
     });
 
     return (
-      <section class={["save-draft", className]} aria-label="Draft" style={style}>
+      <section
+        class={["save-draft", className]}
+        aria-label="Draft"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <p role="status">{status.value}</p>
         <button type="button" onClick$={save}>
           Save the draft
@@ -43,4 +48,13 @@ export default component$<SaveDraftEvents & { class?: ClassList; style?: CSSProp
  */
 function nextTick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve));
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

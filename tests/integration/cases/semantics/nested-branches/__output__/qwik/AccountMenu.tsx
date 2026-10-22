@@ -21,7 +21,7 @@ export interface AccountMenuEvents {
 
 export default component$<
   AccountMenuProps & AccountMenuEvents & { class?: ClassList; style?: CSSProperties }
->(({ owner, onGreeted$, class: className, style }) => {
+>(({ owner, onGreeted$, class: className, style, ...attributes }) => {
   const step = useSignal("intro");
   const user = useSignal<User | null>(null);
 
@@ -42,7 +42,12 @@ export default component$<
   });
 
   return (
-    <section class={["account-menu", className]} aria-label="Account" style={style}>
+    <section
+      class={["account-menu", className]}
+      aria-label="Account"
+      {...scopeAttributes(attributes)}
+      style={style}
+    >
       <>
         {step.value === "intro" ? (
           <button type="button" onClick$={start}>
@@ -67,3 +72,12 @@ export default component$<
     </section>
   );
 });
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

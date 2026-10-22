@@ -67,6 +67,7 @@ export function template(
   composition: Composition,
   models: Models,
   fallthrough: boolean,
+  scope?: { roots: ReadonlySet<string>; host: string },
 ): string {
   const { component } = plan;
   const pad = INDENT.repeat(LEVEL);
@@ -105,6 +106,12 @@ export function template(
       attribute.kind === "Event"
         ? listeners.attributes.get(attribute)
         : models.options.get(attribute),
+    // The child-root rule (ADR-0063): every root node, each candidate of a `<component is>`
+    // included, binds the directive that gives it the scope attributes on the host.
+    scopeRootAttributes: ({ span }) =>
+      scope?.roots.has(`${span.start}:${span.end}`)
+        ? [{ name: "[ufScope]", text: `[ufScope]="this.${scope.host}"` }]
+        : [],
   });
   // A slot's templates are projected here, so none counts as the default slot's content
   // (ADR-0056); an `<ng-template>` renders nothing where it is projected.

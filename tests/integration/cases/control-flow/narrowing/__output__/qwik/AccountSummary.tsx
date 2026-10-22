@@ -27,9 +27,14 @@ export interface AccountSummaryProps {
 }
 
 export default component$<AccountSummaryProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ loading, member, uptime, storage, plan, seats, class: className, style }) => {
+  ({ loading, member, uptime, storage, plan, seats, class: className, style, ...attributes }) => {
     return (
-      <section class={["account-summary", className]} aria-label="Account" style={style}>
+      <section
+        class={["account-summary", className]}
+        aria-label="Account"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <>
           {loading ? (
             <p>Loading the account</p>
@@ -69,3 +74,12 @@ export default component$<AccountSummaryProps & { class?: ClassList; style?: CSS
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

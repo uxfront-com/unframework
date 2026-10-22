@@ -1,4 +1,14 @@
-import { Component, type WritableSignal, input, signal } from "@angular/core";
+import {
+  Component,
+  Directive,
+  ElementRef,
+  type OnInit,
+  Renderer2,
+  type WritableSignal,
+  inject,
+  input,
+  signal,
+} from "@angular/core";
 
 /**
  * Vue's `vModelText` (ADR-0054): the text a field shows for its model's value. It keeps the
@@ -35,14 +45,40 @@ function looseToNumber(text: string): string | number {
   return Number.isNaN(number) ? text : number;
 }
 
+/** The scope attributes taken off each host, for the roots its component renders later. */
+const scopes = new WeakMap<Element, string[]>();
+
+/**
+ * Gives a root node of its component the scope attributes the component's styled parents put on
+ * its host (ADR-0063), and takes them off the host, which keeps only `display: contents`.
+ */
+@Directive({ selector: "[ufScope]" })
+export class ScopeAttributes implements OnInit {
+  readonly ufScope = input.required<HTMLElement>();
+  private readonly element = inject<ElementRef<Element>>(ElementRef);
+  private readonly renderer = inject(Renderer2);
+
+  ngOnInit(): void {
+    const host = this.ufScope();
+    let names = scopes.get(host);
+    if (!names) {
+      names = host.getAttributeNames().filter((name) => name.startsWith("data-uf-"));
+      for (const name of names) this.renderer.removeAttribute(host, name);
+      scopes.set(host, names);
+    }
+    for (const name of names) this.renderer.setAttribute(this.element.nativeElement, name, "");
+  }
+}
+
 @Component({
   selector: "uf-quantity",
+  imports: [ScopeAttributes],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let count = this.count();
     @let volume = this.volume();
-    <section aria-label="Order" [class]="this.class()" [style]="this.style()">
+    <section aria-label="Order" [class]="this.class()" [style]="this.style()" [ufScope]="this.host">
       <input
         type="number"
         aria-label="Count"
@@ -76,4 +112,5 @@ export default class Quantity {
   protected onTen() {
     this.count.set(10);
   }
+  protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

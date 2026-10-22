@@ -23,7 +23,7 @@ export interface ContactListEvents {
 
 export default component$<
   ContactListProps & ContactListEvents & { class?: ClassList; style?: CSSProperties }
->(({ initial, onChoose$, onRemoved$, class: className, style }) => {
+>(({ initial, onChoose$, onRemoved$, class: className, style, ...attributes }) => {
   const contacts = useSignal(initial);
   const chosen = useSignal<string>();
 
@@ -38,7 +38,12 @@ export default component$<
   });
 
   return (
-    <section class={["contact-list", className]} aria-label="Contacts" style={style}>
+    <section
+      class={["contact-list", className]}
+      aria-label="Contacts"
+      {...scopeAttributes(attributes)}
+      style={style}
+    >
       <ul>
         {contacts.value.map((contact, index) => (
           <li key={contact.id}>
@@ -63,3 +68,12 @@ export default component$<
     </section>
   );
 });
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

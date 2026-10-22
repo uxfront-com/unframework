@@ -8,9 +8,9 @@ export interface UsageMeterProps {
 }
 
 export default component$<UsageMeterProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ label, percent, colour, thickness, class: className, style }) => {
+  ({ label, percent, colour, thickness, class: className, style, ...attributes }) => {
     return (
-      <div class={["usage-meter", className]} style={style}>
+      <div class={["usage-meter", className]} {...scopeAttributes(attributes)} style={style}>
         <p style={{ color: colour, fontWeight: 700, lineHeight: 1.5, marginBottom: "4px" }}>
           {label}: {percent}%
         </p>
@@ -44,3 +44,12 @@ export default component$<UsageMeterProps & { class?: ClassList; style?: CSSProp
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

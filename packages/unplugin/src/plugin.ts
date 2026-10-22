@@ -80,6 +80,13 @@ export interface UnframeworkApi {
    * child components with it.
    */
   getCompiled(id: string): string | undefined;
+  /**
+   * The scoped sheet this target's last finished load of the `.uf.tsx` file emitted (ADR-0063),
+   * after the plugins' `output` hooks, or `undefined` when no load of it finished or it imports
+   * no stylesheet. Angular's `ngtscVirtual` hands it to ngtsc, which reads a `styleUrl` itself:
+   * Vite never loads the sheet there.
+   */
+  getSheet(file: string): string | undefined;
 }
 
 /** The name of the pre plugin, by which other plugins find its {@link UnframeworkApi}. */
@@ -154,6 +161,8 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
   // id concurrently, and `getCompiled` must not miss a module because another environment is
   // reloading it.
   const compiled = new Map<string, string>();
+  // The scoped sheet of each file's last finished load, replaced as `compiled` is.
+  const sheets = new Map<string, string>();
   // The modules the guard failed, per environment (what Vite's `perEnvironmentState` does,
   // without importing Vite at runtime). One plugin instance serves every environment of a
   // server, and each environment's post transform must read the verdict on its own load, not on
@@ -502,6 +511,11 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
           });
           if ("error" in assembly) return fail(assembly.error);
           compiled.set(id, assembly.code);
+          const emitted = files.find(
+            (file) => file.path === `${basename(request.file)}${SHEET_SUFFIX}`,
+          );
+          if (emitted) sheets.set(request.file, emitted.contents);
+          else sheets.delete(request.file);
           if (verdict === undefined) {
             failed.delete(id);
           } else {
@@ -529,6 +543,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
       },
       api: {
         getCompiled: (id: string) => compiled.get(id),
+        getSheet: (file: string) => sheets.get(file),
       } satisfies UnframeworkApi,
     },
   };

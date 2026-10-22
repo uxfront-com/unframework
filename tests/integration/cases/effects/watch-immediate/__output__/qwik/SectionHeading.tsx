@@ -19,7 +19,7 @@ export interface SectionHeadingEvents {
 
 export default component$<
   SectionHeadingProps & SectionHeadingEvents & { class?: ClassList; style?: CSSProperties }
->(({ title, onChange$, onReady$, class: className, style }) => {
+>(({ title, onChange$, onReady$, class: className, style, ...attributes }) => {
   const previousTitle = useSignal<{ value: typeof title }>();
   useTask$(
     ({ track }) => {
@@ -41,8 +41,17 @@ export default component$<
   );
 
   return (
-    <h2 class={["section-heading", className]} style={style}>
+    <h2 class={["section-heading", className]} {...scopeAttributes(attributes)} style={style}>
       {title}
     </h2>
   );
 });
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

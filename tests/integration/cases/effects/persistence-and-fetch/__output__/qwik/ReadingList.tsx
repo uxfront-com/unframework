@@ -37,6 +37,7 @@ export default component$<
     onRefreshed$,
     class: className,
     style,
+    ...attributes
   }) => {
     const query = useSignal("");
     const books = useSignal<string[]>([]);
@@ -152,7 +153,12 @@ export default component$<
     });
 
     return (
-      <section class={["reading-list", className]} aria-label="Reading list" style={style}>
+      <section
+        class={["reading-list", className]}
+        aria-label="Reading list"
+        {...scopeAttributes(attributes)}
+        style={style}
+      >
         <label>
           Search
           <input
@@ -209,3 +215,12 @@ export default component$<
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}

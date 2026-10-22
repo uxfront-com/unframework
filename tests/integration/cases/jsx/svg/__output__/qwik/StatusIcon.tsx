@@ -7,7 +7,7 @@ export interface StatusIconProps {
 }
 
 export default component$<StatusIconProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ label, size = 24, colour = "#1f6feb", class: className, style }) => {
+  ({ label, size = 24, colour = "#1f6feb", class: className, style, ...attributes }) => {
     return (
       <svg
         class={["status-icon", className]}
@@ -16,6 +16,7 @@ export default component$<StatusIconProps & { class?: ClassList; style?: CSSProp
         width={size}
         height={size}
         fill="none"
+        {...scopeAttributes(attributes)}
         style={style}
       >
         <title>{label}</title>
@@ -37,3 +38,12 @@ export default component$<StatusIconProps & { class?: ClassList; style?: CSSProp
     );
   },
 );
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}
