@@ -69,6 +69,12 @@ export interface TextPosition {
 export interface AttributeContext {
   element: ElementNode;
   namespace: Namespace;
+  /**
+   * Whether the target spreads an object of its own on the element (`scopeRootAttributes`), which
+   * changes how a language whose server renders a spread element through its runtime writes the
+   * element's other attributes (Svelte).
+   */
+  spreads?: boolean;
 }
 
 /** A printed attribute, by the name a dialect orders it by (`v-if`, `key`, `class`). */
@@ -122,6 +128,8 @@ export interface ComponentContext {
   /** The tag the component is written with. */
   tag: string;
   namespace: Namespace;
+  /** The `-s` attributes the content of its fills carries (ADR-0063). */
+  slotted: readonly string[];
 }
 
 /** A prop passed to a component, as code: `literal` is the string a static prop holds. */
@@ -357,6 +365,11 @@ export interface MarkupDialect {
    * `component` piece's name as the dialect gives them, with the node's attributes.
    */
   dynamic?(dynamic: PrintedDynamic): MarkupPiece[];
+  /**
+   * Writes the scope attributes a component's tag carries (ADR-0063), where the language checks
+   * them against the child's props (Svelte): `name=""` each, as on an element, without it.
+   */
+  componentScopeAttributes?(names: readonly string[]): PrintedAttribute[];
 }
 
 /**
@@ -405,13 +418,6 @@ export interface MarkupOptions {
    */
   module?: UfModule;
   /**
-   * What an element or a component's tag carries after its scope attributes: Angular binds, on
-   * the component's root nodes (`scopeRoots`), a directive that gives them the scope attributes
-   * its styled parents put on its host (the child-root rule, ADR-0063). The element is the node,
-   * or the tag in an element's shape, with the node's span.
-   */
-  scopeRootAttributes?(element: ElementNode): PrintedAttribute[];
-  /**
    * The tag a component element is written with, where the target declares the component under
    * another name than its own (Vue's alias for a child named like one of its built-ins), or
    * `undefined` to leave it to the dialect (`MarkupDialect.componentTag`).
@@ -423,6 +429,25 @@ export interface MarkupOptions {
    * written without it. Needs `component`.
    */
   rewrite?: RewriteRules;
+  /**
+   * What an element, a component's tag or a `<component is>` carries after its scope attributes,
+   * as code: the targets whose child cannot know the scope attributes its styled parents pass
+   * spread them on the component's roots (`scopeRoots`, the child-root rule, ADR-0063). Asked
+   * for each node at the template's top level, where the roots are: the element, or the tag in an
+   * element's shape, with the node's span.
+   */
+  scopeRootAttributes?(element: ElementNode): string[];
+  /**
+   * The components a component element stands for, where the target writes a `<component is>`
+   * as one (Svelte's `$derived`): its fills take each candidate's `-s`, as they do printed
+   * through the dialect's `dynamic` (ADR-0063).
+   */
+  candidates?(node: ComponentNode): readonly string[] | undefined;
+  /**
+   * The `-s` attributes the root's nodes carry: those of the child whose scoped fill the markup
+   * is, where the target prints a fill apart (Astro's render prop, ADR-0063).
+   */
+  slotted?: readonly string[];
 }
 
 /**
@@ -624,6 +649,11 @@ interface Scope {
   slotted: readonly string[];
   /** The components a `<component is>` whose pieces are printed may render. */
   candidates: readonly string[] | undefined;
+  /**
+   * Whether the nodes are the template's own top level, outside every element and fill, where
+   * a component's roots are (`scopeRoots`).
+   */
+  top: boolean;
 }
 
 /**
@@ -659,8 +689,9 @@ export function printMarkup(
     element: undefined,
     namespace: "html",
     preformatted: false,
-    slotted: [],
+    slotted: options.slotted ?? [],
     candidates: undefined,
+    top: true,
   };
   const roots =
     root.kind === "Fragment" ? itemsOf(root.children, root, scope) : [elementItem(root, [], scope)];
@@ -835,15 +866,15 @@ export function printMarkup(
       options.componentTag?.(node.component) ??
       at.dialect.componentTag?.(node.component) ??
       node.component;
-    const context: ComponentContext = { component: node, tag, namespace: at.namespace };
-    const content = hook(at.dialect, "fills")(node.fills.map(fillParts), context);
     // A fill's content is the parent's, so it keeps the parent's attribute, and takes the `-s`
     // of this child alone: a child further out stamps only the content filled into it.
-    const fills: Scope = {
-      ...at,
-      slotted: slottedAttributes(options.module, at.candidates ?? [node.component]),
-      candidates: undefined,
-    };
+    const slotted = slottedAttributes(
+      options.module,
+      at.candidates ?? options.candidates?.(node) ?? [node.component],
+    );
+    const context: ComponentContext = { component: node, tag, namespace: at.namespace, slotted };
+    const content = hook(at.dialect, "fills")(node.fills.map(fillParts), context);
+    const fills: Scope = { ...at, slotted, candidates: undefined, top: false };
     const children = content.flatMap((piece) => pieceItems(piece, fills));
     const empty = content.length === 0;
     return {
@@ -874,7 +905,12 @@ export function printMarkup(
       children: [],
       span: node.span,
     };
-    const attributeContext: AttributeContext = { element, namespace: context.namespace };
+    const spread = rootAttributes(element, at);
+    const attributeContext: AttributeContext = {
+      element,
+      namespace: context.namespace,
+      ...(spread.length ? { spreads: true } : {}),
+    };
     const printed: PrintedAttribute[] = [...directives];
     for (const attribute of node.attributes as readonly ComponentAttribute[]) {
       switch (attribute.kind) {
@@ -949,11 +985,14 @@ export function printMarkup(
           unreachable(attribute);
       }
     }
-    const scoped = scopeAttributes(at, attributeContext);
-    printed.push(...scoped, ...(options.scopeRootAttributes?.(element) ?? []));
+    // The scope attributes are values, unless the dialect writes them as code.
+    const names = scopeNames(at);
+    const written = names.length ? of.componentScopeAttributes?.(names) : undefined;
+    const values = written ? [] : scopeAttributes(at, attributeContext);
+    printed.push(...values, ...(written ?? []), ...spread.map((text) => ({ name: "", text })));
     return (of.orderAttributes?.(printed) ?? printed).map((each) => ({
       text: each.text,
-      code: !scoped.includes(each),
+      code: !values.includes(each),
     }));
   }
 
@@ -964,12 +1003,21 @@ export function printMarkup(
    * builder writes it.
    */
   function scopeAttributes(at: Scope, context: AttributeContext): PrintedAttribute[] {
-    const scopeId = component?.scopeId;
-    const names = [...(scopeId ? [scopeAttribute(scopeId)] : []), ...at.slotted];
-    return names.map((name) => ({
+    return scopeNames(at).map((name) => ({
       name,
       text: at.dialect.attribute(name, "", context.element.tag, context),
     }));
+  }
+
+  /** What the target spreads on a node at the top level (`MarkupOptions.scopeRootAttributes`). */
+  function rootAttributes(element: ElementNode, at: Scope): string[] {
+    return at.top ? (options.scopeRootAttributes?.(element) ?? []) : [];
+  }
+
+  /** The names of the scope attributes a node carries (see {@link scopeAttributes}). */
+  function scopeNames(at: Scope): string[] {
+    const scopeId = component?.scopeId;
+    return [...(scopeId ? [scopeAttribute(scopeId)] : []), ...at.slotted];
   }
 
   /** A fill, with its parameter as written and a forwarded slot's presence. */
@@ -1020,6 +1068,7 @@ export function printMarkup(
       preformatted: at.preformatted || WHITESPACE_PRESERVING_ELEMENTS.has(element.tag),
       slotted: at.slotted,
       candidates: undefined,
+      top: false,
     };
     const children = itemsOf(element.children, element, inner);
     const isVoid = namespace === "html" && isVoidElement(element.tag);
@@ -1034,7 +1083,7 @@ export function printMarkup(
     return {
       kind: "element",
       tag: name,
-      attributes: attributesOf(element, directives, inner),
+      attributes: attributesOf(element, directives, inner, rootAttributes(element, at)),
       end: selfClosing ? " />" : ">",
       children,
       close: isVoid || selfClosing ? "" : `</${name}>`,
@@ -1054,9 +1103,14 @@ export function printMarkup(
     element: ElementNode,
     directives: readonly PrintedAttribute[],
     at: Scope,
+    spread: readonly string[],
   ): AttributeText[] {
     const of = at.dialect;
-    const context: AttributeContext = { element, namespace: at.namespace };
+    const context: AttributeContext = {
+      element,
+      namespace: at.namespace,
+      ...(spread.length ? { spreads: true } : {}),
+    };
     const printed: PrintedAttribute[] = [...directives];
     // The attributes whose text is a static value, never code.
     const values = new Set<PrintedAttribute>();
@@ -1178,7 +1232,7 @@ export function printMarkup(
       values.add(scoped);
       printed.push(scoped);
     }
-    printed.push(...(options.scopeRootAttributes?.(element) ?? []));
+    printed.push(...spread.map((text) => ({ name: "", text })));
     return (of.orderAttributes?.(printed) ?? printed).map((each) => ({
       text: each.text,
       code: !values.has(each),

@@ -16,7 +16,15 @@
     style?: string;
   };
 
-  let { actions, onwelcomed, onsubscribed, onchosen, class: className, style }: Props = $props();
+  let {
+    actions,
+    onwelcomed,
+    onsubscribed,
+    onchosen,
+    class: className,
+    style,
+    ...attributes
+  }: Props = $props();
 
   let query = $state("");
   let lastKey = $state("none");
@@ -50,9 +58,21 @@
       handler(event);
     };
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["quick-actions", className]} aria-label="Quick actions" {style}>
+<section
+  class={["quick-actions", className]}
+  aria-label="Quick actions"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <label>Search<input
     name="query"
     oninput={(event) => (query = (event.currentTarget as HTMLInputElement).value)}

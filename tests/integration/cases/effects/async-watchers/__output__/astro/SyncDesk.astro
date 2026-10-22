@@ -10,6 +10,13 @@ interface Props extends SyncDeskProps {
 
 const { class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const email = "ada@example.com" as string;
 const checking = false as boolean;
 const valid = true as boolean;
@@ -26,7 +33,12 @@ const outcome = "" as string;
 const level = 4 as number;
 ---
 
-<section class:list={["sync-desk", className]} aria-label="Sync desk" style={style}>
+<section
+  class:list={["sync-desk", className]}
+  aria-label="Sync desk"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <button type="button">Suggest</button>
   <button type="button">Use this email</button>
   <p>{email}: {checking ? "checking" : valid ? "valid" : "invalid"}</p>

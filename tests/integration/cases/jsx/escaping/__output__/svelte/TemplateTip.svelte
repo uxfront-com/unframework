@@ -11,10 +11,17 @@
 
   type Props = TemplateTipProps & { class?: ClassValue; style?: string };
 
-  let { example, note, path, class: className, style }: Props = $props();
+  let { example, note, path, class: className, style, ...attributes }: Props = $props();
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<figure class={["template-tip", className]} {style}>
+<figure class={["template-tip", className]} {style} {...scopeAttributes(attributes)}>
   <figcaption
     title="Vue &#123;&#123; name &#125;&#125;, Svelte &#123;#if ok&#125;, Angular @if (ok) &amp; JSX &#123;name&#125;"
   >Template syntax &amp; escaping</figcaption

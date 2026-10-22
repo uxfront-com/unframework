@@ -6,6 +6,13 @@ interface Props {
 }
 
 const { text, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
 ---
 
-<h3 class:list={["heading", className]} style={style}>{text}</h3>
+<h3 class:list={["heading", className]} style={style} {...scopeAttributes(Astro.props)}>{text}</h3>

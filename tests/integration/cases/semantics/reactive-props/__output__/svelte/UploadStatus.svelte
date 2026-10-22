@@ -18,7 +18,16 @@
 
   type Props = UploadStatusProps & { class?: ClassValue; style?: string };
 
-  let { fileName, state, percent, steps, error, class: className, style }: Props = $props();
+  let {
+    fileName,
+    state,
+    percent,
+    steps,
+    error,
+    class: className,
+    style,
+    ...attributes
+  }: Props = $props();
 
   function mergeStyle(
     own: Record<string, string | number | null | undefined>,
@@ -56,12 +65,20 @@
       .map(([property, value]) => `${property}: ${value ?? ""}`)
       .join("; ");
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
 <section
   class={["upload", `upload-${state}`, className]}
   aria-label={`Upload of ${fileName}`}
   style={mergeStyle({ color: state === "failed" ? "#8a1c1c" : "#1f3d5c", "--upload-percent": percent }, style)}
+  {...scopeAttributes(attributes)}
 >
   <h2>{fileName}</h2
   ><div

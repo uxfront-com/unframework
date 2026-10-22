@@ -68,7 +68,8 @@ A component is that line, an instance script when it takes props or has a setup,
   `src/events.ts`). Every capability is native but `event-once`, emulated by
   `once`: `event-capture`, `event-passive`, `event-semantics`, `use-id`, `next-tick` included.
   Of composition's cells, `fallthrough` (`mergeStyle`), `model-modifiers` (`modelText`) and
-  `reactive-context` (`refObject`) are emulated, and the others native.
+  `reactive-context` (`refObject`) are emulated, and the others native; of styling's,
+  `child-root-scope` (`scopeAttributes`) is emulated.
 - **Composition** (ADR-0053 to ADR-0055), with what it imports beside `svelte`:
 
   | Source                                              | Svelte                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -85,6 +86,18 @@ A component is that line, an instance script when it takes props or has a setup,
   | `InjectionKey`, `provide`, `inject(Key, fallback)`  | `export const Key = Symbol("…") as symbol & { readonly __value: T }` in the `<script lang="ts" module>` of the module's main component, with the types it copies; `setContext(Key, value)`; `hasContext(Key) ? getContext<(typeof Key)["__value"]>(Key) : fallback`, a consumer importing only the key; a provided ref as the inline `refObject(() => count)`, whose `value` reads it                                                                                                                                            |
   | `<component is={…}>`                                | `<svelte:element this={…}>` over tags; over components, `const Component = $derived(…)` and `<Component />`, or, where the condition reads a list's item or a fill's parameter, `{#if …}<Chip />{:else}<Card />{/if}` where it sits                                                                                                                                                                                                                                                                                              |
 
+- **Styles** (ADR-0063). A component with a stylesheet imports the sheet `compile()` scoped,
+  `import "./Card.uf.tsx.css";`, after its other imports: Svelte's own `<style>` is never
+  used, since it drops the selectors it cannot match. Every element of its markup carries
+  `data-uf-<id>=""`. A child's tag takes the parent's attribute in an object spread,
+  `<Button {...{ "data-uf-a33d603f": "" }} />`, since svelte-check rejects a prop the child does
+  not declare, and the child's root spreads the `data-uf-*` props of its styled parents, picked
+  out of `$props()` by an inline helper, `{...scopeAttributes(attributes)}` (`child-root-scope`,
+  emulated), on each node Vue's fallthrough reaches. The imports of sibling outputs are sorted by
+  specifier, as the other targets sort theirs, so the children's sheets load, and cascade, in
+  Vue's order. Content filled into a child whose sheet
+  uses `:slotted()`, a snippet's included, carries the child's `-s`, and the fill of a
+  `<component is>` that of each candidate.
 - **Markup** (`svelteDialect` in `@unframework/codegen`). `{expr}`, `{#if}{:else if}{:else}{/if}`,
   `{#each source as item, index (key)}…{/each}` (the index only when an expression reads it),
   `name={expr}`, and Svelte's shorthands where the value is the variable of the same name

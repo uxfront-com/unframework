@@ -12,10 +12,30 @@
 
   type Props = InboxSummaryProps & { class?: ClassValue; style?: string };
 
-  let { folder, unread, flagged, signature, class: className, style }: Props = $props();
+  let {
+    folder,
+    unread,
+    flagged,
+    signature,
+    class: className,
+    style,
+    ...attributes
+  }: Props = $props();
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["inbox-summary", className]} aria-label="Inbox summary" {style}>
+<section
+  class={["inbox-summary", className]}
+  aria-label="Inbox summary"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <h2>{folder || "Inbox"}</h2
   >{#if unread}
     <p>{unread} unread</p>

@@ -5,15 +5,27 @@
 
   type Props = { class?: ClassValue; style?: string };
 
-  let { class: className, style }: Props = $props();
+  let { class: className, style, ...attributes }: Props = $props();
 
   let size = $state("M");
   let quantity = $state(1);
   let note = $state("");
   let noteField: HTMLInputElement | null = null;
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["shirt-order", className]} aria-label="Shirt order" {style}>
+<section
+  class={["shirt-order", className]}
+  aria-label="Shirt order"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p role="status">{`${quantity} x size ${size}`}</p
   ><div role="group" aria-label="Size">
     <button

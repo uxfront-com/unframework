@@ -23,6 +23,7 @@
     oncurrencyupdate,
     class: className,
     style,
+    ...attributes
   }: Props = $props();
 
   let low = $state(10);
@@ -59,9 +60,21 @@
       oncurrencyupdate?.(value);
     });
   });
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["price-range", className]} aria-label="Price range" {style}>
+<section
+  class={["price-range", className]}
+  aria-label="Price range"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p role="status">{low} to {high} {currency}</p
   ><button
     type="button"

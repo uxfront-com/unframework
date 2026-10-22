@@ -5,7 +5,7 @@
 
   type Props = { ontagschange?: (tags: string[]) => void; class?: ClassValue; style?: string };
 
-  let { ontagschange, class: className, style }: Props = $props();
+  let { ontagschange, class: className, style, ...attributes }: Props = $props();
 
   let tags = $state.raw<string[]>([]);
   let draft = $state("");
@@ -35,9 +35,22 @@
     event.preventDefault();
     helpOpen = !helpOpen;
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<form class={["tag-form", className]} aria-label="Tags" onsubmit={addTag} {style}>
+<form
+  class={["tag-form", className]}
+  aria-label="Tags"
+  onsubmit={addTag}
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <label>New tag<input name="tag" bind:this={field} onkeydown={blockComma} oninput={updateDraft} /></label
   ><button type="submit">Add tag</button><a href="/help/tags" onclick={toggleHelp}>How tags work</a
   >{#if helpOpen}

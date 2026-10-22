@@ -1,13 +1,30 @@
+import { NgTemplateOutlet } from "@angular/common";
 import {
   Component,
   Directive,
   ElementRef,
   type OnInit,
   Renderer2,
+  TemplateRef,
   ViewEncapsulation,
+  contentChild,
   inject,
   input,
 } from "@angular/core";
+
+/** What a template of `Frame`'s `label` slot reads: the slot's props. */
+export type FrameLabelContext = { text: string };
+
+/** A template of `Frame`'s `label` slot, its `let-` variables typed (ADR-0056). */
+@Directive({ selector: "ng-template[ufFrameLabel]" })
+export class FrameLabel {
+  static ngTemplateContextGuard(
+    _directive: FrameLabel,
+    _context: unknown,
+  ): _context is FrameLabelContext & { $implicit: FrameLabelContext } {
+    return true;
+  }
+}
 
 /** The scope attributes taken off each host, for the roots its component renders later. */
 const scopes = new WeakMap<Element, string[]>();
@@ -36,7 +53,7 @@ export class ScopeAttributes implements OnInit {
 
 @Component({
   selector: "uf-frame",
-  imports: [ScopeAttributes],
+  imports: [NgTemplateOutlet, ScopeAttributes],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
@@ -48,7 +65,14 @@ export class ScopeAttributes implements OnInit {
       [ufScope]="this.host"
     >
       <ng-content />
+      @if (this.labelTemplate(); as template) {
+        <ng-container
+          [ngTemplateOutlet]="template"
+          [ngTemplateOutletContext]="{ $implicit: { text: 'Harbour at dusk' }, text: 'Harbour at dusk' }"
+        />
+      }
     </figure>
+    <ng-content select="[ufFrameLabel]" />
   `,
   styleUrl: "./Frame.uf.tsx.css",
   encapsulation: ViewEncapsulation.None,
@@ -56,5 +80,6 @@ export class ScopeAttributes implements OnInit {
 export default class Frame {
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
+  protected readonly labelTemplate = contentChild(FrameLabel, { read: TemplateRef });
   protected readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 }

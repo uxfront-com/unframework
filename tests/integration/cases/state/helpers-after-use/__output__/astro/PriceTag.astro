@@ -11,6 +11,13 @@ interface Props extends PriceTagProps {
 
 const { price, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const quantity = 1 as number;
 const unit = formatCents(price);
 const summary = describe();
@@ -26,7 +33,12 @@ function describe(): string {
 }
 ---
 
-<section class:list={["price-tag", className]} aria-label="Price" style={style}>
+<section
+  class:list={["price-tag", className]}
+  aria-label="Price"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <p>Unit: {unit}</p>
   <p role="status">{summary}</p>
   <p>Total: {total}</p>

@@ -13,7 +13,15 @@
     style?: string;
   };
 
-  let { onsave, onstatus, onclosed, onkey, class: className, style }: Props = $props();
+  let {
+    onsave,
+    onstatus,
+    onclosed,
+    onkey,
+    class: className,
+    style,
+    ...attributes
+  }: Props = $props();
 
   let open = $state(false);
   let status = $state("draft");
@@ -80,9 +88,21 @@
   onMount(() => () => {
     stop();
   });
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["draft-panel", className]} aria-label="Draft" {style}>
+<section
+  class={["draft-panel", className]}
+  aria-label="Draft"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <button type="button" aria-expanded={open} onclick={show}>Options</button
   >{#if open}
     <div class="options" role="group" aria-label="Draft options">

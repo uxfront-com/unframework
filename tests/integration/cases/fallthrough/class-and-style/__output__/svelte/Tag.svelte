@@ -5,7 +5,7 @@
 
   type Props = { label: string; class?: ClassValue; style?: string };
 
-  let { label, class: className, style }: Props = $props();
+  let { label, class: className, style, ...attributes }: Props = $props();
 
   function mergeStyle(
     own: Record<string, string | number | null | undefined>,
@@ -43,9 +43,17 @@
       .map(([property, value]) => `${property}: ${value ?? ""}`)
       .join("; ");
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
 <span
   class={["tag", className]}
   style={mergeStyle({ padding: "2px 6px", color: "rgb(30, 30, 30)" }, style)}
+  {...scopeAttributes(attributes)}
 >{label}</span>

@@ -10,13 +10,25 @@
 
   type Props = WelcomeBannerProps & { class?: ClassValue; style?: string };
 
-  let { name, class: className, style }: Props = $props();
+  let { name, class: className, style, ...attributes }: Props = $props();
 
   const greeting = untrack(() => `Welcome, ${name}`);
   const tips = ["Set up your profile", "Invite your team"];
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["welcome-banner", className]} aria-label="Welcome" {style}>
+<section
+  class={["welcome-banner", className]}
+  aria-label="Welcome"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <h2>{greeting}</h2
   ><p>Signed in as {name}</p
   ><ul>

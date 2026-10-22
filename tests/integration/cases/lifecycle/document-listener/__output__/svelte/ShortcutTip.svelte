@@ -11,7 +11,7 @@
     style?: string;
   };
 
-  let { ondismissed, onshortcut, class: className, style }: Props = $props();
+  let { ondismissed, onshortcut, class: className, style, ...attributes }: Props = $props();
 
   let open = $state(true);
   let enabled = $state(false);
@@ -57,9 +57,21 @@
     document.removeEventListener("keydown", onEscape);
     document.removeEventListener("keydown", onShortcut);
   });
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["shortcut-tip", className]} aria-label="Shortcuts" {style}>
+<section
+  class={["shortcut-tip", className]}
+  aria-label="Shortcuts"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p>{open ? "Press Escape to hide this tip." : "Tip hidden."}</p
   ><button type="button" aria-pressed={enabled} onclick={toggle}>Shortcut K</button
   ><p role="status">Used: {count}</p>

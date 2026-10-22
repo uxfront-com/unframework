@@ -6,7 +6,7 @@
 
   type Props = { onsaved?: (count: number) => void; class?: ClassValue; style?: string };
 
-  let { onsaved, class: className, style }: Props = $props();
+  let { onsaved, class: className, style, ...attributes }: Props = $props();
 
   let saves = $state(0);
 
@@ -24,9 +24,21 @@
   onMount(() => () => {
     document.removeEventListener("keydown", onShortcut);
   });
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["draft-editor", className]} aria-label="Draft" {style}>
+<section
+  class={["draft-editor", className]}
+  aria-label="Draft"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <label>Draft<textarea name="draft"></textarea></label
   ><p role="status">Saved: {saves}</p>
 </section>

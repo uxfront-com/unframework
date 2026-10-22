@@ -17,7 +17,7 @@
     style?: string;
   };
 
-  let { owner, ongreeted, class: className, style }: Props = $props();
+  let { owner, ongreeted, class: className, style, ...attributes }: Props = $props();
 
   let step = $state("intro");
   let user = $state.raw<User | null>(null);
@@ -37,9 +37,21 @@
   function greet(name: string) {
     ongreeted?.(name);
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["account-menu", className]} aria-label="Account" {style}>
+<section
+  class={["account-menu", className]}
+  aria-label="Account"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   {#if step === "intro"}
     <button type="button" onclick={start}>Start</button>
   {:else}

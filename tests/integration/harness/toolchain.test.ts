@@ -61,6 +61,8 @@ interface Checked {
 const DECLARATIONS: Readonly<Record<string, readonly string[]>> = {
   react: ["sheets.d.ts"],
   solid: ["sheets.d.ts"],
+  svelte: ["sheets.d.ts"],
+  astro: ["sheets.d.ts"],
   qwik: ["sheets.d.ts"],
 };
 

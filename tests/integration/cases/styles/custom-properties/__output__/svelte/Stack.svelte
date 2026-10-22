@@ -2,10 +2,11 @@
 
 <script lang="ts">
   import type { ClassValue } from "svelte/elements";
+  import "./Stack.uf.tsx.css";
 
   type Props = { gap: string; accent: string; class?: ClassValue; style?: string };
 
-  let { gap, accent, class: className, style }: Props = $props();
+  let { gap, accent, class: className, style, ...attributes }: Props = $props();
 
   function mergeStyle(
     own: Record<string, string | number | null | undefined>,
@@ -43,12 +44,20 @@
       .map(([property, value]) => `${property}: ${value ?? ""}`)
       .join("; ");
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
 <ul
   class={["stack", className]}
   style={mergeStyle({ "--gap": gap, "--accent": accent }, style)}
   data-uf-e3a22111=""
+  {...scopeAttributes(attributes)}
 >
   <li class="item" data-uf-e3a22111="">One</li
   ><li class="item" data-uf-e3a22111="">Two</li

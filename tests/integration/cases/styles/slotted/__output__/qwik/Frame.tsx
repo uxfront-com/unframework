@@ -1,8 +1,20 @@
-import { type CSSProperties, type ClassList, Slot, component$, useStyles$ } from "@qwik.dev/core";
+import {
+  type CSSProperties,
+  type ClassList,
+  type JSXOutput,
+  type QRL,
+  Slot,
+  component$,
+  useStyles$,
+} from "@qwik.dev/core";
 import styles from "./Frame.uf.tsx.css?inline";
 
-export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style, ...attributes }) => {
+export interface FrameSlots {
+  label$?: QRL<(props: { text: string }) => JSXOutput>;
+}
+
+export default component$<FrameSlots & { class?: ClassList; style?: CSSProperties }>(
+  ({ label$, class: className, style, ...attributes }) => {
     useStyles$(styles);
 
     return (
@@ -13,6 +25,7 @@ export default component$<{ class?: ClassList; style?: CSSProperties }>(
         style={style}
       >
         <Slot />
+        {label$?.({ text: "Harbour at dusk" })}
       </figure>
     );
   },

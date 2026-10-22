@@ -12,10 +12,23 @@
     style?: string;
   };
 
-  let { label, children, action, class: className, style }: Props = $props();
+  let { label, children, action, class: className, style, ...attributes }: Props = $props();
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<div role="note" aria-label={label} class={["notice", className]} {style}>
+<div
+  role="note"
+  aria-label={label}
+  class={["notice", className]}
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p>
     {#if children}{@render children()}{:else}<em>Nothing to report.</em>{/if}
   </p

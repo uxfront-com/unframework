@@ -1,0 +1,104 @@
+{
+  "irVersion": 1,
+  "file": "styles/slotted/Mat.uf.tsx",
+  "components": [
+    {
+      "name": "Mat",
+      "span": {
+        "start": 108,
+        "end": 250
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@148",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 168,
+            "end": 191
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 170,
+              "end": 189
+            }
+          }
+        ],
+        "span": {
+          "start": 142,
+          "end": 195
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@148",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 148,
+            "end": 153
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "mat",
+            "span": {
+              "start": 210,
+              "end": 221
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "SlotOutlet",
+            "slot": "default",
+            "fallback": [],
+            "span": {
+              "start": 222,
+              "end": 241
+            }
+          }
+        ],
+        "span": {
+          "start": 205,
+          "end": 247
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Mat.css",
+          "source": ".mat {\n  padding: 8px;\n  background: rgb(254, 243, 199);\n}\n\n/* Matches the content a parent fills into the mat's slot, which carries the mat's `-s`. */\n:slotted(.caption) {\n  text-decoration: underline;\n}\n",
+          "span": {
+            "start": 0,
+            "end": 19
+          }
+        }
+      ],
+      "scopeId": "09929c4a"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Mat",
+      "span": {
+        "start": 108,
+        "end": 250
+      }
+    }
+  ],
+  "types": []
+}

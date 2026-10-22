@@ -20,7 +20,7 @@
     style?: string;
   };
 
-  let { onapplied, onsaved, class: className, style }: Props = $props();
+  let { onapplied, onsaved, class: className, style, ...attributes }: Props = $props();
 
   let settings = $state.raw<Settings>({ theme: "light", size: 14 });
   let maxSize = $state(20);
@@ -57,9 +57,21 @@
       saving = false;
     }
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["display-settings", className]} aria-label="Display" {style}>
+<section
+  class={["display-settings", className]}
+  aria-label="Display"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p role="status">Theme {settings.theme}, size {settings.size}</p
   ><button type="button" onclick={() => apply({ theme: "dark" })}>Dark</button
   ><button type="button" onclick={grow}>Larger</button

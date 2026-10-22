@@ -20,6 +20,13 @@ interface Props extends TeamInviteProps {
 
 const { inviter, members, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const greeting = inviter ? `Invite as ${inviter.name}` : "Invite as a guest";
 const selected = null as Member | null;
 const page = 1 as number;
@@ -29,7 +36,12 @@ const byPassword = true as boolean;
 const seconds = 0 as number;
 ---
 
-<section class:list={["team-invite", className]} aria-label="Invite" style={style}>
+<section
+  class:list={["team-invite", className]}
+  aria-label="Invite"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <h2>{greeting}</h2>
   <ul aria-label="Members">
     {visible.map((member) => (

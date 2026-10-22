@@ -110,6 +110,14 @@ per component (ADR-0034, ADR-0046):
   A component whose frontmatter would declare nothing is its markup alone. Astro's
   `compressHTML` must stay `"jsx"`, its default (the M6 unplugin checks it).
 
+- **Styles** (ADR-0063): a component with a stylesheet imports the sheet `compile()` scoped in
+  its frontmatter, `import "./Card.uf.tsx.css";`, after its children's imports, and every element
+  of its markup carries `data-uf-<id>=""`. Its root spreads the `data-uf-*` props of the styled
+  parents that render it, picked out of `Astro.props` by an inline helper,
+  `{...scopeAttributes(Astro.props)}` (`child-root-scope`, emulated), on each node Vue's
+  fallthrough reaches. Content filled into a child whose sheet uses `:slotted()`, a scoped
+  fill's render prop included, carries the child's `-s`.
+
 The capabilities (`src/index.ts`): `interactivity`, `event-capture`, `event-once`,
 `event-passive`, `event-semantics` and `next-tick` are unsupported (UF4001, for information):
 components render on the server only and each render is a new instance, so handlers, template
@@ -117,8 +125,9 @@ refs, watchers and hooks never run and state keeps its initial value; the compil
 `interactivity`, once per module. Composition's `component-event`, `two-way-binding`,
 `model-array`, `model-modifiers` and `expose` refine `interactivity` and are unsupported in the
 same way; `context` and `reactive-context` are unsupported (UF4001, warnings: `inject` gives its
-fallback, and a provided ref reaches no descendant). `use-id` is emulated (`uniqueId`), and so is
-`scoped-slot` (a render prop named as the slot). Every other capability is native.
+fallback, and a provided ref reaches no descendant). `use-id` is emulated (`uniqueId`), and so are
+`scoped-slot` (a render prop named as the slot) and `child-root-scope` (`scopeAttributes`). Every
+other capability is native.
 
 Its toolchain, for tests and tooling (the target's main entry never loads it):
 
@@ -127,7 +136,10 @@ Its toolchain, for tests and tooling (the target's main entry never loads it):
   `.astro` files. For `browser` projects, no Astro plugins (in the browser they replace components
   with stubs that throw): a compiled component becomes a plain reference, and the `ufAstroRender`
   browser command renders it in Node, through a dedicated server built from the same pipeline,
-  returning the HTML, the component's styles and what the render logged. The checks:
+  returning the HTML, the component's styles and what the render logged. The Container API
+  leaves out the sheets a frontmatter imports, so the command puts each sheet the component and
+  its children import, as the browser project serves it, in a `<style>` before the HTML, a
+  child's first (ADR-0063). The checks:
   - L3 runs `@astrojs/compiler-rs` with Astro's options and reports every diagnostic (it refuses
     a compiler version other than the one `astro` uses);
   - L4 runs `astro check` (`AstroCheck`, TypeScript 6) from the toolchain directory, once over
