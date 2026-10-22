@@ -23,12 +23,15 @@ import {
 import type { ComponentApi, UfComponent } from "@unframework/ir";
 import { describe, expect, it } from "vitest";
 
+import { styled } from "../../ir/test/fixtures.ts";
 import {
+  addPassThroughImports,
   childImports,
   exportsOf,
   ImportSet,
   js,
   keyOwner,
+  passThroughImports,
   printProgram,
   referencedBindings,
 } from "../src/index.ts";
@@ -206,6 +209,34 @@ describe("ImportSet aliases (ADR-0054)", () => {
     expect(imports.add("./K.vue", "AKey", { local: "B", exact: true })).toBe("B");
     expect(printProgram(js.program(imports.toDeclarations())).trim()).toBe(
       'import { AKey as A, AKey as B } from "./K.vue";',
+    );
+  });
+});
+
+describe("passThroughImports", () => {
+  it("gives Styleframe's stylesheet, and each recipe the template reads, in source order", () => {
+    const module = styled();
+    expect(passThroughImports(module.components[0]!, module)).toEqual([
+      { specifier: "virtual:styleframe", names: [{ imported: "button", local: "button" }] },
+      { specifier: "virtual:styleframe.css", names: [] },
+    ]);
+  });
+
+  it("leaves out a recipe import the component does not read", () => {
+    const module = styled();
+    const [component] = module.components;
+    const unread = { ...component!, render: createElement("p", [], [], at) };
+    expect(passThroughImports(unread, module)).toEqual([
+      { specifier: "virtual:styleframe.css", names: [] },
+    ]);
+  });
+
+  it("prints them as written, by the source's names", () => {
+    const module = styled();
+    const imports = new ImportSet(["button"]);
+    addPassThroughImports(module.components[0]!, module, imports);
+    expect(printProgram(js.program(imports.toDeclarations())).trim()).toBe(
+      'import { button } from "virtual:styleframe";\nimport "virtual:styleframe.css";',
     );
   });
 });
