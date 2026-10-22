@@ -8,7 +8,7 @@
 // names the output introduces are claimed here, after the source's own, in a fixed order (P8).
 import {
   codeKind,
-  moduleHelperNames,
+  moduleHelperName,
   ImportSet,
   parseCodeSource,
   pascalCase,
@@ -170,14 +170,18 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
   const listeners = listenerModes(component);
   const eventModes = eventParameterModes(component, listeners);
   const names = new ImportSet(reservedNames(component, module, listeners, eventModes));
-  // A source's components are joined into one module where it is loaded (ADR-0053): each takes
-  // its helpers under names no other component declares or takes (`cx_1`).
+  // A source's components are joined into one module where it is loaded (ADR-0053): each claims
+  // its helpers from bases of its own (`cx_1`), past the names any other component declares.
   const index = module.components.findIndex((each) => each.name === component.name);
   const reserved = module.components.map((each) => {
     const modes = listenerModes(each);
     return reservedNames(each, module, modes, eventParameterModes(each, modes));
   });
-  for (const helper of HELPER_NAMES) names.reserve(...moduleHelperNames(helper, reserved, index));
+  for (const helper of HELPER_NAMES) {
+    const { base, others } = moduleHelperName(helper, reserved, index);
+    names.reserve(...others);
+    names.scope.rebase(helper, base);
+  }
   const nativeElements = nativeElementsOf(listeners);
   const narrowedReads = narrowedReadsOf(component);
   const stable = (groups: readonly EventAttribute[][]) =>

@@ -174,7 +174,7 @@ export type { ChildImport, KeyImport } from "./imports.ts";
 export { isPrimitiveState } from "./kinds.ts";
 export {
   kebabCase,
-  moduleHelperNames,
+  moduleHelperName,
   NameScope,
   pascalCase,
   sourceNames,

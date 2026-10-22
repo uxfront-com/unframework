@@ -6,7 +6,7 @@ import type { UfComponent } from "@unframework/ir";
 import { parseModule } from "@unframework/parser";
 import { describe, expect, it } from "vitest";
 
-import { js, moduleHelperNames, printProgram, scopeRoots } from "../src/index.ts";
+import { js, moduleHelperName, NameScope, printProgram, scopeRoots } from "../src/index.ts";
 
 /** The last component of a source, lowered by the analyser. */
 function lowered(source: string): UfComponent {
@@ -68,15 +68,38 @@ export default function A() {
   });
 });
 
-describe("moduleHelperNames", () => {
-  it("leaves every component the names the module declares, and the earlier ones' claims", () => {
-    expect(moduleHelperNames("cx", [[], []], 0)).toEqual([]);
-    expect(moduleHelperNames("cx", [[], []], 1)).toEqual(["cx"]);
-    // A name any component declares, before or after this one, stays its own: an output hoists
+describe("moduleHelperName", () => {
+  it("gives each component a base of its own, and leaves it the others' and what they declare", () => {
+    expect(moduleHelperName("cx", [[]], 0)).toEqual({ base: "cx", others: [] });
+    expect(moduleHelperName("cx", [[], [], []], 0)).toEqual({
+      base: "cx",
+      others: ["cx_1", "cx_2"],
+    });
+    expect(moduleHelperName("cx", [[], [], []], 2)).toEqual({
+      base: "cx_2",
+      others: ["cx", "cx_1"],
+    });
+    // A name any component declares, before or after this one, is left to it: an output hoists
     // a `const` to the joined module's scope.
-    expect(moduleHelperNames("cx", [["cx"], []], 1)).toEqual(["cx", "cx_1"]);
-    expect(moduleHelperNames("cx", [[], ["cx"]], 0)).toEqual(["cx"]);
-    expect(moduleHelperNames("cx", [["cx_1", "cxs"], [], []], 2)).toEqual(["cx_1", "cx", "cx_2"]);
+    expect(moduleHelperName("cx", [["cx_1_1", "cxs"], []], 0)).toEqual({
+      base: "cx",
+      others: ["cx_1_1", "cx_1"],
+    });
+  });
+
+  // What another claim in a component takes first can't make two components declare one name.
+  it("keeps every component's fallbacks apart", () => {
+    const reserved = [["cx"], [], []];
+    const claimed = reserved.map((own, index) => {
+      const { base, others } = moduleHelperName("cx", reserved, index);
+      const scope = new NameScope([...own, ...others]);
+      scope.rebase("cx", base);
+      scope.claim("cx_1");
+      scope.claim("cx_2_1");
+      return scope.claim("cx");
+    });
+    expect(claimed).toEqual(["cx_3", "cx_1_1", "cx_2"]);
+    expect(new Set(claimed).size).toBe(3);
   });
 });
 

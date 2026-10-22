@@ -141,37 +141,58 @@ export default function Two() {
     const helpers = async (index: number) =>
       [...(await output(module, index)).matchAll(/^function (\w+)\(/gm)].map((match) => match[1]);
     expect([await helpers(0), await helpers(1)]).toEqual([
-      ["scopeAttributes_1"],
       ["scopeAttributes_2"],
+      ["scopeAttributes_1"],
     ]);
   });
 
-  // A local `const` an output hoists to module scope is declared in the joined module too, in an
-  // earlier component or a later one.
+  // The joined module declares every component's helpers and hoisted `const`s: a helper's name
+  // must be no other component's, whatever an earlier or a later component declares or claims.
   it.each([
     [
-      "an earlier component's",
+      "a const in an earlier component",
+      "scopeAttributes",
       `export function First() { const scopeAttributes = "local"; return <b title={scopeAttributes}>F</b>; }
 export default function Second() { return <i>S</i>; }`,
     ],
     [
-      "a later component's",
+      "a const in a later component",
+      "scopeAttributes",
       `export function First() { return <b>F</b>; }
 export default function Second() { const scopeAttributes = "local"; return <i title={scopeAttributes}>S</i>; }`,
     ],
     [
-      "an earlier component's",
+      "a const named cx in an earlier component",
+      "cx",
       `export function First() { const cx = "local"; return <><b title={cx}>F</b><i>G</i></>; }
 export default function Second({ k }: { k: string }) { return <><b class={["a", k]}>S</b><i>T</i></>; }`,
     ],
-  ])("leaves the helper's name to %s module-level const", async (_, source) => {
-    const helper = source.includes("const cx") ? "cx" : "scopeAttributes";
+    [
+      "a slot in an earlier component",
+      "scopeAttributes",
+      `import { defineSlots } from "unframework";
+import type { Element } from "unframework";
+export function A() { const slots = defineSlots<{ scopeAttributes?(): Element }>(); return <b>{slots.scopeAttributes?.()}</b>; }
+export default function B() { const slots = defineSlots<{ title?(): Element }>(); return <i>{slots.title?.()}</i>; }`,
+    ],
+    [
+      "a model in an earlier component",
+      "scopeAttributes",
+      `import { defineModel } from "unframework";
+export function A() {
+  const value = defineModel<string>("scopeAttributes", { default: "" });
+  return <button type="button" onClick={() => (value.value = "x")}>{value.value}</button>;
+}
+export default function B() { return <i>B</i>; }`,
+    ],
+  ])("names the helper apart from %s", async (_, helper, source) => {
     const { module } = lowered("Pair.uf.tsx", source);
     const declared = async (index: number) =>
       [...(await output(module, index)).matchAll(/^(?:function|const) (\w+)\b/gm)]
         .map((match) => match[1]!)
         .filter((name) => name === helper || name.startsWith(`${helper}_`));
     const [first, second] = [await declared(0), await declared(1)];
+    expect(second.length).toBeGreaterThan(0);
     expect(new Set([...first, ...second]).size).toBe(first.length + second.length);
   });
 });
