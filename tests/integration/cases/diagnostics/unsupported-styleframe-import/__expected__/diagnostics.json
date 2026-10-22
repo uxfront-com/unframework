@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF5006",
+    "severity": "error",
+    "message": "`badge` is a Styleframe recipe, which a template only calls in a `class`: every output keeps its import as written, and no other use of it is analysed.",
+    "file": "diagnostics/unsupported-styleframe-import/Badge.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 23,
+      "offset": 219
+    },
+    "end": {
+      "line": 5,
+      "column": 28,
+      "offset": 224
+    },
+    "help": "Call it in a `class`, as in `class={badge()}`."
+  }
+]

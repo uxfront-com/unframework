@@ -1,0 +1,166 @@
+{
+  "irVersion": 1,
+  "file": "styleframe/recipe/Badge.uf.tsx",
+  "components": [
+    {
+      "name": "Badge",
+      "span": {
+        "start": 78,
+        "end": 188
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 128,
+              "end": 134
+            }
+          },
+          "binding": "label@110",
+          "span": {
+            "start": 121,
+            "end": 134
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 119,
+            "end": 136
+          }
+        },
+        "span": {
+          "start": 108,
+          "end": 136
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@110",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 110,
+            "end": 115
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "badge()",
+                  "span": {
+                    "start": 162,
+                    "end": 169
+                  },
+                  "refs": [
+                    {
+                      "kind": "Import",
+                      "name": "badge",
+                      "span": {
+                        "start": 162,
+                        "end": 167
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 162,
+                  "end": 169
+                }
+              }
+            ],
+            "span": {
+              "start": 155,
+              "end": 170
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 172,
+                "end": 177
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@110",
+                  "span": {
+                    "start": 172,
+                    "end": 177
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 171,
+              "end": 178
+            }
+          }
+        ],
+        "span": {
+          "start": 149,
+          "end": 185
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Badge",
+      "span": {
+        "start": 78,
+        "end": 188
+      }
+    }
+  ],
+  "types": [],
+  "passThroughImports": [
+    {
+      "specifier": "virtual:styleframe",
+      "names": [
+        {
+          "imported": "badge",
+          "local": "badge",
+          "span": {
+            "start": 9,
+            "end": 14
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 43
+      }
+    },
+    {
+      "specifier": "virtual:styleframe.css",
+      "names": [],
+      "span": {
+        "start": 44,
+        "end": 76
+      }
+    }
+  ]
+}

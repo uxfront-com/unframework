@@ -1,0 +1,10 @@
+{
+  "description": "Styleframe's token variables, which its stylesheet declares on `:root`, read by a scoped sheet.",
+  "ssr": {
+    "default": {
+      "props": {
+        "text": "Tokens reach scoped styles."
+      }
+    }
+  }
+}

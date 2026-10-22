@@ -1,0 +1,26 @@
+{
+  "irVersion": 1,
+  "file": "diagnostics/unsupported-styleframe-import/Badge.uf.tsx",
+  "components": [],
+  "exports": [],
+  "types": [],
+  "passThroughImports": [
+    {
+      "specifier": "virtual:styleframe",
+      "names": [
+        {
+          "imported": "badge",
+          "local": "badge",
+          "span": {
+            "start": 99,
+            "end": 104
+          }
+        }
+      ],
+      "span": {
+        "start": 90,
+        "end": 133
+      }
+    }
+  ]
+}

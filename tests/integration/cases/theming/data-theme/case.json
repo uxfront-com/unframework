@@ -1,0 +1,16 @@
+{
+  "description": "A theme a prop toggles: `data-theme=\"dark\"` gives the element and its descendants Styleframe's dark tokens.",
+  "ssr": {
+    "light": {
+      "props": {
+        "text": "Light theme."
+      }
+    },
+    "dark": {
+      "props": {
+        "text": "Dark theme.",
+        "dark": true
+      }
+    }
+  }
+}

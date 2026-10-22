@@ -1,0 +1,28 @@
+---
+import { button } from "virtual:styleframe";
+import "virtual:styleframe.css";
+
+interface Props {
+  label: string;
+  size?: "sm" | "lg";
+  tone?: "neutral" | "primary";
+  class?: string;
+  style?: Record<string, string | number | undefined>;
+}
+
+const { label, size, tone, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+---
+
+<button
+  type="button"
+  class:list={[button({ size, tone }), className]}
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>{label}</button>

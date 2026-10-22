@@ -1,0 +1,206 @@
+{
+  "irVersion": 1,
+  "file": "styleframe/recipe-and-scoped/Card.uf.tsx",
+  "components": [
+    {
+      "name": "Card",
+      "span": {
+        "start": 100,
+        "end": 302
+      },
+      "props": [
+        {
+          "name": "title",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 149,
+              "end": 155
+            }
+          },
+          "binding": "title@131",
+          "span": {
+            "start": 142,
+            "end": 155
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ title: string }",
+          "span": {
+            "start": 140,
+            "end": 157
+          }
+        },
+        "span": {
+          "start": 129,
+          "end": 157
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "title@131",
+          "name": "title",
+          "kind": "prop",
+          "span": {
+            "start": 131,
+            "end": 136
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "article",
+        "attributes": [
+          {
+            "kind": "Class",
+            "items": [
+              {
+                "kind": "Static",
+                "value": "card",
+                "span": {
+                  "start": 193,
+                  "end": 199
+                }
+              },
+              {
+                "kind": "Dynamic",
+                "value": {
+                  "code": "button({ size: \"lg\", tone: \"primary\" })",
+                  "span": {
+                    "start": 201,
+                    "end": 240
+                  },
+                  "refs": [
+                    {
+                      "kind": "Import",
+                      "name": "button",
+                      "span": {
+                        "start": 201,
+                        "end": 207
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 201,
+                  "end": 240
+                }
+              }
+            ],
+            "span": {
+              "start": 185,
+              "end": 242
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "h2",
+            "attributes": [
+              {
+                "kind": "Static",
+                "name": "class",
+                "value": "title",
+                "span": {
+                  "start": 254,
+                  "end": 267
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Interpolation",
+                "value": {
+                  "code": "title",
+                  "span": {
+                    "start": 269,
+                    "end": 274
+                  },
+                  "refs": [
+                    {
+                      "kind": "Binding",
+                      "binding": "title@131",
+                      "span": {
+                        "start": 269,
+                        "end": 274
+                      }
+                    }
+                  ]
+                },
+                "span": {
+                  "start": 268,
+                  "end": 275
+                }
+              }
+            ],
+            "span": {
+              "start": 250,
+              "end": 280
+            }
+          }
+        ],
+        "span": {
+          "start": 176,
+          "end": 295
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Card.css",
+          "source": ".card {\n  width: 240px;\n  border: 2px solid rgb(17, 24, 39);\n}\n\n.title {\n  margin: 0;\n  font-size: 16px;\n  font-weight: 600;\n}\n",
+          "span": {
+            "start": 78,
+            "end": 98
+          }
+        }
+      ],
+      "scopeId": "9cfb6163"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Card",
+      "span": {
+        "start": 100,
+        "end": 302
+      }
+    }
+  ],
+  "types": [],
+  "passThroughImports": [
+    {
+      "specifier": "virtual:styleframe",
+      "names": [
+        {
+          "imported": "button",
+          "local": "button",
+          "span": {
+            "start": 9,
+            "end": 15
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 44
+      }
+    },
+    {
+      "specifier": "virtual:styleframe.css",
+      "names": [],
+      "span": {
+        "start": 45,
+        "end": 77
+      }
+    }
+  ]
+}

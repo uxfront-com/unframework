@@ -1,0 +1,17 @@
+{
+  "description": "A Styleframe recipe's variants, driven by props: an absent prop takes the recipe's default variant.",
+  "ssr": {
+    "default": {
+      "props": {
+        "label": "Cancel"
+      }
+    },
+    "large-primary": {
+      "props": {
+        "label": "Publish",
+        "size": "lg",
+        "tone": "primary"
+      }
+    }
+  }
+}

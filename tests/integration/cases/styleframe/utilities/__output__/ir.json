@@ -1,0 +1,125 @@
+{
+  "irVersion": 1,
+  "file": "styleframe/utilities/Tag.uf.tsx",
+  "components": [
+    {
+      "name": "Tag",
+      "span": {
+        "start": 34,
+        "end": 233
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 82,
+              "end": 88
+            }
+          },
+          "binding": "label@64",
+          "span": {
+            "start": 75,
+            "end": 88
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "{ label: string }",
+          "span": {
+            "start": 73,
+            "end": 90
+          }
+        },
+        "span": {
+          "start": 62,
+          "end": 90
+        }
+      },
+      "types": [],
+      "bindings": [
+        {
+          "id": "label@64",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 64,
+            "end": 69
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "span",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "_padding:lg _background-color:primary _color:on-primary _border-radius:[4px]",
+            "span": {
+              "start": 115,
+              "end": 199
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 208,
+                "end": 213
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@64",
+                  "span": {
+                    "start": 208,
+                    "end": 213
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 207,
+              "end": 214
+            }
+          }
+        ],
+        "span": {
+          "start": 109,
+          "end": 226
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Tag",
+      "span": {
+        "start": 34,
+        "end": 233
+      }
+    }
+  ],
+  "types": [],
+  "passThroughImports": [
+    {
+      "specifier": "virtual:styleframe.css",
+      "names": [],
+      "span": {
+        "start": 0,
+        "end": 32
+      }
+    }
+  ]
+}
