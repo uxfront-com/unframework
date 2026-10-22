@@ -147,7 +147,8 @@ function collect(node: AST.Expression, parts: Part[], context: RenderContext): v
       }
       break;
   }
-  const value = checkExpression(node, context);
+  // A dynamic part, where a Styleframe recipe may be called (ADR-0064).
+  const value = checkExpression(node, { ...context, classPart: true });
   checkDynamic(value, node, context);
   parts.push({ kind: "dynamic", value, at: span(node) });
 }
@@ -172,7 +173,7 @@ function collectToggle(node: AST.LogicalExpression, parts: Part[], context: Rend
     }
     return;
   }
-  const value = checkExpression(node.right, context);
+  const value = checkExpression(node.right, { ...context, classPart: true });
   const kinds = outside(value.kinds, ["string", "null", "undefined"]);
   const fixable = condition.clean && value.clean && !kinds.length;
   const left = source.slice(node.left.start, node.left.end);

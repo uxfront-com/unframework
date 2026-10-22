@@ -26,6 +26,7 @@ import {
   createExpression,
   createFunctionCode,
   createGlobalReference,
+  createImportReference,
   createSlotReference,
   createNarrowedPath,
   createParameter,
@@ -1191,6 +1192,10 @@ class Walk {
    */
   #imported(node: AST.IdentifierReference, declaration: object): Kinds {
     const { authoring } = this.#context.setup;
+    if (this.#context.styleframe.names.has(declaration)) {
+      this.#recipeValue(node, declaration);
+      return UNKNOWN;
+    }
     if (!authoring.has(declaration)) {
       this.#unsupported(
         node,
@@ -1215,6 +1220,26 @@ class Walk {
     }
     this.#misplaced(node, api, false);
     return UNKNOWN;
+  }
+
+  /**
+   * A Styleframe recipe read other than as a call in a `class` (UF5006): every output keeps its
+   * import as written, and only a `class` part's call of it reaches them (ADR-0064). A name its
+   * import reported is not reported again.
+   */
+  #recipeValue(node: AST.IdentifierReference, declaration: object): void {
+    const { styleframe } = this.#context;
+    const name = styleframe.names.get(declaration);
+    if (name === undefined) return;
+    styleframe.read.add(declaration);
+    this.#context.reporter.report(
+      "UF5006",
+      node,
+      this.#mode === "render"
+        ? `\`${node.name}\` is a Styleframe recipe, which a template only calls in a \`class\`: every output keeps its import as written, and no other use of it is analysed.`
+        : `\`${node.name}\` is a Styleframe recipe, which only a template calls, in a \`class\`: setup code would reach every output unanalysed.`,
+      { help: `Call it in a \`class\`, as in \`class={${name}()}\`.` },
+    );
   }
 
   /** An authoring API used where it may not be (UF2005). */
@@ -2536,6 +2561,23 @@ class Walk {
     }
     if (callee.type === "Identifier") {
       const resolution = context.scopes.resolve(callee);
+      if (resolution.kind === "import" && context.styleframe.names.has(resolution.declaration)) {
+        // A recipe's call in a `class` gives its class names (ADR-0064); any other is reported.
+        if (!render || !context.classPart || node.optional) {
+          this.#recipeValue(callee, resolution.declaration);
+          this.#skip(node.arguments);
+          return UNKNOWN;
+        }
+        if (context.styleframe.names.get(resolution.declaration) !== undefined) {
+          context.styleframe.read.add(resolution.declaration);
+          this.refs.push(createImportReference(callee.name, span(callee)));
+        }
+        this.#arguments(node.arguments, [], this.#runs(callee), {
+          name: callee.name,
+          arrayMethod: false,
+        });
+        return kinds("string");
+      }
       if (resolution.kind === "import" && context.setup.authoring.has(resolution.declaration)) {
         const api = context.setup.authoring.get(resolution.declaration);
         // A call the import reports, or a macro in the wrong place, whose arguments would say

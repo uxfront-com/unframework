@@ -18,6 +18,7 @@ import type {
   InjectionKeyDeclaration,
   ModuleApi,
   ModuleImport,
+  PassThroughImport,
   TypeDeclaration,
   UfComponent,
   UfExport,
@@ -48,6 +49,8 @@ import { checkRules } from "./rules.ts";
 import { Scopes } from "./scope.ts";
 import { checkDirective, declareSetup, isDirective, refTypeOf } from "./setup.ts";
 import type { InjectionKeyInfo } from "./setup.ts";
+import { isStyleframeSpecifier, reportUncalled, styleframeImport } from "./styleframe.ts";
+import type { Styleframe } from "./styleframe.ts";
 import { scopeIdOf, STYLESHEET_SPECIFIER, stylesheetImport } from "./styles.ts";
 import type { LoweredSheet, StylesheetSource } from "./styles.ts";
 import { syntaxError } from "./syntax.ts";
@@ -213,6 +216,8 @@ export function analyzeModule(
     outputs: new Map(candidates.map((candidate) => [candidate.name.toLowerCase(), candidate.name])),
     stylesheets: options.stylesheets ?? new Map(),
     sheets: [],
+    styleframe: { names: new Map(), read: new Set() },
+    passThroughImports: [],
   };
   const moduleMark = reporter.diagnostics.length;
   for (const statement of parsed.program.body) {
@@ -257,6 +262,7 @@ export function analyzeModule(
     reporter,
     components,
     keys,
+    styleframe: context.styleframe,
     ...(observe ? { observe } : {}),
   };
   const lowered: UfComponent[] = [];
@@ -302,7 +308,10 @@ export function analyzeModule(
     };
   }
   const kept = new Set(lowered.map((component) => component.name));
-  if (moduleErrors) return { module: undefined, diagnostics: reporter.diagnostics, api };
+  // A recipe nothing reads would reach every output unused (UF5006): an error of the module's.
+  const uncalled = reportUncalled(parsed.program.body, context.styleframe, reporter);
+  if (moduleErrors || uncalled)
+    return { module: undefined, diagnostics: reporter.diagnostics, api };
   if (!candidates.some((candidate) => candidate.exports.length)) {
     reporter.report("UF1101", { start: 0, end: 0 }, "This file exports no component.", {
       help: "A component is an exported PascalCase function whose last statement returns JSX.",
@@ -318,6 +327,7 @@ export function analyzeModule(
       moduleTypes(lowered, types, parsed.source),
       imports,
       keyDeclarations,
+      context.passThroughImports,
     ),
     diagnostics: reporter.diagnostics,
     api,
@@ -447,6 +457,10 @@ interface ModuleContext {
   stylesheets: ReadonlyMap<string, StylesheetSource | undefined>;
   /** The module's sheets, collected in source order. */
   sheets: LoweredSheet[];
+  /** The names the module's Styleframe imports bind, and those its code reads (ADR-0064). */
+  styleframe: Styleframe & { names: Map<object, string | undefined> };
+  /** The module's imports that every output keeps as written, in source order (ADR-0064). */
+  passThroughImports: PassThroughImport[];
 }
 
 /** The local names a module exports as values in `export { name }` and `export default name`. */
@@ -517,6 +531,11 @@ function checkTopLevelStatement(
     case "ImportDeclaration":
       if (COMPONENT_SPECIFIER.test(statement.source.value) && statement.importKind !== "type") {
         componentImport(statement, context);
+        return;
+      }
+      // Before the stylesheets: `virtual:styleframe.css` is Styleframe's, not a component's sheet.
+      if (isStyleframeSpecifier(statement.source.value)) {
+        styleframeImport(statement, reporter, context.styleframe.names, context.passThroughImports);
         return;
       }
       if (STYLESHEET_SPECIFIER.test(statement.source.value)) {
@@ -1049,6 +1068,8 @@ interface ComponentModule {
   components: ReadonlyMap<object, ComponentInfo | undefined>;
   /** The injection keys the module declares or imports, by the identifier that declares each. */
   keys: ReadonlyMap<object, InjectionKeyInfo>;
+  /** The module's Styleframe imports (ADR-0064). */
+  styleframe: Styleframe;
   observe?: SetupObserver;
 }
 
@@ -1113,6 +1134,7 @@ function analyzeComponent(candidate: Candidate, module: ComponentModule): UfComp
     facts: { nestedCalls: [], getterKinds: new Map(), tickCallbacks: [], passed: new Map() },
     components: module.components,
     slots: setup.slots,
+    styleframe: module.styleframe,
   };
   setup.lower(render);
   if (!returned || (returned.type !== "JSXElement" && returned.type !== "JSXFragment")) {
