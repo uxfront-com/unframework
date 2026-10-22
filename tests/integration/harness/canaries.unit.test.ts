@@ -28,6 +28,7 @@ import {
   addRootAttribute,
   CANARIES,
   canaryCase,
+  dropFirstRule,
   canaryFixes,
   canaryFormats,
   canaryPlugins,
@@ -129,6 +130,7 @@ const fixture = (hasFixes: boolean): CanaryCase => ({
   interacts: () => false,
   rerenders: () => false,
   listens: false,
+  styled: false,
   reference: REFERENCE,
 });
 
@@ -514,9 +516,16 @@ describe("canaries", () => {
     }
   });
 
-  // L9-unwired-handler's corruption needs a listener, which the fixture has none of: it has a
-  // test of its own below.
-  it.each(CANARIES.filter((canary) => canary.layer !== "L1" && canary.id !== "L9-unwired-handler"))(
+  // L9-unwired-handler's corruption needs a listener, and L10-stylesheet-rule-dropped's a sheet,
+  // which the fixture has none of: each has a test of its own below.
+  it.each(
+    CANARIES.filter(
+      (canary) =>
+        canary.layer !== "L1" &&
+        canary.id !== "L9-unwired-handler" &&
+        canary.id !== "L10-stylesheet-rule-dropped",
+    ),
+  )(
     "$id changes the output of every target it corrupts, without plugin errors",
     async (canary) => {
       const clean = await compileWith(null);
@@ -555,7 +564,9 @@ describe("canaries", () => {
         plugins: canaryPlugins(id, target),
         format: canaryFormats(id),
       });
-    const hooked = CANARIES.filter((canary) => canary.plugin && "output" in canary.plugin());
+    const hooked = CANARIES.filter(
+      (canary) => canary.plugin && "output" in canary.plugin() && !canary.sheets,
+    );
     expect(hooked.length).toBeGreaterThan(0);
     for (const canary of hooked) {
       for (const target of TARGET_NAMES.filter(
@@ -574,6 +585,66 @@ describe("canaries", () => {
         expect(sheet(clean), where).toBeDefined();
       }
     }
+  });
+
+  // ADR-0063: every target's sheet loads from the compile's output, so the hook corrupts each
+  // copy, Angular's `styleUrl` included (the unplugin's `getSheet`).
+  it("L10-stylesheet-rule-dropped drops a rule of each styled case's sheet, on the followers only", async () => {
+    const styled = listCases().filter((info) => canaryCase(info).styled);
+    expect(styled.map(({ id }) => id.split("/")[0])).toEqual(styled.map(() => "styles"));
+    expect(styled.length).toBeGreaterThanOrEqual(13);
+    let sheets = 0;
+    for (const info of styled) {
+      for (const { source, filename } of info.sources) {
+        const text = readFileSync(source, "utf8");
+        const compileStyled = (id: string | null, target: TargetName) =>
+          compile(text, {
+            filename,
+            targets: [target],
+            resolve: caseResolver(info, CASES_DIR),
+            plugins: canaryPlugins(id, target),
+          });
+        for (const target of TARGET_NAMES) {
+          const where = `${filename} on ${target}`;
+          const clean = await compileStyled(null, target);
+          const corrupted = await compileStyled("L10-stylesheet-rule-dropped", target);
+          expect(corrupted.diagnostics, where).toEqual(clean.diagnostics);
+          const part = (result: CompileResult, sheet: boolean) =>
+            result.outputs[target]!.filter(({ path }) => path.endsWith(".css") === sheet);
+          expect(part(corrupted, false), where).toEqual(part(clean, false));
+          const [sheet, ...more] = part(clean, true);
+          expect(more, where).toEqual([]);
+          if (!sheet) continue;
+          if (target === REFERENCE) sheets++;
+          const [dropped] = part(corrupted, true);
+          if (target === REFERENCE) {
+            expect(dropped, where).toEqual(sheet);
+          } else {
+            expect(dropped?.contents, where).toBe(dropFirstRule(sheet));
+            expect(dropped?.contents, where).not.toBe(sheet.contents);
+          }
+        }
+      }
+    }
+    expect(sheets).toBe(styled.length);
+  });
+
+  it("drops the first style rule outside @keyframes, inside an at-rule block too", () => {
+    const drop = (contents: string) => dropFirstRule({ path: "A.uf.tsx.css", contents });
+    expect(drop(".a { color: red; }\n\n.b { margin: 0; }\n")).toBe(".b { margin: 0; }\n");
+    // Its comment stays, as a comment holding a brace or a string does.
+    expect(drop('/* { */\n.a[title="}"] { content: "}"; }\n.b { margin: 0; }\n')).toBe(
+      "/* { */\n.b { margin: 0; }\n",
+    );
+    expect(drop("@layer a, b;\n\n@layer b {\n  .a { color: red; }\n  .b { margin: 0; }\n}\n")).toBe(
+      "@layer a, b;\n\n@layer b {\n  .b { margin: 0; }\n}\n",
+    );
+    expect(
+      drop("@keyframes spin {\n  from { opacity: 0; }\n  to { opacity: 1; }\n}\n.a { color: red; }\n"),
+    ).toBe("@keyframes spin {\n  from { opacity: 0; }\n  to { opacity: 1; }\n}\n");
+    expect(() => drop("@keyframes spin {\n  to { opacity: 1; }\n}\n")).toThrow(
+      /no style rule outside @keyframes/,
+    );
   });
 
   it("needs the project's target for a canary that spares the reference", () => {
@@ -606,7 +677,7 @@ describe("canaries", () => {
       /function TaskList\(\n {2}rawProps: TaskListProps & \{ class\?: string; style\?: JSX\.CSSProperties \},\n\) \{\n {2}console\.warn/,
     );
     expect(contents("qwik")).toMatch(
-      /component\$<TaskListProps & \{ class\?: ClassList; style\?: CSSProperties \}>\(\n {2}\(\{ title = "Tasks \(today\)", tasks, done, tone = "info", class: className, style \}\) => \{\n {4}console\.warn/,
+      /component\$<TaskListProps & \{ class\?: ClassList; style\?: CSSProperties \}>\(\n {2}\(\{\n[\s\S]*?\n {4}\.\.\.attributes\n {2}\}\) => \{\n {4}console\.warn/,
     );
     expect(contents("vue")).toMatch(/<script setup lang="ts">\nconsole\.warn/);
     expect(contents("svelte")).toMatch(/<script lang="ts">\n {2}console\.warn/);
@@ -714,7 +785,9 @@ describe("canaries", () => {
     // The pattern runs over several lines, beside the fallthrough props (ADR-0054).
     expect(lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(lines("astro")).toEqual(["type Props = any;"]);
+    // The scope directive's input too, which no consumer binds (ADR-0063).
     expect(lines("angular")).toEqual([
+      "  readonly ufScope = input.required<any>();",
       '  readonly title = input<any>("Tasks (today)", {',
       "  readonly tasks = input.required<any>();",
       "  readonly done = input.required<any>();",
@@ -754,6 +827,7 @@ describe("canaries", () => {
     expect(await lines("svelte")).toEqual(["  }: any = $props();"]);
     expect(await lines("astro")).toEqual(["type Props = any;"]);
     expect(await lines("angular")).toEqual([
+      "  readonly ufScope = input.required<any>();",
       "  readonly path = input.required<any>();",
       "  readonly size = input.required<any>();",
       "  readonly class = input<any>();",
@@ -1233,6 +1307,19 @@ it("clicks", { requires: ["interactivity", "event-capture"] }, async () => {
     );
     expect(angular).toBe(
       "export default class A {\n  constructor() {\n    x();\n  }\n\n  readonly label = input.required<string>();\n}\n",
+    );
+    // The component's class, not a directive's declared before it (ADR-0047, ADR-0063).
+    const directive =
+      '@Directive({ selector: "[ufScope]" })\nexport class Scope {\n  constructor() {\n    y();\n  }\n}\n\n';
+    expect(
+      injectScript(
+        { path: "a.ts", contents: `${directive}@Component({})\nexport default class A {}\n` },
+        "angular",
+        "x();",
+        "render",
+      ),
+    ).toBe(
+      `${directive}@Component({})\nexport default class A {\n  constructor() {\n    x();\n  }\n}\n`,
     );
     // A class with a constructor of its own (M2's effects and hooks) gets it first in its body.
     const withConstructor = injectScript(

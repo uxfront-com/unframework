@@ -9,7 +9,7 @@ import { toolchain } from "./src/toolchain/index.ts";
 import { corpusOutputs } from "./test/corpus-plugin.ts";
 
 /** The tests that render on Angular's server platform. */
-const SSR = ["test/render.test.ts", "test/server.test.ts"];
+const SSR = ["test/render.test.ts", "test/server.test.ts", "test/styles.test.ts"];
 
 const context = {
   toolchainDir: fileURLToPath(new URL("../../tests/toolchains/angular", import.meta.url)),
@@ -22,7 +22,10 @@ const browser = await toolchain.vite("browser", context);
  * The toolchain compiles the unframework plugin's virtual modules, and requires the plugin. These
  * tests compile their components with the ngtsc plugin themselves: there is none to serve.
  */
-const noVirtualModules = { name: "unframework", api: { getCompiled: () => undefined } } as Plugin;
+const noVirtualModules = {
+  name: "unframework",
+  api: { getCompiled: () => undefined, getSheet: () => undefined },
+} as Plugin;
 
 /** Most tests run ngtsc or Angular's renderer: seconds each on a loaded CI runner. */
 const testTimeout = 30_000;
