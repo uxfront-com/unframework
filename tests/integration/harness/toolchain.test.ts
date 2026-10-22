@@ -53,6 +53,16 @@ interface Checked {
   L5: PromiseSettledResult<Map<string, ToolchainMessage[]>>;
 }
 
+/**
+ * The declarations the checker reads beside the outputs, from the target's toolchain package: a
+ * styled output imports its sheet (`import "./Card.uf.tsx.css"`), which type-checks only through
+ * `declare module "*.css"` (ADR-0023, ADR-0063). Each target's M4 lane lists its own.
+ */
+const DECLARATIONS: Readonly<Record<string, readonly string[]>> = {
+  react: ["sheets.d.ts"],
+  solid: ["sheets.d.ts"],
+};
+
 /** The tool that decides each layer, as its failure names it. */
 const TOOLS = { L3: "framework compiler", L4: "checker", L5: "linter" } as const;
 
@@ -69,6 +79,7 @@ beforeAll(async () => {
     const typechecked = new Set([
       ...all,
       ...[...fixtures.values()].flat().map(({ checked }) => checked),
+      ...(DECLARATIONS[target] ?? []).map((file) => join(toolchainDir(target), file)),
     ]);
     const context = { toolchainDir: toolchainDir(target), root: ROOT };
     const contents: ToolchainFile[] = all.map((path) => ({

@@ -1,6 +1,7 @@
 import {
   componentTypes,
   defineTarget,
+  moduleHelperName,
   exportDeclaration,
   exportsOf,
   ImportSet,
@@ -17,7 +18,7 @@ import type { UfComponent } from "@unframework/ir";
 
 import { SolidComposition } from "./composition.ts";
 import { NEXT_TICK_HELPER, WATCHER_HELPER } from "./helpers.ts";
-import { CLASS_HELPER, solidJsx } from "./jsx.ts";
+import { CLASS_HELPER, SCOPE_HELPER, solidJsx } from "./jsx.ts";
 import { solidListeners } from "./listeners.ts";
 import { ModelHelpers, modelRef } from "./models.ts";
 import { BindingTypes, Narrowings } from "./narrowing.ts";
@@ -27,7 +28,6 @@ import { SolidCode, solidSetup } from "./setup.ts";
 
 // The ESTree node types, named through codegen's builders: a target imports only ir and codegen.
 type JsxExpression = ReturnType<typeof jsxNode>;
-type JsxAttribute = ReturnType<typeof js.jsxAttribute>;
 
 /** The Solid 1.9 target. Solid's JSX takes HTML attribute names as they are. */
 export const solid: Target = defineTarget({
@@ -116,7 +116,13 @@ export const solid: Target = defineTarget({
     },
     "dynamic-component": { support: "native" },
     "scoped-styles": { support: "native" },
-    "child-root-scope": { support: "native" },
+    // The child's root picks its styled parents' `data-uf-*` attributes out of its props
+    // (ADR-0063): their names are the parents', which the child cannot know.
+    "child-root-scope": {
+      support: "emulated",
+      helper: SCOPE_HELPER,
+      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
+    },
     "slotted-styles": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
@@ -124,7 +130,23 @@ export const solid: Target = defineTarget({
     // (`props`, `Show`, `cx`, `setCount`), so none of them captures a reference (ADR-0035).
     const names = sourceNames(component, context.module);
     for (const name of freeNames(component, names)) names.delete(name);
-    const imports = new ImportSet(new NameScope(names));
+    // A source's components are joined into one module where it is loaded (ADR-0053): each claims
+    // the class and scope helpers from bases of its own (`cx_1`), past the names any other
+    // component declares.
+    const index = context.module.components.findIndex((each) => each.name === component.name);
+    const reserved = context.module.components.map((each) => {
+      const taken = sourceNames(each, context.module);
+      for (const name of freeNames(each, taken)) taken.delete(name);
+      return taken;
+    });
+    const bases = [CLASS_HELPER, SCOPE_HELPER].map((helper) => {
+      const { base, others } = moduleHelperName(helper, reserved, index);
+      for (const name of others) names.add(name);
+      return [helper, base] as const;
+    });
+    const scope = new NameScope(names);
+    for (const [helper, base] of bases) scope.rebase(helper, base);
+    const imports = new ImportSet(scope);
     const placeholders = new Placeholders();
     const composition = new SolidComposition(component, context.module, imports);
     const props = solidProps(component, imports, placeholders, {
@@ -145,7 +167,7 @@ export const solid: Target = defineTarget({
     const listeners = solidListeners(code, imports, placeholders, narrowings, (element, context) =>
       modelRef(element, context, code, models),
     );
-    const { dialect, helpers, fallthrough } = solidJsx(
+    const { dialect, helpers } = solidJsx(
       imports,
       narrowings,
       [component.propsParameter?.type.code ?? "", ...types.map((declaration) => declaration.code)],
@@ -167,7 +189,7 @@ export const solid: Target = defineTarget({
       ...composition.statements(object).map((text) => placeholders.statements(text)),
       ...setup.statements,
       ...(exposed ? [placeholders.statements(`${exposed}\n`)] : []),
-      js.returnStatement(rendered(component, code, narrowings.types, jsx, fallthrough)),
+      js.returnStatement(rendered(component, code, narrowings.types, jsx)),
     ]);
     const statements = exportDeclaration(
       component.name,
@@ -175,15 +197,23 @@ export const solid: Target = defineTarget({
       exportsOf(component.name, context.module.exports),
     );
     const keys = composition.keys().map((text) => placeholders.statements(`${text}\n`));
+    // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
+    // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
+    // component's style after its script.
+    const file = context.module.file;
+    const sheet = component.styles
+      ? [js.importDeclaration(`./${file.slice(file.lastIndexOf("/") + 1)}.css`, [])]
+      : [];
     return [
       {
         path: `${component.name}.tsx`,
         contents: printComponentModule(
           {
-            imports,
             types: [...types, ...(props.events ? [props.events] : []), ...composition.types],
             body: [...keys, ...setup.hoisted, ...statements],
             helpers: [...helpers(), ...code.helpers()],
+            // Collected last: the helpers import what they call.
+            imports: [...imports.toDeclarations(), ...sheet],
             placeholders,
           },
           { jsx: true },
@@ -194,8 +224,7 @@ export const solid: Target = defineTarget({
 });
 
 /**
- * What the component returns: its template, with what falls through added to its root where
- * the root has no `class` or `style` of its own, inside the providers of what it provides, the
+ * What the component returns: its template, inside the providers of what it provides, the
  * first outermost (ADR-0054). A root that is one component, or one `<component is>`, is printed
  * as it is, not in a fragment.
  */
@@ -204,7 +233,6 @@ function rendered(
   code: SolidCode,
   types: BindingTypes,
   context: JsxContext,
-  fallthrough: (context: JsxContext) => JsxAttribute[],
 ): JsxExpression {
   const render = forSolid(component, code.rules, types);
   const [only] = render.children;
@@ -214,10 +242,7 @@ function rendered(
     (only?.kind === "Component" || only?.kind === "Dynamic")
       ? only
       : render;
-  const printed = jsxNode(root, context);
-  if (printed.type === "JSXElement")
-    printed.openingElement.attributes.push(...fallthrough(context));
-  let wrapped: JsxExpression = printed;
+  let wrapped: JsxExpression = jsxNode(root, context);
   for (const item of component.setup.toReversed()) {
     if (item.kind !== "Provide") continue;
     const value = context.placeholders.expression(code.provided(item.key, item.value));

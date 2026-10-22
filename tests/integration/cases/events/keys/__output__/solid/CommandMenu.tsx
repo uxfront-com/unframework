@@ -40,6 +40,7 @@ export default function CommandMenu(
       class={props.class ? `command-menu ${props.class}` : "command-menu"}
       aria-label="Command menu"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <form role="search" aria-label="Commands">
         <label>
@@ -73,4 +74,11 @@ export default function CommandMenu(
       </label>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

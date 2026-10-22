@@ -6,11 +6,11 @@ export interface ControlsAttributes {
   style?: CSSProperties;
 }
 
-export default function Controls({ className, style }: ControlsAttributes) {
+export default function Controls({ className, style, ...attributes }: ControlsAttributes) {
   const counter = useRef<{ increment(): void; reset(): void }>(null);
 
   return (
-    <div className={cx("controls", className)} style={style}>
+    <div className={cx("controls", className)} style={style} {...scopeAttributes(attributes)}>
       <Counter ref={counter} start={10} />
       <button type="button" onClick={() => counter.current?.increment()}>
         More
@@ -35,4 +35,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

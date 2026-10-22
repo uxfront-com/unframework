@@ -340,6 +340,19 @@ export function arrayPattern(
   } as AST.ArrayPattern;
 }
 
+/** The rest of an object pattern, `...rest`. */
+export function bindingRestElement(name: string): AST.BindingRestElement {
+  return {
+    type: "RestElement",
+    decorators: [],
+    argument: bindingIdentifier(name),
+    optional: false,
+    typeAnnotation: null,
+    value: null,
+    ...at,
+  } as AST.BindingRestElement;
+}
+
 /** A shorthand property of an object pattern, `name` or `name = defaultValue`. */
 export function bindingProperty(name: string, defaultValue?: AST.Expression): AST.BindingProperty {
   return {

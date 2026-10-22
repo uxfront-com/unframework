@@ -22,6 +22,7 @@ export default function QuickActions({
   onChosen,
   className,
   style,
+  ...attributes
 }: QuickActionsProps & QuickActionsEvents & QuickActionsAttributes) {
   const [query, setQuery] = useState("");
   const queryRef = useRef(query);
@@ -57,7 +58,12 @@ export default function QuickActions({
   const submitOnce = useOnce();
 
   return (
-    <section className={cx("quick-actions", className)} aria-label="Quick actions" style={style}>
+    <section
+      className={cx("quick-actions", className)}
+      aria-label="Quick actions"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <label>
         Search
         <input
@@ -149,4 +155,13 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
     fired.current.add(target);
     return true;
   };
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

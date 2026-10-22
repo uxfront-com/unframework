@@ -156,11 +156,48 @@ sheet with `parseStylesheet` instead, Vue's and Angular's included.
   compile project parses every emitted sheet with `parseStylesheet`, as part of L2, and fails one
   with an error or an unknown at-rule.
 
+**React and Solid**, as built:
+
+- **The attachment.** The output imports its sheet for its side effect, `import "./Card.uf.tsx.css"`,
+  after its other imports, so a child's sheet loads before its parent's, as plugin-vue imports a
+  component's style after its script. The toolchain projects hand the checker a
+  `declare module "*.css" {}` file from the target's toolchain package (`sheets.d.ts`), and every
+  toolchain's lint baseline allows that import, and only an emitted sheet's
+  (`import/no-unassigned-import` on `*.uf.tsx.css`).
+- **`child-root-scope`, emulated (`scopeAttributes`).** The parent passes its attribute on the
+  child's tag, `<Button data-uf-a33d603f="" />`, which a typed JSX consumer may write, since JSX
+  checks no hyphenated name. Each name is a parent's id, which the child can't know, so the child
+  spreads an inline helper's pick of them, `{...scopeAttributes(attributes)}`, on each node Vue's
+  attribute fallthrough reaches (codegen's `scopeRoots`): its root element, component or
+  `<component is>`, or each branch of a root conditional that renders one of those alone. The
+  helper reads the rest of a React props pattern, or the props object (`props` on Solid, and
+  React's object form), and a component without props takes one, typed `object`. It keeps only
+  the props' `data-uf-*` keys, each with the empty value the parent writes, and reads no value,
+  so it runs no Solid getter, and no prop the output leaves unread reaches the root, as a bare
+  rest spread would let it. A root component spreads them on, so they reach its own root. Each
+  component of a module claims the helper from a base of its own, `scopeAttributes` for the
+  first and `scopeAttributes_<index>` for the others, past the helper names any component
+  declares, because the unplugin joins them into one module, where an output's hoisted `const`s
+  are declared too (ADR-0053).
+- **The cost on Solid.** A spread on the root makes Solid's compiler set the root's attributes
+  through `spread` and `mergeProps`, and render it on the server with `ssrElement`, instead of a
+  template and `ssrHydrationKey()`. The hydration key is still written. `ssrElement` writes `class`
+  for a key that holds nothing and a space after a class (`class="card "`), as it writes
+  `style=""`: the server HTML differs from Vue's in an empty `class` and the class's whitespace,
+  which hydration sets right and the normaliser reads as the same (ADR-0044).
+- **`slotted-styles`, native.** The shared JSX builder stamps the child's `-s` on the content a
+  parent fills in, so it holds on `children`, named slot props and render props, whose function
+  returns the stamped content.
+- **What no target scopes.** Vue treats any other root as a fragment, and gives it none: several
+  nodes, a list, a slot, text, a branch that holds a conditional (Vue's `<template v-if>`), and a
+  root with `inheritAttrs: false`, which drops the attribute with the rest. React and Solid leave
+  them unscoped too, so every target renders the same DOM.
+
 **The capabilities:** `scoped-styles` (a component with a sheet), `child-root-scope` (a child a
 styled component renders) and `slotted-styles` (content filled into a child whose sheet uses
-`:slotted()`). Each target declares all three `native`, the cell its lane is expected to reach. A
-lane that can't reach it declares the cell `emulated` or `unsupported`, with the next free UF4 code,
-and adds a section here.
+`:slotted()`). Each target first declared all three `native`, the cell its lane was expected to
+reach. A lane that can't reach it declares the cell `emulated` or `unsupported`, with the next free
+UF4 code, and adds a section here: React and Solid emulate `child-root-scope`.
 
 **The codes** are UF5001 `shared-stylesheet`, UF5002 `invalid-stylesheet`, UF5003
 `unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`), UF5004
@@ -205,8 +242,8 @@ Vue      <style src="./Button.uf.tsx.css"></style>
 
 - Astro's attachment: an import that the Container API collects, or an inline `<style is:global>`
   (its lane, ADR-0020).
-- Each lane's `child-root-scope` and `slotted-styles` cells on React's children, Svelte's snippets,
-  Angular's projection and Qwik's `<Slot />`, recorded here as they settle.
+- Each lane's `child-root-scope` and `slotted-styles` cells on Svelte's snippets, Angular's
+  projection and Qwik's `<Slot />`, recorded here as they settle. React's and Solid's are above.
 - No watch or HMR edge runs from the author's `X.css` to its sheet module until M6.
 - A sheet that two modules import is not yet a diagnostic: detecting it needs M5's project graph,
   and until then each module scopes its own copy.

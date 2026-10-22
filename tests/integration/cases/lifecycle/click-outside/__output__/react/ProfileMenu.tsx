@@ -20,6 +20,7 @@ export default function ProfileMenu({
   onClosed,
   className,
   style,
+  ...attributes
 }: ProfileMenuEvents & ProfileMenuAttributes) {
   const onClosedRef = useRef(onClosed);
   useLayoutEffect(() => {
@@ -52,7 +53,12 @@ export default function ProfileMenu({
   useEffect(() => () => onUnmount(), []);
 
   return (
-    <section className={cx("profile-menu", className)} aria-label="Profile" style={style}>
+    <section
+      className={cx("profile-menu", className)}
+      aria-label="Profile"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <div className="menu" ref={menu}>
         <button
           type="button"
@@ -93,4 +99,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

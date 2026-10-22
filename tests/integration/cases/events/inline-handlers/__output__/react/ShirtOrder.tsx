@@ -5,7 +5,7 @@ export interface ShirtOrderAttributes {
   style?: CSSProperties;
 }
 
-export default function ShirtOrder({ className, style }: ShirtOrderAttributes) {
+export default function ShirtOrder({ className, style, ...attributes }: ShirtOrderAttributes) {
   const [size, setSize] = useState("M");
   const sizeRef = useRef(size);
   const [quantity, setQuantity] = useState(1);
@@ -15,7 +15,12 @@ export default function ShirtOrder({ className, style }: ShirtOrderAttributes) {
   const noteField = useRef<HTMLInputElement>(null);
 
   return (
-    <section className={cx("shirt-order", className)} aria-label="Shirt order" style={style}>
+    <section
+      className={cx("shirt-order", className)}
+      aria-label="Shirt order"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p role="status">{`${quantity} x size ${size}`}</p>
       <div role="group" aria-label="Size">
         <button
@@ -105,4 +110,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

@@ -20,6 +20,7 @@ export default function SectionHeading({
   onReady,
   className,
   style,
+  ...attributes
 }: SectionHeadingProps & SectionHeadingEvents & SectionHeadingAttributes) {
   const previousTitle = useRef<typeof title | undefined>(undefined);
   const onTitleChange = useEffectEvent(
@@ -41,7 +42,7 @@ export default function SectionHeading({
   }, []);
 
   return (
-    <h2 className={cx("section-heading", className)} style={style}>
+    <h2 className={cx("section-heading", className)} style={style} {...scopeAttributes(attributes)}>
       {title}
     </h2>
   );
@@ -60,4 +61,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

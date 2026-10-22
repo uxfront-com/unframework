@@ -291,6 +291,7 @@ what Solid cannot render as the other targets do is the analyser's to reject (AD
 | `use-id`                                       | native: `createUniqueId`                                                                                     |
 | `next-tick`                                    | emulated: `nextTick`                                                                                         |
 | `class-binding`                                | emulated: `cx`                                                                                               |
+| `child-root-scope`                             | emulated: `scopeAttributes`, the props' `data-uf-*` keys, spread on the root nodes                           |
 | `model-array`                                  | emulated: `toggle`, and `selectedValues` for a multiple select                                               |
 | `model-modifiers`                              | emulated: `modelText`                                                                                        |
 | `reactive-context`                             | emulated: `refObject`, an object whose `value` getter reads the signal                                       |
@@ -378,6 +379,16 @@ Everything a parent passes is a prop, read through the props object (`src/compos
 - `solid/reactivity` (L5) reports a signal handed to a function in the component or a provider's
   value, so a provided ref is an object literal with a getter, and what is read once is read in
   `untrack`.
+
+## Scoped styles (M4)
+
+A component that imports a stylesheet imports the sheet `compile()` scoped for it, after its
+other imports: `import "./Badge.uf.tsx.css";` (ADR-0063). The shared JSX builder prints
+`data-uf-<id>=""` on each element it renders, the parent's attribute on a child's tag, and the
+child's `-s` on the content filled into a child whose sheet uses `:slotted()`. A component also
+takes the scope attributes of its styled parents: `{...scopeAttributes(props)}` on each root node: its root element, component or `<component is>`, or each branch of a root conditional that renders one alone (`scopeRoots`, where Vue's fallthrough reaches). The inline helper reads the props' names alone, keeps
+the `data-uf-*` ones, and so runs no getter. The spread makes Solid's compiler set the root's
+attributes through `spread` and `mergeProps`, and render it on the server with `ssrElement`.
 
 ## Toolchain
 

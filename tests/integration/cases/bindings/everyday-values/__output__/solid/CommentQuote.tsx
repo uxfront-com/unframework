@@ -12,6 +12,7 @@ export default function CommentQuote(
     <figure
       class={props.class ? `comment-quote ${props.class}` : "comment-quote"}
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <blockquote style={{ margin: "0", padding: "0" }}>
         <p dir="auto">{props.comment}</p>
@@ -19,4 +20,11 @@ export default function CommentQuote(
       <figcaption>{props.author}</figcaption>
     </figure>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

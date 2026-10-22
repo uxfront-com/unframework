@@ -15,6 +15,7 @@ export default function Callout({
   body,
   className,
   style,
+  ...attributes
 }: CalloutProps & CalloutAttributes) {
   return (
     <aside
@@ -29,6 +30,7 @@ export default function Callout({
           ...style,
         } as CSSProperties
       }
+      {...scopeAttributes(attributes)}
     >
       <p style={{ margin: "0", fontWeight: "700" }}>{heading}</p>
       <p style={{ margin: "4px 0 0" }}>{body}</p>
@@ -49,4 +51,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

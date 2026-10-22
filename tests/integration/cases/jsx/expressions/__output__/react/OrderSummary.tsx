@@ -23,9 +23,15 @@ export default function OrderSummary({
   coupon,
   className,
   style,
+  ...attributes
 }: OrderSummaryProps & OrderSummaryAttributes) {
   return (
-    <section className={cx("order-summary", className)} aria-label="Order summary" style={style}>
+    <section
+      className={cx("order-summary", className)}
+      aria-label="Order summary"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <h2>Order {String(orderNumber).padStart(6, "0")}</h2>
       <p>Customer: {customer.trim().toUpperCase()}</p>
       <p>{`${quantity} item${quantity === 1 ? "" : "s"} at ${unitPrice.toFixed(2)} each`}</p>
@@ -55,4 +61,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

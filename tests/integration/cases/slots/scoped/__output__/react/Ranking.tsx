@@ -10,9 +10,10 @@ export default function Ranking({
   names,
   className,
   style,
+  ...attributes
 }: { names: string[] } & RankingAttributes) {
   return (
-    <div className={className} style={style}>
+    <div className={className} style={style} {...scopeAttributes(attributes)}>
       <List
         items={names}
         label="Podium"
@@ -29,4 +30,13 @@ export default function Ranking({
       />
     </div>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

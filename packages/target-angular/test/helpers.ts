@@ -76,7 +76,7 @@ export function corpusSources(): { name: string; file: string; source: string }[
  * through the resolver `compile()` runs, which `lower` has not. The corpus's toolchain project
  * checks their Angular outputs (ADR-0063).
  */
-const STYLED_COMPOSITION = /^styles\/(?:child-root|deep|global|slotted)$/;
+const STYLED_COMPOSITION = /^styles\/(?:child-root|child-root-branches|deep|global|slotted)$/;
 
 /**
  * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane

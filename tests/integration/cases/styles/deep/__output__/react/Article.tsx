@@ -1,5 +1,6 @@
 import Note from "./Note";
 import type { CSSProperties } from "react";
+import "./Article.uf.tsx.css";
 
 export interface ArticleAttributes {
   className?: string;
@@ -11,9 +12,15 @@ export default function Article({
   note,
   className,
   style,
+  ...attributes
 }: { title: string; note: string } & ArticleAttributes) {
   return (
-    <article className={cx("article", className)} style={style} data-uf-15946226="">
+    <article
+      className={cx("article", className)}
+      style={style}
+      data-uf-15946226=""
+      {...scopeAttributes(attributes)}
+    >
       <h2 className="title" data-uf-15946226="">
         {title}
       </h2>
@@ -35,4 +42,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

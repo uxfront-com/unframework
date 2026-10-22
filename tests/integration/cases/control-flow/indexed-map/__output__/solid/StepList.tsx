@@ -13,6 +13,7 @@ export default function StepList(
       class={props.class ? `step-list ${props.class}` : "step-list"}
       aria-label={props.title}
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <For each={props.steps}>
         {(step, index) => (
@@ -23,4 +24,11 @@ export default function StepList(
       </For>
     </ol>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

@@ -20,6 +20,7 @@ export default function SaveDraft({
   onSaved,
   className,
   style,
+  ...attributes
 }: SaveDraftEvents & SaveDraftAttributes) {
   const onSavedRef = useRef(onSaved);
   useLayoutEffect(() => {
@@ -47,7 +48,12 @@ export default function SaveDraft({
   }
 
   return (
-    <section className={cx("save-draft", className)} aria-label="Draft" style={style}>
+    <section
+      className={cx("save-draft", className)}
+      aria-label="Draft"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p role="status">{status}</p>
       <button type="button" onClick={save}>
         Save the draft
@@ -120,4 +126,13 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

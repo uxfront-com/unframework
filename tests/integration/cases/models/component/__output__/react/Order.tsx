@@ -6,12 +6,17 @@ export interface OrderAttributes {
   style?: CSSProperties;
 }
 
-export default function Order({ className, style }: OrderAttributes) {
+export default function Order({ className, style, ...attributes }: OrderAttributes) {
   const [cups, setCups] = useState(2);
   const cupsRef = useRef(cups);
 
   return (
-    <section aria-label="Order" className={className} style={style}>
+    <section
+      aria-label="Order"
+      className={className}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <Stepper
         label="Cups"
         value={cups}
@@ -32,4 +37,13 @@ export default function Order({ className, style }: OrderAttributes) {
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

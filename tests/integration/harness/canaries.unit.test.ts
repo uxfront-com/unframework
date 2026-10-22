@@ -600,7 +600,7 @@ describe("canaries", () => {
     const result = await compileWith("L13-console-warn");
     const contents = (target: string) => result.outputs[target]![0]!.contents;
     expect(contents("react")).toMatch(
-      /style,\n\}: TaskListProps & TaskListAttributes\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
+      /\.\.\.attributes\n\}: TaskListProps & TaskListAttributes\) \{\n {2}console\.warn\("\[uf canary\] L13 in react"\);/,
     );
     expect(contents("solid")).toMatch(
       /function TaskList\(\n {2}rawProps: TaskListProps & \{ class\?: string; style\?: JSX\.CSSProperties \},\n\) \{\n {2}console\.warn/,

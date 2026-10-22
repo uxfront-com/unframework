@@ -21,9 +21,10 @@ export default function ContributorTable({
   contributors,
   className,
   style,
+  ...attributes
 }: ContributorTableProps & ContributorTableAttributes) {
   return (
-    <table className={cx("contributors", className)} style={style}>
+    <table className={cx("contributors", className)} style={style} {...scopeAttributes(attributes)}>
       <caption>{caption}</caption>
       <thead>
         <tr>
@@ -58,4 +59,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

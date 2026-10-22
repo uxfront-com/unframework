@@ -5,7 +5,7 @@ export interface FilterPanelAttributes {
   style?: CSSProperties;
 }
 
-export default function FilterPanel({ className, style }: FilterPanelAttributes) {
+export default function FilterPanel({ className, style, ...attributes }: FilterPanelAttributes) {
   const [open, setOpen] = useState(false);
   const openRef = useRef(open);
   const [colour, setColour] = useState<string | null>(null);
@@ -14,7 +14,12 @@ export default function FilterPanel({ className, style }: FilterPanelAttributes)
   const noteRef = useRef(note);
 
   return (
-    <section className={cx("filter-panel", className)} aria-label="Filters" style={style}>
+    <section
+      className={cx("filter-panel", className)}
+      aria-label="Filters"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       {open ? (
         <button
           key={0}
@@ -134,4 +139,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

@@ -21,6 +21,7 @@ export default function EventLog(props: { class?: string; style?: JSX.CSSPropert
       class={props.class ? `event-log ${props.class}` : "event-log"}
       aria-label="Event options"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <div
         class="panel"
@@ -73,4 +74,11 @@ export default function EventLog(props: { class?: string; style?: JSX.CSSPropert
       </ol>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

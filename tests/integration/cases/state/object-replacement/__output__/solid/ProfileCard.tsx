@@ -28,6 +28,7 @@ export default function ProfileCard(
       class={props.class ? `profile-card ${props.class}` : "profile-card"}
       aria-label="Profile"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <h2>{profile().name}</h2>
       <p>{profile().title}</p>
@@ -40,4 +41,11 @@ export default function ProfileCard(
       </button>
     </article>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

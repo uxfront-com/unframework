@@ -66,16 +66,14 @@ type JsxChild = ReturnType<typeof jsxChildren>[number];
 /** The class helper's name, before the name scope makes it unique. */
 export const CLASS_HELPER = "cx";
 
+/** The scope helper's name, before the name scope makes it unique. */
+export const SCOPE_HELPER = "scopeAttributes";
+
 /** The Solid dialect of one output file, and the helpers its JSX ended up calling. */
 export interface SolidJsx {
   dialect: JsxDialect;
   /** The inline helpers to print after the component, as source code. */
   helpers: () => string[];
-  /**
-   * The fallthrough attributes the root has not printed with its own (`class={props.class}`,
-   * `style={props.style}`), to add once it is printed: none without fallthrough.
-   */
-  fallthrough: (context: JsxContext) => JsxAttribute[];
 }
 
 /** What a file's composition prints with: its code, its composition and its props object. */
@@ -102,6 +100,7 @@ export function solidJsx(
   compose: SolidCompose,
 ): SolidJsx {
   let helper: string | undefined;
+  let scopeHelper: string | undefined;
   const classHelper = () => (helper ??= imports.claim(CLASS_HELPER));
   const flow: Flow = { imports, narrowings, falsy: declaresFalsyLiteral(types) };
   const { code, composition, object, models } = compose;
@@ -109,6 +108,7 @@ export function solidJsx(
   // added after them where it has none.
   const root = composition.fallthrough;
   const printed = { class: false, style: false };
+  const pending = new Set(composition.scopeRoots);
   const isRoot = (element: ElementNode) => isSpan(root, element.span);
   const passed = (name: "class" | "style", context: JsxContext): AstExpression =>
     context.placeholders.expression(`${object!}.${name}`, "argument");
@@ -236,17 +236,31 @@ export function solidJsx(
       jsxDynamic(node, imports.add("solid-js/web", "Dynamic"), context, [
         js.jsxAttribute("component", js.jsxExpressionContainer(jsxExpression(node.is, context))),
       ]),
+    // After a root's own attributes: the `class` and `style` it has not merged with its own
+    // (`class={props.class}`), then the `data-uf-*` attributes of the styled parents that render
+    // it, whose names only they know, picked out of the props by name (the child-root rule,
+    // ADR-0063).
+    // Each root takes them once: the first node printed with its span, which is the root
+    // itself, printed before what it holds.
+    scopeRootAttributes(element, context) {
+      if (!pending.delete(`${element.span.start}:${element.span.end}`)) return [];
+      const fallthrough = isRoot(element)
+        ? (["class", "style"] as const)
+            .filter((name) => !printed[name])
+            .map((name) => js.jsxAttribute(name, js.jsxExpressionContainer(passed(name, context))))
+        : [];
+      scopeHelper ??= imports.claim(SCOPE_HELPER);
+      const picked = context.placeholders.expression(`${scopeHelper}(${object!})`, "argument");
+      return [...fallthrough, js.jsxSpreadAttribute(picked)];
+    },
   };
   return {
     dialect,
-    helpers: () => [...(helper ? [classHelperCode(helper)] : []), ...models.helpers()],
-    fallthrough(context) {
-      if (!root) return [];
-      const missing = (["class", "style"] as const).filter((name) => !printed[name]);
-      return missing.map((name) =>
-        js.jsxAttribute(name, js.jsxExpressionContainer(passed(name, context))),
-      );
-    },
+    helpers: () => [
+      ...(helper ? [classHelperCode(helper)] : []),
+      ...(scopeHelper ? [scopeHelperCode(scopeHelper)] : []),
+      ...models.helpers(),
+    ],
   };
 }
 
@@ -897,5 +911,20 @@ function ${name}(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}`;
+}
+
+/**
+ * The inline scope helper (emulated `child-root-scope`, ADR-0063), printed after the component:
+ * the props' `data-uf-*` keys, each with the empty value the parent passes. It reads the names
+ * alone, so it never runs a prop's getter (a slot's `children`), and passes on no prop the
+ * component declares.
+ */
+function scopeHelperCode(name: string): string {
+  return `/** The scope attributes of the styled parents that render this component, for its root. */
+function ${name}(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }`;
 }

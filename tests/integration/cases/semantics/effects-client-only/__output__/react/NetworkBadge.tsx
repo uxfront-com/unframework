@@ -5,7 +5,7 @@ export interface NetworkBadgeAttributes {
   style?: CSSProperties;
 }
 
-export default function NetworkBadge({ className, style }: NetworkBadgeAttributes) {
+export default function NetworkBadge({ className, style, ...attributes }: NetworkBadgeAttributes) {
   const [online, setOnline] = useState<boolean>();
   const onlineRef = useRef(online);
   const [label, setLabel] = useState("Checking the connection");
@@ -37,6 +37,7 @@ export default function NetworkBadge({ className, style }: NetworkBadgeAttribute
       role="status"
       data-checked={online === undefined ? "no" : "yes"}
       style={style}
+      {...scopeAttributes(attributes)}
     >
       {label}
     </p>
@@ -56,4 +57,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

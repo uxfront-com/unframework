@@ -32,6 +32,7 @@ export default function Mailbox({
   onNoted,
   className,
   style,
+  ...attributes
 }: MailboxProps & MailboxEvents & MailboxAttributes) {
   const folderRef = useRef(folder);
   const onSeenRef = useRef(onSeen);
@@ -172,7 +173,12 @@ export default function Mailbox({
   }
 
   return (
-    <section className={cx("mailbox", className)} aria-label="Mailbox" style={style}>
+    <section
+      className={cx("mailbox", className)}
+      aria-label="Mailbox"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <h2>{name}</h2>
       <p role="status">{summary}</p>
       <p>Status: {status}</p>
@@ -256,4 +262,13 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

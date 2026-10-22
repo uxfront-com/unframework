@@ -20,6 +20,7 @@ export default function CityPicker({
   onNoted,
   className,
   style,
+  ...attributes
 }: CityPickerProps & CityPickerEvents & CityPickerAttributes) {
   const listId = `uf-id-${useId()}`;
   const [query, setQuery] = useState("");
@@ -93,7 +94,12 @@ export default function CityPicker({
   }
 
   return (
-    <section className={cx("city-picker", className)} aria-label="Trip" style={style}>
+    <section
+      className={cx("city-picker", className)}
+      aria-label="Trip"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <form role="search" aria-label="Destination" onSubmit={(event) => event.preventDefault()}>
         <label>
           City
@@ -167,4 +173,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

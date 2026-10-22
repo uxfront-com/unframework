@@ -181,6 +181,13 @@ export interface JsxDialect {
    * gives it.
    */
   dynamic?(node: DynamicNode, context: JsxContext): AST.Expression;
+  /**
+   * What an element, a component's tag or a `<component is>` carries after its scope attributes:
+   * the JSX targets spread, on the component's root nodes (`scopeRoots`), the scope attributes
+   * the styled parents that render it pass (the child-root rule, ADR-0063). The node is the
+   * element, or the tag in an element's shape, with the node's span.
+   */
+  scopeRootAttributes?(element: ElementNode, context: JsxContext): AST.JSXAttributeItem[];
 }
 
 /** What a JSX printer prints one component with. */
@@ -664,9 +671,12 @@ export function scopeJsxAttributes(
 ): AST.JSXAttributeItem[] {
   const { scopeId } = context.component;
   const names = [...(scopeId ? [scopeAttribute(scopeId)] : []), ...(context.slotted ?? [])];
-  return names.flatMap((name) =>
-    staticJsxAttribute({ kind: "Static", name, value: "", span: element.span }, element, context),
-  );
+  return [
+    ...names.flatMap((name) =>
+      staticJsxAttribute({ kind: "Static", name, value: "", span: element.span }, element, context),
+    ),
+    ...(context.dialect.scopeRootAttributes?.(element, context) ?? []),
+  ];
 }
 
 /** The attribute name a dialect writes. */

@@ -116,6 +116,23 @@ export interface NextTickHooks {
 }
 
 /**
+ * `child-root-scope`: the scope attributes a component's styled parents pass it (ADR-0063),
+ * which its root carries. Their names are the parents' ids, which the component cannot know, so
+ * it picks the props' `data-uf-*` keys by name, each with the empty value the parent passes: a
+ * rest spread alone would also pass on the props the output leaves unread.
+ */
+export function scopeAttributesHelper(name: string): string {
+  return `/** The scope attributes of the styled parents that render this component, for its root. */
+function ${name}(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
+}`;
+}
+
+/**
  * `reactive-context`: a provided ref (ADR-0054). Consumers read a ref's `value`, so the provider
  * passes the state behind a `value` getter, a new object each time the state changes: the
  * context's consumers render again with it. The getter reads the rendered state, never the

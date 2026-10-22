@@ -22,6 +22,7 @@ export default function PriceRange({
   onCurrencyUpdate,
   className,
   style,
+  ...attributes
 }: PriceRangeProps & PriceRangeEvents & PriceRangeAttributes) {
   const [low, setLow] = useState(10);
   const lowRef = useRef(low);
@@ -63,7 +64,12 @@ export default function PriceRange({
   }, [currency]);
 
   return (
-    <section className={cx("price-range", className)} aria-label="Price range" style={style}>
+    <section
+      className={cx("price-range", className)}
+      aria-label="Price range"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p role="status">
         {low} to {high} {currency}
       </p>
@@ -104,4 +110,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

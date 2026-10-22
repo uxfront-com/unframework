@@ -8,6 +8,7 @@ export default function Button(
       type="button"
       class={props.class ? `button ${props.class}` : "button"}
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <span class="icon" aria-hidden="true">
         +
@@ -15,4 +16,11 @@ export default function Button(
       {props.text}
     </button>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

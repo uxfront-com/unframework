@@ -6,7 +6,7 @@ export default function Profile(props: { class?: string; style?: JSX.CSSProperti
   const [weight, setWeight] = createSignal(0);
 
   return (
-    <form aria-label="Profile" class={props.class} style={props.style}>
+    <form aria-label="Profile" class={props.class} style={props.style} {...scopeAttributes(props)}>
       <label>
         Name <input value={untrack(name)} ref={modelText(name, setName, { trim: true })} />
       </label>
@@ -22,6 +22,13 @@ export default function Profile(props: { class?: string; style?: JSX.CSSProperti
       </output>
     </form>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /** Binds a text field to a signal as Vue's `vModelText` does: see its modifiers. */

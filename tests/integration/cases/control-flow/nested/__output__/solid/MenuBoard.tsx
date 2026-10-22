@@ -22,7 +22,11 @@ export default function MenuBoard(
   props: MenuBoardProps & { class?: string; style?: JSX.CSSProperties },
 ) {
   return (
-    <div class={props.class ? `menu-board ${props.class}` : "menu-board"} style={props.style}>
+    <div
+      class={props.class ? `menu-board ${props.class}` : "menu-board"}
+      style={props.style}
+      {...scopeAttributes(props)}
+    >
       <Show
         when={props.closed}
         fallback={
@@ -51,4 +55,11 @@ export default function MenuBoard(
       </Show>
     </div>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

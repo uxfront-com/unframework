@@ -25,6 +25,7 @@ export default function SaveDraft(
       class={props.class ? `save-draft ${props.class}` : "save-draft"}
       aria-label="Draft"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p role="status">{status()}</p>
       <button type="button" onClick={save}>
@@ -32,6 +33,13 @@ export default function SaveDraft(
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /**

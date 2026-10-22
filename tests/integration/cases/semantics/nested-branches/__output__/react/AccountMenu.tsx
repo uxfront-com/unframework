@@ -22,6 +22,7 @@ export default function AccountMenu({
   onGreeted,
   className,
   style,
+  ...attributes
 }: AccountMenuProps & AccountMenuEvents & AccountMenuAttributes) {
   const [step, setStep] = useState("intro");
   const stepRef = useRef(step);
@@ -48,7 +49,12 @@ export default function AccountMenu({
   }
 
   return (
-    <section className={cx("account-menu", className)} aria-label="Account" style={style}>
+    <section
+      className={cx("account-menu", className)}
+      aria-label="Account"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       {step === "intro" ? (
         <button key={0} type="button" onClick={start}>
           Start
@@ -85,4 +91,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

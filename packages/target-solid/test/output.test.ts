@@ -246,8 +246,10 @@ describe("solid output where Solid needs a rewrite (src/render.ts, src/attribute
       label: "",
       format: { separator: null },
     };
+    // A root that spreads its scope attributes renders through Solid's \`ssrElement\` (ADR-0063),
+    // which writes \`class\` where the key holds nothing, and a space after a class.
     expect(await narrowingHtml(absent)).toBe(
-      '<div style=""><i>anon</i><i>none</i><i>anon</i><ul><li>-</li></ul><i>none</i><svg><rect width="3"></rect></svg><p>E</p><ul><li></li></ul>&lt;anonymous><p title="t">a</p><p>anon</p><p></p><p></p></div>',
+      '<div class="" style=""><i>anon</i><i>none</i><i>anon</i><ul><li>-</li></ul><i>none</i><svg><rect width="3"></rect></svg><p>E</p><ul><li></li></ul>&lt;anonymous><p title="t">a</p><p>anon</p><p></p><p></p></div>',
     );
     const user = {
       name: "Ada",
@@ -273,7 +275,7 @@ describe("solid output where Solid needs a rewrite (src/render.ts, src/attribute
       attrs: { title: "T", id: "I" },
     });
     expect(html).toContain(
-      '<div style=""><p>Ada</p><b title="Ada">Ada</b><p>Ada</p><b>Ada</b><b>Ada</b><p>Ada</p><p title="A" class="grown"',
+      '<div class="" style=""><p>Ada</p><b title="Ada">Ada</b><p>Ada</p><b>Ada</b><b>Ada</b><p>Ada</p><p title="A" class="grown"',
     );
     expect(html).toContain('>30<b>Ada</b></p><p>C</p><a href="#a" data-json="{&quot;user&quot;');
     expect(html).toContain(

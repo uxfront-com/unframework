@@ -34,6 +34,7 @@ export default function MeetingList({
   onTrack,
   className,
   style,
+  ...attributes
 }: MeetingListProps & MeetingListEvents & MeetingListAttributes) {
   const [rooms] = useState(["Atlas", "Borealis"]);
   const [log, setLog] = useState<string[]>([]);
@@ -70,7 +71,12 @@ export default function MeetingList({
   const clickOnce_3 = useOnce();
 
   return (
-    <section className={cx("meeting-list", className)} aria-label="Meetings" style={style}>
+    <section
+      className={cx("meeting-list", className)}
+      aria-label="Meetings"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <ul aria-label="Upcoming">
         {upcoming.map((event) => (
           <li key={event.id}>
@@ -179,4 +185,13 @@ function useOnce(): (event: { currentTarget: EventTarget | null }) => boolean {
     fired.current.add(target);
     return true;
   };
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

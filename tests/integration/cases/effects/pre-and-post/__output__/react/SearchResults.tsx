@@ -25,6 +25,7 @@ export default function SearchResults({
   onShown,
   className,
   style,
+  ...attributes
 }: SearchResultsEvents & SearchResultsAttributes) {
   const onReadyRef = useRef(onReady);
   const onShownRef = useRef(onShown);
@@ -111,7 +112,12 @@ export default function SearchResults({
   }
 
   return (
-    <section className={cx("search-results", className)} aria-label="Search" style={style}>
+    <section
+      className={cx("search-results", className)}
+      aria-label="Search"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p ref={banner}>{status}</p>
       <label>
         Query
@@ -200,4 +206,13 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

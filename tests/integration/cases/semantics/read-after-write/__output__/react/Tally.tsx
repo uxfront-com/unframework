@@ -17,6 +17,7 @@ export default function Tally({
   onLogged,
   className,
   style,
+  ...attributes
 }: TallyEvents & TallyAttributes) {
   const [count, setCount] = useState(0);
   const countRef = useRef(count);
@@ -69,7 +70,12 @@ export default function Tally({
   }
 
   return (
-    <section className={cx("tally", className)} aria-label="Tally" style={style}>
+    <section
+      className={cx("tally", className)}
+      aria-label="Tally"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p role="status">Count: {count}</p>
       <button type="button" onClick={addTwice}>
         Add two
@@ -104,4 +110,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

@@ -19,9 +19,15 @@ export default function InboxSummary({
   signature,
   className,
   style,
+  ...attributes
 }: InboxSummaryProps & InboxSummaryAttributes) {
   return (
-    <section className={cx("inbox-summary", className)} aria-label="Inbox summary" style={style}>
+    <section
+      className={cx("inbox-summary", className)}
+      aria-label="Inbox summary"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <h2>{folder || "Inbox"}</h2>
       {unread ? <p>{unread} unread</p> : null}
       {flagged ? <p>{flagged} flagged</p> : null}
@@ -45,4 +51,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

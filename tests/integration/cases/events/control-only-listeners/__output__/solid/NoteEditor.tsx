@@ -22,6 +22,7 @@ export default function NoteEditor(
       aria-label="Note"
       onSubmit={(event) => event.preventDefault()}
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <label>
         Title
@@ -50,4 +51,11 @@ export default function NoteEditor(
       <p role="status">Saves: {saves()}</p>
     </form>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

@@ -20,6 +20,7 @@ export default function PriceRange({
   onMaxChange,
   className,
   style,
+  ...attributes
 }: { label: string } & PriceRangeModels & PriceRangeAttributes) {
   const [localMin, setLocalMin] = useState<{ value: number }>({ value: 0 });
   const min = minProp === undefined ? localMin.value : minProp;
@@ -47,7 +48,7 @@ export default function PriceRange({
   }
 
   return (
-    <fieldset className={className} style={style}>
+    <fieldset className={className} style={style} {...scopeAttributes(attributes)}>
       <legend>{label}</legend>
       <p>
         From {min} to {max}
@@ -57,4 +58,13 @@ export default function PriceRange({
       </button>
     </fieldset>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

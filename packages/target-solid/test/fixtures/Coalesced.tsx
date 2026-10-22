@@ -133,7 +133,12 @@ export default function Coalesced(
   }
 
   return (
-    <section aria-label="Coalesced" class={props.class} style={props.style}>
+    <section
+      aria-label="Coalesced"
+      class={props.class}
+      style={props.style}
+      {...scopeAttributes(props)}
+    >
       <p role="status">
         {step()} {count()} {busy() ? "busy" : "idle"}
       </p>
@@ -184,6 +189,13 @@ export default function Coalesced(
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }
 
 /** The watchers whose sources have changed since the last flush, in the order they changed. */

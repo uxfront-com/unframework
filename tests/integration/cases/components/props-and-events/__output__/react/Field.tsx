@@ -20,9 +20,10 @@ export default function Field({
   onClear,
   className,
   style,
+  ...attributes
 }: FieldProps & FieldEvents & FieldAttributes) {
   return (
-    <div className={cx("field", tone, className)} style={style}>
+    <div className={cx("field", tone, className)} style={style} {...scopeAttributes(attributes)}>
       <span>{label}</span>
       <button type="button" onClick={() => onClear?.(label)}>
         Clear {label}
@@ -44,4 +45,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

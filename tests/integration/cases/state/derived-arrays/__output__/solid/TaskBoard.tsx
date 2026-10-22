@@ -107,6 +107,7 @@ export default function TaskBoard(
       class={props.class ? `task-board ${props.class}` : "task-board"}
       aria-label="Tasks"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <ol aria-label="Open">
         <For each={open()}>
@@ -165,4 +166,11 @@ export default function TaskBoard(
       </label>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

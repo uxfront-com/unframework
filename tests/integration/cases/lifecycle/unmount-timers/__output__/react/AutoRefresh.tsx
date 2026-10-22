@@ -26,6 +26,7 @@ export default function AutoRefresh({
   onRefresh,
   className,
   style,
+  ...attributes
 }: AutoRefreshProps & AutoRefreshEvents & AutoRefreshAttributes) {
   const onRefreshRef = useRef(onRefresh);
   useLayoutEffect(() => {
@@ -60,7 +61,12 @@ export default function AutoRefresh({
   useEffect(() => () => onUnmount(), []);
 
   return (
-    <section className={cx("auto-refresh", className)} aria-label="Auto-refresh" style={style}>
+    <section
+      className={cx("auto-refresh", className)}
+      aria-label="Auto-refresh"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <button type="button" aria-pressed={enabled} onClick={toggle}>
         Auto-refresh
       </button>
@@ -82,4 +88,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

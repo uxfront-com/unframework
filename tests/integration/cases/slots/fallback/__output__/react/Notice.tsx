@@ -16,9 +16,16 @@ export default function Notice({
   action,
   className,
   style,
+  ...attributes
 }: { label: string } & NoticeSlots & NoticeAttributes) {
   return (
-    <div role="note" aria-label={label} className={cx("notice", className)} style={style}>
+    <div
+      role="note"
+      aria-label={label}
+      className={cx("notice", className)}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p>{children ?? <em>Nothing to report.</em>}</p>
       {action ?? <span className="muted">No action</span>}
     </div>
@@ -38,4 +45,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

@@ -39,6 +39,7 @@ export default function AccountMenu(
       class={props.class ? `account-menu ${props.class}` : "account-menu"}
       aria-label="Account"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <Show
         when={step() === "intro"}
@@ -77,4 +78,11 @@ export default function AccountMenu(
       </Show>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

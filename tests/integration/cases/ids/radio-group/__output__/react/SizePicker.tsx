@@ -15,6 +15,7 @@ export default function SizePicker({
   sizes,
   className,
   style,
+  ...attributes
 }: SizePickerProps & SizePickerAttributes) {
   const group = `uf-id-${useId()}`;
   const hintId = `uf-id-${useId()}`;
@@ -27,7 +28,12 @@ export default function SizePicker({
   }
 
   return (
-    <fieldset className={cx("size-picker", className)} aria-describedby={hintId} style={style}>
+    <fieldset
+      className={cx("size-picker", className)}
+      aria-describedby={hintId}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <legend>{legend}</legend>
       <p id={hintId}>Pick one size.</p>
       {sizes.map((size, index) => (
@@ -74,4 +80,13 @@ function listen<K extends keyof HTMLElementEventMap>(
 ): () => void {
   element?.addEventListener(type, listener as EventListener, options);
   return () => element?.removeEventListener(type, listener as EventListener, options);
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

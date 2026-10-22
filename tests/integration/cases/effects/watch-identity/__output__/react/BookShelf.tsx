@@ -35,6 +35,7 @@ export default function BookShelf({
   onSummed,
   className,
   style,
+  ...attributes
 }: BookShelfProps & BookShelfEvents & BookShelfAttributes) {
   const [focused, setFocused] = useState<Book | null>(null);
   const focusedRef = useRef(focused);
@@ -139,7 +140,12 @@ export default function BookShelf({
   }
 
   return (
-    <section className={cx("book-shelf", className)} aria-label="Books" style={style}>
+    <section
+      className={cx("book-shelf", className)}
+      aria-label="Books"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <ul aria-label="Shelf">
         {books.map((book) => (
           <li key={book.id}>
@@ -200,4 +206,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

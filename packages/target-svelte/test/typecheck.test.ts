@@ -26,7 +26,7 @@ afterAll(removeScratch);
  * `Props` doesn't declare it (TS2353): `harness/quarantine/svelte.ts` lists their L4 cells until
  * Svelte's M4 lane (UXF-400) settles the child's root, and brings them back here (ADR-0063).
  */
-const CHILD_ROOT = /\/styles\/(?:child-root|deep|global)\//;
+const CHILD_ROOT = /\/styles\/(?:child-root|child-root-branches|deep|global)\//;
 
 /**
  * Type-checks a golden output with a toolchain tsconfig that extends the real one with

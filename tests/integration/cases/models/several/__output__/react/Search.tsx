@@ -6,13 +6,18 @@ export interface SearchAttributes {
   style?: CSSProperties;
 }
 
-export default function Search({ className, style }: SearchAttributes) {
+export default function Search({ className, style, ...attributes }: SearchAttributes) {
   const [low, setLow] = useState(20);
   const [high, setHigh] = useState(50);
   const highRef = useRef(high);
 
   return (
-    <section aria-label="Search" className={className} style={style}>
+    <section
+      aria-label="Search"
+      className={className}
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <PriceRange
         label="Price"
         min={low}
@@ -37,4 +42,13 @@ export default function Search({ className, style }: SearchAttributes) {
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

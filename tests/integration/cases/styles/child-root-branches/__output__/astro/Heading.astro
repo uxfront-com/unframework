@@ -1,0 +1,12 @@
+---
+interface Props {
+  big: boolean;
+  text: string;
+}
+
+const { big, text } = Astro.props;
+
+const Tag = big ? "h2" : "h3";
+---
+
+<Tag class="heading">{text}</Tag>

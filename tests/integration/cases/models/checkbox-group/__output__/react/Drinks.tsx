@@ -5,12 +5,12 @@ export interface DrinksAttributes {
   style?: CSSProperties;
 }
 
-export default function Drinks({ className, style }: DrinksAttributes) {
+export default function Drinks({ className, style, ...attributes }: DrinksAttributes) {
   const [drinks, setDrinks] = useState<string[]>(["tea"]);
   const drinksRef = useRef(drinks);
 
   return (
-    <fieldset className={className} style={style}>
+    <fieldset className={className} style={style} {...scopeAttributes(attributes)}>
       <legend>Drinks</legend>
       <label>
         <input
@@ -60,6 +60,15 @@ export default function Drinks({ className, style }: DrinksAttributes) {
       </button>
     </fieldset>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }
 
 /** The array with `value` added when `checked`, and without it otherwise. */

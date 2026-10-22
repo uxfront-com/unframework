@@ -22,6 +22,7 @@ import {
   lower,
   packageDir,
   profileCard,
+  scopeHelper,
   toolchainDir,
 } from "./fixtures.ts";
 import type { Emitted } from "./fixtures.ts";
@@ -160,9 +161,9 @@ describe("react target", () => {
         "  style?: CSSProperties;",
         "}",
         "",
-        "export default function Hello({ className, style }: HelloAttributes) {",
+        "export default function Hello({ className, style, ...attributes }: HelloAttributes) {",
         "  return (",
-        '    <p className={cx("greeting", className)} style={style}>',
+        '    <p className={cx("greeting", className)} style={style} {...scopeAttributes(attributes)}>',
         "      Hello, world!",
         "    </p>",
         "  );",
@@ -183,6 +184,7 @@ describe("react target", () => {
         '  return names.join(" ");',
         "}",
         "",
+        scopeHelper(),
       ].join("\n"),
     });
   });
@@ -198,9 +200,14 @@ describe("react target", () => {
         "  style?: CSSProperties;",
         "}",
         "",
-        "export default function ProfileCard({ className, style }: ProfileCardAttributes) {",
+        "export default function ProfileCard({ className, style, ...attributes }: ProfileCardAttributes) {",
         "  return (",
-        '    <article className={cx("profile", className)} aria-labelledby="profile-name" style={style}>',
+        "    <article",
+        '      className={cx("profile", className)}',
+        '      aria-labelledby="profile-name"',
+        "      style={style}",
+        "      {...scopeAttributes(attributes)}",
+        "    >",
         '      <header className="profile-header">',
         "        <img",
         "          src=\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%23345'/%3E%3C/svg%3E\"",
@@ -237,6 +244,7 @@ describe("react target", () => {
         '  return names.join(" ");',
         "}",
         "",
+        scopeHelper(),
       ].join("\n"),
     });
   });
@@ -244,7 +252,7 @@ describe("react target", () => {
   it("keeps a named export named", async () => {
     const file = await formatted(hello(), { name: "Hello", kind: "named" });
     expect(file.contents).toMatch(
-      /^export function Hello\(\{ className, style \}: HelloAttributes\) \{$/m,
+      /^export function Hello\(\{ className, style, \.\.\.attributes \}: HelloAttributes\) \{$/m,
     );
   });
 
@@ -321,14 +329,22 @@ export default function Badge({ tone = "info", label, size }: BadgeProps) {
         "  size,",
         "  className,",
         "  style,",
+        "  ...attributes",
         "}: BadgeProps & BadgeAttributes) {",
         "  return (",
-        "    <p data-tone={tone} data-width={size?.width} className={className} style={style}>",
+        "    <p",
+        "      data-tone={tone}",
+        "      data-width={size?.width}",
+        "      className={className}",
+        "      style={style}",
+        "      {...scopeAttributes(attributes)}",
+        "    >",
         "      {label}",
         "    </p>",
         "  );",
         "}",
         "",
+        scopeHelper(),
       ].join("\n"),
     );
   });
@@ -381,7 +397,12 @@ export function Plain(props: PlainProps) {
       [
         "export function Plain(props: PlainProps & PlainAttributes) {",
         "  return (",
-        "    <p title={props.title} className={props.className} style={props.style}>",
+        "    <p",
+        "      title={props.title}",
+        "      className={props.className}",
+        "      style={props.style}",
+        "      {...scopeAttributes(props)}",
+        "    >",
         "      {props.label}",
         "    </p>",
         "  );",
@@ -401,14 +422,20 @@ export function Plain(props: PlainProps) {
         "  style?: CSSProperties;",
         "}",
         "",
-        "export default function Inline({ label, className, style }: { label: string } & InlineAttributes) {",
+        "export default function Inline({",
+        "  label,",
+        "  className,",
+        "  style,",
+        "  ...attributes",
+        "}: { label: string } & InlineAttributes) {",
         "  return (",
-        "    <p className={className} style={style}>",
+        "    <p className={className} style={style} {...scopeAttributes(attributes)}>",
         "      {label}",
         "    </p>",
         "  );",
         "}",
         "",
+        scopeHelper(),
       ].join("\n"),
     );
   });
@@ -419,7 +446,7 @@ export function Plain(props: PlainProps) {
   return <p title={\`\${amount * 1000} mills\`}>{(amount / 0.50).toFixed(2)}, {amount * 1e3}</p>;
 }`),
     ).toContain(
-      "<p title={`${amount * 1000} mills`} className={className} style={style}>\n      {(amount / 0.5).toFixed(2)}, {amount * 1e3}\n    </p>",
+      "<p\n      title={`${amount * 1000} mills`}\n      className={className}\n      style={style}\n      {...scopeAttributes(attributes)}\n    >\n      {(amount / 0.5).toFixed(2)}, {amount * 1e3}\n    </p>",
     );
   });
 
@@ -437,7 +464,7 @@ export default function Status({ count, label, ready }: P) {
 }`;
     expect(await output(source)).toContain(
       [
-        "    <div className={className} style={style}>",
+        "    <div className={className} style={style} {...scopeAttributes(attributes)}>",
         "      {count ? <b>{count}</b> : null}",
         "      {ready ? (",
         "        <i>Ready</i>",
@@ -500,7 +527,7 @@ export default function Form({ id, locked, order, skip }: P) {
 }`;
     const contents = await output(source);
     for (const expected of [
-      '<form acceptCharset="utf-8" noValidate className={className} style={style}>',
+      '<form\n      acceptCharset="utf-8"\n      noValidate\n      className={className}\n      style={style}\n      {...scopeAttributes(attributes)}\n    >',
       "<label htmlFor={id}>Name</label>",
       "<input id={id} readOnly disabled={locked} tabIndex={order} maxLength={10} />",
       '<button type="submit" formNoValidate={skip}>',
@@ -524,7 +551,13 @@ export default function Form({ id, locked, order, skip }: P) {
 }`),
     ).toContain(
       [
-        '    <svg viewBox="0 0 10 10" role="img" className={className} style={style}>',
+        "    <svg",
+        '      viewBox="0 0 10 10"',
+        '      role="img"',
+        "      className={className}",
+        "      style={style}",
+        "      {...scopeAttributes(attributes)}",
+        "    >",
         "      <title>Done</title>",
         '      <linearGradient id="fade">',
         '        <stop offset="0" stopColor="#fff" />',
@@ -600,9 +633,17 @@ export default function Chip({ tone, active, busy, label }: P) {
         "  style?: CSSProperties;",
         "}",
         "",
-        "export default function Chip({ tone, active, busy, label, className, style }: P & ChipAttributes) {",
+        "export default function Chip({",
+        "  tone,",
+        "  active,",
+        "  busy,",
+        "  label,",
+        "  className,",
+        "  style,",
+        "  ...attributes",
+        "}: P & ChipAttributes) {",
         "  return (",
-        '    <p className={cx("chip", className)} style={style}>',
+        '    <p className={cx("chip", className)} style={style} {...scopeAttributes(attributes)}>',
         '      <b className={cx("badge", tone, { active, "is-busy": busy, long: label.length > 3 })}>',
         "        {label}",
         "      </b>",
@@ -625,6 +666,7 @@ export default function Chip({ tone, active, busy, label }: P) {
         '  return names.join(" ");',
         "}",
         "",
+        scopeHelper(),
       ].join("\n"),
     );
   });

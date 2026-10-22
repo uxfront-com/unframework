@@ -31,6 +31,7 @@ export default function ShipmentCard(
       class={props.class ? `shipment-card ${props.class}` : "shipment-card"}
       aria-label={props.reference}
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p id={props.carrier?.id} title={props.carrier?.title}>
         Carrier
@@ -72,4 +73,11 @@ export default function ShipmentCard(
       </Show>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

@@ -14,7 +14,12 @@ function formatCents(cents: number): string {
   return `EUR ${(cents / 100).toFixed(2)}`;
 }
 
-export default function PriceTag({ price, className, style }: PriceTagProps & PriceTagAttributes) {
+export default function PriceTag({
+  price,
+  className,
+  style,
+  ...attributes
+}: PriceTagProps & PriceTagAttributes) {
   const [quantity, setQuantity] = useState(1);
   const quantityRef = useRef(quantity);
   const [unit, setUnit] = useState(() => formatCents(price));
@@ -54,7 +59,12 @@ export default function PriceTag({ price, className, style }: PriceTagProps & Pr
   }
 
   return (
-    <section className={cx("price-tag", className)} aria-label="Price" style={style}>
+    <section
+      className={cx("price-tag", className)}
+      aria-label="Price"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p>Unit: {unit}</p>
       <p role="status">{summary}</p>
       <p>Total: {total}</p>
@@ -88,4 +98,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

@@ -35,6 +35,7 @@ export default function ReadingList({
   onRefreshed,
   className,
   style,
+  ...attributes
 }: ReadingListProps & ReadingListEvents & ReadingListAttributes) {
   // React Compiler 1.0 cannot compile `?.` inside a `try` block yet: the component opts out of it.
   "use no memo";
@@ -194,7 +195,12 @@ export default function ReadingList({
   }
 
   return (
-    <section className={cx("reading-list", className)} aria-label="Reading list" style={style}>
+    <section
+      className={cx("reading-list", className)}
+      aria-label="Reading list"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <label>
         Search
         <input
@@ -276,4 +282,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

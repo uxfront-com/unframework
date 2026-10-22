@@ -11,6 +11,7 @@ export default function ShirtOrder(props: { class?: string; style?: JSX.CSSPrope
       class={props.class ? `shirt-order ${props.class}` : "shirt-order"}
       aria-label="Shirt order"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <p role="status">{`${quantity()} x size ${size()}`}</p>
       <div role="group" aria-label="Size">
@@ -70,4 +71,11 @@ export default function ShirtOrder(props: { class?: string; style?: JSX.CSSPrope
       </button>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

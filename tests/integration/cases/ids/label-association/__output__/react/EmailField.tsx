@@ -15,12 +15,13 @@ export default function EmailField({
   hint,
   className,
   style,
+  ...attributes
 }: EmailFieldProps & EmailFieldAttributes) {
   const inputId = `uf-id-${useId()}`;
   const hintId = `uf-id-${useId()}`;
 
   return (
-    <div className={cx("email-field", className)} style={style}>
+    <div className={cx("email-field", className)} style={style} {...scopeAttributes(attributes)}>
       <label htmlFor={inputId}>{label}</label>
       <input id={inputId} name="email" type="email" aria-describedby={hintId} />
       <p id={hintId}>{hint}</p>
@@ -41,4 +42,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

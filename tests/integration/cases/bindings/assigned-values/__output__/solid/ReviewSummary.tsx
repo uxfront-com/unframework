@@ -15,6 +15,7 @@ export default function ReviewSummary(
       class={props.class ? `review-summary ${props.class}` : "review-summary"}
       aria-label="Review"
       style={props.style}
+      {...scopeAttributes(props)}
     >
       <ol>
         <For each={props.steps}>{(step, index) => <li value={index()}>{step}</li>}</For>
@@ -27,4 +28,11 @@ export default function ReviewSummary(
       </p>
     </section>
   );
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
 }

@@ -24,9 +24,15 @@ export default function BuildLog({
   warnings,
   className,
   style,
+  ...attributes
 }: BuildLogProps & BuildLogAttributes) {
   return (
-    <section className={cx("build-log", className)} aria-label="Build log" style={style}>
+    <section
+      className={cx("build-log", className)}
+      aria-label="Build log"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <pre>
         $ make {target}
         {failed ? <strong> (failed)</strong> : null}
@@ -60,4 +66,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

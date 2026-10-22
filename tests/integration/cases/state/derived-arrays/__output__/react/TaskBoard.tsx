@@ -33,6 +33,7 @@ export default function TaskBoard({
   initial,
   className,
   style,
+  ...attributes
 }: TaskBoardProps & TaskBoardAttributes) {
   const [tasks, setTasks] = useState(initial);
   const tasksRef = useRef(tasks);
@@ -117,7 +118,12 @@ export default function TaskBoard({
   }
 
   return (
-    <section className={cx("task-board", className)} aria-label="Tasks" style={style}>
+    <section
+      className={cx("task-board", className)}
+      aria-label="Tasks"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <ol aria-label="Open">
         {open.map((task) => (
           <li key={task.id} className={cx({ first: task.rank === 1 })}>
@@ -172,4 +178,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

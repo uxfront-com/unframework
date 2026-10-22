@@ -20,6 +20,7 @@ export default function PageCount({
   onPageChange,
   className,
   style,
+  ...attributes
 }: PageCountProps & PageCountEvents & PageCountAttributes) {
   const label = useMemo(() => `Page ${page} of ${total}`, [page, total]);
 
@@ -35,7 +36,12 @@ export default function PageCount({
   }, [page]);
 
   return (
-    <nav className={cx("page-count", className)} aria-label="Pages" style={style}>
+    <nav
+      className={cx("page-count", className)}
+      aria-label="Pages"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <p role="status">{label}</p>
       <p>Direct: {page}</p>
     </nav>
@@ -55,4 +61,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

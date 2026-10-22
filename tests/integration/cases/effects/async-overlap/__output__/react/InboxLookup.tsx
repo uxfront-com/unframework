@@ -33,6 +33,7 @@ export default function InboxLookup({
   onCounted,
   className,
   style,
+  ...attributes
 }: InboxLookupEvents & InboxLookupAttributes) {
   const onDroppedRef = useRef(onDropped);
   const onScaledRef = useRef(onScaled);
@@ -231,7 +232,12 @@ export default function InboxLookup({
   }
 
   return (
-    <section className={cx("inbox-lookup", className)} aria-label="Inbox" style={style}>
+    <section
+      className={cx("inbox-lookup", className)}
+      aria-label="Inbox"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <button
         type="button"
         onClick={() => {
@@ -359,4 +365,13 @@ function useNextTick(settled: () => boolean = () => true): () => Promise<void> {
       pending.current.push({ ticket, resolve });
       render(ticket);
     });
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

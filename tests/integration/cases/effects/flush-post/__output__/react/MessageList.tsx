@@ -13,6 +13,7 @@ export default function MessageList({
   onRendered,
   className,
   style,
+  ...attributes
 }: MessageListEvents & MessageListAttributes) {
   const [messages, setMessages] = useState(["Welcome to the team"]);
   const messagesRef = useRef(messages);
@@ -35,7 +36,12 @@ export default function MessageList({
   }
 
   return (
-    <section className={cx("message-list", className)} aria-label="Messages" style={style}>
+    <section
+      className={cx("message-list", className)}
+      aria-label="Messages"
+      style={style}
+      {...scopeAttributes(attributes)}
+    >
       <ul ref={list}>
         {messages.map((message) => (
           <li key={message}>{message}</li>
@@ -61,4 +67,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }

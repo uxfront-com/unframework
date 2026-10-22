@@ -6,11 +6,11 @@ export interface HeaderAttributes {
   style?: CSSProperties;
 }
 
-export default function Header({ className, style }: HeaderAttributes) {
+export default function Header({ className, style, ...attributes }: HeaderAttributes) {
   const search = useRef<{ focus(): void }>(null);
 
   return (
-    <header className={cx("header", className)} style={style}>
+    <header className={cx("header", className)} style={style} {...scopeAttributes(attributes)}>
       <SearchField ref={search} label="Find" />
       <button type="button" onClick={() => search.current?.focus()}>
         Search
@@ -32,4 +32,13 @@ function cx(...parts: unknown[]): string {
     }
   }
   return names.join(" ");
+}
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const key of Object.keys(props)) {
+    if (key.startsWith("data-uf-")) scope[key] = "";
+  }
+  return scope;
 }
