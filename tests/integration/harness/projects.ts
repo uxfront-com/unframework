@@ -41,6 +41,7 @@ import { listCases } from "./cases.ts";
 import { goldenGuard } from "./guard.ts";
 import { noOutputCases, noOutputPlugin } from "./no-output.ts";
 import { FAILURE_SCREENSHOTS_DIR, ROOT, toolchainDir } from "./paths.ts";
+import { STYLEFRAME_DECLARATIONS, styleframePlugin } from "./styleframe.ts";
 import { loadToolchain, REFERENCE } from "./targets.ts";
 
 /** What every project factory needs. */
@@ -219,11 +220,29 @@ function unpluginOptions(setup: HarnessSetup, target: string): UnframeworkOption
   };
 }
 
+/**
+ * Where a target's toolchain runs the ssr and browser projects: its checkers read Styleframe's
+ * virtual modules beside the outputs (ADR-0064), Angular's ngtsc compiles with them, and a
+ * server of the toolchain's own (Astro's render server) loads Styleframe's plugin too.
+ */
+function toolchainContext(target: string): ToolchainContext {
+  return {
+    toolchainDir: toolchainDir(target),
+    root: ROOT,
+    declarations: [STYLEFRAME_DECLARATIONS],
+    plugins: styleframePlugin,
+  };
+}
+
 const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework) => {
-  const context: ToolchainContext = { toolchainDir: toolchainDir(target), root: ROOT };
+  const context = toolchainContext(target);
   const fragment = await toolchain.vite("ssr", context);
   const config = mergeConfig(
-    { root: ROOT, plugins: unframework(unpluginOptions(setup, target)) },
+    {
+      root: ROOT,
+      // Styleframe's plugin resolves the imports every output keeps as written (ADR-0064).
+      plugins: [...(await styleframePlugin()), ...unframework(unpluginOptions(setup, target))],
+    },
     fragment,
   );
   return {
@@ -248,7 +267,7 @@ const ssrProject: ProjectFactory = async (setup, target, toolchain, unframework)
 
 const browserProject: ProjectFactory = async (setup, target, toolchain, unframework) => {
   const name = `browser:${target}`;
-  const context: ToolchainContext = { toolchainDir: toolchainDir(target), root: ROOT };
+  const context = toolchainContext(target);
   const fragment = await toolchain.vite("browser", context);
   // The cases this target has no output for: their specs load against a stand-in, so each test
   // is skipped by the capability it requires (harness/no-output.ts).
@@ -260,12 +279,19 @@ const browserProject: ProjectFactory = async (setup, target, toolchain, unframew
       plugins: [
         noOutputPlugin(cases, noOutput),
         noErrorBroadcast(),
+        // Styleframe's plugin resolves the imports every output keeps as written (ADR-0064).
+        ...(await styleframePlugin()),
         ...unframework(unpluginOptions(setup, target)),
       ],
-      // The testing API's own browser dependencies (CommonJS axe-core, parse5): listed up front,
-      // because one discovered mid-run reloads the page (the browser-projects ADR).
+      // The testing API's own browser dependencies (CommonJS axe-core, parse5), and the runtime
+      // Styleframe's recipes import (ADR-0064): listed up front, because one discovered mid-run
+      // reloads the page (the browser-projects ADR).
       optimizeDeps: {
-        include: ["@unframework/testing > axe-core", "@unframework/testing > parse5"],
+        include: [
+          "@unframework/testing > axe-core",
+          "@unframework/testing > parse5",
+          "@styleframe/runtime",
+        ],
       },
     },
     fragment,

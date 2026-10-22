@@ -32,6 +32,9 @@ const ALLOWED_IMPORTS: Record<string, readonly string[]> = {
   astro: ["astro", "astro/*"],
 };
 
+/** What every output may import as written: Styleframe's virtual modules (plan §4.4, ADR-0064). */
+const PASS_THROUGH_IMPORTS: readonly string[] = ["virtual:styleframe", "virtual:styleframe.css"];
+
 /**
  * The baseline rules a target turns off, each because its framework's own idiom needs it: Svelte
  * writes a recursive component as an import of its own file (ADR-0054), which
@@ -256,7 +259,12 @@ describe("every toolchain's oxlint configuration", () => {
 
   it.each(TARGETS)("%s allows imports of its framework only", (target) => {
     expect(importGroups(configs.get(target)!)).toEqual([
-      ["*", ...ALLOWED_IMPORTS[target]!.map((name) => `!${name}`), "!./**", "!../**"],
+      [
+        "*",
+        ...[...ALLOWED_IMPORTS[target]!, ...PASS_THROUGH_IMPORTS].map((name) => `!${name}`),
+        "!./**",
+        "!../**",
+      ],
     ]);
   });
 
