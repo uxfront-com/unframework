@@ -1,8 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import Chip from "./Chip.svelte";
   import Card from "./Card.svelte";
+  import Chip from "./Chip.svelte";
   import type { ClassValue } from "svelte/elements";
 
   type Props = { label: string; class?: ClassValue; style?: string };

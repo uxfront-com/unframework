@@ -202,7 +202,9 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
         '<style>.badge[data-uf-2] { color: red }</style><style>.card[data-uf-1] { padding: 8px }</style><section class="card"><b class="badge">New</b></section>',
       );
       sheets.set(sheetOf("Card"), ".card[data-uf-1] { padding: 4px }");
-      expect((await render()).html).toContain("<style>.card[data-uf-1] { padding: 4px }</style>");
+      expect((await render()).html).toBe(
+        '<style>.badge[data-uf-2] { color: red }</style><style>.card[data-uf-1] { padding: 4px }</style><section class="card"><b class="badge">New</b></section>',
+      );
     });
 
     // A real Vite client environment, as Vitest's browser project has: a stubbed plugin

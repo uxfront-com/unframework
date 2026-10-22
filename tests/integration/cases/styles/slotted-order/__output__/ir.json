@@ -1,0 +1,447 @@
+{
+  "irVersion": 1,
+  "file": "styles/slotted-order/Shelf.uf.tsx",
+  "components": [
+    {
+      "name": "Shelf",
+      "span": {
+        "start": 323,
+        "end": 840
+      },
+      "props": [],
+      "types": [],
+      "bindings": [
+        {
+          "id": "Amber@7",
+          "name": "Amber",
+          "kind": "component",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        },
+        {
+          "id": "Blue@43",
+          "name": "Blue",
+          "kind": "component",
+          "span": {
+            "start": 43,
+            "end": 47
+          }
+        },
+        {
+          "id": "items@365",
+          "name": "items",
+          "kind": "localConst",
+          "span": {
+            "start": 365,
+            "end": 370
+          }
+        },
+        {
+          "id": "item@629",
+          "name": "item",
+          "kind": "loopVar",
+          "span": {
+            "start": 629,
+            "end": 633
+          }
+        }
+      ],
+      "setup": [
+        {
+          "kind": "Const",
+          "binding": "items@365",
+          "value": {
+            "code": "[\n    { label: \"Warm\", warm: true },\n    { label: \"Cool\", warm: false },\n  ]",
+            "span": {
+              "start": 373,
+              "end": 449
+            },
+            "refs": []
+          },
+          "span": {
+            "start": 359,
+            "end": 450
+          }
+        }
+      ],
+      "render": {
+        "kind": "Element",
+        "tag": "section",
+        "attributes": [],
+        "children": [
+          {
+            "kind": "Component",
+            "component": "Blue",
+            "attributes": [],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "caption",
+                        "span": {
+                          "start": 500,
+                          "end": 515
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "In blue",
+                        "span": {
+                          "start": 516,
+                          "end": 523
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 497,
+                      "end": 527
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 497,
+                  "end": 527
+                }
+              }
+            ],
+            "span": {
+              "start": 482,
+              "end": 541
+            }
+          },
+          {
+            "kind": "Component",
+            "component": "Amber",
+            "attributes": [],
+            "fills": [
+              {
+                "slot": "default",
+                "children": [
+                  {
+                    "kind": "Element",
+                    "tag": "p",
+                    "attributes": [
+                      {
+                        "kind": "Static",
+                        "name": "class",
+                        "value": "caption",
+                        "span": {
+                          "start": 567,
+                          "end": 582
+                        }
+                      }
+                    ],
+                    "children": [
+                      {
+                        "kind": "Text",
+                        "value": "In amber",
+                        "span": {
+                          "start": 583,
+                          "end": 591
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 564,
+                      "end": 595
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 564,
+                  "end": 595
+                }
+              }
+            ],
+            "span": {
+              "start": 548,
+              "end": 610
+            }
+          },
+          {
+            "kind": "For",
+            "source": {
+              "code": "items",
+              "span": {
+                "start": 618,
+                "end": 623
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "items@365",
+                  "span": {
+                    "start": 618,
+                    "end": 623
+                  }
+                }
+              ]
+            },
+            "item": "item@629",
+            "key": {
+              "code": "item.label",
+              "span": {
+                "start": 658,
+                "end": 668
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "item@629",
+                  "span": {
+                    "start": 658,
+                    "end": 662
+                  }
+                }
+              ]
+            },
+            "body": {
+              "kind": "Element",
+              "tag": "div",
+              "attributes": [],
+              "children": [
+                {
+                  "kind": "Dynamic",
+                  "is": {
+                    "code": "item.warm ? Amber : Blue",
+                    "span": {
+                      "start": 696,
+                      "end": 720
+                    },
+                    "refs": [
+                      {
+                        "kind": "Binding",
+                        "binding": "item@629",
+                        "span": {
+                          "start": 696,
+                          "end": 700
+                        }
+                      },
+                      {
+                        "kind": "Binding",
+                        "binding": "Amber@7",
+                        "span": {
+                          "start": 708,
+                          "end": 713
+                        }
+                      },
+                      {
+                        "kind": "Binding",
+                        "binding": "Blue@43",
+                        "span": {
+                          "start": 716,
+                          "end": 720
+                        }
+                      }
+                    ]
+                  },
+                  "candidates": [
+                    {
+                      "kind": "Component",
+                      "component": "Amber"
+                    },
+                    {
+                      "kind": "Component",
+                      "component": "Blue"
+                    }
+                  ],
+                  "attributes": [],
+                  "children": [],
+                  "fills": [
+                    {
+                      "slot": "default",
+                      "children": [
+                        {
+                          "kind": "Element",
+                          "tag": "p",
+                          "attributes": [
+                            {
+                              "kind": "Static",
+                              "name": "class",
+                              "value": "caption",
+                              "span": {
+                                "start": 738,
+                                "end": 753
+                              }
+                            }
+                          ],
+                          "children": [
+                            {
+                              "kind": "Interpolation",
+                              "value": {
+                                "code": "item.label",
+                                "span": {
+                                  "start": 755,
+                                  "end": 765
+                                },
+                                "refs": [
+                                  {
+                                    "kind": "Binding",
+                                    "binding": "item@629",
+                                    "span": {
+                                      "start": 755,
+                                      "end": 759
+                                    }
+                                  }
+                                ]
+                              },
+                              "span": {
+                                "start": 754,
+                                "end": 766
+                              }
+                            }
+                          ],
+                          "span": {
+                            "start": 735,
+                            "end": 770
+                          }
+                        }
+                      ],
+                      "span": {
+                        "start": 735,
+                        "end": 770
+                      }
+                    }
+                  ],
+                  "span": {
+                    "start": 681,
+                    "end": 793
+                  }
+                }
+              ],
+              "span": {
+                "start": 648,
+                "end": 808
+              }
+            },
+            "span": {
+              "start": 618,
+              "end": 817
+            }
+          }
+        ],
+        "span": {
+          "start": 466,
+          "end": 833
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Shelf",
+      "span": {
+        "start": 323,
+        "end": 840
+      }
+    }
+  ],
+  "types": [],
+  "imports": [
+    {
+      "specifier": "./Amber.uf.tsx",
+      "file": "Amber.uf.tsx",
+      "api": {
+        "file": "Amber.uf.tsx",
+        "components": [
+          {
+            "name": "Amber",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div",
+            "styles": {
+              "scopeId": "c97301b3",
+              "slotted": true
+            }
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Amber",
+          "span": {
+            "start": 7,
+            "end": 12
+          }
+        }
+      ],
+      "span": {
+        "start": 0,
+        "end": 35
+      }
+    },
+    {
+      "specifier": "./Blue.uf.tsx",
+      "file": "Blue.uf.tsx",
+      "api": {
+        "file": "Blue.uf.tsx",
+        "components": [
+          {
+            "name": "Blue",
+            "export": "default",
+            "props": [],
+            "events": [],
+            "models": [],
+            "slots": [
+              {
+                "name": "default",
+                "optional": true
+              }
+            ],
+            "exposes": [],
+            "inheritAttrs": true,
+            "root": "element",
+            "rootTag": "div",
+            "styles": {
+              "scopeId": "721c504a",
+              "slotted": true
+            }
+          }
+        ],
+        "keys": []
+      },
+      "names": [
+        {
+          "kind": "Component",
+          "imported": "default",
+          "local": "Blue",
+          "span": {
+            "start": 43,
+            "end": 47
+          }
+        }
+      ],
+      "span": {
+        "start": 36,
+        "end": 69
+      }
+    }
+  ]
+}

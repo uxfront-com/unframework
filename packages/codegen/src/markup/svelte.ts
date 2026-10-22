@@ -131,9 +131,9 @@ const hasSpread = (element: ElementNode) =>
  * Whether Svelte's server renders an element's static attributes through its runtime, which
  * escapes them twice (`ESCAPED_TWICE`): every `<option>`'s (`$$renderer.option()`), and those of
  * an element with a spread (`$.attributes()`, `$$renderer.select()`), which is one the dialect
- * or the target (`AttributeContext.spreads`) writes an object spread on. Svelte's server also renders a `<select>`'s attributes through
- * its runtime when it has a `value`, and escapes a `<textarea>`'s static `value` twice; the
- * analyser rejects both values as form state (M3).
+ * or the target (`AttributeContext.spreads`) writes an object spread on. Svelte's server also
+ * renders a `<select>`'s attributes through its runtime when it has a `value`, and escapes a
+ * `<textarea>`'s static `value` twice; the analyser rejects both values as form state (M3).
  */
 const rendersAtRuntime = (tag: string, context: AttributeContext | undefined) =>
   tag === "option" ||

@@ -1,9 +1,9 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
+  import KeepAlive from "./KeepAlive.svelte";
   import Transition from "./Transition.svelte";
   import TransitionComponent from "./TransitionComponent.svelte";
-  import KeepAlive from "./KeepAlive.svelte";
   import type { ClassValue } from "svelte/elements";
 
   type Props = { class?: ClassValue; style?: string };

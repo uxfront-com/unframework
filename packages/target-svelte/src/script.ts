@@ -158,11 +158,16 @@ class Names {
   }
 
   /**
-   * The import declarations: the sibling outputs in the order the script first names them, then
-   * Svelte's modules, each name sorted, a type-only import written `import type`.
+   * The import declarations: the sibling outputs sorted by specifier, as the other targets'
+   * `ImportSet` sorts them, so the children's sheets load, and cascade, in Vue's order
+   * (ADR-0063); then Svelte's modules, each name sorted, a type-only import written
+   * `import type`.
    */
   declarations(): string[] {
-    const locals = [...this.#locals.values()].map(({ specifier, default: local, names }) => {
+    const sorted = [...this.#locals.values()].toSorted((a, b) =>
+      a.specifier < b.specifier ? -1 : a.specifier > b.specifier ? 1 : 0,
+    );
+    const locals = sorted.map(({ specifier, default: local, names }) => {
       const named = names.size
         ? `{ ${[...names]
             .map(([alias, name]) => (name === alias ? name : `${name} as ${alias}`))
@@ -170,7 +175,7 @@ class Names {
             .join(", ")} }`
         : "";
       const clause = [...(local === undefined ? [] : [local]), ...(named ? [named] : [])];
-      return `import ${clause.join(", ")} from "${specifier}";`;
+      return `import ${clause.join(", ")} from ${JSON.stringify(specifier)};`;
     });
     const modules = (["svelte", "svelte/elements", "svelte/events"] as const).flatMap((source) => {
       const names = this.#imports.get(source);
@@ -318,7 +323,9 @@ class ScriptWriter {
     const file = this.#module.file;
     const imports = [
       ...this.#names.declarations(),
-      ...(component.styles ? [`import "./${file.slice(file.lastIndexOf("/") + 1)}.css";`] : []),
+      ...(component.styles
+        ? [`import ${JSON.stringify(`./${file.slice(file.lastIndexOf("/") + 1)}.css`)};`]
+        : []),
     ];
     const pieces = [
       ...(imports.length ? [imports.map((line) => `${INDENT}${line}`).join("\n")] : []),

@@ -129,7 +129,7 @@ export function frontmatterOf(
   // children's outputs.
   const declarations = [
     ...(imports.size ? [printProgram(js.program(imports.toDeclarations())).trim()] : []),
-    ...(sheet ? [`import "${sheet}";`] : []),
+    ...(sheet ? [`import ${JSON.stringify(sheet)};`] : []),
   ];
   if (declarations.length) sections.unshift([declarations.join("\n")]);
   return frontmatterCode(sections);

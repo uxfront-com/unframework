@@ -268,3 +268,22 @@ export default function Form() {
     });
   });
 });
+
+describe("the sheet's import", () => {
+  // A file name may hold any character the file system allows, `"` included: every output that
+  // imports the sheet writes its specifier as a string literal.
+  it("escapes the specifier on each target that imports it", async () => {
+    const targets = ["react", "solid", "svelte", "astro"] as const;
+    const result = await compile(CARD, {
+      filename: 'src/Q"x.uf.tsx',
+      targets: [...targets],
+      resolve: memoryResolver({ "/project/src/Card.css": ".card {}" }).resolve,
+    });
+    expect(result.diagnostics).toEqual([]);
+    for (const target of targets) {
+      expect(result.outputs[target]?.[0]?.contents, target).toMatch(
+        /import ["']\.\/Q\\?"x\.uf\.tsx\.css["']/,
+      );
+    }
+  });
+});

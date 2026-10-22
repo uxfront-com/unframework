@@ -3,7 +3,8 @@
 - **Status:** Proposed
 - **Date:** 2026-10-21
 - **Plan:** §4.4, §5.3, §5.8, §6, §7.2, §7.5, §9 M4, P2, P5, P6, P7, P8; C4 (ADR-0004), D5
-  (ADR-0009); amends ADR-0004, ADR-0009, ADR-0021, ADR-0025 and ADR-0053
+  (ADR-0009); amends ADR-0004, ADR-0009, ADR-0021, ADR-0025 and ADR-0053; settles the open item
+  of ADR-0020 on CSS
 
 ## Context
 
@@ -121,7 +122,7 @@ matches nothing.
 | -------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Vue                  | `<style src="./<source>.css">`, without `scoped`: plugin-vue resolves it through the unplugin               |
 | React, Solid, Svelte | `import "./<source>.css"`                                                                                   |
-| Astro                | an import in the frontmatter, or an inline `<style is:global>`: its lane settles ADR-0020's open item       |
+| Astro                | `import "./<source>.css"` in the frontmatter, which the render command collects (ADR-0020's open item)      |
 | Angular              | `styleUrl: "./<source>.css"` with `ViewEncapsulation.None`, read through ngtsc's resource loader (ADR-0027) |
 | Qwik                 | `import styles from "./<source>.css?inline"` and `useStyles$(styles)`                                       |
 
@@ -208,19 +209,19 @@ sheet with `parseStylesheet` instead, Vue's and Angular's included.
   from the browser project's pipeline at each render, as a `<style>` before the markup, a
   child's first; the mount adapter moves it to `<head>`. The `ssr:astro` project compares the
   markup alone (L6), as every target's server HTML leaves its styles out. Normalisation still
-  strips `data-astro-cid-*` and keeps `data-uf-*`. This changes plan §6's Astro cell: the sheet
-  is an import, not a `<style>` block.
+  strips `data-astro-cid-*` and keeps `data-uf-*`. The choice keeps plan §6's Astro cell, an
+  import, which only an inline `<style is:global>` would have changed.
 - **`child-root-scope`, emulated (`scopeAttributes`) on both.** As on React and Solid, the child
   spreads an inline helper's pick of its props' `data-uf-*` keys on each node Vue's fallthrough
   reaches (`scopeRoots`): Svelte's out of `$props()` (the pattern's rest, the props object, or
   `let attributes: object = $props()` where the component has no props), Astro's out of
   `Astro.props`. The markup printer takes the spread from `MarkupOptions.scopeRootAttributes`.
-  Svelte's server renders an element with a spread through its runtime, so the dialect writes
-  that element's static values as beside any spread (`AttributeContext.spreads`), and the
-  runtime writes `class=""` for a class that holds nothing, which the normaliser reads as none
-  (ADR-0044). svelte-check
-  rejects a prop the child does not declare, so a Svelte parent passes the scope attributes in
-  an object spread, `<Button {...{ "data-uf-a33d603f": "" }} />`
+  Svelte's server renders an element with a spread through its runtime. So the dialect writes
+  that element's static values as it writes them on any element with a spread
+  (`AttributeContext.spreads`), and the runtime writes `class=""` for a class that holds
+  nothing, which the normaliser reads as none (ADR-0044). svelte-check rejects a prop the child
+  does not declare, so a Svelte parent passes the scope attributes in an object spread,
+  `<Button {...{ "data-uf-a33d603f": "" }} />`
   (`MarkupDialect.componentScopeAttributes`); Astro's checker, as TSX's, checks no hyphenated
   name.
 - **`slotted-styles`, native on both.** The markup printer stamps a child's `-s` on the content
@@ -230,7 +231,13 @@ sheet with `parseStylesheet` instead, Vue's and Angular's included.
   `<component is>` over components as a `$derived` variable or an `{#if}` chain, a component
   element the printer could not match to the candidates, so the target names them
   (`MarkupOptions.candidates`): its fills take each candidate's `-s`, as the emission section
-  says of every target. `styles/slotted` covers a slot, a scoped slot and a `<component is>`.
+  says of every target. `styles/slotted` covers a slot, a scoped slot and a `<component is>`,
+  and `styles/slotted-order` a `<component is>` chosen per list item.
+- **The order of the children's sheets.** Two children's `:slotted()` rules of equal
+  specificity can meet on one fill, and the sheet that loads later wins. A child's sheet loads
+  with its module, so Svelte sorts the imports of sibling outputs by specifier, as every other
+  target's `ImportSet` does, and its children's sheets load in Vue's order whatever the order
+  the markup first uses them in (`styles/slotted-order`).
 
 **The capabilities:** `scoped-styles` (a component with a sheet), `child-root-scope` (a child a
 styled component renders) and `slotted-styles` (content filled into a child whose sheet uses
@@ -295,8 +302,6 @@ Vue      <style src="./Button.uf.tsx.css"></style>
 - **ADR-0009.** The id is FNV-1a over the name and the sheets' text. `:slotted()` uses
   `data-uf-<id>-s`, which the parent stamps at compile time. `@keyframes` names take the id, and
   the selectors above are UF5004.
-- **ADR-0020.** Its open item on CSS is settled: an Astro output imports its sheet in the
-  frontmatter, and the `ufAstroRender` command puts the sheets a render imports before its HTML.
 - **ADR-0021.** Every target's style id is `<source>.css`, served by the unplugin: Vue and Svelte
   no longer use their plugins' own style sub-requests for a component's sheet, and Astro not its
   own.

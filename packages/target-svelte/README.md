@@ -87,13 +87,15 @@ A component is that line, an instance script when it takes props or has a setup,
   | `<component is={…}>`                                | `<svelte:element this={…}>` over tags; over components, `const Component = $derived(…)` and `<Component />`, or, where the condition reads a list's item or a fill's parameter, `{#if …}<Chip />{:else}<Card />{/if}` where it sits                                                                                                                                                                                                                                                                                              |
 
 - **Styles** (ADR-0063). A component with a stylesheet imports the sheet `compile()` scoped,
-  `import "./Card.uf.tsx.css";`, last in its instance script: Svelte's own `<style>` is never
+  `import "./Card.uf.tsx.css";`, after its other imports: Svelte's own `<style>` is never
   used, since it drops the selectors it cannot match. Every element of its markup carries
   `data-uf-<id>=""`. A child's tag takes the parent's attribute in an object spread,
   `<Button {...{ "data-uf-a33d603f": "" }} />`, since svelte-check rejects a prop the child does
   not declare, and the child's root spreads the `data-uf-*` props of its styled parents, picked
   out of `$props()` by an inline helper, `{...scopeAttributes(attributes)}` (`child-root-scope`,
-  emulated), on each node Vue's fallthrough reaches. Content filled into a child whose sheet
+  emulated), on each node Vue's fallthrough reaches. The imports of sibling outputs are sorted by
+  specifier, as the other targets sort theirs, so the children's sheets load, and cascade, in
+  Vue's order. Content filled into a child whose sheet
   uses `:slotted()`, a snippet's included, carries the child's `-s`, and the fill of a
   `<component is>` that of each candidate.
 - **Markup** (`svelteDialect` in `@unframework/codegen`). `{expr}`, `{#if}{:else if}{:else}{/if}`,

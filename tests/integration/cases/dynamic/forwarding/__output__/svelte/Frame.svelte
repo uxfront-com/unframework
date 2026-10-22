@@ -1,8 +1,8 @@
 <svelte:options runes={true} preserveWhitespace={false} />
 
 <script lang="ts">
-  import Panel from "./Panel.svelte";
   import Card from "./Card.svelte";
+  import Panel from "./Panel.svelte";
   import type { Snippet } from "svelte";
   import type { ClassValue } from "svelte/elements";
 

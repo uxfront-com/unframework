@@ -22,6 +22,7 @@ const UNATTACHED: Readonly<Record<string, readonly LayerName[]>> = {
   "styles/pseudo-elements": ["L7", "L10"],
   "styles/scoped-basics": ["L7", "L10"],
   "styles/slotted": ["L10"],
+  "styles/slotted-order": ["L10"],
 };
 
 export const QUARANTINE: readonly QuarantineEntry[] = Object.entries(UNATTACHED).flatMap(
