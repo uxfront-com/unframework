@@ -31,6 +31,11 @@ export interface Fallthrough {
 /** What the markup prints in place of the IR's render tree. */
 export interface ComposedRender {
   render: ElementNode | FragmentNode;
+  /**
+   * The candidates of the `<component is>` each component element stands for: its fills take
+   * each candidate's `-s`, as Vue's do (ADR-0063).
+   */
+  candidates: ReadonlyMap<ComponentNode, readonly string[]>;
 }
 
 /** The prop a slot is passed as: a snippet named like the slot, `children` for the default. */
@@ -175,6 +180,7 @@ export function composedRender(
   fillParameter: (parameter: Parameter) => Parameter,
   code: (expression: Expression) => string,
 ): ComposedRender {
+  const candidates = new Map<ComponentNode, readonly string[]>();
   const rewrite = (nodes: readonly RenderNode[]): RenderNode[] =>
     nodes.map((node) => rewriteNode(node));
   const rewriteElement = (element: ElementNode): ElementNode => ({
@@ -211,14 +217,20 @@ export function composedRender(
         if (node.candidates.some((candidate) => candidate.kind === "Tag")) {
           return { ...node, children: rewrite(node.children) };
         }
-        const candidate = (name: string): ComponentNode =>
-          composedComponent({
+        const names = node.candidates.flatMap((each) =>
+          each.kind === "Component" ? [each.component] : [],
+        );
+        const candidate = (name: string): ComponentNode => {
+          const composed = composedComponent({
             kind: "Component",
             component: name,
             attributes: node.attributes.filter(isComponentAttribute),
             fills: node.fills ?? [],
             span: node.span,
           });
+          candidates.set(composed, names);
+          return composed;
+        };
         const name = dynamic.get(node);
         return name === undefined ? chosenComponent(node, candidate) : candidate(name);
       }
@@ -260,13 +272,16 @@ export function composedRender(
   const { render } = component;
   if (render.kind === "Element") {
     const element = rewriteElement(render);
-    if (!fallthrough) return { render: element };
-    return { render: rootElement(element, fallthrough, code) };
+    if (!fallthrough) return { render: element, candidates };
+    return { render: rootElement(element, fallthrough, code), candidates };
   }
   const fragment: FragmentNode = { ...render, children: rewrite(render.children) };
   const [only] = fragment.children;
-  if (!fallthrough || only?.kind !== "Component") return { render: fragment };
-  return { render: { ...fragment, children: [rootComponent(only, fallthrough, code)] } };
+  if (!fallthrough || only?.kind !== "Component") return { render: fragment, candidates };
+  return {
+    render: { ...fragment, children: [rootComponent(only, fallthrough, code)] },
+    candidates,
+  };
 }
 
 /**

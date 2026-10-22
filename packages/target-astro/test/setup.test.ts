@@ -15,7 +15,7 @@ import { toolchain } from "../src/toolchain/index.ts";
 import { renderToString } from "../src/toolchain/server.ts";
 import { loadAstroComponent, scratchDirectory, writeAstroModule } from "./astro.ts";
 import { M2_SHAPES } from "./lint-probes.ts";
-import { compiled, emitSource } from "./source.ts";
+import { compiled, emitSource, SCOPE_HELPER } from "./source.ts";
 import { integrationRoot, toolchainDir } from "./workspace.ts";
 
 const scratch = scratchDirectory("setup");
@@ -329,6 +329,8 @@ describe("setup (ADR-0046)", () => {
         "",
         "const { flag, class: className, style } = Astro.props;",
         "",
+        ...SCOPE_HELPER,
+        "",
         "const level = (flag ? 1 : 2) as number;",
         "const maybe = (flag ? 1 : null) as number | null;",
         'const mixed = (flag ? "a" : 0) as string | number;',
@@ -362,6 +364,8 @@ describe("setup (ADR-0046)", () => {
         "",
         "const { class: className, style } = Astro.props;",
         "",
+        ...SCOPE_HELPER,
+        "",
         "const rates = { standard: 0, express: 12 };",
         "",
         "function format(cents: number): string {",
@@ -373,7 +377,12 @@ describe("setup (ADR-0046)", () => {
         "const shipping = double(rates[method]);",
         "---",
         "",
-        '<section aria-label="Totals" class:list={[className]} style={style}>',
+        "<section",
+        '  aria-label="Totals"',
+        "  class:list={[className]}",
+        "  style={style}",
+        "  {...scopeAttributes(Astro.props)}",
+        ">",
         "  <p>{format(shipping)}</p>",
         '  <button type="button">Express</button>',
         "</section>",
@@ -404,10 +413,17 @@ describe("setup (ADR-0046)", () => {
         "",
         "const { heading, class: className, style } = Astro.props;",
         "",
+        ...SCOPE_HELPER,
+        "",
         'const status = "Waiting" as string;',
         "---",
         "",
-        "<section aria-label={heading} class:list={[className]} style={style}>",
+        "<section",
+        "  aria-label={heading}",
+        "  class:list={[className]}",
+        "  style={style}",
+        "  {...scopeAttributes(Astro.props)}",
+        ">",
         '  <p role="status">{status}</p>',
         '  <input aria-label="Name" />',
         '  <button type="button">Toggle</button>',
@@ -437,11 +453,13 @@ describe("setup (ADR-0046)", () => {
         "const props = Astro.props;",
         "const { class: className, style } = Astro.props;",
         "",
+        ...SCOPE_HELPER,
+        "",
         "const moons = 2 as number;",
         "const label = `${props.name}: ${moons}`;",
         "---",
         "",
-        "<p class:list={[className]} style={style}>{label}</p>",
+        "<p class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>{label}</p>",
         "",
       ].join("\n"),
     );
@@ -458,10 +476,12 @@ describe("setup (ADR-0046)", () => {
         "",
         "const { class: className, style } = Astro.props;",
         "",
+        ...SCOPE_HELPER,
+        "",
         'const Astro_1 = "Mars" as string;',
         "---",
         "",
-        "<p class:list={[className]} style={style}>{Astro_1}</p>",
+        "<p class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>{Astro_1}</p>",
         "",
       ].join("\n"),
     );

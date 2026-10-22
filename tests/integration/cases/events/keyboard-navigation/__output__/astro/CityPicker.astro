@@ -16,6 +16,13 @@ function uniqueId(): string {
   return `uf-id-${locals.ufIdCount}`;
 }
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const listId = uniqueId();
 const query = "" as string;
 const open = false as boolean;
@@ -25,7 +32,12 @@ const notes = [] as string[];
 const matches = cities.filter((city) => city.toLowerCase().startsWith(query.toLowerCase()));
 ---
 
-<section class:list={["city-picker", className]} aria-label="Trip" style={style}>
+<section
+  class:list={["city-picker", className]}
+  aria-label="Trip"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <form role="search" aria-label="Destination">
     <label>City<input
       type="search"

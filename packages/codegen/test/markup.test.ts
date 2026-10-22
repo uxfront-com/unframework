@@ -27,6 +27,7 @@ import {
 import type {
   Attribute,
   ComponentApi,
+  ComponentNode,
   ElementNode,
   FragmentNode,
   Handler,
@@ -1455,11 +1456,13 @@ describe("scope attributes (ADR-0063)", () => {
 
   it("stamps a fill's content with the `-s` of a child whose sheets use :slotted()", () => {
     // An unstyled parent stamps nothing of its own, and a child without `:slotted()` nothing.
+    // Svelte passes a component's scope attributes in an object spread, which svelte-check
+    // does not check against the child's props.
     expect(printMarkup(tree, svelteDialect, options(false)).split("\n")).toEqual([
       "<div>",
       '  <p class="a">Hi</p',
       "  ><Field>",
-      '    <span data-uf-bbbbbbbb-s="">Name</span><Plain data-uf-bbbbbbbb-s=""><i></i></Plain',
+      '    <span data-uf-bbbbbbbb-s="">Name</span><Plain {...{ "data-uf-bbbbbbbb-s": "" }}><i></i></Plain',
       "    >{#snippet title()}",
       '      <h2 data-uf-bbbbbbbb-s="">T</h2>',
       "    {/snippet}",
@@ -1469,5 +1472,58 @@ describe("scope attributes (ADR-0063)", () => {
     // Without the module, the printer cannot read a child's styles.
     const { module: _module, ...withoutModule } = options(false);
     expect(printMarkup(tree, svelteDialect, withoutModule)).not.toContain("data-uf-");
+  });
+
+  it("adds what a target spreads on the root nodes it names, after the scope attributes", () => {
+    const named: string[] = [];
+    const markup = printMarkup(tree, svelteDialect, {
+      ...options(true),
+      scopeRootAttributes(element) {
+        named.push(element.tag);
+        return element.tag === "div" ? ["{...scopeAttributes(attributes)}"] : [];
+      },
+    });
+    expect(markup.split("\n")[0]).toBe(
+      '<div data-uf-aaaaaaaa="" {...scopeAttributes(attributes)}>',
+    );
+    // Only the template's top level is asked, where a component's roots are.
+    expect(named).toEqual(["div"]);
+  });
+
+  it("writes a spread element's static values as Svelte's server renders them", () => {
+    const quoted = el("p", [], [["title", 'a "b"']]);
+    const root = (spreads: boolean) =>
+      printMarkup(
+        quoted,
+        svelteDialect,
+        spreads ? { scopeRootAttributes: () => ["{...rest}"] } : {},
+      );
+    // Svelte's server escapes the static values of an element with a spread twice: an
+    // expression keeps them as written.
+    expect(root(false)).toBe('<p title="a &quot;b&quot;"></p>');
+    expect(root(true)).toBe('<p title={"a \\"b\\""} {...rest}></p>');
+  });
+
+  it("takes the candidates a target names for a component element, and a fill's `-s`", () => {
+    const dynamicName = "Component";
+    const dynamic = el("section", [
+      createComponentNode(dynamicName, [], [createSlotFill("default", [el("b")], at)], at),
+    ]);
+    // The target writes the `<component is>` over Plain and Field as one element, `Component`.
+    const candidates = (node: ComponentNode) =>
+      node.component === dynamicName ? ["Plain", "Field"] : undefined;
+    expect(
+      printMarkup(dynamic, svelteDialect, { ...options(false), candidates }).split("\n"),
+    ).toEqual([
+      "<section>",
+      "  <Component>",
+      '    <b data-uf-bbbbbbbb-s=""></b>',
+      "  </Component>",
+      "</section>",
+    ]);
+    // A fill printed apart (Astro's render prop) takes its child's `-s` through `slotted`.
+    expect(printMarkup(el("i"), astroDialect, { slotted: ["data-uf-bbbbbbbb-s"] })).toBe(
+      '<i data-uf-bbbbbbbb-s=""></i>',
+    );
   });
 });

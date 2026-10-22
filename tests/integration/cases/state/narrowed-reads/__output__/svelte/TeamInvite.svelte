@@ -43,6 +43,7 @@
     onmoved,
     class: className,
     style,
+    ...attributes
   }: Props = $props();
 
   const greeting = $derived(inviter ? `Invite as ${inviter.name}` : "Invite as a guest");
@@ -100,9 +101,21 @@
   onMount(() => () => {
     clearInterval(timer);
   });
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["team-invite", className]} aria-label="Invite" {style}>
+<section
+  class={["team-invite", className]}
+  aria-label="Invite"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <h2>{greeting}</h2
   ><ul aria-label="Members">
     {#each visible as member (member.id)}

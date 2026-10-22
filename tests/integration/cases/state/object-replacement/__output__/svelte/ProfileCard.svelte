@@ -16,7 +16,7 @@
 
   type Props = ProfileCardProps & { class?: ClassValue; style?: string };
 
-  let { initial, class: className, style }: Props = $props();
+  let { initial, class: className, style, ...attributes }: Props = $props();
 
   let profile = $state.raw(untrack(() => initial));
 
@@ -27,9 +27,21 @@
   function toggleAvailability() {
     profile = { ...profile, available: !profile.available };
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<article class={["profile-card", className]} aria-label="Profile" {style}>
+<article
+  class={["profile-card", className]}
+  aria-label="Profile"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <h2>{profile.name}</h2
   ><p>{profile.title}</p
   ><p role="status">{profile.available ? "Available" : "Away"}</p

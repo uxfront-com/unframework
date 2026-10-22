@@ -14,7 +14,7 @@
     style?: string;
   };
 
-  let { label, ontitle, onreleased, onready, onstopped, class: className, style }: Props = $props();
+  let { label, ontitle, onreleased, onready, onstopped, class: className, style, ...attributes }: Props = $props();
 
   let ticks = $state(0);
   let list: HTMLUListElement | null = null;
@@ -55,9 +55,16 @@
     clearInterval(timer);
     onstopped?.();
   });
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<ul bind:this={list} class={className} {style}>
+<ul bind:this={list} class={className} {style} {...scopeAttributes(attributes)}>
   <li>{label}</li
   ><li>{ticks}</li>
 </ul>

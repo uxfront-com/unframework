@@ -21,6 +21,7 @@ import {
   referencedBindings,
   rewriteCode,
   rewriteExpression,
+  scopeRoots,
   sourceNames,
   typeDeclarationCode,
 } from "@unframework/codegen";
@@ -31,6 +32,7 @@ import type {
   BindingKind,
   Code,
   DerivedItem,
+  ComponentNode,
   DynamicNode,
   ElementNode,
   EventAttribute,
@@ -82,7 +84,10 @@ export interface InstanceScript {
    * How the markup spells references, and writes the listeners Svelte has no attribute for and
    * the fields `modelText` binds.
    */
-  markup: Pick<MarkupOptions, "rewrite" | "attribute" | "handler" | "componentTag">;
+  markup: Pick<
+    MarkupOptions,
+    "rewrite" | "attribute" | "handler" | "componentTag" | "scopeRootAttributes" | "candidates"
+  >;
   /** The render tree the markup prints (`composition.ts`). */
   render: ElementNode | FragmentNode;
 }
@@ -233,6 +238,11 @@ class ScriptWriter {
   #fallthrough: Fallthrough | undefined;
   /** The `refObject` helper's name, once a provided or injected ref needs it. */
   #refObject: string | undefined;
+  /**
+   * The `scopeAttributes` helper's name and the props it picks from, when the component's root
+   * takes its styled parents' scope attributes (`scopeRoots`, ADR-0063).
+   */
+  #scope: { helper: string; props: string } | undefined;
   /** The variable of each `<component is>` over components (`$derived`), by its node. */
   readonly #dynamic = new Map<RenderNode, string>();
   /** Each slot's snippet variable, where it is not the slot's prop name (`children`, `title`). */
@@ -300,13 +310,22 @@ class ScriptWriter {
       ...(this.#refObject ? [refObjectHelper(this.#refObject)] : []),
       ...(modelText && on ? [modelTextHelper(modelText, on)] : []),
       ...(this.#fallthrough?.mergeStyle ? [mergeStyleHelper(this.#fallthrough.mergeStyle)] : []),
+      ...(this.#scope ? [scopeAttributesHelper(this.#scope.helper)] : []),
     ];
-    const imports = this.#names.declarations();
+    // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
+    // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
+    // component's style after its script.
+    const file = this.#module.file;
+    const imports = [
+      ...this.#names.declarations(),
+      ...(component.styles ? [`import "./${file.slice(file.lastIndexOf("/") + 1)}.css";`] : []),
+    ];
     const pieces = [
       ...(imports.length ? [imports.map((line) => `${INDENT}${line}`).join("\n")] : []),
       ...(owner ? [] : types.map((each) => indent(each, INDENT))),
       ...[...props, ...setup, ...dynamic, ...helpers].map((piece) => reindent(piece, INDENT)),
     ];
+    const roots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
     const composed = composedRender(
       component,
       this.#fallthrough,
@@ -333,6 +352,19 @@ class ScriptWriter {
       },
       ...(this.#componentTags.size
         ? { componentTag: (name: string) => this.#componentTags.get(name) }
+        : {}),
+      // Each node Vue's fallthrough reaches spreads the `data-uf-*` props of the styled parents
+      // that render the component, picked by name: they are the parents' (ADR-0063).
+      ...(this.#scope
+        ? {
+            scopeRootAttributes: ({ span }: ElementNode) =>
+              roots.has(`${span.start}:${span.end}`)
+                ? [`{...${this.#scope!.helper}(${this.#scope!.props})}`]
+                : [],
+          }
+        : {}),
+      ...(composed.candidates.size
+        ? { candidates: (child: ComponentNode) => composed.candidates.get(child) }
         : {}),
     };
     const moduleBlock = owner ? this.#moduleScript(types) : undefined;
@@ -533,8 +565,20 @@ class ScriptWriter {
     const models = component.setup.filter((item): item is ModelItem => item.kind === "Model");
     const declaredSlots = component.slots?.slots ?? [];
     const fallthrough = takesFallthrough(component);
-    if (!parameter && !emits && !models.length && !declaredSlots.length && !fallthrough) return [];
     const scope = this.#names;
+    // A root that takes its styled parents' scope attributes reads them from the props
+    // (ADR-0063): the rest of the pattern, or the props object.
+    const scoped = scopeRoots(component).length > 0;
+    const helper = scoped ? scope.claim("scopeAttributes") : undefined;
+    const scopeFrom = (props: string) => {
+      if (helper) this.#scope = { helper, props };
+      return props;
+    };
+    if (!parameter && !emits && !models.length && !declaredSlots.length && !fallthrough) {
+      if (!scoped) return [];
+      // No props of its own: the props object is the parents' attributes, unchecked.
+      return [`let ${scopeFrom(scope.claim("attributes"))}: object = $props();`];
+    }
     const read = referencedBindings(component);
     const emitted = emittedEvents(component);
     const destructured = parameter?.form !== "object";
@@ -606,7 +650,8 @@ class ScriptWriter {
       let local = parameter.name!;
       const reads =
         component.bindings.some(({ id, kind }) => kind === "prop" && read.has(id)) ||
-        emitted.size > 0;
+        emitted.size > 0 ||
+        scoped;
       if (!reads) {
         // An object nothing reads still declares the props, whose type is the component's API,
         // under a name starting with `_`: an unused binding fails L5 (`no-unused-vars`), which
@@ -624,6 +669,7 @@ class ScriptWriter {
       // the props, which a component that reads none of its own leaves out.
       if (!extras.length) pattern = local;
       else pattern = `{ ${[...extras, ...(reads ? [`...${local}`] : [])].join(", ")} }`;
+      scopeFrom(local);
     } else {
       const props = new Map(component.props.map((prop) => [prop.binding, prop]));
       const entries = component.bindings.flatMap(({ id, kind }) => {
@@ -639,8 +685,13 @@ class ScriptWriter {
       entries.push(...extras);
       // A component that reads none of its props still declares them, under the object form:
       // the props type is its API, and an empty pattern (`let {}`) is `no-empty-pattern`. The
-      // object is named `_props`, as nothing reads it (`no-unused-vars`).
-      pattern = entries.length ? `{ ${entries.join(", ")} }` : scope.claim("_props");
+      // object is named `_props`, as nothing reads it (`no-unused-vars`), or `attributes` where
+      // its root reads the scope attributes from it.
+      if (!entries.length)
+        pattern = scoped ? scopeFrom(scope.claim("attributes")) : scope.claim("_props");
+      else if (scoped)
+        pattern = `{ ${[...entries, `...${scopeFrom(scope.claim("attributes"))}`].join(", ")} }`;
+      else pattern = `{ ${entries.join(", ")} }`;
     }
     pieces.push(`let ${pattern}: ${type!} = $props();`);
     return pieces;
@@ -1429,6 +1480,22 @@ function modelTextFields(component: UfComponent): ModelAttribute[] {
     },
   });
   return found;
+}
+
+/**
+ * The `scopeAttributes` helper (`child-root-scope`, emulated, ADR-0063): the props' `data-uf-*`
+ * keys, each with the empty value the parent passes. It reads the names alone and passes on no
+ * prop the component declares, which a bare rest spread would.
+ */
+function scopeAttributesHelper(name: string): string {
+  return [
+    "/** The scope attributes of the styled parents that render this component, for its root. */",
+    `function ${name}(props: object): Record<string, ""> {`,
+    '  const scope: Record<string, ""> = {};',
+    '  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";',
+    "  return scope;",
+    "}",
+  ].join("\n");
 }
 
 /**

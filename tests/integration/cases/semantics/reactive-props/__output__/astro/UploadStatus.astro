@@ -18,12 +18,20 @@ interface Props extends UploadStatusProps {
 }
 
 const { fileName, state, percent, steps, error, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
 ---
 
 <section
   class:list={["upload", `upload-${state}`, className]}
   aria-label={`Upload of ${fileName}`}
   style={{ color: state === "failed" ? "#8a1c1c" : "#1f3d5c", "--upload-percent": percent, ...style }}
+  {...scopeAttributes(Astro.props)}
 >
   <h2>{fileName}</h2>
   <div

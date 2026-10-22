@@ -3,6 +3,7 @@ import "./Frame.uf.tsx.css";
 
 export interface FrameSlots {
   children?: ReactNode;
+  renderLabel?: (props: { text: string }) => ReactNode;
 }
 
 export interface FrameAttributes {
@@ -12,6 +13,7 @@ export interface FrameAttributes {
 
 export default function Frame({
   children,
+  renderLabel,
   className,
   style,
   ...attributes
@@ -24,6 +26,7 @@ export default function Frame({
       {...scopeAttributes(attributes)}
     >
       {children}
+      {renderLabel?.({ text: "Harbour at dusk" })}
     </figure>
   );
 }

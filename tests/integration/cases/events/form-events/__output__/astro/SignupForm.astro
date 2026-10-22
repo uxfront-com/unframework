@@ -6,6 +6,13 @@ interface Props {
 
 const { class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const fullName = "" as string;
 const email = "" as string;
 const plan = "free" as string;
@@ -13,7 +20,12 @@ const newsletter = false as boolean;
 const focused = "none" as string;
 ---
 
-<form class:list={["signup-form", className]} aria-label="Sign up" style={style}>
+<form
+  class:list={["signup-form", className]}
+  aria-label="Sign up"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <label>Name<input name="name" /></label>
   <label>Email<input name="email" type="email" /></label>
   <label>Plan<select

@@ -15,9 +15,22 @@ interface Props extends FileRowProps {
 }
 
 const { path, size, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
 ---
 
-<div class:list={["file-row", className]} role="group" aria-label={path} style={style}>
+<div
+  class:list={["file-row", className]}
+  role="group"
+  aria-label={path}
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <span>{path} ({size} bytes)</span>
   <button type="button">Refresh</button>
   <button type="button">Open</button>

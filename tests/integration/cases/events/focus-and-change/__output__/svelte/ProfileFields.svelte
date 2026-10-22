@@ -6,7 +6,7 @@
 
   type Props = { onfirstnickname?: (nickname: string) => void; class?: ClassValue; style?: string };
 
-  let { onfirstnickname, class: className, style }: Props = $props();
+  let { onfirstnickname, class: className, style, ...attributes }: Props = $props();
 
   let log = $state.raw<string[]>([]);
   let nickname = $state("");
@@ -30,9 +30,21 @@
       handler(event);
     };
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["profile-fields", className]} aria-label="Profile" {style}>
+<section
+  class={["profile-fields", className]}
+  aria-label="Profile"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <div
     class="name-group"
     role="group"

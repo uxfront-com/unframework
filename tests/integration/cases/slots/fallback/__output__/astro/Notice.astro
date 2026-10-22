@@ -6,9 +6,22 @@ interface Props {
 }
 
 const { label, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
 ---
 
-<div role="note" aria-label={label} class:list={["notice", className]} style={style}>
+<div
+  role="note"
+  aria-label={label}
+  class:list={["notice", className]}
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <p>
     <slot>
       <em>Nothing to report.</em>

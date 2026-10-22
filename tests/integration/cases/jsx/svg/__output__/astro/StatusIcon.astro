@@ -11,6 +11,13 @@ interface Props extends StatusIconProps {
 }
 
 const { label, size = 24, colour = "#1f6feb", class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
 ---
 
 <svg
@@ -21,6 +28,7 @@ const { label, size = 24, colour = "#1f6feb", class: className, style } = Astro.
   height={size}
   fill="none"
   style={style}
+  {...scopeAttributes(Astro.props)}
 >
   <title>{label}</title>
   <defs>

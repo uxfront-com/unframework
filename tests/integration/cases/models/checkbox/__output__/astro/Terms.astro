@@ -6,10 +6,22 @@ interface Props {
 
 const { class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const agreed = false as boolean;
 ---
 
-<section aria-label="Terms" class:list={[className]} style={style}>
+<section
+  aria-label="Terms"
+  class:list={[className]}
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <label><input type="checkbox" checked={agreed} /> I agree</label>
   <output>{agreed ? "Agreed" : "Not agreed"}</output>
   <button type="button">Toggle</button>

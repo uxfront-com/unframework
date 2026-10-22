@@ -11,7 +11,7 @@
     style?: string;
   };
 
-  let { ontotal, onsteps, onlogged, class: className, style }: Props = $props();
+  let { ontotal, onsteps, onlogged, class: className, style, ...attributes }: Props = $props();
 
   let count = $state(0);
   let trail = $state.raw<string[]>([]);
@@ -53,9 +53,16 @@
     trail = [...trail, "bubble"];
     onlogged?.(trail);
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["tally", className]} aria-label="Tally" {style}>
+<section class={["tally", className]} aria-label="Tally" {style} {...scopeAttributes(attributes)}>
   <p role="status">Count: {count}</p
   ><button type="button" onclick={addTwice}>Add two</button
   ><button type="button" onclick={addFive}>Add five</button

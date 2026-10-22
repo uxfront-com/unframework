@@ -15,10 +15,17 @@ interface Props {
 
 const { initial, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const tasks = initial;
 ---
 
-<div class:list={[className]} style={style}>
+<div class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
   <div role="list" aria-label="Tasks">
     {tasks.map((task) => (
       <Row name={task.name} done={task.done} />

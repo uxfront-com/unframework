@@ -6,17 +6,17 @@
       "name": "Frame",
       "span": {
         "start": 110,
-        "end": 262
+        "end": 377
       },
       "props": [],
       "types": [],
       "slots": {
         "binding": "slots@152",
         "type": {
-          "code": "{ default?(): Element }",
+          "code": "{ default?(): Element; label?(props: { text: string }): Element }",
           "span": {
             "start": 172,
-            "end": 195
+            "end": 237
           }
         },
         "slots": [
@@ -25,13 +25,28 @@
             "optional": true,
             "span": {
               "start": 174,
-              "end": 193
+              "end": 194
+            }
+          },
+          {
+            "name": "label",
+            "optional": true,
+            "props": {
+              "code": "{ text: string }",
+              "span": {
+                "start": 209,
+                "end": 225
+              }
+            },
+            "span": {
+              "start": 195,
+              "end": 235
             }
           }
         ],
         "span": {
           "start": 146,
-          "end": 199
+          "end": 241
         }
       },
       "bindings": [
@@ -55,8 +70,8 @@
             "name": "class",
             "value": "frame",
             "span": {
-              "start": 217,
-              "end": 230
+              "start": 265,
+              "end": 278
             }
           }
         ],
@@ -66,14 +81,31 @@
             "slot": "default",
             "fallback": [],
             "span": {
-              "start": 231,
-              "end": 250
+              "start": 286,
+              "end": 305
+            }
+          },
+          {
+            "kind": "SlotOutlet",
+            "slot": "label",
+            "props": {
+              "code": "{ text: \"Harbour at dusk\" }",
+              "span": {
+                "start": 327,
+                "end": 354
+              },
+              "refs": []
+            },
+            "fallback": [],
+            "span": {
+              "start": 312,
+              "end": 356
             }
           }
         ],
         "span": {
-          "start": 209,
-          "end": 259
+          "start": 257,
+          "end": 370
         }
       },
       "styles": [
@@ -96,7 +128,7 @@
       "local": "Frame",
       "span": {
         "start": 110,
-        "end": 262
+        "end": 377
       }
     }
   ],

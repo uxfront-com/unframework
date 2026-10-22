@@ -11,8 +11,15 @@ interface Props extends OrderStatusProps {
 }
 
 const { status, carrier, eta, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
 ---
 
-<p class:list={["order-status", className]} style={style}>
+<p class:list={["order-status", className]} style={style} {...scopeAttributes(Astro.props)}>
   {status === "pending" ? "Waiting for payment." : status === "shipped" ? <><strong>Shipped</strong> with {carrier ?? "our courier"}, arriving {eta ?? "soon"}.</> : status === "delivered" ? <strong>Delivered</strong> : <em>Cancelled</em>}
 </p>

@@ -1,4 +1,4 @@
 {
-  "description": "A child's `:slotted()` rule styles the content a parent fills into its slot, and not the parent's element of the same class outside it.",
+  "description": "A child's `:slotted()` rule styles the content a parent fills into its slot, through a scoped slot and into a <component is> too, and not the parent's element of the same class outside it.",
   "main": "Gallery.uf.tsx"
 }

@@ -1,4 +1,4 @@
-import { childImports, defineTarget, ImportSet } from "@unframework/codegen";
+import { childImports, defineTarget, ImportSet, scopeRoots } from "@unframework/codegen";
 import type { CapabilityCell, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
@@ -95,7 +95,13 @@ export const astro: Target = defineTarget({
     },
     "dynamic-component": { support: "native" },
     "scoped-styles": { support: "native" },
-    "child-root-scope": { support: "native" },
+    // The child's root picks its styled parents' `data-uf-*` props out of `Astro.props`
+    // (ADR-0063): their names are the parents', which the child cannot know.
+    "child-root-scope": {
+      support: "emulated",
+      helper: "scopeAttributes",
+      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
+    },
     "slotted-styles": { support: "native" },
   },
   /**
@@ -118,17 +124,28 @@ export const astro: Target = defineTarget({
       ? { className: spelling.scope.claim("className"), style: spelling.scope.claim("style") }
       : undefined;
     const render = astroRender(component, module, spelling, fallthrough);
+    // A root that takes its styled parents' scope attributes picks them out of `Astro.props`
+    // (ADR-0063).
+    const roots = scopeRoots(component);
+    const scope = roots.length ? spelling.scope.claim("scopeAttributes") : undefined;
     const markup = printComponentMarkup(component, spelling.rules, {
       spelling,
       render,
       tags,
       module,
+      ...(scope ? { scope: { helper: scope, roots } } : {}),
     });
+    // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
+    // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
+    // component's style after its script.
+    const file = module.file;
     const code = frontmatterOf(component, module, {
       spelling,
       imports,
       render,
       markupNamesAstro: /\bAstro\./.test(markup),
+      ...(scope ? { scope } : {}),
+      ...(component.styles ? { sheet: `./${file.slice(file.lastIndexOf("/") + 1)}.css` } : {}),
     });
     return [
       {

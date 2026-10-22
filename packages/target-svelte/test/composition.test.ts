@@ -108,7 +108,7 @@ describe("svelte composition across files", () => {
         { id: 2, label: "b", compact: false },
       ];
       expect(await render(sources, "List", { items })).toMatch(
-        /<ul[^>]*>.*<i>a<\/i>.*<b>b<\/b>.*<\/ul>/,
+        /<ul[^>]*>.*<i[^>]*>a<\/i>.*<b[^>]*>b<\/b>.*<\/ul>/,
       );
       expect(await check(sources)).toEqual({
         "Card.svelte": [],

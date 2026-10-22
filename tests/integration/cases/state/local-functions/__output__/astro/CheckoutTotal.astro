@@ -13,6 +13,13 @@ interface Props extends CheckoutTotalProps {
 
 const { subtotal, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const rates = { standard: 0, express: 1200 };
 
 function formatCents(cents: number): string {
@@ -24,7 +31,12 @@ const shipping = rates[method];
 const total = formatCents(subtotal + shipping);
 ---
 
-<section class:list={["checkout-total", className]} aria-label="Order total" style={style}>
+<section
+  class:list={["checkout-total", className]}
+  aria-label="Order total"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <p>Subtotal: {formatCents(subtotal)}</p>
   <p>Shipping: {formatCents(shipping)}</p>
   <p role="status">Total: {total}</p>

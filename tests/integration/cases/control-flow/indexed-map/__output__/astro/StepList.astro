@@ -10,9 +10,21 @@ interface Props extends StepListProps {
 }
 
 const { title, steps, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
 ---
 
-<ol class:list={["step-list", className]} aria-label={title} style={style}>
+<ol
+  class:list={["step-list", className]}
+  aria-label={title}
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   {steps.map((step, index) => (
     <li data-step={index + 1}>Step {index + 1}: {step}</li>
   ))}

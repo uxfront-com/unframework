@@ -693,9 +693,11 @@ describe("canaries", () => {
     // Qwik's root also takes the fallthrough `class` and `style` (ADR-0054): oxfmt breaks it.
     expect(root("qwik")).toMatch(/^<section\s+className="uf-canary"\s+class=/);
     expect(root("vue")).toMatch(/^<section v-html="'uf-canary'" class=/);
-    expect(root("svelte")).toMatch(/^<section style:uf-canary="1" class=/);
+    // Svelte's and Astro's roots also spread their styled parents' scope attributes (ADR-0063):
+    // the tag breaks.
+    expect(root("svelte")).toMatch(/^<section style:uf-canary="1"\s+class=/);
     expect(root("angular")).toMatch(/^<section \*ngIf="true"\s+class=/);
-    expect(root("astro")).toMatch(/^<section set:html="uf-canary" class:list=/);
+    expect(root("astro")).toMatch(/^<section set:html="uf-canary"\s+class:list=/);
   });
 
   it("L4-consumer types each target's props `any` where its consumers' checker reads them", async () => {

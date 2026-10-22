@@ -32,6 +32,10 @@ export interface FrontmatterParts {
   render: AstroRender;
   /** Whether the markup names `Astro` (`Astro.slots`, `Astro.self`). */
   markupNamesAstro: boolean;
+  /** The `scopeAttributes` helper's name, when the root takes its parents' (ADR-0063). */
+  scope?: string;
+  /** The emitted sheet the component imports, `./Card.uf.tsx.css` (ADR-0063). */
+  sheet?: string;
 }
 
 /**
@@ -77,7 +81,7 @@ export function childTags(
 export function frontmatterOf(
   component: UfComponent,
   module: UfModule,
-  { spelling, imports, render, markupNamesAstro }: FrontmatterParts,
+  { spelling, imports, render, markupNamesAstro, scope, sheet }: FrontmatterParts,
 ): string | undefined {
   const parameter = component.propsParameter;
   const live = serverBindings(component);
@@ -109,6 +113,7 @@ export function frontmatterOf(
   if (alias !== undefined) sections.push([exported ? `export ${alias}` : alias]);
   if (reads.length) sections.push(reads);
   for (const helper of setup.helpers) sections.push([helper]);
+  if (scope) sections.push([scopeAttributesHelper(scope)]);
   if (setup.statements.length) sections.push(setup.statements);
   // Each hoisted `<component is>` once, though a branch per set of forwarded slots repeats it.
   const constants = new Map<string, string>();
@@ -120,9 +125,30 @@ export function frontmatterOf(
     );
   }
   if (constants.size) sections.push([...constants.values()]);
-  // Imported last: the setup adds the types an injected value names.
-  if (imports.size) sections.unshift([printProgram(js.program(imports.toDeclarations())).trim()]);
+  // Imported last: the setup adds the types an injected value names. The sheet follows the
+  // children's outputs.
+  const declarations = [
+    ...(imports.size ? [printProgram(js.program(imports.toDeclarations())).trim()] : []),
+    ...(sheet ? [`import "${sheet}";`] : []),
+  ];
+  if (declarations.length) sections.unshift([declarations.join("\n")]);
   return frontmatterCode(sections);
+}
+
+/**
+ * The `scopeAttributes` helper (`child-root-scope`, emulated, ADR-0063): the props' `data-uf-*`
+ * keys, each with the empty value the parent passes. It passes on no prop the component
+ * declares, which a spread of `Astro.props` would.
+ */
+function scopeAttributesHelper(name: string): string {
+  return [
+    "/** The scope attributes of the styled parents that render this component, for its root. */",
+    `function ${name}(props: object): Record<string, ""> {`,
+    '  const scope: Record<string, ""> = {};',
+    '  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";',
+    "  return scope;",
+    "}",
+  ].join("\n");
 }
 
 /**

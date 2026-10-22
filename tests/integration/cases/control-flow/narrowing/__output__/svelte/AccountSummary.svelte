@@ -31,10 +31,32 @@
 
   type Props = AccountSummaryProps & { class?: ClassValue; style?: string };
 
-  let { loading, member, uptime, storage, plan, seats, class: className, style }: Props = $props();
+  let {
+    loading,
+    member,
+    uptime,
+    storage,
+    plan,
+    seats,
+    class: className,
+    style,
+    ...attributes
+  }: Props = $props();
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["account-summary", className]} aria-label="Account" {style}>
+<section
+  class={["account-summary", className]}
+  aria-label="Account"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   {#if loading}
     <p>Loading the account</p>
   {:else if !member}

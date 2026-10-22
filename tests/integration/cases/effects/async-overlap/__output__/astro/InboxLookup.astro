@@ -6,6 +6,13 @@ interface Props {
 
 const { class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const answers = [] as string[];
 const ordering = "none" as string;
 const messages = [] as string[];
@@ -14,7 +21,12 @@ const failure = "" as string;
 const unread = 0 as number;
 ---
 
-<section class:list={["inbox-lookup", className]} aria-label="Inbox" style={style}>
+<section
+  class:list={["inbox-lookup", className]}
+  aria-label="Inbox"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <button type="button">Find Ann</button>
   <button type="button">Find Anna</button>
   <button type="button">Answer lookups</button>

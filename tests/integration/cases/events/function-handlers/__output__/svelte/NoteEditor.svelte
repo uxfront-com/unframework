@@ -10,7 +10,7 @@
     style?: string;
   };
 
-  let { onsaved, ontagged, class: className, style }: Props = $props();
+  let { onsaved, ontagged, class: className, style, ...attributes }: Props = $props();
 
   let saves = $state(0);
   let lastKey = $state("none");
@@ -38,9 +38,21 @@
   function onTagKeydown(event: KeyboardEvent) {
     if (event.key === "Enter") addTag(event);
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["note-editor", className]} aria-label="Note" {style}>
+<section
+  class={["note-editor", className]}
+  aria-label="Note"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <button type="button" onclick={save}>Save</button
   ><label>Title<input name="title" onkeydown={recordKey} /></label
   ><label>Body<textarea name="body" onkeydown={recordKey}></textarea></label

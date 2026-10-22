@@ -13,6 +13,7 @@ import { compiledAstroSource } from "../src/toolchain/sources.ts";
 
 const root = join(import.meta.dirname, "..", ".uf-tmp", `render-${process.pid}`);
 const idOf = (name: string) => join(root, `${name}.uf.tsx.astro`);
+const sheetOf = (name: string) => join(root, `${name}.uf.tsx.css`);
 
 /** What a browser project does when it imports a component: the ref plugin's transform. */
 function compileInBrowserProject(name: string, source: string): unknown {
@@ -140,6 +141,7 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
           compileInBrowserProject("Field", field);
           return Promise.resolve();
         },
+        sheet: () => Promise.reject(new Error("no sheet")),
       };
       const result = await renderAstroComponent(root, { id: idOf("Form"), props: {} }, children);
       expect(result).toEqual({
@@ -158,9 +160,49 @@ describe("the ufAstroRender command", { timeout: 60_000 }, () => {
       const children = {
         resolve: () => Promise.resolve(idOf("Field")),
         load: () => Promise.reject(new Error("already compiled")),
+        sheet: () => Promise.reject(new Error("no sheet")),
       };
       const { html } = await renderAstroComponent(root, { id: idOf("Form"), props: {} }, children);
       expect(html).toBe('<form aria-label="Again"><p class="changed">Name</p></form>');
+    });
+
+    // ADR-0063: `?container` leaves out the sheets a frontmatter imports, so the render puts
+    // them first, as the browser project serves them on each render.
+    it("puts the sheets the component and its children import first, a child's before", async () => {
+      const sheets = new Map([
+        [sheetOf("Card"), ".card[data-uf-1] { padding: 8px }"],
+        [sheetOf("Badge"), ".badge[data-uf-2] { color: red }"],
+      ]);
+      compileInBrowserProject(
+        "Card",
+        '---\nimport Badge from "./Badge.astro";\nimport "./Card.uf.tsx.css";\n---\n\n<section class="card"><Badge /></section>\n',
+      );
+      const children = {
+        resolve: (specifier: string) =>
+          Promise.resolve(
+            specifier === "./Badge.astro"
+              ? idOf("Badge")
+              : specifier === "./Card.uf.tsx.css"
+                ? sheetOf("Card")
+                : specifier === "./Badge.uf.tsx.css"
+                  ? sheetOf("Badge")
+                  : undefined,
+          ),
+        load: () => {
+          compileInBrowserProject(
+            "Badge",
+            '---\nimport "./Badge.uf.tsx.css";\n---\n\n<b class="badge">New</b>\n',
+          );
+          return Promise.resolve();
+        },
+        sheet: (id: string) => Promise.resolve(sheets.get(id)!),
+      };
+      const render = () => renderAstroComponent(root, { id: idOf("Card"), props: {} }, children);
+      expect((await render()).html).toBe(
+        '<style>.badge[data-uf-2] { color: red }</style><style>.card[data-uf-1] { padding: 8px }</style><section class="card"><b class="badge">New</b></section>',
+      );
+      sheets.set(sheetOf("Card"), ".card[data-uf-1] { padding: 4px }");
+      expect((await render()).html).toContain("<style>.card[data-uf-1] { padding: 4px }</style>");
     });
 
     // A real Vite client environment, as Vitest's browser project has: a stubbed plugin

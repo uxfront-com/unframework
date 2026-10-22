@@ -131,12 +131,13 @@ const hasSpread = (element: ElementNode) =>
  * Whether Svelte's server renders an element's static attributes through its runtime, which
  * escapes them twice (`ESCAPED_TWICE`): every `<option>`'s (`$$renderer.option()`), and those of
  * an element with a spread (`$.attributes()`, `$$renderer.select()`), which is one the dialect
- * writes an object spread on. Svelte's server also renders a `<select>`'s attributes through
+ * or the target (`AttributeContext.spreads`) writes an object spread on. Svelte's server also renders a `<select>`'s attributes through
  * its runtime when it has a `value`, and escapes a `<textarea>`'s static `value` twice; the
  * analyser rejects both values as form state (M3).
  */
 const rendersAtRuntime = (tag: string, context: AttributeContext | undefined) =>
-  tag === "option" || (context !== undefined && hasSpread(context.element));
+  tag === "option" ||
+  (context !== undefined && (context.spreads === true || hasSpread(context.element)));
 
 /**
  * Whether a static value of an attribute is written as an expression (`name={"…"}`), which
@@ -424,6 +425,15 @@ export const svelteDialect: MarkupDialect = {
       },
     ];
   },
+  // svelte-check rejects a prop the child's type does not declare, and a child declares no
+  // scope attribute: its styled parents' names are theirs (ADR-0063). An object spread passes
+  // them as props all the same, unchecked.
+  componentScopeAttributes: (names) => [
+    {
+      name: "data-uf",
+      text: `{...{ ${names.map((name) => `${JSON.stringify(name)}: ""`).join(", ")} }}`,
+    },
+  ],
 };
 
 /** Whether an attribute of `<component is>` over tags is an element's: every one is. */

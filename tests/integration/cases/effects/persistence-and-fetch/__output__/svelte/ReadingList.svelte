@@ -29,6 +29,7 @@
     onrefreshed,
     class: className,
     style,
+    ...attributes
   }: Props = $props();
 
   let query = $state("");
@@ -127,9 +128,21 @@
     refreshing = false;
     onrefreshed?.(shelves.reduce((total, name) => total + (counts[name] ?? 0), 0));
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["reading-list", className]} aria-label="Reading list" {style}>
+<section
+  class={["reading-list", className]}
+  aria-label="Reading list"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <label>Search<input
     type="search"
     name="query"

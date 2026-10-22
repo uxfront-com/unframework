@@ -65,7 +65,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
   /** Props no expression reads, under a fragment root, which takes no fallthrough (ADR-0054). */
   unread: [
     "export default function Hi({ label }: { label?: string }) {",
-    "  return <><p>Hi</p></>;",
+    "  return <><p>Hi</p><p>Bye</p></>;",
     "}",
   ].join("\n"),
   /** Defaults whose literals run over several lines. */
@@ -818,6 +818,7 @@ export const SHAPES: Readonly<Record<Shape, string>> = {
     '      <button type="button" value="a" onClick={(event) => console.log((event.currentTarget as HTMLButtonElement).value)}>',
     "        Log",
     "      </button>",
+    "      <p>Plain</p>",
     "    </>",
     "  );",
     "}",

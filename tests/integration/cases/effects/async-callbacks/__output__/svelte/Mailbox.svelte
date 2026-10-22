@@ -17,7 +17,16 @@
     style?: string;
   };
 
-  let { folder, onloaded, onprogress, onseen, onnoted, class: className, style }: Props = $props();
+  let {
+    folder,
+    onloaded,
+    onprogress,
+    onseen,
+    onnoted,
+    class: className,
+    style,
+    ...attributes
+  }: Props = $props();
 
   let name = $state("Loading");
   let unread = $state(0);
@@ -105,9 +114,21 @@
       onnoted?.(`${name}: ${unread}`);
     });
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["mailbox", className]} aria-label="Mailbox" {style}>
+<section
+  class={["mailbox", className]}
+  aria-label="Mailbox"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <h2>{name}</h2
   ><p role="status">{summary}</p
   ><p>Status: {status}</p

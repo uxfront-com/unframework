@@ -13,10 +13,22 @@
 
   type Props = FilterSummaryProps & { class?: ClassValue; style?: string };
 
-  let { tags, limit, result, class: className, style }: Props = $props();
+  let { tags, limit, result, class: className, style, ...attributes }: Props = $props();
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["filter-summary", className]} aria-label="Filters" {style}>
+<section
+  class={["filter-summary", className]}
+  aria-label="Filters"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p>Tags: {Array.isArray(tags) ? tags.join(", ") : tags}</p
   ><p>Limit: {typeof limit === "number" ? limit.toFixed(0) : limit.toLowerCase()}</p
   >{#if result.ok}

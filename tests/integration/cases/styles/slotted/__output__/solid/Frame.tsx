@@ -3,6 +3,7 @@ import "./Frame.uf.tsx.css";
 
 export interface FrameSlots {
   children?: JSX.Element;
+  label?: (props: { text: string }) => JSX.Element;
 }
 
 export default function Frame(props: FrameSlots & { class?: string; style?: JSX.CSSProperties }) {
@@ -14,6 +15,7 @@ export default function Frame(props: FrameSlots & { class?: string; style?: JSX.
       {...scopeAttributes(props)}
     >
       {props.children}
+      {props.label?.({ text: "Harbour at dusk" })}
     </figure>
   );
 }
