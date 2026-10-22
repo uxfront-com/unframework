@@ -318,11 +318,15 @@ function checkPassThroughImports(
           message: `must be an identifier, and "${imported}" is not`,
         });
       }
+      const reserved = isIdentifier(local) ? reservedSetupName(local) : undefined;
       if (!isIdentifier(local)) {
         errors.push({
           path: `${at}/local`,
           message: `must be an identifier, and "${local}" is not`,
         });
+      } else if (reserved) {
+        // Every output declares it beside its own names, as a setup binding (UF2003).
+        errors.push({ path: `${at}/local`, message: `must not be "${local}": ${reserved}` });
       } else if (locals.has(local) || taken.has(local)) {
         errors.push({
           path: `${at}/local`,

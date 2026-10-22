@@ -105,4 +105,39 @@ describe("Styleframe's imports", () => {
     expect(module).toBeUndefined();
     expect(problems(source, diagnostics)).toEqual(["UF5006 button"]);
   });
+
+  it.each([
+    ["`$btn`", 'import { $btn } from "virtual:styleframe";\n', "$btn"],
+    ["`btn$`", 'import { btn$ } from "virtual:styleframe";\n', "btn$"],
+    ["`ngButton`", 'import { button as ngButton } from "virtual:styleframe";\n', "ngButton"],
+  ])("reports a recipe named %s (UF2003): no output can declare it", (_, imports, reported) => {
+    const source = component("<p>Hi</p>", imports);
+    const { module, diagnostics } = run(source);
+    expect(module).toBeUndefined();
+    expect(problems(source, diagnostics)).toEqual([`UF2003 ${reported}`]);
+  });
+
+  it.each([
+    [
+      "a string name",
+      'import { "my-button" as button } from "virtual:styleframe";\n',
+      '"my-button"',
+    ],
+    [
+      "the default export by name",
+      'import { default as button } from "virtual:styleframe";\n',
+      "default",
+    ],
+  ])("reports %s of the recipes (UF5006)", (_, imports, reported) => {
+    const source = component("<p>Hi</p>", imports);
+    const { module, diagnostics } = run(source);
+    expect(module).toBeUndefined();
+    expect(problems(source, diagnostics)).toEqual([`UF5006 ${reported}`]);
+  });
+
+  it("reports a recipe named like a prop of the object form (UF2003)", () => {
+    const source = `${RECIPES}export default function B(props: { button?: string }) {\n  return <p class={button()}>{props.button}</p>;\n}\n`;
+    const { diagnostics } = run(source);
+    expect(problems(source, diagnostics)).toEqual(["UF2003 button"]);
+  });
 });

@@ -3660,6 +3660,20 @@ describe("checkInvariants on styles (ADR-0063)", () => {
       "must differ from every other name",
     ],
     [
+      "a name Qwik's optimizer reads as a QRL",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [
+          createPassThroughImport(
+            "virtual:styleframe",
+            [createPassThroughName("button", "button$", at)],
+            at,
+          ),
+        ];
+      }),
+      "/passThroughImports/0/names/0/local",
+      'must not be "button$": Qwik\'s optimizer',
+    ],
+    [
       "a read of a name no pass-through import binds",
       changedModule(recipe(), () => {}),
       "/refs/0/name",

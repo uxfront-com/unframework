@@ -309,7 +309,10 @@ export function analyzeModule(
   }
   const kept = new Set(lowered.map((component) => component.name));
   // A recipe nothing reads would reach every output unused (UF5006): an error of the module's.
-  const uncalled = reportUncalled(parsed.program.body, context.styleframe, reporter);
+  // After another error, the walk that would read it may have stopped, so it is left unreported.
+  const uncalled =
+    !reporter.diagnostics.some(({ severity }) => severity === "error") &&
+    reportUncalled(parsed.program.body, context.styleframe, reporter);
   if (moduleErrors || uncalled)
     return { module: undefined, diagnostics: reporter.diagnostics, api };
   if (!candidates.some((candidate) => candidate.exports.length)) {

@@ -2570,6 +2570,15 @@ class Walk {
         }
         if (context.styleframe.names.get(resolution.declaration) !== undefined) {
           context.styleframe.read.add(resolution.declaration);
+          // A prop of the object form keeps its name in every output, beside the import's.
+          if (context.props.has(callee.name)) {
+            context.reporter.report(
+              "UF2003",
+              callee,
+              `\`${callee.name}\` is also a prop's name: every output declares the prop under it, beside the recipe's import.`,
+              { help: "Import the recipe under another name, or rename the prop." },
+            );
+          }
           this.refs.push(createImportReference(callee.name, span(callee)));
         }
         this.#arguments(node.arguments, [], this.#runs(callee), {

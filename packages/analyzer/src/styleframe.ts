@@ -3,7 +3,12 @@
 // `virtual:styleframe`, which a template only calls in a `class`, and the side-effect import of
 // Styleframe's stylesheet, `virtual:styleframe.css`. Any other import of a `virtual:styleframe`
 // module, or another use of a name it binds, is UF5006: it would reach the targets unanalysed.
-import { createPassThroughImport, createPassThroughName } from "@unframework/ir";
+import {
+  createPassThroughImport,
+  createPassThroughName,
+  isIdentifier,
+  reservedSetupName,
+} from "@unframework/ir";
 import type { PassThroughImport, PassThroughName } from "@unframework/ir";
 import { exportName } from "@unframework/parser";
 import type { AST } from "@unframework/parser";
@@ -97,8 +102,34 @@ export function styleframeImport(
       );
       continue;
     }
+    const imported = exportName(item.imported);
+    // A recipe is exported under an identifier, and Styleframe's module has no default export.
+    if (!isIdentifier(imported) || imported === "default") {
+      reporter.report(
+        "UF5006",
+        item.imported,
+        imported === "default"
+          ? `"${RECIPES}" is imported by its recipes' names: its default export is no recipe.`
+          : `"${imported}" names no recipe: Styleframe exports each recipe under an identifier.`,
+        { help: `Import each recipe by name, as in \`import { button } from "${RECIPES}";\`.` },
+      );
+      continue;
+    }
+    // Every output declares the local name beside its own (ADR-0045's rules for a binding).
+    const reserved = reservedSetupName(item.local.name);
+    if (reserved) {
+      reporter.report(
+        "UF2003",
+        item.local,
+        `\`${item.local.name}\` cannot name a recipe: ${reserved}.`,
+        {
+          help: `Import it under another name, as in \`import { ${imported} as recipe } from "${RECIPES}";\`.`,
+        },
+      );
+      continue;
+    }
     lowered.push(
-      createPassThroughName(exportName(item.imported), item.local.name, {
+      createPassThroughName(imported, item.local.name, {
         start: item.start,
         end: item.end,
       }),
