@@ -37,9 +37,9 @@ const NAMED_OTHERWISE: Readonly<Record<string, string>> = {
 
 /**
  * The diagnostics cases whose code `compile()` reports after the analyser, which finds nothing:
- * the codegen scoper's, and a target cell's from the capability check (ADR-0063).
+ * the codegen scoper's (ADR-0063).
  */
-const AFTER_ANALYSIS: ReadonlySet<string> = new Set(["unscopable-selector", "component-host"]);
+const AFTER_ANALYSIS: ReadonlySet<string> = new Set(["unscopable-selector"]);
 
 /** The warnings the corpus's feature cases hold on purpose. */
 const WARNINGS: Readonly<Record<string, readonly string[]>> = {

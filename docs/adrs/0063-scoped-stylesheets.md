@@ -279,8 +279,11 @@ sheet with `parseStylesheet` instead, Vue's and Angular's included.
   which selectors see: a parent's rule that reaches it through a combinator (`.list > .row`,
   `+`, `~`) or a structural pseudo-class (`:first-child`, `:nth-child()`, …) matches the host's
   place, not the root's. And a root Angular binds nothing on (`{{` in an attribute, ADR-0037)
-  takes no directive, so it takes no scope attribute. `diagnostics/component-host` covers the
-  code.
+  takes no directive, so it takes no scope attribute. The corpus covers UF4003 through the
+  `info` diagnostics of the styled cases that render a child (`styles/child-root`, `deep`,
+  `global`, …), with no `diagnostics/` case, as UF4002: a `diagnostics/` case is one whose
+  compile fails, and a case with only an `info` diagnostic has output, which a browser spec and
+  its baselines would have to render.
 - **`slotted-styles`, native on both.** The shared builders stamp a child's `-s` on the content a
   parent fills in, which Angular projects through `<ng-content>` and `ng-template` slots, and
   Qwik through `<Slot />` and QRL render props: the content is the parent's markup in both.
