@@ -136,7 +136,7 @@ describe("Styleframe's imports", () => {
   });
 
   it("reports a recipe named like a prop of the object form (UF2003)", () => {
-    const source = `${RECIPES}export default function B(props: { button?: string }) {\n  return <p class={button()}>{props.button}</p>;\n}\n`;
+    const source = `${RECIPES}export default function B(props: { button?: string }) {\n  return <p class={button()}><b class={button()}>{props.button}</b></p>;\n}\n`;
     const { diagnostics } = run(source);
     expect(problems(source, diagnostics)).toEqual(["UF2003 button"]);
   });

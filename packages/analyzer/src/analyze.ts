@@ -216,7 +216,7 @@ export function analyzeModule(
     outputs: new Map(candidates.map((candidate) => [candidate.name.toLowerCase(), candidate.name])),
     stylesheets: options.stylesheets ?? new Map(),
     sheets: [],
-    styleframe: { names: new Map(), read: new Set() },
+    styleframe: { names: new Map(), read: new Set(), clashes: new Set() },
     passThroughImports: [],
   };
   const moduleMark = reporter.diagnostics.length;

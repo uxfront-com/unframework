@@ -2570,12 +2570,15 @@ class Walk {
         }
         if (context.styleframe.names.get(resolution.declaration) !== undefined) {
           context.styleframe.read.add(resolution.declaration);
-          // A prop of the object form keeps its name in every output, beside the import's.
-          if (context.props.has(callee.name)) {
+          // The outputs that declare the props by name (Vue's and Svelte's destructured props,
+          // Angular's inputs) would declare it beside the import: reported once per component.
+          const clash = `${context.component.start}:${callee.name}`;
+          if (context.props.has(callee.name) && !context.styleframe.clashes.has(clash)) {
+            context.styleframe.clashes.add(clash);
             context.reporter.report(
               "UF2003",
               callee,
-              `\`${callee.name}\` is also a prop's name: every output declares the prop under it, beside the recipe's import.`,
+              `\`${callee.name}\` is also a prop's name: the outputs that declare the props by name, Angular's class among them, would declare both.`,
               { help: "Import the recipe under another name, or rename the prop." },
             );
           }

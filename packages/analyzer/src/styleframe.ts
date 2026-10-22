@@ -30,6 +30,11 @@ export interface Styleframe {
    * use reported as UF5006.
    */
   readonly read: Set<object>;
+  /**
+   * The recipes reported as named like a prop (UF2003), by the component's start and the name:
+   * each once per component.
+   */
+  readonly clashes: Set<string>;
 }
 
 /** Whether a specifier names one of Styleframe's virtual modules. */
