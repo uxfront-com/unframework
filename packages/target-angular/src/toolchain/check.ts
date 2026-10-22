@@ -50,7 +50,7 @@ let configs = 0;
 /**
  * L4: type-checks the files on disk as ngc would, with the toolchain directory's
  * `tsconfig.json`, through a temporary tsconfig in its `.uf-tmp/` that extends it and lists
- * exactly these files. Returns every diagnostic ngtsc reported, by file: a requested file's own,
+ * exactly these files, and the context's declarations. Returns every diagnostic ngtsc reported, by file: a requested file's own,
  * an imported file's, the toolchain tsconfig's, and, under the temporary tsconfig, the ones that
  * belong to no file (options, globals). Rejects when the toolchain has no tsconfig.
  */
@@ -71,7 +71,9 @@ export async function typecheck(
   mkdirSync(directory, { recursive: true });
   writeFileSync(
     project,
-    `${JSON.stringify({ extends: "../tsconfig.json", files: files.map((file) => resolve(file)), include: [] }, null, 2)}\n`,
+    // The ambient declarations go into the program beside the files, and are reported on by no
+    // entry of their own (ADR-0064).
+    `${JSON.stringify({ extends: "../tsconfig.json", files: [...files, ...(context.declarations ?? [])].map((file) => resolve(file)), include: [] }, null, 2)}\n`,
   );
   let config: ParsedConfiguration;
   try {
