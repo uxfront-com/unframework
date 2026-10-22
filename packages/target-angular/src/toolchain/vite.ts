@@ -38,7 +38,7 @@ export async function viteConfig(
     );
   }
   const plugins = [
-    ngtscVirtual(compiler),
+    ngtscVirtual(compiler, context.declarations),
     ...tools.analog({ tsconfig: analogTsconfig(context.toolchainDir), jit: false }),
   ];
   if (mode === "browser") {

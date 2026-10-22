@@ -18,6 +18,7 @@ import {
   parseExpression,
   parseStatementsSource,
   pascalCase,
+  passThroughImports,
   referencedBindings,
   rewriteCode,
   rewriteExpression,
@@ -143,6 +144,11 @@ class Names {
     return entry.default;
   }
 
+  /** A module imported for its effect alone: `import "virtual:styleframe.css"`. */
+  importSideEffect(specifier: string): void {
+    this.#local(specifier);
+  }
+
   /** A name a sibling output exports, under the source's local name: `Theme as Mode`. */
   importNamed(specifier: string, name: string, local: string): void {
     const entry = this.#local(specifier);
@@ -175,6 +181,8 @@ class Names {
             .join(", ")} }`
         : "";
       const clause = [...(local === undefined ? [] : [local]), ...(named ? [named] : [])];
+      // A module imported for its effect alone: Styleframe's stylesheet (ADR-0064).
+      if (!clause.length) return `import ${JSON.stringify(specifier)};`;
       return `import ${clause.join(", ")} from ${JSON.stringify(specifier)};`;
     });
     const modules = (["svelte", "svelte/elements", "svelte/events"] as const).flatMap((source) => {
@@ -408,6 +416,11 @@ class ScriptWriter {
     }
     for (const key of keyImports(component, this.#module, (name) => `${name}.svelte`)) {
       if (key.specifier) this.#names.importNamed(key.specifier, key.name, key.local);
+    }
+    // Styleframe's imports, which the markup reads as written (ADR-0064).
+    for (const { specifier, names } of passThroughImports(component, this.#module)) {
+      if (!names.length) this.#names.importSideEffect(specifier);
+      for (const { imported, local } of names) this.#names.importNamed(specifier, imported, local);
     }
   }
 

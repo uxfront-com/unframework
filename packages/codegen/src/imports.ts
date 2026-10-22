@@ -1,5 +1,5 @@
 import type * as AST from "@oxc-project/types";
-import { walk } from "@unframework/ir";
+import { expressionsOf, walk } from "@unframework/ir";
 import type { UfComponent, UfModule } from "@unframework/ir";
 
 import { importDeclaration, importDefaultSpecifier, importSpecifier } from "./js/builders.ts";
@@ -133,6 +133,47 @@ export class ImportSet {
       }
       return importDeclaration(source, specifiers, allTypes ? "type" : "value");
     });
+  }
+}
+
+/** An import every output keeps as written, with the names a component's template reads. */
+export interface PassThroughUse {
+  specifier: string;
+  /** The names the template reads, by the name the module exports and the source's local. */
+  names: { imported: string; local: string }[];
+}
+
+/**
+ * The imports every output keeps as written that a component's output needs (plan §4.4,
+ * ADR-0064), in source order: Styleframe's stylesheet, and each recipe import with the names the
+ * component's template calls, by the name the source binds, which the template reads as written.
+ * Styleframe's own plugin resolves them.
+ */
+export function passThroughImports(component: UfComponent, module: UfModule): PassThroughUse[] {
+  const read = new Set<string>();
+  for (const { expression } of expressionsOf(component)) {
+    for (const reference of expression.refs) {
+      if (reference.kind === "Import") read.add(reference.name);
+    }
+  }
+  return (module.passThroughImports ?? []).flatMap((entry): PassThroughUse[] => {
+    const names = entry.names
+      .filter(({ local }) => read.has(local))
+      .map(({ imported, local }) => ({ imported, local }));
+    return entry.names.length && !names.length ? [] : [{ specifier: entry.specifier, names }];
+  });
+}
+
+/** Adds the imports every output keeps as written to a component's ({@link passThroughImports}). */
+export function addPassThroughImports(
+  component: UfComponent,
+  module: UfModule,
+  imports: ImportSet,
+): void {
+  for (const { specifier, names } of passThroughImports(component, module)) {
+    if (!names.length) imports.addSideEffect(specifier);
+    for (const { imported, local } of names)
+      imports.add(specifier, imported, { local, exact: true });
   }
 }
 

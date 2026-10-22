@@ -7,6 +7,7 @@
 // and which listeners React's synthetic events cannot keep the DOM's semantics for (native). The
 // names the output introduces are claimed here, after the source's own, in a fixed order (P8).
 import {
+  addPassThroughImports,
   codeKind,
   moduleHelperName,
   ImportSet,
@@ -182,6 +183,8 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
     names.reserve(...others);
     names.scope.rebase(helper, base);
   }
+  // Styleframe's imports, which the render reads as written (ADR-0064).
+  addPassThroughImports(component, module, names);
   const nativeElements = nativeElementsOf(listeners);
   const narrowedReads = narrowedReadsOf(component);
   const stable = (groups: readonly EventAttribute[][]) =>

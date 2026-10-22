@@ -52,6 +52,8 @@ export interface CompileRequest {
   sources: [id: string, source: string][];
   /** The virtual module each relative import among them resolved to, by `childKey`. */
   children: [key: string, id: string][];
+  /** The ambient declarations the program reads beside the module, from the disk (ADR-0064). */
+  declarations: string[];
 }
 
 /** What the worker receives: a compile, or a plugin whose program it can drop. */
@@ -76,9 +78,13 @@ export type WorkerReply = { request: number } & ({ compiled: Compiled } | { fail
  * Compiles `<abs>/X.uf.tsx.ts` ids with Angular's AOT compiler under the strict options L3
  * checks with, failing the module on any error (template type errors included) and passing
  * warnings to Vite. Compiles run one at a time in a worker, each reusing the previous program, so
- * libraries are analysed once.
+ * libraries are analysed once. `declarations` are the ambient declarations each program reads
+ * beside the module (`ToolchainContext.declarations`).
  */
-export function ngtscVirtual(compiler: AngularCompiler): Plugin {
+export function ngtscVirtual(
+  compiler: AngularCompiler,
+  declarations: readonly string[] = [],
+): Plugin {
   const pluginId = nextPlugin++;
   let api: UnframeworkApi | undefined;
   /** The virtual module each relative import of a virtual module resolved to, by importer. */
@@ -115,6 +121,7 @@ export function ngtscVirtual(compiler: AngularCompiler): Plugin {
       id,
       sources: [...sources, ...sheets],
       children: [...resolved],
+      declarations: [...declarations],
     });
   }
 

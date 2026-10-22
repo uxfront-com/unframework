@@ -33,11 +33,11 @@ export async function frameworkCompile(
   const options = strictOptions(compiler);
   const contents = new Map(files.map((file) => [resolve(file.path), file.contents]));
   const host = createHost(compiler, options, (fileName) => contents.get(resolve(fileName)));
-  const diagnostics = collectDiagnostics(
-    compiler,
-    [...contents.keys()],
-    (rootNames) => new compiler.cli.NgtscProgram(rootNames, options, host),
-  );
+  // The ambient declarations are read from the disk, beside the files in memory (ADR-0064).
+  const declarations = (context.declarations ?? []).map((file) => resolve(file));
+  const diagnostics = collectDiagnostics(compiler, [...contents.keys()], (rootNames) => {
+    return new compiler.cli.NgtscProgram([...rootNames, ...declarations], options, host);
+  });
   return groupByFile(
     compiler,
     files.map((file) => file.path),

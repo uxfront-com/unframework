@@ -1,6 +1,13 @@
 // What the Angular class declares for each of a component's bindings (plan §6, ADR-0046), and the
 // names the output file claims beside the source's own.
-import { codeKind, codeNames, ImportSet, NameScope, sourceNames } from "@unframework/codegen";
+import {
+  addPassThroughImports,
+  codeKind,
+  codeNames,
+  ImportSet,
+  NameScope,
+  sourceNames,
+} from "@unframework/codegen";
 import { summarizeCode, walk } from "@unframework/ir";
 import type {
   Binding,
@@ -151,6 +158,8 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
   const imports = new ImportSet(
     new NameScope([...source].filter((name) => name !== component.name)),
   );
+  // Styleframe's imports, which the template reads through members (ADR-0064).
+  addPassThroughImports(component, module, imports);
   const events = new Map(component.emits?.events.map((event) => [event.name, event]) ?? []);
   const memberNames = [
     ...ANGULAR_MEMBERS,
