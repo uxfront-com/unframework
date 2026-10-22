@@ -1,17 +1,32 @@
 ---
 import Frame from "./Frame.astro";
+import Mat from "./Mat.astro";
 
 interface Props {
+  matted?: boolean;
   class?: string;
   style?: Record<string, string | number | undefined>;
 }
 
-const { class: className, style } = Astro.props;
+const { matted = true, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
+const Tag = matted ? Mat : Frame;
 ---
 
-<section class:list={[className]} style={style}>
+<section class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
   <Frame>
     <p class="caption" data-uf-9dc516fd-s="">A quiet harbour</p>
   </Frame>
+  <Frame label={({ text }) => <p class="caption" data-uf-9dc516fd-s="">{text}</p>} />
+  <Tag>
+    <p class="caption" data-uf-09929c4a-s="" data-uf-9dc516fd-s="">A matted print</p>
+  </Tag>
   <p class="caption">Outside the frame</p>
 </section>

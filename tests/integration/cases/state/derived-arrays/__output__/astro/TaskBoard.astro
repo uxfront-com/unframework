@@ -23,6 +23,13 @@ interface Props extends TaskBoardProps {
 
 const { initial, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const tasks = initial;
 const filters = { query: "", tags: [] } as Filters;
 const open = tasks.filter((task) => !task.done).sort((a, b) => a.rank - b.rank);
@@ -71,7 +78,12 @@ const byState = getByState();
 const progress = Math.round((tasks.filter((task) => task.done).length / tasks.length) * 100);
 ---
 
-<section class:list={["task-board", className]} aria-label="Tasks" style={style}>
+<section
+  class:list={["task-board", className]}
+  aria-label="Tasks"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <ol aria-label="Open">
     {open.map((task) => (
       <li

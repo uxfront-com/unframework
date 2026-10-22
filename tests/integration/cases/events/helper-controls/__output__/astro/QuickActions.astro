@@ -10,12 +10,24 @@ interface Props extends QuickActionsProps {
 
 const { actions, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const query = "" as string;
 const lastKey = "none" as string;
 const subscriptions = 0 as number;
 ---
 
-<section class:list={["quick-actions", className]} aria-label="Quick actions" style={style}>
+<section
+  class:list={["quick-actions", className]}
+  aria-label="Quick actions"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <label>Search<input name="query" /></label>
   <p>Query: {query}</p>
   <label>Note<input name="note" /></label>

@@ -1,0 +1,4 @@
+{
+  "description": "Two children's `:slotted()` rules of equal specificity meet on the content filled into a <component is> chosen per list item: the sheet that loads later wins, in the same order on every target.",
+  "main": "Shelf.uf.tsx"
+}

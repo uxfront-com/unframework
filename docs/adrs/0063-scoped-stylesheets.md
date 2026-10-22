@@ -3,7 +3,8 @@
 - **Status:** Proposed
 - **Date:** 2026-10-21
 - **Plan:** §4.4, §5.3, §5.8, §6, §7.2, §7.5, §9 M4, P2, P5, P6, P7, P8; C4 (ADR-0004), D5
-  (ADR-0009); amends ADR-0004, ADR-0009, ADR-0021, ADR-0025 and ADR-0053
+  (ADR-0009); amends ADR-0004, ADR-0009, ADR-0021, ADR-0025 and ADR-0053; settles the open item
+  of ADR-0020 on CSS
 
 ## Context
 
@@ -121,7 +122,7 @@ matches nothing.
 | -------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Vue                  | `<style src="./<source>.css">`, without `scoped`: plugin-vue resolves it through the unplugin               |
 | React, Solid, Svelte | `import "./<source>.css"`                                                                                   |
-| Astro                | an import in the frontmatter, or an inline `<style is:global>`: its lane settles ADR-0020's open item       |
+| Astro                | `import "./<source>.css"` in the frontmatter, which the render command collects (ADR-0020's open item)      |
 | Angular              | `styleUrl: "./<source>.css"` with `ViewEncapsulation.None`, read through ngtsc's resource loader (ADR-0027) |
 | Qwik                 | `import styles from "./<source>.css?inline"` and `useStyles$(styles)`                                       |
 
@@ -193,11 +194,56 @@ sheet with `parseStylesheet` instead, Vue's and Angular's included.
   root with `inheritAttrs: false`, which drops the attribute with the rest. React and Solid leave
   them unscoped too, so every target renders the same DOM.
 
+**Svelte and Astro**, as built:
+
+- **Svelte's attachment.** The instance script imports the sheet for its side effect,
+  `import "./Card.uf.tsx.css"`, after its other imports, as React and Solid do. Svelte's own
+  `<style>` is never used: it drops the selectors it cannot match (§4.4). svelte-check reads the
+  toolchain's `declare module "*.css" {}`.
+- **Astro's attachment, which settles ADR-0020's open item.** The frontmatter imports the sheet,
+  `import "./Card.uf.tsx.css";`, after the children's imports: an Astro page links what a
+  frontmatter imports, and every target then loads the one emitted sheet. An inline
+  `<style is:global>` would copy the sheet into the output and through Astro's own style
+  pipeline. The Container API's `?container` render leaves an imported sheet out, so the
+  `ufAstroRender` browser command puts each sheet the component and its children import, read
+  from the browser project's pipeline at each render, as a `<style>` before the markup, a
+  child's first; the mount adapter moves it to `<head>`. The `ssr:astro` project compares the
+  markup alone (L6), as every target's server HTML leaves its styles out. Normalisation still
+  strips `data-astro-cid-*` and keeps `data-uf-*`. The choice keeps plan §6's Astro cell, an
+  import, which only an inline `<style is:global>` would have changed.
+- **`child-root-scope`, emulated (`scopeAttributes`) on both.** As on React and Solid, the child
+  spreads an inline helper's pick of its props' `data-uf-*` keys on each node Vue's fallthrough
+  reaches (`scopeRoots`): Svelte's out of `$props()` (the pattern's rest, the props object, or
+  `let attributes: object = $props()` where the component has no props), Astro's out of
+  `Astro.props`. The markup printer takes the spread from `MarkupOptions.scopeRootAttributes`.
+  Svelte's server renders an element with a spread through its runtime. So the dialect writes
+  that element's static values as it writes them on any element with a spread
+  (`AttributeContext.spreads`), and the runtime writes `class=""` for a class that holds
+  nothing, which the normaliser reads as none (ADR-0044). svelte-check rejects a prop the child
+  does not declare, so a Svelte parent passes the scope attributes in an object spread,
+  `<Button {...{ "data-uf-a33d603f": "" }} />`
+  (`MarkupDialect.componentScopeAttributes`); Astro's checker, as TSX's, checks no hyphenated
+  name.
+- **`slotted-styles`, native on both.** The markup printer stamps a child's `-s` on the content
+  filled into it: Svelte's default content and `{#snippet}` blocks, Astro's default and named
+  slots. Astro's scoped fill is a render prop the target prints apart, so the printer hands it
+  the child's `-s` (`ComponentContext.slotted`, `MarkupOptions.slotted`). Svelte writes a
+  `<component is>` over components as a `$derived` variable or an `{#if}` chain, a component
+  element the printer could not match to the candidates, so the target names them
+  (`MarkupOptions.candidates`): its fills take each candidate's `-s`, as the emission section
+  says of every target. `styles/slotted` covers a slot, a scoped slot and a `<component is>`,
+  and `styles/slotted-order` a `<component is>` chosen per list item.
+- **The order of the children's sheets.** Two children's `:slotted()` rules of equal
+  specificity can meet on one fill, and the sheet that loads later wins. A child's sheet loads
+  with its module, so Svelte sorts the imports of sibling outputs by specifier, as every other
+  target's `ImportSet` does, and its children's sheets load in Vue's order whatever the order
+  the markup first uses them in (`styles/slotted-order`).
+
 **The capabilities:** `scoped-styles` (a component with a sheet), `child-root-scope` (a child a
 styled component renders) and `slotted-styles` (content filled into a child whose sheet uses
 `:slotted()`). Each target first declared all three `native`, the cell its lane was expected to
 reach. A lane that can't reach it declares the cell `emulated` or `unsupported`, with the next free
-UF4 code, and adds a section here: React and Solid emulate `child-root-scope`.
+UF4 code, and adds a section here: React, Solid, Svelte and Astro emulate `child-root-scope`.
 
 **The codes** are UF5001 `shared-stylesheet`, UF5002 `invalid-stylesheet`, UF5003
 `unsupported-stylesheet-language` (`.scss`, `.sass`, `.less`, `.styl` and `.pcss`), UF5004
@@ -240,10 +286,8 @@ Vue      <style src="./Button.uf.tsx.css"></style>
 
 **Open:**
 
-- Astro's attachment: an import that the Container API collects, or an inline `<style is:global>`
-  (its lane, ADR-0020).
-- Each lane's `child-root-scope` and `slotted-styles` cells on Svelte's snippets, Angular's
-  projection and Qwik's `<Slot />`, recorded here as they settle. React's and Solid's are above.
+- Each lane's `child-root-scope` and `slotted-styles` cells on Angular's projection and Qwik's
+  `<Slot />`, recorded here as they settle. React's, Solid's, Svelte's and Astro's are above.
 - No watch or HMR edge runs from the author's `X.css` to its sheet module until M6.
 - A sheet that two modules import is not yet a diagnostic: detecting it needs M5's project graph,
   and until then each module scopes its own copy.

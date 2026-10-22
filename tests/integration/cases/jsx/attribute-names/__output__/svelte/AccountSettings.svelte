@@ -25,10 +25,18 @@
     helpOrder,
     class: className,
     style,
+    ...attributes
   }: Props = $props();
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<div class={["account-settings", className]} {style}>
+<div class={["account-settings", className]} {style} {...scopeAttributes(attributes)}>
   <form accept-charset="utf-8" aria-label="Profile">
     <img
       src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='%23345'/%3E%3C/svg%3E"

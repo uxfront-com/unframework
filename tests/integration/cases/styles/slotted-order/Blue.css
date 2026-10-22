@@ -1,0 +1,9 @@
+.blue {
+  padding: 4px;
+  border: 2px dashed rgb(29, 78, 216);
+}
+
+/* As specific as Amber's rule: on content that carries both `-s`, the sheet that loads later wins. */
+:slotted(.caption) {
+  color: rgb(29, 78, 216);
+}

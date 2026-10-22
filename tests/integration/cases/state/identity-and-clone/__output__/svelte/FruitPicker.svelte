@@ -18,7 +18,7 @@
     style?: string;
   };
 
-  let { fruits, onkept, class: className, style }: Props = $props();
+  let { fruits, onkept, class: className, style, ...attributes }: Props = $props();
 
   let selected = $state.raw<Fruit | null>(null);
   let basket = $state.raw<Fruit[]>([]);
@@ -34,9 +34,21 @@
     basket = [...basket, copy];
     onkept?.(copy.name, copy.colour);
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["fruit-picker", className]} aria-label="Fruit" {style}>
+<section
+  class={["fruit-picker", className]}
+  aria-label="Fruit"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <ul aria-label="Fruits">
     {#each fruits as fruit (fruit.name)}
       <li>

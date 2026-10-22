@@ -10,7 +10,7 @@
     style?: string;
   };
 
-  let { ondone, class: className, style }: Props = $props();
+  let { ondone, class: className, style, ...attributes }: Props = $props();
 
   let selected = $state("none");
   let hits = $state(0);
@@ -49,9 +49,16 @@
     void run();
     status = "started";
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["picker", className]} aria-label="Picker" {style}>
+<section class={["picker", className]} aria-label="Picker" {style} {...scopeAttributes(attributes)}>
   <div class="choices" role="presentation" onclick={report}>
     <button type="button" onclick={() => pick("alpha")}>Alpha</button
     ><button type="button" onclick={() => pick("beta")}>Beta</button>

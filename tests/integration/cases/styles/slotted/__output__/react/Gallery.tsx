@@ -1,4 +1,5 @@
 import Frame from "./Frame";
+import Mat from "./Mat";
 import type { CSSProperties } from "react";
 
 export interface GalleryAttributes {
@@ -6,7 +7,14 @@ export interface GalleryAttributes {
   style?: CSSProperties;
 }
 
-export default function Gallery({ className, style, ...attributes }: GalleryAttributes) {
+export default function Gallery({
+  matted = true,
+  className,
+  style,
+  ...attributes
+}: { matted?: boolean } & GalleryAttributes) {
+  const Tag = matted ? Mat : Frame;
+
   return (
     <section className={className} style={style} {...scopeAttributes(attributes)}>
       <Frame>
@@ -14,6 +22,18 @@ export default function Gallery({ className, style, ...attributes }: GalleryAttr
           A quiet harbour
         </p>
       </Frame>
+      <Frame
+        renderLabel={({ text }) => (
+          <p className="caption" data-uf-9dc516fd-s="">
+            {text}
+          </p>
+        )}
+      />
+      <Tag>
+        <p className="caption" data-uf-09929c4a-s="" data-uf-9dc516fd-s="">
+          A matted print
+        </p>
+      </Tag>
       <p className="caption">Outside the frame</p>
     </section>
   );

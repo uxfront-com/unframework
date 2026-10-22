@@ -1,0 +1,104 @@
+{
+  "irVersion": 1,
+  "file": "styles/slotted-order/Blue.uf.tsx",
+  "components": [
+    {
+      "name": "Blue",
+      "span": {
+        "start": 109,
+        "end": 253
+      },
+      "props": [],
+      "types": [],
+      "slots": {
+        "binding": "slots@150",
+        "type": {
+          "code": "{ default?(): Element }",
+          "span": {
+            "start": 170,
+            "end": 193
+          }
+        },
+        "slots": [
+          {
+            "name": "default",
+            "optional": true,
+            "span": {
+              "start": 172,
+              "end": 191
+            }
+          }
+        ],
+        "span": {
+          "start": 144,
+          "end": 197
+        }
+      },
+      "bindings": [
+        {
+          "id": "slots@150",
+          "name": "slots",
+          "kind": "slots",
+          "span": {
+            "start": 150,
+            "end": 155
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "blue",
+            "span": {
+              "start": 212,
+              "end": 224
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "SlotOutlet",
+            "slot": "default",
+            "fallback": [],
+            "span": {
+              "start": 225,
+              "end": 244
+            }
+          }
+        ],
+        "span": {
+          "start": 207,
+          "end": 250
+        }
+      },
+      "styles": [
+        {
+          "specifier": "./Blue.css",
+          "source": ".blue {\n  padding: 4px;\n  border: 2px dashed rgb(29, 78, 216);\n}\n\n/* As specific as Amber's rule: on content that carries both `-s`, the sheet that loads later wins. */\n:slotted(.caption) {\n  color: rgb(29, 78, 216);\n}\n",
+          "span": {
+            "start": 0,
+            "end": 20
+          }
+        }
+      ],
+      "scopeId": "721c504a"
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Blue",
+      "span": {
+        "start": 109,
+        "end": 253
+      }
+    }
+  ],
+  "types": []
+}

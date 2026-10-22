@@ -12,9 +12,16 @@ interface Props extends UsageMeterProps {
 }
 
 const { label, percent, colour, thickness, class: className, style } = Astro.props;
+
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
 ---
 
-<div class:list={["usage-meter", className]} style={style}>
+<div class:list={["usage-meter", className]} style={style} {...scopeAttributes(Astro.props)}>
   <p
     style={{ color: colour, fontWeight: 700, lineHeight: 1.5, marginBottom: "4px" }}
   >{label}: {percent}%</p>

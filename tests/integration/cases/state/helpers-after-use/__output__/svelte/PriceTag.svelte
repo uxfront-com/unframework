@@ -11,7 +11,7 @@
 
   type Props = PriceTagProps & { class?: ClassValue; style?: string };
 
-  let { price, class: className, style }: Props = $props();
+  let { price, class: className, style, ...attributes }: Props = $props();
 
   let quantity = $state(1);
   let unit = $state(untrack(() => formatCents(price)));
@@ -40,9 +40,21 @@
   function describe(): string {
     return `${quantity} at ${formatCents(price)}`;
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["price-tag", className]} aria-label="Price" {style}>
+<section
+  class={["price-tag", className]}
+  aria-label="Price"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p>Unit: {unit}</p
   ><p role="status">{summary}</p
   ><p>Total: {total}</p

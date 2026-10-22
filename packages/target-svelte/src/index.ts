@@ -68,7 +68,13 @@ export const svelte: Target = defineTarget({
     },
     "dynamic-component": { support: "native" },
     "scoped-styles": { support: "native" },
-    "child-root-scope": { support: "native" },
+    // The child's root picks its styled parents' `data-uf-*` props out of `$props()` (ADR-0063):
+    // their names are the parents', which the child cannot know.
+    "child-root-scope": {
+      support: "emulated",
+      helper: "scopeAttributes",
+      note: "A child cannot know the scope attributes its styled parents pass, so an inline helper picks them out of its props by name and spreads them on its root, on each branch of a root conditional and on a root <component is> too, as Vue's fallthrough reaches them.",
+    },
     "slotted-styles": { support: "native" },
     // A capture listener is an attribute, `onclickcapture` (ADR-0047).
     "event-capture": { support: "native" },

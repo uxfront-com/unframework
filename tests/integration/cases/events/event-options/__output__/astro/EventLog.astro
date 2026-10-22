@@ -6,11 +6,23 @@ interface Props {
 
 const { class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const log = [] as string[];
 const volume = 5 as number;
 ---
 
-<section class:list={["event-log", className]} aria-label="Event options" style={style}>
+<section
+  class:list={["event-log", className]}
+  aria-label="Event options"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <div class="panel" role="presentation">
     <button type="button">Inside</button>
     <button type="button">Stop here</button>

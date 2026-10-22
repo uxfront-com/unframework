@@ -5,7 +5,14 @@
 
   type Props = { step: string; class?: ClassValue; style?: string };
 
-  let { step, class: className, style }: Props = $props();
+  let { step, class: className, style, ...attributes }: Props = $props();
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<p class={["step", className]} {style}>Step: {step}</p>
+<p class={["step", className]} {style} {...scopeAttributes(attributes)}>Step: {step}</p>

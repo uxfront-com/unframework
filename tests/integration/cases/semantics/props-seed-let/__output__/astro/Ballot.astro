@@ -12,11 +12,23 @@ interface Props extends BallotProps {
 
 const { limit, label = "Vote", choices, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const votes = limit;
 const picked = "none" as string;
 ---
 
-<section class:list={["ballot", className]} aria-label={label} style={style}>
+<section
+  class:list={["ballot", className]}
+  aria-label={label}
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <p role="status">{votes} votes left</p>
   <p>Picked: {picked}</p>
   <ul aria-label="Choices">

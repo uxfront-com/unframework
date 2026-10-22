@@ -9,7 +9,7 @@
     style?: string;
   };
 
-  let { onsignup, class: className, style }: Props = $props();
+  let { onsignup, class: className, style, ...attributes }: Props = $props();
 
   let fullName = $state("");
   let email = $state("");
@@ -21,9 +21,22 @@
     event.preventDefault();
     onsignup?.(fullName, email, plan, newsletter);
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<form class={["signup-form", className]} aria-label="Sign up" onsubmit={submit} {style}>
+<form
+  class={["signup-form", className]}
+  aria-label="Sign up"
+  onsubmit={submit}
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <label>Name<input
     name="name"
     onchange={(event) => (fullName = (event.currentTarget as HTMLInputElement).value)}

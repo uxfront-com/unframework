@@ -6,6 +6,13 @@ interface Props {
 
 const { class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const names = ["Cy", "Al"].toSorted((a, b) => compare(a, b));
 const count = 0 as number;
 
@@ -14,7 +21,12 @@ function compare(a: string, b: string): number {
 }
 ---
 
-<section class:list={["name-sorter", className]} aria-label="Names" style={style}>
+<section
+  class:list={["name-sorter", className]}
+  aria-label="Names"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <p>Names: {names.join(", ")}</p>
   <p>Added: {count}</p>
   <button type="button">Add Bo</button>

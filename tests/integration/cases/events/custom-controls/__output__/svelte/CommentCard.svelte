@@ -9,7 +9,7 @@
     style?: string;
   };
 
-  let { onliked, class: className, style }: Props = $props();
+  let { onliked, class: className, style, ...attributes }: Props = $props();
 
   let text = $state("");
   let liked = $state(false);
@@ -29,9 +29,21 @@
     if (event.key === " ") event.preventDefault();
     if (event.key === "Enter" || event.key === " ") toggleLike(event);
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["comment-card", className]} aria-label="Comment" {style}>
+<section
+  class={["comment-card", className]}
+  aria-label="Comment"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <label>Comment<textarea name="comment" rows="2" oninput={autosize}></textarea></label
   ><div class="meter" role="presentation">
     <div class="fill" style:width={`${Math.min(text.length, 100)}%`}></div>

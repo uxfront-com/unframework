@@ -132,11 +132,18 @@ interface Props extends CounterProps {
 
 const { initial = 0, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const count = initial;
 const doubled = count * 2;
 ---
 
-<div class:list={["counter", className]} style={style}>
+<div class:list={["counter", className]} style={style} {...scopeAttributes(Astro.props)}>
   <output>{count}</output>
   {doubled > 10 ? (
     <span>Big</span>
@@ -158,6 +165,13 @@ interface Props {
 
 const { class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const count = 0 as number;
 const offset = -1 as number;
 const title = "Draft" as string;
@@ -168,7 +182,7 @@ const items = [] as Item[];
 const tags = ["a", "b"];
 ---
 
-<dl class:list={[className]} style={style}>
+<dl class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
   <dt>{count === 5 ? "five" : count}</dt>
   <dd>{offset + 1}</dd>
   <dd>{title === "Final" ? "final" : title}</dd>
@@ -193,6 +207,13 @@ interface Props extends PriceProps {
 
 const { price, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const quantity = 2 as number;
 const total = quantity * price;
 const unit = "EUR" as string;
@@ -216,6 +237,7 @@ const label = getLabel();
   data-tier={tier}
   class:list={[className]}
   style={style}
+  {...scopeAttributes(Astro.props)}
 >{label} {unit === "USD" ? "(US)" : "(EU)"}</p>
 `,
   "Field.astro": `---
@@ -236,11 +258,18 @@ function uniqueId(): string {
   return \`uf-id-\${locals.ufIdCount}\`;
 }
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const inputId = uniqueId();
 const hintId = uniqueId();
 ---
 
-<div class:list={[className]} style={style}>
+<div class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
   <label for={inputId}>{label}</label>
   <input id={inputId} aria-describedby={hintId} />
   <p id={hintId}>Required</p>

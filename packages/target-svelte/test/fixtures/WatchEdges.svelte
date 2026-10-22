@@ -13,7 +13,7 @@
     style?: string;
   };
 
-  let { onpair, ontotal, onseen, onunseen, class: className, style }: Props = $props();
+  let { onpair, ontotal, onseen, onunseen, class: className, style, ...attributes }: Props = $props();
 
   let a = $state(1);
   let b = $state(2);
@@ -66,6 +66,13 @@
     })();
     return cleanUp;
   });
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
 <button
@@ -76,4 +83,5 @@
   }}
   class={className}
   {style}
+  {...scopeAttributes(attributes)}
 >{a} {b} {items.length}</button>

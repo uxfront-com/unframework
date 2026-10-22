@@ -10,11 +10,23 @@ interface Props extends PriceRangeProps {
 
 const { currency, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const low = 10 as number;
 const high = 50 as number;
 ---
 
-<section class:list={["price-range", className]} aria-label="Price range" style={style}>
+<section
+  class:list={["price-range", className]}
+  aria-label="Price range"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <p role="status">{low} to {high} {currency}</p>
   <button type="button">Shift up</button>
   <button type="button">Widen</button>

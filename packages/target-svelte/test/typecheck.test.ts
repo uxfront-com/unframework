@@ -21,12 +21,8 @@ const checker = { timeout: 60_000 };
 
 afterAll(removeScratch);
 
-/**
- * The scoping corpus's child-root cases, whose parents pass the scope attribute to a child whose
- * `Props` doesn't declare it (TS2353): `harness/quarantine/svelte.ts` lists their L4 cells until
- * Svelte's M4 lane (UXF-400) settles the child's root, and brings them back here (ADR-0063).
- */
-const CHILD_ROOT = /\/styles\/(?:child-root|child-root-branches|deep|global)\//;
+/** The declaration a styled golden's sheet import needs, as the toolchain project passes it. */
+const SHEETS = join(toolchainDir, "sheets.d.ts");
 
 /**
  * Type-checks a golden output with a toolchain tsconfig that extends the real one with
@@ -54,12 +50,11 @@ async function checkWithBrokenToolchain(
 
 describe("svelte typecheck", () => {
   it("checks the corpus and an injected error in one run, by file", checker, async () => {
-    const golden = goldenFiles().filter((path) => !CHILD_ROOT.test(path));
+    const golden = goldenFiles();
     expect(golden.length).toBeGreaterThan(0);
     // Each case in a directory of its own, where its sources' outputs import each other.
     const fresh: string[] = [];
-    for (const { modules, outputDir } of corpus()) {
-      if (CHILD_ROOT.test(outputDir)) continue;
+    for (const { modules } of corpus()) {
       const emitted: Record<string, string> = {};
       for (const module of modules) {
         for (const file of await emitFormatted(module)) emitted[file.path] = file.contents;
@@ -80,7 +75,7 @@ describe("svelte typecheck", () => {
       ].join("\n"),
     });
 
-    const clean = [...golden, ...fresh];
+    const clean = [...golden, ...fresh, SHEETS];
     const results = await toolchain.typecheck([...clean, broken!], context);
 
     expect([...results.keys()].toSorted()).toEqual([...clean, broken!].toSorted());

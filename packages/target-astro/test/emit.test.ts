@@ -28,7 +28,7 @@ import { astroFrameworkCompile } from "../src/toolchain/compile.ts";
 import { toolchain } from "../src/toolchain/index.ts";
 import { renderToString } from "../src/toolchain/server.ts";
 import { loadAstroComponent, scratchDirectory } from "./astro.ts";
-import { compiled, emitSource, emitted } from "./source.ts";
+import { compiled, emitSource, emitted, SCOPE_HELPER } from "./source.ts";
 import { integrationRoot, toolchainDir } from "./workspace.ts";
 
 const at = { start: 0, end: 0 };
@@ -76,7 +76,7 @@ const scratch = scratchDirectory("emit");
 afterAll(() => scratch.remove());
 
 describe("astro target", () => {
-  it("declares every capability: what runs in the browser unsupported, `use-id` emulated", () => {
+  it("declares every capability: what runs in the browser unsupported, `use-id` and the child root emulated", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([...CAPABILITY_NAMES].toSorted());
     // Nothing runs in the browser, so these are inert, reported for information (ADR-0047).
     for (const name of [
@@ -108,6 +108,10 @@ describe("astro target", () => {
       support: "emulated",
       helper: "uniqueId",
     });
+    expect(target.capabilities["child-root-scope"]).toMatchObject({
+      support: "emulated",
+      helper: "scopeAttributes",
+    });
     // Context is the one difference a static render shows: `inject` gives its fallback
     // (ADR-0055), a warning.
     const unsupported = CAPABILITY_NAMES.filter(
@@ -136,9 +140,15 @@ describe("astro target", () => {
             "}",
             "",
             "const { class: className, style } = Astro.props;",
+            "",
+            ...SCOPE_HELPER,
             "---",
             "",
-            '<p class:list={["greeting", className]} style={style}>Hello, world!</p>',
+            "<p",
+            '  class:list={["greeting", className]}',
+            "  style={style}",
+            "  {...scopeAttributes(Astro.props)}",
+            ">Hello, world!</p>",
             "",
           ].join("\n"),
         },
@@ -156,9 +166,11 @@ describe("astro target", () => {
         "}",
         "",
         "const { class: className, style } = Astro.props;",
+        "",
+        ...SCOPE_HELPER,
         "---",
         "",
-        '<section class:list={["card", className]} style={style}>',
+        '<section class:list={["card", className]} style={style} {...scopeAttributes(Astro.props)}>',
         '  <h2 title="say &quot;hi&quot; &amp; {x}">a &lt; b &amp; &#123;c&#125; d&nbsp;e</h2>',
         "  <p>Line one<br />Line two</p>",
         '  <input type="checkbox" checked aria-label="Agree" />',
@@ -364,9 +376,16 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "}",
         "",
         "const { name, price, available = true, class: className, style } = Astro.props;",
+        "",
+        ...SCOPE_HELPER,
         "---",
         "",
-        '<article class:list={["product-tile", className]} aria-label={name} style={style}>',
+        "<article",
+        '  class:list={["product-tile", className]}',
+        "  aria-label={name}",
+        "  style={style}",
+        "  {...scopeAttributes(Astro.props)}",
+        ">",
         "  <p>Price: {price} EUR</p>",
         '  <p>{available ? "Available" : "Unavailable"}</p>',
         '  <button type="button" disabled={!available}>Add {name}</button>',
@@ -399,9 +418,16 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "}",
         "",
         'const { label, tone = "info", class: className, style } = Astro.props;',
+        "",
+        ...SCOPE_HELPER,
         "---",
         "",
-        "<span data-tone={tone} class:list={[className]} style={style}>{label}</span>",
+        "<span",
+        "  data-tone={tone}",
+        "  class:list={[className]}",
+        "  style={style}",
+        "  {...scopeAttributes(Astro.props)}",
+        ">{label}</span>",
       ),
     );
     expect(emitted(namedProps)).toBe(
@@ -430,9 +456,16 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "",
         "const props = Astro.props;",
         "const { class: className, style } = Astro.props;",
+        "",
+        ...SCOPE_HELPER,
         "---",
         "",
-        "<span title={props.hint} class:list={[className]} style={style}>{props.label}</span>",
+        "<span",
+        "  title={props.hint}",
+        "  class:list={[className]}",
+        "  style={style}",
+        "  {...scopeAttributes(Astro.props)}",
+        ">{props.label}</span>",
       ),
     );
   });
@@ -453,9 +486,11 @@ describe("props: the frontmatter (ADR-0034)", () => {
           "",
           "const props = Astro.props;",
           "const { class: className, style } = Astro.props;",
+          "",
+          ...SCOPE_HELPER,
           "---",
           "",
-          "<span class:list={[className]} style={style}>{props.label}</span>",
+          "<span class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>{props.label}</span>",
         ),
       );
       await expect(renderSource(output, { label: "Hi" })).resolves.toBe("<span>Hi</span>");
@@ -481,9 +516,11 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "}",
         "",
         "const { items, class: className, style } = Astro.props;",
+        "",
+        ...SCOPE_HELPER,
         "---",
         "",
-        "<ul class:list={[className]} style={style}>",
+        "<ul class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>",
         "  {items.map((item) => (",
         "    <li>{item.label}</li>",
         "  ))}",
@@ -573,6 +610,8 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "  class: className,",
         "  style,",
         "} = Astro.props;",
+        "",
+        ...SCOPE_HELPER,
         "---",
         "",
         "<p",
@@ -580,6 +619,7 @@ describe("props: the frontmatter (ADR-0034)", () => {
         "  data-priority={priority}",
         "  class:list={[className]}",
         "  style={style}",
+        "  {...scopeAttributes(Astro.props)}",
         '>{message} {tags.join(", ")} {author.name}</p>',
       ),
     );
@@ -590,7 +630,7 @@ describe("control flow (ADR-0036)", () => {
   it("writes conditionals as ternaries ending in `null`, and lists as `.map` without keys", () => {
     expect(markupOf(emitted(controlFlow))).toBe(
       lines(
-        "<div class:list={[className]} style={style}>",
+        "<div class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>",
         "  {open ? (",
         "    <p>open</p>",
         "  ) : null}",
@@ -661,7 +701,7 @@ describe("attributes (ADR-0037 to ADR-0040)", () => {
   it("writes bindings, `class:list`, style objects and spreads key by key", () => {
     expect(markupOf(emitted(attributes))).toBe(
       lines(
-        "<div class:list={[className]} style={style}>",
+        "<div class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>",
         // Astro's renderer does not read `multiple` as a boolean (ADR-0037).
         '  <input type="file" multiple={on ? "" : undefined} disabled={!on} aria-label="Files" />',
         '  <p class="a b">s</p>',

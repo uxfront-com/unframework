@@ -10,10 +10,22 @@ interface Props extends UnreadBadgeProps {
 
 const { class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const unread = 0 as number;
 ---
 
-<section class:list={["unread-badge", className]} aria-label="Inbox" style={style}>
+<section
+  class:list={["unread-badge", className]}
+  aria-label="Inbox"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <p role="status">{unread} unread</p>
   <button type="button">Receive a message</button>
   <button type="button">Mark all read</button>

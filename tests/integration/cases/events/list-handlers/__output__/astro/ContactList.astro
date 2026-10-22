@@ -15,11 +15,23 @@ interface Props extends ContactListProps {
 
 const { initial, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const contacts = initial;
 const chosen = undefined as string | undefined;
 ---
 
-<section class:list={["contact-list", className]} aria-label="Contacts" style={style}>
+<section
+  class:list={["contact-list", className]}
+  aria-label="Contacts"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <ul>
     {contacts.map((contact) => (
       <li>

@@ -21,6 +21,13 @@ interface Props extends MeetingListProps {
 
 const { meetings, organiser, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const rooms = ["Atlas", "Borealis"];
 const log = [] as string[];
 const lastKey = "none" as string;
@@ -28,7 +35,12 @@ const clicks = 0 as number;
 const upcoming = meetings.filter((meeting) => !meeting.done);
 ---
 
-<section class:list={["meeting-list", className]} aria-label="Meetings" style={style}>
+<section
+  class:list={["meeting-list", className]}
+  aria-label="Meetings"
+  style={style}
+  {...scopeAttributes(Astro.props)}
+>
   <ul aria-label="Upcoming">
     {upcoming.map((event) => (
       <li>

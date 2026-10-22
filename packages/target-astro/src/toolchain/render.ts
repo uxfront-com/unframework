@@ -16,7 +16,13 @@ import type {
 } from "@unframework/codegen";
 import type * as AstroContainerModule from "astro/container";
 import type { experimental_AstroContainer as AstroContainer } from "astro/container";
-import type { DevEnvironment, Plugin, RunnableDevEnvironment, ViteDevServer } from "vite";
+import type {
+  DevEnvironment,
+  EnvironmentModuleNode,
+  Plugin,
+  RunnableDevEnvironment,
+  ViteDevServer,
+} from "vite";
 
 import { astroViteConfig } from "./config.ts";
 import {
@@ -48,6 +54,11 @@ export interface ChildModules {
   resolve(specifier: string, importer: string): Promise<string | undefined>;
   /** Compiles a virtual id in the browser project, which records its Astro source. */
   load(id: string): Promise<void>;
+  /**
+   * The sheet the browser project's pipeline serves for an emitted sheet's id (ADR-0063), as
+   * the unframework plugin (and any canary) gives it.
+   */
+  sheet(id: string): Promise<string>;
 }
 
 /** The children of the render running now: renders run one at a time. */
@@ -55,6 +66,9 @@ let children: ChildModules | undefined;
 
 /** Astro's sub-requests (`?astro&type=style&index=0…`), served by Astro from its compile cache. */
 const ASTRO_SUB_REQUEST = /[?&]astro(?:[&=]|$)/;
+
+/** The sheet `compile()` emits beside a source (`/abs/X.uf.tsx.css`, ADR-0063), with any query. */
+const SHEET_ID = /\.uf\.tsx\.css(?:\?.*)?$/;
 
 /** The `ufAstroRender` browser command for a project. */
 export function createAstroRenderCommand(context: ToolchainContext): ToolchainCommand {
@@ -90,6 +104,13 @@ function browserChildModules(browser: unknown): ChildModules | undefined {
         const thrown = /^throw new Error\((".*")\);$/m.exec(transformed)?.[1];
         throw new Error(thrown ? (JSON.parse(thrown) as string) : transformed);
       }
+    },
+    async sheet(id) {
+      const loaded = await client.pluginContainer.load(id);
+      const code = typeof loaded === "object" ? loaded?.code : loaded;
+      if (code == null)
+        throw new Error(`ufAstroRender: the browser project serves no sheet ${id}.`);
+      return code;
     },
   };
 }
@@ -148,7 +169,35 @@ async function render(root: string, { id, props }: AstroRenderRequest): Promise<
   const { value: html, messages } = await captureConsole(() =>
     server.container.renderComponent(component, { props }),
   );
-  return { html, console: messages };
+  // The sheets the component and its children import in their frontmatter (ADR-0063), which
+  // `?container` leaves out (ADR-0020): each as a `<style>` before the markup, a child's
+  // before its parent's, as an Astro page links them. Read again each render, so a recompile
+  // or a canary is seen.
+  const styles: string[] = [];
+  for (const sheet of importedSheets(server.ssr, `${id}?container`)) {
+    styles.push(`<style>${await children!.sheet(sheet)}</style>`);
+  }
+  return { html: `${styles.join("")}${html}`, console: messages };
+}
+
+/**
+ * The emitted sheets a compiled component imports, through the components it imports, in
+ * import order: each child's (depth first) before the importer's own.
+ */
+function importedSheets(ssr: RunnableDevEnvironment, id: string): string[] {
+  const sheets = new Set<string>();
+  const seen = new Set<string>();
+  const visit = (node: EnvironmentModuleNode | undefined) => {
+    if (!node?.id || seen.has(node.id)) return;
+    seen.add(node.id);
+    for (const imported of node.importedModules) {
+      if (!imported.id) continue;
+      if (ASTRO_VIRTUAL_ID.test(imported.id)) visit(imported);
+      else if (SHEET_ID.test(imported.id)) sheets.add(splitQuery(imported.id)[0]);
+    }
+  };
+  visit(ssr.moduleGraph.getModuleById(id));
+  return [...sheets];
 }
 
 /** Drops a recompiled component from the server's module graph and the runner's cache. */
@@ -216,14 +265,19 @@ function compiledSourceLoader(served: Map<string, string>): Plugin {
       const [parent] = splitQuery(importer ?? "");
       if (!children || !/^\.\.?\//.test(id) || !ASTRO_VIRTUAL_ID.test(parent)) return null;
       const child = await children.resolve(id, parent);
+      // A served module's sheet (ADR-0063): the render reads it from the browser project.
+      if (child !== undefined && SHEET_ID.test(child)) return splitQuery(child)[0];
       if (child === undefined || !ASTRO_VIRTUAL_ID.test(child)) return null;
       const [path] = splitQuery(child);
       if (compiledAstroSource(path) === undefined) await children.load(path);
       return path;
     },
     load: {
-      filter: { id: ASTRO_VIRTUAL_ID },
-      handler(id) {
+      filter: { id: [ASTRO_VIRTUAL_ID, SHEET_ID] },
+      async handler(id) {
+        // The render puts the sheet before the markup itself (`importedSheets`): the module is
+        // only an edge of the graph, whatever the sheet holds.
+        if (SHEET_ID.test(id)) return "";
         const [path, query] = splitQuery(id);
         if (ASTRO_SUB_REQUEST.test(query)) return null;
         const source = compiledAstroSource(path);

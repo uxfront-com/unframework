@@ -1,10 +1,22 @@
-import { type CSSProperties, type ClassList, Slot, component$ } from "@qwik.dev/core";
+import {
+  type CSSProperties,
+  type ClassList,
+  type JSXOutput,
+  type QRL,
+  Slot,
+  component$,
+} from "@qwik.dev/core";
 
-export default component$<{ class?: ClassList; style?: CSSProperties }>(
-  ({ class: className, style }) => {
+export interface FrameSlots {
+  label$?: QRL<(props: { text: string }) => JSXOutput>;
+}
+
+export default component$<FrameSlots & { class?: ClassList; style?: CSSProperties }>(
+  ({ label$, class: className, style }) => {
     return (
       <figure class={["frame", className]} data-uf-9dc516fd="" style={style}>
         <Slot />
+        {label$?.({ text: "Harbour at dusk" })}
       </figure>
     );
   },

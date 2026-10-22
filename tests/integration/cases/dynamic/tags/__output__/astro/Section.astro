@@ -7,12 +7,19 @@ interface Props {
 
 const { title, class: className, style } = Astro.props;
 
+/** The scope attributes of the styled parents that render this component, for its root. */
+function scopeAttributes(props: object): Record<string, ""> {
+  const scope: Record<string, ""> = {};
+  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+  return scope;
+}
+
 const nested = false as boolean;
 
 const Tag = nested ? "h3" : "h2";
 ---
 
-<article class:list={[className]} style={style}>
+<article class:list={[className]} style={style} {...scopeAttributes(Astro.props)}>
   <Tag class="title">{title}</Tag>
   <button type="button">{nested ? "Lift" : "Nest"}</button>
 </article>

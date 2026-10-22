@@ -51,3 +51,16 @@ export async function compiled(source: string): Promise<string> {
   if (error) throw new Error(error);
   return formatted.contents;
 }
+
+/**
+ * The `scopeAttributes` helper, as the frontmatter of a component whose root takes its styled
+ * parents' scope declares it.
+ */
+export const SCOPE_HELPER: readonly string[] = [
+  "/** The scope attributes of the styled parents that render this component, for its root. */",
+  'function scopeAttributes(props: object): Record<string, ""> {',
+  '  const scope: Record<string, ""> = {};',
+  '  for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";',
+  "  return scope;",
+  "}",
+];

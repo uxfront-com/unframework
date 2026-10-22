@@ -16,7 +16,7 @@
     style?: string;
   };
 
-  let { subtotal, onshippingchange, class: className, style }: Props = $props();
+  let { subtotal, onshippingchange, class: className, style, ...attributes }: Props = $props();
 
   const rates = { standard: 0, express: 1200 };
 
@@ -40,9 +40,21 @@
   function chooseStandard() {
     choose("standard");
   }
+
+  /** The scope attributes of the styled parents that render this component, for its root. */
+  function scopeAttributes(props: object): Record<string, ""> {
+    const scope: Record<string, ""> = {};
+    for (const name of Object.keys(props)) if (name.startsWith("data-uf-")) scope[name] = "";
+    return scope;
+  }
 </script>
 
-<section class={["checkout-total", className]} aria-label="Order total" {style}>
+<section
+  class={["checkout-total", className]}
+  aria-label="Order total"
+  {style}
+  {...scopeAttributes(attributes)}
+>
   <p>Subtotal: {formatCents(subtotal)}</p
   ><p>Shipping: {formatCents(shipping)}</p
   ><p role="status">Total: {total}</p
