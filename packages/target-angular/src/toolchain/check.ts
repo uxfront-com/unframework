@@ -50,9 +50,10 @@ let configs = 0;
 /**
  * L4: type-checks the files on disk as ngc would, with the toolchain directory's
  * `tsconfig.json`, through a temporary tsconfig in its `.uf-tmp/` that extends it and lists
- * exactly these files, and the context's declarations. Returns every diagnostic ngtsc reported, by file: a requested file's own,
- * an imported file's, the toolchain tsconfig's, and, under the temporary tsconfig, the ones that
- * belong to no file (options, globals). Rejects when the toolchain has no tsconfig.
+ * exactly these files, and the context's declarations. Returns every diagnostic ngtsc reported,
+ * by file: a requested file's own, an imported file's, the toolchain tsconfig's, and, under the
+ * temporary tsconfig, the ones that belong to no file (options, globals). Rejects when the
+ * toolchain has no tsconfig.
  */
 export async function typecheck(
   files: readonly string[],

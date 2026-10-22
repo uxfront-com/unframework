@@ -6,6 +6,7 @@ import {
   codeNames,
   ImportSet,
   NameScope,
+  passThroughImports,
   sourceNames,
 } from "@unframework/codegen";
 import { summarizeCode, walk } from "@unframework/ir";
@@ -100,6 +101,11 @@ export interface Plan {
   events: ReadonlyMap<string, EventDeclaration>;
   /** The names of the list items and indexes: a template statement shadowed by one says `this.`. */
   loopNames: ReadonlySet<string>;
+  /**
+   * The member the template reads each Styleframe recipe through, by the recipe's local name
+   * (ADR-0064): its own name, unless a member of the class takes it.
+   */
+  recipes: ReadonlyMap<string, string>;
 }
 
 /** The names Angular gives a component class's own members: no binding may take them. */
@@ -168,6 +174,23 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
     ...[...events.keys()].map(outputName),
   ];
   const members = new NameScope(memberNames);
+  // A recipe's member takes no name a member has, those composition declares (the `class` and
+  // `style` inputs, a slot's query) included; the members the emitter claims later (`host`)
+  // then take others.
+  const composition = new NameScope([
+    ...memberNames,
+    "class",
+    "style",
+    ...(component.slots?.slots.map(({ name }) => slotQuery(name)) ?? []),
+  ]);
+  const recipes = new Map<string, string>();
+  for (const { names } of passThroughImports(component, module)) {
+    for (const { local } of names) {
+      const member = composition.claim(local);
+      members.reserve(member);
+      recipes.set(local, member);
+    }
+  }
   const bindingNames = new Set(component.bindings.map(({ name }) => name));
   const locals = new NameScope([
     ...[...source].filter((name) => !bindingNames.has(name)),
@@ -193,6 +216,7 @@ export function planComponent(declared: UfComponent, module: UfModule): Plan {
     loopNames: new Set(
       component.bindings.filter(({ kind }) => isLoopVariable(kind)).map(({ name }) => name),
     ),
+    recipes,
   };
 }
 

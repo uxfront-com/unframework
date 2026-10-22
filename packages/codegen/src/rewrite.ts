@@ -18,6 +18,7 @@ import type {
   EventReference,
   Expression,
   GlobalReference,
+  ImportReference,
   SlotReference,
   Span,
   UfComponent,
@@ -100,6 +101,11 @@ export interface RewriteRules {
    * it, as the target tests it (`title != null`, `title()`). As written when absent.
    */
   slot?(reference: SlotReference, site: RewriteSite): string;
+  /**
+   * The code that replaces a read of a name a pass-through import binds (`button`, ADR-0064): as
+   * written when absent. Angular's template reads it through a member of the class.
+   */
+  import?(reference: ImportReference, site: RewriteSite): string;
   /**
    * The code that replaces a whole write (`count.value += step` → `setCount(count + step)`),
    * given its parts already rewritten: an expression, which stands as a statement or as an
@@ -390,9 +396,9 @@ function spell(node: ReferenceNode, written: string, context: Context): string {
       return spellEmit(reference, node.slots, written, context);
     case "Slot":
       return rules.slot?.(reference, site) ?? written;
-    // A pass-through import is printed as written, and Styleframe's plugin resolves it (ADR-0063).
+    // A pass-through import is read as written, and Styleframe's plugin resolves it (ADR-0064).
     case "Import":
-      return written;
+      return rules.import?.(reference, site) ?? written;
     default:
       return unreachable(reference);
   }

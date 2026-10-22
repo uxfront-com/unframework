@@ -303,6 +303,31 @@ describe("angular output", () => {
     expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
   });
 
+  // A recipe named like a member the class declares itself: the `host` it binds `ufScope` to, the
+  // `style` input and an output (ADR-0064). The template reads each through a member of its own.
+  it(
+    "passes them for recipes named like the class's own members",
+    { timeout: 120_000 },
+    async () => {
+      const source = [
+        'import { badge as style, button as host, button as save } from "virtual:styleframe";',
+        'import { defineEmits } from "unframework";',
+        "export default function Probe() {",
+        "  const emit = defineEmits<{ save: [] }>();",
+        '  return <button type="button" class={[host(), style(), save()]} onClick={() => emit("save")}>Hi</button>;',
+        "}",
+      ].join("\n");
+      const files = await emitFormatted(lower(source, "Probe.uf.tsx"));
+      const code = files.map((file) => file.contents).join("\n");
+      expect(code).toContain("[class]=\"[host(), style_1(), save_1(), this.class()].join(' ')\"");
+      expect(code).toContain("protected readonly style_1 = style;");
+      expect(code).toContain("protected readonly save_1 = save;");
+      expect(code).toContain('[ufScope]="this.host_1"');
+      const messages = await toolchainMessages(files);
+      expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
+    },
+  );
+
   it(
     "passes them for composition's forms the corpus does not reach",
     { timeout: 120_000 },

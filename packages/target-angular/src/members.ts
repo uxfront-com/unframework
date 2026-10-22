@@ -571,9 +571,15 @@ export function classMembers(context: MemberContext): {
       ),
     );
   }
-  // The template reads module functions through members of their names, as it reads globals.
-  const globals = [...context.globals, ...context.helpers.map(({ name }) => name)].map((name) =>
-    js.propertyDefinition(name, js.identifier(name), {
+  // The template reads module functions through members of their names, as it reads globals,
+  // and each Styleframe recipe through the member the plan gives it (ADR-0064).
+  const globals = [
+    ...[...context.globals.map((name) => [name, name] as const), ...plan.recipes]
+      .map(([value, member]) => ({ value, member }))
+      .toSorted((a, b) => (a.member < b.member ? -1 : a.member > b.member ? 1 : 0)),
+    ...context.helpers.map(({ name }) => ({ value: name, member: name })),
+  ].map(({ value, member }) =>
+    js.propertyDefinition(member, js.identifier(value), {
       accessibility: "protected",
       readonly: true,
     }),
