@@ -1,6 +1,6 @@
 # ADR-0015: No runtime, only inline helpers
 
-- **Status:** Proposed — the plan proceeds on the recommendation
+- **Status:** Proposed — the plan proceeds on the recommendation, amended by ADR-0064
 - **Date:** 2026-10-01
 - **Plan:** §11 D11; §3 (G2, P7, non-goals), §4.1, §5.7, §6, §7.2 (L15), §7.7, §8.4
 

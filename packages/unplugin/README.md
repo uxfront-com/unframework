@@ -22,6 +22,16 @@ import Hello from "./Hello.uf.tsx"; // a Vue component
 plugins. Only Vite is supported until M6; `unframeworkUnplugin` (the `.` entry) refuses any other
 bundler when the plugin is created.
 
+A component that uses Styleframe (plan §4.4, ADR-0064) keeps its `virtual:styleframe` and
+`virtual:styleframe.css` imports as written, and the plugin never resolves them: add Styleframe's
+own plugin, `styleframe/plugin/vite`, beside it. Both run `enforce: "pre"` and neither claims the
+other's ids, so their order doesn't matter. We list Styleframe's first, as its installation guide
+does:
+
+```ts
+plugins: [styleframe(), unframework({ target: "vue" }), vue()],
+```
+
 ## Options
 
 | Option      | Meaning                                                                                                                                                                                       |

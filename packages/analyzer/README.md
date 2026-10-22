@@ -117,6 +117,11 @@ required })` declares a `model` binding, read and written as `value.value`, as s
   preprocessor's language UF5003, and a sheet the resolver could not read UF5005. Another import
   of a stylesheet (for a binding, or not relative) is UF1002. Selectors are checked by the scoper
   in `compile()` (UF5004).
+- **Styleframe's imports** (`styleframe.ts`, ADR-0064): named imports from `virtual:styleframe`
+  and the side-effect import `virtual:styleframe.css` become the module's `passThroughImports`,
+  which every output keeps as written. A recipe is read only as a call in a `class` part (an
+  `Import` reference). Any other import of a `virtual:styleframe` module, a recipe read anywhere
+  else, and a recipe nothing reads are UF5006.
 - **The setup** (`setup.ts`): each statement before the return, in source order, as a setup item
   and a binding (ADR-0045): `ref`, `computed`, `useTemplateRef`, `useId`, `const`, `let`, local
   functions, `watch` (a ref, a getter or an array of them; `immediate` and `flush`),

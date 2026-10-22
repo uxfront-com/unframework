@@ -67,7 +67,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0012](./0012-output-event-and-model-names.md)                     | Events and models take each target's naming convention               | Proposed, amended by ADR-0056                                         | §11 D8                  |
 | [0013](./0013-visual-baselines.md)                                 | Visual baselines live in Linux CI, plus a live mode                  | Proposed                                                              | §11 D9                  |
 | [0014](./0014-reference-target.md)                                 | Vue is the reference target for expectations                         | Proposed, amended by ADR-0057                                         | §11 D10                 |
-| [0015](./0015-no-runtime.md)                                       | No runtime, only inline helpers                                      | Proposed                                                              | §11 D11                 |
+| [0015](./0015-no-runtime.md)                                       | No runtime, only inline helpers                                      | Proposed, amended by ADR-0064                                         | §11 D11                 |
 | [0016](./0016-package-naming.md)                                   | `unframework` plus `@unframework/*`                                  | Proposed                                                              | §11 D12                 |
 | [0017](./0017-jsx-attribute-and-event-names.md)                    | HTML attribute names and Vue event names in JSX                      | Proposed                                                              | §11 D13                 |
 | [0018](./0018-one-vitest-run-browser-projects.md)                  | One Vitest 5 run with one browser project per target                 | Accepted (M0 spike)                                                   | §9 M0 spike 1           |
@@ -116,6 +116,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0061](./0061-visual-context-and-geometry.md)                      | Visual context and geometry for styled components                    | Proposed                                                              | §7.5, §7.6, §9 M4       |
 | [0062](./0062-baselines-generated-in-ci.md)                        | CI generates the Linux baselines, and a script applies them          | Proposed                                                              | §7.4, §7.9, §9 M4       |
 | [0063](./0063-scoped-stylesheets.md)                               | Scoped stylesheets, from the import to each target's attachment      | Proposed                                                              | §4.4, §6, §9 M4         |
+| [0064](./0064-styleframe-and-ci-without-a-licence.md)              | Styleframe passes through, and CI needs no licence                   | Proposed                                                              | §4.4, R11, §9 M4        |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 

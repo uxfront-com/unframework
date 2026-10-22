@@ -211,7 +211,9 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   exports a component the module does not export by its name, a sibling file its siblings
   import (ADR-0053); `childImports` lists the components a component renders, each with the
   specifier of its output file in the target's naming (`./Field.vue`, `../shared/field`), its
-  export kind and whether it renders itself; `componentTypes`
+  export kind and whether it renders itself; `passThroughImports` lists the imports a
+  component's output keeps as written (Styleframe's, ADR-0064), and `addPassThroughImports` adds
+  them to an `ImportSet`; `componentTypes`
   and `typeDeclarationCode` copy the type declarations a component's props reach, exported as
   the source does. `ImportSet` sorts imports and renames one that clashes with a name in its
   `NameScope`: a target reserves the source's names (`sourceNames`: the component, its types,
