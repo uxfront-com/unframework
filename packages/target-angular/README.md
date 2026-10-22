@@ -243,6 +243,27 @@ false` is `if (c) this.save();`).
 Handlers run synchronously during dispatch, so `preventDefault()` and `stopPropagation()` work as
 written; listeners keep DOM semantics (`change` on commit, `focus` and `blur` without bubbling).
 
+### Scoped styles (M4)
+
+A component that imports a stylesheet names the sheet `compile()` scoped for it in its metadata,
+`styleUrl: "./Badge.uf.tsx.css"`, with `encapsulation: ViewEncapsulation.None`, since the sheet is
+scoped already (ADR-0063). The shared markup printer writes `data-uf-<id>=""` on each element, the
+parent's attribute on a child's tag, and the child's `-s` on the content filled into a child whose
+sheet uses `:slotted()`, through `<ng-content>` and `ng-template` slots alike. The parent's
+attribute lands on the child's host, which must keep only `display: contents`, and a template
+cannot write an attribute whose name it does not know. So each root node of a component binds an
+inline attribute directive to its host, `[ufScope]="this.host"` (`ScopeAttributes`, with the host
+in a protected `host` member): in `ngOnInit` it takes the host's `data-uf-*` attributes off it,
+keeps their names in a module `WeakMap` for a root that renders later, and sets them on its node.
+Its root nodes are those Vue's fallthrough reaches (`scopeRoots`): the root element, component or
+each candidate of a root `<component is>`, or each branch of a root conditional that renders one
+alone. A root component's own root directive runs after this one has set them on its host, so they
+pass through it.
+
+Angular adds a sheet to the page as its component first renders, a parent's before its children's,
+where the other targets load sheets in import order: `sheet-order` is unsupported (UF4002, info),
+reported at every stylesheet import.
+
 ### Capabilities
 
 Native: everything but `event-capture`, `event-once` and `event-passive` (emulated, the directives
@@ -250,8 +271,9 @@ above, helper `uf<Event><Option>`), `use-id` (emulated, `nextId`), `next-tick` (
 `nextTick`) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
 `slot-forwarding` (emulated, the slot directives `uf<Component><Slot>`), `model-array`
 (`toggle`), `model-modifiers` (`modelText`), `fallthrough` (`fallthrough`), `reactive-context`
-(`refObject`) and `dynamic-component` (`@switch`), all emulated, and `default-slot-presence` and
-`contextual-root`, unsupported (UF4001, errors). Where an unsupported cell is reported, the
+(`refObject`) and `dynamic-component` (`@switch`), all emulated, `child-root-scope` (emulated,
+the `[ufScope]` directive), `default-slot-presence` and `contextual-root`, unsupported (UF4001,
+errors), and `sheet-order`, unsupported (UF4002, info). Where an unsupported cell is reported, the
 output still compiles: default-slot presence reads `true`, and the forwarded default slot
 re-projects `<ng-content />`.
 

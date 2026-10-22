@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { format as formatMessage } from "node:util";
 
+import { scopeStylesheet } from "@unframework/codegen";
 import type { OutputFile } from "@unframework/codegen";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -250,12 +251,15 @@ beforeAll(async () => {
 
 /**
  * What L3, L4 and L5 report about each file, by its path: the files are written to a scratch
- * directory of their own, under `prefix` when two share a name.
+ * directory of their own, under `prefix` when two share a name, beside the scoped `sheets` their
+ * `styleUrl`s name, which ngtsc reads and which no tool checks (ADR-0063).
  */
 async function toolchainMessages(
   files: readonly (OutputFile & { prefix?: string })[],
+  sheets: readonly OutputFile[] = [],
 ): Promise<Record<string, string[]>> {
   const directory = scratchDir();
+  for (const sheet of sheets) writeFileSync(join(directory, sheet.path), sheet.contents);
   const written = files.map((file) => ({
     path: join(directory, `${file.prefix ?? ""}${file.path}`),
     contents: file.contents,
@@ -339,7 +343,23 @@ describe("angular output", () => {
         })),
       ),
     );
-    const messages = await toolchainMessages(files.flat());
+    // The sheet `compile()` scopes and emits beside a styled case's output.
+    const sheets = cases.flatMap(({ file, source }) =>
+      lower(source, file, true).components.flatMap(({ styles, scopeId }) =>
+        styles?.length
+          ? [
+              {
+                path: `${file.slice(file.lastIndexOf("/") + 1)}.css`,
+                contents: styles
+                  .map((sheet) => scopeStylesheet(sheet.specifier, sheet.source, scopeId!).code)
+                  .join("\n"),
+              },
+            ]
+          : [],
+      ),
+    );
+    expect(sheets.length).toBeGreaterThan(0);
+    const messages = await toolchainMessages(files.flat(), sheets);
     expect(Object.keys(messages).length).toBe(files.flat().length);
     expect(Object.entries(messages).filter(([, found]) => found.length)).toEqual([]);
   });

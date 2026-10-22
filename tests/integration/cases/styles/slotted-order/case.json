@@ -1,4 +1,5 @@
 {
-  "description": "Two children's `:slotted()` rules of equal specificity meet on the content filled into a <component is> chosen per list item: the sheet that loads later wins, in the same order on every target.",
-  "main": "Shelf.uf.tsx"
+  "description": "Two children's `:slotted()` rules of equal specificity meet on the content filled into a <component is> chosen per list item: the sheet that loads later wins, in Vue's order on every target that loads sheets in import order.",
+  "main": "Shelf.uf.tsx",
+  "requires": "The case's one test checks which of two sheets wins, which a target that loads sheets in render order decides otherwise (`sheet-order`, ADR-0063)."
 }

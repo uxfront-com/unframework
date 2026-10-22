@@ -154,6 +154,25 @@ A conditional or a `<component is>` that a sibling follows sits in a fragment of
 2.0.0-beta.47's diff moves the siblings after a node it replaces, and a moved element loses its
 focus.
 
+## Scoped styles (M4)
+
+A component that imports a stylesheet imports the sheet `compile()` scoped for it as a string,
+after its other imports, and attaches it first in its body: `import styles from
+"./Badge.uf.tsx.css?inline"` and `useStyles$(styles)` (ADR-0063). The shared JSX builder prints
+`data-uf-<id>=""` on each element, the parent's attribute on a child's tag, and the child's `-s` on
+the content filled into a child whose sheet uses `:slotted()`, through `<Slot />` and QRL render
+props alike. A component also takes the scope attributes of its styled parents, which each of its
+root nodes spreads (`scopeRoots`, where Vue's fallthrough reaches), each candidate tag of a root
+`<component is>` with listeners included: `{...scopeAttributes(attributes)}`, from the rest of its
+props pattern, or from the props object in the object form, and a component without props takes
+one, typed `object`. The inline helper keeps only the `data-uf-*` keys, and takes a name of each
+component's own in a module of several (`scopeAttributes_1`).
+
+`useStyles$` adds a sheet to the page as its component first renders, a parent's before its
+children's, where the other targets load sheets in import order: `sheet-order` is unsupported
+(UF4002, info), reported at every stylesheet import. Qwik's server writes the sheet as a
+`<style q:style>` where the component renders, which the normaliser leaves out of Qwik's markup.
+
 ## Toolchain
 
 Tests and tooling use three Node and browser entries (plan §5.7, `Toolchain` in

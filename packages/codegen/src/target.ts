@@ -140,7 +140,13 @@ export type CapabilityName =
    * Content a component fills into a slot of a child whose sheet uses `:slotted()`
    * (`ComponentApi.styles`): it takes the child's `data-uf-<id>-s` attribute (ADR-0063).
    */
-  | "slotted-styles";
+  | "slotted-styles"
+  /**
+   * The order sheets cascade in, Vue's import order: a child's before its parent's, siblings by
+   * their imports. Where two sheets' rules of equal specificity meet on one element, the later
+   * one wins. Required wherever `scoped-styles` is (ADR-0063).
+   */
+  | "sheet-order";
 
 /** Every capability name, in a stable order. */
 export const CAPABILITY_NAMES: readonly CapabilityName[] = [
@@ -188,13 +194,15 @@ export const CAPABILITY_NAMES: readonly CapabilityName[] = [
   "scoped-styles",
   "child-root-scope",
   "slotted-styles",
+  "sheet-order",
 ];
 
 /**
- * The capabilities that change what code does in the browser, not what renders: a static render
- * is the same without them (ADR-0033, as amended by ADR-0047). The render-parity tests, which
- * compare static renders, do not require a case that uses one its target leaves unsupported to
- * render differently: Astro renders the same DOM with its handlers inert.
+ * The capabilities that change nothing the markup shows: what code does in the browser, or the
+ * cascade (`sheet-order`), so a static render's markup is the same without them (ADR-0033, as
+ * amended by ADR-0047 and ADR-0063). The render-parity tests, which compare static renders, do
+ * not require a case that uses one its target leaves unsupported to render differently: Astro
+ * renders the same DOM with its handlers inert.
  */
 export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<CapabilityName>([
   "interactivity",
@@ -210,6 +218,7 @@ export const BEHAVIOURAL_CAPABILITIES: ReadonlySet<CapabilityName> = new Set<Cap
   "two-way-binding",
   "model-array",
   "model-modifiers",
+  "sheet-order",
 ]);
 
 /**

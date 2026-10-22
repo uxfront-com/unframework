@@ -558,6 +558,19 @@ describe("requiredCapabilities over styles (ADR-0063)", () => {
     expect(required.has("child-root-scope")).toBe(false);
   });
 
+  // Any meeting of two sheets' rules of equal specificity involves a styled module, so the
+  // cascade order is required wherever a module has a sheet, and nowhere else (ADR-0063).
+  it("derives sheet-order with scoped-styles, at the first stylesheet of every module with one", () => {
+    const styled = requiredCapabilities(
+      parent(createElement("div", [], [], at(10)), { styled: true }),
+    );
+    expect(styled.get("sheet-order")).toEqual(sheet.span);
+    // A styled child, or a fill of one, gives a module without a sheet of its own none.
+    for (const options of [{ styled: false }, { styled: false, slotted: true }]) {
+      expect(requiredCapabilities(parent(withChild(), options)).has("sheet-order")).toBe(false);
+    }
+  });
+
   it("derives child-root-scope at any child a styled component renders", () => {
     const required = requiredCapabilities(parent(withChild(), { styled: true }));
     expect(required.get("child-root-scope")).toEqual(at(20));

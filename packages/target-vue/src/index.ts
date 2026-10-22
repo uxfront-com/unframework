@@ -73,6 +73,8 @@ export const vue: Target = defineTarget({
     "scoped-styles": { support: "native" },
     "child-root-scope": { support: "native" },
     "slotted-styles": { support: "native" },
+    // A sheet loads as its module evaluates, in import order, as Vue's does (ADR-0063).
+    "sheet-order": { support: "native" },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     const { block, rewrite, listeners, components, keys } = scriptSetup(component, context.module);

@@ -179,6 +179,15 @@ export const angular: Target = defineTarget({
       note: "A child cannot know the scope attributes its styled parents put on its host, so each of its root nodes binds an attribute directive, `[ufScope]`, that reads them off the host, which keeps only `display: contents`, and sets them on the node.",
     },
     "slotted-styles": { support: "native" },
+    // Sheets cascade in render order, not Vue's import order (ADR-0063): declared, since a
+    // parent sees too little of its subtree to attach its sheets in Vue's order.
+    "sheet-order": {
+      support: "unsupported",
+      code: "UF4002",
+      severity: "info",
+      reason:
+        "Angular adds a component's sheet to the page when the component first renders (`styleUrl`, through `SharedStylesHost`): a parent's before its children's, and siblings in the order they render, where Vue loads them in import order, a child's first. Where two sheets' rules of equal specificity meet on one element (a child's root, content filled into a slot, `:deep()`, `:global()`), the winner can differ.",
+    },
   },
   emit(component: UfComponent, context: EmitContext): OutputFile[] {
     return [emitComponent(component, context)];

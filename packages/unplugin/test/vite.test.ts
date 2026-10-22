@@ -951,6 +951,7 @@ function htmlTarget() {
     "scoped-styles": { support: "native" },
     "child-root-scope": { support: "native" },
     "slotted-styles": { support: "native" },
+    "sheet-order": { support: "native" },
   };
   return defineTarget({
     name: "html",

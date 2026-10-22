@@ -97,6 +97,7 @@ describe("qwik target", () => {
       "reactive-context",
       "scoped-slot",
       "scoped-styles",
+      "sheet-order",
       "slot-fallback",
       "slot-forwarding",
       "slotted-styles",
