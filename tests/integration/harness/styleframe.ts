@@ -30,17 +30,18 @@ export function sourceUtilities(content: string, file: string): string[] {
 }
 
 /**
- * Styleframe's Vite plugin for the ssr and browser projects. It resolves `virtual:styleframe`
+ * Styleframe's Vite plugin for the ssr and browser projects, with the corpus's configuration
+ * unless another is given. It resolves `virtual:styleframe`
  * and `virtual:styleframe.css`, which the unplugin leaves alone, so the order of the two plugins
  * does not matter; it is listed first, as Styleframe's installation guide does. Its scanner reads
  * the corpus's sources for utility classes, and it neither minifies class names nor writes
  * declarations into the working directory (`styleframe.d.ts` holds them).
  */
-export async function styleframePlugin(): Promise<Plugin[]> {
+export async function styleframePlugin(config: string = STYLEFRAME_CONFIG): Promise<Plugin[]> {
   const { default: styleframe } = await import("styleframe/plugin/vite");
   return [
     styleframe({
-      entry: STYLEFRAME_CONFIG,
+      entry: config,
       silent: true,
       minify: false,
       dts: { enabled: false },
@@ -48,7 +49,7 @@ export async function styleframePlugin(): Promise<Plugin[]> {
       include: [join(ROOT, "*.styleframe.ts")],
       scanner: { content: [join(ROOT, "cases/**/*.uf.tsx")], extractors: [sourceUtilities] },
     }),
-  ].flat() as Plugin[];
+  ].flat();
 }
 
 /**
