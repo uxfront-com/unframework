@@ -29,8 +29,16 @@ other's ids, so their order doesn't matter. We list Styleframe's first, as its i
 does:
 
 ```ts
-plugins: [styleframe(), unframework({ target: "vue" }), vue()],
+import styleframe from "styleframe/plugin/vite";
+
+export default {
+  plugins: [styleframe(), unframework({ target: "vue" }), vue()],
+};
 ```
+
+Styleframe's scanner reads utility classes in a `.tsx` file's `className` only. For utilities
+written in a `.uf.tsx` file's `class`, give it an extractor that reads `class` too, as the
+integration harness does (`sourceUtilities` in `tests/integration/harness/styleframe.ts`).
 
 ## Options
 

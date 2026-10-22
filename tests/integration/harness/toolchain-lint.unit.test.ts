@@ -257,7 +257,7 @@ function importGroups(config: EffectiveConfig): unknown {
 describe("every toolchain's oxlint configuration", () => {
   const configs = new Map(TARGETS.map((target) => [target, effectiveConfig(target)]));
 
-  it.each(TARGETS)("%s allows imports of its framework only", (target) => {
+  it.each(TARGETS)("%s allows imports of its framework and Styleframe's modules only", (target) => {
     expect(importGroups(configs.get(target)!)).toEqual([
       [
         "*",

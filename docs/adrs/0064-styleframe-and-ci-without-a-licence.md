@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-10-22
 - **Plan:** §4.4, §5.7, §7.3, §9 M4, G7, P2, P7, P8, R11; C4 (ADR-0004), D11 (ADR-0015); amends
-  ADR-0015; builds on ADR-0063
+  ADR-0015; settles ADR-0004's R11 consequence; builds on ADR-0063
 
 ## Context
 
@@ -29,11 +29,16 @@ licence or a deterministic stub".
   (`class={button({ size })}`, alone, in an array or in a conditional), and the side-effect import
   `virtual:styleframe.css`. The IR holds them as `passThroughImports`, and a call as an `Import`
   reference. Every output imports them as written, with the source's local names, and the
-  template reads them as written. Angular reads a recipe through a protected member, as it reads a
-  global.
+  template reads them as written. Angular reads a recipe through a protected member of the
+  class, of the recipe's name unless a member already takes it (a prop, an output, the `class` and
+  `style` inputs), when it claims another (`style_1`).
 - **Anything else is UF5006** at its span: a default, namespace or type-only import, an import of
   another `virtual:styleframe…` module, a recipe read outside a `class` part (a toggle's condition,
   setup code, `?.`), and a recipe nothing reads, whose import would reach every output unused.
+- **A recipe's name follows a binding's rules (UF2003).** Every output declares it beside its own
+  names, so the names a setup binding can't take are reported at the import (`$btn`, `btn$`,
+  `ngButton`), and so is a call of a recipe named like a prop of the object form, which each
+  output declares under the same name.
 - **Styleframe's plugin resolves them.** The unplugin leaves `virtual:styleframe*` alone, so the
   two plugins can sit in either order. We list Styleframe's first, as its installation guide does.
 - **The runtime import is the one exception to P7.** A styled output's `virtual:styleframe`
