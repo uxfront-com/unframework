@@ -28,7 +28,7 @@ function styleObject(
       const key = property!.trim();
       // A property is a custom property or a CSS identifier: anything else would reach the markup.
       if (value !== undefined && /^(?:--[^\s"'<>&;:]+|-?[A-Za-z_][\w-]*)$/.test(key))
-        properties[key] = value.trim();
+        properties[key.startsWith("--") ? key : key.toLowerCase()] = value.trim();
     }
     return properties;
   }

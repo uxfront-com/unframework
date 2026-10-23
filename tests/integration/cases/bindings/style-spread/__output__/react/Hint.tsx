@@ -43,7 +43,10 @@ function styleObject(style: object | string | null | undefined): CSSProperties |
     const key = property!.trim();
     // A property is a custom property or a CSS identifier: anything else would reach the markup.
     if (value === undefined || !/^(?:--[^\s"'<>&;:]+|-?[A-Za-z_][\w-]*)$/.test(key)) continue;
-    const camel = key.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+    // A standard name is case-insensitive, as the browser reads it: COLOR is color.
+    const camel = key
+      .toLowerCase()
+      .replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
     object[key.startsWith("--") ? key : camel] = value.trim();
   }
   return object as CSSProperties;

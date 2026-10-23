@@ -49,7 +49,7 @@ function ${name}(style: object | string | null | undefined): Record<string, stri
       const [property, value] = declaration.split(/:([^]+)/);
       const key = property!.trim();
       // A property is a custom property or a CSS identifier: anything else would reach the markup.
-      if (value !== undefined && /^(?:--[^\s"'<>&;:]+|-?[A-Za-z_][\w-]*)$/.test(key)) properties[key] = value.trim();
+      if (value !== undefined && /^(?:--[^\s"'<>&;:]+|-?[A-Za-z_][\w-]*)$/.test(key)) properties[key.startsWith("--") ? key : key.toLowerCase()] = value.trim();
     }
     return properties;
   }

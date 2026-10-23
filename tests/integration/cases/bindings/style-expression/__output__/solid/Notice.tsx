@@ -73,7 +73,10 @@ function styleProperties(
     for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
       const [property, value] = declaration.split(/:([^]+)/);
       const key = property!.trim();
-      if (value !== undefined && PROPERTY.test(key)) properties[key] = value.trim();
+      // A standard name is case-insensitive, as the browser reads it: COLOR is color.
+      if (value !== undefined && PROPERTY.test(key)) {
+        properties[key.startsWith("--") ? key : key.toLowerCase()] = value.trim();
+      }
     }
     return properties;
   }
