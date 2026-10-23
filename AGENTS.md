@@ -3,7 +3,8 @@
 Unframework compiles one `.uf.tsx` component into native React, Vue, Svelte, Solid, Angular, Qwik
 and Astro components. The source is ordinary TSX with Vue-inspired APIs (`ref`, `computed`,
 `defineEmits`, …) imported from `unframework` and erased at build time. The output has no runtime:
-each file depends only on its framework. Every output is verified by executed tests, from golden
+each file depends only on its framework, and on any module a styling engine's Vite plugin
+registers, which passes through as written. Every output is verified by executed tests, from golden
 files and each framework's own compiler to server HTML, the DOM, the accessibility tree and pixels
 in a real browser.
 
@@ -38,8 +39,8 @@ in a real browser.
   `virtual:` by default), tested with Styleframe Community, which needs no licence key, and with a
   fixture engine. Tokens and theming, with a per-case colour scheme, and the binding forms M1
   deferred are in too: a `style` bound to a value, run-time class collections, a spread's
-  `style`, vendor prefixes and a static table-internal `display`. Angular and Qwik cascade sheets in render order (`sheet-order`,
-  UF4002, info), and Angular renders a host between a parent and a child's root (UF4003, info).
+  `style`, vendor prefixes and a static table-internal `display`. Angular and Qwik cascade sheets
+  in render order (`sheet-order`, UF4002, info), and Angular renders a host between a parent and a child's root (UF4003, info).
   L10 also compares the `::before` and `::after` styles, and CI's `Baselines` job generates the
   Linux screenshots and geometry. Firefox and WebKit run nightly (`nightly.yml`), live against
   Vue in the same engine: a report that gates no pull request, red until each engine's
