@@ -58,7 +58,7 @@ import type { StaticString } from "./literals.ts";
 import { bindsInputType, CONTROL_MODEL, lowerControlModel } from "./models.ts";
 import type { RenderContext } from "./render.ts";
 import { spreadSource } from "./spread-source.ts";
-import { lowerStaticStyle, lowerStyleObject } from "./style.ts";
+import { lowerStaticStyle, lowerStyleObject, lowerStyleValue, styleValueProblem } from "./style.ts";
 import type { LoweredStyle } from "./style.ts";
 import { declaredShapeOf, describe, has, outside, union, UNDEFINED } from "./types/kinds.ts";
 import type { Kinds, Primitive } from "./types/kinds.ts";
@@ -419,15 +419,13 @@ function readForm(item: AST.JSXAttribute, name: string, element: ElementContext)
     return { kind: "class", lowered: lowerClass(expression, render), container: value };
   }
   if (name === "style") {
-    if (expression.type === "ObjectExpression") {
-      return { kind: "style", lowered: lowerStyleObject(expression, render) };
-    }
-    reporter.unsupported(
-      expression,
-      "A `style` bound to anything but an object literal is not supported yet: it lands in M4.",
-      { help: 'Write the declarations in an object: `style={{ color: tone, "--gap": gap }}`.' },
-    );
-    return undefined;
+    return {
+      kind: "style",
+      lowered:
+        expression.type === "ObjectExpression"
+          ? lowerStyleObject(expression, render)
+          : lowerStyleValue(expression, render),
+    };
   }
   const literal = literalForm(expression, name, element);
   if (literal) return literal;
@@ -681,22 +679,24 @@ function readSpread(
         ? reservedSpreadKey(
             `A spread's \`${name}\` key is not rendered: \`${name}\` has its own channel, and a spread renders attributes.`,
           )
-        : name === "style"
-          ? unsupported("A spread's `style` key is not supported yet: it lands in M4.")
-          : name !== authored
-            ? {
-                code: "UF3004",
-                message: `The spread's key \`${authored}\` is written \`${name}\`: a spread's keys are attribute names.`,
-                help: "Rename the member in its type.",
-              }
-            : nameProblem(tag, namespace, authored, name);
+        : name !== authored
+          ? {
+              code: "UF3004",
+              message: `The spread's key \`${authored}\` is written \`${name}\`: a spread's keys are attribute names.`,
+              help: "Rename the member in its type.",
+            }
+          : nameProblem(tag, namespace, authored, name);
     if (problem) {
       report(reporter, item, problem, related);
       continue;
     }
     const kinds = member.optional || nullish ? union(member.kinds(), UNDEFINED) : member.kinds();
     const bound =
-      name === "class" ? classKeyProblem(kinds) : boundValueProblem(tag, namespace, name, kinds);
+      name === "class"
+        ? classKeyProblem(kinds)
+        : name === "style"
+          ? styleKeyProblem(kinds)
+          : boundValueProblem(tag, namespace, name, kinds);
     if (bound) {
       report(reporter, item, bound, related);
       continue;
@@ -724,6 +724,12 @@ function classKeyProblem(kinds: Kinds): Problem | undefined {
         help: "Type the key as a string.",
       }
     : undefined;
+}
+
+/** A spread's `style` key is the element's style (ADR-0065): an object, a string, or nothing. */
+function styleKeyProblem(kinds: Kinds): Problem | undefined {
+  const problem = styleValueProblem(kinds);
+  return problem && { code: "UF3018", message: problem.message, help: problem.help };
 }
 
 /**

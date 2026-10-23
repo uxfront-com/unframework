@@ -28,7 +28,9 @@ component, written as a React developer would write it (plan §6):
   printed after the component (`className={cx("badge", tone, { active })}`): the
   `class-binding` capability is emulated.
 - `style={{ color: "red", marginTop: gap }}`, typed `as CSSProperties` (a type import from
-  `react`) when it sets a custom property.
+  `react`) when it sets a custom property. A style bound to a value goes through `styleObject`, an
+  inline helper that splits a declaration list into an object as Vue does (`style={styleObject(look)}`),
+  and `cx` reads an array's entries where a class part may be an array or an object (ADR-0065).
 - a spread written out key by key (`title={attrs.title}`, through `?.` when the source may be
   absent), its `class` merged into the element's `cx`.
 
@@ -107,7 +109,7 @@ the component opts out of it: its body starts with a comment naming the shape an
 The capabilities: `interactivity`, `event-capture`, `event-passive`, `conditional-event-control`
 and `use-id` are native;
 `event-once` (`useOnce`), `event-semantics` (`listen`) and `next-tick` (`useNextTick`) are
-emulated with inline helpers, and `class-binding` with `cx`. Of composition's cells,
+emulated with inline helpers, `class-binding` with `cx` and `style-binding` with `styleObject`. Of composition's cells,
 `model-array` (`toggle`), `model-modifiers` (`modelText`) and `reactive-context` (`refObject`)
 are emulated, and the others native. Of the styles' cells, `child-root-scope` is emulated
 (`scopeAttributes`), and the others native.

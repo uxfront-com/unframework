@@ -30,6 +30,7 @@ import type {
   SlotFill,
   SlotOutletNode,
   SlotReference,
+  StyleAttribute,
   UfComponent,
   UfModule,
 } from "@unframework/ir";
@@ -90,9 +91,14 @@ export interface PrintedAttribute {
 export type ClassPart =
   | { kind: "Static"; value: string }
   | { kind: "Toggle"; name: string; condition: string }
-  | { kind: "Dynamic"; value: string };
+  /** `collection`: the value may be an array or an object at run time (ADR-0065). */
+  | { kind: "Dynamic"; value: string; collection?: true };
 
-/** A declaration of an element's style, with its value as code when it is bound. */
+/**
+ * A declaration of an element's style, with its value as code when it is bound. A Bound part
+ * whose `property` is empty holds a whole style: a style object or a declaration list, from a
+ * value bound to `style` or a spread's `style` key (ADR-0065), or a consumer's (ADR-0056).
+ */
 export type StylePart =
   | { kind: "Static"; property: string; value: string }
   | { kind: "Bound"; property: string; value: string };
@@ -700,6 +706,24 @@ export function printMarkup(
   return rootRuns ? joinRuns(rootRuns, roots, level).join("\n") : "";
 
   /** A binding's name: from the component, or from its id (`name@offset`) without one. */
+  /** A class's dynamic part, marked where it may hold an array or an object (ADR-0065). */
+  function dynamicPart(value: Expression, collection: boolean | undefined): ClassPart {
+    return { kind: "Dynamic", value: code(value), ...(collection ? { collection: true } : {}) };
+  }
+
+  /**
+   * A style's parts: its declarations, or the one value it is bound to, as a part without a
+   * property (ADR-0065).
+   */
+  function styleParts(attribute: StyleAttribute): StylePart[] {
+    if (attribute.value) return [{ kind: "Bound", property: "", value: code(attribute.value) }];
+    return attribute.declarations.map((declaration): StylePart =>
+      declaration.kind === "Static"
+        ? { kind: "Static", property: declaration.property, value: declaration.value }
+        : { kind: "Bound", property: declaration.property, value: code(declaration.value) },
+    );
+  }
+
   function bindingName(id: string): string {
     return component ? bindingOf(component, id).name : id.slice(0, id.lastIndexOf("@"));
   }
@@ -946,27 +970,14 @@ export function printMarkup(
                   ? { kind: "Static", value: item.value }
                   : item.kind === "Toggle"
                     ? { kind: "Toggle", name: item.name, condition: code(item.condition) }
-                    : { kind: "Dynamic", value: code(item.value) },
+                    : dynamicPart(item.value, item.collection),
               ),
               attributeContext,
             ),
           );
           break;
         case "Style":
-          printed.push(
-            ...of.styleAttribute(
-              attribute.declarations.map((declaration): StylePart =>
-                declaration.kind === "Static"
-                  ? { kind: "Static", property: declaration.property, value: declaration.value }
-                  : {
-                      kind: "Bound",
-                      property: declaration.property,
-                      value: code(declaration.value),
-                    },
-              ),
-              attributeContext,
-            ),
-          );
+          printed.push(...of.styleAttribute(styleParts(attribute), attributeContext));
           break;
         case "Ref":
           printed.push(
@@ -1167,25 +1178,12 @@ export function printMarkup(
                 ? { kind: "Static", value: item.value }
                 : item.kind === "Toggle"
                   ? { kind: "Toggle", name: item.name, condition: code(item.condition) }
-                  : { kind: "Dynamic", value: code(item.value) },
+                  : dynamicPart(item.value, item.collection),
             );
           }
           break;
         case "Style":
-          printed.push(
-            ...of.styleAttribute(
-              attribute.declarations.map((declaration) =>
-                declaration.kind === "Static"
-                  ? { kind: "Static", property: declaration.property, value: declaration.value }
-                  : {
-                      kind: "Bound",
-                      property: declaration.property,
-                      value: code(declaration.value),
-                    },
-              ),
-              context,
-            ),
-          );
+          printed.push(...of.styleAttribute(styleParts(attribute), context));
           break;
         case "Spread": {
           const object = code(attribute.value);
@@ -1194,6 +1192,9 @@ export function printMarkup(
             if (key.name === "class") {
               claimClass();
               classParts.push({ kind: "Dynamic", value });
+            } else if (key.name === "style") {
+              // The element's one style (ADR-0065): no `style` of its own sits beside it.
+              printed.push(...of.styleAttribute([{ kind: "Bound", property: "", value }], context));
             } else {
               printed.push({ name: key.name, text: of.boundAttribute(key.name, value, context) });
             }

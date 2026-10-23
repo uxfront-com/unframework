@@ -126,8 +126,9 @@ refs, watchers and hooks never run and state keeps its initial value; the compil
 `model-array`, `model-modifiers` and `expose` refine `interactivity` and are unsupported in the
 same way; `context` and `reactive-context` are unsupported (UF4001, warnings: `inject` gives its
 fallback, and a provided ref reaches no descendant). `use-id` is emulated (`uniqueId`), and so are
-`scoped-slot` (a render prop named as the slot) and `child-root-scope` (`scopeAttributes`). Every
-other capability is native.
+`scoped-slot` (a render prop named as the slot), `child-root-scope` (`scopeAttributes`) and
+`style-binding` (`styleObject`, for a style bound to a value that a merge spreads, ADR-0065).
+Every other capability is native.
 
 Its toolchain, for tests and tooling (the target's main entry never loads it):
 

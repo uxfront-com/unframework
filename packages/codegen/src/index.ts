@@ -4,6 +4,8 @@ export {
   CAPABILITY_PREREQUISITES,
   defineTarget,
 } from "./target.ts";
+export { bindingForms, mergesWholeStyle, spreadStyleExpression } from "./binding-forms.ts";
+export type { BindingForms } from "./binding-forms.ts";
 export { compositionUse, requiredCapabilities } from "./capabilities.ts";
 export { scopeStylesheet } from "./scoper.ts";
 export type { ScopedStylesheet } from "./scoper.ts";
@@ -113,9 +115,11 @@ export {
   negate,
   operand,
   printMarkup,
+  staticClassValue,
   svelteDialect,
   test,
   vueAttributeCode,
+  vueClassValue,
   vueDialect,
 } from "./markup.ts";
 export type {

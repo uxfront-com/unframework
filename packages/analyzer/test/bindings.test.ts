@@ -65,10 +65,11 @@ function describeAttribute(attribute: Attribute): string {
             ? JSON.stringify(item.value)
             : item.kind === "Toggle"
               ? `${item.name}?${item.condition.code}`
-              : `{${item.value.code}}`,
+              : `{${item.value.code}}${item.collection ? "[]" : ""}`,
         )
         .join(", ")}]`;
     case "Style":
+      if (attribute.value) return `style={${attribute.value.code}}`;
       return `style[${attribute.declarations
         .map((declaration) =>
           declaration.kind === "Static"
@@ -484,6 +485,9 @@ describe("class", () => {
     ['class={on ? "a" : "b"}', '{on ? "a" : "b"}'],
     ["class={maybe}", "{maybe}"],
     ['class={["a", false, null, undefined, { b: false }, label]}', '"a", {label}'],
+    // ADR-0065: an array or an object at run time renders as Vue's `normalizeClass` reads it.
+    ['class={["a", items]}', '"a", {items}[]'],
+    ["class={user}", "{user}[]"],
   ])("lowers %s", (attribute, items) => {
     expect(lowered(`<p ${attribute}>a</p>`)).toEqual([`class[${items}]`]);
   });
@@ -502,7 +506,6 @@ describe("class", () => {
   it.each([
     ['class={["a", count]}', "UF3018"],
     ['class={["a", on]}', "UF3018"],
-    ["class={items}", "UF1002"],
     ['class={{ ["k"]: on }}', "UF3022"],
     ["class={{ ...user }}", "UF3022"],
     ['class={{ "": on }}', "UF3022"],
@@ -511,6 +514,13 @@ describe("class", () => {
     ['class={["a\\u00a0b", label]}', "UF3008"],
   ])("reports %s", (attribute, code) => {
     expect(codes(attributes(`<p ${attribute}>x</p>`).diagnostics)).toContain(code);
+  });
+
+  // Vue's `normalizeClass` skips a number that clsx renders as its digits.
+  it("reports an array whose entries can be numbers (UF3018)", () => {
+    const { diagnostics } = attributes('<p class={["a", counts]}>x</p>', "counts: number[]");
+    expect(codes(diagnostics)).toEqual(["UF3018"]);
+    expect(diagnostics[0]!.message).toContain("A `class` array's entries are class names");
   });
 
   it("writes `cond && expr` as a conditional, which renders the same names", () => {
@@ -571,16 +581,20 @@ describe("style", () => {
     ['style="margin-left: 0; margin-inline-start: 1px"', "UF3022"],
     ['style="color: red !important"', "UF3022"],
     ['style="color: "', "UF3022"],
-    ['style="-webkit-line-clamp: 2"', "UF1002"],
-    ['style="display: table-row"', "UF1002"],
+    ['style="-webkit-transform: none"', "UF3022"],
+    ['style="-moz-osx-font-smoothing: auto"', "UF3022"],
+    ['style="-webkit-text-stroke: 1px red"', "UF3022"],
     ["style={{ margin: 0, marginTop: label }}", "UF3022"],
     ['style={{ color: "red !important" }}', "UF3022"],
-    ["style={{ WebkitLineClamp: count }}", "UF1002"],
+    ["style={{ WebkitLineClamp: count }}", "UF3018"],
+    ['style={{ WebkitTransform: "none" }}', "UF3022"],
     ["style={{ [label]: 1 }}", "UF3022"],
     ["style={{ ...user }}", "UF3022"],
     ["style={{ color: on }}", "UF3018"],
     ["style={{ marginTop: count }}", "UF3018"],
-    ["style={user}", "UF1002"],
+    ["style={user}", "UF3018"],
+    ["style={count}", "UF3018"],
+    ["style={items}", "UF3018"],
     ['style={{ colour1: "red" }}', "UF3022"],
   ])("reports %s", (attribute, code) => {
     expect(codes(attributes(`<p ${attribute}>a</p>`).diagnostics)).toContain(code);
@@ -639,16 +653,69 @@ describe("style", () => {
     ]);
   });
 
-  // ADR-0038 defers vendor prefixes and table-part displays to M4.
+  // ADR-0065: Chromium's own prefixed longhands, and a table part's `display` as a bound one.
+  it("lowers vendor-prefixed longhands and a static table-internal display", () => {
+    expect(
+      lowered(
+        '<p style="-webkit-line-clamp: 2; -WEBKIT-BOX-ORIENT: vertical; display: table-row">a</p>',
+      ),
+    ).toEqual(["style[-webkit-line-clamp: 2; -webkit-box-orient: vertical; display: table-row]"]);
+    expect(
+      lowered('<p style={{ WebkitLineClamp: "2", WebkitTextFillColor: label }}>a</p>'),
+    ).toEqual(["style[-webkit-line-clamp: 2; -webkit-text-fill-color: {label}]"]);
+  });
+
+  it("names the standard property of a prefixed alias", () => {
+    const { diagnostics } = attributes('<p style="-webkit-transform: none">a</p>');
+    expect(diagnostics[0]!.message).toContain("has a standard name, `transform`");
+    expect(diagnostics[0]!.help).toBe("Write `transform`.");
+  });
+
+  it("reports a prefixed longhand beside the shorthand it belongs to (UF3022)", () => {
+    expect(
+      codes(
+        attributes('<p style="mask-position: 0 0; -webkit-mask-position-x: 1px">a</p>').diagnostics,
+      ),
+    ).toEqual(["UF3022"]);
+  });
+
+  // ADR-0065: a style object or a declaration list known only at run time.
   it.each([
-    ['<p style="-webkit-line-clamp: 2">a</p>', "Vendor-prefixed properties"],
-    ["<p style={{ WebkitLineClamp: count }}>a</p>", "Vendor-prefixed properties"],
-    ['<p style="display: table-row">a</p>', "A `display` that makes a table part"],
-  ])("names the milestone that lands %s", (jsx, message) => {
-    const [diagnostic] = attributes(jsx).diagnostics;
-    expect(diagnostic!.code).toBe("UF1002");
-    expect(diagnostic!.message).toContain(message);
-    expect(diagnostic!.message).toMatch(/lands? in M4\.$/);
+    ["style={label}", "style={label}"],
+    ["style={look}", "style={look}"],
+    ["style={on ? look : undefined}", "style={on ? look : undefined}"],
+    ["style={maybe}", "style={maybe}"],
+  ])("lowers %s, bound to one value", (attribute, expected) => {
+    const props = `${PROPS}; look: { color?: string; "--gap"?: string; lineHeight: number }`;
+    expect(lowered(`<p ${attribute}>a</p>`, props)).toEqual([expected]);
+  });
+
+  // Vue's and Qwik's style types have an index signature, which an interface lacks (TS2322).
+  it("reports a style object or a class object typed by an interface (UF3018)", () => {
+    const before = "interface Look { color?: string }\ninterface On { active?: boolean }\n";
+    for (const jsx of ["<p style={look}>a</p>", '<p class={["a", on]}>a</p>']) {
+      const { diagnostics } = component(jsx, { props: "look: Look; on: On", before });
+      expect(codes(diagnostics)).toEqual(["UF3018"]);
+      expect(diagnostics[0]!.message).toContain("is typed by an `interface`");
+      expect(diagnostics[0]!.help).toContain("Declare the type with `type`");
+    }
+    const aliased = "type Look = { color?: string };\ntype On = { active?: boolean };\n";
+    const { diagnostics } = component('<p style={look} class={["a", on]}>a</p>', {
+      props: "look: Look; on: On",
+      before: aliased,
+    });
+    expect(diagnostics).toEqual([]);
+  });
+
+  it.each([
+    ['{ "margin-top": string }', '"margin-top"'],
+    ["{ WebkitLineClamp: string }", "WebkitLineClamp"],
+    ["{ colr: string }", "colr"],
+    ['{ "--Gap": string }', '"--Gap"'],
+    ["{ marginTop: number }", "marginTop"],
+  ])("checks the members of a style object typed %s (UF3018)", (type, at) => {
+    const { found } = attributes("<p style={look}>a</p>", `look: ${type}`);
+    expect(found).toEqual([`UF3018 ${at}`]);
   });
 
   // React adds no `px` to a number on SVG's stroke and opacity properties, as Qwik does.
@@ -825,7 +892,7 @@ describe("spreads", () => {
   it.each([
     // A function type is no prop's (UF1002): a callback is an event.
     ["{ onClick: () => void }", "UF1002"],
-    ["{ style: string }", "UF1002"],
+    ["{ style: number }", "UF3018"],
     ["{ key: string }", "UF3049"],
     ["{ className: string }", "UF3004"],
     ["{ hidden: boolean }", "UF1002"],
@@ -833,6 +900,15 @@ describe("spreads", () => {
   ])("reports a spread whose type is %s", (type, code) => {
     const props = `extra: ${type}`;
     expect(codes(attributes("<p {...extra}>x</p>", props).diagnostics)).toContain(code);
+  });
+
+  // ADR-0065: a spread's `style` is the element's style, an object, a string or nothing.
+  it("lowers a spread's style key", () => {
+    expect(lowered("<p {...extra}>x</p>", "extra: { title: string; style?: string }")).toEqual([
+      "...{extra}[title style]",
+    ]);
+    const twice = attributes('<p style="color: red" {...extra}>x</p>', "extra: { style: string }");
+    expect(codes(twice.diagnostics)).toEqual(["UF3007"]);
   });
 
   it("removes a spread whose type declares no keys (UF3004)", () => {

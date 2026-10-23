@@ -4,6 +4,7 @@ import {
   defineTarget,
   ImportSet,
   scopeRoots,
+  mergesWholeStyle,
 } from "@unframework/codegen";
 import type { CapabilityCell, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
@@ -62,7 +63,11 @@ export const astro: Target = defineTarget({
     fragment: { support: "native" },
     "bound-attribute": { support: "native" },
     "class-binding": { support: "native" },
-    "style-binding": { support: "native" },
+    "style-binding": {
+      support: "emulated",
+      helper: "styleObject",
+      note: "A style bound to a value is Astro's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
+    },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
@@ -138,12 +143,17 @@ export const astro: Target = defineTarget({
     // (ADR-0063).
     const roots = scopeRoots(component);
     const scope = roots.length ? spelling.scope.claim("scopeAttributes") : undefined;
+    // A style bound to a value that an object spread merges is an object first (ADR-0065).
+    const styleObject = mergesWholeStyle(component)
+      ? spelling.scope.claim("styleObject")
+      : undefined;
     const markup = printComponentMarkup(component, spelling.rules, {
       spelling,
       render,
       tags,
       module,
       ...(scope ? { scope: { helper: scope, roots } } : {}),
+      ...(styleObject ? { styleObject } : {}),
     });
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
     // the children's outputs, so a child's sheet loads first, as plugin-vue imports a
@@ -155,6 +165,7 @@ export const astro: Target = defineTarget({
       render,
       markupNamesAstro: /\bAstro\./.test(markup),
       ...(scope ? { scope } : {}),
+      ...(styleObject ? { styleObject } : {}),
       ...(component.styles ? { sheet: `./${file.slice(file.lastIndexOf("/") + 1)}.css` } : {}),
     });
     return [

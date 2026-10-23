@@ -89,7 +89,7 @@ describe("solid target", () => {
     ]);
   });
 
-  it("emulates watchers, nextTick, class bindings and the child-root rule with the helpers it prints, the rest natively", () => {
+  it("emulates watchers, nextTick, class and style bindings and the child-root rule with the helpers it prints, the rest natively", () => {
     // Nothing is unsupported: the watchers' scheduler coalesces every shape of a synchronous run
     // of client code (src/helpers.ts).
     const cells = Object.entries(target.capabilities).filter(
@@ -99,6 +99,7 @@ describe("solid target", () => {
       ["interactivity", expect.objectContaining({ helper: "createWatcher" })],
       ["next-tick", expect.objectContaining({ helper: "nextTick" })],
       ["class-binding", expect.objectContaining({ helper: "cx" })],
+      ["style-binding", expect.objectContaining({ helper: "styleProperties" })],
       ["model-array", expect.objectContaining({ helper: "toggle" })],
       ["model-modifiers", expect.objectContaining({ helper: "modelText" })],
       ["reactive-context", expect.objectContaining({ helper: "refObject" })],

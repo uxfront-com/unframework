@@ -34,6 +34,8 @@ export interface FrontmatterParts {
   markupNamesAstro: boolean;
   /** The `scopeAttributes` helper's name, when the root takes its parents' (ADR-0063). */
   scope?: string;
+  /** The `styleObject` helper's name, when a style bound to a value is merged (ADR-0065). */
+  styleObject?: string;
   /** The emitted sheet the component imports, `./Card.uf.tsx.css` (ADR-0063). */
   sheet?: string;
 }
@@ -81,7 +83,7 @@ export function childTags(
 export function frontmatterOf(
   component: UfComponent,
   module: UfModule,
-  { spelling, imports, render, markupNamesAstro, scope, sheet }: FrontmatterParts,
+  { spelling, imports, render, markupNamesAstro, scope, styleObject, sheet }: FrontmatterParts,
 ): string | undefined {
   const parameter = component.propsParameter;
   const live = serverBindings(component);
@@ -114,6 +116,7 @@ export function frontmatterOf(
   if (reads.length) sections.push(reads);
   for (const helper of setup.helpers) sections.push([helper]);
   if (scope) sections.push([scopeAttributesHelper(scope)]);
+  if (styleObject) sections.push([styleObjectHelper(styleObject)]);
   if (setup.statements.length) sections.push(setup.statements);
   // Each hoisted `<component is>` once, though a branch per set of forwarded slots repeats it.
   const constants = new Map<string, string>();
@@ -133,6 +136,28 @@ export function frontmatterOf(
   ];
   if (declarations.length) sections.unshift([declarations.join("\n")]);
   return frontmatterCode(sections);
+}
+
+/**
+ * The `styleObject` helper (`style-binding`, emulated, ADR-0065): a style bound to a value as an
+ * object, which a merge spreads. A declaration list splits as Vue's `parseStringStyle` splits
+ * it, with camel-case keys, as the consumer's object has them, which Astro writes in kebab case.
+ */
+function styleObjectHelper(name: string): string {
+  // Raw, so the regular expressions keep their escapes.
+  return String.raw`/** A style bound to a value as an object: a declaration list becomes one. */
+function ${name}(style: object | string | null | undefined): Record<string, string> {
+  if (typeof style !== "string") return { ...style };
+  const object: Record<string, string> = {};
+  for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
+    const [property, value] = declaration.split(/:([^]+)/);
+    if (value === undefined) continue;
+    const key = property!.trim();
+    const camel = key.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+    object[key.startsWith("--") ? key : camel] = value.trim();
+  }
+  return object;
+}`;
 }
 
 /**

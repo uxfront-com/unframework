@@ -87,6 +87,8 @@ export interface ComposedMarkup {
    * (`scopeRoots`, ADR-0063).
    */
   scope?: { helper: string; roots: readonly Span[] };
+  /** The `styleObject` helper, where a style bound to a value is merged (ADR-0065). */
+  styleObject?: string;
 }
 
 /**
@@ -129,7 +131,7 @@ export function printComponentMarkup(
 /** The dialect, with what composition needs of the component and its spelling. */
 function composition(
   component: UfComponent,
-  { spelling, render, tags }: ComposedMarkup,
+  { spelling, render, tags, styleObject }: ComposedMarkup,
   options: MarkupOptions,
 ): MarkupDialect {
   const code = (expression: Parameters<typeof rewriteExpression>[0]) =>
@@ -261,6 +263,14 @@ function composition(
      */
     styleAttribute(parts, context) {
       const consumer = parts.find((part) => part.property === SPREAD_STYLE);
+      // A style bound to a value is an object where it is spread (ADR-0065): on a component,
+      // and on the root, before the consumer's.
+      const whole = parts.find((part) => part.property === "");
+      if (whole && styleObject && (consumer || /^[A-Z]|\./.test(context.element.tag))) {
+        const own = `${styleObject}(${whole.value})`;
+        const text = consumer ? `style={{ ...${own}, ...${consumer.value} }}` : `style={${own}}`;
+        return [{ name: "style", text }];
+      }
       if (!consumer && !/^[A-Z]|\./.test(context.element.tag)) {
         return dialect.styleAttribute(parts, context);
       }

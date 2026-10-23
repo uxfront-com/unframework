@@ -104,8 +104,16 @@ export const angular: Target = defineTarget({
     list: { support: "native" },
     fragment: { support: "native" },
     "bound-attribute": { support: "native" },
-    "class-binding": { support: "native" },
-    "style-binding": { support: "native" },
+    "class-binding": {
+      support: "emulated",
+      helper: "classNames",
+      note: "Angular's `[class]` reads no nested array, and drops an entry that holds a space, so a class part that may be an array or an object goes through an inline helper, `classNames`, that reads it as Vue's `normalizeClass` does (ADR-0065).",
+    },
+    "style-binding": {
+      support: "emulated",
+      helper: "styleObject",
+      note: "A style bound to a value is Angular's own `[style]`, but where an object spread merges it, on the root that takes a consumer's style and on a component, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
+    },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },

@@ -15,6 +15,7 @@ import {
   jsxDynamic,
   jsxElement,
   jsxExpression,
+  styleJsxAttribute,
   jsxNode,
   keyImports,
   keyOwner,
@@ -136,7 +137,11 @@ export const qwik: Target = defineTarget({
     fragment: { support: "native" },
     "bound-attribute": { support: "native" },
     "class-binding": { support: "native" },
-    "style-binding": { support: "native" },
+    "style-binding": {
+      support: "emulated",
+      helper: "styleObject",
+      note: "A style bound to a value is Qwik's own `style`, but where an object spread merges it, on the root that takes a consumer's style and on a component, an inline helper splits a declaration list into an object as Vue does (ADR-0065).",
+    },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
@@ -730,6 +735,25 @@ function helpers(plan: SetupPlan, listeners: Listeners): string[] {
       ].join("\n"),
     );
   }
+  if (names.has("styleObject")) {
+    // Raw, so the regular expressions keep their escapes.
+    found.push(String.raw`/**
+ * A style bound to a value as an object, which a merge spreads: a declaration list splits as
+ * Vue's parseStringStyle splits it, with camel-case keys.
+ */
+function ${names.once("styleObject")}(style: object | string | null | undefined): Record<string, string> {
+  if (typeof style !== "string") return { ...style };
+  const object: Record<string, string> = {};
+  for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
+    const [property, value] = declaration.split(/:([^]+)/);
+    if (value === undefined) continue;
+    const key = property!.trim();
+    const camel = key.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+    object[key.startsWith("--") ? key : camel] = value.trim();
+  }
+  return object;
+}`);
+  }
   if (names.has("nextTick")) {
     found.push(
       [
@@ -860,6 +884,26 @@ function qwikDialect(
   const namespaceOf = (element: ElementNode) => namespaces.get(element) ?? "html";
   const { composition } = plan;
   const fills = fillExpressions(component);
+  const { render } = component;
+  const fallthroughRoot = render.kind === "Element" ? render : render.children[0];
+  /**
+   * `style={value}`, or `style={styleObject(value)}` where an object spread merges it: on the
+   * root that takes a consumer's style, and on a component, whose root spreads it (ADR-0054).
+   */
+  const wholeStyle = (value: AstExpression, element: ElementNode) => {
+    const merged =
+      /^[A-Z]/.test(element.tag) ||
+      (composition.fallthrough !== undefined &&
+        fallthroughRoot !== undefined &&
+        fallthroughRoot.span.start === element.span.start &&
+        fallthroughRoot.span.end === element.span.end);
+    return js.jsxAttribute(
+      "style",
+      js.jsxExpressionContainer(
+        merged ? js.callExpression(js.identifier(plan.names.once("styleObject")), [value]) : value,
+      ),
+    );
+  };
   /** The name of each setup function's copy in the fills that call it. */
   const fillCopies = new Map<BindingId, string>();
   return {
@@ -1009,6 +1053,8 @@ function qwikDialect(
         .filter((key) => !(merged && key.name === "class"))
         .map((key) => {
           const value = spreadRead(attribute, key, context);
+          // A `style` key is the element's style (ADR-0065).
+          if (key.name === "style") return wholeStyle(value, element);
           return isUntypedAttribute(element.tag, namespace, key.name)
             ? untypedSpread(key.name, value)
             : js.jsxAttribute(
@@ -1021,6 +1067,12 @@ function qwikDialect(
       qwikClassAttribute(attribute, element, context, (condition) =>
         isPrimitiveValue(condition, component, module),
       ),
+    // A style bound to a value, an object or a declaration list, is Qwik's own `style`
+    // (ADR-0065), but where a consumer's merges into it.
+    styleAttribute: (attribute, element, context) =>
+      attribute.value
+        ? [wholeStyle(jsxExpression(attribute.value, context), element)]
+        : styleJsxAttribute(attribute, element, context),
     // The `data-uf-*` attributes of the styled parents that render the component, whose names
     // only they know, picked out of its props by name (the child-root rule, ADR-0063). Each
     // root takes them once: the first node printed with its span, which is the root itself,

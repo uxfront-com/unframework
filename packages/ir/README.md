@@ -31,7 +31,7 @@ plain, versioned, schema-validated JSON (plan §5.3).
   reads through `Import` references; and the
   forms ADR-0038 and ADR-0039 defer: a `style` bound to one value (`StyleAttribute.value`), a
   `class` part that may be an array or an object (`DynamicClass.collection`), a spread's `style`
-  key and vendor-prefixed properties. The analyser lowers none of it yet.
+  key and vendor-prefixed properties, which the analyser lowers since ADR-0065.
 - **Builders:** one per type (`createModule`, `createComponent`, `createElement`, `createFor`,
   `createExpression`, `createCode`, `createWriteReference`, `createFunctionCode`,
   `createStateItem`, `createEventAttribute`, …). They write keys in the order of the types, which

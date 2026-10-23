@@ -593,6 +593,7 @@ export function planComponent(component: UfComponent, module: UfModule): ReactPl
 /** The inline helpers' names, as the target claims them. */
 const HELPER_NAMES = [
   "cx",
+  "styleObject",
   "listen",
   "useOnce",
   "useNextTick",

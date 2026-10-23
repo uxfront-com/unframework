@@ -162,22 +162,25 @@ export const astroDialect: MarkupDialect = {
     parts.every((part) => part.kind === "Static")
       ? [{ name: "class", text: quotedAttribute("class", staticClassValue(parts)) }]
       : [{ name: "class", text: `class:list={[${classArrayItems(parts, true).join(", ")}]}` }],
+  // A whole style, an object or a declaration list, is Astro's own `style` (ADR-0065).
   styleAttribute: (parts) =>
-    parts.every((part) => part.kind === "Static")
-      ? [{ name: "style", text: quotedAttribute("style", staticStyleValue(parts)) }]
-      : [
-          {
-            name: "style",
-            text: `style={{ ${parts
-              .map(
-                (part) =>
-                  `${part.property.startsWith("--") ? JSON.stringify(part.property) : camelCaseProperty(part.property)}: ${
-                    part.kind === "Static" ? JSON.stringify(part.value) : part.value
-                  }`,
-              )
-              .join(", ")} }}`,
-          },
-        ],
+    parts[0]?.property === ""
+      ? [{ name: "style", text: `style={${parts[0].value}}` }]
+      : parts.every((part) => part.kind === "Static")
+        ? [{ name: "style", text: quotedAttribute("style", staticStyleValue(parts)) }]
+        : [
+            {
+              name: "style",
+              text: `style={{ ${parts
+                .map(
+                  (part) =>
+                    `${part.property.startsWith("--") ? JSON.stringify(part.property) : camelCaseProperty(part.property)}: ${
+                      part.kind === "Static" ? JSON.stringify(part.value) : part.value
+                    }`,
+                )
+                .join(", ")} }}`,
+            },
+          ],
   conditional: (branches) => {
     // A trailing empty branch renders nothing either way.
     let last = branches.length;

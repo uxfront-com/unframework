@@ -290,7 +290,8 @@ what Solid cannot render as the other targets do is the analyser's to reject (AD
 | `event-semantics`                              | native: some events delegated, the others native                                                             |
 | `use-id`                                       | native: `createUniqueId`                                                                                     |
 | `next-tick`                                    | emulated: `nextTick`                                                                                         |
-| `class-binding`                                | emulated: `cx`                                                                                               |
+| `class-binding`                                | emulated: `cx`, which reads an array's entries where a part may be an array or an object (ADR-0065)          |
+| `style-binding`                                | emulated: `styleProperties`, a style bound to a value as an object with kebab-case keys (ADR-0065)           |
 | `child-root-scope`                             | emulated: `scopeAttributes`, the props' `data-uf-*` keys, spread on the root nodes                           |
 | `model-array`                                  | emulated: `toggle`, and `selectedValues` for a multiple select                                               |
 | `model-modifiers`                              | emulated: `modelText`                                                                                        |

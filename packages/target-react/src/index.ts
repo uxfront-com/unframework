@@ -10,6 +10,7 @@ import {
   jsxNode,
   printComponentModule,
   printExpression,
+  spreadStyleExpression,
 } from "@unframework/codegen";
 import type { EmitContext, JsxContext, OutputFile, Target } from "@unframework/codegen";
 import type {
@@ -35,7 +36,7 @@ import type { ComponentCode } from "./bailouts.ts";
 import { placeConditionals } from "./branches.ts";
 import { ReactComposer } from "./compose.ts";
 import { exposedType, refValueType, SCOPE_HELPER, slotProp } from "./composition.ts";
-import { cxHelper, reactDialect } from "./dialect.ts";
+import { cxHelper, reactDialect, styleObjectHelper } from "./dialect.ts";
 import type { ReactNames } from "./dialect.ts";
 import {
   modelTextHelper,
@@ -102,7 +103,11 @@ export const react: Target = defineTarget({
       helper: "cx",
       note: "React's className takes one string, so an inline helper joins the static names, toggles and dynamic parts.",
     },
-    "style-binding": { support: "native" },
+    "style-binding": {
+      support: "emulated",
+      helper: "styleObject",
+      note: "React's style takes an object, so a style bound to a value goes through an inline helper, `styleObject`, that splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
+    },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
@@ -225,7 +230,15 @@ export const react: Target = defineTarget({
       ...compositionInterfaces(plan),
     ];
     const helpers = [
-      ...(names.cx ? [cxHelper(names.cx)] : []),
+      ...(names.cx ? [cxHelper(names.cx, names.cxCollections)] : []),
+      ...(names.styleObject
+        ? [
+            styleObjectHelper(
+              names.styleObject,
+              names.imports.add("react", "CSSProperties", { type: true }),
+            ),
+          ]
+        : []),
       ...listenerHelpers(plan),
       ...(plan.helpers.nextTick
         ? [nextTickHelper(plan.helpers.nextTick, nextTickHooks(plan))]
@@ -351,6 +364,18 @@ function fallthroughAttributes<T extends Attribute | ComponentAttribute>(
       const merged: StyleAttribute = { ...attribute };
       composer.fallthroughStyles.add(merged);
       attributes.push(merged);
+    } else if (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")) {
+      // A spread's `style` is the root's own (ADR-0065): the consumer's merges over it.
+      styled = true;
+      const keys = attribute.keys.filter((key) => key.name !== "style");
+      const merged: StyleAttribute = {
+        kind: "Style",
+        declarations: [],
+        value: spreadStyleExpression(attribute),
+        span: attribute.span,
+      };
+      composer.fallthroughStyles.add(merged);
+      attributes.push({ ...attribute, keys }, merged);
     } else {
       attributes.push(attribute);
     }

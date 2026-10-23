@@ -17,7 +17,8 @@ import { checkExpression, span } from "./expressions.ts";
 import type { CheckedExpression } from "./expressions.ts";
 import { isStaticString, reportCharacters, valueOf } from "./literals.ts";
 import type { RenderContext } from "./render.ts";
-import { describe, outside } from "./types/kinds.ts";
+import { interfaceProblem } from "./style.ts";
+import { describe, elementsOf, outside } from "./types/kinds.ts";
 
 /** HTML's ASCII whitespace, which separates class names. */
 const ASCII_WHITESPACE = /[\t\n\f\r ]+/;
@@ -36,7 +37,7 @@ export interface LoweredClass {
 type Part =
   | { kind: "static"; names: string[]; at: Span }
   | { kind: "toggle"; names: string[]; condition: CheckedExpression; static: boolean; at: Span }
-  | { kind: "dynamic"; value: CheckedExpression; at: Span };
+  | { kind: "dynamic"; value: CheckedExpression; collection: boolean; at: Span };
 
 /**
  * Lowers `class={value}`: string literals are static names, `cond && "a"` and object keys toggle
@@ -85,7 +86,7 @@ export function lowerClass(value: AST.Expression, context: RenderContext): Lower
           createToggleClass(name, part.condition.expression, part.at),
         );
       default:
-        return [createDynamicClass(part.value.expression, part.at)];
+        return [createDynamicClass(part.value.expression, part.at, part.collection)];
     }
   });
   return { attribute: createClassAttribute(items, span(value)), names: undefined, reported };
@@ -149,8 +150,8 @@ function collect(node: AST.Expression, parts: Part[], context: RenderContext): v
   }
   // A dynamic part, where a pass-through name (an engine's class function) may be called.
   const value = checkExpression(node, { ...context, classPart: true });
-  checkDynamic(value, node, context);
-  parts.push({ kind: "dynamic", value, at: span(node) });
+  const collection = checkDynamic(value, node, context);
+  parts.push({ kind: "dynamic", value, collection, at: span(node) });
 }
 
 /** `false`, `null` and `undefined` render no class, in an array as anywhere. */
@@ -192,7 +193,7 @@ function collectToggle(node: AST.LogicalExpression, parts: Part[], context: Rend
         },
       ]
     : [];
-  parts.push({ kind: "dynamic", value, at: span(node) });
+  parts.push({ kind: "dynamic", value, collection: false, at: span(node) });
   reporter.report(
     "UF3018",
     node,
@@ -274,23 +275,47 @@ function collectObject(node: AST.ObjectExpression, parts: Part[], context: Rende
   }
 }
 
-/** A dynamic part's value must be a string, or nothing (UF3018, and arrays and objects M4). */
+/**
+ * A dynamic part's value must be a string, an array or an object, or nothing (UF3018). Returns
+ * whether it can be an array or an object at run time: its names then render as Vue's
+ * `normalizeClass` reads them (ADR-0065).
+ */
 function checkDynamic(
   value: CheckedExpression,
   node: AST.Expression,
   context: RenderContext,
-): void {
+): boolean {
   const kinds = outside(value.kinds, ["string", "null", "undefined"]);
-  if (!kinds.length) return;
+  if (!kinds.length) return false;
   if (kinds.every((kind) => kind === "array" || kind === "object")) {
-    context.reporter.unsupported(
+    const objects = [
+      ...(value.kinds.objects ?? []),
+      ...(kinds.includes("array") ? (elementsOf(value.kinds).objects ?? []) : []),
+    ];
+    if (objects.some((shape) => shape.interface)) {
+      const problem = interfaceProblem("class object", "class");
+      context.reporter.report("UF3018", node, problem.message, { help: problem.help });
+      return false;
+    }
+    // Vue's `normalizeClass` skips a number entry that clsx renders as its digits.
+    const entries = kinds.includes("array")
+      ? outside(elementsOf(value.kinds), [
+          "string",
+          "boolean",
+          "null",
+          "undefined",
+          "array",
+          "object",
+        ])
+      : [];
+    if (!entries.length) return true;
+    context.reporter.report(
+      "UF3018",
       node,
-      "A `class` part that holds an array or an object at run time is not supported yet: it lands in M4. Here it can be one.",
-      {
-        help: "Write the array or the object in the `class` itself, or join the names into a string.",
-      },
+      `A \`class\` array's entries are class names, and this one's can be ${describe(entries)}, which the targets render differently.`,
+      { help: "Hold strings in the array, or `String(value)` to render a number's digits." },
     );
-    return;
+    return false;
   }
   context.reporter.report(
     "UF3018",
@@ -300,4 +325,5 @@ function checkDynamic(
       help: 'Write `cond && "name"` to toggle a name, or `String(value)` to render a number\'s digits.',
     },
   );
+  return false;
 }

@@ -19,7 +19,7 @@ import type { UfComponent } from "@unframework/ir";
 
 import { SolidComposition } from "./composition.ts";
 import { NEXT_TICK_HELPER, WATCHER_HELPER } from "./helpers.ts";
-import { CLASS_HELPER, SCOPE_HELPER, solidJsx } from "./jsx.ts";
+import { CLASS_HELPER, SCOPE_HELPER, solidJsx, STYLE_HELPER } from "./jsx.ts";
 import { solidListeners } from "./listeners.ts";
 import { ModelHelpers, modelRef } from "./models.ts";
 import { BindingTypes, Narrowings } from "./narrowing.ts";
@@ -83,7 +83,11 @@ export const solid: Target = defineTarget({
       helper: CLASS_HELPER,
       note: "Solid's class takes one string, so an inline helper joins dynamic parts with the static names and toggles; static names and toggles alone print as class and classList.",
     },
-    "style-binding": { support: "native" },
+    "style-binding": {
+      support: "emulated",
+      helper: STYLE_HELPER,
+      note: "Solid's style takes kebab-case keys, so a style bound to a value goes through an inline helper that writes an object's camel-case keys in kebab case and splits a declaration list as Vue does (ADR-0065); declarations print as an object.",
+    },
     "attribute-spread": { support: "native" },
     svg: { support: "native" },
     component: { support: "native" },
@@ -142,7 +146,7 @@ export const solid: Target = defineTarget({
       for (const name of freeNames(each, taken)) taken.delete(name);
       return taken;
     });
-    const bases = [CLASS_HELPER, SCOPE_HELPER].map((helper) => {
+    const bases = [CLASS_HELPER, SCOPE_HELPER, STYLE_HELPER].map((helper) => {
       const { base, others } = moduleHelperName(helper, reserved, index);
       for (const name of others) names.add(name);
       return [helper, base] as const;

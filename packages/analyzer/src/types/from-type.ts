@@ -156,7 +156,7 @@ export class TypeTable {
     if (node.type === "TSInterfaceDeclaration") {
       const cached = this.#memo.get(node);
       if (cached) return cached;
-      const shape = objectOf(this.shapeOf(node.body.body));
+      const shape = objectOf({ ...this.shapeOf(node.body.body), interface: true });
       this.#memo.set(node, shape);
       return shape;
     }

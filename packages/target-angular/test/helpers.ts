@@ -72,7 +72,8 @@ export function corpusSources(): { name: string; file: string; source: string }[
       ({ name }) =>
         !name.startsWith("diagnostics/") &&
         !COMPOSITION.test(name) &&
-        !STYLED_COMPOSITION.test(name),
+        !STYLED_COMPOSITION.test(name) &&
+        !BINDING_COMPOSITION.test(name),
     );
 }
 
@@ -83,6 +84,13 @@ export function corpusSources(): { name: string; file: string; source: string }[
  */
 const STYLED_COMPOSITION =
   /^styles\/(?:child-root|child-root-branches|deep|global|slotted|slotted-order)$/;
+
+/**
+ * The binding cases whose main source renders a child that merges a style bound to a value
+ * (ADR-0065): they resolve the child as `compile()` does, which `lower` has not. The corpus's
+ * toolchain project checks their Angular outputs.
+ */
+const BINDING_COMPOSITION = /^bindings\/(?:style-expression|style-spread)$/;
 
 /**
  * The areas of M3's composition cases, which Angular reports (UF1002) until its M3 lane

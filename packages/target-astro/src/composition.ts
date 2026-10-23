@@ -6,7 +6,7 @@
 //   its bindings (a list's index), and the dialect writes no content for it;
 // - a `<textarea>`'s model as its text, and a `<select>`'s as `selected` on its options.
 // Astro renders once, on the server, so a model renders its initial state and nothing writes it.
-import { rewriteExpression } from "@unframework/codegen";
+import { rewriteExpression, spreadStyleExpression } from "@unframework/codegen";
 import type {
   Attribute,
   ComponentAttribute,
@@ -372,7 +372,30 @@ function withFallthrough<T extends ElementNode | ComponentNode>(root: T, names: 
   else attributes.push({ kind: "Class", items: [className], span: root.span });
   const styleAt = attributes.findIndex((attribute) => attribute.kind === "Style");
   const declared = attributes[styleAt];
-  if (declared?.kind === "Style") {
+  // A style bound to one value, or a spread's `style` key, is the root's own (ADR-0065).
+  const spreadAt = attributes.findIndex(
+    (attribute) =>
+      attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style"),
+  );
+  const spread = attributes[spreadAt];
+  if (spread?.kind === "Spread") {
+    const whole = {
+      kind: "Bound" as const,
+      property: "",
+      value: spreadStyleExpression(spread),
+      span: spread.span,
+    };
+    attributes[spreadAt] = { ...spread, keys: spread.keys.filter((key) => key.name !== "style") };
+    attributes.push({ kind: "Style", declarations: [whole, style], span: root.span });
+  } else if (declared?.kind === "Style" && declared.value) {
+    const whole = {
+      kind: "Bound" as const,
+      property: "",
+      value: declared.value,
+      span: declared.span,
+    };
+    attributes[styleAt] = { kind: "Style", declarations: [whole, style], span: declared.span };
+  } else if (declared?.kind === "Style") {
     attributes[styleAt] = { ...declared, declarations: [...declared.declarations, style] };
   } else attributes.push({ kind: "Style", declarations: [style], span: root.span });
   return { ...root, attributes } as T;
