@@ -1,0 +1,10 @@
+{
+  "description": "A recipe's classes beside a scoped sheet's class on one element: the two set different properties, so neither sheet's order decides what renders.",
+  "ssr": {
+    "default": {
+      "props": {
+        "title": "Release notes"
+      }
+    }
+  }
+}

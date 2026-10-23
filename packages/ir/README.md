@@ -26,8 +26,9 @@ plain, versioned, schema-validated JSON (plan §5.3).
   lowers none of it yet: M3's lanes do.
 - **Styles (ADR-0063):** a component's `styles`, the sibling stylesheets it imports, each with its
   specifier, its text and its span, and its `scopeId`; a child's `ComponentApi.styles`, its scope id
-  and whether its sheets use `:slotted()`; a module's `passThroughImports` of `virtual:styleframe`
-  and `virtual:styleframe.css`, whose names a template reads through `Import` references; and the
+  and whether its sheets use `:slotted()`; a module's `passThroughImports`, of any module that is neither
+  relative nor absolute (a styling engine's `virtual:` modules, ADR-0064), whose names a template
+  reads through `Import` references; and the
   forms ADR-0038 and ADR-0039 defer: a `style` bound to one value (`StyleAttribute.value`), a
   `class` part that may be an array or an object (`DynamicClass.collection`), a spread's `style`
   key and vendor-prefixed properties. The analyser lowers none of it yet.

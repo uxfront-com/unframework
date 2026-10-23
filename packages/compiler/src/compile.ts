@@ -62,6 +62,30 @@ export interface CompileOptions {
    * imports (ADR-0063): without it, or when it returns nothing, the import is UF5005.
    */
   resolve?: Resolver;
+  /**
+   * The specifier prefixes whose imports pass through to every output as written (plan §4.4,
+   * ADR-0064): a styling engine's virtual modules, which its own bundler plugin resolves. It
+   * defaults to `["virtual:"]`, Vite's convention for a module a plugin registers, and a list
+   * replaces the default (`["virtual:", "styled-system/"]`). A prefix that is empty, relative or
+   * absolute throws (`checkPassThrough`). An import the analyser classifies itself (the
+   * authoring API, a framework, a `.uf.tsx` or relative module) never passes through.
+   */
+  passThrough?: readonly string[];
+}
+
+/**
+ * Checks the `passThrough` option (ADR-0064): throws when a prefix is empty, or starts with `.`,
+ * `/`, `\\` or a drive letter, since such a specifier names a file of the project, a component's
+ * own sheet or a child, never a module a plugin registers.
+ */
+export function checkPassThrough(prefixes: readonly string[]): void {
+  for (const prefix of prefixes) {
+    if (typeof prefix !== "string" || !prefix || /^(?:[./\\]|[A-Za-z]:)/.test(prefix)) {
+      throw new TypeError(
+        `The passThrough prefix ${JSON.stringify(prefix)} is invalid: a prefix that passes through names a module a bundler plugin registers, such as "virtual:", so it is not empty, relative or absolute.`,
+      );
+    }
+  }
 }
 
 /** The result of {@link compile}. */
@@ -84,12 +108,14 @@ export interface CompileResult {
 /**
  * Compiles one `.uf.tsx` source to every selected target. A pure function of the source and
  * the options: the same input and versions give byte-identical output (P8). It throws only
- * for invalid options (an unknown target name, two targets with one name); every other
+ * for invalid options (an unknown target name, two targets with one name, an invalid
+ * `passThrough` prefix); every other
  * problem, a misbehaving plugin or target included, is a diagnostic, and an error in one
  * component or target never stops the others.
  */
 export async function compile(source: string, options: CompileOptions): Promise<CompileResult> {
   const file = options.filename;
+  if (options.passThrough) checkPassThrough(options.passThrough);
   const diagnostics: Diagnostic[] = [];
   const targets = options.targets.map(resolveTarget);
   const outputs: Record<string, OutputFile[]> = {};
@@ -131,7 +157,11 @@ export async function compile(source: string, options: CompileOptions): Promise<
     sheetFiles = new Map(
       [...stylesheets].flatMap(([specifier, sheet]) => (sheet ? [[specifier, sheet.file]] : [])),
     );
-    const analysis = analyze(parsed, { imports, stylesheets });
+    const analysis = analyze(parsed, {
+      imports,
+      stylesheets,
+      ...(options.passThrough ? { passThrough: options.passThrough } : {}),
+    });
     diagnostics.push(...analysis.diagnostics);
     // The analyser keeps the IR's invariants by construction; a module that breaks one is a
     // compiler bug, and no target may emit from it.

@@ -3467,10 +3467,10 @@ function recipe(): ElementNode {
   ]);
 }
 
-/** A named import of Styleframe's `button`. */
-function styleframe() {
+/** A named import of an engine's `button`. */
+function recipes() {
   return createPassThroughImport(
-    "virtual:styleframe",
+    "virtual:recipes",
     [createPassThroughName("button", "button", span(20, 26))],
     span(0, 40),
   );
@@ -3501,14 +3501,16 @@ describe("checkInvariants on styles (ADR-0063)", () => {
     [
       "a template that reads a pass-through import",
       changedModule(recipe(), (module) => {
-        module.passThroughImports = [styleframe()];
+        module.passThroughImports = [recipes()];
       }),
     ],
     [
-      "Styleframe's stylesheet",
+      "a side-effect import of any module neither relative nor absolute",
       changedModule(node("p"), (module) => {
         module.passThroughImports = [
-          createPassThroughImport("virtual:styleframe.css", [], span(0, 30)),
+          createPassThroughImport("virtual:engine.css", [], span(0, 30)),
+          createPassThroughImport("styled-system/setup", [], span(31, 60)),
+          createPassThroughImport("virtual:engine", [], span(61, 90)),
         ];
       }),
     ],
@@ -3551,33 +3553,44 @@ describe("checkInvariants on styles (ADR-0063)", () => {
       "declares one component",
     ],
     [
-      "Styleframe's stylesheet with a name",
+      "a pass-through import of a relative module",
       changedModule(node("p"), (module) => {
-        module.passThroughImports = [
-          createPassThroughImport(
-            "virtual:styleframe.css",
-            [createPassThroughName("button", "button", at)],
-            at,
-          ),
-        ];
+        module.passThroughImports = [createPassThroughImport("./theme.css", [], at)];
       }),
-      "/passThroughImports/0/names",
-      "must be empty",
+      "/passThroughImports/0/specifier",
+      "neither relative nor absolute",
     ],
     [
-      "an import of Styleframe's recipes without a name",
+      "a pass-through import of an absolute module",
       changedModule(node("p"), (module) => {
-        module.passThroughImports = [createPassThroughImport("virtual:styleframe", [], at)];
+        module.passThroughImports = [createPassThroughImport("/theme.css", [], at)];
       }),
-      "/passThroughImports/0/names",
-      "must name what",
+      "/passThroughImports/0/specifier",
+      "neither relative nor absolute",
     ],
+    [
+      "a pass-through import of a module on a drive",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [createPassThroughImport("C:\\theme.css", [], at)];
+      }),
+      "/passThroughImports/0/specifier",
+      "neither relative nor absolute",
+    ],
+    [
+      "a pass-through import of no module",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [createPassThroughImport("", [], at)];
+      }),
+      "/passThroughImports/0/specifier",
+      "neither relative nor absolute",
+    ],
+
     [
       "a name that is no identifier",
       changedModule(node("p"), (module) => {
         module.passThroughImports = [
           createPassThroughImport(
-            "virtual:styleframe",
+            "virtual:recipes",
             [createPassThroughName("button", "my-button", at)],
             at,
           ),
@@ -3591,7 +3604,7 @@ describe("checkInvariants on styles (ADR-0063)", () => {
       changedModule(node("p"), (module) => {
         module.passThroughImports = [
           createPassThroughImport(
-            "virtual:styleframe",
+            "virtual:recipes",
             [createPassThroughName("my-button", "button", at)],
             at,
           ),
@@ -3605,7 +3618,7 @@ describe("checkInvariants on styles (ADR-0063)", () => {
       changedModule(node("p"), (module) => {
         module.passThroughImports = [
           createPassThroughImport(
-            "virtual:styleframe",
+            "virtual:recipes",
             [
               createPassThroughName("button", "button", at),
               createPassThroughName("badge", "button", at),
@@ -3636,7 +3649,7 @@ describe("checkInvariants on styles (ADR-0063)", () => {
         ];
         module.passThroughImports = [
           createPassThroughImport(
-            "virtual:styleframe",
+            "virtual:recipes",
             [createPassThroughName("button", "ThemeKey", at)],
             at,
           ),
@@ -3650,7 +3663,7 @@ describe("checkInvariants on styles (ADR-0063)", () => {
       changedModule(node("p"), (module) => {
         module.passThroughImports = [
           createPassThroughImport(
-            "virtual:styleframe",
+            "virtual:recipes",
             [createPassThroughName("button", "A", at)],
             at,
           ),
@@ -3658,6 +3671,20 @@ describe("checkInvariants on styles (ADR-0063)", () => {
       }),
       "/passThroughImports/0/names/0/local",
       "must differ from every other name",
+    ],
+    [
+      "a name Qwik's optimizer reads as a QRL",
+      changedModule(node("p"), (module) => {
+        module.passThroughImports = [
+          createPassThroughImport(
+            "virtual:recipes",
+            [createPassThroughName("button", "button$", at)],
+            at,
+          ),
+        ];
+      }),
+      "/passThroughImports/0/names/0/local",
+      'must not be "button$": Qwik\'s optimizer',
     ],
     [
       "a read of a name no pass-through import binds",
@@ -3670,7 +3697,7 @@ describe("checkInvariants on styles (ADR-0063)", () => {
       changedModule(recipe(), (module) => {
         module.passThroughImports = [
           createPassThroughImport(
-            "virtual:styleframe",
+            "virtual:recipes",
             [createPassThroughName("button", "btn", at)],
             at,
           ),
@@ -3694,7 +3721,7 @@ describe("checkInvariants on styles (ADR-0063)", () => {
 
   it("reports a pass-through import read in setup code", () => {
     const module = extraConst("styled");
-    module.passThroughImports = [styleframe()];
+    module.passThroughImports = [recipes()];
     const extra = module.components[1]!.setup.at(-1);
     if (extra?.kind !== "Const") throw new Error("Expected the extra const.");
     const { start } = extra.value.span;

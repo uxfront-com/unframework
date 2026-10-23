@@ -139,9 +139,9 @@ const CANONICAL_CLASS = /^\S+(?: \S+)*$/u;
  *   properties in lower case and static values Angular's style parser reads as written
  *   (ADR-0038), or is bound to one value and has no declarations;
  * - styles (ADR-0063): only the one component of a module imports stylesheets, and it has a
- *   scope id exactly when it imports any; a pass-through import binds names exactly when it
- *   imports Styleframe's recipes and tokens, each local name an identifier no other import
- *   binds, and only a template reads one;
+ *   scope id exactly when it imports any; a pass-through import names a module that is neither
+ *   relative nor absolute, each local name it binds is an identifier no other import binds, and
+ *   only a template reads one;
  * - no value holds code or a document the compiler cannot analyse (`srcdoc`, a `javascript:`
  *   URL, a `data:` URL a frame loads), and text and values hold only characters HTML keeps;
  * - text sits where every target renders it alike: no whitespace-only text where Svelte drops
@@ -285,10 +285,13 @@ export function checkInvariants(module: UfModule): IrValidationError[] {
   return errors;
 }
 
+/** A pass-through import's specifier: not empty, and neither relative nor absolute. */
+const PASS_THROUGH_SPECIFIER = /^(?![./\\]|[A-Za-z]:).+/;
+
 /**
- * Checks the module's pass-through imports (ADR-0063): the side-effect import of Styleframe's
- * stylesheet binds nothing, and a named import of its recipes and tokens binds identifiers that
- * no other import binds. Returns the local names a template may read.
+ * Checks the module's pass-through imports (ADR-0064): each names a module that is neither
+ * relative nor absolute, which a bundler plugin registers, and binds identifiers that no other
+ * import binds (none for a side-effect import). Returns the local names a template may read.
  */
 function checkPassThroughImports(
   module: UfModule,
@@ -301,13 +304,10 @@ function checkPassThroughImports(
   ]);
   for (const [index, entry] of (module.passThroughImports ?? []).entries()) {
     const path = `/passThroughImports/${index}`;
-    if ((entry.specifier === "virtual:styleframe.css") !== (entry.names.length === 0)) {
+    if (!PASS_THROUGH_SPECIFIER.test(entry.specifier)) {
       errors.push({
-        path: `${path}/names`,
-        message:
-          entry.specifier === "virtual:styleframe.css"
-            ? `must be empty: "${entry.specifier}" is a stylesheet, which binds nothing`
-            : `must name what "${entry.specifier}" gives the module`,
+        path: `${path}/specifier`,
+        message: `must name a module that is neither relative nor absolute, and "${entry.specifier}" does not`,
       });
     }
     for (const [position, { imported, local }] of entry.names.entries()) {
@@ -318,11 +318,15 @@ function checkPassThroughImports(
           message: `must be an identifier, and "${imported}" is not`,
         });
       }
+      const reserved = isIdentifier(local) ? reservedSetupName(local) : undefined;
       if (!isIdentifier(local)) {
         errors.push({
           path: `${at}/local`,
           message: `must be an identifier, and "${local}" is not`,
         });
+      } else if (reserved) {
+        // Every output declares it beside its own names, as a setup binding (UF2003).
+        errors.push({ path: `${at}/local`, message: `must not be "${local}": ${reserved}` });
       } else if (locals.has(local) || taken.has(local)) {
         errors.push({
           path: `${at}/local`,

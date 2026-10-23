@@ -588,7 +588,8 @@ describe("canaries", () => {
   // copy, Angular's `styleUrl` included (the unplugin's `getSheet`).
   it("L10-stylesheet-rule-dropped drops a rule of each styled case's sheet, on the followers only", async () => {
     const styled = listCases().filter((info) => canaryCase(info).styled);
-    expect(styled.map(({ id }) => id.split("/")[0])).toEqual(styled.map(() => "styles"));
+    // The scoping corpus, and the Styleframe cases with a sheet of their own (ADR-0064).
+    for (const { id } of styled) expect(["styles", "styleframe"], id).toContain(id.split("/")[0]);
     expect(styled.length).toBeGreaterThanOrEqual(15);
     /** The cases a sheet of which the reference emitted. */
     const sheets = new Set<string>();

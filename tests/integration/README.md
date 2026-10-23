@@ -375,6 +375,16 @@ of them (`--project`, `pnpm test:baselines:check`) is a partial run.
   sheets' parse; `toolchain-results.ts`: what L3, L4 and L5 make of each tool's report, and the
   files they check; `consumers.ts`: L4's
   consumer check and `CONSUMER_GAPS`.
+- `harness/engines.ts`: the styling engines every ssr and browser project loads, and Astro's
+  render server too (ADR-0064): Styleframe, and `harness/fixture-engine.ts`, an engine of a few
+  lines with no dependency, whose `virtual:fixture-engine` modules the `engines/fixture-engine`
+  case imports, typed by `fixture-engine.d.ts`.
+- `styleframe.config.ts`: the Styleframe configuration of the `styleframe/` and `theming/`
+  cases, Community only (ADR-0064). `harness/styleframe.ts` loads Styleframe's plugin with it in
+  every ssr and browser project, and gives the checkers `styleframe.d.ts`, the declarations
+  Styleframe writes for it (`pnpm test:update` rewrites them). `harness/styleframe.unit.test.ts`
+  builds it for production with no licence key (`scripts/styleframe-build.ts`), and a
+  configuration flagged as Pro fails the same build.
 - `harness/no-output.ts`: the browser projects' stand-ins for the components a target has no
   output for.
 - `harness/canaries.ts`, `canary-verdict.ts`, `load-failures.ts`: the canaries, how

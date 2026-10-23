@@ -19,5 +19,8 @@ export default defineConfig({
     // Vendored verbatim from @vue/runtime-dom: `pnpm --filter unframework vendor:jsx --check`
     // and the unframework tests compare it byte for byte.
     "packages/unframework/src/vendor/**",
+    // Written by Styleframe's transpiler for the corpus's configuration: the harness compares it
+    // byte for byte (tests/integration/harness/styleframe.unit.test.ts).
+    "tests/integration/styleframe.d.ts",
   ],
 });

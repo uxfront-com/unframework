@@ -35,6 +35,11 @@ export const casesDir: string = join(repoRoot, "tests/integration/cases");
 export const context: ToolchainContext = {
   toolchainDir: join(repoRoot, "tests/toolchains/angular"),
   root: join(repoRoot, "tests/integration"),
+  // The styling engines' modules, which the styled goldens import (ADR-0064).
+  declarations: [
+    join(repoRoot, "tests/integration/styleframe.d.ts"),
+    join(repoRoot, "tests/integration/fixture-engine.d.ts"),
+  ],
 };
 
 function filesUnder(directory: string): string[] {

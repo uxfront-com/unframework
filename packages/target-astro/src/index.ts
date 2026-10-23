@@ -1,4 +1,10 @@
-import { childImports, defineTarget, ImportSet, scopeRoots } from "@unframework/codegen";
+import {
+  addPassThroughImports,
+  childImports,
+  defineTarget,
+  ImportSet,
+  scopeRoots,
+} from "@unframework/codegen";
 import type { CapabilityCell, OutputFile, Target } from "@unframework/codegen";
 import type { UfComponent } from "@unframework/ir";
 
@@ -118,6 +124,8 @@ export const astro: Target = defineTarget({
     const { module } = context;
     const spelling = spellingOf(component, module);
     const imports = new ImportSet(spelling.scope);
+    // The imports that pass through, which the markup reads as written (ADR-0064).
+    addPassThroughImports(component, module, imports);
     const tags = childTags(
       childImports(component, module, (name) => `${name}.astro`),
       imports,

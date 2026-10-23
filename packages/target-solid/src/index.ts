@@ -1,4 +1,5 @@
 import {
+  addPassThroughImports,
   componentTypes,
   defineTarget,
   moduleHelperName,
@@ -149,6 +150,8 @@ export const solid: Target = defineTarget({
     const scope = new NameScope(names);
     for (const [helper, base] of bases) scope.rebase(helper, base);
     const imports = new ImportSet(scope);
+    // The imports that pass through, which the render reads as written (ADR-0064).
+    addPassThroughImports(component, context.module, imports);
     const placeholders = new Placeholders();
     const composition = new SolidComposition(component, context.module, imports);
     const props = solidProps(component, imports, placeholders, {

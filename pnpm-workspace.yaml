@@ -110,6 +110,8 @@ catalog:
   "@qwik.dev/core": 2.0.0-beta.47
   "@qwik.dev/optimizer": 2.1.0-beta.9
   "@standard-schema/spec": ^1.1.0
+  "@styleframe/runtime": 3.2.2
+  "@styleframe/theme": 3.10.0
   "@sveltejs/vite-plugin-svelte": 7.3.1
   "@types/babel__core": ^7.20.5
   "@types/node": ^24.19.0
@@ -151,6 +153,7 @@ catalog:
   react-dom: 19.3.0
   rxjs: ^7.8.2
   solid-js: 1.9.15
+  styleframe: 3.9.2
   svelte: 5.57.1
   svelte-check: 4.7.6
   tsdown: ^0.23.0

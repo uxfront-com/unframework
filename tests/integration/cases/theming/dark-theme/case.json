@@ -1,0 +1,11 @@
+{
+  "description": "The dark colour scheme: Styleframe's stylesheet sets the dark tokens under `prefers-color-scheme: dark`, which the case opts into.",
+  "colorScheme": "dark",
+  "ssr": {
+    "default": {
+      "props": {
+        "text": "Dark by preference."
+      }
+    }
+  }
+}

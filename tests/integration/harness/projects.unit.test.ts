@@ -148,7 +148,7 @@ describe("project factories", () => {
 });
 
 describe("browser projects", () => {
-  it("serve stand-ins for the cases their target has no output for, before the unplugin", async () => {
+  it("serve stand-ins for the cases their target has no output for, before the styling engines' plugins and the unplugin", async () => {
     const [, , , , browser] = harnessProjects({ harness, mode, targets: ["qwik"] });
     const project = await (browser as () => Promise<UserWorkspaceConfig>)();
     expect(project.test?.include).toEqual(["cases/**/*.test.ts"]);
@@ -157,9 +157,11 @@ describe("browser projects", () => {
     const names = (project.plugins ?? [])
       .flat()
       .map((plugin) => (plugin as { name?: string }).name);
-    expect(names.slice(0, 3)).toEqual([
+    expect(names.slice(0, 5)).toEqual([
       "uf-harness:no-output",
       "uf-harness:no-error-broadcast",
+      "styleframe",
+      "fixture-engine",
       "unframework",
     ]);
   });

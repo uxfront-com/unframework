@@ -23,6 +23,7 @@ import { errorState, listCases } from "./cases.ts";
 import type { CaseInfo } from "./cases.ts";
 import { consumerFixtures, consumerProblems, copyFixtures } from "./consumers.ts";
 import type { Fixture } from "./consumers.ts";
+import { ENGINE_DECLARATIONS } from "./engines.ts";
 import { CANARY_DIR, ROOT, toolchainDir } from "./paths.ts";
 import { caseResolver } from "./sources.ts";
 import { loadToolchain } from "./targets.ts";
@@ -83,8 +84,14 @@ beforeAll(async () => {
       ...all,
       ...[...fixtures.values()].flat().map(({ checked }) => checked),
       ...(DECLARATIONS[target] ?? []).map((file) => join(toolchainDir(target), file)),
+      // The styling engines' virtual modules, which a styled output imports as written (ADR-0064).
+      ...ENGINE_DECLARATIONS,
     ]);
-    const context = { toolchainDir: toolchainDir(target), root: ROOT };
+    const context = {
+      toolchainDir: toolchainDir(target),
+      root: ROOT,
+      declarations: ENGINE_DECLARATIONS,
+    };
     const contents: ToolchainFile[] = all.map((path) => ({
       path,
       contents: readFileSync(path, "utf8"),

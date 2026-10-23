@@ -139,7 +139,9 @@ Its toolchain, for tests and tooling (the target's main entry never loads it):
   returning the HTML, the component's styles and what the render logged. The Container API
   leaves out the sheets a frontmatter imports, so the command puts each sheet the component and
   its children import, as the browser project serves it, in a `<style>` before the HTML, a
-  child's first (ADR-0063). The checks:
+  child's first (ADR-0063). The render server adds the project's own plugins
+  (`ToolchainContext.plugins`), so a styling engine's plugin resolves its `virtual:` modules,
+  and the engine's stylesheet goes before the markup too (ADR-0064). The checks:
   - L3 runs `@astrojs/compiler-rs` with Astro's options and reports every diagnostic (it refuses
     a compiler version other than the one `astro` uses);
   - L4 runs `astro check` (`AstroCheck`, TypeScript 6) from the toolchain directory, once over

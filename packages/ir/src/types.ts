@@ -51,21 +51,26 @@ export interface UfModule {
   /** The injection keys the module declares and exports, in source order (ADR-0054). */
   keys?: InjectionKeyDeclaration[];
   /**
-   * The module's pass-through imports, in source order (plan §4.4, ADR-0004, ADR-0063): every
-   * output keeps them as written, and Styleframe's own plugin resolves them. Absent when it has
-   * none.
+   * The module's pass-through imports, in source order (plan §4.4, ADR-0004, ADR-0064): every
+   * output keeps them as written, in this order, and the plugin that registers each module
+   * resolves it. Absent when it has none.
    */
   passThroughImports?: PassThroughImport[];
 }
 
 /**
- * An import every output keeps as written (ADR-0063): named imports of Styleframe's recipes and
- * tokens, `import { button } from "virtual:styleframe"`, or its stylesheet,
- * `import "virtual:styleframe.css"`.
+ * An import every output keeps as written (ADR-0064): a module a bundler plugin registers, such
+ * as a styling engine's, `import { button } from "virtual:recipes"`, or one imported for its
+ * effect alone, `import "virtual:theme.css"`. Which specifiers pass through is the compiler's
+ * option; the IR keeps any that is neither relative nor absolute.
  */
 export interface PassThroughImport {
-  specifier: "virtual:styleframe" | "virtual:styleframe.css";
-  /** The names a named import binds, in source order: none for the side-effect import. */
+  /**
+   * The specifier as written: not empty, and neither relative nor absolute.
+   * @pattern ^(?![./\\]|[A-Za-z]:).+
+   */
+  specifier: string;
+  /** The names a named import binds, in source order: none for a side-effect import. */
   names: PassThroughName[];
   /** The import declaration. */
   span: Span;

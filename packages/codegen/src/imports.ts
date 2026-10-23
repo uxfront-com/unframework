@@ -1,5 +1,5 @@
 import type * as AST from "@oxc-project/types";
-import { walk } from "@unframework/ir";
+import { expressionsOf, walk } from "@unframework/ir";
 import type { UfComponent, UfModule } from "@unframework/ir";
 
 import { importDeclaration, importDefaultSpecifier, importSpecifier } from "./js/builders.ts";
@@ -26,6 +26,8 @@ interface ModuleImports {
  */
 export class ImportSet {
   readonly #modules = new Map<string, ModuleImports>();
+  /** The pass-through imports, by module, in the order added (`addPassThrough`). */
+  readonly #passThrough = new Map<string, { imported: string; local: string }[]>();
   /** The output file's names: imports, reserved source names and claimed locals. */
   readonly scope: NameScope;
 
@@ -108,12 +110,36 @@ export class ImportSet {
     this.#module(source).sideEffect = true;
   }
 
-  get size(): number {
-    return this.#modules.size;
+  /**
+   * Imports a module that passes through as written (ADR-0064): by name, under the source's own
+   * local name, which the scope reserves, or for its effect alone. These imports follow the
+   * sorted ones, in the order they are added, each module once: an engine's setup module, or two
+   * engines' stylesheets, depend on their order.
+   */
+  addPassThrough(source: string, name?: { imported: string; local: string }): void {
+    let names = this.#passThrough.get(source);
+    if (!names) this.#passThrough.set(source, (names = []));
+    if (!name || names.some(({ local }) => local === name.local)) return;
+    this.scope.reserve(name.local);
+    names.push(name);
   }
 
-  /** The import declarations, sorted by module and name. */
+  get size(): number {
+    return this.#modules.size + this.#passThrough.size;
+  }
+
+  /** The import declarations, sorted by module and name, then the pass-through ones in order. */
   toDeclarations(): AST.ImportDeclaration[] {
+    const passThrough = [...this.#passThrough].map(([source, names]) =>
+      importDeclaration(
+        source,
+        names.map(({ imported, local }) => importSpecifier(imported, local, "value")),
+      ),
+    );
+    return [...this.#sorted(), ...passThrough];
+  }
+
+  #sorted(): AST.ImportDeclaration[] {
     return [...this.#modules.keys()].toSorted().map((source) => {
       const entry = this.#modules.get(source)!;
       const specifiers: AST.ImportDeclarationSpecifier[] = [];
@@ -133,6 +159,46 @@ export class ImportSet {
       }
       return importDeclaration(source, specifiers, allTypes ? "type" : "value");
     });
+  }
+}
+
+/** An import every output keeps as written, with the names a component's template reads. */
+export interface PassThroughUse {
+  specifier: string;
+  /** The names the template reads, by the name the module exports and the source's local. */
+  names: { imported: string; local: string }[];
+}
+
+/**
+ * The imports every output keeps as written that a component's output needs (plan §4.4,
+ * ADR-0064), in the IR's order: each side-effect import, and each named import with the names the
+ * component's template calls, by the name the source binds, which the template reads as written.
+ * The plugin that registers each module resolves it.
+ */
+export function passThroughImports(component: UfComponent, module: UfModule): PassThroughUse[] {
+  const read = new Set<string>();
+  for (const { expression } of expressionsOf(component)) {
+    for (const reference of expression.refs) {
+      if (reference.kind === "Import") read.add(reference.name);
+    }
+  }
+  return (module.passThroughImports ?? []).flatMap((entry): PassThroughUse[] => {
+    const names = entry.names
+      .filter(({ local }) => read.has(local))
+      .map(({ imported, local }) => ({ imported, local }));
+    return entry.names.length && !names.length ? [] : [{ specifier: entry.specifier, names }];
+  });
+}
+
+/** Adds the imports every output keeps as written to a component's ({@link passThroughImports}). */
+export function addPassThroughImports(
+  component: UfComponent,
+  module: UfModule,
+  imports: ImportSet,
+): void {
+  for (const { specifier, names } of passThroughImports(component, module)) {
+    if (!names.length) imports.addPassThrough(specifier);
+    for (const name of names) imports.addPassThrough(specifier, name);
   }
 }
 

@@ -34,12 +34,7 @@ function lanesBut(
  * its corpus case.
  */
 export const EXEMPT_KINDS: Readonly<Partial<Record<KindFamily, Readonly<Record<string, string>>>>> =
-  {
-    "code reference": {
-      Import:
-        "A read of a pass-through import (ADR-0063): the analyser still rejects Styleframe's imports, and the case lands in layer 10 of M4.",
-    },
-  };
+  {};
 
 /** Catalogued diagnostic codes that no case triggers, and why none can. */
 export const EXEMPT_CODES: Readonly<Record<string, string>> = {
@@ -47,8 +42,6 @@ export const EXEMPT_CODES: Readonly<Record<string, string>> = {
     "Raised by a crashing compiler plugin: the L1 canary triggers it, and no case installs plugins.",
   UF9001:
     "An internal compiler error: a case that triggers it is a compiler bug to fix, not to keep.",
-  // M4's Styleframe code is catalogued before the analyser reports it (ADR-0063).
-  UF5006: "The analyser still rejects Styleframe's imports: the case lands in layer 10 of M4.",
 };
 
 /**

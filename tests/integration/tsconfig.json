@@ -11,6 +11,14 @@
     "declaration": false,
     "isolatedDeclarations": false
   },
-  "include": ["harness", "scripts", "vitest.config.ts", "cases/**/*.test.ts"],
+  "include": [
+    "harness",
+    "scripts",
+    "vitest.config.ts",
+    "styleframe.config.ts",
+    "styleframe.d.ts",
+    "fixture-engine.d.ts",
+    "cases/**/*.test.ts"
+  ],
   "exclude": ["cases/**/__output__/**"]
 }

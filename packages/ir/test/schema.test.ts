@@ -175,15 +175,25 @@ describe("validateModule", () => {
         module
       ),
     ]),
-    ...(["virtual:styleframe.css", "virtual:other"] as const).map(
-      (specifier): [string, (module: Record<string, unknown>) => unknown] => [
-        `a pass-through import of ${specifier}`,
-        (module) => ({
-          ...module,
-          passThroughImports: [{ specifier, names: [], span: { start: 0, end: 1 } }],
-        }),
-      ],
-    ),
+    // A pass-through import names any module that is neither relative nor absolute (ADR-0064).
+    ...(
+      [
+        "virtual:theme.css",
+        "virtual:other",
+        "styled-system/css",
+        "",
+        "./a.css",
+        "/a",
+        "\\a",
+        "C:\\x",
+      ] as const
+    ).map((specifier): [string, (module: Record<string, unknown>) => unknown] => [
+      `a pass-through import of ${specifier}`,
+      (module) => ({
+        ...module,
+        passThroughImports: [{ specifier, names: [], span: { start: 0, end: 1 } }],
+      }),
+    ]),
     ["null", () => null],
     ["an array", () => []],
     // Keys a prototype has: they must not find a schema there, or a value.

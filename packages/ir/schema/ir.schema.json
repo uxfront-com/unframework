@@ -54,7 +54,7 @@
           "items": {
             "$ref": "#/definitions/PassThroughImport"
           },
-          "description": "The module's pass-through imports, in source order (plan §4.4, ADR-0004, ADR-0063): every output keeps them as written, and Styleframe's own plugin resolves them. Absent when it has none."
+          "description": "The module's pass-through imports, in source order (plan §4.4, ADR-0004, ADR-0064): every output keeps them as written, in this order, and the plugin that registers each module resolves it. Absent when it has none."
         }
       },
       "required": [
@@ -3050,17 +3050,15 @@
       "properties": {
         "specifier": {
           "type": "string",
-          "enum": [
-            "virtual:styleframe",
-            "virtual:styleframe.css"
-          ]
+          "description": "The specifier as written: not empty, and neither relative nor absolute.",
+          "pattern": "^(?![./\\\\]|[A-Za-z]:).+"
         },
         "names": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/PassThroughName"
           },
-          "description": "The names a named import binds, in source order: none for the side-effect import."
+          "description": "The names a named import binds, in source order: none for a side-effect import."
         },
         "span": {
           "$ref": "#/definitions/Span",
@@ -3073,7 +3071,7 @@
         "span"
       ],
       "additionalProperties": false,
-      "description": "An import every output keeps as written (ADR-0063): named imports of Styleframe's recipes and tokens, `import { button } from \"virtual:styleframe\"`, or its stylesheet, `import \"virtual:styleframe.css\"`."
+      "description": "An import every output keeps as written (ADR-0064): a module a bundler plugin registers, such as a styling engine's, `import { button } from \"virtual:recipes\"`, or one imported for its effect alone, `import \"virtual:theme.css\"`. Which specifiers pass through is the compiler's option; the IR keeps any that is neither relative nor absolute."
     },
     "PassThroughName": {
       "type": "object",

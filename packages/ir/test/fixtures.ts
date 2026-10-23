@@ -1006,11 +1006,11 @@ export function styled(): UfModule {
     [],
     [
       createPassThroughImport(
-        "virtual:styleframe",
+        "virtual:recipes",
         [createPassThroughName("button", "button", span(32, 38))],
         span(23, 67),
       ),
-      createPassThroughImport("virtual:styleframe.css", [], span(68, 99)),
+      createPassThroughImport("virtual:recipes.css", [], span(68, 99)),
     ],
   );
 }

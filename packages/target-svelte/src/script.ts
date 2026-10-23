@@ -18,6 +18,7 @@ import {
   parseExpression,
   parseStatementsSource,
   pascalCase,
+  passThroughImports,
   referencedBindings,
   rewriteCode,
   rewriteExpression,
@@ -111,6 +112,7 @@ class Names {
   readonly scope: NameScope;
   readonly #imports = new Map<Module, Map<string, { local: string; type: boolean }>>();
   readonly #locals = new Map<string, LocalImport>();
+  readonly #passThrough = new Map<string, { imported: string; local: string }[]>();
 
   constructor(component: UfComponent, module: UfModule) {
     this.scope = new NameScope(sourceNames(component, module));
@@ -143,6 +145,20 @@ class Names {
     return entry.default;
   }
 
+  /**
+   * A module that passes through as written (ADR-0064): by name, under the source's own local
+   * name, or for its effect alone. These imports follow the others, in the order they are added,
+   * each module once: an engine's setup module, or two engines' stylesheets, depend on their
+   * order.
+   */
+  importPassThrough(specifier: string, name?: { imported: string; local: string }): void {
+    let names = this.#passThrough.get(specifier);
+    if (!names) this.#passThrough.set(specifier, (names = []));
+    if (!name || names.some(({ local }) => local === name.local)) return;
+    this.scope.reserve(name.local);
+    names.push(name);
+  }
+
   /** A name a sibling output exports, under the source's local name: `Theme as Mode`. */
   importNamed(specifier: string, name: string, local: string): void {
     const entry = this.#local(specifier);
@@ -161,7 +177,7 @@ class Names {
    * The import declarations: the sibling outputs sorted by specifier, as the other targets'
    * `ImportSet` sorts them, so the children's sheets load, and cascade, in Vue's order
    * (ADR-0063); then Svelte's modules, each name sorted, a type-only import written
-   * `import type`.
+   * `import type`; then the pass-through imports, in their order (ADR-0064).
    */
   declarations(): string[] {
     const sorted = [...this.#locals.values()].toSorted((a, b) =>
@@ -183,7 +199,12 @@ class Names {
       const types = [...names.values()].every(({ type }) => type);
       return [`import ${types ? "type " : ""}${specifiers(names, !types)} from "${source}";`];
     });
-    return [...locals, ...modules];
+    const passThrough = [...this.#passThrough].map(([specifier, names]) =>
+      names.length
+        ? `import { ${names.map(({ imported, local }) => (imported === local ? local : `${imported} as ${local}`)).join(", ")} } from ${JSON.stringify(specifier)};`
+        : `import ${JSON.stringify(specifier)};`,
+    );
+    return [...locals, ...modules, ...passThrough];
   }
 }
 
@@ -408,6 +429,11 @@ class ScriptWriter {
     }
     for (const key of keyImports(component, this.#module, (name) => `${name}.svelte`)) {
       if (key.specifier) this.#names.importNamed(key.specifier, key.name, key.local);
+    }
+    // The imports that pass through, which the markup reads as written (ADR-0064).
+    for (const { specifier, names } of passThroughImports(component, this.#module)) {
+      if (!names.length) this.#names.importPassThrough(specifier);
+      for (const name of names) this.#names.importPassThrough(specifier, name);
     }
   }
 

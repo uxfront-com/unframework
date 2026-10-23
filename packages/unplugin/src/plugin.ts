@@ -3,7 +3,12 @@ import { readFile } from "node:fs/promises";
 import { basename, extname, isAbsolute, posix, relative, sep } from "node:path";
 
 import type { OutputFile, Target } from "@unframework/codegen";
-import { compile, createFileResolver, resolveTarget } from "@unframework/compiler";
+import {
+  checkPassThrough,
+  compile,
+  createFileResolver,
+  resolveTarget,
+} from "@unframework/compiler";
 import type { CompileResult, CompilerPlugin, TargetName, UfModule } from "@unframework/compiler";
 import { formatDiagnostic, formatDiagnostics } from "@unframework/diagnostics";
 import type { Diagnostic } from "@unframework/diagnostics";
@@ -70,6 +75,12 @@ export interface UnframeworkOptions {
   plugins?: readonly CompilerPlugin[];
   /** Formats the output with oxfmt. Defaults to `true`, so modules equal the golden files. */
   format?: boolean;
+  /**
+   * The specifier prefixes whose imports pass through to every output as written, passed to
+   * `compile()` (ADR-0064): `["virtual:"]` when absent. The plugin never resolves such an import:
+   * the plugin that registers the module does, such as a styling engine's.
+   */
+  passThrough?: readonly string[];
 }
 
 /** What the pre plugin exposes as `api`, for other plugins that need the compiled sources. */
@@ -137,6 +148,8 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
     );
   }
   const target = resolveTarget(options.target);
+  // Checked once, so a bad prefix fails the server's start rather than each module's compile.
+  if (options.passThrough) checkPassThrough(options.passThrough);
   const suffix = idSuffix(options.target, options.extension);
   // The output file a module id loads has the id's extension: `.tsx` when the id is the
   // `.uf.tsx` file itself.
@@ -243,6 +256,7 @@ const factory: UnpluginFactory<UnframeworkOptions, true> = (options, meta) => {
       format: options.format !== false,
       plugins: options.plugins,
       resolve,
+      ...(options.passThrough ? { passThrough: options.passThrough } : {}),
     });
     cache.set(file, { source, filename, reads, result });
     // compile() never rejects unless the compiler has a bug. The load that awaits `result`

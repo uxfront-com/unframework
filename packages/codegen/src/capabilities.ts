@@ -104,7 +104,7 @@ const SETUP_ITEM_CAPABILITIES: Readonly<Record<SetupItem["kind"], readonly Capab
 /**
  * What each kind of reference in code needs: `nextTick` its own capability, and the others
  * nothing of their own. A pass-through import needs none: every target keeps it as written, and
- * Styleframe's own plugin resolves it (ADR-0063).
+ * the plugin that registers its module resolves it (ADR-0064).
  */
 const REFERENCE_CAPABILITIES: Readonly<Record<CodeReference["kind"], CapabilityName | undefined>> =
   {

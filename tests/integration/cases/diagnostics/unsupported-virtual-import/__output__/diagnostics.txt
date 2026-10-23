@@ -1,0 +1,8 @@
+error[UF5006]: `badge` is imported from a module that passes through, and a template only calls such a name in a `class`: every output keeps its import as written, and no other use of it is analysed.
+ --> diagnostics/unsupported-virtual-import/Badge.uf.tsx:5:23
+  |
+5 |   return <span title={badge()}>{label}</span>;
+  |                       ^^^^^
+  |
+  = help: Call it in a `class`, as in `class={badge()}`.
+  = see: https://unframework.dev/diagnostics/UF5006

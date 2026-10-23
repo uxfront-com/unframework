@@ -2,7 +2,7 @@
 // target's output. A target ships it as `@unframework/<target>/toolchain` (Node),
 // `…/toolchain/client` (the browser mount adapter) and `…/toolchain/server` (the SSR
 // renderer). Types only: nothing here runs, and the target's main entry never imports it.
-import type { UserConfig } from "vite";
+import type { Plugin, UserConfig } from "vite";
 
 /**
  * A message from a framework compiler, a type checker or a linter. Lines and columns are
@@ -41,6 +41,18 @@ export interface ToolchainContext {
   toolchainDir: string;
   /** The root of the Vite or Vitest project that runs the output. */
   root: string;
+  /**
+   * Ambient declarations a checker reads beside the outputs: the modules they import that no
+   * package types, such as a styling engine's virtual modules (ADR-0064). A toolchain whose compiler
+   * type-checks too (Angular's ngtsc) adds them to its program.
+   */
+  declarations?: readonly string[];
+  /**
+   * The Vite plugins the project adds for the modules the outputs import and it resolves itself,
+   * such as a styling engine's (ADR-0064): a toolchain that runs the outputs through a Vite server of
+   * its own (Astro's render server) adds a fresh set there too.
+   */
+  plugins?: () => Promise<Plugin[]>;
 }
 
 /** A Vitest browser command: runs in Node, called from the browser. */

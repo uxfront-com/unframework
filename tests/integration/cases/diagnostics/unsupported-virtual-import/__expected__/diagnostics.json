@@ -1,0 +1,19 @@
+[
+  {
+    "code": "UF5006",
+    "severity": "error",
+    "message": "`badge` is imported from a module that passes through, and a template only calls such a name in a `class`: every output keeps its import as written, and no other use of it is analysed.",
+    "file": "diagnostics/unsupported-virtual-import/Badge.uf.tsx",
+    "start": {
+      "line": 5,
+      "column": 23,
+      "offset": 228
+    },
+    "end": {
+      "line": 5,
+      "column": 28,
+      "offset": 233
+    },
+    "help": "Call it in a `class`, as in `class={badge()}`."
+  }
+]
