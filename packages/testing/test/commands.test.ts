@@ -31,6 +31,7 @@ beforeEach(() => {
     pixels: "live",
     canary: null,
     baselineEnvironment: null,
+    browser: "chromium",
     ledgerDir: join(root, ".reports", "ledger", "run-1"),
     liveDir: join(root, ".live", "run-1"),
     diffsDir: join(root, ".reports", "diffs", "run-1"),
@@ -436,6 +437,26 @@ describe("parityBrowser", () => {
     expect(provider.options.launchOptions?.args).toEqual([
       "--font-render-hinting=none",
       "--disable-partial-raster",
+    ]);
+  });
+
+  it("launches the engine it is given, and Firefox and WebKit without Chromium's switches", () => {
+    for (const browser of ["firefox", "webkit"] as const) {
+      const config = parityBrowser({ name: "browser:vue", browser });
+      const provider = config.provider as unknown as {
+        options: { launchOptions?: { args?: string[] }; contextOptions?: object };
+      };
+      expect(config.instances).toEqual([{ browser, name: "browser:vue" }]);
+      expect(provider.options.launchOptions?.args).toEqual([]);
+      // The context is the captures' in every engine.
+      expect(provider.options.contextOptions).toMatchObject({
+        deviceScaleFactor: 1,
+        colorScheme: "light",
+        reducedMotion: "reduce",
+      });
+    }
+    expect(parityBrowser({ name: "browser:vue" }).instances).toEqual([
+      { browser: "chromium", name: "browser:vue" },
     ]);
   });
 

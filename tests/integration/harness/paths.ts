@@ -4,6 +4,8 @@ import { realpathSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import type { BrowserEngine } from "@unframework/testing/node";
+
 /** The integration package: the Vitest root of every project. */
 export const ROOT: string = realpathSync(fileURLToPath(new URL("..", import.meta.url)));
 
@@ -12,6 +14,15 @@ export const CASES_DIR: string = join(ROOT, "cases");
 
 /** The partial parity matrices (`parity-matrix.<run>.json`) and the merged summary. */
 export const REPORTS_DIR: string = join(ROOT, ".reports");
+
+/**
+ * Where a run in an engine writes its partial matrices and its summary: Chromium's in
+ * {@link REPORTS_DIR}, Firefox's and WebKit's each in a directory of its own (ADR-0066), so a
+ * run in one engine never supersedes or merges the records of another.
+ */
+export function reportsDirOf(browser: BrowserEngine): string {
+  return browser === "chromium" ? REPORTS_DIR : join(REPORTS_DIR, browser);
+}
 
 /** Vitest's screenshots of failed browser tests: scratch, never next to the baselines. */
 export const FAILURE_SCREENSHOTS_DIR: string = join(REPORTS_DIR, "failures");

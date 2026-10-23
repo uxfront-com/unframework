@@ -1,0 +1,83 @@
+name: Nightly
+
+# Firefox and WebKit (ADR-0066): every browser project in each engine, every night. L10 compares
+# each target with the reference's capture from the same run, in the same engine: the committed
+# baselines are Chromium's, and Chromium stays the only engine that gates a pull request
+# (ci.yml). Each engine's parity matrix goes to the job summary and to an artefact. A difference
+# fails its engine's job, and becomes an issue, never a quarantine entry.
+on:
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: 24
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    name: "Nightly: browser (${{ matrix.browser }})"
+    runs-on: ubuntu-latest
+    # One job runs all seven browser projects, because live L10 needs the reference's capture in
+    # the same run. ci.yml gives Chromium ten minutes per target; these engines are slower.
+    timeout-minutes: 45
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      # The image ships every engine, so the postinstall skips its browser install in CI.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # scripts/run.ts runs the projects, then the summary, which appends the engine's matrix to
+      # the job summary whatever the result. Firefox refuses a $HOME that belongs to another
+      # user, which the container's is.
+      - name: Browser projects
+        env:
+          UF_BROWSER: ${{ matrix.browser }}
+          HOME: /root
+        run: pnpm --filter @unframework/integration test -- --project 'browser:*'
+
+      - name: Upload the parity matrix
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: parity-${{ matrix.browser }}
+          path: tests/integration/.reports/${{ matrix.browser }}
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+
+      - name: Upload visual diffs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: visual-diffs-${{ matrix.browser }}
+          path: |
+            tests/integration/.reports/diffs
+            tests/integration/.reports/failures
+            tests/integration/.vitest
+          include-hidden-files: true
+          if-no-files-found: ignore
+          overwrite: true
+          retention-days: 14

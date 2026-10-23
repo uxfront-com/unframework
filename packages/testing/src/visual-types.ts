@@ -6,6 +6,13 @@
  */
 export const LIVE_REFERENCE_SKIP = "live pixels: the reference's capture is this run's expectation";
 
+/**
+ * Why L10 skips the font audit outside Chromium (ADR-0066). The audit asks CDP which font drew
+ * each glyph; Firefox and WebKit have no such protocol, and `document.fonts` only says a font
+ * loaded, not that the text used it.
+ */
+export const FONT_AUDIT_SKIP = "CDP reports the font each glyph used, and only Chromium has CDP";
+
 /** `[x, y, width, height]`, relative to the capture container. */
 export type GeometryBox = [x: number, y: number, width: number, height: number];
 

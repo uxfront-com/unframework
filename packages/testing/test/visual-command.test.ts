@@ -11,6 +11,7 @@ import type { HarnessContext } from "../src/harness.ts";
 import { BASELINE_ENVIRONMENT } from "../src/node/mode.ts";
 import { ufVisualCapture } from "../src/node/visual.ts";
 import type { VisualCommandContext } from "../src/node/visual.ts";
+import { FONT_AUDIT_SKIP } from "../src/visual-types.ts";
 import type { CaptureRequest, GeometrySnapshot } from "../src/visual-types.ts";
 
 let harness: HarnessContext;
@@ -28,6 +29,7 @@ beforeEach(() => {
     pixels: "live",
     canary: null,
     baselineEnvironment: null,
+    browser: "chromium",
     ledgerDir: join(root, ".reports", "ledger", runId),
     liveDir: join(root, ".live", runId),
     diffsDir: join(root, ".reports", "diffs", runId),
@@ -417,6 +419,28 @@ describe("ufVisualCapture's preconditions", () => {
         '  <textarea> rendered 2 glyph(s) with "Hiragino Sans" (system font)',
       ].join("\n"),
     );
+  });
+
+  it("skips the font audit outside Chromium, where CDP cannot say which font drew a glyph", async () => {
+    const fallback = [{ familyName: "Hiragino Sans", isCustomFont: false, glyphCount: 2 }];
+    // A page whose CDP session fails, as Firefox's and WebKit's do.
+    const noCdp = (target: string) =>
+      Object.assign(
+        context(target, { shots: [png(20, 10)], fonts: fallback }, { browser: "firefox" }),
+        {
+          page: {
+            context: () => ({
+              newCDPSession: async () => {
+                throw new Error("CDP session: only Chromium");
+              },
+            }),
+          },
+        },
+      );
+    expect(FONT_AUDIT_SKIP).toMatch(/only Chromium/);
+    await ufVisualCapture(noCdp("vue"), request());
+    const result = await ufVisualCapture(noCdp("react"), request());
+    expect(result).toMatchObject({ pass: true, outcome: "matched", role: "follower" });
   });
 
   it("rejects a web font that is not the bundled one", async () => {

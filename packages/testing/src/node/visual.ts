@@ -115,7 +115,9 @@ export async function ufVisualCapture(
   });
 
   // 1. Fonts: text rendered with anything but the bundled font fails before any comparison.
-  const fontViolations = await fontAudit(context.page, request.marker);
+  //    Only Chromium can audit them (FONT_AUDIT_SKIP, ADR-0066).
+  const fontViolations =
+    harness.browser === "chromium" ? await fontAudit(context.page, request.marker) : [];
   if (fontViolations.length) {
     return done({
       pass: false,

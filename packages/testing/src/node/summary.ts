@@ -1,11 +1,13 @@
 // The summary (plan §7.4): merges partial matrices into `parity-matrix.json` and
-// `parity-matrix.md` (appended to $GITHUB_STEP_SUMMARY in CI), and reports what is wrong: every
+// `parity-matrix.md` (appended to $GITHUB_STEP_SUMMARY in CI), named after the engine outside
+// Chromium (`parity-matrix.firefox.json`, ADR-0066), and reports what is wrong: every
 // failed cell, every stale quarantine entry and, when every project ran all its tests (or must
 // have), every missing or partly run project, every missing (case, target, live layer) cell and
 // every target whose parity scenarios of a case differ from the reference's.
 import { appendFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import type { BrowserEngine } from "../harness.ts";
 import {
   LAYERS,
   NO_INTERACTION_SKIP,
@@ -15,7 +17,7 @@ import {
   REQUIRES_SKIP,
 } from "../layers.ts";
 import type { LayerName } from "../layers.ts";
-import { LIVE_REFERENCE_SKIP } from "../visual-types.ts";
+import { FONT_AUDIT_SKIP, LIVE_REFERENCE_SKIP } from "../visual-types.ts";
 import {
   cellHeadline,
   mergeMatrices,
@@ -83,6 +85,8 @@ export interface SummaryJudgement {
    * subset someone chose. `writeSummary` defaults it to whether `CI` is set.
    */
   requireComplete?: boolean | undefined;
+  /** The engine the browser projects ran in; Chromium by default. The Markdown names another. */
+  browser?: BrowserEngine | undefined;
 }
 
 /** Options for {@link writeSummary}. */
@@ -141,11 +145,22 @@ export function writeSummary(options: SummaryOptions): SummaryResult {
   }
   const result = summarise(partials, options.expected, {
     requireComplete: options.requireComplete ?? isCI(process.env),
+    browser: options.browser,
   });
-  writeFileSync(join(options.reportsDir, "parity-matrix.json"), stringifyMatrix(result.matrix));
-  writeFileSync(join(options.reportsDir, "parity-matrix.md"), result.markdown);
+  const name = summaryName(options.browser ?? "chromium");
+  writeFileSync(join(options.reportsDir, `${name}.json`), stringifyMatrix(result.matrix));
+  writeFileSync(join(options.reportsDir, `${name}.md`), result.markdown);
   if (options.stepSummary) appendFileSync(options.stepSummary, `${result.markdown}\n`);
   return result;
+}
+
+/**
+ * The merged matrix's file name, without its extension: `parity-matrix` for Chromium, and
+ * `parity-matrix.<engine>` for another engine (ADR-0066), which `isPartialMatrixFile` never
+ * reads back as a partial matrix.
+ */
+export function summaryName(browser: BrowserEngine): string {
+  return browser === "chromium" ? "parity-matrix" : `parity-matrix.${browser}`;
 }
 
 /** Merges matrices, fills the layers that are not live, and lists the problems. Pure. */
@@ -229,6 +244,7 @@ export function summarise(
       problems,
       requireComplete: Boolean(judgement.requireComplete),
       quarantined: quarantine.length,
+      browser: judgement.browser,
     }),
     problems,
     complete,
@@ -383,8 +399,11 @@ export function renderMarkdown(
     requireComplete: boolean;
     /** How many quarantine entries the newest run applied, which judged every record. */
     quarantined: number;
+    /** The engine the browser projects ran in, when it is not Chromium. */
+    browser?: BrowserEngine | undefined;
   },
 ): string {
+  const browser = status.browser ?? "chromium";
   const layers = LAYERS.filter((layer) => expected.liveLayers.includes(layer));
   const { missingProjects, partialProjects, problems } = status;
   // The projects a filter narrowed, grouped by the filter: usually one run narrowed them all.
@@ -404,8 +423,16 @@ export function renderMarkdown(
     ),
   ];
   const lines = [
-    "## Unframework parity matrix",
+    browser === "chromium"
+      ? "## Unframework parity matrix"
+      : `## Unframework parity matrix in ${browser}`,
     "",
+    ...(browser === "chromium"
+      ? []
+      : [
+          `The browser projects ran in ${browser}: L10 compared each target with the reference's capture in this run, and the font audit was skipped (${FONT_AUDIT_SKIP}).`,
+          "",
+        ]),
     `${Object.keys(matrix.cases).length} case(s) × ${expected.targets.length} target(s) × ${layers.length} live layer(s), from ${matrix.projects.length} project(s).`,
     gaps.length
       ? status.requireComplete

@@ -1,14 +1,16 @@
 // `pnpm --filter @unframework/integration summary` (plan §7.4): merges every partial parity
 // matrix into `.reports/parity-matrix.json` and `.md`, appends the Markdown to
 // $GITHUB_STEP_SUMMARY in CI, and fails on any failed cell and, when every project ran (or, in
-// CI's parity job, must have), on any missing project and (case, target, live layer) cell.
+// CI's parity job, must have), on any missing project and (case, target, live layer) cell. With
+// UF_BROWSER set to another engine, it merges that engine's directory into
+// `parity-matrix.<engine>.json` and `.md` there (ADR-0066).
 import { join } from "node:path";
 
 import { CAPABILITY_NAMES } from "@unframework/codegen";
-import { writeSummary } from "@unframework/testing/node";
+import { resolveBrowser, summaryName, writeSummary } from "@unframework/testing/node";
 
 import { listCases } from "../harness/cases.ts";
-import { REPORTS_DIR } from "../harness/paths.ts";
+import { reportsDirOf } from "../harness/paths.ts";
 import { projectNames } from "../harness/projects.ts";
 import { LIVE_LAYERS } from "../harness/quarantine.ts";
 import { selectTargets } from "../harness/targets.ts";
@@ -26,15 +28,18 @@ export interface SummaryRun {
   requireComplete: boolean;
   /** Only the matrices written after this time: a run summarises itself, not leftovers. */
   since?: Date | undefined;
-  /** Where the partial matrices are; `.reports` by default. */
+  /** Where the partial matrices are; the engine's directory (`reportsDirOf`) by default. */
   reportsDir?: string | undefined;
 }
 
 /** Writes the summary and returns the exit status: 1 when anything is not green. */
 export function runSummary(env: NodeJS.ProcessEnv, run: SummaryRun): number {
-  const reportsDir = run.reportsDir ?? REPORTS_DIR;
+  let where: string;
   let result: ReturnType<typeof writeSummary>;
   try {
+    const browser = resolveBrowser(env);
+    const reportsDir = run.reportsDir ?? reportsDirOf(browser);
+    where = join(reportsDir, `${summaryName(browser)}.md`);
     const targets = selectTargets(env.UF_TARGETS);
     result = writeSummary({
       reportsDir,
@@ -50,12 +55,12 @@ export function runSummary(env: NodeJS.ProcessEnv, run: SummaryRun): number {
       stepSummary: env.GITHUB_STEP_SUMMARY,
       since: run.since,
       requireComplete: run.requireComplete,
+      browser,
     });
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     return 1;
   }
-  const where = join(reportsDir, "parity-matrix.md");
   if (!result.problems.length) {
     process.stdout.write(
       `[uf:summary] The parity matrix is green${result.complete ? "" : " (partial run)"}: ${where}\n`,
