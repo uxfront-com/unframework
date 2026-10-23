@@ -1,7 +1,7 @@
 # ADR-0009: CSS is scoped with Vue's attribute algorithm
 
-- **Status:** Proposed — the plan proceeds on the recommendation, amended by ADR-0063
-- **Date:** 2026-10-01
+- **Status:** Accepted, amended by ADR-0063
+- **Date:** 2026-10-23
 - **Plan:** §11 D5; §4.3, §4.4, §4.5, §5.8, §6, §7.5, §7.6, P8, M4, Appendix A
 
 ## Context

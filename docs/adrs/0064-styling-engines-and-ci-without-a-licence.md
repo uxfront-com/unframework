@@ -1,6 +1,6 @@
 # ADR-0064: Styling engines through virtual modules, and CI without a licence
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-23
 - **Plan:** §4.4, §5.7, §7.3, §9 M4, G7, P2, P5, P7, P8, R11; C4 (ADR-0004), D11 (ADR-0015);
   amends ADR-0004 and ADR-0015; settles ADR-0004's R11 consequence; builds on ADR-0063

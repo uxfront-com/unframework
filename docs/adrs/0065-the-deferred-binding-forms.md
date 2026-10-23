@@ -1,6 +1,6 @@
 # ADR-0065: The binding forms ADR-0038 and ADR-0039 deferred to M4
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-23
 - **Plan:** §4.3, §6, §9 M4, P2, P4, P7; ADR-0015, ADR-0033, ADR-0044, ADR-0054, ADR-0056;
   amends ADR-0038 and ADR-0039; builds on ADR-0063
