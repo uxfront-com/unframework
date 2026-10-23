@@ -88,9 +88,10 @@ CI licence or a deterministic stub".
 
 - A styled output may depend on an engine's runtime, and a consumer installs the engine and its
   plugin.
-- An engine's global stylesheet and a scoped sheet load in import order on five targets and in
-  render order on Angular and Qwik (`sheet-order`, ADR-0063). A case whose captures depend on which
-  wins declares `requires: ["sheet-order"]`. `styleframe/recipe-and-scoped` sets different
+- An engine's stylesheet is a side-effect import on every target, so it loads with the module
+  that imports it. A scoped sheet loads with its module on five targets, and when its component
+  first renders on Angular and Qwik (`sheet-order`, ADR-0063). A case whose captures depend on
+  which wins declares `requires: ["sheet-order"]`. `styleframe/recipe-and-scoped` sets different
   properties in each, so it doesn't.
 - The engines the corpus uses are pinned exactly, since they shape what renders (P8).
 
