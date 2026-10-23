@@ -57,8 +57,8 @@ function styleProperties(
   style: object | string | null | undefined,
 ): Record<string, string> | undefined {
   if (style === null || style === undefined) return undefined;
-  // Only a CSS identifier is a property: Solid's server writes an object's keys as they are.
-  const PROPERTY = /^-?-?[A-Za-z_][\w-]*$/;
+  // A property is a custom property or a CSS identifier: Solid's server writes keys as they are.
+  const PROPERTY = /^(?:--[^\s"'<>&;:]+|-?[A-Za-z_][\w-]*)$/;
   const properties: Record<string, string> = {};
   if (typeof style === "string") {
     for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {

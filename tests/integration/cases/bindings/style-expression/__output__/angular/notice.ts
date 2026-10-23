@@ -40,8 +40,9 @@ function styleObject(
     for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
       const [property, value] = declaration.split(/:([^]+)/);
       const key = property!.trim();
-      // Only a CSS identifier is a property: anything else would reach the markup as written.
-      if (value !== undefined && /^-?-?[A-Za-z_][\w-]*$/.test(key)) properties[key] = value.trim();
+      // A property is a custom property or a CSS identifier: anything else would reach the markup.
+      if (value !== undefined && /^(?:--[^\s"'<>&;:]+|-?[A-Za-z_][\w-]*)$/.test(key))
+        properties[key] = value.trim();
     }
     return properties;
   }

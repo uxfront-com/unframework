@@ -45,9 +45,13 @@ The frameworks take these forms differently:
   - Its kinds are within object, string, `null` and `undefined`, or it is UF3018. A declared
     object type's members, and the members of an object literal anywhere in the value (a
     conditional's branch, a `computed`, a local constant), are checked as an object literal's
-    keys and values are written in place: each a known property in camel case or a lower-case
-    custom property, never vendor-prefixed, each value a string, `0`, or a number only on
-    `UNITLESS_PROPERTIES` and custom properties (UF3018 at the member).
+    keys and values are: each a known property in camel case or a lower-case custom property,
+    never vendor-prefixed, each value a string, `0`, or a number only on `UNITLESS_PROPERTIES` and
+    custom properties (UF3018 at the member). An object literal the value is, or holds as a
+    conditional's branch, a side of `??`, `||` or `&&`, or in parentheses, gets every check it gets
+    written in place (`lowerStyleObject`), and a vendor-prefixed key is UF3018 there: every target
+    copies the object as written, and Vue's server writes `WebkitLineClamp` as
+    `webkit-line-clamp`, which no browser applies.
   - An object typed by an `interface` is UF3018, with the help to declare it with `type`: Vue's
     and Qwik's style types need the index signature only a type literal has.
   - **Each target writes its own form.** Vue `:style="value"`, Angular `[style]="value"`, Qwik and
@@ -55,8 +59,9 @@ The frameworks take these forms differently:
     `style={styleProperties(value)}` and Svelte `style={styleText(value)}`, inline helpers that turn
     a declaration list into an object, an object into kebab-case keys, or an object into a
     declaration list. A helper that splits a declaration list splits it as Vue's
-    `parseStringStyle` does where Vue merges one, and keeps a property only where its name is a CSS
-    identifier, so no text of the list reaches the markup but as a value the framework escapes.
+    `parseStringStyle` does where Vue merges one, and keeps a property only where its name is a custom
+    property without a quote, `<`, `>`, `&`, `;`, `:` or whitespace, or a CSS identifier, so no
+    text of the list reaches the markup but as a value the framework escapes.
   - **Merged, it is an object first.** Where a root merges a consumer's `style` into the value,
     and where a component or a `<component is>` takes the value, whose root spreads it, React, Solid, Qwik, Astro and
     Angular turn it into an object (`styleObject`) before the spread, the consumer's spread last,
@@ -73,7 +78,8 @@ The frameworks take these forms differently:
   - An array whose entries, at any depth, can be numbers or `true` is UF3018: Vue and Qwik skip a
     number, which clsx renders as its digits, and Qwik's `ClassList` takes no `true`. An object
     typed by an `interface`, at any depth, is UF3018 too: Qwik's `ClassList` needs an index
-    signature.
+    signature. So is an object whose values can be objects or arrays: `ClassList` takes primitives
+    there.
   - Vue, Svelte, Astro and Qwik pass it to their own class. React's and Solid's `cx` read an
     array's entries too, printed only where a class has such a part. Angular writes
     `[class]="classNames([…])"`, an inline helper read through a class member, so
@@ -148,7 +154,8 @@ Svelte   <span class={["tag", tags, states]}>        (Vue, Qwik and Astro alike)
   to one value", "checks the members of a style object typed %s (UF3018)", "reports a style object
   or a class object typed by an interface (UF3018)", "reports an array whose entries can be
   numbers (UF3018)", "reports a class collection holding %s at any depth (UF3018)", "checks the
-  object literals in style={%s} (UF3018)" and "lowers a spread's style key".
+  object literals in style={%s} (UF3018)", "checks a class object's values (UF3018)" and
+  "lowers a spread's style key".
 - `packages/target-solid/test/styles.test.ts`: "keeps markup out of a style bound to a value",
   through Solid's own server render.
 - `packages/codegen/test/binding-forms.test.ts`: which forms a template uses, a spread's `style`
