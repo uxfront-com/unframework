@@ -1,0 +1,14 @@
+{
+  "description": "Class parts that hold arrays and objects at run time: a prop array and a prop object beside a static name and a toggle, a lone prop array, an absent array beside a conditional array literal.",
+  "ssr": {
+    "selected": {
+      "props": {
+        "label": "Design",
+        "tags": ["tag-large", "tag-blue"],
+        "states": { "selected": true, "muted": false },
+        "extra": ["tag-extra"]
+      }
+    },
+    "empty": { "props": { "label": "Empty", "tags": [], "states": {} } }
+  }
+}

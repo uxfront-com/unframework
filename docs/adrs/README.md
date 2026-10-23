@@ -90,8 +90,8 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0035](./0035-render-expressions.md)                               | Render expressions are a scope-analysed subset                       | Accepted, amended by ADR-0045                                         | §4.5, §5.4              |
 | [0036](./0036-control-flow-children-and-lists.md)                  | Conditionals test truthiness, and lists need one keyed element       | Accepted, amended by ADR-0046, ADR-0054                               | §4.3, §5.4              |
 | [0037](./0037-bound-attributes-and-rendered-values.md)             | A bound value must render the same on every target                   | Accepted                                                              | §4.3, §6, P4            |
-| [0038](./0038-class-and-style-bindings.md)                         | `class` binds a set of tokens; `style` binds declarations            | Accepted                                                              | §4.3, §6, M4            |
-| [0039](./0039-spreads-with-known-keys.md)                          | An attribute spread renders exactly its declared keys                | Accepted, amended by ADR-0045, ADR-0054                               | §4.3, §6                |
+| [0038](./0038-class-and-style-bindings.md)                         | `class` binds a set of tokens; `style` binds declarations            | Accepted, amended by ADR-0065                                         | §4.3, §6, M4            |
+| [0039](./0039-spreads-with-known-keys.md)                          | An attribute spread renders exactly its declared keys                | Accepted, amended by ADR-0045, ADR-0054, ADR-0065                     | §4.3, §6                |
 | [0040](./0040-svg.md)                                              | SVG is lowered inside `<svg>`, with case-exact tables                | Accepted                                                              | §4.3, §9 M1             |
 | [0041](./0041-script-blocks-and-frontmatter-are-formatted.md)      | Script blocks and frontmatter are formatted as TypeScript            | Accepted, amended by ADR-0051                                         | §5.8, R14               |
 | [0042](./0042-l5-lints-the-emitters-idiom.md)                      | L5 lints the emitter's idiom                                         | Accepted, amended by ADR-0045, ADR-0047, ADR-0048, ADR-0054, ADR-0056 | §7.2 L5                 |
@@ -117,6 +117,7 @@ A record stays between about 40 and 120 lines. It cites the plan rather than res
 | [0062](./0062-baselines-generated-in-ci.md)                        | CI generates the Linux baselines, and a script applies them          | Proposed                                                              | §7.4, §7.9, §9 M4       |
 | [0063](./0063-scoped-stylesheets.md)                               | Scoped stylesheets, from the import to each target's attachment      | Proposed                                                              | §4.4, §6, §9 M4         |
 | [0064](./0064-styling-engines-and-ci-without-a-licence.md)         | Styling engines through virtual modules, and CI without a licence    | Proposed                                                              | §4.4, R11, §9 M4        |
+| [0065](./0065-the-deferred-binding-forms.md)                       | The binding forms ADR-0038 and ADR-0039 deferred to M4               | Proposed                                                              | §4.3, §6, §9 M4         |
 
 "Proposed" in the index is short for "Proposed — the plan proceeds on the recommendation".
 

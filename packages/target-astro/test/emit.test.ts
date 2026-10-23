@@ -76,7 +76,7 @@ const scratch = scratchDirectory("emit");
 afterAll(() => scratch.remove());
 
 describe("astro target", () => {
-  it("declares every capability: what runs in the browser unsupported, `use-id` and the child root emulated", () => {
+  it("declares every capability: what runs in the browser unsupported, `use-id`, the child root and a merged style emulated", () => {
     expect(Object.keys(target.capabilities).toSorted()).toEqual([...CAPABILITY_NAMES].toSorted());
     // Nothing runs in the browser, so these are inert, reported for information (ADR-0047).
     for (const name of [

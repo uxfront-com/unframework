@@ -3,7 +3,7 @@
 // and `style` are props it merges into its root; a forwarded slot is the parent's snippet
 // passed on as a prop (`{title}`); and `<component is>` over components renders a variable the
 // script declares with `$derived`. The target prints the tree this module returns.
-import { parseExpression } from "@unframework/codegen";
+import { parseExpression, spreadStyleExpression } from "@unframework/codegen";
 import type {
   Attribute,
   ComponentAttribute,
@@ -15,6 +15,7 @@ import type {
   IfNode,
   Parameter,
   RenderNode,
+  SpreadAttribute,
   StyleAttribute,
   UfComponent,
   UfModule,
@@ -26,6 +27,8 @@ export interface Fallthrough {
   style: string;
   /** The `mergeStyle` helper's name, where the root has a style of its own. */
   mergeStyle?: string;
+  /** The `styleText` helper's name, where a style is bound to one value (ADR-0065). */
+  styleText?: string;
 }
 
 /** What the markup prints in place of the IR's render tree. */
@@ -152,13 +155,20 @@ export function rootTakesFallthrough(component: UfComponent, module: UfModule): 
   return module.components.find((each) => each.name === name)?.inheritAttrs !== false;
 }
 
-/** Whether a component's root, an element or a component, has a style of its own. */
+/**
+ * Whether a component's root, an element or a component, has a style of its own: a `style`, or
+ * a spread's `style` key (ADR-0065).
+ */
 export function hasOwnStyle(component: UfComponent): boolean {
   const { render } = component;
   const root = render.kind === "Element" ? render : render.children[0];
   return (
     (root?.kind === "Element" || root?.kind === "Component") &&
-    root.attributes.some((attribute) => attribute.kind === "Style")
+    root.attributes.some(
+      (attribute) =>
+        attribute.kind === "Style" ||
+        (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")),
+    )
   );
 }
 
@@ -288,14 +298,18 @@ export function composedRender(
  * The root's own style merged with the fallthrough `style` (ADR-0054): `mergeStyle(own, style)`,
  * which drops the root's declaration of a property the consumer's names with a nullish value, as
  * an object merge does on the other targets (`fallthrough`, emulated). Without a style of its own
- * the root takes the consumer's as it is.
+ * the root takes the consumer's as it is. A style bound to one value is read as its text,
+ * before the consumer's, which the helper merges in the same pass (ADR-0065).
  */
 function mergedStyle(
   attribute: StyleAttribute | undefined,
-  { style, mergeStyle }: Fallthrough,
+  { style, mergeStyle, styleText }: Fallthrough,
   code: (expression: Expression) => string,
 ): string {
   if (!attribute) return style;
+  if (attribute.value) {
+    return `${mergeStyle!}({}, [${styleText!}(${code(attribute.value)}), ${style}].join("; "))`;
+  }
   const own = attribute.declarations.map((declaration) => {
     const key = isIdentifierName(declaration.property)
       ? declaration.property
@@ -305,6 +319,12 @@ function mergedStyle(
     return `${key}: ${value}`;
   });
   return `${mergeStyle!}({ ${own.join(", ")} }, ${style})`;
+}
+
+/** A spread's `style` key as a style bound to its read, `attrs?.style` (ADR-0065). */
+function spreadStyle(attribute: SpreadAttribute): StyleAttribute {
+  const value = spreadStyleExpression(attribute);
+  return { kind: "Style", declarations: [], value, span: attribute.span };
 }
 
 /** Whether a property name is written bare as an object key. */
@@ -346,7 +366,11 @@ function rootElement(
         ],
       });
     } else if (attribute.kind === "Style") own = attribute;
-    else attributes.push(attribute);
+    else if (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")) {
+      // A spread's `style` is the root's own (ADR-0065), merged with the consumer's in one.
+      own = spreadStyle(attribute);
+      attributes.push({ ...attribute, keys: attribute.keys.filter((key) => key.name !== "style") });
+    } else attributes.push(attribute);
   }
   if (!classed) {
     attributes.push({

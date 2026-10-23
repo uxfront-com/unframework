@@ -1195,9 +1195,21 @@ function setAttribute(element: ElementNode, attribute: StaticAttribute): void {
 
 /**
  * Adds a declaration to an element's `style`, in place of any that sets the same property or
- * overlaps it (the IR's styles never do), or gives the element a `style` of its own.
+ * overlaps it (the IR's styles never do), or gives the element a `style` of its own. A style
+ * bound to a value, or a spread's `style` key, holds no declarations (ADR-0065), and a plugin
+ * may not write code of its own (UF8001), so such a root is left as it is: the root of the
+ * component that renders it takes the declaration.
  */
 function setStyle(element: ElementNode, declaration: StaticStyle): void {
+  if (
+    element.attributes.some(
+      (attribute) =>
+        (attribute.kind === "Style" && attribute.value) ||
+        (attribute.kind === "Spread" && attribute.keys.some((key) => key.name === "style")),
+    )
+  ) {
+    return;
+  }
   const style = element.attributes.find((attribute) => attribute.kind === "Style");
   if (!style) {
     element.attributes.push(createStyleAttribute([declaration], element.span));

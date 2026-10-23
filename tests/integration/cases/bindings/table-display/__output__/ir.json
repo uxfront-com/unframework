@@ -1,0 +1,601 @@
+{
+  "irVersion": 1,
+  "file": "bindings/table-display/Summary.uf.tsx",
+  "components": [
+    {
+      "name": "Summary",
+      "span": {
+        "start": 84,
+        "end": 805
+      },
+      "props": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 40,
+              "end": 46
+            }
+          },
+          "binding": "name@118",
+          "span": {
+            "start": 34,
+            "end": 47
+          }
+        },
+        {
+          "name": "plan",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 56,
+              "end": 62
+            }
+          },
+          "binding": "plan@124",
+          "span": {
+            "start": 50,
+            "end": 63
+          }
+        },
+        {
+          "name": "seats",
+          "optional": false,
+          "type": {
+            "code": "number",
+            "span": {
+              "start": 73,
+              "end": 79
+            }
+          },
+          "binding": "seats@130",
+          "span": {
+            "start": 66,
+            "end": 80
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "SummaryProps",
+          "span": {
+            "start": 139,
+            "end": 151
+          }
+        },
+        "span": {
+          "start": 116,
+          "end": 151
+        }
+      },
+      "types": [
+        "SummaryProps"
+      ],
+      "bindings": [
+        {
+          "id": "name@118",
+          "name": "name",
+          "kind": "prop",
+          "span": {
+            "start": 118,
+            "end": 122
+          }
+        },
+        {
+          "id": "plan@124",
+          "name": "plan",
+          "kind": "prop",
+          "span": {
+            "start": 124,
+            "end": 128
+          }
+        },
+        {
+          "id": "seats@130",
+          "name": "seats",
+          "kind": "prop",
+          "span": {
+            "start": 130,
+            "end": 135
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "div",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "summary",
+            "span": {
+              "start": 175,
+              "end": 190
+            }
+          },
+          {
+            "kind": "Style",
+            "declarations": [
+              {
+                "kind": "Static",
+                "property": "display",
+                "value": "table",
+                "span": {
+                  "start": 198,
+                  "end": 212
+                }
+              },
+              {
+                "kind": "Static",
+                "property": "border-spacing",
+                "value": "8px 4px",
+                "span": {
+                  "start": 214,
+                  "end": 237
+                }
+              }
+            ],
+            "span": {
+              "start": 191,
+              "end": 238
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Static",
+                    "property": "display",
+                    "value": "table-caption",
+                    "span": {
+                      "start": 258,
+                      "end": 280
+                    }
+                  },
+                  {
+                    "kind": "Static",
+                    "property": "font-weight",
+                    "value": "700",
+                    "span": {
+                      "start": 282,
+                      "end": 298
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 251,
+                  "end": 299
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Account",
+                "span": {
+                  "start": 300,
+                  "end": 307
+                }
+              }
+            ],
+            "span": {
+              "start": 246,
+              "end": 313
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Static",
+                    "property": "display",
+                    "value": "table-row",
+                    "span": {
+                      "start": 332,
+                      "end": 350
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 325,
+                  "end": 351
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "span",
+                "attributes": [
+                  {
+                    "kind": "Style",
+                    "declarations": [
+                      {
+                        "kind": "Static",
+                        "property": "display",
+                        "value": "table-cell",
+                        "span": {
+                          "start": 374,
+                          "end": 393
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 367,
+                      "end": 394
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Name",
+                    "span": {
+                      "start": 395,
+                      "end": 399
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 361,
+                  "end": 406
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "span",
+                "attributes": [
+                  {
+                    "kind": "Style",
+                    "declarations": [
+                      {
+                        "kind": "Static",
+                        "property": "display",
+                        "value": "table-cell",
+                        "span": {
+                          "start": 428,
+                          "end": 447
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 421,
+                      "end": 448
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "name",
+                      "span": {
+                        "start": 450,
+                        "end": 454
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "name@118",
+                          "span": {
+                            "start": 450,
+                            "end": 454
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 449,
+                      "end": 455
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 415,
+                  "end": 462
+                }
+              }
+            ],
+            "span": {
+              "start": 320,
+              "end": 475
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "div",
+            "attributes": [
+              {
+                "kind": "Style",
+                "declarations": [
+                  {
+                    "kind": "Static",
+                    "property": "display",
+                    "value": "table-row",
+                    "span": {
+                      "start": 494,
+                      "end": 512
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 487,
+                  "end": 513
+                }
+              }
+            ],
+            "children": [
+              {
+                "kind": "Element",
+                "tag": "span",
+                "attributes": [
+                  {
+                    "kind": "Style",
+                    "declarations": [
+                      {
+                        "kind": "Static",
+                        "property": "display",
+                        "value": "table-cell",
+                        "span": {
+                          "start": 536,
+                          "end": 555
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 529,
+                      "end": 556
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Text",
+                    "value": "Plan",
+                    "span": {
+                      "start": 557,
+                      "end": 561
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 523,
+                  "end": 568
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "span",
+                "attributes": [
+                  {
+                    "kind": "Style",
+                    "declarations": [
+                      {
+                        "kind": "Static",
+                        "property": "display",
+                        "value": "table-cell",
+                        "span": {
+                          "start": 590,
+                          "end": 609
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 583,
+                      "end": 610
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "plan",
+                      "span": {
+                        "start": 623,
+                        "end": 627
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "plan@124",
+                          "span": {
+                            "start": 623,
+                            "end": 627
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 622,
+                      "end": 628
+                    }
+                  },
+                  {
+                    "kind": "Text",
+                    "value": " for ",
+                    "span": {
+                      "start": 628,
+                      "end": 633
+                    }
+                  },
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "seats",
+                      "span": {
+                        "start": 634,
+                        "end": 639
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "seats@130",
+                          "span": {
+                            "start": 634,
+                            "end": 639
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 633,
+                      "end": 640
+                    }
+                  },
+                  {
+                    "kind": "Text",
+                    "value": " seats",
+                    "span": {
+                      "start": 640,
+                      "end": 655
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 577,
+                  "end": 662
+                }
+              }
+            ],
+            "span": {
+              "start": 482,
+              "end": 675
+            }
+          },
+          {
+            "kind": "Element",
+            "tag": "p",
+            "attributes": [],
+            "children": [
+              {
+                "kind": "Text",
+                "value": "Billed to ",
+                "span": {
+                  "start": 685,
+                  "end": 704
+                }
+              },
+              {
+                "kind": "Element",
+                "tag": "span",
+                "attributes": [
+                  {
+                    "kind": "Style",
+                    "declarations": [
+                      {
+                        "kind": "Static",
+                        "property": "display",
+                        "value": "table-cell",
+                        "span": {
+                          "start": 717,
+                          "end": 736
+                        }
+                      },
+                      {
+                        "kind": "Static",
+                        "property": "padding",
+                        "value": "0 4px",
+                        "span": {
+                          "start": 738,
+                          "end": 752
+                        }
+                      }
+                    ],
+                    "span": {
+                      "start": 710,
+                      "end": 753
+                    }
+                  }
+                ],
+                "children": [
+                  {
+                    "kind": "Interpolation",
+                    "value": {
+                      "code": "name",
+                      "span": {
+                        "start": 755,
+                        "end": 759
+                      },
+                      "refs": [
+                        {
+                          "kind": "Binding",
+                          "binding": "name@118",
+                          "span": {
+                            "start": 755,
+                            "end": 759
+                          }
+                        }
+                      ]
+                    },
+                    "span": {
+                      "start": 754,
+                      "end": 760
+                    }
+                  }
+                ],
+                "span": {
+                  "start": 704,
+                  "end": 767
+                }
+              },
+              {
+                "kind": "Text",
+                "value": " monthly.",
+                "span": {
+                  "start": 767,
+                  "end": 783
+                }
+              }
+            ],
+            "span": {
+              "start": 682,
+              "end": 787
+            }
+          }
+        ],
+        "span": {
+          "start": 170,
+          "end": 798
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Summary",
+      "span": {
+        "start": 84,
+        "end": 805
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "SummaryProps",
+      "exported": true,
+      "code": "interface SummaryProps {\n  name: string;\n  plan: string;\n  seats: number;\n}",
+      "span": {
+        "start": 7,
+        "end": 82
+      }
+    }
+  ]
+}

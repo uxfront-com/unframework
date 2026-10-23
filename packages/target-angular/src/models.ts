@@ -3,7 +3,12 @@
 // control (`#nameField`), which types its value as the element's. Vue's text binding (trim, lazy,
 // a number's cast) goes through `modelText`, a checkbox group through `toggle` and a multiple
 // select through `selectedValues`: inline helpers the template reads as members.
-import { angularCode, rewriteExpression } from "@unframework/codegen";
+import {
+  angularCode,
+  bindingForms,
+  mergesWholeStyle,
+  rewriteExpression,
+} from "@unframework/codegen";
 import type { PrintedAttribute } from "@unframework/codegen";
 import type { Attribute, ElementNode, EventAttribute, ModelAttribute } from "@unframework/ir";
 
@@ -19,6 +24,41 @@ export interface ModelHelper {
 
 /** The helpers' code, by their base names. */
 const HELPERS = {
+  classNames: (name: string) => `/**
+ * Class names as Vue's \`normalizeClass\` reads them (ADR-0065): a string as it is, an array's
+ * entries and an object's keys whose values are truthy, Angular's \`[class]\` taking the string.
+ */
+function ${name}(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.map(${name}).filter(Boolean).join(" ");
+  if (!value || typeof value !== "object") return "";
+  return Object.entries(value)
+    .flatMap(([key, on]) => (on ? [key] : []))
+    .join(" ");
+}`,
+  // Raw, so the regular expressions keep their escapes.
+  styleObject: (name: string) => String.raw`/**
+ * A style bound to a value as an object of CSS properties (ADR-0065), which a merge spreads: a
+ * declaration list splits as Vue's parseStringStyle splits it, and an object's camel-case keys
+ * are written in kebab case, as the template writes its declarations.
+ */
+function ${name}(style: object | string | null | undefined): Record<string, string | null | undefined> {
+  const properties: Record<string, string | null | undefined> = {};
+  if (typeof style === "string") {
+    for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
+      const [property, value] = declaration.split(/:([^]+)/);
+      const key = property!.trim();
+      // A property is a custom property or a CSS identifier: anything else would reach the markup.
+      if (value !== undefined && /^(?:--[^\s"'<>&;:]+|-?[A-Za-z_][\w-]*)$/.test(key)) properties[key.startsWith("--") ? key : key.toLowerCase()] = value.trim();
+    }
+    return properties;
+  }
+  for (const [key, value] of Object.entries(style ?? {})) {
+    const kebab = key.replace(/[A-Z]/g, (letter) => "-" + letter.toLowerCase());
+    properties[key.startsWith("--") ? key : kebab] = value === null || value === undefined ? value : String(value);
+  }
+  return properties;
+}`,
   modelText: (name: string) => `/**
  * Vue's \`vModelText\` (ADR-0054): the text a field shows for its model's value. It keeps the
  * field's own text where that text already means the value (\`12.5kg\` for \`12.5\` with a number
@@ -102,6 +142,10 @@ export interface Models {
   helpers: ModelHelper[];
   /** The files' functions only the helpers call (`looseToNumber`), declared in the file. */
   support: ModelHelper[];
+  /** The `classNames` helper's name, where a class part may be an array or an object. */
+  classNames?: string;
+  /** The `styleObject` helper's name, where a style bound to a value is merged (ADR-0065). */
+  styleObject?: string;
 }
 
 /** Plans every native control's `v-model` of the component's template. */
@@ -126,6 +170,11 @@ export function planModels(plan: Plan): Models {
     }
     return found.name;
   };
+  // The binding forms' helpers (ADR-0065), claimed before the template prints, as the class's
+  // members are.
+  const forms = bindingForms(plan.component);
+  const classNames = forms.classCollection ? helper("classNames") : undefined;
+  const styleObject = mergesWholeStyle(plan.component) ? helper("styleObject") : undefined;
   const rules = templateRules(plan);
   let server: string | undefined;
   const render = mapElements(plan.component.render, (element) => {
@@ -254,6 +303,8 @@ export function planModels(plan: Plan): Models {
     options,
     render,
     ...(server === undefined ? {} : { server }),
+    ...(classNames === undefined ? {} : { classNames }),
+    ...(styleObject === undefined ? {} : { styleObject }),
     helpers: used.filter(([base]) => base !== "looseToNumber").map(([, each]) => each),
     support: used.filter(([base]) => base === "looseToNumber").map(([, each]) => each),
   };

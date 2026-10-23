@@ -272,7 +272,9 @@ reported at a component's first stylesheet import.
 
 Native: everything but `event-capture`, `event-once` and `event-passive` (emulated, the directives
 above, helper `uf<Event><Option>`), `use-id` (emulated, `nextId`), `next-tick` (emulated,
-`nextTick`) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
+`nextTick`), `class-binding` (emulated, `classNames`, for a class part that may be an array or an
+object), `style-binding` (emulated, `styleObject`, for a style bound to a value that a merge
+spreads; ADR-0065) and composition's cells that ADR-0056 decides: `named-slot`, `scoped-slot` and
 `slot-forwarding` (emulated, the slot directives `uf<Component><Slot>`), `model-array`
 (`toggle`), `model-modifiers` (`modelText`), `fallthrough` (`fallthrough`), `reactive-context`
 (`refObject`) and `dynamic-component` (`@switch`), all emulated, `default-slot-presence` and

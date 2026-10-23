@@ -7,6 +7,7 @@
 // `computed` a `$derived`, a template ref a variable `bind:this` sets, and an event a callback
 // prop, `onchange` for `change` (ADR-0012, D8).
 import {
+  bindingForms,
   childImports,
   componentTypes,
   functionBodyText,
@@ -91,6 +92,8 @@ export interface InstanceScript {
   >;
   /** The render tree the markup prints (`composition.ts`). */
   render: ElementNode | FragmentNode;
+  /** The `styleText` helper's name, where a style is bound to one value (ADR-0065). */
+  styleText?: string;
 }
 
 /** The modules a script imports from, in the order it prints them. */
@@ -322,6 +325,9 @@ class ScriptWriter {
       attached.length || fields.length ? this.#names.import("svelte/events", "on") : undefined;
     const once = attached.some((each) => each.once) ? this.#names.claim("once") : undefined;
     const modelText = fields.length ? this.#names.claim("modelText") : undefined;
+    const styleText = bindingForms(component).wholeStyle
+      ? this.#names.claim("styleText")
+      : undefined;
     const untrack = fields.length ? this.#names.import("svelte", "untrack") : undefined;
 
     const props = this.#props();
@@ -336,6 +342,7 @@ class ScriptWriter {
       ...(this.#refObject ? [refObjectHelper(this.#refObject)] : []),
       ...(modelText && on ? [modelTextHelper(modelText, on)] : []),
       ...(this.#fallthrough?.mergeStyle ? [mergeStyleHelper(this.#fallthrough.mergeStyle)] : []),
+      ...(styleText ? [styleTextHelper(styleText)] : []),
       ...(this.#scope ? [scopeAttributesHelper(this.#scope.helper)] : []),
     ];
     // The sheet `compile()` emits beside the source, already scoped (ADR-0063), imported after
@@ -356,7 +363,7 @@ class ScriptWriter {
     const roots = new Set(scopeRoots(component).map(({ start, end }) => `${start}:${end}`));
     const composed = composedRender(
       component,
-      this.#fallthrough,
+      this.#fallthrough && styleText ? { ...this.#fallthrough, styleText } : this.#fallthrough,
       this.#dynamic,
       (slot) => this.#slotLocal(slot),
       (parameter) => this.#fillParameter(parameter),
@@ -402,6 +409,7 @@ class ScriptWriter {
       component,
       markup,
       render: composed.render,
+      ...(styleText ? { styleText } : {}),
     });
     if (!pieces.length) {
       // Svelte parses the markup's code as TypeScript only in a component whose script is: a
@@ -1575,6 +1583,29 @@ function mergeStyleHelper(name: string): string {
     "  add(text.slice(start));",
     "  return Object.entries(merged)",
     '    .map(([property, value]) => `${property}: ${value ?? ""}`)',
+    '    .join("; ");',
+    "}",
+  ].join("\n");
+}
+
+/**
+ * The `styleText` helper (`style-binding`, emulated, ADR-0065): a style bound to one value as
+ * the declaration list Svelte's `style` takes. A string is the list itself; an object, keyed as
+ * an object literal's are, is one declaration per present value, in kebab case, as Vue's
+ * `stringifyStyle` writes it.
+ */
+function styleTextHelper(name: string): string {
+  return [
+    `function ${name}(`,
+    "  style: object | string | null | undefined,",
+    "): string | undefined {",
+    '  if (style === null || style === undefined || typeof style === "string") return style ?? undefined;',
+    "  return Object.entries(style)",
+    '    .filter(([, value]) => value !== null && value !== undefined && value !== "")',
+    "    .map(([key, value]) => {",
+    '      const property = key.startsWith("--") ? key : key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);',
+    "      return `${property}: ${value}`;",
+    "    })",
     '    .join("; ");',
     "}",
   ].join("\n");

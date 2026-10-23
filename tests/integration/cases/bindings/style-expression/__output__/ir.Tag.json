@@ -1,0 +1,169 @@
+{
+  "irVersion": 1,
+  "file": "bindings/style-expression/Tag.uf.tsx",
+  "components": [
+    {
+      "name": "Tag",
+      "span": {
+        "start": 146,
+        "end": 309
+      },
+      "props": [
+        {
+          "name": "label",
+          "optional": false,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 37,
+              "end": 43
+            }
+          },
+          "binding": "label@176",
+          "span": {
+            "start": 30,
+            "end": 44
+          }
+        },
+        {
+          "name": "tone",
+          "optional": true,
+          "type": {
+            "code": "string",
+            "span": {
+              "start": 54,
+              "end": 60
+            }
+          },
+          "span": {
+            "start": 47,
+            "end": 61
+          }
+        }
+      ],
+      "propsParameter": {
+        "form": "destructured",
+        "type": {
+          "code": "TagProps",
+          "span": {
+            "start": 185,
+            "end": 193
+          }
+        },
+        "span": {
+          "start": 174,
+          "end": 193
+        }
+      },
+      "types": [
+        "TagProps"
+      ],
+      "bindings": [
+        {
+          "id": "label@176",
+          "name": "label",
+          "kind": "prop",
+          "span": {
+            "start": 176,
+            "end": 181
+          }
+        }
+      ],
+      "setup": [],
+      "render": {
+        "kind": "Element",
+        "tag": "em",
+        "attributes": [
+          {
+            "kind": "Static",
+            "name": "class",
+            "value": "tag",
+            "span": {
+              "start": 216,
+              "end": 227
+            }
+          },
+          {
+            "kind": "Style",
+            "declarations": [
+              {
+                "kind": "Static",
+                "property": "color",
+                "value": "rgb(120, 30, 30)",
+                "span": {
+                  "start": 235,
+                  "end": 258
+                }
+              },
+              {
+                "kind": "Static",
+                "property": "padding",
+                "value": "1px 4px",
+                "span": {
+                  "start": 260,
+                  "end": 276
+                }
+              }
+            ],
+            "span": {
+              "start": 228,
+              "end": 277
+            }
+          }
+        ],
+        "children": [
+          {
+            "kind": "Interpolation",
+            "value": {
+              "code": "label",
+              "span": {
+                "start": 286,
+                "end": 291
+              },
+              "refs": [
+                {
+                  "kind": "Binding",
+                  "binding": "label@176",
+                  "span": {
+                    "start": 286,
+                    "end": 291
+                  }
+                }
+              ]
+            },
+            "span": {
+              "start": 285,
+              "end": 292
+            }
+          }
+        ],
+        "span": {
+          "start": 212,
+          "end": 302
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "kind": "default",
+      "name": "default",
+      "local": "Tag",
+      "span": {
+        "start": 146,
+        "end": 309
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "TagProps",
+      "exported": true,
+      "code": "interface TagProps {\n  label: string;\n  tone?: string;\n}",
+      "span": {
+        "start": 7,
+        "end": 63
+      }
+    }
+  ]
+}

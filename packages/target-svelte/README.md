@@ -66,7 +66,9 @@ A component is that line, an instance script when it takes props or has a setup,
   a union (`MouseEvent | KeyboardEvent`) keeps it where each event it receives extends a member,
   and takes the nearest interface they all extend where one does not (`src/handlers.ts`,
   `src/events.ts`). Every capability is native but `event-once`, emulated by
-  `once`: `event-capture`, `event-passive`, `event-semantics`, `use-id`, `next-tick` included.
+  `once`, and `style-binding`, emulated by `styleText`, which writes a style bound to an object as
+  a declaration list (ADR-0065): `event-capture`, `event-passive`, `event-semantics`, `use-id`,
+  `next-tick` included.
   Of composition's cells, `fallthrough` (`mergeStyle`), `model-modifiers` (`modelText`) and
   `reactive-context` (`refObject`) are emulated, and the others native; of styling's,
   `child-root-scope` (`scopeAttributes`) is emulated.

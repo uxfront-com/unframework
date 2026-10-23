@@ -197,7 +197,8 @@ rewrite })` prints a component's root element or fragment, every node and attrib
   level in, its closing brace at the attribute), never a line inside a string or template literal.
   Childless SVG elements close themselves. The entry exports what targets build on beside the
   dialects: `operand`, `test`, `negate`, `conjoin`, `member`, `angularCode`, `vueAttributeCode`,
-  `codeTokens` and `mapCode`. The targets' `markup-semantics` tests render the shared cases of
+  `staticClassValue`, `vueClassValue`, `codeTokens` and `mapCode`, and the binding forms ADR-0065
+  lowers: `bindingForms`, `mergesWholeStyle` and `spreadStyleExpression`. The targets' `markup-semantics` tests render the shared cases of
   `test/markup-cases.ts` through each framework and its L5 linters.
 - **Formatting:** `formatOutput` runs oxfmt (pinned) over code files (TS, TSX, JS), with
   embedded-language formatting off and objects laid out by width alone. In a markup file it
