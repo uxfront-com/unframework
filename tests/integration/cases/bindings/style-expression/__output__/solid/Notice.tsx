@@ -1,5 +1,7 @@
 import Badge from "./Badge";
+import Tag from "./Tag";
 import { type JSX, createSignal } from "solid-js";
+import { Dynamic } from "solid-js/web";
 
 type NoticeLook = {
   color?: string;
@@ -8,10 +10,13 @@ type NoticeLook = {
   "--notice-accent"?: string;
 };
 
+type NoticeVars = { "--notice-gap"?: string };
+
 export interface NoticeProps {
   title: string;
   look?: NoticeLook;
   declarations?: string;
+  vars?: NoticeVars;
 }
 
 export default function Notice(props: NoticeProps & { class?: string; style?: JSX.CSSProperties }) {
@@ -34,6 +39,12 @@ export default function Notice(props: NoticeProps & { class?: string; style?: JS
         style={styleProperties(props.look)}
       />
       <p style={styleProperties(props.declarations)}>Read the details before you continue.</p>
+      <Dynamic
+        component={quiet() ? Tag : Badge}
+        label="Optional"
+        tone="font-weight: 700"
+        style={styleProperties(props.declarations)}
+      />
       <p
         style={styleProperties(
           quiet()
@@ -43,7 +54,7 @@ export default function Notice(props: NoticeProps & { class?: string; style?: JS
       >
         This cannot be undone.
       </p>
-      <button type="button" onClick={toggle}>
+      <button type="button" style={styleProperties(props.vars)} onClick={toggle}>
         {quiet() ? "Emphasise" : "Quieten"}
       </button>
     </div>
@@ -55,16 +66,19 @@ function styleProperties(
   style: object | string | null | undefined,
 ): Record<string, string> | undefined {
   if (style === null || style === undefined) return undefined;
+  // Only a CSS identifier is a property: Solid's server writes an object's keys as they are.
+  const PROPERTY = /^-?-?[A-Za-z_][\w-]*$/;
   const properties: Record<string, string> = {};
   if (typeof style === "string") {
     for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
       const [property, value] = declaration.split(/:([^]+)/);
-      if (value !== undefined) properties[property!.trim()] = value.trim();
+      const key = property!.trim();
+      if (value !== undefined && PROPERTY.test(key)) properties[key] = value.trim();
     }
     return properties;
   }
   for (const [key, value] of Object.entries(style)) {
-    if (value === null || value === undefined) continue;
+    if (value === null || value === undefined || !PROPERTY.test(key)) continue;
     const kebab = key.replace(/[A-Z]/g, (letter) => "-" + letter.toLowerCase());
     properties[key.startsWith("--") ? key : kebab] = String(value);
   }

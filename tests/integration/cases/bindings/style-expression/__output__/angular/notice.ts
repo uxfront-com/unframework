@@ -1,4 +1,5 @@
 import Badge from "./badge";
+import Tag from "./tag";
 import {
   Component,
   Directive,
@@ -17,10 +18,13 @@ type NoticeLook = {
   "--notice-accent"?: string;
 };
 
+type NoticeVars = { "--notice-gap"?: string };
+
 export interface NoticeProps {
   title: string;
   look?: NoticeLook;
   declarations?: string;
+  vars?: NoticeVars;
 }
 
 /**
@@ -35,7 +39,9 @@ function styleObject(
   if (typeof style === "string") {
     for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
       const [property, value] = declaration.split(/:([^]+)/);
-      if (value !== undefined) properties[property!.trim()] = value.trim();
+      const key = property!.trim();
+      // Only a CSS identifier is a property: anything else would reach the markup as written.
+      if (value !== undefined && /^-?-?[A-Za-z_][\w-]*$/.test(key)) properties[key] = value.trim();
     }
     return properties;
   }
@@ -74,13 +80,14 @@ export class ScopeAttributes implements OnInit {
 
 @Component({
   selector: "uf-notice",
-  imports: [Badge, ScopeAttributes],
+  imports: [Badge, Tag, ScopeAttributes],
   host: { "[attr.class]": "null", "[attr.style]": "'display: contents;'" },
   preserveWhitespaces: false,
   template: `
     @let title = this.title();
     @let look = this.look();
     @let declarations = this.declarations();
+    @let vars = this.vars();
     @let quiet = this.quiet();
     <div class="notice" [class]="this.class()" [style]="this.style()" [ufScope]="this.host">
       <p [style]="look">{{ title }}</p>
@@ -90,12 +97,31 @@ export class ScopeAttributes implements OnInit {
         [style]="styleObject(look)"
       />
       <p [style]="declarations">Read the details before you continue.</p>
+      @switch (quiet ? "Tag" : "Badge") {
+        @case ("Tag") {
+          <uf-tag
+            [label]="'Optional'"
+            [tone]="'font-weight: 700'"
+            [style]="styleObject(declarations)"
+          />
+        } @case ("Badge") {
+          <uf-badge
+            [label]="'Optional'"
+            [tone]="'font-weight: 700'"
+            [style]="styleObject(declarations)"
+          />
+        }
+      }
       <p
         [style]="quiet
           ? { color: 'rgb(90, 90, 90)' }
           : { color: 'var(--notice-accent, rgb(160, 40, 40))', fontWeight: '700' }"
       >This cannot be undone.</p>
-      <button type="button" (click)="toggle()">{{ quiet ? "Emphasise" : "Quieten" }}</button>
+      <button
+        type="button"
+        [style]="vars"
+        (click)="toggle()"
+      >{{ quiet ? "Emphasise" : "Quieten" }}</button>
     </div>
   `,
 })
@@ -103,6 +129,7 @@ export default class Notice {
   readonly title = input.required<string>();
   readonly look = input<NoticeLook>();
   readonly declarations = input<string>();
+  readonly vars = input<NoticeVars>();
   readonly class = input<string>();
   readonly style = input<Record<string, string | null | undefined>>();
   protected readonly quiet = signal(false);

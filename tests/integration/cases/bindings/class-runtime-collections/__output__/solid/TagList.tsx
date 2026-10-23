@@ -41,8 +41,10 @@ function cx(...parts: unknown[]): string {
   const names: string[] = [];
   for (const part of parts) {
     if (typeof part === "string") names.push(part);
-    else if (Array.isArray(part)) names.push(cx(...part));
-    else if (part && typeof part === "object") {
+    else if (Array.isArray(part)) {
+      const joined = cx(...part);
+      if (joined) names.push(joined);
+    } else if (part && typeof part === "object") {
       for (const [name, on] of Object.entries(part)) if (on) names.push(name);
     }
   }

@@ -35,13 +35,14 @@ export default function Hint({
 }
 
 /** A style bound to a value as React's style takes it: a declaration list becomes an object. */
-function styleObject(style: CSSProperties | string | null | undefined): CSSProperties | undefined {
-  if (typeof style !== "string") return style ?? undefined;
+function styleObject(style: object | string | null | undefined): CSSProperties | undefined {
+  if (typeof style !== "string") return (style ?? undefined) as CSSProperties | undefined;
   const object: Record<string, string> = {};
   for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
     const [property, value] = declaration.split(/:([^]+)/);
-    if (value === undefined) continue;
     const key = property!.trim();
+    // Only a CSS identifier is a property: anything else would reach the markup as written.
+    if (value === undefined || !/^-?-?[A-Za-z_][\w-]*$/.test(key)) continue;
     const camel = key.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
     object[key.startsWith("--") ? key : camel] = value.trim();
   }

@@ -1,5 +1,6 @@
 ---
 import Badge from "./Badge.astro";
+import Tag from "./Tag.astro";
 
 type NoticeLook = {
   color?: string;
@@ -8,10 +9,13 @@ type NoticeLook = {
   "--notice-accent"?: string;
 };
 
+type NoticeVars = { "--notice-gap"?: string };
+
 export interface NoticeProps {
   title: string;
   look?: NoticeLook;
   declarations?: string;
+  vars?: NoticeVars;
 }
 
 interface Props extends NoticeProps {
@@ -19,7 +23,7 @@ interface Props extends NoticeProps {
   style?: Record<string, string | number | undefined>;
 }
 
-const { title, look, declarations, class: className, style } = Astro.props;
+const { title, look, declarations, vars, class: className, style } = Astro.props;
 
 /** The scope attributes of the styled parents that render this component, for its root. */
 function scopeAttributes(props: object): Record<string, ""> {
@@ -34,8 +38,9 @@ function styleObject(style: object | string | null | undefined): Record<string, 
   const object: Record<string, string> = {};
   for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
     const [property, value] = declaration.split(/:([^]+)/);
-    if (value === undefined) continue;
     const key = property!.trim();
+    // Only a CSS identifier is a property: anything else would reach the markup as written.
+    if (value === undefined || !/^-?-?[A-Za-z_][\w-]*$/.test(key)) continue;
     const camel = key.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
     object[key.startsWith("--") ? key : camel] = value.trim();
   }
@@ -43,6 +48,8 @@ function styleObject(style: object | string | null | undefined): Record<string, 
 }
 
 const quiet = false as boolean;
+
+const Tag_1 = quiet ? Tag : Badge;
 ---
 
 <div class:list={["notice", className]} style={style} {...scopeAttributes(Astro.props)}>
@@ -53,10 +60,11 @@ const quiet = false as boolean;
     style={styleObject(look)}
   />
   <p style={declarations}>Read the details before you continue.</p>
+  <Tag_1 label="Optional" tone="font-weight: 700" style={styleObject(declarations)} />
   <p
     style={quiet
       ? { color: "rgb(90, 90, 90)" }
       : { color: "var(--notice-accent, rgb(160, 40, 40))", fontWeight: "700" }}
   >This cannot be undone.</p>
-  <button type="button">{quiet ? "Emphasise" : "Quieten"}</button>
+  <button type="button" style={vars}>{quiet ? "Emphasise" : "Quieten"}</button>
 </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Badge from "./Badge.vue";
+import Tag from "./Tag.vue";
 import { ref } from "vue";
 
 type NoticeLook = {
@@ -9,13 +10,21 @@ type NoticeLook = {
   "--notice-accent"?: string;
 };
 
+type NoticeVars = { "--notice-gap"?: string };
+
 export interface NoticeProps {
   title: string;
   look?: NoticeLook;
   declarations?: string;
+  vars?: NoticeVars;
 }
 
-const { title, look = undefined, declarations = undefined } = defineProps<NoticeProps>();
+const {
+  title,
+  look = undefined,
+  declarations = undefined,
+  vars = undefined,
+} = defineProps<NoticeProps>();
 
 const quiet = ref(false);
 
@@ -33,11 +42,21 @@ function toggle() {
       :style="look"
     />
     <p :style="declarations">Read the details before you continue.</p>
+    <component
+      :is="quiet ? Tag : Badge"
+      label="Optional"
+      tone="font-weight: 700"
+      :style="declarations"
+    />
     <p
       :style="quiet
         ? { color: 'rgb(90, 90, 90)' }
         : { color: 'var(--notice-accent, rgb(160, 40, 40))', fontWeight: '700' }"
     >This cannot be undone.</p>
-    <button type="button" @click="toggle">{{ quiet ? "Emphasise" : "Quieten" }}</button>
+    <button
+      type="button"
+      :style="vars"
+      @click="toggle"
+    >{{ quiet ? "Emphasise" : "Quieten" }}</button>
   </div>
 </template>

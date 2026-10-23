@@ -1,4 +1,5 @@
 import Badge from "./Badge";
+import Tag from "./Tag";
 import { type CSSProperties, useRef, useState } from "react";
 
 type NoticeLook = {
@@ -8,10 +9,13 @@ type NoticeLook = {
   "--notice-accent"?: string;
 };
 
+type NoticeVars = { "--notice-gap"?: string };
+
 export interface NoticeProps {
   title: string;
   look?: NoticeLook;
   declarations?: string;
+  vars?: NoticeVars;
 }
 
 export interface NoticeAttributes {
@@ -23,6 +27,7 @@ export default function Notice({
   title,
   look,
   declarations,
+  vars,
   className,
   style,
   ...attributes
@@ -35,6 +40,8 @@ export default function Notice({
     setQuiet(quietRef.current);
   }
 
+  const Tag_1 = quiet ? Tag : Badge;
+
   return (
     <div className={cx("notice", className)} style={style} {...scopeAttributes(attributes)}>
       <p style={styleObject(look)}>{title}</p>
@@ -44,6 +51,7 @@ export default function Notice({
         style={styleObject(look)}
       />
       <p style={styleObject(declarations)}>Read the details before you continue.</p>
+      <Tag_1 label="Optional" tone="font-weight: 700" style={styleObject(declarations)} />
       <p
         style={styleObject(
           quiet
@@ -53,7 +61,7 @@ export default function Notice({
       >
         This cannot be undone.
       </p>
-      <button type="button" onClick={toggle}>
+      <button type="button" style={styleObject(vars)} onClick={toggle}>
         {quiet ? "Emphasise" : "Quieten"}
       </button>
     </div>
@@ -76,13 +84,14 @@ function cx(...parts: unknown[]): string {
 }
 
 /** A style bound to a value as React's style takes it: a declaration list becomes an object. */
-function styleObject(style: CSSProperties | string | null | undefined): CSSProperties | undefined {
-  if (typeof style !== "string") return style ?? undefined;
+function styleObject(style: object | string | null | undefined): CSSProperties | undefined {
+  if (typeof style !== "string") return (style ?? undefined) as CSSProperties | undefined;
   const object: Record<string, string> = {};
   for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
     const [property, value] = declaration.split(/:([^]+)/);
-    if (value === undefined) continue;
     const key = property!.trim();
+    // Only a CSS identifier is a property: anything else would reach the markup as written.
+    if (value === undefined || !/^-?-?[A-Za-z_][\w-]*$/.test(key)) continue;
     const camel = key.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
     object[key.startsWith("--") ? key : camel] = value.trim();
   }

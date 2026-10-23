@@ -1,4 +1,5 @@
 import Badge from "./Badge";
+import Tag from "./Tag";
 import { $, type CSSProperties, type ClassList, component$, useSignal } from "@qwik.dev/core";
 
 type NoticeLook = {
@@ -8,19 +9,24 @@ type NoticeLook = {
   "--notice-accent"?: string;
 };
 
+type NoticeVars = { "--notice-gap"?: string };
+
 export interface NoticeProps {
   title: string;
   look?: NoticeLook;
   declarations?: string;
+  vars?: NoticeVars;
 }
 
 export default component$<NoticeProps & { class?: ClassList; style?: CSSProperties }>(
-  ({ title, look, declarations, class: className, style, ...attributes }) => {
+  ({ title, look, declarations, vars, class: className, style, ...attributes }) => {
     const quiet = useSignal(false);
 
     const toggle = $(() => {
       quiet.value = !quiet.value;
     });
+
+    const Tag_1 = quiet.value ? Tag : Badge;
 
     return (
       <div class={["notice", className]} {...scopeAttributes(attributes)} style={style}>
@@ -31,6 +37,9 @@ export default component$<NoticeProps & { class?: ClassList; style?: CSSProperti
           style={styleObject(look)}
         />
         <p style={declarations}>Read the details before you continue.</p>
+        <>
+          <Tag_1 label="Optional" tone="font-weight: 700" style={styleObject(declarations)} />
+        </>
         <p
           style={
             quiet.value
@@ -40,7 +49,7 @@ export default component$<NoticeProps & { class?: ClassList; style?: CSSProperti
         >
           This cannot be undone.
         </p>
-        <button type="button" onClick$={toggle}>
+        <button type="button" style={vars} onClick$={toggle}>
           {quiet.value ? "Emphasise" : "Quieten"}
         </button>
       </div>
@@ -57,8 +66,9 @@ function styleObject(style: object | string | null | undefined): Record<string, 
   const object: Record<string, string> = {};
   for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
     const [property, value] = declaration.split(/:([^]+)/);
-    if (value === undefined) continue;
     const key = property!.trim();
+    // Only a CSS identifier is a property: anything else would reach the markup as written.
+    if (value === undefined || !/^-?-?[A-Za-z_][\w-]*$/.test(key)) continue;
     const camel = key.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
     object[key.startsWith("--") ? key : camel] = value.trim();
   }

@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import Badge from "./Badge.svelte";
+  import Tag from "./Tag.svelte";
   import type { ClassValue } from "svelte/elements";
 
   type NoticeLook = {
@@ -11,21 +12,26 @@
     "--notice-accent"?: string;
   };
 
+  type NoticeVars = { "--notice-gap"?: string };
+
   export interface NoticeProps {
     title: string;
     look?: NoticeLook;
     declarations?: string;
+    vars?: NoticeVars;
   }
 
   type Props = NoticeProps & { class?: ClassValue; style?: string };
 
-  let { title, look, declarations, class: className, style, ...attributes }: Props = $props();
+  let { title, look, declarations, vars, class: className, style, ...attributes }: Props = $props();
 
   let quiet = $state(false);
 
   function toggle() {
     quiet = !quiet;
   }
+
+  const Component = $derived(quiet ? Tag : Badge);
 
   function styleText(style: object | string | null | undefined): string | undefined {
     if (style === null || style === undefined || typeof style === "string")
@@ -56,10 +62,15 @@
     tone="padding: 2px 6px; color: rgb(120, 30, 30); outline: 1px solid"
     style={styleText(look)}
   /><p style={styleText(declarations)}>Read the details before you continue.</p
-  ><p
+  ><Component label="Optional" tone="font-weight: 700" style={styleText(declarations)}
+  /><p
     style={styleText(quiet
       ? { color: "rgb(90, 90, 90)" }
       : { color: "var(--notice-accent, rgb(160, 40, 40))", fontWeight: "700" })}
   >This cannot be undone.</p
-  ><button type="button" onclick={toggle}>{quiet ? "Emphasise" : "Quieten"}</button>
+  ><button
+    type="button"
+    style={styleText(vars)}
+    onclick={toggle}
+  >{quiet ? "Emphasise" : "Quieten"}</button>
 </div>

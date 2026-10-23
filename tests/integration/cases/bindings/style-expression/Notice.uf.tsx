@@ -1,6 +1,7 @@
 import { ref } from "unframework";
 
 import Badge from "./Badge.uf.tsx";
+import Tag from "./Tag.uf.tsx";
 
 type NoticeLook = {
   color?: string;
@@ -9,13 +10,19 @@ type NoticeLook = {
   "--notice-accent"?: string;
 };
 
+// Only custom properties: React's `CSSProperties` declares none.
+type NoticeVars = {
+  "--notice-gap"?: string;
+};
+
 export interface NoticeProps {
   title: string;
   look?: NoticeLook;
   declarations?: string;
+  vars?: NoticeVars;
 }
 
-export default function Notice({ title, look, declarations }: NoticeProps) {
+export default function Notice({ title, look, declarations, vars }: NoticeProps) {
   const quiet = ref(false);
 
   function toggle() {
@@ -31,6 +38,12 @@ export default function Notice({ title, look, declarations }: NoticeProps) {
         style={look}
       />
       <p style={declarations}>Read the details before you continue.</p>
+      <component
+        is={quiet.value ? Tag : Badge}
+        label="Optional"
+        tone="font-weight: 700"
+        style={declarations}
+      />
       <p
         style={
           quiet.value
@@ -40,7 +53,7 @@ export default function Notice({ title, look, declarations }: NoticeProps) {
       >
         This cannot be undone.
       </p>
-      <button type="button" onClick={toggle}>
+      <button type="button" style={vars} onClick={toggle}>
         {quiet.value ? "Emphasise" : "Quieten"}
       </button>
     </div>

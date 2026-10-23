@@ -28,16 +28,19 @@ function styleProperties(
   style: object | string | null | undefined,
 ): Record<string, string> | undefined {
   if (style === null || style === undefined) return undefined;
+  // Only a CSS identifier is a property: Solid's server writes an object's keys as they are.
+  const PROPERTY = /^-?-?[A-Za-z_][\w-]*$/;
   const properties: Record<string, string> = {};
   if (typeof style === "string") {
     for (const declaration of style.replace(/\/\*[^]*?\*\//g, "").split(/;(?![^(]*\))/g)) {
       const [property, value] = declaration.split(/:([^]+)/);
-      if (value !== undefined) properties[property!.trim()] = value.trim();
+      const key = property!.trim();
+      if (value !== undefined && PROPERTY.test(key)) properties[key] = value.trim();
     }
     return properties;
   }
   for (const [key, value] of Object.entries(style)) {
-    if (value === null || value === undefined) continue;
+    if (value === null || value === undefined || !PROPERTY.test(key)) continue;
     const kebab = key.replace(/[A-Z]/g, (letter) => "-" + letter.toLowerCase());
     properties[key.startsWith("--") ? key : kebab] = String(value);
   }
