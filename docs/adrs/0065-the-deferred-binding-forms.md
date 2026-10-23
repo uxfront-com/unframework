@@ -25,9 +25,10 @@ The frameworks take these forms differently:
 - **A class collection.** Vue's `normalizeClass`, Svelte's and Astro's clsx and Qwik's `class`
   read nested arrays and objects. React's and Solid's `cx` read strings and objects only, and
   Angular's `[class]` reads no nested array and drops an entry that holds a space.
-- **Types.** Vue's style type and Qwik's style and class types have an index signature
+- **Types.** Vue's and Qwik's style types and Qwik's class type have an index signature
   (`` `--${string}` ``, `Record<string, …>`), which an `interface` lacks, so a value typed by one
-  fails TS2322 in those outputs.
+  fails TS2322 in those outputs. Vue's class type is `Record<string, any>`, which takes one.
+- **Servers.** Solid's server escapes a style object's values but not its keys.
 - **Vendor prefixes.** Chromium drops a prefixed name it does not know from the CSSOM, where a
   server keeps it in the markup. An alias (`-webkit-transform`) or a prefixed shorthand
   (`-webkit-text-stroke`) sets longhands the overlap check (`cssPropertiesOverlap`) cannot see.
@@ -42,20 +43,22 @@ The frameworks take these forms differently:
   declarations (`StyleAttribute.value`). The value is a style object keyed as an object literal is
   (camel-case standard properties, quoted custom properties), a declaration list, or nothing.
   - Its kinds are within object, string, `null` and `undefined`, or it is UF3018. A declared
-    object type's members are checked as an object literal's keys and values are: each a known
-    property in camel case or a lower-case custom property, never vendor-prefixed, each value a
-    string, or a number only on `UNITLESS_PROPERTIES` and custom properties (UF3018 at the
-    member).
-  - An object typed by an `interface` is UF3018, with the help to declare it with `type`, as a
-    `class` object is: Vue's and Qwik's types need the index signature only a type literal has.
+    object type's members, and the members of an object literal anywhere in the value (a
+    conditional's branch, a `computed`, a local constant), are checked as an object literal's
+    keys and values are written in place: each a known property in camel case or a lower-case
+    custom property, never vendor-prefixed, each value a string, `0`, or a number only on
+    `UNITLESS_PROPERTIES` and custom properties (UF3018 at the member).
+  - An object typed by an `interface` is UF3018, with the help to declare it with `type`: Vue's
+    and Qwik's style types need the index signature only a type literal has.
   - **Each target writes its own form.** Vue `:style="value"`, Angular `[style]="value"`, Qwik and
     Astro `style={value}`. React `style={styleObject(value)}`, Solid
     `style={styleProperties(value)}` and Svelte `style={styleText(value)}`, inline helpers that turn
     a declaration list into an object, an object into kebab-case keys, or an object into a
-    declaration list. Every helper splits a declaration list as Vue's `parseStringStyle` does, so a
-    list splits alike everywhere.
+    declaration list. A helper that splits a declaration list splits it as Vue's
+    `parseStringStyle` does where Vue merges one, and keeps a property only where its name is a CSS
+    identifier, so no text of the list reaches the markup but as a value the framework escapes.
   - **Merged, it is an object first.** Where a root merges a consumer's `style` into the value,
-    and where a component takes the value, whose root spreads it, React, Solid, Qwik, Astro and
+    and where a component or a `<component is>` takes the value, whose root spreads it, React, Solid, Qwik, Astro and
     Angular turn it into an object (`styleObject`) before the spread, the consumer's spread last,
     so its declarations win. Svelte merges the texts through `mergeStyle`.
   - `style-binding` is emulated on React (`styleObject`), Svelte (`styleText`), Solid
@@ -67,7 +70,10 @@ The frameworks take these forms differently:
 - **A class part that may be an array or an object at run time** (`DynamicClass.collection`, a
   prop typed `string[]`) renders the names Vue's `normalizeClass` reads: a string as it is, an
   array's entries, recursively, and an object's keys whose values are truthy.
-  - An array whose entries can be numbers is UF3018: Vue skips them, clsx renders their digits.
+  - An array whose entries, at any depth, can be numbers or `true` is UF3018: Vue and Qwik skip a
+    number, which clsx renders as its digits, and Qwik's `ClassList` takes no `true`. An object
+    typed by an `interface`, at any depth, is UF3018 too: Qwik's `ClassList` needs an index
+    signature.
   - Vue, Svelte, Astro and Qwik pass it to their own class. React's and Solid's `cx` read an
     array's entries too, printed only where a class has such a part. Angular writes
     `[class]="classNames([…])"`, an inline helper read through a class member, so
@@ -109,14 +115,16 @@ Svelte   <span class={["tag", tags, states]}>        (Vue, Qwik and Astro alike)
 
 **Negative:**
 
-- Six targets print a helper for a style bound to a value, and React and Solid for any of them,
-  where the value is already an object, since the IR does not know its type.
+- React, Solid and Svelte print a helper for any style bound to a value, where the value is
+  already the framework's form, since the IR does not know its type. Angular, Qwik and Astro
+  print one only where a merge spreads the value.
 - A style or class object must be typed with `type`, not `interface`.
 - Only Chromium's own prefixed longhands are accepted: `-moz-osx-font-smoothing` and prefixed
   shorthands are not.
 - **Outside the contract** (ADR-0035): a run-time style object's keys beyond those an object
   literal may hold (kebab-case or vendor-prefixed keys, numbers on properties that need a unit),
-  which the targets write differently. Where a root's own declaration list and a consumer's
+  which the targets write differently. A run-time declaration list whose quoted value holds a
+  `;` (`font-family: "A;B"`), which a helper's split cuts where Vue writes the list as it is. Where a root's own declaration list and a consumer's
   object set the same multi-word property (`background-color` and `backgroundColor`), Vue's
   server writes both declarations, the later of which applies, where the others write the
   consumer's alone: the style that renders is the same, the markup is not.
@@ -139,12 +147,18 @@ Svelte   <span class={["tag", tags, states]}>        (Vue, Qwik and Astro alike)
   table-internal display", "names the standard property of a prefixed alias", "lowers %s, bound
   to one value", "checks the members of a style object typed %s (UF3018)", "reports a style object
   or a class object typed by an interface (UF3018)", "reports an array whose entries can be
-  numbers (UF3018)" and "lowers a spread's style key".
+  numbers (UF3018)", "reports a class collection holding %s at any depth (UF3018)", "checks the
+  object literals in style={%s} (UF3018)" and "lowers a spread's style key".
+- `packages/target-solid/test/styles.test.ts`: "keeps markup out of a style bound to a value",
+  through Solid's own server render.
 - `packages/codegen/test/binding-forms.test.ts`: which forms a template uses, a spread's `style`
   key read with its references, and where a whole style is merged.
 - The `bindings/style-expression`, `bindings/class-runtime-collections`, `bindings/style-spread`,
   `bindings/vendor-prefixes` and `bindings/table-display` cases are green at every live layer on
   all seven targets. `style-expression` and `style-spread` each hold a child whose root merges a
-  consumer's `style` over its own whole style.
+  consumer's `style` over its own whole style, and `style-expression` a `<component is>` that
+  takes a declaration list and an object of custom properties only. The L10 root canaries leave
+  a root whose style is bound to a value as it is, since a plugin writes no code, and corrupt the
+  root of the component that renders it (`setStyle` in `harness/canaries.ts`).
 - Chromium 153's prefixed properties: `getComputedStyle` lists the longhands of their own, and
   `style.setProperty(name, "initial")` shows which set a standard longhand instead.
